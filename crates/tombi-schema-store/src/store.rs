@@ -593,7 +593,13 @@ impl SchemaStore {
             // Handle anchor fragments (e.g., "#anchorName")
             let anchor_schema = {
                 let anchors = document_schema.anchors.read().await;
-                anchors.get(&fragment_reference).cloned()
+                if let Some(schema) = anchors.get(&fragment_reference).cloned() {
+                    Some(schema)
+                } else {
+                    drop(anchors);
+                    let dynamic_anchors = document_schema.dynamic_anchors.read().await;
+                    dynamic_anchors.get(&fragment_reference).cloned()
+                }
             };
 
             if let Some(anchor_schema) = anchor_schema
@@ -1013,9 +1019,11 @@ fn canonicalize_path_for_matching(path: &std::path::Path) -> std::path::PathBuf 
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{path::Path, str::FromStr};
 
-    use super::matches_schema_include;
+    use super::{SchemaStore, matches_schema_include};
+    use crate::ValueSchema;
+    use tombi_uri::SchemaUri;
 
     #[test]
     fn schema_include_matches_user_config_path_via_absolute_suffix() {
@@ -1033,5 +1041,87 @@ mod tests {
             Path::new("config.toml"),
             Path::new("/Users/test/project/config.toml"),
         ));
+    }
+
+    #[tokio::test]
+    async fn fragment_pointer_resolves_boolean_schema() {
+        let schema_path = std::env::temp_dir().join(format!(
+            "tombi_fragment_boolean_{}_{}.json",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::write(
+            &schema_path,
+            r#"{
+                "$defs": {
+                    "allowAll": true
+                }
+            }"#,
+        )
+        .unwrap();
+
+        let schema_uri =
+            SchemaUri::from_str(&format!("{}#/$defs/allowAll", SchemaUri::from_file_path(&schema_path).unwrap()))
+                .unwrap();
+        let schema_store = SchemaStore::new();
+
+        let document_schema = schema_store
+            .try_get_document_schema(&schema_uri)
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert!(matches!(
+            document_schema.value_schema.as_deref(),
+            Some(ValueSchema::Anything(_))
+        ));
+
+        let _ = std::fs::remove_file(schema_path);
+    }
+
+    #[tokio::test]
+    async fn fragment_anchor_resolves_dynamic_anchor() {
+        let schema_path = std::env::temp_dir().join(format!(
+            "tombi_fragment_dynamic_anchor_{}_{}.json",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::write(
+            &schema_path,
+            r#"{
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$defs": {
+                    "name": {
+                        "$dynamicAnchor": "nameSchema",
+                        "type": "string"
+                    }
+                }
+            }"#,
+        )
+        .unwrap();
+
+        let schema_uri =
+            SchemaUri::from_str(&format!("{}#nameSchema", SchemaUri::from_file_path(&schema_path).unwrap()))
+                .unwrap();
+        let schema_store = SchemaStore::new();
+
+        let document_schema = schema_store
+            .try_get_document_schema(&schema_uri)
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert!(matches!(
+            document_schema.value_schema.as_deref(),
+            Some(ValueSchema::String(_))
+        ));
+
+        let _ = std::fs::remove_file(schema_path);
     }
 }

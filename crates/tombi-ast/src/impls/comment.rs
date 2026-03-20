@@ -44,7 +44,7 @@ impl Comment {
                     let mut schema_file_path = std::path::PathBuf::from(format!(
                         "{}{}",
                         uri.host_str().unwrap_or_default(),
-                        uri.path()
+                        percent_decode_uri_path(uri.path())
                     ));
                     if schema_file_path.is_relative()
                         && let Some(source_dir_path) = source_path.parent()
@@ -168,6 +168,75 @@ impl Comment {
             content_range,
             directive_range,
         })
+    }
+}
+
+fn percent_decode_uri_path(path: &str) -> String {
+    let mut result = Vec::new();
+    let mut chars = path.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '%' {
+            let mut hex_chars = String::new();
+            for _ in 0..2 {
+                if let Some(&next_ch) = chars.peek() {
+                    if next_ch.is_ascii_hexdigit() {
+                        hex_chars.push(chars.next().unwrap());
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            if hex_chars.len() == 2
+                && let Ok(byte) = u8::from_str_radix(&hex_chars, 16)
+            {
+                result.push(byte);
+                continue;
+            }
+
+            result.push(b'%');
+            result.extend(hex_chars.bytes());
+        } else {
+            let mut buffer = [0; 4];
+            result.extend(ch.encode_utf8(&mut buffer).bytes());
+        }
+    }
+
+    String::from_utf8_lossy(&result).into_owned()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use tombi_uri::SchemaUri;
+
+    use super::percent_decode_uri_path;
+
+    #[test]
+    fn percent_decode_uri_path_decodes_path_bytes() {
+        assert_eq!(percent_decode_uri_path("/foo%20bar/schema.json"), "/foo bar/schema.json");
+    }
+
+    #[test]
+    fn relative_file_schema_path_joins_after_percent_decode() {
+        let source_dir = std::path::Path::new("/tmp/source dir");
+        let schema_file_path =
+            std::path::PathBuf::from(format!(".{}", percent_decode_uri_path("/schemas/schema%20file.json")));
+
+        assert_eq!(
+            source_dir.join(schema_file_path),
+            std::path::Path::new("/tmp/source dir/./schemas/schema file.json")
+        );
+    }
+
+    #[test]
+    fn schema_uri_fragment_parse_still_works() {
+        let uri = SchemaUri::from_str("file://./schema.json#/definitions/TableValue").unwrap();
+        assert_eq!(uri.fragment(), Some("/definitions/TableValue"));
     }
 }
 

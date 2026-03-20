@@ -7,6 +7,7 @@ use crate::x_taplo::XTaplo;
 
 use super::{
     AnchorCollector, DynamicAnchorCollector, SchemaDefinitions, SchemaMap, SchemaUri, ValueSchema,
+    bool_value_schema,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -832,9 +833,15 @@ pub fn resolve_json_pointer(
 
     let path = &pointer[1..]; // Remove the leading '#'
     if path.is_empty() {
-        return Ok(schema_node
-            .as_object()
-            .and_then(|obj| ValueSchema::new(obj, string_formats, dialect, None, None)));
+        return Ok(match schema_node {
+            tombi_json::ValueNode::Object(obj) => {
+                ValueSchema::new(obj, string_formats, dialect, None, None)
+            }
+            tombi_json::ValueNode::Bool(bool_node) => {
+                Some(bool_value_schema(bool_node.value, bool_node.range))
+            }
+            _ => None,
+        });
     }
 
     // RFC 6901: Percent-decode the path before splitting on '/'
@@ -874,6 +881,9 @@ pub fn resolve_json_pointer(
     match current {
         tombi_json::ValueNode::Object(obj) => {
             Ok(ValueSchema::new(obj, string_formats, dialect, None, None))
+        }
+        tombi_json::ValueNode::Bool(bool_node) => {
+            Ok(Some(bool_value_schema(bool_node.value, bool_node.range)))
         }
         _ => Ok(None),
     }
