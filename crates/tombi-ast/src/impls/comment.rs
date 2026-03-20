@@ -37,34 +37,46 @@ impl Comment {
             );
 
             if let Ok(uri) = uri_text.parse::<tombi_uri::SchemaUri>() {
-                let is_relative_file_domain =
-                    uri.scheme() == "file" && matches!(uri.host_str(), Some(".") | Some(".."));
+                if let Some(host) = uri.host_str()
+                    && matches!(host, "." | "..")
+                    && let Some(source_path) = source_path
+                    && let Some(source_dir_path) = source_path.parent()
+                    && let Ok(mut base_dir_uri) =
+                        tombi_uri::SchemaUri::from_file_path(source_dir_path)
+                {
+                    let relative_ref = format!("{}{}", host, uri.path());
 
-                if is_relative_file_domain && let Some(source_path) = source_path {
-                    let mut schema_file_path = std::path::PathBuf::from(format!(
-                        "{}{}",
-                        uri.host_str().unwrap_or_default(),
-                        percent_decode_uri_path(uri.path())
-                    ));
-                    if schema_file_path.is_relative()
-                        && let Some(source_dir_path) = source_path.parent()
+                    if !base_dir_uri.path().ends_with('/') {
+                        let path = format!("{}/", base_dir_uri.path());
+                        base_dir_uri.set_path(&path);
+                    }
+
+                    if let Ok(resolved_uri) = base_dir_uri
+                        .join(&relative_ref)
+                        .map(tombi_uri::SchemaUri::from)
+                        && let Ok(mut schema_file_path) = resolved_uri.to_file_path()
                     {
-                        schema_file_path = source_dir_path.join(schema_file_path);
-                    }
-                    if let Ok(canonicalized_file_path) = schema_file_path.canonicalize() {
-                        schema_file_path = canonicalized_file_path;
-                    }
+                        if let Ok(canonicalized_file_path) = schema_file_path.canonicalize() {
+                            schema_file_path = canonicalized_file_path;
+                        }
 
-                    Some(SchemaDocumentCommentDirective {
-                        directive_range,
-                        uri: tombi_uri::SchemaUri::from_file_path(&schema_file_path)
-                            .map(|mut schema_uri| {
-                                schema_uri.set_fragment(uri.fragment());
-                                schema_uri
-                            })
-                            .map_err(|_| uri_text.to_string()),
-                        uri_range,
-                    })
+                        Some(SchemaDocumentCommentDirective {
+                            directive_range,
+                            uri: tombi_uri::SchemaUri::from_file_path(&schema_file_path)
+                                .map(|mut schema_uri| {
+                                    schema_uri.set_fragment(uri.fragment());
+                                    schema_uri
+                                })
+                                .map_err(|_| uri_text.to_string()),
+                            uri_range,
+                        })
+                    } else {
+                        Some(SchemaDocumentCommentDirective {
+                            directive_range,
+                            uri: Err(uri_text.to_string()),
+                            uri_range,
+                        })
+                    }
                 } else {
                     Some(SchemaDocumentCommentDirective {
                         directive_range,
@@ -171,65 +183,33 @@ impl Comment {
     }
 }
 
-fn percent_decode_uri_path(path: &str) -> String {
-    let mut result = Vec::new();
-    let mut chars = path.chars().peekable();
-
-    while let Some(ch) = chars.next() {
-        if ch == '%' {
-            let mut hex_chars = String::new();
-            for _ in 0..2 {
-                if let Some(&next_ch) = chars.peek() {
-                    if next_ch.is_ascii_hexdigit() {
-                        hex_chars.push(chars.next().unwrap());
-                    } else {
-                        break;
-                    }
-                } else {
-                    break;
-                }
-            }
-
-            if hex_chars.len() == 2
-                && let Ok(byte) = u8::from_str_radix(&hex_chars, 16)
-            {
-                result.push(byte);
-                continue;
-            }
-
-            result.push(b'%');
-            result.extend(hex_chars.bytes());
-        } else {
-            let mut buffer = [0; 4];
-            result.extend(ch.encode_utf8(&mut buffer).bytes());
-        }
-    }
-
-    String::from_utf8_lossy(&result).into_owned()
-}
-
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
     use tombi_uri::SchemaUri;
 
-    use super::percent_decode_uri_path;
-
     #[test]
-    fn percent_decode_uri_path_decodes_path_bytes() {
-        assert_eq!(percent_decode_uri_path("/foo%20bar/schema.json"), "/foo bar/schema.json");
-    }
-
-    #[test]
-    fn relative_file_schema_path_joins_after_percent_decode() {
+    fn relative_file_schema_path_joins_and_to_file_path_decodes_path_bytes() {
         let source_dir = std::path::Path::new("/tmp/source dir");
-        let schema_file_path =
-            std::path::PathBuf::from(format!(".{}", percent_decode_uri_path("/schemas/schema%20file.json")));
+        let uri = SchemaUri::from_str("file://./schemas/schema%20file.json").unwrap();
+        let mut base_dir_uri = SchemaUri::from_file_path(source_dir).unwrap();
+        if !base_dir_uri.path().ends_with('/') {
+            let path = format!("{}/", base_dir_uri.path());
+            base_dir_uri.set_path(&path);
+        }
+        let resolved_uri = base_dir_uri
+            .join(&format!(
+                "{}{}",
+                uri.host_str().unwrap_or_default(),
+                uri.path()
+            ))
+            .map(SchemaUri::from)
+            .unwrap();
 
         assert_eq!(
-            source_dir.join(schema_file_path),
-            std::path::Path::new("/tmp/source dir/./schemas/schema file.json")
+            resolved_uri.to_file_path().unwrap(),
+            std::path::Path::new("/tmp/source dir/schemas/schema file.json")
         );
     }
 
