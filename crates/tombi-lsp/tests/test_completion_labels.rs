@@ -608,6 +608,7 @@ mod completion_labels {
                 "additional-properties-branch-keys-test.schema.json",
                 "adjacent-applicators-test.schema.json",
                 "anchor-dynamic-ref-test.schema.json",
+                "anchor-table-test.schema.json",
                 "array-const-enum-test.schema.json",
                 "contains-test.schema.json",
                 "dependencies-strict-mode-test.schema.json",
