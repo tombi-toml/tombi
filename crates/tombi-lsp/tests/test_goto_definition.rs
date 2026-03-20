@@ -41,6 +41,43 @@ mod goto_definition_tests {
                 SourcePath(project_root_path().join("tombi.toml")),
             ) -> Ok([]);
         );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn relative_schema_path_with_subschema_fragment(
+                r#"
+                #:schema file://./schemas/type-test.schema.json#/definitions/TableValue█
+
+                boolean = true
+                integer = 1
+                "#,
+                SourcePath(project_root_path().join("tombi.toml")),
+            ) -> Ok([{
+                let mut uri = tombi_uri::Uri::from_file_path(
+                    project_root_path().join("schemas/type-test.schema.json")
+                ).unwrap();
+                uri.set_fragment(Some("/definitions/TableValue"));
+                uri
+            }]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn relative_schema_path_with_anchor_fragment(
+                r#"
+                #:schema file://./schemas/anchor-table-test.schema.json#tableType█
+
+                boolean = true
+                "#,
+                SourcePath(project_root_path().join("tombi.toml")),
+            ) -> Ok([{
+                let mut uri = tombi_uri::Uri::from_file_path(
+                    project_root_path().join("schemas/anchor-table-test.schema.json")
+                ).unwrap();
+                uri.set_fragment(Some("tableType"));
+                uri
+            }]);
+        );
     }
 
     mod cargo_schema {

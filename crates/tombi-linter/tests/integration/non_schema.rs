@@ -188,6 +188,38 @@ test_lint! {
 
 test_lint! {
     #[test]
+    fn test_schema_file_with_subschema_fragment(
+        r#"
+        #:schema file://./schemas/type-test.schema.json#/definitions/TableValue
+
+        boolean = true
+        "#,
+    ) -> Err([
+        tombi_validator::DiagnosticKind::TableMinKeys {
+            min_keys: 2,
+            actual: 1,
+        }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_schema_file_with_anchor_fragment(
+        r#"
+        #:schema file://./schemas/anchor-table-test.schema.json#tableType
+
+        boolean = true
+        "#,
+    ) -> Err([
+        tombi_validator::DiagnosticKind::TableMinKeys {
+            min_keys: 2,
+            actual: 1,
+        }
+    ])
+}
+
+test_lint! {
+    #[test]
     fn test_file_schema_does_not_exist_url(
         r#"
         #:schema https://does-not-exist.co.jp

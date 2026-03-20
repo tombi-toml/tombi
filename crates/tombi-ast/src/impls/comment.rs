@@ -37,11 +37,51 @@ impl Comment {
             );
 
             if let Ok(uri) = uri_text.parse::<tombi_uri::SchemaUri>() {
-                Some(SchemaDocumentCommentDirective {
-                    directive_range,
-                    uri: Ok(uri),
-                    uri_range,
-                })
+                if let Some(host) = uri.host_str()
+                    && matches!(host, "." | "..")
+                    && let Some(source_path) = source_path
+                    && let Some(source_dir_path) = source_path.parent()
+                    && let Ok(mut base_dir_uri) =
+                        tombi_uri::SchemaUri::from_file_path(source_dir_path)
+                {
+                    if !base_dir_uri.path().ends_with('/') {
+                        let path = format!("{}/", base_dir_uri.path());
+                        base_dir_uri.set_path(&path);
+                    }
+
+                    if let Ok(resolved_uri) = base_dir_uri
+                        .join(&format!("{}{}", host, uri.path()))
+                        .map(tombi_uri::SchemaUri::from)
+                        && let Ok(mut schema_file_path) = resolved_uri.to_file_path()
+                    {
+                        if let Ok(canonicalized_file_path) = schema_file_path.canonicalize() {
+                            schema_file_path = canonicalized_file_path;
+                        }
+
+                        Some(SchemaDocumentCommentDirective {
+                            directive_range,
+                            uri: tombi_uri::SchemaUri::from_file_path(&schema_file_path)
+                                .map(|mut schema_uri| {
+                                    schema_uri.set_fragment(uri.fragment());
+                                    schema_uri
+                                })
+                                .map_err(|_| uri_text.to_string()),
+                            uri_range,
+                        })
+                    } else {
+                        Some(SchemaDocumentCommentDirective {
+                            directive_range,
+                            uri: Err(uri_text.to_string()),
+                            uri_range,
+                        })
+                    }
+                } else {
+                    Some(SchemaDocumentCommentDirective {
+                        directive_range,
+                        uri: Ok(uri),
+                        uri_range,
+                    })
+                }
             } else if let Some(source_path) = source_path {
                 let mut schema_file_path = std::path::PathBuf::from(uri_text);
                 if schema_file_path.is_relative()
@@ -50,7 +90,7 @@ impl Comment {
                     schema_file_path = source_dir_path.join(schema_file_path);
                 }
                 if let Ok(canonicalized_file_path) = schema_file_path.canonicalize() {
-                    schema_file_path = canonicalized_file_path
+                    schema_file_path = canonicalized_file_path;
                 }
 
                 Some(SchemaDocumentCommentDirective {
@@ -138,6 +178,44 @@ impl Comment {
             content_range,
             directive_range,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use pretty_assertions::assert_eq;
+    use tombi_uri::SchemaUri;
+
+    #[test]
+    fn relative_file_schema_path_joins_and_to_file_path_decodes_path_bytes() {
+        let source_dir = std::path::Path::new("/tmp/source dir");
+        let uri = SchemaUri::from_str("file://./schemas/schema%20file.json").unwrap();
+        let mut base_dir_uri = SchemaUri::from_file_path(source_dir).unwrap();
+        if !base_dir_uri.path().ends_with('/') {
+            let path = format!("{}/", base_dir_uri.path());
+            base_dir_uri.set_path(&path);
+        }
+        let resolved_uri = base_dir_uri
+            .join(&format!(
+                "{}{}",
+                uri.host_str().unwrap_or_default(),
+                uri.path()
+            ))
+            .map(SchemaUri::from)
+            .unwrap();
+
+        assert_eq!(
+            resolved_uri.to_file_path().unwrap(),
+            std::path::Path::new("/tmp/source dir/schemas/schema file.json")
+        );
+    }
+
+    #[test]
+    fn schema_uri_fragment_parse_still_works() {
+        let uri = SchemaUri::from_str("file://./schema.json#/definitions/TableValue").unwrap();
+        assert_eq!(uri.fragment(), Some("/definitions/TableValue"));
     }
 }
 
