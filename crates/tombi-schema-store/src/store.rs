@@ -1,5 +1,6 @@
 use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 
+use crate::resolve_json_pointer;
 use crate::{
     AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, SchemaAccessor,
     SchemaAccessors, SourceSchema, SubSchemaUriMap, ValueSchema, get_tombi_schemastore_content,
@@ -339,15 +340,19 @@ impl SchemaStore {
         Ok(())
     }
 
-    pub async fn update_schema(&self, schema_uri: &SchemaUri) -> Result<bool, crate::Error> {
+    pub async fn update_schema(&self, mut schema_uri: SchemaUri) -> Result<bool, crate::Error> {
         if matches!(schema_uri.scheme(), "http" | "https") && self.offline() {
             log::debug!("offline mode, skip fetch schema from url: {}", schema_uri);
             return Ok(false);
         }
 
-        let has_key = { self.document_schemas.read().await.contains_key(schema_uri) };
+        if schema_uri.fragment().is_some() {
+            schema_uri.set_fragment(None);
+        }
+
+        let has_key = { self.document_schemas.read().await.contains_key(&schema_uri) };
         if has_key
-            && let Some(document_schema) = self.fetch_document_schema(schema_uri).await.transpose()
+            && let Some(document_schema) = self.fetch_document_schema(&schema_uri).await.transpose()
         {
             self.document_schemas
                 .write()
@@ -519,26 +524,98 @@ impl SchemaStore {
         schema_uri: &'a SchemaUri,
     ) -> BoxFuture<'b, Result<Option<Arc<DocumentSchema>>, crate::Error>> {
         async move {
-            // Use memory cache first
-            if let Some(document_schema) = self.document_schemas.read().await.get(schema_uri) {
-                return match document_schema {
-                    Ok(document_schema) => Ok(Some(document_schema.clone())),
-                    Err(err) => Err(err.to_owned()),
-                };
-            }
+            let requested_schema_uri = schema_uri.clone();
 
-            // Then fetch from remote
-            match self.fetch_document_schema(schema_uri).await.transpose() {
-                Some(document_schema) => {
-                    self.document_schemas
-                        .write()
-                        .await
-                        .insert(schema_uri.clone(), document_schema.clone());
+            let (schema_uri, fragment) = {
+                let mut uri = schema_uri.clone();
+                let fragment = uri.fragment().map(ToOwned::to_owned);
+                uri.set_fragment(None);
+                (uri, fragment)
+            };
 
-                    Some(document_schema).transpose()
+            let document_schema = {
+                if let Some(document_schema) = self.document_schemas.read().await.get(&schema_uri) {
+                    match document_schema {
+                        Ok(document_schema) => Some(document_schema.clone()),
+                        Err(err) => return Err(err.to_owned()),
+                    }
+                } else {
+                    match self.fetch_document_schema(&schema_uri).await.transpose() {
+                        Some(document_schema) => {
+                            self.document_schemas
+                                .write()
+                                .await
+                                .insert(schema_uri.clone(), document_schema.clone());
+                            Some(document_schema?)
+                        }
+                        None => None,
+                    }
                 }
-                None => Ok(None),
+            };
+
+            let Some(document_schema) = document_schema else {
+                return Ok(None);
+            };
+
+            // If no fragment, return the base document schema as-is
+            let Some(fragment) = fragment else {
+                return Ok(Some(document_schema));
+            };
+
+            let fragment_reference = format!("#{fragment}");
+
+            // Handle JSON Pointer fragments (e.g., "#/definitions/TableValue")
+            if fragment_reference == "#" || fragment_reference.starts_with("#/") {
+                let Some(schema_value) = self.fetch_schema_value(&schema_uri).await? else {
+                    return Ok(None);
+                };
+
+                let Some(fragment_value_schema) = resolve_json_pointer(
+                    &schema_value,
+                    &fragment_reference,
+                    document_schema.string_formats(),
+                    document_schema.dialect(),
+                )?
+                else {
+                    return Err(crate::Error::InvalidJsonPointer {
+                        pointer: fragment_reference,
+                        schema_uri,
+                    });
+                };
+
+                // Create a new document schema with the fragment-referenced schema_uri in the return value
+                let mut fragment_document_schema = document_schema.as_ref().clone();
+                fragment_document_schema.schema_uri = requested_schema_uri; // Use fragment-full URI for return value
+                fragment_document_schema.value_schema = Some(Arc::new(fragment_value_schema));
+                return Ok(Some(Arc::new(fragment_document_schema)));
             }
+
+            // Handle anchor fragments (e.g., "#anchorName")
+            let anchor_schema = {
+                let anchors = document_schema.anchors.read().await;
+                anchors.get(&fragment_reference).cloned()
+            };
+
+            if let Some(anchor_schema) = anchor_schema
+                && let Some(current_schema) = anchor_schema
+                    .to_current_schema(
+                        Cow::Borrowed(document_schema.base_uri()),
+                        Cow::Borrowed(&document_schema.definitions),
+                        self,
+                    )
+                    .await?
+            {
+                // Create a new document schema with the fragment-referenced schema_uri in the return value
+                let mut fragment_document_schema = document_schema.as_ref().clone();
+                fragment_document_schema.schema_uri = requested_schema_uri; // Use fragment-full URI for return value
+                fragment_document_schema.value_schema = Some(current_schema.value_schema);
+                return Ok(Some(Arc::new(fragment_document_schema)));
+            }
+
+            Err(crate::Error::InvalidJsonSchemaReference {
+                reference: fragment_reference,
+                schema_uri,
+            })
         }
         .boxed()
     }

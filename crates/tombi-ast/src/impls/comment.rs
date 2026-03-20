@@ -37,11 +37,41 @@ impl Comment {
             );
 
             if let Ok(uri) = uri_text.parse::<tombi_uri::SchemaUri>() {
-                Some(SchemaDocumentCommentDirective {
-                    directive_range,
-                    uri: Ok(uri),
-                    uri_range,
-                })
+                let is_relative_file_domain =
+                    uri.scheme() == "file" && matches!(uri.host_str(), Some(".") | Some(".."));
+
+                if is_relative_file_domain && let Some(source_path) = source_path {
+                    let mut schema_file_path = std::path::PathBuf::from(format!(
+                        "{}{}",
+                        uri.host_str().unwrap_or_default(),
+                        uri.path()
+                    ));
+                    if schema_file_path.is_relative()
+                        && let Some(source_dir_path) = source_path.parent()
+                    {
+                        schema_file_path = source_dir_path.join(schema_file_path);
+                    }
+                    if let Ok(canonicalized_file_path) = schema_file_path.canonicalize() {
+                        schema_file_path = canonicalized_file_path;
+                    }
+
+                    Some(SchemaDocumentCommentDirective {
+                        directive_range,
+                        uri: tombi_uri::SchemaUri::from_file_path(&schema_file_path)
+                            .map(|mut schema_uri| {
+                                schema_uri.set_fragment(uri.fragment());
+                                schema_uri
+                            })
+                            .map_err(|_| uri_text.to_string()),
+                        uri_range,
+                    })
+                } else {
+                    Some(SchemaDocumentCommentDirective {
+                        directive_range,
+                        uri: Ok(uri),
+                        uri_range,
+                    })
+                }
             } else if let Some(source_path) = source_path {
                 let mut schema_file_path = std::path::PathBuf::from(uri_text);
                 if schema_file_path.is_relative()
@@ -50,7 +80,7 @@ impl Comment {
                     schema_file_path = source_dir_path.join(schema_file_path);
                 }
                 if let Ok(canonicalized_file_path) = schema_file_path.canonicalize() {
-                    schema_file_path = canonicalized_file_path
+                    schema_file_path = canonicalized_file_path;
                 }
 
                 Some(SchemaDocumentCommentDirective {

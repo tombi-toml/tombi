@@ -37,6 +37,42 @@ mod document_link_tests {
 
         test_document_link!(
             #[tokio::test]
+            async fn cargo_workspace_package_readme_without_schema_with_subschema_fragment(
+                r#"
+                #:schema file://./schemas/type-test.schema.json#/definitions/TableValue
+
+                [workspace.package]
+                readme = "README.md"
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(Some(vec![
+                {
+                    path: project_root_path().join("schemas/type-test.schema.json"),
+                    range: 0:9..0:71
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_workspace_package_readme_without_schema_with_anchor_fragment(
+                r#"
+                #:schema file://./schemas/anchor-table-test.schema.json#tableType
+
+                [workspace.package]
+                readme = "README.md"
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(Some(vec![
+                {
+                    path: project_root_path().join("schemas/anchor-table-test.schema.json"),
+                    range: 0:9..0:65
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
             async fn cargo_workspace_dependencies_tombi_lsp(
                 r#"
                 [workspace.package]

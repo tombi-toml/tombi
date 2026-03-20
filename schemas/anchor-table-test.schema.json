@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "AnchorTable": {
+      "$anchor": "tableType",
+      "type": "object",
+      "properties": {
+        "boolean": {
+          "type": ["boolean", "null"]
+        }
+      },
+      "minProperties": 2
+    }
+  }
+}

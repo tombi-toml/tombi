@@ -240,14 +240,14 @@ impl ConfigManager {
 
     pub async fn update_schema(
         &self,
-        schema_uri: &SchemaUri,
+        schema_uri: SchemaUri,
     ) -> Result<bool, tombi_schema_store::Error> {
         let mut updated = false;
         let mut config_schema_stores = self.config_schema_stores.write().await;
         for config_schema_store in config_schema_stores.values_mut() {
             updated |= config_schema_store
                 .schema_store
-                .update_schema(schema_uri)
+                .update_schema(schema_uri.clone())
                 .await?;
         }
         if let Some((_, ConfigSchemaStore { schema_store, .. })) =
