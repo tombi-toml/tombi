@@ -185,6 +185,7 @@ impl Comment {
 mod tests {
     use std::str::FromStr;
 
+    use pretty_assertions::assert_eq;
     use tombi_uri::SchemaUri;
 
     #[test]
