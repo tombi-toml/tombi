@@ -1,3 +1,5 @@
+import { Note } from "~/components/Highlight";
+
 # Schema Document Directive
 
 Same as [Taplo](https://taplo.tamasfe.dev/configuration/directives.html#the-schema-directive), `#:schema` is used to specify the schema to use for the document.
@@ -22,3 +24,22 @@ value = "example"
 [settings]
 enabled = true
 ```
+
+<Note>
+Although prohibited by [RFC 3986](https://www.rfc-editor.org/rfc/rfc8089),
+Tombi allows the specification of `.` and `..` in the hostname of the `file://` scheme.
+
+These are interpreted as follows, respectively:
+
+- `.`: After replacing with the directory in which the TOML file is located, interpreted as the `file://` scheme
+- `..`: After replacing with the parent directory of the TOML file, interpreted as the `file://` scheme
+
+This allows you to specify local files in the following ways:
+
+```toml
+#:schema file://../../schemas/my-schema.json#/definitions/User
+
+name = "Taro"
+country = "Japan"
+```
+</Note>
