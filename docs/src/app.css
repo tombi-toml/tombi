@@ -167,6 +167,9 @@ main {
 .mdx-content pre,
 .mdx-content pre code {
   font-size: 0.875rem !important;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 /* Table Styles */

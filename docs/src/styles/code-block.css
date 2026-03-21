@@ -7,7 +7,7 @@
 }
 
 /* Code blocks should scroll internally */
-pre {
+.code-block-wrapper pre {
   overflow-x: auto;
   overflow-y: hidden;
   max-width: 100%;
@@ -16,10 +16,13 @@ pre {
   background: #1e1e1e;
   border-radius: 0.5rem;
   font-size: 0.875rem !important;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 /* Ensure code doesn't wrap */
-pre code {
+.code-block-wrapper pre code {
   display: block;
   width: max-content;
   min-width: 100%;
@@ -27,6 +30,9 @@ pre code {
   word-break: normal;
   word-wrap: normal;
   font-size: 0.875rem !important;
+  line-height: inherit;
+  -webkit-text-size-adjust: inherit;
+  text-size-adjust: inherit;
 }
 
 /* Copy button positioning */
@@ -39,32 +45,32 @@ pre code {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  pre {
+  .code-block-wrapper pre {
     padding: 0.75rem;
   }
 }
 
 /* Custom scrollbar for code blocks */
-pre::-webkit-scrollbar {
+.code-block-wrapper pre::-webkit-scrollbar {
   height: 6px;
 }
 
-pre::-webkit-scrollbar-track {
+.code-block-wrapper pre::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 3px;
 }
 
-pre::-webkit-scrollbar-thumb {
+.code-block-wrapper pre::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 3px;
 }
 
-pre::-webkit-scrollbar-thumb:hover {
+.code-block-wrapper pre::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
 
 /* Firefox */
-pre {
+.code-block-wrapper pre {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
 }
