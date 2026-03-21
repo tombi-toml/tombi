@@ -36,52 +36,20 @@ impl Comment {
                 ),
             );
 
-            if let Ok(uri) = uri_text.parse::<tombi_uri::SchemaUri>() {
-                if let Some(host) = uri.host_str()
-                    && matches!(host, "." | "..")
-                    && let Some(source_path) = source_path
-                    && let Some(source_dir_path) = source_path.parent()
-                    && let Ok(mut base_dir_uri) =
-                        tombi_uri::SchemaUri::from_file_path(source_dir_path)
-                {
-                    if !base_dir_uri.path().ends_with('/') {
-                        let path = format!("{}/", base_dir_uri.path());
-                        base_dir_uri.set_path(&path);
-                    }
-
-                    if let Ok(resolved_uri) = base_dir_uri
-                        .join(&format!("{}{}", host, uri.path()))
-                        .map(tombi_uri::SchemaUri::from)
-                        && let Ok(mut schema_file_path) = resolved_uri.to_file_path()
-                    {
-                        if let Ok(canonicalized_file_path) = schema_file_path.canonicalize() {
-                            schema_file_path = canonicalized_file_path;
-                        }
-
-                        Some(SchemaDocumentCommentDirective {
-                            directive_range,
-                            uri: tombi_uri::SchemaUri::from_file_path(&schema_file_path)
-                                .map(|mut schema_uri| {
-                                    schema_uri.set_fragment(uri.fragment());
-                                    schema_uri
-                                })
-                                .map_err(|_| uri_text.to_string()),
-                            uri_range,
-                        })
-                    } else {
-                        Some(SchemaDocumentCommentDirective {
-                            directive_range,
-                            uri: Err(uri_text.to_string()),
-                            uri_range,
-                        })
-                    }
-                } else {
-                    Some(SchemaDocumentCommentDirective {
-                        directive_range,
-                        uri: Ok(uri),
-                        uri_range,
-                    })
-                }
+            if let Some(source_path) = source_path
+                && is_relative_file_schema_uri_text(uri_text)
+            {
+                Some(SchemaDocumentCommentDirective {
+                    directive_range,
+                    uri: resolve_relative_file_schema_uri(uri_text, source_path),
+                    uri_range,
+                })
+            } else if let Ok(uri) = uri_text.parse::<tombi_uri::SchemaUri>() {
+                Some(SchemaDocumentCommentDirective {
+                    directive_range,
+                    uri: Ok(uri),
+                    uri_range,
+                })
             } else if let Some(source_path) = source_path {
                 let mut schema_file_path = std::path::PathBuf::from(uri_text);
                 if schema_file_path.is_relative()
@@ -181,6 +149,40 @@ impl Comment {
     }
 }
 
+fn is_relative_file_schema_uri_text(uri_text: &str) -> bool {
+    let Some(path_and_fragment) = uri_text.strip_prefix("file://") else {
+        return false;
+    };
+    let path = path_and_fragment
+        .split_once('#')
+        .map(|(path, _)| path)
+        .unwrap_or(path_and_fragment);
+
+    matches!(path, "." | "..") || path.starts_with("./") || path.starts_with("../")
+}
+
+fn resolve_relative_file_schema_uri(
+    uri_text: &str,
+    source_path: &std::path::Path,
+) -> Result<tombi_uri::SchemaUri, String> {
+    if let Some(path_and_fragment) = uri_text.strip_prefix("file://")
+        && let Some(source_dir_path) = source_path.parent()
+        && let Ok(mut base_dir_uri) = tombi_uri::SchemaUri::from_file_path(source_dir_path)
+    {
+        if !base_dir_uri.path().ends_with('/') {
+            let path = format!("{}/", base_dir_uri.path());
+            base_dir_uri.set_path(&path);
+        }
+
+        base_dir_uri
+            .join(path_and_fragment)
+            .map(tombi_uri::SchemaUri::from)
+            .map_err(|_| uri_text.to_string())
+    } else {
+        return Err(uri_text.to_string());
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -188,27 +190,66 @@ mod tests {
     use pretty_assertions::assert_eq;
     use tombi_uri::SchemaUri;
 
+    use super::resolve_relative_file_schema_uri;
+
     #[test]
-    fn relative_file_schema_path_joins_and_to_file_path_decodes_path_bytes() {
-        let source_dir = std::path::Path::new("/tmp/source dir");
-        let uri = SchemaUri::from_str("file://./schemas/schema%20file.json").unwrap();
-        let mut base_dir_uri = SchemaUri::from_file_path(source_dir).unwrap();
-        if !base_dir_uri.path().ends_with('/') {
-            let path = format!("{}/", base_dir_uri.path());
-            base_dir_uri.set_path(&path);
-        }
-        let resolved_uri = base_dir_uri
-            .join(&format!(
-                "{}{}",
-                uri.host_str().unwrap_or_default(),
-                uri.path()
-            ))
-            .map(SchemaUri::from)
-            .unwrap();
+    fn relative_file_schema_path_decodes_path_bytes() {
+        let source_path = std::path::Path::new("/tmp/source dir/tombi.toml");
+        let resolved_uri =
+            resolve_relative_file_schema_uri("file://./schemas/schema%20file.json", source_path)
+                .unwrap();
 
         assert_eq!(
             resolved_uri.to_file_path().unwrap(),
             std::path::Path::new("/tmp/source dir/schemas/schema file.json")
+        );
+    }
+
+    #[test]
+    fn parent_relative_file_schema_path_preserves_all_parent_segments() {
+        let temp_dir = std::env::temp_dir().join(format!(
+            "tombi-ast-parent-relative-schema-{}",
+            std::process::id()
+        ));
+        let source_path = temp_dir.join("workspace/project/nested/tombi.toml");
+        let schema_path = temp_dir.join("schemas/schema.json");
+
+        std::fs::create_dir_all(source_path.parent().unwrap()).unwrap();
+        std::fs::create_dir_all(schema_path.parent().unwrap()).unwrap();
+        std::fs::write(&source_path, "").unwrap();
+        std::fs::write(&schema_path, "{}").unwrap();
+
+        let resolved_uri =
+            resolve_relative_file_schema_uri("file://../../../schemas/schema.json", &source_path)
+                .unwrap();
+
+        assert_eq!(
+            resolved_uri.to_file_path().unwrap().canonicalize().unwrap(),
+            schema_path.canonicalize().unwrap()
+        );
+    }
+
+    #[test]
+    fn dot_prefixed_parent_relative_file_schema_path_preserves_all_parent_segments() {
+        let temp_dir = std::env::temp_dir().join(format!(
+            "tombi-ast-dot-parent-relative-schema-{}",
+            std::process::id()
+        ));
+        let source_path = temp_dir.join("workspace/project/nested/tombi.toml");
+        let schema_path = temp_dir.join("workspace/schemas/schema.json");
+
+        std::fs::create_dir_all(source_path.parent().unwrap()).unwrap();
+        std::fs::create_dir_all(schema_path.parent().unwrap()).unwrap();
+        std::fs::write(&source_path, "").unwrap();
+        std::fs::write(&schema_path, "{}").unwrap();
+
+        let resolved_uri =
+            resolve_relative_file_schema_uri("file://./../../schemas/schema.json", &source_path)
+                .unwrap();
+
+        assert_eq!(
+            resolved_uri.to_file_path().unwrap().canonicalize().unwrap(),
+            schema_path.canonicalize().unwrap()
         );
     }
 

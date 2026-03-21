@@ -78,6 +78,25 @@ mod goto_definition_tests {
                 uri
             }]);
         );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn parent_relative_schema_path_with_subschema_fragment(
+                r#"
+                #:schema file://../../schemas/type-test.schema.json#/definitions/TableValue█
+
+                boolean = true
+                integer = 1
+                "#,
+                SourcePath(project_root_path().join("crates/tombi-lsp/Cargo.toml")),
+            ) -> Ok([{
+                let mut uri = tombi_uri::Uri::from_file_path(
+                    project_root_path().join("schemas/type-test.schema.json")
+                ).unwrap();
+                uri.set_fragment(Some("/definitions/TableValue"));
+                uri
+            }]);
+        );
     }
 
     mod cargo_schema {
