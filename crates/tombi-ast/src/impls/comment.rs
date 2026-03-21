@@ -188,31 +188,30 @@ mod tests {
     use std::str::FromStr;
 
     use pretty_assertions::assert_eq;
+    use tempfile::tempdir;
     use tombi_uri::SchemaUri;
 
     use super::resolve_relative_file_schema_uri;
 
     #[test]
     fn relative_file_schema_path_decodes_path_bytes() {
-        let source_path = std::path::Path::new("/tmp/source dir/tombi.toml");
+        let temp_dir = tempdir().unwrap();
+        let source_path = temp_dir.path().join("source dir/tombi.toml");
         let resolved_uri =
-            resolve_relative_file_schema_uri("file://./schemas/schema%20file.json", source_path)
+            resolve_relative_file_schema_uri("file://./schemas/schema%20file.json", &source_path)
                 .unwrap();
 
         assert_eq!(
             resolved_uri.to_file_path().unwrap(),
-            std::path::Path::new("/tmp/source dir/schemas/schema file.json")
+            temp_dir.path().join("source dir/schemas/schema file.json")
         );
     }
 
     #[test]
     fn parent_relative_file_schema_path_preserves_all_parent_segments() {
-        let temp_dir = std::env::temp_dir().join(format!(
-            "tombi-ast-parent-relative-schema-{}",
-            std::process::id()
-        ));
-        let source_path = temp_dir.join("workspace/project/nested/tombi.toml");
-        let schema_path = temp_dir.join("schemas/schema.json");
+        let temp_dir = tempdir().unwrap();
+        let source_path = temp_dir.path().join("workspace/project/nested/tombi.toml");
+        let schema_path = temp_dir.path().join("schemas/schema.json");
 
         std::fs::create_dir_all(source_path.parent().unwrap()).unwrap();
         std::fs::create_dir_all(schema_path.parent().unwrap()).unwrap();
@@ -231,12 +230,9 @@ mod tests {
 
     #[test]
     fn dot_prefixed_parent_relative_file_schema_path_preserves_all_parent_segments() {
-        let temp_dir = std::env::temp_dir().join(format!(
-            "tombi-ast-dot-parent-relative-schema-{}",
-            std::process::id()
-        ));
-        let source_path = temp_dir.join("workspace/project/nested/tombi.toml");
-        let schema_path = temp_dir.join("workspace/schemas/schema.json");
+        let temp_dir = tempdir().unwrap();
+        let source_path = temp_dir.path().join("workspace/project/nested/tombi.toml");
+        let schema_path = temp_dir.path().join("workspace/schemas/schema.json");
 
         std::fs::create_dir_all(source_path.parent().unwrap()).unwrap();
         std::fs::create_dir_all(schema_path.parent().unwrap()).unwrap();
