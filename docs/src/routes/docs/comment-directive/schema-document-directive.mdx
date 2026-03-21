@@ -26,13 +26,14 @@ enabled = true
 ```
 
 <Note>
-Although prohibited by [RFC 3986](https://www.rfc-editor.org/rfc/rfc8089),
-Tombi allows the specification of `.` and `..` in the hostname of the `file://` scheme.
+Although not defined by [RFC 8089](https://www.rfc-editor.org/rfc/rfc8089),
+which specifies the `file` URI scheme,
+Tombi allows the specification of `.` and `..` in the hostname of the `file://` file URI.
 
-These are interpreted as follows, respectively:
+These hostname values are resolved as follows:
 
-- `.`: After replacing with the directory in which the TOML file is located, interpreted as the `file://` scheme
-- `..`: After replacing with the parent directory of the TOML file, interpreted as the `file://` scheme
+- If the file URI authority is `.`, Tombi treats it as the directory that contains the TOML file.
+- If the file URI authority is `..`, Tombi treats it as the parent directory of the TOML file.
 
 This allows you to specify local files in the following ways:
 
