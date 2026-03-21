@@ -1,3 +1,5 @@
+import { Note } from "~/components/Highlight";
+
 # Schema Document Directive
 
 Same as [Taplo](https://taplo.tamasfe.dev/configuration/directives.html#the-schema-directive), `#:schema` is used to specify the schema to use for the document.
@@ -22,3 +24,23 @@ value = "example"
 [settings]
 enabled = true
 ```
+
+<Note>
+Although not defined by [RFC 8089](https://www.rfc-editor.org/rfc/rfc8089),
+which specifies the `file` URI scheme,
+Tombi allows the specification of `.` and `..` in the hostname of the `file://` file URI.
+
+These hostname values are resolved as follows:
+
+- If the file URI authority is `.`, Tombi treats it as the directory that contains the TOML file.
+- If the file URI authority is `..`, Tombi treats it as the parent directory of the TOML file.
+
+This allows you to specify local files in the following ways:
+
+```toml
+#:schema file://../../schemas/my-schema.json#/definitions/User
+
+name = "Taro"
+country = "Japan"
+```
+</Note>
