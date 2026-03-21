@@ -3543,6 +3543,7 @@ version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
  "pretty_assertions",
+ "tempfile",
  "thiserror 2.0.12",
  "tombi-accessor",
  "tombi-syntax",
