@@ -1,4 +1,18 @@
+import { Warning } from "~/components/Highlight";
+
 # Zed Extension
+
+<Warning>
+Zed may send `goto type definition` requests on each key press while editing TOML files.
+To avoid unwanted `lsp edit` tabs, set the following in your `tombi.toml`:
+
+```toml
+[lsp]
+goto-type-definition.enabled = false
+```
+
+For context, see [#1556](https://github.com/tombi-toml/tombi/issues/1556).
+</Warning>
 
 ## Language Server Binary Priority
 
