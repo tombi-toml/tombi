@@ -1272,7 +1272,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(cargo_schema_path()),
             ) -> Ok([
-                "workspace",
+                "workspace = true",
             ]);
         }
 

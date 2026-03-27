@@ -76,12 +76,12 @@ mod completion_edit {
                 [dependencies]
                 serde.work█
                 "#,
-                Select("workspace"),
+                Select("workspace = true"),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [dependencies]
-                serde.workspace
+                serde.workspace = true
                 "#
             );
         }
@@ -93,12 +93,29 @@ mod completion_edit {
                 [dependencies]
                 serde=work█
                 "#,
-                Select("workspace"),
+                Select("workspace = true"),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [dependencies]
-                serde = { workspace$1 }$0
+                serde = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_dependencies_serde_dot_optional(
+                r#"
+                [dependencies]
+                serde.█
+                "#,
+                Select("optional = true"),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                serde.optional = true
                 "#
             );
         }

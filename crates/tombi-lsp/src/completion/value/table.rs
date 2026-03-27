@@ -15,7 +15,7 @@ use crate::{
         comment::get_tombi_comment_directive_content_completion_contents,
         value::{
             all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
-            one_of::find_one_of_completion_items, type_hint_value,
+            one_of::find_one_of_completion_items, singleton_literal_label, type_hint_value,
         },
     },
 };
@@ -465,6 +465,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         Some(current_schema.schema_uri.as_ref()),
                                         deprecated,
                                         completion_hint,
+                                        None,
                                     ));
                                     continue;
                                 }
@@ -534,6 +535,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 Some(current_schema.schema_uri.as_ref()),
                                                 value_schema.deprecated().await,
                                                 completion_hint,
+                                                singleton_literal_label(value_schema),
                                             ));
                                         }
                                     }
@@ -737,6 +739,7 @@ impl FindCompletionContents for TableSchema {
                         Some(current_schema.schema_uri.as_ref()),
                         current_schema.value_schema.deprecated().await,
                         completion_hint,
+                        singleton_literal_label(&schema_candidate),
                     ));
                 }
             }
@@ -1015,6 +1018,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                 Some(&current_schema.schema_uri),
                 current_schema.value_schema.deprecated().await,
                 completion_hint,
+                singleton_literal_label(&schema_candidate),
             ));
         }
 

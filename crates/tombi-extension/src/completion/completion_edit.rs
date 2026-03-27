@@ -317,6 +317,67 @@ impl CompletionEdit {
         }
     }
 
+    pub fn new_key_with_literal(
+        key_name: &str,
+        key_range: tombi_text::Range,
+        value_label: &str,
+        completion_hint: Option<CompletionHint>,
+    ) -> Option<Self> {
+        match completion_hint {
+            Some(CompletionHint::InArray {
+                add_leading_comma,
+                add_trailing_comma,
+            }) => {
+                let new_text = match add_trailing_comma {
+                    Some(_) => format!("{{ {key_name} = {value_label} }},$0"),
+                    None => format!("{{ {key_name} = {value_label} }}$0"),
+                };
+                let additional_text_edits =
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma, key_range.start);
+
+                Some(Self {
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        new_text,
+                        range: key_range,
+                    }),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    additional_text_edits,
+                })
+            }
+            Some(CompletionHint::EqualTrigger { range, .. }) => Some(Self {
+                text_edit: CompletionTextEdit::Edit(TextEdit {
+                    new_text: format!(" = {{ {key_name} = {value_label} }}"),
+                    range: key_range,
+                }),
+                insert_text_format: None,
+                additional_text_edits: Some(vec![TextEdit {
+                    range,
+                    new_text: "".to_string(),
+                }]),
+            }),
+            Some(CompletionHint::DotTrigger { range, .. }) => Some(Self {
+                text_edit: CompletionTextEdit::Edit(TextEdit {
+                    new_text: format!(".{key_name} = {value_label}"),
+                    range: key_range,
+                }),
+                insert_text_format: None,
+                additional_text_edits: Some(vec![TextEdit {
+                    range,
+                    new_text: "".to_string(),
+                }]),
+            }),
+            Some(CompletionHint::Comma { .. }) => Some(Self {
+                text_edit: CompletionTextEdit::Edit(TextEdit {
+                    new_text: format!("{key_name} = {value_label}"),
+                    range: key_range,
+                }),
+                insert_text_format: None,
+                additional_text_edits: None,
+            }),
+            Some(CompletionHint::InTableHeader) | None => None,
+        }
+    }
+
     pub fn new_additional_key(
         key_name: &str,
         key_range: tombi_text::Range,
