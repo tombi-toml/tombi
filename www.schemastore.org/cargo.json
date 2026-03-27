@@ -202,7 +202,7 @@
         "optional": {
           "description": "Mark the dependency as optional.\n\nOptional dependencies can be activated through features.",
           "type": "boolean",
-          "const": true,
+          "enum": [true],
           "x-taplo": {
             "links": {
               "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features"
