@@ -98,6 +98,7 @@
         "workspace": {
           "description": "Inherit this dependency from the workspace manifest.",
           "type": "boolean",
+          "const": true,
           "x-taplo": {
             "links": {
               "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#inheriting-a-dependency-from-a-workspace"
@@ -201,6 +202,7 @@
         "optional": {
           "description": "Mark the dependency as optional.\n\nOptional dependencies can be activated through features.",
           "type": "boolean",
+          "const": true,
           "x-taplo": {
             "links": {
               "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features"
