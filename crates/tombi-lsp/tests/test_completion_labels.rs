@@ -1300,7 +1300,6 @@ mod completion_labels {
                 SchemaPath(cargo_schema_path()),
             ) -> Ok([
                 "true",
-                "false",
             ]);
         }
 
