@@ -26,6 +26,7 @@ mod completion_labels {
                 "schema",
                 "schemas",
                 "toml-version",
+                "toml-version = \"v1.1.0-preview\"",
             ]);
         }
 
@@ -578,6 +579,7 @@ mod completion_labels {
                 "path",
                 "root",
                 "toml-version",
+                "toml-version = \"v1.1.0-preview\"",
             ]);
         }
 
@@ -1019,6 +1021,8 @@ mod completion_labels {
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok([
                 "format",
+                "format = \"sdist\"",
+                "format = \"wheel\"",
                 "path",
                 "\"\"",
                 "''",
@@ -1378,14 +1382,14 @@ mod completion_labels {
                 "default-features",
                 "features",
                 "git",
-                "optional",
+                "optional = true",
                 "package",
                 "path",
                 "registry",
                 "rev",
                 "tag",
                 "version",
-                "workspace",
+                "workspace = true",
                 "\"\"",
                 "''",
                 "{}",
@@ -1408,14 +1412,14 @@ mod completion_labels {
                 "default-features",
                 "features",
                 "git",
-                "optional",
+                "optional = true",
                 "package",
                 "path",
                 "registry",
                 "rev",
                 "tag",
                 "version",
-                "workspace",
+                "workspace = true",
                 "\"\"",
                 "''",
                 "{}",
@@ -1531,7 +1535,7 @@ mod completion_labels {
                 "default-features",
                 "features",
                 "git",
-                "optional",
+                "optional = true",
                 "package",
                 "path",
                 "registry",
@@ -1684,14 +1688,14 @@ mod completion_labels {
                 "default-features",
                 "features",
                 "git",
-                "optional",
+                "optional = true",
                 "package",
                 "path",
                 "registry",
                 "rev",
                 "tag",
                 "version",
-                "workspace",
+                "workspace = true",
             ]);
         }
 
@@ -1740,7 +1744,7 @@ mod completion_labels {
                 "\"GPL-2.0-or-later WITH Bison-exception-2.2\"",
                 "\"LGPL-2.1-only\"",
                 "\"MIT\"",
-                "workspace",
+                "workspace = true",
                 "\"\"",
                 "''",
                 "{}",
