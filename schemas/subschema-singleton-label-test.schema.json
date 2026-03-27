@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "properties": {
+    "flag": {
+      "anyOf": [
+        {
+          "type": "boolean",
+          "const": true
+        },
+        {
+          "type": "boolean",
+          "enum": [true]
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

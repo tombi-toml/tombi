@@ -321,10 +321,10 @@ impl CompletionContent {
         schema_uri: Option<&SchemaUri>,
         deprecated: Option<bool>,
         completion_hint: Option<CompletionHint>,
+        singleton_value_label: Option<String>,
     ) -> Self {
-        let label = key_name.to_string();
         let required = required_keys
-            .map(|required_keys| required_keys.contains(&label))
+            .map(|required_keys| required_keys.iter().any(|required_key| required_key == key_name))
             .unwrap_or_default();
 
         let key_range = match completion_hint {
@@ -332,6 +332,19 @@ impl CompletionContent {
                 CompletionHint::DotTrigger { range } | CompletionHint::EqualTrigger { range, .. },
             ) => tombi_text::Range::new(range.end, position),
             _ => tombi_text::Range::at(position),
+        };
+
+        let label = if let Some(value_label) = &singleton_value_label {
+            format!("{key_name} = {value_label}")
+        } else {
+            key_name.to_string()
+        };
+
+        let edit = if let Some(value_label) = singleton_value_label {
+            CompletionEdit::new_key_with_literal(key_name, key_range, &value_label, completion_hint)
+                .or_else(|| CompletionEdit::new_key(key_name, key_range, completion_hint))
+        } else {
+            CompletionEdit::new_key(key_name, key_range, completion_hint)
         };
 
         Self {
@@ -346,7 +359,7 @@ impl CompletionContent {
             detail,
             documentation,
             filter_text: None,
-            edit: CompletionEdit::new_key(key_name, key_range, completion_hint),
+            edit,
             schema_uri: schema_uri.cloned(),
             deprecated,
             preselect: None,
