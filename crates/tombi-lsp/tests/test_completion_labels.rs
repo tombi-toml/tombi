@@ -625,6 +625,7 @@ mod completion_labels {
                 "recursive-defs-any-of-test.schema.json",
                 "recursive-schema.schema.json",
                 "string-format-test.schema.json",
+                "subschema-singleton-label-test.schema.json",
                 "table-const-enum-test.schema.json",
                 "tuple-items-test.schema.json",
                 "type-test.schema.json",
@@ -1927,7 +1928,7 @@ mod completion_labels {
     }
 
     mod with_subschema {
-        use tombi_test_lib::{pyproject_schema_path, type_test_schema_path};
+        use tombi_test_lib::{project_root_path, pyproject_schema_path, type_test_schema_path};
 
         use super::*;
 
@@ -1983,6 +1984,22 @@ mod completion_labels {
                 "string",
                 "table",
                 "table-allows-empty-key",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn aaa_bbb_singleton_any_of_subschema(
+                r#"
+                [aaa.bbb]
+                fl█
+                "#,
+                SubSchema {
+                    root: "aaa.bbb",
+                    path: project_root_path().join("schemas/subschema-singleton-label-test.schema.json"),
+                },
+            ) -> Ok([
+                "flag = true",
             ]);
         }
     }

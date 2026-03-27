@@ -512,6 +512,19 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             && let Some(value_schema) =
                                                 &document_schema.value_schema
                                         {
+                                            let (schema_candidates, errors) = value_schema
+                                                .find_schema_candidates(
+                                                    accessors,
+                                                    &document_schema.schema_uri,
+                                                    &document_schema.definitions,
+                                                    schema_context.store,
+                                                )
+                                                .await;
+
+                                            for error in errors {
+                                                log::warn!("{}", error);
+                                            }
+
                                             completion_contents.push(CompletionContent::new_key(
                                                 last_key,
                                                 position,
@@ -535,7 +548,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 Some(current_schema.schema_uri.as_ref()),
                                                 value_schema.deprecated().await,
                                                 completion_hint,
-                                                singleton_literal_label(value_schema),
+                                                key_singleton_literal_label(&schema_candidates),
                                             ));
                                         }
                                     }
