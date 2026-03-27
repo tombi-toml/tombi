@@ -26,7 +26,6 @@ mod completion_labels {
                 "schema",
                 "schemas",
                 "toml-version",
-                "toml-version = \"v1.1.0-preview\"",
             ]);
         }
 
@@ -579,7 +578,6 @@ mod completion_labels {
                 "path",
                 "root",
                 "toml-version",
-                "toml-version = \"v1.1.0-preview\"",
             ]);
         }
 
@@ -1021,8 +1019,6 @@ mod completion_labels {
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok([
                 "format",
-                "format = \"sdist\"",
-                "format = \"wheel\"",
                 "path",
                 "\"\"",
                 "''",

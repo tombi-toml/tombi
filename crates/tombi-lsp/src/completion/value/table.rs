@@ -708,6 +708,7 @@ impl FindCompletionContents for TableSchema {
                     log::warn!("{}", error);
                 }
 
+                let singleton_value_label = key_singleton_literal_label(&schema_candidates);
                 for schema_candidate in schema_candidates {
                     if let Some(CompletionHint::InTableHeader) = completion_hint
                         && count_table_or_array_schema(&current_schema, schema_context.store).await
@@ -739,7 +740,7 @@ impl FindCompletionContents for TableSchema {
                         Some(current_schema.schema_uri.as_ref()),
                         current_schema.value_schema.deprecated().await,
                         completion_hint,
-                        singleton_literal_label(&schema_candidate),
+                        singleton_value_label.clone(),
                     ));
                 }
             }
@@ -945,6 +946,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
             log::warn!("{}", error);
         }
 
+        let singleton_value_label = key_singleton_literal_label(&schema_candidates);
         for schema_candidate in schema_candidates {
             match &schema_candidate {
                 ValueSchema::Boolean(_)
@@ -1018,11 +1020,33 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                 Some(&current_schema.schema_uri),
                 current_schema.value_schema.deprecated().await,
                 completion_hint,
-                singleton_literal_label(&schema_candidate),
+                singleton_value_label.clone(),
             ));
         }
 
         Some(completion_contents)
     }
     .boxed()
+}
+
+fn key_singleton_literal_label(schema_candidates: &[ValueSchema]) -> Option<String> {
+    let labels = schema_candidates
+        .iter()
+        .map(singleton_literal_label)
+        .collect_vec();
+
+    if labels.iter().any(Option::is_none) {
+        return None;
+    }
+
+    let unique_labels = labels
+        .into_iter()
+        .flatten()
+        .collect::<tombi_hashmap::HashSet<_>>();
+
+    if unique_labels.len() == 1 {
+        unique_labels.into_iter().next()
+    } else {
+        None
+    }
 }
