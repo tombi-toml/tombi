@@ -15,7 +15,7 @@ use crate::{
         comment::get_tombi_comment_directive_content_completion_contents,
         value::{
             all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
-            one_of::find_one_of_completion_items, singleton_literal_label, type_hint_value,
+            one_of::find_one_of_completion_items, type_hint_value,
         },
     },
 };
@@ -1045,7 +1045,58 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
 fn key_singleton_literal_label(schema_candidates: &[ValueSchema]) -> Option<String> {
     let labels = schema_candidates
         .iter()
-        .map(singleton_literal_label)
+        .map(|schema_candidate| {
+            fn singleton_label<T>(
+                const_value: &Option<T>,
+                enum_values: &Option<Vec<T>>,
+                format: impl Fn(&T) -> String,
+            ) -> Option<String> {
+                if let Some(const_value) = const_value {
+                    return Some(format(const_value));
+                }
+
+                enum_values.as_ref().and_then(|values| {
+                    if values.len() == 1 {
+                        values.first().map(format)
+                    } else {
+                        None
+                    }
+                })
+            }
+
+            match schema_candidate {
+                ValueSchema::String(schema) => {
+                    singleton_label(&schema.const_value, &schema.r#enum, |v| format!("\"{v}\""))
+                }
+                ValueSchema::Boolean(schema) => {
+                    singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
+                }
+                ValueSchema::Integer(schema) => {
+                    singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
+                }
+                ValueSchema::Float(schema) => {
+                    singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
+                }
+                ValueSchema::LocalDate(schema) => {
+                    singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
+                }
+                ValueSchema::LocalDateTime(schema) => {
+                    singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
+                }
+                ValueSchema::OffsetDateTime(schema) => {
+                    singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
+                }
+                ValueSchema::LocalTime(_)
+                | ValueSchema::Array(_)
+                | ValueSchema::Table(_)
+                | ValueSchema::OneOf(_)
+                | ValueSchema::AnyOf(_)
+                | ValueSchema::AllOf(_)
+                | ValueSchema::Null
+                | ValueSchema::Anything(_)
+                | ValueSchema::Nothing(_) => None,
+            }
+        })
         .collect_vec();
 
     if labels.iter().any(Option::is_none) {

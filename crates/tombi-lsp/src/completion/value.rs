@@ -265,59 +265,6 @@ pub fn type_hint_value(
     completion_contents
 }
 
-pub fn singleton_literal_label(value_schema: &ValueSchema) -> Option<String> {
-    fn singleton_label<T>(
-        const_value: &Option<T>,
-        enum_values: &Option<Vec<T>>,
-        format: impl Fn(&T) -> String,
-    ) -> Option<String> {
-        if let Some(const_value) = const_value {
-            return Some(format(const_value));
-        }
-
-        enum_values.as_ref().and_then(|values| {
-            if values.len() == 1 {
-                values.first().map(format)
-            } else {
-                None
-            }
-        })
-    }
-
-    match value_schema {
-        ValueSchema::String(schema) => {
-            singleton_label(&schema.const_value, &schema.r#enum, |v| format!("\"{v}\""))
-        }
-        ValueSchema::Boolean(schema) => {
-            singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
-        }
-        ValueSchema::Integer(schema) => {
-            singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
-        }
-        ValueSchema::Float(schema) => {
-            singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
-        }
-        ValueSchema::LocalDate(schema) => {
-            singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
-        }
-        ValueSchema::LocalDateTime(schema) => {
-            singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
-        }
-        ValueSchema::OffsetDateTime(schema) => {
-            singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
-        }
-        ValueSchema::LocalTime(_)
-        | ValueSchema::Array(_)
-        | ValueSchema::Table(_)
-        | ValueSchema::OneOf(_)
-        | ValueSchema::AnyOf(_)
-        | ValueSchema::AllOf(_)
-        | ValueSchema::Null
-        | ValueSchema::Anything(_)
-        | ValueSchema::Nothing(_) => None,
-    }
-}
-
 impl CompletionCandidate for ValueSchema {
     fn title<'a: 'b, 'b>(
         &'a self,
