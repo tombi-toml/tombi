@@ -1,0 +1,11 @@
+[package]
+name = "tombi-extension-manifest"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description = "Shared manifest helpers for Tombi extensions"
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+tombi-uri.workspace = true

@@ -3757,6 +3757,7 @@ dependencies = [
  "tombi-config",
  "tombi-document-tree",
  "tombi-extension",
+ "tombi-extension-manifest",
  "tombi-future",
  "tombi-hashmap",
  "tombi-parser",
@@ -3765,6 +3766,13 @@ dependencies = [
  "tombi-uri",
  "tombi-version-sort",
  "tower-lsp",
+]
+
+[[package]]
+name = "tombi-extension-manifest"
+version = "0.0.0-dev"
+dependencies = [
+ "tombi-uri",
 ]
 
 [[package]]
@@ -3794,6 +3802,7 @@ dependencies = [
  "tombi-config",
  "tombi-document-tree",
  "tombi-extension",
+ "tombi-extension-manifest",
  "tombi-parser",
  "tombi-schema-store",
  "tombi-text",
