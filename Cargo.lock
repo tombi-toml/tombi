@@ -3756,7 +3756,6 @@ version = "0.0.0-dev"
 dependencies = [
  "glob",
  "itertools 0.14.0",
- "log",
  "serde",
  "serde_json",
  "tempfile",

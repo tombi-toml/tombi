@@ -9,7 +9,7 @@ pub use completion::*;
 pub use definition::*;
 pub use document_link::*;
 pub use hover::*;
-pub use remote_cache::{fetch_cached_remote_json, get_remote_json_cache_file_path};
+pub use remote_cache::{fetch_cached_remote_json, get_cached_remote_file_path};
 
 // Export completion-specific TextEdit (uses tombi_text::Range internally)
 pub use text_edit::TextEdit;

@@ -4,14 +4,15 @@ use std::{
 };
 
 use serde::de::DeserializeOwned;
-use tombi_cache::{get_tombi_cache_dir_path, read_from_cache, save_to_cache};
+use tombi_cache::{get_cache_file_path, read_from_cache, save_to_cache};
 use tombi_schema_store::HttpClient;
 
-const REMOTE_JSON_CACHE_FILE_NAME: &str = "__index__.json";
+const CACHE_INDEX_FILE_NAME: &str = "__index__.json";
 
-pub async fn get_remote_json_cache_file_path(url: &str) -> Option<PathBuf> {
+pub async fn get_cached_remote_file_path(url: &str) -> Option<PathBuf> {
     let uri = tombi_uri::Uri::from_str(url).ok()?;
-    get_remote_json_cache_file_path_from_uri(&uri).await
+    let cache_uri = get_cache_uri_for_remote_url(&uri)?;
+    get_cache_file_path(&cache_uri).await
 }
 
 pub async fn fetch_cached_remote_json<T: DeserializeOwned>(
@@ -19,29 +20,22 @@ pub async fn fetch_cached_remote_json<T: DeserializeOwned>(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
 ) -> Option<T> {
-    let cache_file_path = get_remote_json_cache_file_path(url).await;
+    let cache_file_path = get_cached_remote_file_path(url).await;
 
     fetch_cached_remote_json_from_path(url, cache_file_path.as_deref(), offline, cache_options)
         .await
 }
 
-async fn get_remote_json_cache_file_path_from_uri(
-    cache_file_uri: &tombi_uri::Uri,
-) -> Option<PathBuf> {
-    get_tombi_cache_dir_path().await.map(|mut dir_path| {
-        dir_path.push(cache_file_uri.scheme());
-        if let Some(host) = cache_file_uri.host() {
-            dir_path.push(host.to_string());
-        }
-        if let Some(path_segments) = cache_file_uri.path_segments() {
-            for segment in path_segments {
-                dir_path.push(segment);
-            }
-        }
-        dir_path.push(REMOTE_JSON_CACHE_FILE_NAME);
+fn get_cache_uri_for_remote_url(remote_uri: &tombi_uri::Uri) -> Option<tombi_uri::Uri> {
+    if remote_uri.path().ends_with(".json") {
+        return Some(remote_uri.clone());
+    }
 
-        dir_path
-    })
+    let mut cache_uri = remote_uri.clone();
+    let mut path_segments = cache_uri.path_segments_mut().ok()?;
+    path_segments.push(CACHE_INDEX_FILE_NAME);
+    drop(path_segments);
+    Some(cache_uri)
 }
 
 async fn fetch_cached_remote_json_from_path<T: DeserializeOwned>(
@@ -159,7 +153,7 @@ mod tests {
 
     impl TestCacheHome {
         fn new() -> Self {
-            let guard = CACHE_ENV_LOCK.lock().unwrap();
+            let guard = CACHE_ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
             let temp_dir = tempfile::tempdir().unwrap();
             let previous = std::env::var_os("XDG_CACHE_HOME");
             // SAFETY: Tests serialize access with a process-wide mutex so env mutation
@@ -198,43 +192,50 @@ mod tests {
     }
 
     #[tokio::test(flavor = "current_thread")]
-    async fn remote_json_cache_paths_use_index_file_name() {
+    async fn non_json_paths_use_index_file_name() {
         let _cache_home = TestCacheHome::new();
         let root_uri = tombi_uri::Uri::from_str("https://crates.io/api/v1/crates/serde").unwrap();
         let nested_uri =
             tombi_uri::Uri::from_str("https://crates.io/api/v1/crates/serde/1.0.0").unwrap();
+        let root_cache_uri = get_cache_uri_for_remote_url(&root_uri).unwrap();
+        let nested_cache_uri = get_cache_uri_for_remote_url(&nested_uri).unwrap();
 
-        let root_path = get_remote_json_cache_file_path_from_uri(&root_uri)
-            .await
-            .unwrap();
-        let nested_path = get_remote_json_cache_file_path_from_uri(&nested_uri)
-            .await
-            .unwrap();
+        let root_path = get_cache_file_path(&root_cache_uri).await.unwrap();
+        let nested_path = get_cache_file_path(&nested_cache_uri).await.unwrap();
 
         assert_ne!(root_path, nested_path);
-        assert_eq!(root_path.file_name().unwrap(), REMOTE_JSON_CACHE_FILE_NAME);
-        assert_eq!(
-            nested_path.file_name().unwrap(),
-            REMOTE_JSON_CACHE_FILE_NAME
-        );
+        assert_eq!(root_path.file_name().unwrap(), CACHE_INDEX_FILE_NAME);
+        assert_eq!(nested_path.file_name().unwrap(), CACHE_INDEX_FILE_NAME);
         assert_eq!(root_path.parent().unwrap().file_name().unwrap(), "serde");
         assert_eq!(nested_path.parent().unwrap().file_name().unwrap(), "1.0.0");
     }
 
     #[tokio::test(flavor = "current_thread")]
-    async fn remote_json_cache_paths_use_index_file_name_for_root() {
+    async fn root_path_uses_index_file_name() {
         let _cache_home = TestCacheHome::new();
         let root_uri = tombi_uri::Uri::from_str("https://example.invalid").unwrap();
+        let root_cache_uri = get_cache_uri_for_remote_url(&root_uri).unwrap();
 
-        let root_path = get_remote_json_cache_file_path_from_uri(&root_uri)
-            .await
-            .unwrap();
+        let root_path = get_cache_file_path(&root_cache_uri).await.unwrap();
 
-        assert_eq!(root_path.file_name().unwrap(), REMOTE_JSON_CACHE_FILE_NAME);
+        assert_eq!(root_path.file_name().unwrap(), CACHE_INDEX_FILE_NAME);
         assert_eq!(
             root_path.parent().unwrap().file_name().unwrap(),
             "example.invalid"
         );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn json_paths_are_preserved() {
+        let _cache_home = TestCacheHome::new();
+        let json_uri =
+            tombi_uri::Uri::from_str("https://example.invalid/api/schema/catalog.json").unwrap();
+        let cache_uri = get_cache_uri_for_remote_url(&json_uri).unwrap();
+        let cache_path = get_cache_file_path(&cache_uri).await.unwrap();
+
+        assert_eq!(cache_uri, json_uri);
+        assert_eq!(cache_path.file_name().unwrap(), "catalog.json");
+        assert_eq!(cache_path.parent().unwrap().file_name().unwrap(), "schema");
     }
 
     #[tokio::test]

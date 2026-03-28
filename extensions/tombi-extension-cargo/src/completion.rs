@@ -946,7 +946,7 @@ mod tests {
     }
 
     async fn write_cached_response(url: &str, body: &str) -> std::path::PathBuf {
-        let cache_path = tombi_extension::get_remote_json_cache_file_path(url)
+        let cache_path = tombi_extension::get_cached_remote_file_path(url)
             .await
             .unwrap();
         if let Some(parent) = cache_path.parent() {
