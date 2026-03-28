@@ -4,8 +4,8 @@ use pep508_rs::VersionOrUrl;
 use serde::Deserialize;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_accessors, dig_keys};
-use tombi_extension::HoverMetadata;
-use tombi_schema_store::{Accessor, HttpClient, matches_accessors};
+use tombi_extension::{HoverMetadata, fetch_cached_remote_text};
+use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
     find_member_project_toml, find_workspace_pyproject_toml, get_project_name,
@@ -29,6 +29,7 @@ pub async fn hover(
     accessors: &[Accessor],
     toml_version: TomlVersion,
     offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
 ) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(None);
@@ -74,16 +75,14 @@ pub async fn hover(
         return Ok(Some(metadata));
     }
 
-    if offline
-        || matches!(
-            requirement.version_or_url.as_ref(),
-            Some(VersionOrUrl::Url(_))
-        )
-    {
+    if matches!(
+        requirement.version_or_url.as_ref(),
+        Some(VersionOrUrl::Url(_))
+    ) {
         return Ok(None);
     }
 
-    fetch_pypi_metadata(package_name).await
+    fetch_pypi_metadata(package_name, offline, cache_options).await
 }
 
 fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
@@ -224,17 +223,15 @@ fn load_project_metadata(
 
 async fn fetch_pypi_metadata(
     package_name: &str,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
 ) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
     let url = format!("https://pypi.org/pypi/{package_name}/json");
-    let bytes = match HttpClient::new().get_bytes(&url).await {
-        Ok(bytes) => bytes,
-        Err(err) => {
-            log::warn!("Failed to fetch PyPI metadata from {url}: {err}");
-            return Ok(None);
-        }
+    let Some(text) = fetch_cached_remote_text(&url, offline, cache_options).await else {
+        return Ok(None);
     };
 
-    let response: PypiProjectResponse = match serde_json::from_slice(&bytes) {
+    let response: PypiProjectResponse = match serde_json::from_str(&text) {
         Ok(response) => response,
         Err(err) => {
             log::warn!("Failed to parse PyPI metadata response: {err}");

@@ -75,6 +75,11 @@ impl SchemaStore {
         self.options.offline.unwrap_or(false)
     }
 
+    /// Cache options
+    pub fn cache_options(&self) -> Option<&tombi_cache::Options> {
+        self.options.cache.as_ref()
+    }
+
     /// Strict mode
     pub fn strict(&self) -> bool {
         self.options.strict.unwrap_or(true)

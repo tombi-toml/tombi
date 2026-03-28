@@ -7,9 +7,14 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+log.workspace = true
 tombi-ast.workspace = true
+tombi-cache.workspace = true
 tombi-document-tree.workspace = true
 tombi-schema-store.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true
 tower-lsp.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
