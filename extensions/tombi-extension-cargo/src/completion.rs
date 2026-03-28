@@ -816,21 +816,20 @@ async fn fetch_crate_features(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
 ) -> Option<tombi_hashmap::HashMap<String, Vec<String>>> {
-    let version = if let Some(ver) = version {
-        ver.to_string()
+    if let Some(version) = version {
+        let url = format!("https://crates.io/api/v1/crates/{crate_name}/{version}");
+        let resp =
+            fetch_cached_remote_json::<CratesIoVersionDetailResponse>(&url, offline, cache_options)
+                .await?;
+        Some(resp.version.features)
     } else {
-        // fetch latest version
+        // The crate overview response already includes features for each version,
+        // so we can read them directly from the latest version without a second fetch.
         let url = format!("https://crates.io/api/v1/crates/{crate_name}");
         let resp =
             fetch_cached_remote_json::<CratesIoCrateResponse>(&url, offline, cache_options).await?;
-
-        resp.versions.into_iter().next().map(|v| v.num)?
-    };
-    let url = format!("https://crates.io/api/v1/crates/{crate_name}/{version}");
-    let resp =
-        fetch_cached_remote_json::<CratesIoVersionDetailResponse>(&url, offline, cache_options)
-            .await?;
-    Some(resp.version.features)
+        resp.versions.into_iter().next().map(|v| v.features)
+    }
 }
 
 /// Fetch crate features from local path Cargo.toml
@@ -900,7 +899,7 @@ mod tests {
 
     impl TestCacheHome {
         fn new() -> Self {
-            let guard = CACHE_ENV_LOCK.lock().unwrap();
+            let guard = CACHE_ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
             let temp_dir = tempfile::tempdir().unwrap();
             let previous = std::env::var_os("XDG_CACHE_HOME");
             // SAFETY: Tests serialize access with a process-wide mutex so env mutation
@@ -945,7 +944,7 @@ mod tests {
         format!("tombi-cache-test-{suffix}-{unique}")
     }
 
-    async fn write_cached_response(url: &str, body: &str) -> std::path::PathBuf {
+    async fn write_cached_response(url: &str, body: &str) {
         let cache_path = tombi_extension::get_cached_remote_file_path(url)
             .await
             .unwrap();
@@ -953,7 +952,6 @@ mod tests {
             std::fs::create_dir_all(parent).unwrap();
         }
         std::fs::write(&cache_path, body).unwrap();
-        cache_path
     }
 
     #[tokio::test(flavor = "current_thread")]
@@ -961,7 +959,7 @@ mod tests {
         let _cache_home = TestCacheHome::new();
         let crate_name = unique_crate_name("versions");
         let url = format!("https://crates.io/api/v1/crates/{crate_name}/versions");
-        let cache_path = write_cached_response(
+        write_cached_response(
             &url,
             r#"{"versions":[{"num":"2.0.0","features":{}},{"num":"1.0.0","features":{}}]}"#,
         )
@@ -973,8 +971,6 @@ mod tests {
             versions,
             Some(vec!["2.0.0".to_string(), "1.0.0".to_string()])
         );
-
-        let _ = std::fs::remove_file(cache_path);
     }
 
     #[tokio::test(flavor = "current_thread")]
@@ -983,7 +979,7 @@ mod tests {
         let crate_name = unique_crate_name("features-version");
         let version = "1.2.3";
         let url = format!("https://crates.io/api/v1/crates/{crate_name}/{version}");
-        let cache_path = write_cached_response(
+        write_cached_response(
             &url,
             r#"{"version":{"num":"1.2.3","features":{"derive":[],"std":["dep:std"]}}}"#,
         )
@@ -1003,24 +999,18 @@ mod tests {
                 .collect()
             )
         );
-
-        let _ = std::fs::remove_file(cache_path);
     }
 
     #[tokio::test(flavor = "current_thread")]
     async fn fetch_crate_features_uses_cached_latest_version_lookup_while_offline() {
         let _cache_home = TestCacheHome::new();
         let crate_name = unique_crate_name("features-latest");
-        let latest_url = format!("https://crates.io/api/v1/crates/{crate_name}");
-        let latest_cache_path = write_cached_response(
-            &latest_url,
-            r#"{"versions":[{"num":"9.9.9","features":{}}]}"#,
-        )
-        .await;
-        let detail_url = format!("https://crates.io/api/v1/crates/{crate_name}/9.9.9");
-        let detail_cache_path = write_cached_response(
-            &detail_url,
-            r#"{"version":{"num":"9.9.9","features":{"full":["derive"]}}}"#,
+        let url = format!("https://crates.io/api/v1/crates/{crate_name}");
+        // The crate overview response includes features for each version,
+        // so no second fetch for the version detail is needed.
+        write_cached_response(
+            &url,
+            r#"{"versions":[{"num":"9.9.9","features":{"full":["derive"]}}]}"#,
         )
         .await;
 
@@ -1034,8 +1024,5 @@ mod tests {
                     .collect()
             )
         );
-
-        let _ = std::fs::remove_file(latest_cache_path);
-        let _ = std::fs::remove_file(detail_cache_path);
     }
 }
