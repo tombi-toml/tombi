@@ -3737,6 +3737,8 @@ name = "tombi-extension"
 version = "0.0.0-dev"
 dependencies = [
  "log",
+ "serde",
+ "serde_json",
  "tokio",
  "tombi-ast",
  "tombi-cache",

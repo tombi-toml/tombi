@@ -3,7 +3,7 @@ use std::path::Path;
 use serde::Deserialize;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_accessors, dig_keys};
-use tombi_extension::{HoverMetadata, fetch_cached_remote_text};
+use tombi_extension::{HoverMetadata, fetch_cached_remote_json};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
@@ -229,16 +229,10 @@ async fn fetch_crates_io_metadata(
     cache_options: Option<&tombi_cache::Options>,
 ) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
     let url = format!("https://crates.io/api/v1/crates/{package_name}");
-    let Some(text) = fetch_cached_remote_text(&url, offline, cache_options).await else {
+    let Some(response) =
+        fetch_cached_remote_json::<CratesIoCrateResponse>(&url, offline, cache_options).await
+    else {
         return Ok(None);
-    };
-
-    let response: CratesIoCrateResponse = match serde_json::from_str(&text) {
-        Ok(response) => response,
-        Err(err) => {
-            log::warn!("Failed to parse crates.io metadata response: {err}");
-            return Ok(None);
-        }
     };
 
     if response.crate_info.name.is_none() && response.crate_info.description.is_none() {
