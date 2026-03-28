@@ -1120,10 +1120,10 @@
             }
           ]
         },
-        "tombi-toml/uv": {
+        "tombi-toml/pyproject": {
           "anyOf": [
             {
-              "$ref": "#/definitions/UvExtensionFeatures"
+              "$ref": "#/definitions/PyprojectExtensionFeatures"
             },
             {
               "type": "null"
@@ -1478,23 +1478,23 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "UvExtensionFeatures": {
+    "PyprojectExtensionFeatures": {
       "anyOf": [
         {
           "$ref": "#/definitions/EnabledOnly"
         },
         {
-          "$ref": "#/definitions/UvExtensionFeatureTree"
+          "$ref": "#/definitions/PyprojectExtensionFeatureTree"
         }
       ]
     },
-    "UvExtensionFeatureTree": {
+    "PyprojectExtensionFeatureTree": {
       "type": "object",
       "properties": {
         "lsp": {
           "anyOf": [
             {
-              "$ref": "#/definitions/UvLspFeatures"
+              "$ref": "#/definitions/PyprojectLspFeatures"
             },
             {
               "type": "null"
@@ -1505,23 +1505,23 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "UvLspFeatures": {
+    "PyprojectLspFeatures": {
       "anyOf": [
         {
           "$ref": "#/definitions/EnabledOnly"
         },
         {
-          "$ref": "#/definitions/UvLspFeatureTree"
+          "$ref": "#/definitions/PyprojectLspFeatureTree"
         }
       ]
     },
-    "UvLspFeatureTree": {
+    "PyprojectLspFeatureTree": {
       "type": "object",
       "properties": {
         "completion": {
           "anyOf": [
             {
-              "$ref": "#/definitions/UvCompletionFeatures"
+              "$ref": "#/definitions/PyprojectCompletionFeatures"
             },
             {
               "type": "null"
@@ -1531,7 +1531,7 @@
         "goto-definition": {
           "anyOf": [
             {
-              "$ref": "#/definitions/UvNavigationFeatures"
+              "$ref": "#/definitions/PyprojectNavigationFeatures"
             },
             {
               "type": "null"
@@ -1541,7 +1541,7 @@
         "goto-declaration": {
           "anyOf": [
             {
-              "$ref": "#/definitions/UvNavigationFeatures"
+              "$ref": "#/definitions/PyprojectNavigationFeatures"
             },
             {
               "type": "null"
@@ -1551,7 +1551,7 @@
         "document-link": {
           "anyOf": [
             {
-              "$ref": "#/definitions/UvDocumentLinkFeatures"
+              "$ref": "#/definitions/PyprojectDocumentLinkFeatures"
             },
             {
               "type": "null"
@@ -1561,7 +1561,7 @@
         "code-action": {
           "anyOf": [
             {
-              "$ref": "#/definitions/UvCodeActionFeatures"
+              "$ref": "#/definitions/PyprojectCodeActionFeatures"
             },
             {
               "type": "null"
@@ -1572,17 +1572,17 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "UvCompletionFeatures": {
+    "PyprojectCompletionFeatures": {
       "anyOf": [
         {
           "$ref": "#/definitions/EnabledOnly"
         },
         {
-          "$ref": "#/definitions/UvCompletionFeatureTree"
+          "$ref": "#/definitions/PyprojectCompletionFeatureTree"
         }
       ]
     },
-    "UvCompletionFeatureTree": {
+    "PyprojectCompletionFeatureTree": {
       "type": "object",
       "properties": {
         "path": {
@@ -1599,17 +1599,17 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "UvNavigationFeatures": {
+    "PyprojectNavigationFeatures": {
       "anyOf": [
         {
           "$ref": "#/definitions/EnabledOnly"
         },
         {
-          "$ref": "#/definitions/UvNavigationFeatureTree"
+          "$ref": "#/definitions/PyprojectNavigationFeatureTree"
         }
       ]
     },
-    "UvNavigationFeatureTree": {
+    "PyprojectNavigationFeatureTree": {
       "type": "object",
       "properties": {
         "dependency": {
@@ -1646,17 +1646,17 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "UvDocumentLinkFeatures": {
+    "PyprojectDocumentLinkFeatures": {
       "anyOf": [
         {
           "$ref": "#/definitions/EnabledOnly"
         },
         {
-          "$ref": "#/definitions/UvDocumentLinkFeatureTree"
+          "$ref": "#/definitions/PyprojectDocumentLinkFeatureTree"
         }
       ]
     },
-    "UvDocumentLinkFeatureTree": {
+    "PyprojectDocumentLinkFeatureTree": {
       "type": "object",
       "properties": {
         "pyproject-toml": {
@@ -1683,17 +1683,17 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "UvCodeActionFeatures": {
+    "PyprojectCodeActionFeatures": {
       "anyOf": [
         {
           "$ref": "#/definitions/EnabledOnly"
         },
         {
-          "$ref": "#/definitions/UvCodeActionFeatureTree"
+          "$ref": "#/definitions/PyprojectCodeActionFeatureTree"
         }
       ]
     },
-    "UvCodeActionFeatureTree": {
+    "PyprojectCodeActionFeatureTree": {
       "type": "object",
       "properties": {
         "use-workspace-dependency": {

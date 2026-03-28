@@ -3776,20 +3776,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tombi-extension-tombi"
-version = "0.0.0-dev"
-dependencies = [
- "tombi-config",
- "tombi-document-tree",
- "tombi-extension",
- "tombi-schema-store",
- "tombi-text",
- "tombi-uri",
- "tower-lsp",
-]
-
-[[package]]
-name = "tombi-extension-uv"
+name = "tombi-extension-pyproject"
 version = "0.0.0-dev"
 dependencies = [
  "glob",
@@ -3808,6 +3795,19 @@ dependencies = [
  "tombi-text",
  "tombi-uri",
  "tombi-version-sort",
+ "tower-lsp",
+]
+
+[[package]]
+name = "tombi-extension-tombi"
+version = "0.0.0-dev"
+dependencies = [
+ "tombi-config",
+ "tombi-document-tree",
+ "tombi-extension",
+ "tombi-schema-store",
+ "tombi-text",
+ "tombi-uri",
  "tower-lsp",
 ]
 
@@ -3983,8 +3983,8 @@ dependencies = [
  "tombi-document-tree",
  "tombi-extension",
  "tombi-extension-cargo",
+ "tombi-extension-pyproject",
  "tombi-extension-tombi",
- "tombi-extension-uv",
  "tombi-formatter",
  "tombi-future",
  "tombi-glob",

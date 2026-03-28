@@ -212,8 +212,8 @@ pub async fn handle_completion(
     {
         completion_items.extend(items);
     }
-    if config.uv_extension_enabled()
-        && let Some(items) = tombi_extension_uv::completion(
+    if config.pyproject_extension_enabled()
+        && let Some(items) = tombi_extension_pyproject::completion(
             &text_document_uri,
             &document_tree,
             position,
@@ -221,7 +221,7 @@ pub async fn handle_completion(
             toml_version,
             completion_hint,
             comment_context.as_ref(),
-            config.uv_extension_features(),
+            config.pyproject_extension_features(),
         )
         .await?
     {

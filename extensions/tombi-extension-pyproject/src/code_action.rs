@@ -86,14 +86,14 @@ pub fn code_action(
     accessors: &[Accessor],
     toml_version: tombi_config::TomlVersion,
     line_index: &tombi_text::LineIndex,
-    features: Option<&tombi_config::UvExtensionFeatures>,
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
 ) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
     // Check if the file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(None);
     }
 
-    if !uv_code_action_root_enabled(features) {
+    if !pyproject_code_action_root_enabled(features) {
         return Ok(None);
     }
 
@@ -101,9 +101,9 @@ pub fn code_action(
     if document_tree.contains_key("tool")
         && let Some((_, tool_value)) = tombi_document_tree::dig_keys(document_tree, &["tool"])
         && let tombi_document_tree::Value::Table(tool_table) = tool_value
-        && let Some((_, uv_value)) = tool_table.get_key_value("uv")
-        && let tombi_document_tree::Value::Table(uv_table) = uv_value
-        && uv_table.contains_key("workspace")
+        && let Some((_, pyproject_value)) = tool_table.get_key_value("uv")
+        && let tombi_document_tree::Value::Table(pyproject_table) = pyproject_value
+        && pyproject_table.contains_key("workspace")
     {
         // This is a workspace root, don't provide code actions
         return Ok(None);
@@ -132,7 +132,7 @@ fn code_action_for_dependency_package(
     accessors: &[Accessor],
     toml_version: tombi_config::TomlVersion,
     line_index: &tombi_text::LineIndex,
-    features: Option<&tombi_config::UvExtensionFeatures>,
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
 ) -> Option<Vec<CodeActionOrCommand>> {
     // Try to find workspace pyproject.toml
     let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
@@ -170,7 +170,7 @@ fn code_action_for_dependency_package(
     // Try "Use Workspace Dependency" (when dependency exists in workspace)
     if features.map_or(
         true,
-        tombi_config::UvExtensionFeatures::use_workspace_dependency_code_action_enabled,
+        tombi_config::PyprojectExtensionFeatures::use_workspace_dependency_code_action_enabled,
     ) && let Some(action) = use_workspace_dependency_code_action(
         text_document_uri,
         line_index,
@@ -184,7 +184,7 @@ fn code_action_for_dependency_package(
     // Try "Add to Workspace and Use Workspace Dependency" (when dependency doesn't exist in workspace)
     if features.map_or(
         true,
-        tombi_config::UvExtensionFeatures::add_to_workspace_and_use_workspace_dependency_code_action_enabled,
+        tombi_config::PyprojectExtensionFeatures::add_to_workspace_and_use_workspace_dependency_code_action_enabled,
     ) && let Some(action) = add_workspace_dependency_code_action(
         text_document_uri,
         line_index,
@@ -206,8 +206,13 @@ fn code_action_for_dependency_package(
     (!actions.is_empty()).then_some(actions)
 }
 
-fn uv_code_action_root_enabled(features: Option<&tombi_config::UvExtensionFeatures>) -> bool {
-    features.map_or(true, tombi_config::UvExtensionFeatures::code_action_enabled)
+fn pyproject_code_action_root_enabled(
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::PyprojectExtensionFeatures::code_action_enabled,
+    )
 }
 
 fn format_dependency_without_version(requirement: &Requirement<VerbatimUrl>) -> String {

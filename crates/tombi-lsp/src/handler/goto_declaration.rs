@@ -71,13 +71,13 @@ pub async fn handle_goto_declaration(
         return Ok(locations.into());
     }
 
-    if config.uv_extension_enabled()
-        && let Some(locations) = tombi_extension_uv::goto_declaration(
+    if config.pyproject_extension_enabled()
+        && let Some(locations) = tombi_extension_pyproject::goto_declaration(
             &text_document_uri,
             &document_tree,
             &accessors,
             toml_version,
-            config.uv_extension_features(),
+            config.pyproject_extension_features(),
         )
         .await?
     {

@@ -516,7 +516,7 @@ mod document_link_tests {
                 dependencies = ["anyio>=4.0"]
                 "#,
                 SourcePath(project_root_path().join(
-                    "crates/tombi-lsp/tests/fixtures/extensions/uv-disabled/pyproject.toml"
+                    "crates/tombi-lsp/tests/fixtures/extensions/pyproject-disabled/pyproject.toml"
                 )),
             ) -> Ok(None);
         );

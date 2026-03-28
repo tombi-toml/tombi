@@ -93,7 +93,7 @@ tombi-extension = { path = "crates/tombi-extension" }
 tombi-extension-manifest = { path = "crates/tombi-extension-manifest" }
 tombi-extension-cargo = { path = "extensions/tombi-extension-cargo" }
 tombi-extension-tombi = { path = "extensions/tombi-extension-tombi" }
-tombi-extension-uv = { path = "extensions/tombi-extension-uv" }
+tombi-extension-pyproject = { path = "extensions/tombi-extension-pyproject" }
 tombi-formatter = { path = "crates/tombi-formatter" }
 tombi-future = { path = "crates/tombi-future" }
 tombi-glob = { path = "crates/tombi-glob" }

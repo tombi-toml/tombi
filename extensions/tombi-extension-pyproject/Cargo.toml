@@ -1,9 +1,9 @@
 [package]
-name = "tombi-extension-uv"
+name = "tombi-extension-pyproject"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
-description = "Tombi extension for uv Python project management"
+description = "Tombi extension for pyproject.toml Python project management"
 repository.workspace = true
 license.workspace = true
 

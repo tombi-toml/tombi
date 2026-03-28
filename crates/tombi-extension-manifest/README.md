@@ -7,7 +7,7 @@ In this crate, a "manifest" means a TOML file that defines a project or workspac
 Concrete examples:
 
 - `Cargo.toml` for Rust/Cargo projects
-- `pyproject.toml` for Python/uv projects
+- `pyproject.toml` for Python projects
 
 The helpers in this crate are intentionally format-agnostic. They only handle path resolution and ancestor lookup for those manifest files.
 
@@ -20,8 +20,8 @@ Not every `tombi-extension` consumer needs manifest lookup helpers. Keeping thes
 This crate is currently used by:
 
 - `tombi-extension-cargo`
-- `tombi-extension-uv`
+- `tombi-extension-pyproject`
 
 `tombi-extension-cargo` uses it to locate workspace and path dependency `Cargo.toml` files.
 
-`tombi-extension-uv` uses it to locate workspace and member `pyproject.toml` files.
+`tombi-extension-pyproject` uses it to locate workspace and member `pyproject.toml` files.
