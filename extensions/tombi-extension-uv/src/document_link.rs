@@ -53,7 +53,7 @@ pub async fn document_link(
     toml_version: TomlVersion,
     features: Option<&tombi_config::UvExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
-    // Check if current file is Cargo.toml
+    // Check if current file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(None);
     }

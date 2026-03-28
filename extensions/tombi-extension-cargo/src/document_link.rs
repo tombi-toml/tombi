@@ -673,7 +673,7 @@ fn document_link_for_dependency(
         }
 
         if crates_io_document_link_enabled(features)
-            && let Some(tombi_document_tree::Value::String(registry_name)) = table.get("registory")
+            && let Some(tombi_document_tree::Value::String(registry_name)) = table.get("registry")
             && let Some(registry) = registries.get(registry_name.value())
             && let Ok(target) =
                 tombi_uri::Uri::from_str(&format!("{}/{}", registry.index, package_name))

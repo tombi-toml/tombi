@@ -504,6 +504,23 @@ mod document_link_tests {
             ]));
         );
     }
+
+    mod pyproject_schema {
+        use super::*;
+
+        test_document_link!(
+            #[tokio::test]
+            async fn pyproject_dependencies_disabled_by_extensions(
+                r#"
+                [project]
+                dependencies = ["anyio>=4.0"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/uv-disabled/pyproject.toml"
+                )),
+            ) -> Ok(None);
+        );
+    }
 }
 
 #[macro_export]

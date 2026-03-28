@@ -45,7 +45,7 @@ pub const TOMBI_CONFIG_TOML_VERSION: TomlVersion = TomlVersion::V1_1_0;
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-toml-version" = TOMBI_CONFIG_TOML_VERSION)))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = concat!("https://", tombi_uri::schemastore_hostname!(), "/tombi.json"))))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = concat!("tombi://", tombi_uri::schemastore_hostname!(), "/tombi.json"))))]
 pub struct Config {
     /// # TOML version
     ///

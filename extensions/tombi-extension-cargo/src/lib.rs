@@ -682,7 +682,10 @@ pub(crate) enum CargoNavigationFeature {
 pub(crate) fn classify_cargo_navigation_feature(
     accessors: &[tombi_schema_store::Accessor],
 ) -> CargoNavigationFeature {
-    if accessors.last() == Some(&tombi_schema_store::Accessor::Key("path".to_string())) {
+    if matches!(
+        accessors.last(),
+        Some(tombi_schema_store::Accessor::Key(key)) if key == "path"
+    ) {
         CargoNavigationFeature::Path
     } else if matches_accessors!(accessors, ["workspace", "members"])
         || matches_accessors!(accessors, ["workspace", "members", _])

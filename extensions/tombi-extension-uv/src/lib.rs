@@ -116,7 +116,10 @@ pub(crate) enum UvNavigationFeature {
 pub(crate) fn classify_uv_navigation_feature(
     accessors: &[tombi_schema_store::Accessor],
 ) -> UvNavigationFeature {
-    if accessors.last() == Some(&tombi_schema_store::Accessor::Key("path".to_string())) {
+    if matches!(
+        accessors.last(),
+        Some(tombi_schema_store::Accessor::Key(key)) if key == "path"
+    ) {
         UvNavigationFeature::Path
     } else if matches_accessors!(
         accessors[..accessors.len().min(3)],

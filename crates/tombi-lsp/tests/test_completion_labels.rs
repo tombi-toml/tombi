@@ -1268,6 +1268,23 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn cargo_dependencies_workspace_inheritance_candidate_disabled_by_extensions(
+                r#"
+                [dependencies]
+                s█
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/cargo-disabled/member/Cargo.toml"
+                )),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                ".",
+                "=",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn cargo_dev_dependencies_workspace_inheritance_candidate(
                 r#"
                 [dev-dependencies]
