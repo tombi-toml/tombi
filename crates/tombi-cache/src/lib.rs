@@ -3,6 +3,8 @@ mod options;
 pub use error::Error;
 pub use options::{DEFAULT_CACHE_TTL, Options};
 
+const CACHE_ENTRY_FILE_NAME: &str = "__response__.json";
+
 pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
     if let Ok(xdg_cache_home) = std::env::var("XDG_CACHE_HOME") {
         let mut cache_dir_path = std::path::PathBuf::from(xdg_cache_home);
@@ -44,6 +46,7 @@ pub async fn get_cache_file_path(cache_file_uri: &tombi_uri::Uri) -> Option<std:
                 dir_path.push(segment)
             }
         }
+        dir_path.push(CACHE_ENTRY_FILE_NAME);
 
         dir_path
     })
@@ -142,4 +145,26 @@ pub async fn refresh_cache() -> Result<bool, crate::Error> {
     }
 
     Ok(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn cache_paths_do_not_conflict_for_nested_urls() {
+        let root_uri = tombi_uri::Uri::from_str("https://crates.io/api/v1/crates/serde").unwrap();
+        let nested_uri =
+            tombi_uri::Uri::from_str("https://crates.io/api/v1/crates/serde/1.0.0").unwrap();
+
+        let root_path = get_cache_file_path(&root_uri).await.unwrap();
+        let nested_path = get_cache_file_path(&nested_uri).await.unwrap();
+
+        assert_ne!(root_path, nested_path);
+        assert_eq!(root_path.file_name().unwrap(), CACHE_ENTRY_FILE_NAME);
+        assert_eq!(nested_path.file_name().unwrap(), CACHE_ENTRY_FILE_NAME);
+        assert_eq!(nested_path.parent().unwrap().file_name().unwrap(), "1.0.0");
+    }
 }

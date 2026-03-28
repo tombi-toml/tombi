@@ -3758,6 +3758,7 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
+ "tokio",
  "tombi-ast",
  "tombi-cache",
  "tombi-config",

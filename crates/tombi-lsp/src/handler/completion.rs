@@ -185,6 +185,8 @@ pub async fn handle_completion(
     };
 
     let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
+    let offline = schema_store.offline();
+    let cache_options = schema_store.cache_options();
     if config.tombi_extension_enabled()
         && let Some(items) = tombi_extension_tombi::completion(
             &text_document_uri,
@@ -209,6 +211,8 @@ pub async fn handle_completion(
             toml_version,
             completion_hint,
             comment_context.as_ref(),
+            offline,
+            cache_options,
             config.cargo_extension_features(),
         )
         .await?
