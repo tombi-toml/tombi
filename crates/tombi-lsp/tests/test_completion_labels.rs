@@ -601,6 +601,7 @@ mod completion_labels {
                 "include",
                 "path",
                 "root",
+                "lint",
                 "toml-version",
             ]);
         }
