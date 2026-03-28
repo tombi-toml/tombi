@@ -367,6 +367,42 @@ mod hover_keys_value {
                 "Value": "(String ^ Boolean)?"
             });
         );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_workspace_dependency_hover_metadata(
+                r#"
+                [dependencies]
+                tombi-extension-cargo█ = { workspace = true }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("crates/tombi-lsp/Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok({
+                "Keys": "dependencies.tombi-extension-cargo",
+                "Value": "(String | Table)?",
+                "Title": Some("tombi-extension-cargo"),
+                "Description": Some("Tombi extension for Cargo.toml"),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_remote_dependency_hover_offline(
+                r#"
+                [workspace.dependencies]
+                serde█ = "1.0"
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: None,
+                },
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok({
+                "Keys": "workspace.dependencies.serde",
+                "Value": "(String | Table)?"
+            });
+        );
     }
 
     mod pyproject_schema {
@@ -413,6 +449,52 @@ mod hover_keys_value {
                 "#,
             ) -> Ok({
                 "Keys": "dependency-groups.dev[0]",
+                "Value": "String"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn pyproject_workspace_dependency_hover_metadata(
+                r#"
+                [project]
+                dependencies = [
+                    "tombi-beta█",
+                ]
+
+                [tool.uv.workspace]
+                members = ["python/tombi-beta"]
+
+                [tool.uv.sources]
+                tombi-beta = { workspace = true }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("pyproject.toml")),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok({
+                "Keys": "project.dependencies[0]",
+                "Value": "String",
+                "Title": Some("tombi-beta"),
+                "Description": Some("Add your description here"),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn pyproject_remote_dependency_hover_offline(
+                r#"
+                [project]
+                dependencies = [
+                    "request█s>=2.0",
+                ]
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("pyproject.toml")),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: None,
+                },
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok({
+                "Keys": "project.dependencies[0]",
                 "Value": "String"
             });
         );
@@ -512,7 +594,10 @@ mod hover_keys_value {
             $source:expr $(, $arg:expr )* $(,)?
         ) -> Ok({
             "Keys": $keys:expr,
-            "Value": $value_type:expr$(,)?
+            "Value": $value_type:expr
+            $(, "Title": $title:expr)?
+            $(, "Description": $description:expr)?
+            $(,)?
         });) => {
             #[tokio::test]
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
@@ -655,14 +740,16 @@ mod hover_keys_value {
                 let line_index =
                 tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
 
-                let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
-                    return Err("failed to convert temporary file path to URL".into());
+                let source_path = args.source_file_path.as_deref().unwrap_or(temp_file.path());
+
+                let Ok(toml_file_url) = Url::from_file_path(source_path) else {
+                    return Err("failed to convert file path to URL".into());
                 };
 
                 if !schema_items.is_empty() {
                     let config_schema_store = backend
                         .config_manager
-                        .config_schema_store_for_file(temp_file.path())
+                        .config_schema_store_for_file(source_path)
                         .await;
 
                     let mut test_config = config_schema_store.config;
@@ -728,6 +815,8 @@ mod hover_keys_value {
 
                 pretty_assertions::assert_eq!(hover_content.accessors.to_string(), $keys, "Keys are not equal");
                 pretty_assertions::assert_eq!(hover_content.value_type.to_string(), $value_type, "Value type are not equal");
+                $(pretty_assertions::assert_eq!(hover_content.title.as_deref(), $title, "Title is not equal");)?
+                $(pretty_assertions::assert_eq!(hover_content.description.as_deref(), $description, "Description is not equal");)?
 
                 Ok(())
             }
