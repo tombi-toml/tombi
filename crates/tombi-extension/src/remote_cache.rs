@@ -133,14 +133,60 @@ fn parse_json<T: DeserializeOwned>(url: &str, bytes: &[u8]) -> Option<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::{path::PathBuf, str::FromStr, time::Duration};
+    use std::{
+        ffi::OsString,
+        path::PathBuf,
+        str::FromStr,
+        sync::{LazyLock, Mutex, MutexGuard},
+        time::Duration,
+    };
 
     use super::*;
     use serde::Deserialize;
 
+    static CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
     #[derive(Debug, Deserialize, PartialEq, Eq)]
     struct TestMetadata {
         name: String,
+    }
+
+    struct TestCacheHome {
+        _guard: MutexGuard<'static, ()>,
+        previous: Option<OsString>,
+        _temp_dir: tempfile::TempDir,
+    }
+
+    impl TestCacheHome {
+        fn new() -> Self {
+            let guard = CACHE_ENV_LOCK.lock().unwrap();
+            let temp_dir = tempfile::tempdir().unwrap();
+            let previous = std::env::var_os("XDG_CACHE_HOME");
+            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
+            // remains scoped to one test at a time.
+            unsafe {
+                std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
+            }
+            Self {
+                _guard: guard,
+                previous,
+                _temp_dir: temp_dir,
+            }
+        }
+    }
+
+    impl Drop for TestCacheHome {
+        fn drop(&mut self) {
+            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
+            // remains scoped to one test at a time.
+            unsafe {
+                if let Some(previous) = &self.previous {
+                    std::env::set_var("XDG_CACHE_HOME", previous);
+                } else {
+                    std::env::remove_var("XDG_CACHE_HOME");
+                }
+            }
+        }
     }
 
     fn temp_cache_path(test_name: &str) -> PathBuf {
@@ -151,8 +197,9 @@ mod tests {
         std::env::temp_dir().join(format!("tombi-{test_name}-{unique}.json"))
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "current_thread")]
     async fn remote_json_cache_paths_use_index_file_name() {
+        let _cache_home = TestCacheHome::new();
         let root_uri = tombi_uri::Uri::from_str("https://crates.io/api/v1/crates/serde").unwrap();
         let nested_uri =
             tombi_uri::Uri::from_str("https://crates.io/api/v1/crates/serde/1.0.0").unwrap();
@@ -174,8 +221,9 @@ mod tests {
         assert_eq!(nested_path.parent().unwrap().file_name().unwrap(), "1.0.0");
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "current_thread")]
     async fn remote_json_cache_paths_use_index_file_name_for_root() {
+        let _cache_home = TestCacheHome::new();
         let root_uri = tombi_uri::Uri::from_str("https://example.invalid").unwrap();
 
         let root_path = get_remote_json_cache_file_path_from_uri(&root_uri)

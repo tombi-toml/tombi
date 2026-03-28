@@ -882,9 +882,53 @@ async fn fetch_local_crate_features(
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    use std::{
+        ffi::OsString,
+        sync::{LazyLock, Mutex, MutexGuard},
+        time::Duration,
+    };
 
     use super::*;
+
+    static CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
+    struct TestCacheHome {
+        _guard: MutexGuard<'static, ()>,
+        previous: Option<OsString>,
+        _temp_dir: tempfile::TempDir,
+    }
+
+    impl TestCacheHome {
+        fn new() -> Self {
+            let guard = CACHE_ENV_LOCK.lock().unwrap();
+            let temp_dir = tempfile::tempdir().unwrap();
+            let previous = std::env::var_os("XDG_CACHE_HOME");
+            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
+            // remains scoped to one test at a time.
+            unsafe {
+                std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
+            }
+            Self {
+                _guard: guard,
+                previous,
+                _temp_dir: temp_dir,
+            }
+        }
+    }
+
+    impl Drop for TestCacheHome {
+        fn drop(&mut self) {
+            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
+            // remains scoped to one test at a time.
+            unsafe {
+                if let Some(previous) = &self.previous {
+                    std::env::set_var("XDG_CACHE_HOME", previous);
+                } else {
+                    std::env::remove_var("XDG_CACHE_HOME");
+                }
+            }
+        }
+    }
 
     fn cache_options() -> tombi_cache::Options {
         tombi_cache::Options {
@@ -912,8 +956,9 @@ mod tests {
         cache_path
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "current_thread")]
     async fn fetch_crate_versions_uses_cached_response_while_offline() {
+        let _cache_home = TestCacheHome::new();
         let crate_name = unique_crate_name("versions");
         let url = format!("https://crates.io/api/v1/crates/{crate_name}/versions");
         let cache_path = write_cached_response(
@@ -932,8 +977,9 @@ mod tests {
         let _ = std::fs::remove_file(cache_path);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "current_thread")]
     async fn fetch_crate_features_uses_cached_version_detail_while_offline() {
+        let _cache_home = TestCacheHome::new();
         let crate_name = unique_crate_name("features-version");
         let version = "1.2.3";
         let url = format!("https://crates.io/api/v1/crates/{crate_name}/{version}");
@@ -961,8 +1007,9 @@ mod tests {
         let _ = std::fs::remove_file(cache_path);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "current_thread")]
     async fn fetch_crate_features_uses_cached_latest_version_lookup_while_offline() {
+        let _cache_home = TestCacheHome::new();
         let crate_name = unique_crate_name("features-latest");
         let latest_url = format!("https://crates.io/api/v1/crates/{crate_name}");
         let latest_cache_path = write_cached_response(
