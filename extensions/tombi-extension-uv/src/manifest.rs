@@ -39,12 +39,13 @@ pub(crate) fn find_workspace_pyproject_toml(
     tombi_ast::Root,
     tombi_document_tree::DocumentTree,
 )> {
-    let (workspace_pyproject_toml_path, (root, document_tree)) = tombi_extension::find_ancestor_manifest(
-        pyproject_toml_path,
-        "pyproject.toml",
-        |path| load_pyproject_toml(path, toml_version),
-        |(_, tree)| tombi_document_tree::dig_keys(tree, &["tool", "uv", "workspace"]).is_some(),
-    )?;
+    let (workspace_pyproject_toml_path, (root, document_tree)) =
+        tombi_extension_manifest::find_ancestor_manifest(
+            pyproject_toml_path,
+            "pyproject.toml",
+            |path| load_pyproject_toml(path, toml_version),
+            |(_, tree)| tombi_document_tree::dig_keys(tree, &["tool", "uv", "workspace"]).is_some(),
+        )?;
 
     Some((workspace_pyproject_toml_path, root, document_tree))
 }
@@ -62,7 +63,7 @@ pub(crate) fn resolve_member_pyproject_toml_path(
     base_pyproject_toml_path: &Path,
     dependency_path: &str,
 ) -> Option<std::path::PathBuf> {
-    tombi_extension::resolve_manifest_path(
+    tombi_extension_manifest::resolve_manifest_path(
         base_pyproject_toml_path,
         Path::new(dependency_path),
         "pyproject.toml",

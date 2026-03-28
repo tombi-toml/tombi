@@ -46,7 +46,7 @@ pub(crate) fn find_workspace_cargo_toml(
     tombi_document_tree::DocumentTree,
 )> {
     if let Some(workspace_path) = workspace_path {
-        let workspace_cargo_toml_path = tombi_extension::resolve_manifest_path(
+        let workspace_cargo_toml_path = tombi_extension_manifest::resolve_manifest_path(
             cargo_toml_path,
             Path::new(workspace_path),
             "Cargo.toml",
@@ -61,12 +61,13 @@ pub(crate) fn find_workspace_cargo_toml(
         ));
     }
 
-    let (workspace_cargo_toml_path, (root, document_tree)) = tombi_extension::find_ancestor_manifest(
-        cargo_toml_path,
-        "Cargo.toml",
-        |path| load_cargo_toml(path, toml_version),
-        |(_, tree)| tree.contains_key("workspace"),
-    )?;
+    let (workspace_cargo_toml_path, (root, document_tree)) =
+        tombi_extension_manifest::find_ancestor_manifest(
+            cargo_toml_path,
+            "Cargo.toml",
+            |path| load_cargo_toml(path, toml_version),
+            |(_, tree)| tree.contains_key("workspace"),
+        )?;
 
     Some((workspace_cargo_toml_path, root, document_tree))
 }
@@ -81,7 +82,7 @@ pub(crate) fn find_path_crate_cargo_toml(
     tombi_document_tree::DocumentTree,
 )> {
     let crate_cargo_toml_path =
-        tombi_extension::resolve_manifest_path(cargo_toml_path, crate_path, "Cargo.toml")?;
+        tombi_extension_manifest::resolve_manifest_path(cargo_toml_path, crate_path, "Cargo.toml")?;
     let canonicalized_path = crate_cargo_toml_path.canonicalize().ok()?;
     let (root, document_tree) = load_cargo_toml(&canonicalized_path, toml_version)?;
 
@@ -108,5 +109,5 @@ pub(crate) fn get_uri_relative_to_cargo_toml(
     relative_path: &Path,
     cargo_toml_path: &Path,
 ) -> Option<tombi_uri::Uri> {
-    tombi_extension::resolve_relative_file_uri(cargo_toml_path, relative_path)
+    tombi_extension_manifest::resolve_relative_file_uri(cargo_toml_path, relative_path)
 }
