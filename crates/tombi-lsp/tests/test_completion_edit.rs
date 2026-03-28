@@ -400,6 +400,46 @@ mod completion_edit {
                 "#
             );
         }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_build_dependencies_workspace_inheritance_candidate(
+                r#"
+                [build-dependencies]
+                s█
+                "#,
+                Select("serde"),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/issue-1621-cargo-workspace-completion/member/Cargo.toml"
+                )),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [build-dependencies]
+                serde.workspace = true
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_target_build_dependencies_workspace_inheritance_candidate(
+                r#"
+                [target.'cfg(unix)'.build-dependencies]
+                s█
+                "#,
+                Select("serde"),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/issue-1621-cargo-workspace-completion/member/Cargo.toml"
+                )),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [target.'cfg(unix)'.build-dependencies]
+                serde.workspace = true
+                "#
+            );
+        }
     }
 
     mod pyproject_schema {

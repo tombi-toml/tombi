@@ -1262,6 +1262,24 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn cargo_build_dependencies_workspace_inheritance_candidate(
+                r#"
+                [build-dependencies]
+                s█
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/issue-1621-cargo-workspace-completion/member/Cargo.toml"
+                )),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "serde",
+                ".",
+                "=",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn cargo_package_build_path_file_completion(
                 r#"
                 [package]
@@ -1819,6 +1837,24 @@ mod completion_labels {
             async fn cargo_target_dependencies_workspace_inheritance_candidate(
                 r#"
                 [target.'cfg(unix)'.dependencies]
+                s█
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/issue-1621-cargo-workspace-completion/member/Cargo.toml"
+                )),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "serde",
+                ".",
+                "=",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_target_build_dependencies_workspace_inheritance_candidate(
+                r#"
+                [target.'cfg(unix)'.build-dependencies]
                 s█
                 "#,
                 SourcePath(project_root_path().join(
