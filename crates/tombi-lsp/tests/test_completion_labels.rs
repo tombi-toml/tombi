@@ -601,6 +601,7 @@ mod completion_labels {
                 "include",
                 "path",
                 "root",
+                "lint",
                 "toml-version",
             ]);
         }
@@ -639,6 +640,7 @@ mod completion_labels {
                 "dependencies-test.schema.json",
                 "dependent-required-test.schema.json",
                 "dependent-schemas-test.schema.json",
+                "deprecated-test.schema.json",
                 "format-annotation-test.schema.json",
                 "format-assertion-vocab-test.schema.json",
                 "if-then-else-test.schema.json",
@@ -2346,6 +2348,7 @@ mod completion_labels {
                         toml_version: None,
                         path: schema_uri.to_string(),
                         include: vec!["*.toml".to_string()],
+                    lint: None,
                     }));
                 }
 
@@ -2363,6 +2366,7 @@ mod completion_labels {
                         path: subschema_uri.to_string(),
                         include: vec!["*.toml".to_string()],
                         root: subschema.root.to_string(),
+                        lint: None,
                     }));
                 }
 

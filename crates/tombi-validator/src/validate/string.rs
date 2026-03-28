@@ -324,6 +324,7 @@ where
                 string_schema.deprecated,
                 accessors,
                 string_value,
+                schema_context,
                 string_value.comment_directives(),
                 lint_rules.as_ref().map(|rules| &rules.common),
             );

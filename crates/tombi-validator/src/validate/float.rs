@@ -362,6 +362,7 @@ async fn validate_float(
             float_schema.deprecated,
             accessors,
             float_value,
+            schema_context,
             float_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
         );

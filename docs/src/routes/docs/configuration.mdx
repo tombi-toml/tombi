@@ -683,11 +683,15 @@ Apply a schema to the entire TOML document.
 toml-version = "v1.0.0"  # optional
 path = "https://example.com/schema.json"
 include = ["example.toml"]
+
+[schemas.lint.rules]
+deprecated = "error"
 ```
 
 - `toml-version`(optional): The TOML version that the schema is available for
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
+- `lint.rules.deprecated`(optional): Override the deprecated diagnostic level for this schema with `"off"`, `"warn"`, or `"error"`
 
 <Note>
 For local paths, `path` is resolved relative to the directory containing the loaded config file.
@@ -706,11 +710,15 @@ Sub schemas are mainly provided for configuring extension features, such as the 
 root = "tool.taskipy"
 path = "schemas/partial-taskipy.schema.json"
 include = ["pyproject.toml"]
+
+[schemas.lint.rules]
+deprecated = "warn"
 ```
 
 - `root`: The accessor path to apply the sub-schema (e.g., `"tools.tombi"`, `"items[0].name"`)
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
+- `lint.rules.deprecated`(optional): Override the deprecated diagnostic level for this schema with `"off"`, `"warn"`, or `"error"`
 
 ### overrides
 

@@ -283,6 +283,7 @@ pub struct PropertySchema {
 pub struct Schema {
     pub title: Option<String>,
     pub description: Option<String>,
+    pub deprecated_lint_level: Option<tombi_severity_level::SeverityLevelDefaultWarn>,
     pub toml_version: Option<tombi_config::TomlVersion>,
     pub schema_uri: tombi_uri::SchemaUri,
     pub catalog_uri: Option<Arc<tombi_uri::CatalogUri>>,
