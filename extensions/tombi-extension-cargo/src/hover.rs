@@ -195,7 +195,7 @@ fn is_unsupported_remote_dependency(dependency_value: &Value) -> bool {
         return false;
     };
 
-    table.contains_key("git") || table.contains_key("registry") || table.contains_key("registory")
+    table.contains_key("git") || table.contains_key("registry")
 }
 
 fn load_package_metadata(

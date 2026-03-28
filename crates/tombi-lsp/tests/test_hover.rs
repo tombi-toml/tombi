@@ -743,7 +743,7 @@ mod hover_keys_value {
                 let source_path = args.source_file_path.as_deref().unwrap_or(temp_file.path());
 
                 let Ok(toml_file_url) = Url::from_file_path(source_path) else {
-                    return Err("failed to convert temporary file path to URL".into());
+                    return Err("failed to convert file path to URL".into());
                 };
 
                 if !schema_items.is_empty() {
