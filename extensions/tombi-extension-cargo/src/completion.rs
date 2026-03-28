@@ -9,11 +9,11 @@ use tombi_extension::CompletionHint;
 use tombi_extension::CompletionKind;
 use tombi_extension::CompletionTextEdit;
 use tombi_extension::TextEdit;
+use tombi_extension::fetch_cached_remote_json;
 use tombi_extension::{completion_directory_path, completion_file_path};
 use tombi_future::Boxable;
 use tombi_hashmap::HashSet;
 use tombi_schema_store::Accessor;
-use tombi_schema_store::HttpClient;
 use tombi_schema_store::matches_accessors;
 use tombi_version_sort::version_sort;
 use tower_lsp::lsp_types::InsertTextFormat;
@@ -58,6 +58,8 @@ pub async fn completion(
     toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
     comment_context: Option<&CommentContext>,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
@@ -90,6 +92,8 @@ pub async fn completion(
                 accessors,
                 completion_hint,
                 toml_version,
+                offline,
+                cache_options,
                 features,
             )
             .await
@@ -101,6 +105,8 @@ pub async fn completion(
                 accessors,
                 completion_hint,
                 toml_version,
+                offline,
+                cache_options,
                 features,
             )
             .await
@@ -206,6 +212,8 @@ async fn completion_workspace(
     accessors: &[Accessor],
     completion_hint: Option<CompletionHint>,
     toml_version: TomlVersion,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     if matches_accessors!(accessors, ["workspace", "dependencies", _]) {
@@ -219,6 +227,8 @@ async fn completion_workspace(
                 accessors,
                 position,
                 completion_hint,
+                offline,
+                cache_options,
             )
             .await;
         }
@@ -233,6 +243,8 @@ async fn completion_workspace(
                 accessors,
                 position,
                 completion_hint,
+                offline,
+                cache_options,
             )
             .await;
         }
@@ -256,6 +268,8 @@ async fn completion_workspace(
             &accessors[..4],
             position,
             toml_version,
+            offline,
+            cache_options,
             accessors.get(4).and_then(|_| {
                 dig_accessors(document_tree, accessors).and_then(|(_, feature)| {
                     if let tombi_document_tree::Value::String(feature_string) = feature {
@@ -278,6 +292,8 @@ async fn completion_member(
     accessors: &[Accessor],
     completion_hint: Option<CompletionHint>,
     toml_version: TomlVersion,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     if let Some(completions) = complete_workspace_dependency_inheritance(
@@ -308,6 +324,8 @@ async fn completion_member(
                 accessors,
                 position,
                 completion_hint,
+                offline,
+                cache_options,
             )
             .await;
         }
@@ -328,6 +346,8 @@ async fn completion_member(
                 accessors,
                 position,
                 completion_hint,
+                offline,
+                cache_options,
             )
             .await;
         }
@@ -373,6 +393,8 @@ async fn completion_member(
                 &accessors[..3 + offset],
                 position,
                 toml_version,
+                offline,
+                cache_options,
                 accessors.get(3 + offset).and_then(|_| {
                     dig_accessors(document_tree, accessors).and_then(|(_, feature)| {
                         if let tombi_document_tree::Value::String(feature_string) = feature {
@@ -549,6 +571,8 @@ async fn complete_crate_version(
     accessors: &[Accessor],
     position: tombi_text::Position,
     completion_hint: Option<CompletionHint>,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     let version_value = match dig_accessors(document_tree, accessors) {
         Some((_, value))
@@ -563,7 +587,7 @@ async fn complete_crate_version(
         _ => return Ok(None),
     };
 
-    if let Some(versions) = fetch_crate_versions(crate_name).await {
+    if let Some(versions) = fetch_crate_versions(crate_name, offline, cache_options).await {
         let items = versions
             .into_iter()
             .sorted_by(|a, b| tombi_version_sort::version_sort(a, b))
@@ -628,6 +652,8 @@ fn complete_crate_feature<'a: 'b, 'b>(
     features_accessors: &'a [Accessor],
     position: tombi_text::Position,
     toml_version: TomlVersion,
+    offline: bool,
+    cache_options: Option<&'a tombi_cache::Options>,
     editing_feature_string: Option<&'a tombi_document_tree::String>,
 ) -> tombi_future::BoxFuture<'b, Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error>>
 {
@@ -652,7 +678,13 @@ fn complete_crate_feature<'a: 'b, 'b>(
                 .cloned()
                 .collect_vec(),
         ) {
-            fetch_crate_features(crate_name, Some(value_string.value())).await
+            fetch_crate_features(
+                crate_name,
+                Some(value_string.value()),
+                offline,
+                cache_options,
+            )
+            .await
         } else if let Some((_, tombi_document_tree::Value::Boolean(boolean))) = dig_accessors(
             document_tree,
             &features_accessors[..features_accessors.len() - 1]
@@ -683,14 +715,16 @@ fn complete_crate_feature<'a: 'b, 'b>(
                     ],
                     position,
                     toml_version,
+                    offline,
+                    cache_options,
                     editing_feature_string,
                 )
                 .await;
             } else {
-                fetch_crate_features(crate_name, None).await
+                fetch_crate_features(crate_name, None, offline, cache_options).await
             }
         } else {
-            fetch_crate_features(crate_name, None).await
+            fetch_crate_features(crate_name, None, offline, cache_options).await
         };
 
         let Some(features) = features else {
@@ -764,28 +798,14 @@ fn complete_crate_feature<'a: 'b, 'b>(
 }
 
 /// Fetch crate version list from crates.io API
-async fn fetch_crate_versions(crate_name: &str) -> Option<Vec<String>> {
+async fn fetch_crate_versions(
+    crate_name: &str,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
+) -> Option<Vec<String>> {
     let url = format!("https://crates.io/api/v1/crates/{crate_name}/versions");
-    let client = HttpClient::new();
-    let bytes = match client
-        .get_bytes(&url)
-        .await
-        .map_err(|e| format!("http error: {e:?}"))
-    {
-        Ok(bytes) => bytes,
-        Err(e) => {
-            log::warn!("Failed to fetch crate versions from {url}: {e}");
-            return None;
-        }
-    };
-
-    let resp: CratesIoVersionsResponse = match serde_json::from_slice(&bytes) {
-        Ok(resp) => resp,
-        Err(e) => {
-            log::warn!("Failed to parse crate versions response: {e}");
-            return None;
-        }
-    };
+    let resp =
+        fetch_cached_remote_json::<CratesIoVersionsResponse>(&url, offline, cache_options).await?;
     Some(resp.versions.into_iter().map(|v| v.num).collect())
 }
 
@@ -793,22 +813,23 @@ async fn fetch_crate_versions(crate_name: &str) -> Option<Vec<String>> {
 async fn fetch_crate_features(
     crate_name: &str,
     version: Option<&str>,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
 ) -> Option<tombi_hashmap::HashMap<String, Vec<String>>> {
-    let client = HttpClient::new();
-    let version = if let Some(ver) = version {
-        ver.to_string()
+    if let Some(version) = version {
+        let url = format!("https://crates.io/api/v1/crates/{crate_name}/{version}");
+        let resp =
+            fetch_cached_remote_json::<CratesIoVersionDetailResponse>(&url, offline, cache_options)
+                .await?;
+        Some(resp.version.features)
     } else {
-        // fetch latest version
+        // The crate overview response already includes features for each version,
+        // so we can read them directly from the latest version without a second fetch.
         let url = format!("https://crates.io/api/v1/crates/{crate_name}");
-        let bytes = client.get_bytes(&url).await.ok()?;
-        let resp: CratesIoCrateResponse = serde_json::from_slice(&bytes).ok()?;
-
-        resp.versions.into_iter().next().map(|v| v.num)?
-    };
-    let url = format!("https://crates.io/api/v1/crates/{crate_name}/{version}");
-    let bytes = client.get_bytes(&url).await.ok()?;
-    let resp: CratesIoVersionDetailResponse = serde_json::from_slice(&bytes).ok()?;
-    Some(resp.version.features)
+        let resp =
+            fetch_cached_remote_json::<CratesIoCrateResponse>(&url, offline, cache_options).await?;
+        resp.versions.into_iter().next().map(|v| v.features)
+    }
 }
 
 /// Fetch crate features from local path Cargo.toml
@@ -856,4 +877,159 @@ async fn fetch_local_crate_features(
     }
 
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        ffi::OsString,
+        str::FromStr,
+        sync::{LazyLock, Mutex, MutexGuard},
+        time::Duration,
+    };
+
+    use super::*;
+
+    static CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
+    struct TestCacheHome {
+        _guard: MutexGuard<'static, ()>,
+        previous: Option<OsString>,
+        _temp_dir: tempfile::TempDir,
+    }
+
+    impl TestCacheHome {
+        fn new() -> Self {
+            let guard = CACHE_ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+            let temp_dir = tempfile::tempdir().unwrap();
+            let previous = std::env::var_os("XDG_CACHE_HOME");
+            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
+            // remains scoped to one test at a time.
+            unsafe {
+                std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
+            }
+            Self {
+                _guard: guard,
+                previous,
+                _temp_dir: temp_dir,
+            }
+        }
+    }
+
+    impl Drop for TestCacheHome {
+        fn drop(&mut self) {
+            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
+            // remains scoped to one test at a time.
+            unsafe {
+                if let Some(previous) = &self.previous {
+                    std::env::set_var("XDG_CACHE_HOME", previous);
+                } else {
+                    std::env::remove_var("XDG_CACHE_HOME");
+                }
+            }
+        }
+    }
+
+    fn cache_options() -> tombi_cache::Options {
+        tombi_cache::Options {
+            no_cache: None,
+            cache_ttl: Some(Duration::from_secs(60)),
+        }
+    }
+
+    fn unique_crate_name(suffix: &str) -> String {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        format!("tombi-cache-test-{suffix}-{unique}")
+    }
+
+    async fn cached_remote_json_file_path(url: &str) -> std::path::PathBuf {
+        let mut uri = tombi_uri::Uri::from_str(url).unwrap();
+        if !uri.path().ends_with(".json") {
+            uri.path_segments_mut().unwrap().push("__index__.json");
+        }
+        tombi_cache::get_cache_file_path(&uri).await.unwrap()
+    }
+
+    async fn write_cached_response(url: &str, body: &str) {
+        let cache_path = cached_remote_json_file_path(url).await;
+        if let Some(parent) = cache_path.parent() {
+            std::fs::create_dir_all(parent).unwrap();
+        }
+        std::fs::write(&cache_path, body).unwrap();
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn fetch_crate_versions_uses_cached_response_while_offline() {
+        let _cache_home = TestCacheHome::new();
+        let crate_name = unique_crate_name("versions");
+        let url = format!("https://crates.io/api/v1/crates/{crate_name}/versions");
+        write_cached_response(
+            &url,
+            r#"{"versions":[{"num":"2.0.0","features":{}},{"num":"1.0.0","features":{}}]}"#,
+        )
+        .await;
+
+        let versions = fetch_crate_versions(&crate_name, true, Some(&cache_options())).await;
+
+        assert_eq!(
+            versions,
+            Some(vec!["2.0.0".to_string(), "1.0.0".to_string()])
+        );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn fetch_crate_features_uses_cached_version_detail_while_offline() {
+        let _cache_home = TestCacheHome::new();
+        let crate_name = unique_crate_name("features-version");
+        let version = "1.2.3";
+        let url = format!("https://crates.io/api/v1/crates/{crate_name}/{version}");
+        write_cached_response(
+            &url,
+            r#"{"version":{"num":"1.2.3","features":{"derive":[],"std":["dep:std"]}}}"#,
+        )
+        .await;
+
+        let features =
+            fetch_crate_features(&crate_name, Some(version), true, Some(&cache_options())).await;
+
+        assert_eq!(
+            features,
+            Some(
+                [
+                    ("derive".to_string(), Vec::new()),
+                    ("std".to_string(), vec!["dep:std".to_string()]),
+                ]
+                .into_iter()
+                .collect()
+            )
+        );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn fetch_crate_features_uses_cached_latest_version_lookup_while_offline() {
+        let _cache_home = TestCacheHome::new();
+        let crate_name = unique_crate_name("features-latest");
+        let url = format!("https://crates.io/api/v1/crates/{crate_name}");
+        // The crate overview response includes features for each version,
+        // so no second fetch for the version detail is needed.
+        write_cached_response(
+            &url,
+            r#"{"versions":[{"num":"9.9.9","features":{"full":["derive"]}}]}"#,
+        )
+        .await;
+
+        let features = fetch_crate_features(&crate_name, None, true, Some(&cache_options())).await;
+
+        assert_eq!(
+            features,
+            Some(
+                [("full".to_string(), vec!["derive".to_string()])]
+                    .into_iter()
+                    .collect()
+            )
+        );
+    }
 }

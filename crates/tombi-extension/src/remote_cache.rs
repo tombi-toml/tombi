@@ -1,24 +1,39 @@
-use std::{path::Path, str::FromStr};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use serde::de::DeserializeOwned;
 use tombi_cache::{get_cache_file_path, read_from_cache, save_to_cache};
 use tombi_schema_store::HttpClient;
+
+const CACHE_INDEX_FILE_NAME: &str = "__index__.json";
 
 pub async fn fetch_cached_remote_json<T: DeserializeOwned>(
     url: &str,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
 ) -> Option<T> {
-    let cache_file_path = match tombi_uri::Uri::from_str(url) {
-        Ok(uri) => get_cache_file_path(&uri).await,
-        Err(err) => {
-            log::warn!("Failed to create cache key from remote metadata url {url}: {err}");
-            None
-        }
-    };
+    let cache_file_path = get_cached_remote_json_file_path(url).await;
 
     fetch_cached_remote_json_from_path(url, cache_file_path.as_deref(), offline, cache_options)
         .await
+}
+
+async fn get_cached_remote_json_file_path(url: &str) -> Option<PathBuf> {
+    let uri = tombi_uri::Uri::from_str(url)
+        .inspect_err(|err| log::warn!("Invalid URL for remote cache {url}: {err}"))
+        .ok()?;
+
+    let cache_uri = if uri.path().ends_with(".json") {
+        uri
+    } else {
+        let mut u = uri;
+        u.path_segments_mut().ok()?.push(CACHE_INDEX_FILE_NAME);
+        u
+    };
+
+    get_cache_file_path(&cache_uri).await
 }
 
 async fn fetch_cached_remote_json_from_path<T: DeserializeOwned>(
@@ -110,22 +125,109 @@ fn parse_json<T: DeserializeOwned>(url: &str, bytes: &[u8]) -> Option<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::{path::PathBuf, time::Duration};
+    use std::{
+        ffi::OsString,
+        sync::{LazyLock, Mutex, MutexGuard},
+        time::Duration,
+    };
 
     use super::*;
     use serde::Deserialize;
+
+    static CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
     #[derive(Debug, Deserialize, PartialEq, Eq)]
     struct TestMetadata {
         name: String,
     }
 
-    fn temp_cache_path(test_name: &str) -> PathBuf {
+    struct TestCacheHome {
+        _guard: MutexGuard<'static, ()>,
+        previous: Option<OsString>,
+        _temp_dir: tempfile::TempDir,
+    }
+
+    impl TestCacheHome {
+        fn new() -> Self {
+            let guard = CACHE_ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+            let temp_dir = tempfile::tempdir().unwrap();
+            let previous = std::env::var_os("XDG_CACHE_HOME");
+            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
+            // remains scoped to one test at a time.
+            unsafe {
+                std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
+            }
+            Self {
+                _guard: guard,
+                previous,
+                _temp_dir: temp_dir,
+            }
+        }
+    }
+
+    impl Drop for TestCacheHome {
+        fn drop(&mut self) {
+            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
+            // remains scoped to one test at a time.
+            unsafe {
+                if let Some(previous) = &self.previous {
+                    std::env::set_var("XDG_CACHE_HOME", previous);
+                } else {
+                    std::env::remove_var("XDG_CACHE_HOME");
+                }
+            }
+        }
+    }
+
+    fn temp_cache_path(test_name: &str) -> std::path::PathBuf {
         let unique = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
         std::env::temp_dir().join(format!("tombi-{test_name}-{unique}.json"))
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn non_json_paths_use_index_file_name() {
+        let _cache_home = TestCacheHome::new();
+        let root_path = get_cached_remote_json_file_path("https://crates.io/api/v1/crates/serde")
+            .await
+            .unwrap();
+        let nested_path =
+            get_cached_remote_json_file_path("https://crates.io/api/v1/crates/serde/1.0.0")
+                .await
+                .unwrap();
+
+        assert_ne!(root_path, nested_path);
+        assert_eq!(root_path.file_name().unwrap(), CACHE_INDEX_FILE_NAME);
+        assert_eq!(nested_path.file_name().unwrap(), CACHE_INDEX_FILE_NAME);
+        assert_eq!(root_path.parent().unwrap().file_name().unwrap(), "serde");
+        assert_eq!(nested_path.parent().unwrap().file_name().unwrap(), "1.0.0");
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn root_path_uses_index_file_name() {
+        let _cache_home = TestCacheHome::new();
+        let root_path = get_cached_remote_json_file_path("https://example.invalid")
+            .await
+            .unwrap();
+
+        assert_eq!(root_path.file_name().unwrap(), CACHE_INDEX_FILE_NAME);
+        assert_eq!(
+            root_path.parent().unwrap().file_name().unwrap(),
+            "example.invalid"
+        );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn json_paths_are_preserved() {
+        let _cache_home = TestCacheHome::new();
+        let cache_path =
+            get_cached_remote_json_file_path("https://example.invalid/api/schema/catalog.json")
+                .await
+                .unwrap();
+        assert_eq!(cache_path.file_name().unwrap(), "catalog.json");
+        assert_eq!(cache_path.parent().unwrap().file_name().unwrap(), "schema");
     }
 
     #[tokio::test]
