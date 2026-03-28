@@ -169,6 +169,7 @@ where
                     one_of_schema.deprecated,
                     accessors,
                     value,
+                    schema_context,
                     comment_directives,
                     common_rules,
                 );

@@ -192,6 +192,7 @@ async fn validate_offset_date_time(
             offset_date_time_schema.deprecated,
             accessors,
             offset_date_time_value,
+            schema_context,
             offset_date_time_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
         );

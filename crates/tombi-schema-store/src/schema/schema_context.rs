@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use tombi_severity_level::SeverityLevelDefaultWarn;
 use tombi_x_keyword::StringFormat;
 
 use crate::schema::schema_cycle_guard::SchemaVisits;
@@ -9,6 +10,7 @@ pub struct SchemaContext<'a> {
     pub toml_version: tombi_config::TomlVersion,
     pub root_schema: Option<&'a crate::DocumentSchema>,
     pub sub_schema_uri_map: Option<&'a crate::SubSchemaUriMap>,
+    pub deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
     pub schema_visits: SchemaVisits,
     pub store: &'a crate::SchemaStore,
     pub strict: Option<bool>,
@@ -25,6 +27,11 @@ impl SchemaContext<'_> {
         self.root_schema
             .and_then(|root| root.string_formats())
             .is_some_and(|formats| formats.contains(&format))
+    }
+
+    #[inline]
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevelDefaultWarn> {
+        self.deprecated_lint_level
     }
 
     pub async fn get_subschema(

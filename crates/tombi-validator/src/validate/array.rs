@@ -566,6 +566,7 @@ async fn validate_array(
             array_schema.deprecated,
             accessors,
             array_value,
+            schema_context,
             array_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
         );

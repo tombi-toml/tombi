@@ -88,11 +88,27 @@ pub trait Validate {
     ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>>;
 }
 
+fn resolve_deprecated_lint_level(
+    common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+) -> SeverityLevelDefaultWarn {
+    common_rules
+        .and_then(|rules| {
+            rules
+                .deprecated
+                .as_ref()
+                .map(SeverityLevelDefaultWarn::from)
+        })
+        .or_else(|| schema_context.deprecated_lint_level())
+        .unwrap_or_default()
+}
+
 pub fn handle_deprecated<'a, T>(
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<
         impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
     >,
@@ -101,14 +117,7 @@ pub fn handle_deprecated<'a, T>(
     T: tombi_document_tree::ValueImpl,
 {
     if deprecated == Some(true) {
-        let level = common_rules
-            .and_then(|rules| {
-                rules
-                    .deprecated
-                    .as_ref()
-                    .map(SeverityLevelDefaultWarn::from)
-            })
-            .unwrap_or_default();
+        let level = resolve_deprecated_lint_level(common_rules, schema_context);
 
         crate::Diagnostic {
             kind: Box::new(crate::DiagnosticKind::Deprecated(
@@ -131,6 +140,7 @@ pub fn handle_deprecated_value<'a, T>(
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<
         impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
     >,
@@ -139,14 +149,7 @@ pub fn handle_deprecated_value<'a, T>(
     T: tombi_document_tree::ValueImpl + ToString,
 {
     if deprecated == Some(true) {
-        let level = common_rules
-            .and_then(|rules| {
-                rules
-                    .deprecated
-                    .as_ref()
-                    .map(SeverityLevelDefaultWarn::from)
-            })
-            .unwrap_or_default();
+        let level = resolve_deprecated_lint_level(common_rules, schema_context);
 
         crate::Diagnostic {
             kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
@@ -332,6 +335,7 @@ fn validate_deprecated<'a, T>(
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<
         impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
     >,
@@ -346,6 +350,7 @@ where
         deprecated,
         accessors,
         value,
+        schema_context,
         comment_directives,
         common_rules,
     );

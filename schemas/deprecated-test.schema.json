@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "value": {
+      "type": "integer",
+      "deprecated": true
+    }
+  },
+  "additionalProperties": false
+}

@@ -132,6 +132,9 @@ impl<'a> Formatter<'a> {
                 sub_schema_uri_map: source_schema
                     .as_ref()
                     .map(|schema| &schema.sub_schema_uri_map),
+                deprecated_lint_level: source_schema
+                    .as_ref()
+                    .and_then(|schema| schema.deprecated_lint_level),
                 schema_visits: Default::default(),
                 store: self.schema_store,
                 strict: tombi_document_comment_directive
