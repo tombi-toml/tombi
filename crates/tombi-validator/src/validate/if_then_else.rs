@@ -4,7 +4,9 @@ use tombi_document_tree::ValueImpl;
 use tombi_schema_store::CurrentSchema;
 
 use crate::Validate;
-use crate::validate::{has_error_level_diagnostics, merge_validation_results, is_assertion_success};
+use crate::validate::{
+    has_error_level_diagnostics, is_assertion_success, merge_validation_results,
+};
 
 pub async fn validate_if_then_else<T>(
     value: &T,
@@ -16,16 +18,17 @@ pub async fn validate_if_then_else<T>(
 where
     T: Validate + ValueImpl + Sync + Send,
 {
-    let merge_if_result = |
-        branch_result: Result<crate::EvaluatedLocations, crate::Error>,
-        if_result: Result<crate::EvaluatedLocations, crate::Error>,
-    | match if_result {
-        Ok(evaluated_locations) => merge_validation_results(Ok(evaluated_locations), branch_result),
-        Err(error) if !has_error_level_diagnostics(&error) => {
-            merge_validation_results(Err(error), branch_result)
-        }
-        Err(_) => branch_result,
-    };
+    let merge_if_result =
+        |branch_result: Result<crate::EvaluatedLocations, crate::Error>,
+         if_result: Result<crate::EvaluatedLocations, crate::Error>| match if_result {
+            Ok(evaluated_locations) => {
+                merge_validation_results(Ok(evaluated_locations), branch_result)
+            }
+            Err(error) if !has_error_level_diagnostics(&error) => {
+                merge_validation_results(Err(error), branch_result)
+            }
+            Err(_) => branch_result,
+        };
 
     // Resolve and validate the `if` schema
     let if_result = if let Ok(Some(if_current_schema)) = tombi_schema_store::resolve_schema_item(
