@@ -882,7 +882,7 @@ async fn fetch_local_crate_features(
 
 #[cfg(test)]
 mod tests {
-    use std::{str::FromStr, time::Duration};
+    use std::time::Duration;
 
     use super::*;
 
@@ -902,8 +902,9 @@ mod tests {
     }
 
     async fn write_cached_response(url: &str, body: &str) -> std::path::PathBuf {
-        let uri = tombi_uri::Uri::from_str(url).unwrap();
-        let cache_path = tombi_cache::get_cache_file_path(&uri).await.unwrap();
+        let cache_path = tombi_extension::get_remote_json_cache_file_path(url)
+            .await
+            .unwrap();
         if let Some(parent) = cache_path.parent() {
             std::fs::create_dir_all(parent).unwrap();
         }

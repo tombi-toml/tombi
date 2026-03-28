@@ -40,27 +40,13 @@ pub async fn get_cache_file_path(cache_file_uri: &tombi_uri::Uri) -> Option<std:
             dir_path.push(host.to_string());
         }
         if let Some(path_segments) = cache_file_uri.path_segments() {
-            let path_segments = path_segments.collect::<Vec<_>>();
-            if let Some((last_segment, parent_segments)) = path_segments.split_last() {
-                for segment in parent_segments {
-                    dir_path.push(segment);
-                }
-                dir_path.push(cache_file_name(last_segment));
+            for segment in path_segments {
+                dir_path.push(segment)
             }
-        } else {
-            dir_path.push("__root__.json");
         }
 
         dir_path
     })
-}
-
-fn cache_file_name(path_segment: &str) -> String {
-    if path_segment.ends_with(".json") {
-        path_segment.to_string()
-    } else {
-        format!("{path_segment}.json")
-    }
 }
 
 pub async fn read_from_cache(
@@ -156,32 +142,4 @@ pub async fn refresh_cache() -> Result<bool, crate::Error> {
     }
 
     Ok(false)
-}
-
-#[cfg(test)]
-mod tests {
-    use std::str::FromStr;
-
-    use super::*;
-
-    #[tokio::test]
-    async fn cache_paths_do_not_conflict_for_nested_urls() {
-        let root_uri = tombi_uri::Uri::from_str("https://crates.io/api/v1/crates/serde").unwrap();
-        let nested_uri =
-            tombi_uri::Uri::from_str("https://crates.io/api/v1/crates/serde/1.0.0").unwrap();
-
-        let root_path = get_cache_file_path(&root_uri).await.unwrap();
-        let nested_path = get_cache_file_path(&nested_uri).await.unwrap();
-
-        assert_ne!(root_path, nested_path);
-        assert_eq!(root_path.file_name().unwrap(), "serde.json");
-        assert_eq!(nested_path.file_name().unwrap(), "1.0.0.json");
-        assert_eq!(nested_path.parent().unwrap().file_name().unwrap(), "serde");
-    }
-
-    #[test]
-    fn preserves_existing_json_extension() {
-        assert_eq!(cache_file_name("catalog.json"), "catalog.json");
-        assert_eq!(cache_file_name("serde"), "serde.json");
-    }
 }
