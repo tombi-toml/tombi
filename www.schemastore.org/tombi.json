@@ -932,6 +932,17 @@
             "type": "string"
           },
           "minItems": 1
+        },
+        "lint": {
+          "title": "Schema-specific lint options",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaLintOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -939,6 +950,64 @@
         "path",
         "include"
       ],
+      "x-tombi-table-keys-order": "schema"
+    },
+    "SchemaLintOptions": {
+      "title": "Schema-specific lint options",
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Schema-specific lint rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaLintRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
+    },
+    "SchemaLintRules": {
+      "title": "Schema-specific lint rules",
+      "type": "object",
+      "properties": {
+        "deprecated": {
+          "title": "Deprecated",
+          "description": "Override the deprecated diagnostic level for this schema.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaDeprecatedRule"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
+    },
+    "SchemaDeprecatedRule": {
+      "title": "Deprecated",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "title": "Deprecated diagnostic level",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
       "x-tombi-table-keys-order": "schema"
     },
     "SubSchema": {
@@ -966,6 +1035,17 @@
             "type": "string"
           },
           "minItems": 1
+        },
+        "lint": {
+          "title": "Schema-specific lint options",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaLintOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,

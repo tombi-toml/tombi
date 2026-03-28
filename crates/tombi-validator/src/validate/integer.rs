@@ -375,6 +375,8 @@ async fn validate_integer_schema(
             integer_schema.deprecated,
             accessors,
             integer_value,
+            Some(current_schema),
+            schema_context,
             integer_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
         );
@@ -580,6 +582,8 @@ async fn validate_float_schema_for_integer(
             float_schema.deprecated,
             accessors,
             integer_value,
+            Some(current_schema),
+            schema_context,
             integer_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
         );

@@ -299,6 +299,8 @@ async fn validate_table(
                     current_schema.value_schema.deprecated().await,
                     &new_accessors,
                     value,
+                    Some(&current_schema),
+                    schema_context,
                     table_value.comment_directives(),
                     table_rules.as_ref().map(|rules| &rules.common),
                 );
@@ -560,6 +562,7 @@ async fn validate_table(
                             toml_version: schema_context.toml_version,
                             root_schema: schema_context.root_schema,
                             sub_schema_uri_map: schema_context.sub_schema_uri_map,
+                            deprecated_lint_levels: schema_context.deprecated_lint_levels,
                             schema_visits: schema_context.schema_visits.clone(),
                             store: schema_context.store,
                             strict: Some(false),
@@ -621,6 +624,7 @@ async fn validate_table(
                     toml_version: schema_context.toml_version,
                     root_schema: schema_context.root_schema,
                     sub_schema_uri_map: schema_context.sub_schema_uri_map,
+                    deprecated_lint_levels: schema_context.deprecated_lint_levels,
                     schema_visits: schema_context.schema_visits.clone(),
                     store: schema_context.store,
                     strict: Some(false),
@@ -744,6 +748,8 @@ async fn validate_table(
             table_schema.deprecated,
             accessors,
             table_value,
+            Some(current_schema),
+            schema_context,
             table_value.comment_directives(),
             table_rules.as_ref().map(|rules| &rules.common),
         );
@@ -1234,11 +1240,20 @@ async fn convert_deprecated_diagnostics_range(
     if current_schema.value_schema.deprecated().await == Some(true) {
         for diagnostic in schema_diagnostics.iter_mut() {
             if diagnostic.code() == "deprecated" && diagnostic.range() == value.range() {
-                *diagnostic = tombi_diagnostic::Diagnostic::new_warning(
-                    diagnostic.message(),
-                    diagnostic.code(),
-                    key.range() + value.range(),
-                );
+                let range = key.range() + value.range();
+                *diagnostic = if diagnostic.is_error() {
+                    tombi_diagnostic::Diagnostic::new_error(
+                        diagnostic.message(),
+                        diagnostic.code(),
+                        range,
+                    )
+                } else {
+                    tombi_diagnostic::Diagnostic::new_warning(
+                        diagnostic.message(),
+                        diagnostic.code(),
+                        range,
+                    )
+                };
                 break;
             }
         }

@@ -1,3 +1,4 @@
+use tombi_severity_level::SeverityLevel;
 use tombi_toml_version::TomlVersion;
 
 use crate::{
@@ -121,6 +122,13 @@ impl SchemaItem {
             Self::Sub(item) => Some(&item.root),
         }
     }
+
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevel> {
+        match self {
+            Self::Root(item) => item.deprecated_lint_level(),
+            Self::Sub(item) => item.deprecated_lint_level(),
+        }
+    }
 }
 
 /// # The schema for the root table
@@ -143,6 +151,17 @@ pub struct RootSchema {
     /// Supports glob pattern.
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     pub include: Vec<String>,
+
+    /// # Schema-specific lint options
+    pub lint: Option<SchemaLintOptions>,
+}
+
+impl RootSchema {
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevel> {
+        self.lint
+            .as_ref()
+            .and_then(|lint| lint.deprecated_lint_level())
+    }
 }
 
 /// # The schema for the sub value
@@ -168,6 +187,64 @@ pub struct SubSchema {
     /// Supports glob pattern.
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     pub include: Vec<String>,
+
+    /// # Schema-specific lint options
+    pub lint: Option<SchemaLintOptions>,
+}
+
+impl SubSchema {
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevel> {
+        self.lint
+            .as_ref()
+            .and_then(|lint| lint.deprecated_lint_level())
+    }
+}
+
+/// # Schema-specific lint options
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaLintOptions {
+    /// # Schema-specific lint rules
+    pub rules: Option<SchemaLintRules>,
+}
+
+impl SchemaLintOptions {
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevel> {
+        self.rules
+            .as_ref()
+            .and_then(|rules| rules.deprecated.as_ref())
+            .and_then(|deprecated| deprecated.enabled)
+    }
+}
+
+/// # Schema-specific lint rules
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaLintRules {
+    /// # Deprecated
+    ///
+    /// Override the deprecated diagnostic level for this schema.
+    pub deprecated: Option<SchemaDeprecatedRule>,
+}
+
+/// # Deprecated
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaDeprecatedRule {
+    /// # Deprecated diagnostic level
+    pub enabled: Option<SeverityLevel>,
 }
 
 #[cfg(test)]

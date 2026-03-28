@@ -4060,6 +4060,7 @@ dependencies = [
  "tombi-future",
  "tombi-hashmap",
  "tombi-json",
+ "tombi-severity-level",
  "tombi-test-lib",
  "tombi-text",
  "tombi-uri",

@@ -192,6 +192,8 @@ async fn validate_local_date_time(
             local_date_time_schema.deprecated,
             accessors,
             local_date_time_value,
+            Some(current_schema),
+            schema_context,
             local_date_time_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
         );

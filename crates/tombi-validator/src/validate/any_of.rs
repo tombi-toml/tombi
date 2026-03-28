@@ -128,6 +128,8 @@ where
                 any_of_schema.deprecated,
                 accessors,
                 value,
+                Some(current_schema),
+                schema_context,
                 comment_directives,
                 common_rules,
             ) {

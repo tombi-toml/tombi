@@ -43,7 +43,7 @@ pub use referable_schema::{
 };
 pub use schema_context::SchemaContext;
 pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};
-pub use source_schema::{SourceSchema, SubSchemaUriMap};
+pub use source_schema::{DeprecatedLintLevels, SourceSchema, SubSchemaUriMap};
 pub use string_schema::StringSchema;
 pub use table_schema::{Dependency, TableKeysOrderGroup, TableSchema, XTombiTableKeysOrder};
 pub use tombi_accessor::{SchemaAccessor, SchemaAccessors};
@@ -283,6 +283,7 @@ pub struct PropertySchema {
 pub struct Schema {
     pub title: Option<String>,
     pub description: Option<String>,
+    pub deprecated_lint_level: Option<tombi_severity_level::SeverityLevel>,
     pub toml_version: Option<tombi_config::TomlVersion>,
     pub schema_uri: tombi_uri::SchemaUri,
     pub catalog_uri: Option<Arc<tombi_uri::CatalogUri>>,

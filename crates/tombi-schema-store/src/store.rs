@@ -188,6 +188,7 @@ impl SchemaStore {
             self.schemas.write().await.push(crate::Schema {
                 title: None,
                 description: None,
+                deprecated_lint_level: schema.deprecated_lint_level(),
                 schema_uri,
                 catalog_uri: None,
                 include: schema.include().to_vec(),
@@ -329,6 +330,7 @@ impl SchemaStore {
                 schemas.push(crate::Schema {
                     title: Some(schema.name),
                     description: Some(schema.description),
+                    deprecated_lint_level: None,
                     schema_uri: schema.url,
                     catalog_uri: Some(catalog_uri.clone()),
                     include: schema.file_match,
@@ -641,16 +643,17 @@ impl SchemaStore {
             None
         };
 
-        let (root_schema, sub_schema_uri_map, toml_version) =
+        let (root_schema, sub_schema_uri_map, toml_version, deprecated_lint_levels) =
             if let Some(source_schema) = source_schema {
                 let toml_version = source_schema.toml_version();
                 (
                     source_schema.root_schema,
                     source_schema.sub_schema_uri_map,
                     toml_version,
+                    source_schema.deprecated_lint_levels,
                 )
             } else {
-                (None, Default::default(), None)
+                (None, Default::default(), None, Default::default())
             };
 
         Ok(Some(SourceSchema::new(
@@ -659,6 +662,7 @@ impl SchemaStore {
                 .or(root_schema),
             sub_schema_uri_map,
             toml_version,
+            deprecated_lint_levels,
         )))
     }
 
@@ -767,17 +771,27 @@ impl SchemaStore {
                                     sub_root_keys.clone(),
                                     document_schema.schema_uri.clone(),
                                 );
+                                source_schema.insert_deprecated_lint_level(
+                                    document_schema.schema_uri.clone(),
+                                    matching_schema.deprecated_lint_level,
+                                );
                             }
                         }
                         None => {
                             let mut sub_schema_uri_map = SubSchemaUriMap::default();
                             sub_schema_uri_map
                                 .insert(sub_root_keys.clone(), document_schema.schema_uri.clone());
-                            source_schema = Some(SourceSchema::new(
+                            let mut new_source = SourceSchema::new(
                                 None,
                                 sub_schema_uri_map,
                                 matching_schema.toml_version,
-                            ));
+                                Default::default(),
+                            );
+                            new_source.insert_deprecated_lint_level(
+                                document_schema.schema_uri.clone(),
+                                matching_schema.deprecated_lint_level,
+                            );
+                            source_schema = Some(new_source);
                         }
                     },
                     None => match source_schema {
@@ -787,19 +801,32 @@ impl SchemaStore {
                                     existing.toml_version().or(matching_schema.toml_version);
                                 let sub_schema_uri_map =
                                     std::mem::take(&mut existing.sub_schema_uri_map);
+                                let mut deprecated_lint_levels =
+                                    std::mem::take(&mut existing.deprecated_lint_levels);
+                                if let Some(level) = matching_schema.deprecated_lint_level {
+                                    deprecated_lint_levels
+                                        .insert(document_schema.schema_uri.clone(), level);
+                                }
                                 *existing = SourceSchema::new(
                                     Some(document_schema),
                                     sub_schema_uri_map,
                                     toml_version,
+                                    deprecated_lint_levels,
                                 );
                             }
                         }
                         None => {
-                            source_schema = Some(SourceSchema::new(
+                            let mut new_source = SourceSchema::new(
                                 Some(document_schema),
                                 Default::default(),
                                 matching_schema.toml_version,
-                            ));
+                                Default::default(),
+                            );
+                            new_source.insert_deprecated_lint_level(
+                                new_source.root_schema.as_ref().unwrap().schema_uri.clone(),
+                                matching_schema.deprecated_lint_level,
+                            );
+                            source_schema = Some(new_source);
                         }
                     },
                 },
@@ -874,6 +901,7 @@ impl SchemaStore {
         let new_schema = crate::Schema {
             title: options.title.clone(),
             description: options.description.clone(),
+            deprecated_lint_level: None,
             schema_uri,
             catalog_uri: None,
             include,

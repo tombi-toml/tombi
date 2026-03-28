@@ -149,6 +149,9 @@ pub async fn handle_completion(
                 sub_schema_uri_map: source_schema
                     .as_ref()
                     .map(|schema| &schema.sub_schema_uri_map),
+                deprecated_lint_levels: source_schema
+                    .as_ref()
+                    .map(|schema| &schema.deprecated_lint_levels),
                 schema_visits: Default::default(),
                 store: &schema_store,
                 strict: None,
