@@ -1,6 +1,3 @@
-use std::str::FromStr;
-
-use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::matches_accessors;
@@ -11,6 +8,7 @@ use crate::{
         collect_workspace_project_dependency_definitions, get_path_dependency_definition,
     },
     goto_definition_for_member_pyproject_toml, goto_definition_for_workspace_pyproject_toml,
+    parse_requirement,
 };
 
 pub async fn goto_declaration(
@@ -89,9 +87,8 @@ fn goto_declaration_for_dependency_package(
     };
 
     // Parse the PEP 508 requirement to extract package name
-    let requirement = match Requirement::<VerbatimUrl>::from_str(dependency.value()) {
-        Ok(requirement) => requirement,
-        Err(_) => return Ok(Vec::with_capacity(0)),
+    let Some(requirement) = parse_requirement(dependency.value()) else {
+        return Ok(Vec::with_capacity(0));
     };
     let package_name = requirement.name.as_ref();
 
@@ -115,7 +112,7 @@ fn goto_declaration_for_dependency_package(
             if let Some(location) = get_path_dependency_declaration(pyproject_toml_path, path) {
                 locations.push(location);
             } else if let Some(location) =
-                get_path_dependency_definition(path.value(), toml_version)
+                get_path_dependency_definition(pyproject_toml_path, path.value(), toml_version)
             {
                 locations.push(location);
             }

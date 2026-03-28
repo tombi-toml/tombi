@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use pep508_rs::VersionOrUrl;
 use serde::Deserialize;
@@ -9,7 +9,7 @@ use tombi_schema_store::{Accessor, HttpClient, matches_accessors};
 
 use crate::{
     find_member_project_toml, find_workspace_pyproject_toml, get_project_name,
-    load_pyproject_toml_document_tree, parse_requirement,
+    load_pyproject_toml_document_tree, parse_requirement, resolve_member_pyproject_toml_path,
 };
 
 #[derive(Debug, Deserialize)]
@@ -164,7 +164,7 @@ fn resolve_source_value_metadata(
 
     if let Some((_, Value::String(path))) = source_table.get_key_value("path") {
         let member_pyproject_toml_path =
-            resolve_member_pyproject_path(pyproject_toml_path, path.value())?;
+            resolve_member_pyproject_toml_path(pyproject_toml_path, path.value())?;
         return load_project_metadata(&member_pyproject_toml_path, toml_version);
     }
 
@@ -199,23 +199,6 @@ fn resolve_workspace_member_metadata(
         };
 
     load_project_metadata(&member_pyproject_toml_path, toml_version)
-}
-
-fn resolve_member_pyproject_path(
-    base_pyproject_toml_path: &Path,
-    dependency_path: &str,
-) -> Option<PathBuf> {
-    let dependency_path = Path::new(dependency_path);
-    let member_path = if dependency_path.is_absolute() {
-        dependency_path.to_path_buf()
-    } else {
-        base_pyproject_toml_path.parent()?.join(dependency_path)
-    };
-    let member_pyproject_toml_path = member_path.join("pyproject.toml");
-
-    member_pyproject_toml_path
-        .is_file()
-        .then_some(member_pyproject_toml_path)
 }
 
 fn load_project_metadata(
