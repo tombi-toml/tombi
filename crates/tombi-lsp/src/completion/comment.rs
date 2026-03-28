@@ -8,7 +8,7 @@ use tombi_comment_directive::{
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_extension::get_file_path_completions_with_space_escaped_edit;
+use tombi_extension::get_file_path_completions;
 use tombi_uri::{SchemaUri, Uri};
 
 use crate::{
@@ -63,12 +63,8 @@ pub async fn get_document_comment_directive_completion_contents(
             if schema_range.contains(position)
                 && let Some(base_dir) = source_path.parent()
             {
-                let completions = get_file_path_completions_with_space_escaped_edit(
-                    base_dir,
-                    schema_text,
-                    schema_range,
-                    Some(&["json"]),
-                );
+                let completions =
+                    get_file_path_completions(base_dir, schema_text, schema_range, Some(&["json"]));
                 if !completions.is_empty() {
                     return Some(completions);
                 }
