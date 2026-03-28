@@ -17,6 +17,7 @@ tombi-ast.workspace = true
 tombi-config.workspace = true
 tombi-document-tree.workspace = true
 tombi-extension.workspace = true
+tombi-extension-manifest.workspace = true
 tombi-future.workspace = true
 tombi-hashmap.workspace = true
 tombi-parser.workspace = true

@@ -8,7 +8,7 @@ use crate::{
     collect_dependency_requirements_from_document_tree, find_member_project_toml,
     find_workspace_pyproject_toml, get_project_name, goto_definition_for_member_pyproject_toml,
     goto_definition_for_workspace_pyproject_toml, load_pyproject_toml_document_tree,
-    parse_requirement,
+    parse_requirement, resolve_member_pyproject_toml_path,
 };
 
 pub async fn goto_definition(
@@ -119,7 +119,9 @@ fn goto_definition_for_dependency_package(
             }
         }
         if let Some((_, Value::String(path))) = source_table.get_key_value("path") {
-            if let Some(location) = get_path_dependency_definition(path.value(), toml_version) {
+            if let Some(location) =
+                get_path_dependency_definition(pyproject_toml_path, path.value(), toml_version)
+            {
                 return Ok(vec![location]);
             } else {
                 return Ok(Vec::with_capacity(0));
@@ -262,10 +264,11 @@ pub(crate) fn get_workspace_member_dependency_definitions(
 }
 
 pub fn get_path_dependency_definition(
+    pyproject_toml_path: &std::path::Path,
     path: &str,
     toml_version: TomlVersion,
 ) -> Option<tombi_extension::DefinitionLocation> {
-    let pyproject_toml_path = std::path::PathBuf::from(path).join("pyproject.toml");
+    let pyproject_toml_path = resolve_member_pyproject_toml_path(pyproject_toml_path, path)?;
 
     let member_document_tree =
         load_pyproject_toml_document_tree(&pyproject_toml_path, toml_version)?;
