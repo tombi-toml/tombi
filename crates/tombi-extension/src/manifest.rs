@@ -15,6 +15,10 @@ pub fn find_ancestor_manifest<T>(
         current_dir = target_dir;
         let workspace_toml_path = current_dir.join(manifest_file_name);
 
+        if !workspace_toml_path.is_file() {
+            continue;
+        }
+
         let Some(manifest) = load_manifest(&workspace_toml_path) else {
             continue;
         };

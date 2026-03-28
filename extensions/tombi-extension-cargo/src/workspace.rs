@@ -76,8 +76,13 @@ pub(crate) fn goto_workspace(
         && let Some((_, tombi_document_tree::Value::String(package_name))) =
             tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
     {
+        let Ok(subcrate_cargo_toml_uri) = tombi_uri::Uri::from_file_path(&subcrate_cargo_toml_path)
+        else {
+            return Ok(None);
+        };
+
         return Ok(Some(tombi_extension::DefinitionLocation {
-            uri: tombi_uri::Uri::from_file_path(subcrate_cargo_toml_path).unwrap(),
+            uri: subcrate_cargo_toml_uri,
             range: package_name.unquoted_range(),
         }));
     }
@@ -131,10 +136,14 @@ pub(crate) fn goto_dependency_crates(
                 && let Some((_, tombi_document_tree::Value::String(package_name))) =
                     tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
             {
-                locations.push(tombi_extension::DefinitionLocation {
-                    uri: tombi_uri::Uri::from_file_path(subcrate_cargo_toml_path).unwrap(),
-                    range: package_name.unquoted_range(),
-                });
+                if let Ok(subcrate_cargo_toml_uri) =
+                    tombi_uri::Uri::from_file_path(&subcrate_cargo_toml_path)
+                {
+                    locations.push(tombi_extension::DefinitionLocation {
+                        uri: subcrate_cargo_toml_uri,
+                        range: package_name.unquoted_range(),
+                    });
+                }
             }
         } else if let Some(tombi_document_tree::Value::Boolean(has_workspace)) =
             table.get("workspace")
@@ -257,8 +266,14 @@ pub(crate) fn goto_crate_package(
             && let Some((_, tombi_document_tree::Value::String(package_name))) =
                 tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
         {
+            let Ok(subcrate_cargo_toml_uri) =
+                tombi_uri::Uri::from_file_path(&subcrate_cargo_toml_path)
+            else {
+                return Ok(None);
+            };
+
             return Ok(Some(tombi_extension::DefinitionLocation {
-                uri: tombi_uri::Uri::from_file_path(subcrate_cargo_toml_path).unwrap(),
+                uri: subcrate_cargo_toml_uri,
                 range: package_name.unquoted_range(),
             }));
         }

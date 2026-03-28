@@ -173,9 +173,9 @@ pub(crate) fn goto_workspace_member(
     } else {
         return Ok(None);
     };
-    if accessors.len() == 3
+    if accessors.len() == 4
         && let Some((_, tombi_document_tree::Value::Table(table))) =
-            dig_accessors(document_tree, accessors)
+            dig_accessors(document_tree, &accessors[..4])
         && !table.contains_key("workspace")
     {
         return Ok(None);
@@ -196,7 +196,7 @@ pub(crate) fn goto_workspace_member(
             return Ok(None);
         };
         let Some(member_document_tree) =
-            load_pyproject_toml_document_tree(pyproject_toml_path, toml_version)
+            load_pyproject_toml_document_tree(&package_toml_path, toml_version)
         else {
             return Ok(None);
         };
