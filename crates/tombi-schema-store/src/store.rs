@@ -1063,9 +1063,11 @@ mod tests {
         )
         .unwrap();
 
-        let schema_uri =
-            SchemaUri::from_str(&format!("{}#/$defs/allowAll", SchemaUri::from_file_path(&schema_path).unwrap()))
-                .unwrap();
+        let schema_uri = SchemaUri::from_str(&format!(
+            "{}#/$defs/allowAll",
+            SchemaUri::from_file_path(&schema_path).unwrap()
+        ))
+        .unwrap();
         let schema_store = SchemaStore::new();
 
         let document_schema = schema_store
@@ -1106,9 +1108,11 @@ mod tests {
         )
         .unwrap();
 
-        let schema_uri =
-            SchemaUri::from_str(&format!("{}#nameSchema", SchemaUri::from_file_path(&schema_path).unwrap()))
-                .unwrap();
+        let schema_uri = SchemaUri::from_str(&format!(
+            "{}#nameSchema",
+            SchemaUri::from_file_path(&schema_path).unwrap()
+        ))
+        .unwrap();
         let schema_store = SchemaStore::new();
 
         let document_schema = schema_store

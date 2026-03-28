@@ -4,10 +4,11 @@ use tombi_document_tree::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
-    DependencyRequirement, collect_dependency_requirements_from_document_tree,
-    find_member_project_toml, find_workspace_pyproject_toml, get_project_name,
-    goto_definition_for_member_pyproject_toml, goto_definition_for_workspace_pyproject_toml,
-    load_pyproject_toml_document_tree, parse_requirement,
+    DependencyRequirement, UvNavigationFeature, classify_uv_navigation_feature,
+    collect_dependency_requirements_from_document_tree, find_member_project_toml,
+    find_workspace_pyproject_toml, get_project_name, goto_definition_for_member_pyproject_toml,
+    goto_definition_for_workspace_pyproject_toml, load_pyproject_toml_document_tree,
+    parse_requirement,
 };
 
 pub async fn goto_definition(
@@ -15,6 +16,7 @@ pub async fn goto_definition(
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
+    features: Option<&tombi_config::UvExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
@@ -23,6 +25,10 @@ pub async fn goto_definition(
     let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
         return Ok(Default::default());
     };
+
+    if !uv_navigation_enabled(features, accessors) {
+        return Ok(None);
+    }
 
     let locations = if matches_accessors!(
         accessors[..accessors.len().min(3)],
@@ -65,6 +71,18 @@ pub async fn goto_definition(
     }
 
     Ok(Some(locations))
+}
+
+fn uv_navigation_enabled(
+    features: Option<&tombi_config::UvExtensionFeatures>,
+    accessors: &[tombi_schema_store::Accessor],
+) -> bool {
+    let feature = classify_uv_navigation_feature(accessors);
+    features.map_or(true, |features| match feature {
+        UvNavigationFeature::Dependency => features.goto_definition_dependency_enabled(),
+        UvNavigationFeature::Member => features.goto_definition_member_enabled(),
+        UvNavigationFeature::Path => features.goto_definition_path_enabled(),
+    })
 }
 
 fn goto_definition_for_dependency_package(

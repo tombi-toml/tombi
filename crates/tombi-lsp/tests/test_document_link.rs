@@ -14,7 +14,7 @@ mod document_link_tests {
                 readme = "README.md"
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
-            ) -> Ok(Some(vec![]));
+            ) -> Ok(None);
         );
 
         test_document_link!(
@@ -459,6 +459,19 @@ mod document_link_tests {
 
         test_document_link!(
             #[tokio::test]
+            async fn tombi_schema_catalog_path_disabled_by_extensions(
+                r#"
+                [schema]
+                catalog = { paths = ["https://www.schemastore.org/api/json/catalog.json"] }
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/tombi-disabled/tombi.toml"
+                )),
+            ) -> Ok(None);
+        );
+
+        test_document_link!(
+            #[tokio::test]
             async fn tombi_schemas_path(
                 r#"
                 [[schemas]]
@@ -495,6 +508,15 @@ mod document_link_tests {
 
 #[macro_export]
 macro_rules! test_document_link {
+    (#[tokio::test] async fn $name:ident(
+        $source:expr $(, $arg:expr )* $(,)?
+    ) -> Ok(None);) => {
+        test_document_link! {
+            #[tokio::test] async fn _$name(
+                $source $(, $arg)*
+            ) -> Ok(None);
+        }
+    };
     // Pattern: with url, with tooltip
     (#[tokio::test] async fn $name:ident(
         $source:expr $(, $arg:expr )* $(,)?

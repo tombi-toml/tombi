@@ -324,7 +324,11 @@ impl CompletionContent {
         singleton_value_label: Option<String>,
     ) -> Self {
         let required = required_keys
-            .map(|required_keys| required_keys.iter().any(|required_key| required_key == key_name))
+            .map(|required_keys| {
+                required_keys
+                    .iter()
+                    .any(|required_key| required_key == key_name)
+            })
             .unwrap_or_default();
 
         let key_range = match completion_hint {

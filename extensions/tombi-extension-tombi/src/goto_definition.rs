@@ -9,11 +9,16 @@ pub async fn goto_definition(
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     _toml_version: TomlVersion,
+    features: Option<&tombi_config::TombiExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is .tombi.toml or tombi.toml
     let path = text_document_uri.path();
     if !(path.ends_with(DOT_TOMBI_TOML_FILENAME) || path.ends_with(TOMBI_TOML_FILENAME)) {
         return Ok(Default::default());
+    }
+
+    if !tombi_goto_definition_root_enabled(features) {
+        return Ok(None);
     }
 
     let Some(tombi_toml_path) = text_document_uri.to_file_path().ok() else {
@@ -23,6 +28,7 @@ pub async fn goto_definition(
     let mut locations = vec![];
 
     if accessors.last() == Some(&tombi_schema_store::Accessor::Key("path".to_string()))
+        && tombi_path_goto_definition_enabled(features)
         && let Some((_, tombi_document_tree::Value::String(path))) =
             dig_accessors(document_tree, accessors)
         && let Some(uri) = get_definition_link(path.value(), &tombi_toml_path)
@@ -35,6 +41,7 @@ pub async fn goto_definition(
 
     if matches!(accessors.len(), 3 | 4)
         && matches_accessors!(accessors[..3], ["schema", "catalog", "paths"])
+        && tombi_path_goto_definition_enabled(features)
         && let Some((_, tombi_document_tree::Value::Array(paths))) =
             dig_accessors(document_tree, &accessors[..3])
     {
@@ -63,6 +70,24 @@ pub async fn goto_definition(
     }
 
     Ok(Some(locations))
+}
+
+fn tombi_goto_definition_root_enabled(
+    features: Option<&tombi_config::TombiExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::TombiExtensionFeatures::goto_definition_enabled,
+    )
+}
+
+fn tombi_path_goto_definition_enabled(
+    features: Option<&tombi_config::TombiExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::TombiExtensionFeatures::path_goto_definition_enabled,
+    )
 }
 
 fn get_definition_link(url_str: &str, tombi_toml_path: &std::path::Path) -> Option<tombi_uri::Uri> {

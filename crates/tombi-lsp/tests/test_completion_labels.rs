@@ -18,6 +18,7 @@ mod completion_labels {
                 "█",
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -121,6 +122,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -143,6 +145,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -165,6 +168,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -213,6 +217,7 @@ mod completion_labels {
                 "[█]",
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -233,6 +238,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -255,6 +261,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -277,6 +284,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -293,6 +301,7 @@ mod completion_labels {
                 "[[█]]",
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",

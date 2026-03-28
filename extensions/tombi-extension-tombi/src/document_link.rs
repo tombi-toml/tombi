@@ -40,10 +40,15 @@ pub async fn document_link(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     _toml_version: TomlVersion,
+    features: Option<&tombi_config::TombiExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is .tombi.toml or tombi.toml
     let path = text_document_uri.path();
     if !(path.ends_with(DOT_TOMBI_TOML_FILENAME) || path.ends_with(TOMBI_TOML_FILENAME)) {
+        return Ok(None);
+    }
+
+    if !tombi_document_link_root_enabled(features) {
         return Ok(None);
     }
 
@@ -53,7 +58,9 @@ pub async fn document_link(
 
     let mut document_links = vec![];
 
-    if let Some((_, path)) = dig_keys(document_tree, &["schema", "catalog", "path"]) {
+    if path_document_link_enabled(features)
+        && let Some((_, path)) = dig_keys(document_tree, &["schema", "catalog", "path"])
+    {
         let paths = match path {
             tombi_document_tree::Value::String(path) => vec![path],
             tombi_document_tree::Value::Array(paths) => paths
@@ -80,8 +87,9 @@ pub async fn document_link(
         }
     }
 
-    if let Some((_, tombi_document_tree::Value::Array(paths))) =
-        dig_keys(document_tree, &["schema", "catalog", "paths"])
+    if path_document_link_enabled(features)
+        && let Some((_, tombi_document_tree::Value::Array(paths))) =
+            dig_keys(document_tree, &["schema", "catalog", "paths"])
     {
         for path in paths.iter() {
             let tombi_document_tree::Value::String(path) = path else {
@@ -98,8 +106,9 @@ pub async fn document_link(
         }
     }
 
-    if let Some((_, tombi_document_tree::Value::Array(schemas))) =
-        dig_keys(document_tree, &["schemas"])
+    if path_document_link_enabled(features)
+        && let Some((_, tombi_document_tree::Value::Array(schemas))) =
+            dig_keys(document_tree, &["schemas"])
     {
         for schema in schemas.iter() {
             let tombi_document_tree::Value::Table(table) = schema else {
@@ -125,6 +134,24 @@ pub async fn document_link(
     }
 
     Ok(Some(document_links))
+}
+
+fn tombi_document_link_root_enabled(
+    features: Option<&tombi_config::TombiExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::TombiExtensionFeatures::document_link_enabled,
+    )
+}
+
+fn path_document_link_enabled(
+    features: Option<&tombi_config::TombiExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::TombiExtensionFeatures::path_document_link_enabled,
+    )
 }
 
 fn get_document_link(uri: &str, tombi_toml_path: &std::path::Path) -> Option<tombi_uri::Uri> {

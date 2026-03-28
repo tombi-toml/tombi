@@ -671,6 +671,28 @@ fn goto_workspace_member_crates(
     Ok(locations)
 }
 
+pub(crate) enum CargoNavigationFeature {
+    Dependency,
+    Member,
+    Path,
+}
+
+pub(crate) fn classify_cargo_navigation_feature(
+    accessors: &[tombi_schema_store::Accessor],
+) -> CargoNavigationFeature {
+    if accessors.last() == Some(&tombi_schema_store::Accessor::Key("path".to_string())) {
+        CargoNavigationFeature::Path
+    } else if matches_accessors!(accessors, ["workspace", "members"])
+        || matches_accessors!(accessors, ["workspace", "members", _])
+        || matches_accessors!(accessors, ["workspace", "default-members"])
+        || matches_accessors!(accessors, ["workspace", "default-members", _])
+    {
+        CargoNavigationFeature::Member
+    } else {
+        CargoNavigationFeature::Dependency
+    }
+}
+
 /// Get the workspace path from Cargo.toml
 ///
 /// See: https://doc.rust-lang.org/cargo/reference/manifest.html#the-workspace-field
