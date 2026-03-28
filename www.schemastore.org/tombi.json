@@ -980,7 +980,7 @@
           "description": "Override the deprecated diagnostic level for this schema.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevel"
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
             },
             {
               "type": "null"

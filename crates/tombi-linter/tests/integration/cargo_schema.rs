@@ -99,7 +99,9 @@ fn deprecated_schema_config(deprecated_level: Option<SeverityLevel>) -> tombi_co
             include: vec!["*.toml".to_string()],
             lint: deprecated_level.map(|deprecated_level| tombi_config::SchemaLintOptions {
                 rules: Some(tombi_config::SchemaLintRules {
-                    deprecated: Some(deprecated_level),
+                    deprecated: Some(tombi_severity_level::SeverityLevelDefaultWarn::from(
+                        deprecated_level,
+                    )),
                 }),
             }),
         },

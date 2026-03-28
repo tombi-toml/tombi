@@ -1,4 +1,4 @@
-use tombi_severity_level::SeverityLevel;
+use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultWarn};
 use tombi_toml_version::TomlVersion;
 
 use crate::{
@@ -214,7 +214,10 @@ pub struct SchemaLintOptions {
 
 impl SchemaLintOptions {
     pub fn deprecated_lint_level(&self) -> Option<SeverityLevel> {
-        self.rules.as_ref().and_then(|rules| rules.deprecated)
+        self.rules
+            .as_ref()
+            .and_then(|rules| rules.deprecated)
+            .map(SeverityLevel::from)
     }
 }
 
@@ -229,7 +232,7 @@ pub struct SchemaLintRules {
     /// # Deprecated
     ///
     /// Override the deprecated diagnostic level for this schema.
-    pub deprecated: Option<SeverityLevel>,
+    pub deprecated: Option<SeverityLevelDefaultWarn>,
 }
 
 #[cfg(test)]
