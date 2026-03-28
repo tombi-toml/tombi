@@ -127,8 +127,13 @@ pub fn code_action(
     accessors: &[Accessor],
     contexts: &[AccessorContext],
     toml_version: tombi_config::TomlVersion,
+    features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
+        return Ok(None);
+    }
+
+    if !cargo_code_action_root_enabled(features) {
         return Ok(None);
     }
     let Some(cargo_toml_path) = text_document_uri.to_file_path().ok() else {
@@ -143,6 +148,7 @@ pub fn code_action(
             line_index,
             document_tree,
             accessors,
+            features,
         ))
     } else {
         code_actions.extend(code_actions_for_crate_cargo_toml(
@@ -153,14 +159,18 @@ pub fn code_action(
             accessors,
             contexts,
             toml_version,
+            features,
         ));
     }
 
-    Ok(if code_actions.is_empty() {
-        None
-    } else {
-        Some(code_actions)
-    })
+    Ok((!code_actions.is_empty()).then_some(code_actions))
+}
+
+fn cargo_code_action_root_enabled(features: Option<&tombi_config::CargoExtensionFeatures>) -> bool {
+    features.map_or(
+        true,
+        tombi_config::CargoExtensionFeatures::code_action_enabled,
+    )
 }
 
 fn code_actions_for_workspace_cargo_toml(
@@ -168,10 +178,14 @@ fn code_actions_for_workspace_cargo_toml(
     line_index: &tombi_text::LineIndex,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
+    features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Vec<CodeActionOrCommand> {
     let mut code_actions = Vec::new();
 
-    if let Some(action) =
+    if features.map_or(
+        true,
+        tombi_config::CargoExtensionFeatures::convert_dependency_to_table_format_code_action_enabled,
+    ) && let Some(action) =
         crate_version_code_action(text_document_uri, line_index, document_tree, accessors)
     {
         code_actions.push(CodeActionOrCommand::CodeAction(action));
@@ -188,6 +202,7 @@ fn code_actions_for_crate_cargo_toml(
     accessors: &[Accessor],
     contexts: &[AccessorContext],
     toml_version: tombi_config::TomlVersion,
+    features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Vec<CodeActionOrCommand> {
     let mut code_actions = Vec::new();
 
@@ -206,7 +221,10 @@ fn code_actions_for_crate_cargo_toml(
             tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
 
         // Add workspace-specific code actions here
-        if let Some(action) = workspace_code_action(
+        if features.map_or(
+            true,
+            tombi_config::CargoExtensionFeatures::inherit_from_workspace_code_action_enabled,
+        ) && let Some(action) = workspace_code_action(
             text_document_uri,
             line_index,
             document_tree,
@@ -217,7 +235,10 @@ fn code_actions_for_crate_cargo_toml(
             code_actions.push(CodeActionOrCommand::CodeAction(action));
         }
 
-        if let Some(action) = add_workspace_dependency_code_action(
+        if features.map_or(
+            true,
+            tombi_config::CargoExtensionFeatures::add_to_workspace_and_inherit_dependency_code_action_enabled,
+        ) && let Some(action) = add_workspace_dependency_code_action(
             text_document_uri,
             line_index,
             document_tree,
@@ -231,7 +252,10 @@ fn code_actions_for_crate_cargo_toml(
             code_actions.push(CodeActionOrCommand::CodeAction(action));
         }
 
-        if let Some(action) = use_workspace_dependency_code_action(
+        if features.map_or(
+            true,
+            tombi_config::CargoExtensionFeatures::inherit_dependency_from_workspace_code_action_enabled,
+        ) && let Some(action) = use_workspace_dependency_code_action(
             text_document_uri,
             line_index,
             document_tree,
@@ -244,7 +268,10 @@ fn code_actions_for_crate_cargo_toml(
     }
 
     // Add crate-specific code actions here
-    if let Some(action) =
+    if features.map_or(
+        true,
+        tombi_config::CargoExtensionFeatures::convert_dependency_to_table_format_code_action_enabled,
+    ) && let Some(action) =
         crate_version_code_action(text_document_uri, line_index, document_tree, accessors)
     {
         code_actions.push(CodeActionOrCommand::CodeAction(action));

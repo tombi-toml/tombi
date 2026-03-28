@@ -62,16 +62,20 @@ pub enum CodeActionRefactorRewriteName {
     AddToWorkspaceAndUseWorkspaceDependency,
 }
 
-impl std::fmt::Display for CodeActionRefactorRewriteName {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl CodeActionRefactorRewriteName {
+    pub fn as_str(&self) -> &'static str {
         match self {
-            CodeActionRefactorRewriteName::UseWorkspaceDependency => {
-                write!(f, "Use Workspace Dependency")
-            }
-            CodeActionRefactorRewriteName::AddToWorkspaceAndUseWorkspaceDependency => {
-                write!(f, "Add to Workspace and Use Workspace Dependency")
+            Self::UseWorkspaceDependency => "Use Workspace Dependency",
+            Self::AddToWorkspaceAndUseWorkspaceDependency => {
+                "Add to Workspace and Use Workspace Dependency"
             }
         }
+    }
+}
+
+impl std::fmt::Display for CodeActionRefactorRewriteName {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
@@ -82,9 +86,14 @@ pub fn code_action(
     accessors: &[Accessor],
     toml_version: tombi_config::TomlVersion,
     line_index: &tombi_text::LineIndex,
+    features: Option<&tombi_config::UvExtensionFeatures>,
 ) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
     // Check if the file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
+        return Ok(None);
+    }
+
+    if !uv_code_action_root_enabled(features) {
         return Ok(None);
     }
 
@@ -110,6 +119,7 @@ pub fn code_action(
             accessors,
             toml_version,
             line_index,
+            features,
         ))
     } else {
         Ok(None)
@@ -122,6 +132,7 @@ fn code_action_for_dependency_package(
     accessors: &[Accessor],
     toml_version: tombi_config::TomlVersion,
     line_index: &tombi_text::LineIndex,
+    features: Option<&tombi_config::UvExtensionFeatures>,
 ) -> Option<Vec<CodeActionOrCommand>> {
     // Try to find workspace pyproject.toml
     let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
@@ -157,7 +168,10 @@ fn code_action_for_dependency_package(
     let mut actions = Vec::new();
 
     // Try "Use Workspace Dependency" (when dependency exists in workspace)
-    if let Some(action) = use_workspace_dependency_code_action(
+    if features.map_or(
+        true,
+        tombi_config::UvExtensionFeatures::use_workspace_dependency_code_action_enabled,
+    ) && let Some(action) = use_workspace_dependency_code_action(
         text_document_uri,
         line_index,
         document_tree,
@@ -168,7 +182,10 @@ fn code_action_for_dependency_package(
     }
 
     // Try "Add to Workspace and Use Workspace Dependency" (when dependency doesn't exist in workspace)
-    if let Some(action) = add_workspace_dependency_code_action(
+    if features.map_or(
+        true,
+        tombi_config::UvExtensionFeatures::add_to_workspace_and_use_workspace_dependency_code_action_enabled,
+    ) && let Some(action) = add_workspace_dependency_code_action(
         text_document_uri,
         line_index,
         document_tree,
@@ -186,11 +203,11 @@ fn code_action_for_dependency_package(
         actions.push(CodeActionOrCommand::CodeAction(action));
     }
 
-    if actions.is_empty() {
-        return None;
-    }
+    (!actions.is_empty()).then_some(actions)
+}
 
-    Some(actions)
+fn uv_code_action_root_enabled(features: Option<&tombi_config::UvExtensionFeatures>) -> bool {
+    features.map_or(true, tombi_config::UvExtensionFeatures::code_action_enabled)
 }
 
 fn format_dependency_without_version(requirement: &Requirement<VerbatimUrl>) -> String {
@@ -638,6 +655,7 @@ name = "test"
             &[],
             tombi_config::TomlVersion::default(),
             &line_index,
+            None,
         );
 
         assert!(result.is_ok());
@@ -672,6 +690,7 @@ dependencies = ["pydantic>=2.10"]
             ],
             tombi_config::TomlVersion::default(),
             &line_index,
+            None,
         );
 
         assert!(result.is_ok());
@@ -704,6 +723,7 @@ name = "test"
             ],
             tombi_config::TomlVersion::default(),
             &line_index,
+            None,
         );
 
         assert!(result.is_ok());

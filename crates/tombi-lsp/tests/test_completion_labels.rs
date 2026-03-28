@@ -18,6 +18,7 @@ mod completion_labels {
                 "█",
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -121,6 +122,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -143,6 +145,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -165,6 +168,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -198,6 +202,21 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_extensions_table(
+                r#"
+                [extensions]
+                █
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "tombi-toml/cargo",
+                "tombi-toml/tombi",
+                "tombi-toml/uv",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_lint_rules_key_empty_equal_warn_and_space(
                 r#"
                 [lint.rules]
@@ -213,6 +232,7 @@ mod completion_labels {
                 "[█]",
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -233,6 +253,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -255,6 +276,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -277,6 +299,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -293,6 +316,7 @@ mod completion_labels {
                 "[[█]]",
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extensions",
                 "files",
                 "format",
                 "lint",
@@ -1239,6 +1263,23 @@ mod completion_labels {
             ) -> Ok([
                 "serde",
                 "$crate_name",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_workspace_inheritance_candidate_disabled_by_extensions(
+                r#"
+                [dependencies]
+                s█
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/cargo-disabled/member/Cargo.toml"
+                )),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                ".",
+                "=",
             ]);
         }
 

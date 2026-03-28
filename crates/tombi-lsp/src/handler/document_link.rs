@@ -62,9 +62,14 @@ pub async fn handle_document_link(
 
     let document_tree = document_source.document_tree();
 
-    if let Some(locations) =
-        tombi_extension_cargo::document_link(&text_document_uri, &document_tree, toml_version)
-            .await?
+    if config.cargo_extension_enabled()
+        && let Some(locations) = tombi_extension_cargo::document_link(
+            &text_document_uri,
+            &document_tree,
+            toml_version,
+            config.cargo_extension_features(),
+        )
+        .await?
     {
         document_links.extend(
             locations
@@ -73,9 +78,14 @@ pub async fn handle_document_link(
         );
     }
 
-    if let Some(locations) =
-        tombi_extension_tombi::document_link(&text_document_uri, &document_tree, toml_version)
-            .await?
+    if config.tombi_extension_enabled()
+        && let Some(locations) = tombi_extension_tombi::document_link(
+            &text_document_uri,
+            &document_tree,
+            toml_version,
+            config.tombi_extension_features(),
+        )
+        .await?
     {
         document_links.extend(
             locations
@@ -84,14 +94,24 @@ pub async fn handle_document_link(
         );
     }
 
-    if let Some(locations) =
-        tombi_extension_uv::document_link(&text_document_uri, &document_tree, toml_version).await?
+    if config.uv_extension_enabled()
+        && let Some(locations) = tombi_extension_uv::document_link(
+            &text_document_uri,
+            &document_tree,
+            toml_version,
+            config.uv_extension_features(),
+        )
+        .await?
     {
         document_links.extend(
             locations
                 .into_iter()
                 .map(|location| location.into_lsp(line_index)),
         );
+    }
+
+    if document_links.is_empty() {
+        return Ok(None);
     }
 
     Ok(Some(document_links))

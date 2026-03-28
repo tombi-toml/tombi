@@ -22,6 +22,12 @@ use crate::find_path_crate_cargo_toml;
 use crate::find_workspace_cargo_toml;
 use crate::get_workspace_path;
 
+enum CargoCompletionFeature {
+    DependencyVersion,
+    DependencyFeature,
+    Path,
+}
+
 #[derive(Debug, Deserialize)]
 struct CratesIoVersionsResponse {
     versions: Vec<CratesIoVersion>,
@@ -52,6 +58,7 @@ pub async fn completion(
     toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
     comment_context: Option<&CommentContext>,
+    features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
@@ -61,8 +68,13 @@ pub async fn completion(
         return Ok(None);
     }
 
-    if let Some(completions) =
-        completion_cargo_file_path(text_document_uri, document_tree, position, accessors)
+    if !cargo_completion_root_enabled(features) {
+        return Ok(None);
+    }
+
+    if let Some(completions) = cargo_completion_enabled(features, CargoCompletionFeature::Path)
+        .then(|| completion_cargo_file_path(text_document_uri, document_tree, position, accessors))
+        .flatten()
     {
         return Ok(Some(completions));
     }
@@ -78,6 +90,7 @@ pub async fn completion(
                 accessors,
                 completion_hint,
                 toml_version,
+                features,
             )
             .await
         } else {
@@ -88,6 +101,7 @@ pub async fn completion(
                 accessors,
                 completion_hint,
                 toml_version,
+                features,
             )
             .await
         }
@@ -192,8 +206,12 @@ async fn completion_workspace(
     accessors: &[Accessor],
     completion_hint: Option<CompletionHint>,
     toml_version: TomlVersion,
+    features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     if matches_accessors!(accessors, ["workspace", "dependencies", _]) {
+        if !cargo_completion_enabled(features, CargoCompletionFeature::DependencyVersion) {
+            return Ok(None);
+        }
         if let Some(Accessor::Key(crate_name)) = accessors.last() {
             return complete_crate_version(
                 crate_name.as_str(),
@@ -205,6 +223,9 @@ async fn completion_workspace(
             .await;
         }
     } else if matches_accessors!(accessors, ["workspace", "dependencies", _, "version"]) {
+        if !cargo_completion_enabled(features, CargoCompletionFeature::DependencyVersion) {
+            return Ok(None);
+        }
         if let Some(Accessor::Key(crate_name)) = accessors.get(accessors.len() - 2) {
             return complete_crate_version(
                 crate_name.as_str(),
@@ -219,6 +240,9 @@ async fn completion_workspace(
         | matches_accessors!(accessors, ["workspace", "dependencies", _, "features", _])
         && let Some(Accessor::Key(crate_name)) = accessors.get(2)
     {
+        if !cargo_completion_enabled(features, CargoCompletionFeature::DependencyFeature) {
+            return Ok(None);
+        }
         if let Some((_, tombi_document_tree::Value::Incomplete { .. })) =
             dig_accessors(document_tree, accessors)
         {
@@ -254,6 +278,7 @@ async fn completion_member(
     accessors: &[Accessor],
     completion_hint: Option<CompletionHint>,
     toml_version: TomlVersion,
+    features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     if let Some(completions) = complete_workspace_dependency_inheritance(
         document_tree,
@@ -273,6 +298,9 @@ async fn completion_member(
         || matches_accessors!(accessors, ["target", _, "dev-dependencies", _, "version"])
         || matches_accessors!(accessors, ["target", _, "build-dependencies", _, "version"])
     {
+        if !cargo_completion_enabled(features, CargoCompletionFeature::DependencyVersion) {
+            return Ok(None);
+        }
         if let Some(Accessor::Key(c_name)) = accessors.get(accessors.len() - 2) {
             return complete_crate_version(
                 c_name.as_str(),
@@ -290,6 +318,9 @@ async fn completion_member(
         || matches_accessors!(accessors, ["target", _, "dev-dependencies", _])
         || matches_accessors!(accessors, ["target", _, "build-dependencies", _])
     {
+        if !cargo_completion_enabled(features, CargoCompletionFeature::DependencyVersion) {
+            return Ok(None);
+        }
         if let Some(Accessor::Key(c_name)) = accessors.last() {
             return complete_crate_version(
                 c_name.as_str(),
@@ -322,6 +353,9 @@ async fn completion_member(
             ["target", _, "build-dependencies", _, "features"]
         ))
     {
+        if !cargo_completion_enabled(features, CargoCompletionFeature::DependencyFeature) {
+            return Ok(None);
+        }
         let is_target_dependency = accessors.first().map(|a| a.as_key()) == Some(Some("target"));
         let offset = if is_target_dependency { 2 } else { 0 };
 
@@ -353,6 +387,28 @@ async fn completion_member(
         }
     }
     Ok(None)
+}
+
+fn cargo_completion_root_enabled(features: Option<&tombi_config::CargoExtensionFeatures>) -> bool {
+    features.map_or(
+        true,
+        tombi_config::CargoExtensionFeatures::completion_enabled,
+    )
+}
+
+fn cargo_completion_enabled(
+    features: Option<&tombi_config::CargoExtensionFeatures>,
+    feature: CargoCompletionFeature,
+) -> bool {
+    features.map_or(true, |features| match feature {
+        CargoCompletionFeature::DependencyVersion => {
+            features.dependency_version_completion_enabled()
+        }
+        CargoCompletionFeature::DependencyFeature => {
+            features.dependency_feature_completion_enabled()
+        }
+        CargoCompletionFeature::Path => features.path_completion_enabled(),
+    })
 }
 
 fn complete_workspace_dependency_inheritance(

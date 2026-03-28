@@ -3,7 +3,8 @@ use tombi_document_tree::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::matches_accessors;
 
 use crate::{
-    find_member_project_toml, find_workspace_pyproject_toml,
+    UvNavigationFeature, classify_uv_navigation_feature, find_member_project_toml,
+    find_workspace_pyproject_toml,
     goto_definition::{
         collect_workspace_project_dependency_definitions, get_path_dependency_definition,
     },
@@ -16,6 +17,7 @@ pub async fn goto_declaration(
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
+    features: Option<&tombi_config::UvExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
@@ -24,6 +26,10 @@ pub async fn goto_declaration(
     let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
         return Ok(Default::default());
     };
+
+    if !uv_navigation_enabled(features, accessors) {
+        return Ok(None);
+    }
 
     let locations = if matches_accessors!(
         accessors[..accessors.len().min(3)],
@@ -69,6 +75,18 @@ pub async fn goto_declaration(
     }
 
     Ok(Some(locations))
+}
+
+fn uv_navigation_enabled(
+    features: Option<&tombi_config::UvExtensionFeatures>,
+    accessors: &[tombi_schema_store::Accessor],
+) -> bool {
+    let feature = classify_uv_navigation_feature(accessors);
+    features.map_or(true, |features| match feature {
+        UvNavigationFeature::Dependency => features.goto_declaration_dependency_enabled(),
+        UvNavigationFeature::Member => features.goto_declaration_member_enabled(),
+        UvNavigationFeature::Path => features.goto_declaration_path_enabled(),
+    })
 }
 
 fn goto_declaration_for_dependency_package(

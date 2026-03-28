@@ -51,9 +51,14 @@ pub async fn document_link(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     toml_version: TomlVersion,
+    features: Option<&tombi_config::UvExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
-    // Check if current file is Cargo.toml
+    // Check if current file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
+        return Ok(None);
+    }
+
+    if !uv_document_link_root_enabled(features) {
         return Ok(None);
     }
 
@@ -63,8 +68,9 @@ pub async fn document_link(
 
     let mut document_links = vec![];
 
-    if let Some((_, tombi_document_tree::Value::Table(workspace))) =
-        dig_keys(document_tree, &["tool", "uv", "workspace"])
+    if pyproject_toml_document_link_enabled(features)
+        && let Some((_, tombi_document_tree::Value::Table(workspace))) =
+            dig_keys(document_tree, &["tool", "uv", "workspace"])
     {
         document_links.extend(document_link_for_workspace_pyproject_toml(
             document_tree,
@@ -84,6 +90,7 @@ pub async fn document_link(
                 source,
                 &pyproject_toml_path,
                 toml_version,
+                pyproject_toml_document_link_enabled(features),
             )?);
         }
 
@@ -101,6 +108,8 @@ pub async fn document_link(
             uv_sources,
             &pyproject_toml_path,
             toml_version,
+            pyproject_toml_document_link_enabled(features),
+            pypi_org_document_link_enabled(features),
         )?);
     }
 
@@ -113,6 +122,8 @@ pub async fn document_link(
             uv_sources,
             &pyproject_toml_path,
             toml_version,
+            pyproject_toml_document_link_enabled(features),
+            pypi_org_document_link_enabled(features),
         )?);
     }
 
@@ -125,6 +136,8 @@ pub async fn document_link(
             uv_sources,
             &pyproject_toml_path,
             toml_version,
+            pyproject_toml_document_link_enabled(features),
+            pypi_org_document_link_enabled(features),
         )?);
     }
 
@@ -133,6 +146,29 @@ pub async fn document_link(
     }
 
     Ok(Some(document_links))
+}
+
+fn uv_document_link_root_enabled(features: Option<&tombi_config::UvExtensionFeatures>) -> bool {
+    features.map_or(
+        true,
+        tombi_config::UvExtensionFeatures::document_link_enabled,
+    )
+}
+
+fn pyproject_toml_document_link_enabled(
+    features: Option<&tombi_config::UvExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::UvExtensionFeatures::pyproject_toml_document_link_enabled,
+    )
+}
+
+fn pypi_org_document_link_enabled(features: Option<&tombi_config::UvExtensionFeatures>) -> bool {
+    features.map_or(
+        true,
+        tombi_config::UvExtensionFeatures::pypi_org_document_link_enabled,
+    )
 }
 
 fn document_link_for_workspace_pyproject_toml(
@@ -201,7 +237,12 @@ fn document_link_for_member_pyproject_toml(
     source: &tombi_document_tree::Value,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    pyproject_toml_enabled: bool,
 ) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+    if !pyproject_toml_enabled {
+        return Ok(Vec::with_capacity(0));
+    }
+
     let tombi_document_tree::Value::Table(source) = source else {
         return Ok(Vec::with_capacity(0));
     };
@@ -253,6 +294,8 @@ fn document_link_for_project_dependencies(
     uv_sources: Option<&tombi_document_tree::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    pyproject_toml_enabled: bool,
+    pypi_org_enabled: bool,
 ) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
     let mut document_links = Vec::with_capacity(dependencies.len());
 
@@ -279,6 +322,7 @@ fn document_link_for_project_dependencies(
                             source_value,
                             pyproject_toml_path,
                             toml_version,
+                            pyproject_toml_enabled,
                         ) {
                             for link in links {
                                 if link.tooltip
@@ -296,7 +340,7 @@ fn document_link_for_project_dependencies(
                             }
                         }
                     }
-                } else {
+                } else if pypi_org_enabled {
                     // Create PyPI URL for external packages
                     if let Ok(pypi_uri) = tombi_uri::Uri::from_str(&format!(
                         "https://pypi.org/project/{package_name}/"
@@ -320,6 +364,8 @@ fn document_link_for_dependency_groups(
     uv_sources: Option<&tombi_document_tree::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    pyproject_toml_enabled: bool,
+    pypi_org_enabled: bool,
 ) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
     let mut document_links = Vec::new();
 
@@ -332,6 +378,8 @@ fn document_link_for_dependency_groups(
                 uv_sources,
                 pyproject_toml_path,
                 toml_version,
+                pyproject_toml_enabled,
+                pypi_org_enabled,
             )?);
         }
     }
@@ -344,6 +392,8 @@ fn document_link_for_optional_dependencies(
     uv_sources: Option<&tombi_document_tree::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    pyproject_toml_enabled: bool,
+    pypi_org_enabled: bool,
 ) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
     let mut document_links = Vec::new();
 
@@ -356,6 +406,8 @@ fn document_link_for_optional_dependencies(
                 uv_sources,
                 pyproject_toml_path,
                 toml_version,
+                pyproject_toml_enabled,
+                pypi_org_enabled,
             )?);
         }
     }

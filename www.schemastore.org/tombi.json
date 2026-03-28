@@ -87,6 +87,16 @@
       "items": {
         "$ref": "#/definitions/OverrideItem"
       }
+    },
+    "extensions": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Extensions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "additionalProperties": false,
@@ -1096,6 +1106,777 @@
       },
       "additionalProperties": false,
       "x-tombi-table-keys-order": "schema"
+    },
+    "Extensions": {
+      "type": "object",
+      "properties": {
+        "tombi-toml/cargo": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CargoExtensionFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tombi-toml/uv": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UvExtensionFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tombi-toml/tombi": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TombiExtensionFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "CargoExtensionFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/CargoExtensionFeatureTree"
+        }
+      ]
+    },
+    "EnabledOnly": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "CargoExtensionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "lsp": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CargoLspFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "CargoLspFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/CargoLspFeatureTree"
+        }
+      ]
+    },
+    "CargoLspFeatureTree": {
+      "type": "object",
+      "properties": {
+        "completion": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CargoCompletionFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "goto-definition": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CargoNavigationFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "goto-declaration": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CargoNavigationFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "document-link": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CargoDocumentLinkFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "code-action": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CargoCodeActionFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "CargoCompletionFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/CargoCompletionFeatureTree"
+        }
+      ]
+    },
+    "CargoCompletionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "dependency-version": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dependency-feature": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "ToggleFeature": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "CargoNavigationFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/CargoNavigationFeatureTree"
+        }
+      ]
+    },
+    "CargoNavigationFeatureTree": {
+      "type": "object",
+      "properties": {
+        "dependency": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "member": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "CargoDocumentLinkFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/CargoDocumentLinkFeatureTree"
+        }
+      ]
+    },
+    "CargoDocumentLinkFeatureTree": {
+      "type": "object",
+      "properties": {
+        "cargo-toml": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "git": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "crates-io": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "CargoCodeActionFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/CargoCodeActionFeatureTree"
+        }
+      ]
+    },
+    "CargoCodeActionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "inherit-from-workspace": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "inherit-dependency-from-workspace": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "convert-dependency-to-table-format": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "add-to-workspace-and-inherit-dependency": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "UvExtensionFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/UvExtensionFeatureTree"
+        }
+      ]
+    },
+    "UvExtensionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "lsp": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UvLspFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "UvLspFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/UvLspFeatureTree"
+        }
+      ]
+    },
+    "UvLspFeatureTree": {
+      "type": "object",
+      "properties": {
+        "completion": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UvCompletionFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "goto-definition": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UvNavigationFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "goto-declaration": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UvNavigationFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "document-link": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UvDocumentLinkFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "code-action": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UvCodeActionFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "UvCompletionFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/UvCompletionFeatureTree"
+        }
+      ]
+    },
+    "UvCompletionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "UvNavigationFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/UvNavigationFeatureTree"
+        }
+      ]
+    },
+    "UvNavigationFeatureTree": {
+      "type": "object",
+      "properties": {
+        "dependency": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "member": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "UvDocumentLinkFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/UvDocumentLinkFeatureTree"
+        }
+      ]
+    },
+    "UvDocumentLinkFeatureTree": {
+      "type": "object",
+      "properties": {
+        "pyproject-toml": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pypi-org": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "UvCodeActionFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/UvCodeActionFeatureTree"
+        }
+      ]
+    },
+    "UvCodeActionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "use-workspace-dependency": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "add-to-workspace-and-use-workspace-dependency": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "TombiExtensionFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/TombiExtensionFeatureTree"
+        }
+      ],
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "TombiExtensionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "lsp": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TombiLspFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "TombiLspFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/TombiLspFeatureTree"
+        }
+      ]
+    },
+    "TombiLspFeatureTree": {
+      "type": "object",
+      "properties": {
+        "completion": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TombiCompletionFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "goto-definition": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TombiGotoDefinitionFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "document-link": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TombiDocumentLinkFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "TombiCompletionFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/TombiCompletionFeatureTree"
+        }
+      ],
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "TombiCompletionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "TombiGotoDefinitionFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/TombiGotoDefinitionFeatureTree"
+        }
+      ],
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "TombiGotoDefinitionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "TombiDocumentLinkFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/TombiDocumentLinkFeatureTree"
+        }
+      ]
+    },
+    "TombiDocumentLinkFeatureTree": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
     }
   }
 }

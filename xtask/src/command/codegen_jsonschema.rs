@@ -381,6 +381,7 @@ struct TypeTest {
     local_time: Option<chrono::NaiveTime>,
     literal: Option<LiteralValue>,
     table: Option<TableValue>,
+    table_allows_empty_key: Option<TableValueAllowsEmptyKey>,
 }
 
 #[allow(dead_code)]
@@ -455,4 +456,29 @@ struct TableValue2 {
     local_date_time: Option<chrono::NaiveDateTime>,
     local_date: Option<chrono::NaiveDate>,
     local_time: Option<chrono::NaiveTime>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, serde::Serialize)]
+struct TableValueAllowsEmptyKey {
+    #[serde(flatten)]
+    values: std::collections::BTreeMap<String, i64>,
+}
+
+impl schemars::JsonSchema for TableValueAllowsEmptyKey {
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "TableValueAllowsEmptyKey".into()
+    }
+
+    fn json_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        schemars::json_schema!({
+            "type": "object",
+            "propertyNames": {
+                "minLength": 0
+            },
+            "additionalProperties": {
+                "type": "integer"
+            }
+        })
+    }
 }
