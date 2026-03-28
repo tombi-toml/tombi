@@ -75,6 +75,11 @@ impl SchemaStore {
         self.options.offline.unwrap_or(false)
     }
 
+    /// Cache options
+    pub fn cache_options(&self) -> Option<&tombi_cache::Options> {
+        self.options.cache.as_ref()
+    }
+
     /// Strict mode
     pub fn strict(&self) -> bool {
         self.options.strict.unwrap_or(true)
@@ -935,12 +940,11 @@ async fn load_catalog_from_cache_ignoring_ttl(
     cache_options: Option<tombi_cache::Options>,
 ) -> Result<Option<JsonCatalog>, crate::Error> {
     if let Some(catalog_cache_path) = catalog_cache_path {
-        let mut cache_options = cache_options.clone();
-        if let Some(options) = &mut cache_options {
-            options.cache_ttl = None;
-        }
+        let mut owned_cache_options = cache_options.unwrap_or_default();
+        owned_cache_options.cache_ttl = None;
         if let Ok(Some(catalog)) =
-            load_catalog_from_cache(tagalog_uri, catalog_cache_path, cache_options.as_ref()).await
+            load_catalog_from_cache(tagalog_uri, catalog_cache_path, Some(&owned_cache_options))
+                .await
         {
             return Ok(Some(catalog));
         }
@@ -977,12 +981,11 @@ async fn load_json_schema_from_cache_ignoring_ttl(
     cache_options: Option<tombi_cache::Options>,
 ) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
     if let Some(schema_cache_path) = schema_cache_path {
-        let mut cache_options = cache_options.clone();
-        if let Some(options) = &mut cache_options {
-            options.cache_ttl = None;
-        }
+        let mut owned_cache_options = cache_options.unwrap_or_default();
+        owned_cache_options.cache_ttl = None;
         if let Ok(Some(schema_value)) =
-            load_json_schema_from_cache(schema_uri, schema_cache_path, cache_options.as_ref()).await
+            load_json_schema_from_cache(schema_uri, schema_cache_path, Some(&owned_cache_options))
+                .await
         {
             return Ok(Some(schema_value));
         }
@@ -1029,11 +1032,22 @@ fn canonicalize_path_for_matching(path: &std::path::Path) -> std::path::PathBuf 
 
 #[cfg(test)]
 mod tests {
-    use std::{path::Path, str::FromStr};
+    use std::{path::{Path, PathBuf}, str::FromStr, time::Duration};
 
-    use super::{SchemaStore, matches_schema_include};
-    use crate::ValueSchema;
+    use super::{
+        SchemaStore, load_catalog_from_cache_ignoring_ttl,
+        load_json_schema_from_cache_ignoring_ttl, matches_schema_include,
+    };
+    use crate::{CatalogUri, ValueSchema};
     use tombi_uri::SchemaUri;
+
+    fn temp_cache_path(test_name: &str) -> PathBuf {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir().join(format!("tombi-schema-store-{test_name}-{unique}.json"))
+    }
 
     #[test]
     fn schema_include_matches_user_config_path_via_absolute_suffix() {
@@ -1137,5 +1151,57 @@ mod tests {
         ));
 
         let _ = std::fs::remove_file(schema_path);
+    }
+
+    #[tokio::test]
+    async fn ignores_ttl_for_catalog_cache_without_cache_options() {
+        let cache_path = temp_cache_path("catalog-cache-offline-default-options");
+        std::fs::write(
+            &cache_path,
+            r#"{"schemas":[{"name":"test","description":"desc","url":"https://example.invalid/schema.json"}]}"#,
+        )
+        .unwrap();
+        std::fs::File::options()
+            .write(true)
+            .open(&cache_path)
+            .unwrap()
+            .set_modified(std::time::SystemTime::now() - Duration::from_secs(60 * 60 * 25))
+            .unwrap();
+
+        let catalog = load_catalog_from_cache_ignoring_ttl(
+            &CatalogUri::from_str("https://example.invalid/catalog.json").unwrap(),
+            Some(&cache_path),
+            None,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(catalog.unwrap().schemas.len(), 1);
+
+        let _ = std::fs::remove_file(cache_path);
+    }
+
+    #[tokio::test]
+    async fn ignores_ttl_for_schema_cache_without_cache_options() {
+        let cache_path = temp_cache_path("schema-cache-offline-default-options");
+        std::fs::write(&cache_path, r#"{"type":"string"}"#).unwrap();
+        std::fs::File::options()
+            .write(true)
+            .open(&cache_path)
+            .unwrap()
+            .set_modified(std::time::SystemTime::now() - Duration::from_secs(60 * 60 * 25))
+            .unwrap();
+
+        let schema = load_json_schema_from_cache_ignoring_ttl(
+            &SchemaUri::from_str("https://example.invalid/schema.json").unwrap(),
+            Some(&cache_path),
+            None,
+        )
+        .await
+        .unwrap();
+
+        assert!(schema.is_some());
+
+        let _ = std::fs::remove_file(cache_path);
     }
 }

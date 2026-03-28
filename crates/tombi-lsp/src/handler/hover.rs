@@ -110,6 +110,7 @@ pub async fn handle_hover(
 
         let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
         let offline = schema_store.offline();
+        let cache_options = schema_store.cache_options();
 
         let extension_hover = if let Some(metadata) = tombi_extension_tombi::hover(
             &text_document_uri,
@@ -127,6 +128,7 @@ pub async fn handle_hover(
             &accessors,
             toml_version,
             offline,
+            cache_options,
         )
         .await?
         {
@@ -137,6 +139,7 @@ pub async fn handle_hover(
             &accessors,
             toml_version,
             offline,
+            cache_options,
         )
         .await?
         {

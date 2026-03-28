@@ -15,6 +15,7 @@ pep508_rs.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tombi-ast.workspace = true
+tombi-cache.workspace = true
 tombi-config.workspace = true
 tombi-document-tree.workspace = true
 tombi-extension.workspace = true
