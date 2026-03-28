@@ -90,11 +90,9 @@ async fn load_cached_json_ignoring_ttl<T: DeserializeOwned>(
     cache_options: Option<&tombi_cache::Options>,
 ) -> Option<T> {
     if let Some(cache_file_path) = cache_file_path {
-        let mut cache_options = cache_options.cloned();
-        if let Some(options) = &mut cache_options {
-            options.cache_ttl = None;
-        }
-        return load_cached_json(url, cache_file_path, cache_options.as_ref()).await;
+        let mut owned_cache_options = cache_options.cloned().unwrap_or_default();
+        owned_cache_options.cache_ttl = None;
+        return load_cached_json(url, cache_file_path, Some(&owned_cache_options)).await;
     }
 
     None
@@ -178,6 +176,35 @@ mod tests {
             cached,
             Some(TestMetadata {
                 name: "requests".to_string()
+            })
+        );
+
+        let _ = std::fs::remove_file(cache_path);
+    }
+
+    #[tokio::test]
+    async fn ignores_ttl_while_offline_without_cache_options() {
+        let cache_path = temp_cache_path("remote-cache-offline-default-options");
+        std::fs::write(&cache_path, r#"{"name":"cached"}"#).unwrap();
+        std::fs::File::options()
+            .write(true)
+            .open(&cache_path)
+            .unwrap()
+            .set_modified(std::time::SystemTime::now() - Duration::from_secs(60 * 60 * 25))
+            .unwrap();
+
+        let cached = fetch_cached_remote_json_from_path::<TestMetadata>(
+            "https://example.invalid/metadata.json",
+            Some(&cache_path),
+            true,
+            None,
+        )
+        .await;
+
+        assert_eq!(
+            cached,
+            Some(TestMetadata {
+                name: "cached".to_string()
             })
         );
 
