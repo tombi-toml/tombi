@@ -1,7 +1,8 @@
 use std::path::Path;
 
+use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::dig_keys;
+use tombi_document_tree::{TryIntoDocumentTree, dig_keys};
 
 #[derive(Debug, Clone)]
 pub(crate) struct CrateLocation {
@@ -26,7 +27,13 @@ pub(crate) fn load_cargo_toml(
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<(tombi_ast::Root, tombi_document_tree::DocumentTree)> {
-    tombi_extension::load_toml(cargo_toml_path, toml_version)
+    let toml_text = std::fs::read_to_string(cargo_toml_path).ok()?;
+    let root = tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
+
+    Some((
+        root.clone(),
+        root.try_into_document_tree(toml_version).ok()?,
+    ))
 }
 
 pub(crate) fn find_workspace_cargo_toml(
@@ -54,9 +61,14 @@ pub(crate) fn find_workspace_cargo_toml(
         ));
     }
 
-    tombi_extension::find_ancestor_manifest(cargo_toml_path, "Cargo.toml", toml_version, |tree| {
-        tree.contains_key("workspace")
-    })
+    let (workspace_cargo_toml_path, (root, document_tree)) = tombi_extension::find_ancestor_manifest(
+        cargo_toml_path,
+        "Cargo.toml",
+        |path| load_cargo_toml(path, toml_version),
+        |(_, tree)| tree.contains_key("workspace"),
+    )?;
+
+    Some((workspace_cargo_toml_path, root, document_tree))
 }
 
 pub(crate) fn find_path_crate_cargo_toml(

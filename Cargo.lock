@@ -3736,11 +3736,8 @@ dependencies = [
 name = "tombi-extension"
 version = "0.0.0-dev"
 dependencies = [
- "glob",
  "tombi-ast",
- "tombi-config",
  "tombi-document-tree",
- "tombi-parser",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",
@@ -3787,6 +3784,7 @@ dependencies = [
 name = "tombi-extension-uv"
 version = "0.0.0-dev"
 dependencies = [
+ "glob",
  "itertools 0.14.0",
  "log",
  "pep508_rs",

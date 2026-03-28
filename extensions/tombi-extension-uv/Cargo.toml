@@ -8,6 +8,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+glob.workspace = true
 itertools.workspace = true
 log.workspace = true
 pep508_rs.workspace = true

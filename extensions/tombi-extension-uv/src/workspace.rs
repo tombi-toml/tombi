@@ -59,12 +59,49 @@ pub(crate) fn find_pyproject_toml_paths<'a>(
     exclude_patterns: &'a [&'a tombi_document_tree::String],
     workspace_dir_path: &'a std::path::Path,
 ) -> impl Iterator<Item = (&'a tombi_document_tree::String, std::path::PathBuf)> + 'a {
-    tombi_extension::find_member_manifest_paths(
-        member_patterns,
-        exclude_patterns,
-        workspace_dir_path,
-        "pyproject.toml",
-    )
+    let exclude_patterns = exclude_patterns
+        .iter()
+        .filter_map(|pattern| glob::Pattern::new(pattern.value()).ok())
+        .collect_vec();
+
+    member_patterns
+        .iter()
+        .filter_map(move |&member_pattern| {
+            let mut manifest_paths = vec![];
+
+            let mut member_pattern_path =
+                std::path::Path::new(member_pattern.value()).to_path_buf();
+            if !member_pattern_path.is_absolute() {
+                member_pattern_path = workspace_dir_path.join(member_pattern_path);
+            }
+
+            let mut candidate_paths = match glob::glob(&member_pattern_path.to_string_lossy()) {
+                Ok(paths) => paths,
+                Err(_) => return None,
+            };
+
+            while let Some(Ok(candidate_path)) = candidate_paths.next() {
+                if !candidate_path.is_dir() {
+                    continue;
+                }
+
+                let manifest_path = candidate_path.join("pyproject.toml");
+                if !manifest_path.is_file() {
+                    continue;
+                }
+
+                let is_excluded = exclude_patterns.iter().any(|exclude_pattern| {
+                    exclude_pattern.matches(&manifest_path.to_string_lossy())
+                });
+
+                if !is_excluded {
+                    manifest_paths.push((member_pattern, manifest_path));
+                }
+            }
+
+            (!manifest_paths.is_empty()).then_some(manifest_paths)
+        })
+        .flatten()
 }
 
 pub(crate) fn goto_definition_for_member_pyproject_toml(

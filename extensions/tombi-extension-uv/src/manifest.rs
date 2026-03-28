@@ -1,7 +1,8 @@
 use std::path::Path;
 
+use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::dig_keys;
+use tombi_document_tree::{TryIntoDocumentTree, dig_keys};
 
 #[derive(Debug, Clone)]
 pub(crate) struct PackageLocation {
@@ -26,7 +27,8 @@ pub(crate) fn load_pyproject_toml_document_tree(
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<tombi_document_tree::DocumentTree> {
-    tombi_extension::load_toml_document_tree(pyproject_toml_path, toml_version)
+    let (_, document_tree) = load_pyproject_toml(pyproject_toml_path, toml_version)?;
+    Some(document_tree)
 }
 
 pub(crate) fn find_workspace_pyproject_toml(
@@ -37,12 +39,14 @@ pub(crate) fn find_workspace_pyproject_toml(
     tombi_ast::Root,
     tombi_document_tree::DocumentTree,
 )> {
-    tombi_extension::find_ancestor_manifest(
+    let (workspace_pyproject_toml_path, (root, document_tree)) = tombi_extension::find_ancestor_manifest(
         pyproject_toml_path,
         "pyproject.toml",
-        toml_version,
-        |tree| tombi_document_tree::dig_keys(tree, &["tool", "uv", "workspace"]).is_some(),
-    )
+        |path| load_pyproject_toml(path, toml_version),
+        |(_, tree)| tombi_document_tree::dig_keys(tree, &["tool", "uv", "workspace"]).is_some(),
+    )?;
+
+    Some((workspace_pyproject_toml_path, root, document_tree))
 }
 
 pub(crate) fn get_project_name(
@@ -63,4 +67,17 @@ pub(crate) fn resolve_member_pyproject_toml_path(
         Path::new(dependency_path),
         "pyproject.toml",
     )
+}
+
+fn load_pyproject_toml(
+    pyproject_toml_path: &Path,
+    toml_version: TomlVersion,
+) -> Option<(tombi_ast::Root, tombi_document_tree::DocumentTree)> {
+    let toml_text = std::fs::read_to_string(pyproject_toml_path).ok()?;
+    let root = tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
+
+    Some((
+        root.clone(),
+        root.try_into_document_tree(toml_version).ok()?,
+    ))
 }
