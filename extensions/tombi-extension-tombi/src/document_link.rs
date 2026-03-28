@@ -145,9 +145,7 @@ fn tombi_document_link_root_enabled(
     )
 }
 
-fn path_document_link_enabled(
-    features: Option<&tombi_config::TombiExtensionFeatures>,
-) -> bool {
+fn path_document_link_enabled(features: Option<&tombi_config::TombiExtensionFeatures>) -> bool {
     features.map_or(
         true,
         tombi_config::TombiExtensionFeatures::path_document_link_enabled,

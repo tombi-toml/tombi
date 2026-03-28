@@ -1,6 +1,6 @@
 use tombi_linter::test_lint;
 use tombi_severity_level::SeverityLevel;
-use tombi_test_lib::cargo_schema_path;
+use tombi_test_lib::{cargo_schema_path, project_root_path};
 
 test_lint! {
     #[test]
@@ -85,86 +85,56 @@ test_lint! {
     ])
 }
 
-async fn lint_deprecated_project_table(
-    deprecated_level: Option<SeverityLevel>,
-) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
-    let temp_dir = tempfile::tempdir().unwrap();
-    let schema_path = temp_dir.path().join("schema.json");
-    std::fs::write(
-        &schema_path,
-        r#"{
-  "type": "object",
-  "properties": {
-    "value": {
-      "type": "integer",
-      "deprecated": true
-    }
-  },
-  "additionalProperties": false
-}
-"#,
-    )
-    .unwrap();
+fn deprecated_schema_config(deprecated_level: SeverityLevel) -> tombi_config::Config {
+    let schema_path = project_root_path()
+        .join("schemas")
+        .join("deprecated-test.schema.json");
+    let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path).unwrap();
 
-    let schema_store = tombi_schema_store::SchemaStore::new();
-    let schema_uri = tombi_schema_store::SchemaUri::from_file_path(&schema_path).unwrap();
     let mut config = tombi_config::Config::default();
     config.schemas = Some(vec![tombi_config::SchemaItem::Root(
         tombi_config::RootSchema {
             toml_version: None,
             path: schema_uri.to_string(),
             include: vec!["*.toml".to_string()],
-            lint: deprecated_level.map(|enabled| tombi_config::SchemaLintOptions {
+            lint: Some(tombi_config::SchemaLintOptions {
                 rules: Some(tombi_config::SchemaLintRules {
                     deprecated: Some(tombi_config::SchemaDeprecatedRule {
-                        enabled: Some(enabled),
+                        enabled: Some(deprecated_level),
                     }),
                 }),
             }),
         },
     )]);
-    schema_store.load_config(&config, None).await.unwrap();
-
-    let source_path = temp_dir.path().join("test.toml");
-    let lint_options = tombi_linter::LintOptions::default();
-    let linter = tombi_linter::Linter::new(
-        tombi_config::TomlVersion::default(),
-        &lint_options,
-        Some(itertools::Either::Right(source_path.as_path())),
-        &schema_store,
-    );
-
-    linter.lint("value = 1\n").await
+    config
 }
 
-#[tokio::test]
-async fn test_deprecated_schema_lint_level_off() {
-    tombi_test_lib::init_log();
-
-    let result = lint_deprecated_project_table(Some(SeverityLevel::Off)).await;
-    pretty_assertions::assert_eq!(result, Ok(()));
+test_lint! {
+    #[test]
+    fn test_deprecated_schema_lint_level_off(
+        "value = 1\n",
+        Config(deprecated_schema_config(SeverityLevel::Off)),
+    ) -> Ok(_)
 }
 
-#[tokio::test]
-async fn test_deprecated_schema_lint_level_warn() {
-    tombi_test_lib::init_log();
-
-    let diagnostics = lint_deprecated_project_table(Some(SeverityLevel::Warn))
-        .await
-        .unwrap_err();
-    assert_eq!(diagnostics.len(), 1);
-    assert_eq!(diagnostics[0].code(), "deprecated");
-    assert!(diagnostics[0].is_warning());
+test_lint! {
+    #[test]
+    fn test_deprecated_schema_lint_level_warn(
+        "value = 1\n",
+        Config(deprecated_schema_config(SeverityLevel::Warn)),
+    ) -> Diagnostics([{
+        code: "deprecated",
+        level: tombi_diagnostic::Level::WARNING,
+    }])
 }
 
-#[tokio::test]
-async fn test_deprecated_schema_lint_level_error() {
-    tombi_test_lib::init_log();
-
-    let diagnostics = lint_deprecated_project_table(Some(SeverityLevel::Error))
-        .await
-        .unwrap_err();
-    assert_eq!(diagnostics.len(), 1);
-    assert_eq!(diagnostics[0].code(), "deprecated");
-    assert!(diagnostics[0].is_error());
+test_lint! {
+    #[test]
+    fn test_deprecated_schema_lint_level_error(
+        "value = 1\n",
+        Config(deprecated_schema_config(SeverityLevel::Error)),
+    ) -> Diagnostics([{
+        code: "deprecated",
+        level: tombi_diagnostic::Level::ERROR,
+    }])
 }

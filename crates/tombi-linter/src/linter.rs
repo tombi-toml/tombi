@@ -125,9 +125,9 @@ impl<'a> Linter<'a> {
                 sub_schema_uri_map: source_schema
                     .as_ref()
                     .map(|source_schema| &source_schema.sub_schema_uri_map),
-                deprecated_lint_levels: source_schema
+                deprecated_lint_level: source_schema
                     .as_ref()
-                    .map(|source_schema| &source_schema.deprecated_lint_levels),
+                    .and_then(|source_schema| source_schema.deprecated_lint_level),
                 schema_visits: Default::default(),
                 store: self.schema_store,
                 strict: tombi_document_comment_directive

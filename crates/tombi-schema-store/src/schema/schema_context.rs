@@ -5,13 +5,12 @@ use tombi_x_keyword::StringFormat;
 use crate::schema::schema_cycle_guard::SchemaVisits;
 
 use super::SchemaAccessor;
-use crate::schema::source_schema::DeprecatedLintLevels;
 
 pub struct SchemaContext<'a> {
     pub toml_version: tombi_config::TomlVersion,
     pub root_schema: Option<&'a crate::DocumentSchema>,
     pub sub_schema_uri_map: Option<&'a crate::SubSchemaUriMap>,
-    pub deprecated_lint_levels: Option<&'a DeprecatedLintLevels>,
+    pub deprecated_lint_level: Option<SeverityLevel>,
     pub schema_visits: SchemaVisits,
     pub store: &'a crate::SchemaStore,
     pub strict: Option<bool>,
@@ -31,19 +30,8 @@ impl SchemaContext<'_> {
     }
 
     #[inline]
-    pub fn deprecated_lint_level(
-        &self,
-        current_schema: Option<&crate::CurrentSchema<'_>>,
-    ) -> Option<SeverityLevel> {
-        self.deprecated_lint_levels.and_then(|levels| {
-            current_schema.and_then(|current| {
-                levels.get(&*current.schema_uri).copied().or_else(|| {
-                    let mut schema_uri = current.schema_uri.as_ref().clone();
-                    schema_uri.set_fragment(None);
-                    levels.get(&schema_uri).copied()
-                })
-            })
-        })
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevel> {
+        self.deprecated_lint_level
     }
 
     pub async fn get_subschema(

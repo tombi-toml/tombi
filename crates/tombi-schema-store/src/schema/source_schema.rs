@@ -8,13 +8,12 @@ use super::{DocumentSchema, SchemaUri};
 use crate::{SchemaAccessor, SchemaAccessors};
 
 pub type SubSchemaUriMap = tombi_hashmap::HashMap<Vec<SchemaAccessor>, SchemaUri>;
-pub type DeprecatedLintLevels = tombi_hashmap::HashMap<SchemaUri, SeverityLevel>;
 
 #[derive(Clone, Default)]
 pub struct SourceSchema {
     pub root_schema: Option<Arc<DocumentSchema>>,
     pub sub_schema_uri_map: SubSchemaUriMap,
-    pub deprecated_lint_levels: DeprecatedLintLevels,
+    pub deprecated_lint_level: Option<SeverityLevel>,
     /// TOML version override from `[[schemas]]` config entry.
     ///
     /// Use [`toml_version()`](Self::toml_version) to get the resolved value.
@@ -26,23 +25,13 @@ impl SourceSchema {
         root_schema: Option<Arc<DocumentSchema>>,
         sub_schema_uri_map: SubSchemaUriMap,
         toml_version: Option<TomlVersion>,
-        deprecated_lint_levels: DeprecatedLintLevels,
+        deprecated_lint_level: Option<SeverityLevel>,
     ) -> Self {
         Self {
             root_schema,
             sub_schema_uri_map,
-            deprecated_lint_levels,
+            deprecated_lint_level,
             toml_version,
-        }
-    }
-
-    pub fn insert_deprecated_lint_level(
-        &mut self,
-        schema_uri: SchemaUri,
-        level: Option<SeverityLevel>,
-    ) {
-        if let Some(level) = level {
-            self.deprecated_lint_levels.insert(schema_uri, level);
         }
     }
 
