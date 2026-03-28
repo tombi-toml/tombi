@@ -1,15 +1,17 @@
 use itertools::Itertools;
 use serde::Deserialize;
 use tombi_config::TomlVersion;
-use tombi_document_tree::dig_accessors;
+use tombi_document_tree::{dig_accessors, dig_keys};
 use tombi_extension::CommentContext;
 use tombi_extension::CompletionContent;
+use tombi_extension::CompletionContentPriority;
 use tombi_extension::CompletionHint;
 use tombi_extension::CompletionKind;
 use tombi_extension::CompletionTextEdit;
 use tombi_extension::TextEdit;
 use tombi_extension::{completion_directory_path, completion_file_path};
 use tombi_future::Boxable;
+use tombi_hashmap::HashSet;
 use tombi_schema_store::Accessor;
 use tombi_schema_store::HttpClient;
 use tombi_schema_store::matches_accessors;
@@ -253,6 +255,17 @@ async fn completion_member(
     completion_hint: Option<CompletionHint>,
     toml_version: TomlVersion,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+    if let Some(completions) = complete_workspace_dependency_inheritance(
+        document_tree,
+        cargo_toml_path,
+        position,
+        accessors,
+        completion_hint,
+        toml_version,
+    ) {
+        return Ok(Some(completions));
+    }
+
     if matches_accessors!(accessors, ["dependencies", _, "version"])
         || matches_accessors!(accessors, ["dev-dependencies", _, "version"])
         || matches_accessors!(accessors, ["build-dependencies", _, "version"])
@@ -340,6 +353,138 @@ async fn completion_member(
         }
     }
     Ok(None)
+}
+
+fn complete_workspace_dependency_inheritance(
+    document_tree: &tombi_document_tree::DocumentTree,
+    cargo_toml_path: &std::path::Path,
+    position: tombi_text::Position,
+    accessors: &[Accessor],
+    completion_hint: Option<CompletionHint>,
+    toml_version: TomlVersion,
+) -> Option<Vec<CompletionContent>> {
+    if completion_hint.is_some() {
+        return None;
+    }
+
+    let Some((dependency_table_accessors, dependency_name)) =
+        member_dependency_accessors(accessors)
+    else {
+        return None;
+    };
+
+    let Some((_, tombi_document_tree::Value::Table(current_dependency_table))) =
+        dig_accessors(document_tree, dependency_table_accessors)
+    else {
+        return None;
+    };
+
+    let completion_range = if let Some(Accessor::Key(dependency_name)) = dependency_name {
+        let Some((Accessor::Key(_), tombi_document_tree::Value::Incomplete { .. })) =
+            dig_accessors(document_tree, accessors)
+        else {
+            return None;
+        };
+
+        let Some((current_dependency_key, _)) =
+            current_dependency_table.get_key_value(dependency_name.as_str())
+        else {
+            return None;
+        };
+
+        current_dependency_key.range()
+    } else {
+        tombi_text::Range::at(position)
+    };
+
+    let Some((_, _, workspace_document_tree)) = find_workspace_cargo_toml(
+        cargo_toml_path,
+        get_workspace_path(document_tree),
+        toml_version,
+    ) else {
+        return None;
+    };
+
+    let Some((_, tombi_document_tree::Value::Table(workspace_dependencies))) =
+        dig_keys(&workspace_document_tree, &["workspace", "dependencies"])
+    else {
+        return None;
+    };
+
+    let existing_dependency_names = current_dependency_table
+        .keys()
+        .map(|key| key.value.clone())
+        .filter(|key| Some(key.as_str()) != dependency_name.and_then(|key| key.as_key()))
+        .collect::<HashSet<_>>();
+
+    let dependency_prefix = dependency_name
+        .and_then(|key| key.as_key())
+        .unwrap_or_default();
+    let completions = workspace_dependencies
+        .keys()
+        .filter(|key| key.value.starts_with(dependency_prefix))
+        .filter(|key| !existing_dependency_names.contains(&key.value))
+        .enumerate()
+        .map(|(index, key)| CompletionContent {
+            label: key.value.clone(),
+            kind: CompletionKind::Key,
+            emoji_icon: Some('🦀'),
+            priority: CompletionContentPriority::Custom(format!(
+                "10__cargo_workspace_dependency_{index:>03}__",
+            )),
+            detail: Some("Workspace dependency".to_string()),
+            documentation: Some(
+                "Inherit this dependency from `[workspace.dependencies]`.".to_string(),
+            ),
+            filter_text: None,
+            schema_uri: None,
+            deprecated: None,
+            edit: Some(tombi_extension::CompletionEdit {
+                text_edit: CompletionTextEdit::Edit(TextEdit {
+                    range: completion_range,
+                    new_text: format!("{}.workspace = true", key.value),
+                }),
+                insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
+                additional_text_edits: None,
+            }),
+            preselect: None,
+            in_comment: false,
+        })
+        .collect::<Vec<_>>();
+
+    if completions.is_empty() {
+        None
+    } else {
+        Some(completions)
+    }
+}
+
+fn member_dependency_accessors<'a>(
+    accessors: &'a [Accessor],
+) -> Option<(&'a [Accessor], Option<&'a Accessor>)> {
+    if matches_accessors!(accessors, ["dependencies"])
+        || matches_accessors!(accessors, ["dev-dependencies"])
+        || matches_accessors!(accessors, ["build-dependencies"])
+    {
+        Some((accessors, None))
+    } else if matches_accessors!(accessors, ["dependencies", _])
+        || matches_accessors!(accessors, ["dev-dependencies", _])
+        || matches_accessors!(accessors, ["build-dependencies", _])
+    {
+        Some((&accessors[..1], accessors.get(1)))
+    } else if matches_accessors!(accessors, ["target", _, "dependencies"])
+        || matches_accessors!(accessors, ["target", _, "dev-dependencies"])
+        || matches_accessors!(accessors, ["target", _, "build-dependencies"])
+    {
+        Some((accessors, None))
+    } else if matches_accessors!(accessors, ["target", _, "dependencies", _])
+        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _])
+        || matches_accessors!(accessors, ["target", _, "build-dependencies", _])
+    {
+        Some((&accessors[..3], accessors.get(3)))
+    } else {
+        None
+    }
 }
 
 async fn complete_crate_version(
