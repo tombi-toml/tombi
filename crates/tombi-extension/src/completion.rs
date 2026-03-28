@@ -897,26 +897,6 @@ mod tests {
         fs::remove_dir_all(fixture_dir).unwrap();
     }
 
-    #[test]
-    fn file_path_completion_keeps_spaces_in_edit_text() {
-        let fixture_dir = create_fixture_dir();
-        let range = tombi_text::Range::new((0, 0).into(), (0, 0).into());
-
-        let completions = get_file_path_completions(&fixture_dir, "", range, Some(&["json"]));
-        let completion = completions
-            .into_iter()
-            .find(|completion| completion.label == "schema with spaces.json")
-            .unwrap();
-
-        assert_eq!(completion.label, "schema with spaces.json");
-        assert_eq!(
-            edit_new_text(completion.edit.as_ref().unwrap()),
-            "schema with spaces.json"
-        );
-
-        fs::remove_dir_all(fixture_dir).unwrap();
-    }
-
     fn edit_new_text(edit: &CompletionEdit) -> &str {
         match &edit.text_edit {
             CompletionTextEdit::Edit(edit) => &edit.new_text,

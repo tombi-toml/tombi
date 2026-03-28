@@ -38,11 +38,39 @@ pub(crate) fn classify_cargo_navigation_feature(
     ) {
         CargoNavigationFeature::Path
     } else if matches!(
-        accessors.first(),
-        Some(tombi_schema_store::Accessor::Key(key)) if key == "workspace"
+        accessors,
+        [
+            tombi_schema_store::Accessor::Key(first),
+            tombi_schema_store::Accessor::Key(second),
+            ..
+        ] if *first == "workspace" && (*second == "members" || *second == "default-members")
     ) {
         CargoNavigationFeature::Member
     } else {
         CargoNavigationFeature::Dependency
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{CargoNavigationFeature, classify_cargo_navigation_feature};
+
+    fn key(value: &str) -> tombi_schema_store::Accessor {
+        tombi_schema_store::Accessor::Key(value.to_string())
+    }
+
+    #[test]
+    fn classify_workspace_members_as_member_feature() {
+        let feature = classify_cargo_navigation_feature(&[key("workspace"), key("members")]);
+
+        assert!(matches!(feature, CargoNavigationFeature::Member));
+    }
+
+    #[test]
+    fn classify_workspace_dependencies_as_dependency_feature() {
+        let feature =
+            classify_cargo_navigation_feature(&[key("workspace"), key("dependencies"), key("foo")]);
+
+        assert!(matches!(feature, CargoNavigationFeature::Dependency));
     }
 }
