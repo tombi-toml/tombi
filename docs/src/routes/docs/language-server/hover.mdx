@@ -34,3 +34,7 @@ is not used, and the type is displayed as the TOML Basic Type like `String`, `Bo
 Therefore, the `&` that indicates the relationship of `allOf` does not appear on hover
 if you are using the correct JSON Schema.
 </Tip>
+
+For dependency entries, Tombi can also enrich hover content with package metadata such as the
+resolved package name and description. In offline mode, remote registry lookups are skipped and
+only local workspace or path metadata is used.

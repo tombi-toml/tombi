@@ -3,12 +3,14 @@ mod completion;
 mod document_link;
 mod goto_declaration;
 mod goto_definition;
+mod hover;
 
 pub use code_action::{CodeActionRefactorRewriteName, code_action};
 pub use completion::completion;
 pub use document_link::{DocumentLinkToolTip, document_link};
 pub use goto_declaration::goto_declaration;
 pub use goto_definition::goto_definition;
+pub use hover::hover;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;

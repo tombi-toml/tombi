@@ -71,7 +71,7 @@ impl SchemaStore {
     }
 
     /// Offline mode
-    fn offline(&self) -> bool {
+    pub fn offline(&self) -> bool {
         self.options.offline.unwrap_or(false)
     }
 

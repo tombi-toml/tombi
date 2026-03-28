@@ -106,6 +106,52 @@ pub async fn handle_hover(
 
     if let Some(HoverContent::Value(hover_value_content)) = &mut hover_content {
         hover_value_content.range = range;
+
+        let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
+        let offline = schema_store.offline();
+
+        let extension_hover = if let Some(metadata) = tombi_extension_tombi::hover(
+            &text_document_uri,
+            &document_tree,
+            &accessors,
+            toml_version,
+            offline,
+        )
+        .await?
+        {
+            Some(metadata)
+        } else if let Some(metadata) = tombi_extension_cargo::hover(
+            &text_document_uri,
+            &document_tree,
+            &accessors,
+            toml_version,
+            offline,
+        )
+        .await?
+        {
+            Some(metadata)
+        } else if let Some(metadata) = tombi_extension_uv::hover(
+            &text_document_uri,
+            &document_tree,
+            &accessors,
+            toml_version,
+            offline,
+        )
+        .await?
+        {
+            Some(metadata)
+        } else {
+            None
+        };
+
+        if let Some(metadata) = extension_hover {
+            if metadata.title.is_some() {
+                hover_value_content.title = metadata.title;
+            }
+            if metadata.description.is_some() {
+                hover_value_content.description = metadata.description;
+            }
+        }
     }
     Ok(hover_content)
 }
