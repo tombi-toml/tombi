@@ -781,7 +781,7 @@ impl SchemaStore {
                                 None,
                                 sub_schema_uri_map,
                                 matching_schema.toml_version,
-                                None,
+                                matching_schema.deprecated_lint_level,
                             );
                             source_schema = Some(new_source);
                         }

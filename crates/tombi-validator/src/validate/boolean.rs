@@ -193,7 +193,6 @@ async fn validate_boolean(
             boolean_schema.deprecated,
             accessors,
             boolean_value,
-            Some(current_schema),
             schema_context,
             boolean_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
