@@ -1,6 +1,6 @@
 [workspace]
-members = ["member"]
 resolver = "2"
+members = ["member"]
 
 [workspace.dependencies]
 serde = { version = "1.0.0" }
