@@ -980,25 +980,6 @@
           "description": "Override the deprecated diagnostic level for this schema.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SchemaDeprecatedRule"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false,
-      "x-tombi-table-keys-order": "schema"
-    },
-    "SchemaDeprecatedRule": {
-      "title": "Deprecated",
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "title": "Deprecated diagnostic level",
-          "anyOf": [
-            {
               "$ref": "#/definitions/SeverityLevel"
             },
             {

@@ -67,14 +67,14 @@ test_lint! {
 
 test_lint! {
     #[test]
-    fn test_tombi_schema_lint_rules_deprecated_enabled(
+    fn test_tombi_schema_lint_rules_deprecated(
         r#"
         [[schemas]]
         path = "tombi://www.schemastore.org/cargo.json"
         include = ["Cargo.toml"]
 
-        [schemas.lint.rules.deprecated]
-        enabled = "error"
+        [schemas.lint.rules]
+        deprecated = "error"
         "#,
         SchemaPath(tombi_schema_path()),
     ) -> Ok(_)

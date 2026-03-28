@@ -85,7 +85,7 @@ test_lint! {
     ])
 }
 
-fn deprecated_schema_config(deprecated_level: SeverityLevel) -> tombi_config::Config {
+fn deprecated_schema_config(deprecated_level: Option<SeverityLevel>) -> tombi_config::Config {
     let schema_path = project_root_path()
         .join("schemas")
         .join("deprecated-test.schema.json");
@@ -97,11 +97,9 @@ fn deprecated_schema_config(deprecated_level: SeverityLevel) -> tombi_config::Co
             toml_version: None,
             path: schema_uri.to_string(),
             include: vec!["*.toml".to_string()],
-            lint: Some(tombi_config::SchemaLintOptions {
+            lint: deprecated_level.map(|deprecated_level| tombi_config::SchemaLintOptions {
                 rules: Some(tombi_config::SchemaLintRules {
-                    deprecated: Some(tombi_config::SchemaDeprecatedRule {
-                        enabled: Some(deprecated_level),
-                    }),
+                    deprecated: Some(deprecated_level),
                 }),
             }),
         },
@@ -111,9 +109,20 @@ fn deprecated_schema_config(deprecated_level: SeverityLevel) -> tombi_config::Co
 
 test_lint! {
     #[test]
+    fn test_deprecated_schema_lint_level_default_config(
+        "value = 1\n",
+        Config(deprecated_schema_config(None)),
+    ) -> Diagnostics([{
+        code: "deprecated",
+        level: tombi_diagnostic::Level::WARNING,
+    }])
+}
+
+test_lint! {
+    #[test]
     fn test_deprecated_schema_lint_level_off(
         "value = 1\n",
-        Config(deprecated_schema_config(SeverityLevel::Off)),
+        Config(deprecated_schema_config(Some(SeverityLevel::Off))),
     ) -> Ok(_)
 }
 
@@ -121,7 +130,7 @@ test_lint! {
     #[test]
     fn test_deprecated_schema_lint_level_warn(
         "value = 1\n",
-        Config(deprecated_schema_config(SeverityLevel::Warn)),
+        Config(deprecated_schema_config(Some(SeverityLevel::Warn))),
     ) -> Diagnostics([{
         code: "deprecated",
         level: tombi_diagnostic::Level::WARNING,
@@ -132,7 +141,7 @@ test_lint! {
     #[test]
     fn test_deprecated_schema_lint_level_error(
         "value = 1\n",
-        Config(deprecated_schema_config(SeverityLevel::Error)),
+        Config(deprecated_schema_config(Some(SeverityLevel::Error))),
     ) -> Diagnostics([{
         code: "deprecated",
         level: tombi_diagnostic::Level::ERROR,
