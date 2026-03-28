@@ -883,6 +883,7 @@ async fn fetch_local_crate_features(
 mod tests {
     use std::{
         ffi::OsString,
+        str::FromStr,
         sync::{LazyLock, Mutex, MutexGuard},
         time::Duration,
     };
@@ -944,10 +945,96 @@ mod tests {
         format!("tombi-cache-test-{suffix}-{unique}")
     }
 
+    fn sanitize_cache_segment(segment: &str) -> String {
+        if segment.is_empty() || segment == "." || segment == ".." {
+            return format!(
+                "__segment_{}",
+                segment
+                    .bytes()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>()
+            );
+        }
+
+        let mut sanitized = String::with_capacity(segment.len());
+        for byte in segment.bytes() {
+            match byte {
+                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' => {
+                    sanitized.push(byte as char)
+                }
+                _ => sanitized.push_str(&format!("_{byte:02x}")),
+            }
+        }
+        sanitized
+    }
+
+    fn encode_cache_suffix(value: &str) -> String {
+        let mut encoded = String::new();
+        for byte in value.bytes() {
+            match byte {
+                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' => encoded.push(byte as char),
+                _ => encoded.push_str(&format!("{byte:02x}")),
+            }
+        }
+        encoded
+    }
+
+    async fn cached_remote_json_file_path(url: &str) -> std::path::PathBuf {
+        let remote_uri = tombi_uri::Uri::from_str(url).unwrap();
+        let mut cache_dir_path = tombi_cache::get_tombi_cache_dir_path().await.unwrap();
+        cache_dir_path.push(sanitize_cache_segment(remote_uri.scheme()));
+
+        let host = remote_uri.host_str().unwrap();
+        let host_segment = if let Some(port) = remote_uri.port() {
+            format!("{}__port_{}", sanitize_cache_segment(host), port)
+        } else {
+            sanitize_cache_segment(host)
+        };
+        cache_dir_path.push(host_segment);
+
+        let mut path_segments = remote_uri
+            .path_segments()
+            .into_iter()
+            .flatten()
+            .filter(|segment| !segment.is_empty())
+            .map(sanitize_cache_segment)
+            .collect::<Vec<_>>();
+        let file_name = if let Some(last_segment) = path_segments.last().cloned() {
+            if last_segment.ends_with(".json") {
+                path_segments.pop();
+                let mut file_name = last_segment.trim_end_matches(".json").to_string();
+                if let Some(query) = remote_uri.query() {
+                    file_name.push_str("__query_");
+                    file_name.push_str(&encode_cache_suffix(query));
+                }
+                if let Some(fragment) = remote_uri.fragment() {
+                    file_name.push_str("__fragment_");
+                    file_name.push_str(&encode_cache_suffix(fragment));
+                }
+                file_name.push_str(".json");
+                file_name
+            } else {
+                if let Some(query) = remote_uri.query() {
+                    path_segments.push(format!("__query_{}", encode_cache_suffix(query)));
+                }
+                if let Some(fragment) = remote_uri.fragment() {
+                    path_segments.push(format!("__fragment_{}", encode_cache_suffix(fragment)));
+                }
+                "__index__.json".to_string()
+            }
+        } else {
+            "__index__.json".to_string()
+        };
+
+        for segment in path_segments {
+            cache_dir_path.push(segment);
+        }
+        cache_dir_path.push(file_name);
+        cache_dir_path
+    }
+
     async fn write_cached_response(url: &str, body: &str) {
-        let cache_path = tombi_extension::get_cached_remote_json_file_path(url)
-            .await
-            .unwrap();
+        let cache_path = cached_remote_json_file_path(url).await;
         if let Some(parent) = cache_path.parent() {
             std::fs::create_dir_all(parent).unwrap();
         }
