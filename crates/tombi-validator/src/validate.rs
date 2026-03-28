@@ -99,11 +99,7 @@ fn resolve_deprecated_lint_level(
                 .as_ref()
                 .map(SeverityLevelDefaultWarn::from)
         })
-        .or_else(|| {
-            schema_context
-                .deprecated_lint_level()
-                .map(SeverityLevelDefaultWarn::from)
-        })
+        .or_else(|| schema_context.deprecated_lint_level())
         .unwrap_or_default()
 }
 

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 use tombi_config::TomlVersion;
-use tombi_severity_level::SeverityLevel;
+use tombi_severity_level::SeverityLevelDefaultWarn;
 
 use super::{DocumentSchema, SchemaUri};
 use crate::{SchemaAccessor, SchemaAccessors};
@@ -13,7 +13,7 @@ pub type SubSchemaUriMap = tombi_hashmap::HashMap<Vec<SchemaAccessor>, SchemaUri
 pub struct SourceSchema {
     pub root_schema: Option<Arc<DocumentSchema>>,
     pub sub_schema_uri_map: SubSchemaUriMap,
-    pub deprecated_lint_level: Option<SeverityLevel>,
+    pub deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
     /// TOML version override from `[[schemas]]` config entry.
     ///
     /// Use [`toml_version()`](Self::toml_version) to get the resolved value.
@@ -25,7 +25,7 @@ impl SourceSchema {
         root_schema: Option<Arc<DocumentSchema>>,
         sub_schema_uri_map: SubSchemaUriMap,
         toml_version: Option<TomlVersion>,
-        deprecated_lint_level: Option<SeverityLevel>,
+        deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
     ) -> Self {
         Self {
             root_schema,

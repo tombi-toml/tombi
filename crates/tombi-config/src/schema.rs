@@ -1,4 +1,4 @@
-use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultWarn};
+use tombi_severity_level::SeverityLevelDefaultWarn;
 use tombi_toml_version::TomlVersion;
 
 use crate::{
@@ -123,7 +123,7 @@ impl SchemaItem {
         }
     }
 
-    pub fn deprecated_lint_level(&self) -> Option<SeverityLevel> {
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevelDefaultWarn> {
         match self {
             Self::Root(item) => item.deprecated_lint_level(),
             Self::Sub(item) => item.deprecated_lint_level(),
@@ -157,7 +157,7 @@ pub struct RootSchema {
 }
 
 impl RootSchema {
-    pub fn deprecated_lint_level(&self) -> Option<SeverityLevel> {
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevelDefaultWarn> {
         self.lint
             .as_ref()
             .and_then(|lint| lint.deprecated_lint_level())
@@ -193,7 +193,7 @@ pub struct SubSchema {
 }
 
 impl SubSchema {
-    pub fn deprecated_lint_level(&self) -> Option<SeverityLevel> {
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevelDefaultWarn> {
         self.lint
             .as_ref()
             .and_then(|lint| lint.deprecated_lint_level())
@@ -213,11 +213,8 @@ pub struct SchemaLintOptions {
 }
 
 impl SchemaLintOptions {
-    pub fn deprecated_lint_level(&self) -> Option<SeverityLevel> {
-        self.rules
-            .as_ref()
-            .and_then(|rules| rules.deprecated)
-            .map(SeverityLevel::from)
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevelDefaultWarn> {
+        self.rules.as_ref().and_then(|rules| rules.deprecated)
     }
 }
 

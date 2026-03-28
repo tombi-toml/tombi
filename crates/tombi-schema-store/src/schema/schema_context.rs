@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use tombi_severity_level::SeverityLevel;
+use tombi_severity_level::SeverityLevelDefaultWarn;
 use tombi_x_keyword::StringFormat;
 
 use crate::schema::schema_cycle_guard::SchemaVisits;
@@ -10,7 +10,7 @@ pub struct SchemaContext<'a> {
     pub toml_version: tombi_config::TomlVersion,
     pub root_schema: Option<&'a crate::DocumentSchema>,
     pub sub_schema_uri_map: Option<&'a crate::SubSchemaUriMap>,
-    pub deprecated_lint_level: Option<SeverityLevel>,
+    pub deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
     pub schema_visits: SchemaVisits,
     pub store: &'a crate::SchemaStore,
     pub strict: Option<bool>,
@@ -30,7 +30,7 @@ impl SchemaContext<'_> {
     }
 
     #[inline]
-    pub fn deprecated_lint_level(&self) -> Option<SeverityLevel> {
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevelDefaultWarn> {
         self.deprecated_lint_level
     }
 
