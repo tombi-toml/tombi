@@ -3788,6 +3788,8 @@ dependencies = [
  "itertools 0.14.0",
  "log",
  "pep508_rs",
+ "serde",
+ "serde_json",
  "tombi-ast",
  "tombi-config",
  "tombi-document-tree",
