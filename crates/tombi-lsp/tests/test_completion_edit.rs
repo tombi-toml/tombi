@@ -45,6 +45,23 @@ mod completion_edit {
                 "#
             );
         }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn tombi_extensions_key_is_quoted(
+                r#"
+                [extensions]
+                █
+                "#,
+                Select("\"tombi-toml/cargo\""),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok(
+                r#"
+                [extensions]
+                "tombi-toml/cargo"
+                "#
+            );
+        }
     }
 
     mod cargo_schema {

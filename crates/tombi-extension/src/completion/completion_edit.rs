@@ -313,7 +313,16 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::InTableHeader | CompletionHint::Comma { .. }) | None => None,
+            Some(CompletionHint::InTableHeader | CompletionHint::Comma { .. }) | None => {
+                Some(Self {
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        new_text: key_name.to_string(),
+                        range: key_range,
+                    }),
+                    insert_text_format: None,
+                    additional_text_edits: None,
+                })
+            }
         }
     }
 

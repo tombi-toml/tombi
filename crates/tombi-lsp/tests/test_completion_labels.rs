@@ -202,6 +202,21 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_extensions_table(
+                r#"
+                [extensions]
+                █
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "\"tombi-toml/cargo\"",
+                "\"tombi-toml/tombi\"",
+                "\"tombi-toml/uv\"",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_lint_rules_key_empty_equal_warn_and_space(
                 r#"
                 [lint.rules]
