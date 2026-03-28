@@ -41,7 +41,7 @@ pub async fn hover(
     if matches_accessors!(accessors, ["tool", "uv", "sources", _])
         || matches_accessors!(accessors, ["tool", "uv", "sources", _, _])
     {
-        return Ok(resolve_uv_source_metadata(
+        return Ok(resolve_pyproject_source_metadata(
             document_tree,
             &accessors[..4],
             &pyproject_toml_path,
@@ -64,7 +64,7 @@ pub async fn hover(
 
     let package_name = requirement.name.as_ref();
 
-    if let Some(metadata) = resolve_uv_dependency_metadata_from_sources(
+    if let Some(metadata) = resolve_pyproject_dependency_metadata_from_sources(
         document_tree,
         package_name,
         document_tree,
@@ -98,7 +98,7 @@ fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
     }
 }
 
-fn resolve_uv_dependency_metadata_from_sources(
+fn resolve_pyproject_dependency_metadata_from_sources(
     document_tree: &tombi_document_tree::DocumentTree,
     package_name: &str,
     current_document_tree: &tombi_document_tree::DocumentTree,
@@ -120,7 +120,7 @@ fn resolve_uv_dependency_metadata_from_sources(
     )
 }
 
-fn resolve_uv_source_metadata(
+fn resolve_pyproject_source_metadata(
     document_tree: &tombi_document_tree::DocumentTree,
     source_accessors: &[Accessor],
     pyproject_toml_path: &Path,

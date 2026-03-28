@@ -4,7 +4,7 @@ use tombi_document_tree::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
-    DependencyRequirement, UvNavigationFeature, classify_uv_navigation_feature,
+    DependencyRequirement, PyprojectNavigationFeature, classify_pyproject_navigation_feature,
     collect_dependency_requirements_from_document_tree, find_member_project_toml,
     find_workspace_pyproject_toml, get_project_name, goto_definition_for_member_pyproject_toml,
     goto_definition_for_workspace_pyproject_toml, load_pyproject_toml_document_tree,
@@ -16,7 +16,7 @@ pub async fn goto_definition(
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
-    features: Option<&tombi_config::UvExtensionFeatures>,
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
@@ -26,7 +26,7 @@ pub async fn goto_definition(
         return Ok(Default::default());
     };
 
-    if !uv_navigation_enabled(features, accessors) {
+    if !pyproject_navigation_enabled(features, accessors) {
         return Ok(None);
     }
 
@@ -73,15 +73,15 @@ pub async fn goto_definition(
     Ok(Some(locations))
 }
 
-fn uv_navigation_enabled(
-    features: Option<&tombi_config::UvExtensionFeatures>,
+fn pyproject_navigation_enabled(
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
     accessors: &[tombi_schema_store::Accessor],
 ) -> bool {
-    let feature = classify_uv_navigation_feature(accessors);
+    let feature = classify_pyproject_navigation_feature(accessors);
     features.map_or(true, |features| match feature {
-        UvNavigationFeature::Dependency => features.goto_definition_dependency_enabled(),
-        UvNavigationFeature::Member => features.goto_definition_member_enabled(),
-        UvNavigationFeature::Path => features.goto_definition_path_enabled(),
+        PyprojectNavigationFeature::Dependency => features.goto_definition_dependency_enabled(),
+        PyprojectNavigationFeature::Member => features.goto_definition_member_enabled(),
+        PyprojectNavigationFeature::Path => features.goto_definition_path_enabled(),
     })
 }
 
