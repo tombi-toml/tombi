@@ -945,7 +945,7 @@ mod tests {
     }
 
     async fn write_cached_response(url: &str, body: &str) {
-        let cache_path = tombi_extension::get_cached_remote_file_path(url)
+        let cache_path = tombi_extension::get_cached_remote_json_file_path(url)
             .await
             .unwrap();
         if let Some(parent) = cache_path.parent() {

@@ -9,7 +9,7 @@ use tombi_schema_store::HttpClient;
 
 const CACHE_INDEX_FILE_NAME: &str = "__index__.json";
 
-pub async fn get_cached_remote_file_path(url: &str) -> Option<PathBuf> {
+pub async fn get_cached_remote_json_file_path(url: &str) -> Option<PathBuf> {
     let uri = tombi_uri::Uri::from_str(url).ok()?;
     let cache_uri = get_cache_uri_for_remote_url(&uri)?;
     get_cache_file_path(&cache_uri).await
@@ -20,7 +20,7 @@ pub async fn fetch_cached_remote_json<T: DeserializeOwned>(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
 ) -> Option<T> {
-    let cache_file_path = get_cached_remote_file_path(url).await;
+    let cache_file_path = get_cached_remote_json_file_path(url).await;
 
     fetch_cached_remote_json_from_path(url, cache_file_path.as_deref(), offline, cache_options)
         .await
