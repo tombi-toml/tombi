@@ -5,6 +5,10 @@ use tombi_extension::{
 };
 use tombi_schema_store::{Accessor, matches_accessors};
 
+enum UvCompletionFeature {
+    Path,
+}
+
 pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
@@ -13,6 +17,7 @@ pub async fn completion(
     _toml_version: TomlVersion,
     _completion_hint: Option<CompletionHint>,
     comment_context: Option<&CommentContext>,
+    features: Option<&tombi_config::UvExtensionFeatures>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     if comment_context.is_some() {
         return Ok(None);
@@ -22,13 +27,33 @@ pub async fn completion(
         return Ok(None);
     }
 
-    if let Some(completions) =
-        completion_pyproject_file_path(text_document_uri, document_tree, position, accessors)
+    if !uv_completion_root_enabled(features) {
+        return Ok(None);
+    }
+
+    if let Some(completions) = uv_completion_enabled(features, UvCompletionFeature::Path)
+        .then(|| {
+            completion_pyproject_file_path(text_document_uri, document_tree, position, accessors)
+        })
+        .flatten()
     {
         return Ok(Some(completions));
     }
 
     Ok(None)
+}
+
+fn uv_completion_root_enabled(features: Option<&tombi_config::UvExtensionFeatures>) -> bool {
+    features.map_or(true, tombi_config::UvExtensionFeatures::completion_enabled)
+}
+
+fn uv_completion_enabled(
+    features: Option<&tombi_config::UvExtensionFeatures>,
+    feature: UvCompletionFeature,
+) -> bool {
+    features.map_or(true, |features| match feature {
+        UvCompletionFeature::Path => features.path_completion_enabled(),
+    })
 }
 
 fn completion_pyproject_file_path(

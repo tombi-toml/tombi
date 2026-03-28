@@ -53,3 +53,14 @@ test_lint! {
         },
     ])
 }
+
+test_lint! {
+    #[test]
+    fn test_tombi_schema_extensions_lsp_feature_tree(
+        r#"
+        [extensions]
+        "tombi-toml/tombi" = { lsp.document-link.path.enabled = false }
+        "#,
+        SchemaPath(tombi_schema_path()),
+    ) -> Ok(_)
+}

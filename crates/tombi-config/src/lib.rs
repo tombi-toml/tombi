@@ -1,4 +1,5 @@
 mod error;
+mod extensions;
 mod files;
 pub mod format;
 mod level;
@@ -9,6 +10,7 @@ mod server;
 mod types;
 
 pub use error::Error;
+pub use extensions::*;
 pub use files::FilesOptions;
 pub use format::*;
 pub use level::ConfigLevel;
@@ -43,7 +45,7 @@ pub const TOMBI_CONFIG_TOML_VERSION: TomlVersion = TomlVersion::V1_1_0;
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-toml-version" = TOMBI_CONFIG_TOML_VERSION)))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = concat!("https://", tombi_uri::schemastore_hostname!(), "/tombi.json"))))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = concat!("tombi://", tombi_uri::schemastore_hostname!(), "/tombi.json"))))]
 pub struct Config {
     /// # TOML version
     ///
@@ -66,6 +68,8 @@ pub struct Config {
 
     /// # Override config items
     overrides: Option<Vec<OverrideItem>>,
+
+    pub extensions: Option<Extensions>,
 }
 
 impl Config {
@@ -79,6 +83,40 @@ impl Config {
 
     pub fn overrides(&self) -> Option<&Vec<OverrideItem>> {
         self.overrides.as_ref()
+    }
+
+    pub fn cargo_extension_enabled(&self) -> bool {
+        self.extensions
+            .as_ref()
+            .map_or(true, Extensions::cargo_enabled)
+    }
+
+    pub fn cargo_extension_features(&self) -> Option<&CargoExtensionFeatures> {
+        self.extensions
+            .as_ref()
+            .and_then(Extensions::cargo_features)
+    }
+
+    pub fn uv_extension_enabled(&self) -> bool {
+        self.extensions
+            .as_ref()
+            .map_or(true, Extensions::uv_enabled)
+    }
+
+    pub fn uv_extension_features(&self) -> Option<&UvExtensionFeatures> {
+        self.extensions.as_ref().and_then(Extensions::uv_features)
+    }
+
+    pub fn tombi_extension_enabled(&self) -> bool {
+        self.extensions
+            .as_ref()
+            .map_or(true, Extensions::tombi_enabled)
+    }
+
+    pub fn tombi_extension_features(&self) -> Option<&TombiExtensionFeatures> {
+        self.extensions
+            .as_ref()
+            .and_then(Extensions::tombi_features)
     }
 
     pub fn merge_format(&self, override_options: Option<&OverrideFormatOptions>) -> FormatOptions {

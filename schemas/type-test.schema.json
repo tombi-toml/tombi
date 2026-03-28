@@ -266,15 +266,6 @@
       },
       "minProperties": 2
     },
-    "TableValueAllowsEmptyKey": {
-      "type": "object",
-      "propertyNames": {
-        "minLength": 0
-      },
-      "additionalProperties": {
-        "type": "integer"
-      }
-    },
     "TableValue": {
       "type": "object",
       "properties": {
@@ -369,6 +360,15 @@
         }
       },
       "minProperties": 2
+    },
+    "TableValueAllowsEmptyKey": {
+      "type": "object",
+      "propertyNames": {
+        "minLength": 0
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
     }
   }
 }

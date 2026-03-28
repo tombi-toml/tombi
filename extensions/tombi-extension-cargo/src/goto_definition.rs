@@ -1,4 +1,7 @@
-use crate::{goto_definition_for_crate_cargo_toml, goto_definition_for_workspace_cargo_toml};
+use crate::{
+    CargoNavigationFeature, classify_cargo_navigation_feature,
+    goto_definition_for_crate_cargo_toml, goto_definition_for_workspace_cargo_toml,
+};
 use tombi_config::TomlVersion;
 
 pub async fn goto_definition(
@@ -6,6 +9,7 @@ pub async fn goto_definition(
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
+    features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is Cargo.toml
     if !text_document_uri.path().ends_with("Cargo.toml") {
@@ -14,6 +18,10 @@ pub async fn goto_definition(
     let Ok(cargo_toml_path) = text_document_uri.to_file_path() else {
         return Ok(Default::default());
     };
+
+    if !cargo_navigation_enabled(features, accessors) {
+        return Ok(None);
+    }
 
     let locations = if accessors.first()
         == Some(&tombi_schema_store::Accessor::Key("workspace".to_string()))
@@ -51,4 +59,16 @@ pub async fn goto_definition(
     }
 
     Ok(Some(locations))
+}
+
+fn cargo_navigation_enabled(
+    features: Option<&tombi_config::CargoExtensionFeatures>,
+    accessors: &[tombi_schema_store::Accessor],
+) -> bool {
+    let feature = classify_cargo_navigation_feature(accessors);
+    features.map_or(true, |features| match feature {
+        CargoNavigationFeature::Dependency => features.goto_definition_dependency_enabled(),
+        CargoNavigationFeature::Member => features.goto_definition_member_enabled(),
+        CargoNavigationFeature::Path => features.goto_definition_path_enabled(),
+    })
 }

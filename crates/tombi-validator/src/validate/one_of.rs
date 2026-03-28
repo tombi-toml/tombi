@@ -44,8 +44,7 @@ where
             total_diagnostics.extend(error.diagnostics);
         }
 
-        if let Some(if_then_else_schema) = one_of_schema.if_then_else.as_ref()
-        {
+        if let Some(if_then_else_schema) = one_of_schema.if_then_else.as_ref() {
             match validate_if_then_else(
                 value,
                 accessors,
@@ -58,8 +57,7 @@ where
                 Ok(result) => base_evaluated_locations.merge_from(result),
                 Err(error) => {
                     if !has_error_level_diagnostics(&error) {
-                        base_evaluated_locations
-                            .merge_from(error.evaluated_locations.clone());
+                        base_evaluated_locations.merge_from(error.evaluated_locations.clone());
                     }
                     total_diagnostics.extend(error.diagnostics);
                 }

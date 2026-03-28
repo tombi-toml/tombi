@@ -507,6 +507,19 @@ mod goto_definition_tests {
                 SourcePath(project_root_path().join("tombi.toml")),
             ) -> Ok([project_root_path().join("www.schemastore.org/tombi.json")]);
         );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn schema_path_disabled_by_extensions(
+                r#"
+                [[schemas]]
+                path = "█www.schemastore.org/tombi.json"
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/tombi-disabled/tombi.toml"
+                )),
+            ) -> Ok([]);
+        );
     }
 
     #[macro_export]

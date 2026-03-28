@@ -107,6 +107,33 @@ fn find_workspace_pyproject_toml(
     None
 }
 
+pub(crate) enum UvNavigationFeature {
+    Dependency,
+    Member,
+    Path,
+}
+
+pub(crate) fn classify_uv_navigation_feature(
+    accessors: &[tombi_schema_store::Accessor],
+) -> UvNavigationFeature {
+    if matches!(
+        accessors.last(),
+        Some(tombi_schema_store::Accessor::Key(key)) if key == "path"
+    ) {
+        UvNavigationFeature::Path
+    } else if matches_accessors!(
+        accessors[..accessors.len().min(3)],
+        ["tool", "uv", "workspace"]
+    ) || matches_accessors!(
+        accessors[..accessors.len().min(3)],
+        ["tool", "uv", "sources"]
+    ) {
+        UvNavigationFeature::Member
+    } else {
+        UvNavigationFeature::Dependency
+    }
+}
+
 /// Helper function to extract member patterns from workspace document tree
 fn extract_member_patterns<'a>(
     workspace_document_tree: &'a tombi_document_tree::DocumentTree,

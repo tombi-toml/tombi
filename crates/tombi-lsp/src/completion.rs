@@ -252,8 +252,8 @@ pub async fn find_completion_contents_with_tree(
         .await
         .into_iter()
         .fold(
-            tombi_hashmap::HashMap::new(),
-            |mut acc: tombi_hashmap::HashMap<_, Vec<_>>, content| {
+            tombi_hashmap::IndexMap::new(),
+            |mut acc: tombi_hashmap::IndexMap<_, Vec<_>>, content| {
                 acc.entry(content.label.clone()).or_default().push(content);
                 acc
             },
