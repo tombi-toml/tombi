@@ -655,6 +655,7 @@ name = "test"
             &[],
             tombi_config::TomlVersion::default(),
             &line_index,
+            None,
         );
 
         assert!(result.is_ok());
@@ -689,6 +690,7 @@ dependencies = ["pydantic>=2.10"]
             ],
             tombi_config::TomlVersion::default(),
             &line_index,
+            None,
         );
 
         assert!(result.is_ok());
@@ -721,6 +723,7 @@ name = "test"
             ],
             tombi_config::TomlVersion::default(),
             &line_index,
+            None,
         );
 
         assert!(result.is_ok());
