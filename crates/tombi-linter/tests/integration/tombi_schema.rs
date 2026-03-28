@@ -67,7 +67,7 @@ test_lint! {
 
 test_lint! {
     #[test]
-    fn test_tombi_schema_schema_lint_rules_deprecated_enabled(
+    fn test_tombi_schema_lint_rules_deprecated_enabled(
         r#"
         [[schemas]]
         path = "tombi://www.schemastore.org/cargo.json"
