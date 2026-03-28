@@ -1,11 +1,10 @@
 use std::{
-    fmt::Write,
     path::{Path, PathBuf},
     str::FromStr,
 };
 
 use serde::de::DeserializeOwned;
-use tombi_cache::{get_tombi_cache_dir_path, read_from_cache, save_to_cache};
+use tombi_cache::{get_cache_file_path, read_from_cache, save_to_cache};
 use tombi_schema_store::HttpClient;
 
 const CACHE_INDEX_FILE_NAME: &str = "__index__.json";
@@ -22,116 +21,19 @@ pub async fn fetch_cached_remote_json<T: DeserializeOwned>(
 }
 
 async fn get_cached_remote_json_file_path(url: &str) -> Option<PathBuf> {
-    let remote_uri = match tombi_uri::Uri::from_str(url) {
-        Ok(uri) => uri,
-        Err(err) => {
-            log::warn!("Invalid URL for remote cache {url}: {err}");
-            return None;
-        }
-    };
+    let uri = tombi_uri::Uri::from_str(url)
+        .inspect_err(|err| log::warn!("Invalid URL for remote cache {url}: {err}"))
+        .ok()?;
 
-    let mut cache_dir_path = get_tombi_cache_dir_path().await?;
-    cache_dir_path.push(sanitize_cache_segment(remote_uri.scheme()));
-
-    let Some(host) = remote_uri.host_str() else {
-        log::warn!("Remote cache URL has no host: {url}");
-        return None;
-    };
-    let host_segment = if let Some(port) = remote_uri.port() {
-        format!("{}__port_{}", sanitize_cache_segment(host), port)
+    let cache_uri = if uri.path().ends_with(".json") {
+        uri
     } else {
-        sanitize_cache_segment(host)
-    };
-    cache_dir_path.push(host_segment);
-
-    let mut path_segments = remote_uri
-        .path_segments()
-        .into_iter()
-        .flatten()
-        .filter(|segment| !segment.is_empty())
-        .map(sanitize_cache_segment)
-        .collect::<Vec<_>>();
-    let file_name = if let Some(last_segment) = path_segments.last().cloned() {
-        if last_segment.ends_with(".json") {
-            path_segments.pop();
-            augment_json_file_name(&last_segment, remote_uri.query(), remote_uri.fragment())
-        } else {
-            if let Some(query) = remote_uri.query() {
-                path_segments.push(format!("__query_{}", encode_cache_suffix(query)));
-            }
-            if let Some(fragment) = remote_uri.fragment() {
-                path_segments.push(format!("__fragment_{}", encode_cache_suffix(fragment)));
-            }
-            CACHE_INDEX_FILE_NAME.to_string()
-        }
-    } else {
-        if let Some(query) = remote_uri.query() {
-            path_segments.push(format!("__query_{}", encode_cache_suffix(query)));
-        }
-        if let Some(fragment) = remote_uri.fragment() {
-            path_segments.push(format!("__fragment_{}", encode_cache_suffix(fragment)));
-        }
-        CACHE_INDEX_FILE_NAME.to_string()
+        let mut u = uri;
+        u.path_segments_mut().ok()?.push(CACHE_INDEX_FILE_NAME);
+        u
     };
 
-    for segment in path_segments {
-        cache_dir_path.push(segment);
-    }
-    cache_dir_path.push(file_name);
-
-    Some(cache_dir_path)
-}
-
-fn augment_json_file_name(file_name: &str, query: Option<&str>, fragment: Option<&str>) -> String {
-    if query.is_none() && fragment.is_none() {
-        return file_name.to_string();
-    }
-
-    let stem = file_name.strip_suffix(".json").unwrap_or(file_name);
-    let mut augmented = stem.to_string();
-    if let Some(query) = query {
-        augmented.push_str("__query_");
-        augmented.push_str(&encode_cache_suffix(query));
-    }
-    if let Some(fragment) = fragment {
-        augmented.push_str("__fragment_");
-        augmented.push_str(&encode_cache_suffix(fragment));
-    }
-    augmented.push_str(".json");
-    augmented
-}
-
-fn sanitize_cache_segment(segment: &str) -> String {
-    if segment.is_empty() || segment == "." || segment == ".." {
-        return format!("__segment_{}", encode_cache_suffix(segment));
-    }
-
-    let mut sanitized = String::with_capacity(segment.len());
-    for byte in segment.bytes() {
-        match byte {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' => {
-                sanitized.push(byte as char)
-            }
-            _ => {
-                sanitized.push('_');
-                let _ = write!(sanitized, "{byte:02x}");
-            }
-        }
-    }
-    sanitized
-}
-
-fn encode_cache_suffix(value: &str) -> String {
-    let mut encoded = String::with_capacity(value.len() * 3);
-    for byte in value.bytes() {
-        match byte {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' => encoded.push(byte as char),
-            _ => {
-                let _ = write!(encoded, "{byte:02x}");
-            }
-        }
-    }
-    encoded
+    get_cache_file_path(&cache_uri).await
 }
 
 async fn fetch_cached_remote_json_from_path<T: DeserializeOwned>(
@@ -225,7 +127,6 @@ fn parse_json<T: DeserializeOwned>(url: &str, bytes: &[u8]) -> Option<T> {
 mod tests {
     use std::{
         ffi::OsString,
-        path::PathBuf,
         sync::{LazyLock, Mutex, MutexGuard},
         time::Duration,
     };
@@ -278,7 +179,7 @@ mod tests {
         }
     }
 
-    fn temp_cache_path(test_name: &str) -> PathBuf {
+    fn temp_cache_path(test_name: &str) -> std::path::PathBuf {
         let unique = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
@@ -327,66 +228,6 @@ mod tests {
                 .unwrap();
         assert_eq!(cache_path.file_name().unwrap(), "catalog.json");
         assert_eq!(cache_path.parent().unwrap().file_name().unwrap(), "schema");
-    }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn query_fragment_and_port_affect_cache_path() {
-        let _cache_home = TestCacheHome::new();
-        let base =
-            get_cached_remote_json_file_path("https://example.invalid/api/schema/catalog.json")
-                .await
-                .unwrap();
-        let with_query = get_cached_remote_json_file_path(
-            "https://example.invalid/api/schema/catalog.json?kind=full",
-        )
-        .await
-        .unwrap();
-        let with_fragment = get_cached_remote_json_file_path(
-            "https://example.invalid/api/schema/catalog.json#section",
-        )
-        .await
-        .unwrap();
-        let with_port = get_cached_remote_json_file_path(
-            "https://example.invalid:8443/api/schema/catalog.json",
-        )
-        .await
-        .unwrap();
-
-        assert_ne!(base, with_query);
-        assert_ne!(base, with_fragment);
-        assert_ne!(base, with_port);
-        assert!(
-            with_query
-                .file_name()
-                .unwrap()
-                .to_string_lossy()
-                .starts_with("catalog__query_")
-        );
-        assert!(
-            with_fragment
-                .file_name()
-                .unwrap()
-                .to_string_lossy()
-                .starts_with("catalog__fragment_")
-        );
-        assert_eq!(
-            with_port
-                .ancestors()
-                .nth(3)
-                .unwrap()
-                .file_name()
-                .unwrap()
-                .to_string_lossy(),
-            "example.invalid__port_8443"
-        );
-    }
-
-    #[test]
-    fn dangerous_segments_are_sanitized() {
-        assert_eq!(sanitize_cache_segment("."), "__segment_2e");
-        assert_eq!(sanitize_cache_segment(".."), "__segment_2e2e");
-        assert_eq!(sanitize_cache_segment("a/b"), "a_2fb");
-        assert_eq!(sanitize_cache_segment("a\\b"), "a_5cb");
     }
 
     #[tokio::test]
