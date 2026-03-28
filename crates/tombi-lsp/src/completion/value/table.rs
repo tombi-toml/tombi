@@ -250,6 +250,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                         self,
                                                         &key_name,
                                                         position,
+                                                        current_editing_key_range(keys, position),
                                                         accessors,
                                                         table_schema,
                                                         &current_schema,
@@ -459,6 +460,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     completion_contents.push(CompletionContent::new_key(
                                         &key_name,
                                         position,
+                                        current_editing_key_range(keys, position),
                                         title,
                                         description,
                                         table_schema.required.as_ref(),
@@ -483,6 +485,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         self,
                                         &key_name,
                                         position,
+                                        current_editing_key_range(keys, position),
                                         accessors,
                                         table_schema,
                                         &current_schema,
@@ -528,6 +531,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             completion_contents.push(CompletionContent::new_key(
                                                 last_key,
                                                 position,
+                                                current_editing_key_range(keys, position),
                                                 value_schema
                                                     .detail(
                                                         &current_schema.schema_uri,
@@ -733,6 +737,7 @@ impl FindCompletionContents for TableSchema {
                     completion_items.push(CompletionContent::new_key(
                         &label,
                         position,
+                        current_editing_key_range(keys, position),
                         schema_candidate
                             .detail(
                                 &current_schema.schema_uri,
@@ -936,6 +941,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
     table: &'a tombi_document_tree::Table,
     key_name: &'a String,
     position: tombi_text::Position,
+    replace_range: Option<tombi_text::Range>,
     accessors: &'a [Accessor],
     table_schema: &'a TableSchema,
     current_schema: &'a CurrentSchema<'a>,
@@ -1013,6 +1019,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
             completion_contents.push(CompletionContent::new_key(
                 key_name,
                 position,
+                replace_range,
                 schema_candidate
                     .detail(
                         &current_schema.schema_uri,
@@ -1113,4 +1120,14 @@ fn key_singleton_literal_label(schema_candidates: &[ValueSchema]) -> Option<Stri
     } else {
         None
     }
+}
+
+fn current_editing_key_range(
+    keys: &[tombi_document_tree::Key],
+    position: tombi_text::Position,
+) -> Option<tombi_text::Range> {
+    keys.last().and_then(|key| {
+        let range = key.range();
+        (range.start <= position && position <= range.end).then_some(range)
+    })
 }

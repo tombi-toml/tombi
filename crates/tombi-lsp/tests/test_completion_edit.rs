@@ -53,12 +53,37 @@ mod completion_edit {
                 [extensions]
                 █
                 "#,
-                Select("\"tombi-toml/cargo\""),
+                Select("tombi-toml/cargo"),
                 SchemaPath(tombi_schema_path()),
             ) -> Ok(
                 r#"
                 [extensions]
                 "tombi-toml/cargo"
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn tombi_extensions_inline_table_partial_key_is_replaced(
+                r#"
+                [extensions]
+                "tombi-toml/tombi" = {
+                    lsp = {
+                        comp█
+                    },
+                }
+                "#,
+                Select("completion"),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok(
+                r#"
+                [extensions]
+                "tombi-toml/tombi" = {
+                    lsp = {
+                        completion
+                    },
+                }
                 "#
             );
         }
