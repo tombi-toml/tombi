@@ -3787,7 +3787,6 @@ dependencies = [
 name = "tombi-extension-uv"
 version = "0.0.0-dev"
 dependencies = [
- "glob",
  "itertools 0.14.0",
  "log",
  "pep508_rs",

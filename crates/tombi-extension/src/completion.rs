@@ -733,6 +733,37 @@ pub fn get_file_path_completions(
     path_range: tombi_text::Range,
     allowed_extensions: Option<&[&str]>,
 ) -> Vec<CompletionContent> {
+    get_file_path_completions_with_edit_mode(
+        base_dir,
+        path_text,
+        path_range,
+        allowed_extensions,
+        FilePathCompletionEditMode::AsIs,
+    )
+}
+
+pub fn get_file_path_completions_with_space_escaped_edit(
+    base_dir: &Path,
+    path_text: &str,
+    path_range: tombi_text::Range,
+    allowed_extensions: Option<&[&str]>,
+) -> Vec<CompletionContent> {
+    get_file_path_completions_with_edit_mode(
+        base_dir,
+        path_text,
+        path_range,
+        allowed_extensions,
+        FilePathCompletionEditMode::EscapeSpaces,
+    )
+}
+
+fn get_file_path_completions_with_edit_mode(
+    base_dir: &Path,
+    path_text: &str,
+    path_range: tombi_text::Range,
+    allowed_extensions: Option<&[&str]>,
+    edit_mode: FilePathCompletionEditMode,
+) -> Vec<CompletionContent> {
     let mut completions = Vec::new();
 
     let (search_dir, prefix, path_prefix) = if path_text.is_empty() {
@@ -796,8 +827,10 @@ pub fn get_file_path_completions(
             "File".to_string()
         };
 
-        let completion_edit =
-            CompletionEdit::new_string_literal_while_editing(&relative_path, path_range);
+        let completion_edit = CompletionEdit::new_string_literal_while_editing(
+            &edit_mode.edit_text(&relative_path),
+            path_range,
+        );
 
         if let Some(edit) = completion_edit {
             completions.push(CompletionContent {
@@ -818,6 +851,21 @@ pub fn get_file_path_completions(
     }
 
     completions
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FilePathCompletionEditMode {
+    AsIs,
+    EscapeSpaces,
+}
+
+impl FilePathCompletionEditMode {
+    fn edit_text(self, path: &str) -> String {
+        match self {
+            Self::AsIs => path.to_string(),
+            Self::EscapeSpaces => path.replace(' ', "\\ "),
+        }
+    }
 }
 
 fn is_allowed_extension(file_name: &str, allowed_extensions: Option<&[&str]>) -> bool {
@@ -843,4 +891,81 @@ fn is_json_only_extensions(allowed_extensions: Option<&[&str]>) -> bool {
         return false;
     };
     allowed_extensions.len() == 1 && allowed_extensions[0].eq_ignore_ascii_case("json")
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        fs,
+        path::PathBuf,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    use super::*;
+    use crate::completion::completion_edit::CompletionTextEdit;
+
+    #[test]
+    fn file_path_completion_keeps_spaces_in_string_literal_edit() {
+        let fixture_dir = create_fixture_dir();
+        let range = tombi_text::Range::new((0, 0).into(), (0, 0).into());
+
+        let completions = get_file_path_completions(&fixture_dir, "", range, Some(&["json"]));
+        let completion = completions
+            .into_iter()
+            .find(|completion| completion.label == "schema with spaces.json")
+            .unwrap();
+
+        assert_eq!(completion.label, "schema with spaces.json");
+        assert_eq!(
+            edit_new_text(completion.edit.as_ref().unwrap()),
+            "schema with spaces.json"
+        );
+
+        fs::remove_dir_all(fixture_dir).unwrap();
+    }
+
+    #[test]
+    fn file_path_completion_escapes_spaces_only_in_edit_text() {
+        let fixture_dir = create_fixture_dir();
+        let range = tombi_text::Range::new((0, 0).into(), (0, 0).into());
+
+        let completions = get_file_path_completions_with_space_escaped_edit(
+            &fixture_dir,
+            "",
+            range,
+            Some(&["json"]),
+        );
+        let completion = completions
+            .into_iter()
+            .find(|completion| completion.label == "schema with spaces.json")
+            .unwrap();
+
+        assert_eq!(completion.label, "schema with spaces.json");
+        assert_eq!(
+            edit_new_text(completion.edit.as_ref().unwrap()),
+            "schema\\ with\\ spaces.json"
+        );
+
+        fs::remove_dir_all(fixture_dir).unwrap();
+    }
+
+    fn edit_new_text(edit: &CompletionEdit) -> &str {
+        match &edit.text_edit {
+            CompletionTextEdit::Edit(edit) => &edit.new_text,
+            CompletionTextEdit::InsertAndReplace(edit) => &edit.new_text,
+        }
+    }
+
+    fn create_fixture_dir() -> PathBuf {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let fixture_dir = std::env::temp_dir().join(format!("tombi-extension-completion-{unique}"));
+
+        fs::create_dir_all(&fixture_dir).unwrap();
+        fs::write(fixture_dir.join("schema with spaces.json"), "{}").unwrap();
+
+        fixture_dir
+    }
 }

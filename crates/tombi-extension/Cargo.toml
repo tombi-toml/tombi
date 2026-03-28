@@ -6,6 +6,9 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
+[package.metadata.cargo-shear]
+ignored = ["glob", "tombi-parser"]  # Used by shared manifest helpers.
+
 [dependencies]
 glob.workspace = true
 tombi-ast.workspace = true
