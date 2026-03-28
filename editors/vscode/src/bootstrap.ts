@@ -1,4 +1,4 @@
-import { exec, spawnSync } from "node:child_process";
+import { exec } from "node:child_process";
 import * as os from "node:os";
 import * as path from "node:path";
 import * as vscode from "vscode";
@@ -196,29 +196,18 @@ function createDirectTombiBin(
 
 function createNodeModulesTombiBin(bin: NodeModulesTombiBin): TombiBin {
   if (bin.kind === "node-script") {
-    const node = "node";
     return {
       source: "node_modules",
       binPath: bin.binPath,
       command:
-        process.platform === "win32" && existsCommand(node)
-          ? node
+        process.platform === "win32"
+          ? `${process.execPath}.cmd`
           : process.execPath,
       args: [bin.binPath],
     };
   }
 
   return createDirectTombiBin("node_modules", bin.binPath);
-}
-
-function existsCommand(command: string): boolean {
-  const result = spawnSync(command, ["-v"]);
-  return (
-    result.status === 0 &&
-    !result.error &&
-    result.stdout &&
-    result.stdout.byteLength > 0
-  );
 }
 
 async function findLocalTombiBin(binName: string): Promise<string | undefined> {
