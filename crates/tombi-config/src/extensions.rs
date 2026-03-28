@@ -1,7 +1,7 @@
 use crate::BoolDefaultTrue;
 
 pub const CARGO_EXTENSION_NAME: &str = "tombi-toml/cargo";
-pub const UV_EXTENSION_NAME: &str = "tombi-toml/uv";
+pub const PYPROJECT_EXTENSION_NAME: &str = "tombi-toml/pyproject";
 pub const TOMBI_EXTENSION_NAME: &str = "tombi-toml/tombi";
 
 macro_rules! default_to_features {
@@ -22,8 +22,8 @@ macro_rules! default_to_features {
 pub struct Extensions {
     #[cfg_attr(feature = "serde", serde(rename = "tombi-toml/cargo"))]
     pub cargo: Option<CargoExtensionFeatures>,
-    #[cfg_attr(feature = "serde", serde(rename = "tombi-toml/uv"))]
-    pub uv: Option<UvExtensionFeatures>,
+    #[cfg_attr(feature = "serde", serde(rename = "tombi-toml/pyproject"))]
+    pub pyproject: Option<PyprojectExtensionFeatures>,
     #[cfg_attr(feature = "serde", serde(rename = "tombi-toml/tombi"))]
     pub tombi: Option<TombiExtensionFeatures>,
 }
@@ -39,12 +39,14 @@ impl Extensions {
         self.cargo.as_ref()
     }
 
-    pub fn uv_enabled(&self) -> bool {
-        self.uv.as_ref().map_or(true, UvExtensionFeatures::enabled)
+    pub fn pyproject_enabled(&self) -> bool {
+        self.pyproject
+            .as_ref()
+            .map_or(true, PyprojectExtensionFeatures::enabled)
     }
 
-    pub fn uv_features(&self) -> Option<&UvExtensionFeatures> {
-        self.uv.as_ref()
+    pub fn pyproject_features(&self) -> Option<&PyprojectExtensionFeatures> {
+        self.pyproject.as_ref()
     }
 
     pub fn tombi_enabled(&self) -> bool {
@@ -784,14 +786,14 @@ pub struct CargoCodeActionFeatureTree {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum UvExtensionFeatures {
+pub enum PyprojectExtensionFeatures {
     Enabled(EnabledOnly),
-    Features(UvExtensionFeatureTree),
+    Features(PyprojectExtensionFeatureTree),
 }
 
-default_to_features!(UvExtensionFeatures, UvExtensionFeatureTree);
+default_to_features!(PyprojectExtensionFeatures, PyprojectExtensionFeatureTree);
 
-impl UvExtensionFeatures {
+impl PyprojectExtensionFeatures {
     pub fn enabled(&self) -> bool {
         match self {
             Self::Enabled(enabled) => enabled.enabled(),
@@ -799,7 +801,7 @@ impl UvExtensionFeatures {
         }
     }
 
-    pub fn lsp(&self) -> Option<&UvLspFeatures> {
+    pub fn lsp(&self) -> Option<&PyprojectLspFeatures> {
         match self {
             Self::Enabled(_) => None,
             Self::Features(features) => features.lsp.as_ref(),
@@ -807,102 +809,111 @@ impl UvExtensionFeatures {
     }
 
     pub fn completion_enabled(&self) -> bool {
-        self.enabled() && self.lsp().map_or(true, UvLspFeatures::completion_enabled)
+        self.enabled()
+            && self
+                .lsp()
+                .map_or(true, PyprojectLspFeatures::completion_enabled)
     }
 
     pub fn path_completion_enabled(&self) -> bool {
         self.enabled()
             && self
                 .lsp()
-                .map_or(true, UvLspFeatures::path_completion_enabled)
+                .map_or(true, PyprojectLspFeatures::path_completion_enabled)
     }
 
     pub fn goto_definition_enabled(&self) -> bool {
         self.enabled()
             && self
                 .lsp()
-                .map_or(true, UvLspFeatures::goto_definition_enabled)
+                .map_or(true, PyprojectLspFeatures::goto_definition_enabled)
     }
 
     pub fn goto_definition_dependency_enabled(&self) -> bool {
         self.enabled()
-            && self
-                .lsp()
-                .map_or(true, UvLspFeatures::goto_definition_dependency_enabled)
+            && self.lsp().map_or(
+                true,
+                PyprojectLspFeatures::goto_definition_dependency_enabled,
+            )
     }
 
     pub fn goto_definition_member_enabled(&self) -> bool {
         self.enabled()
             && self
                 .lsp()
-                .map_or(true, UvLspFeatures::goto_definition_member_enabled)
+                .map_or(true, PyprojectLspFeatures::goto_definition_member_enabled)
     }
 
     pub fn goto_definition_path_enabled(&self) -> bool {
         self.enabled()
             && self
                 .lsp()
-                .map_or(true, UvLspFeatures::goto_definition_path_enabled)
+                .map_or(true, PyprojectLspFeatures::goto_definition_path_enabled)
     }
 
     pub fn goto_declaration_enabled(&self) -> bool {
         self.enabled()
             && self
                 .lsp()
-                .map_or(true, UvLspFeatures::goto_declaration_enabled)
+                .map_or(true, PyprojectLspFeatures::goto_declaration_enabled)
     }
 
     pub fn goto_declaration_dependency_enabled(&self) -> bool {
         self.enabled()
-            && self
-                .lsp()
-                .map_or(true, UvLspFeatures::goto_declaration_dependency_enabled)
+            && self.lsp().map_or(
+                true,
+                PyprojectLspFeatures::goto_declaration_dependency_enabled,
+            )
     }
 
     pub fn goto_declaration_member_enabled(&self) -> bool {
         self.enabled()
             && self
                 .lsp()
-                .map_or(true, UvLspFeatures::goto_declaration_member_enabled)
+                .map_or(true, PyprojectLspFeatures::goto_declaration_member_enabled)
     }
 
     pub fn goto_declaration_path_enabled(&self) -> bool {
         self.enabled()
             && self
                 .lsp()
-                .map_or(true, UvLspFeatures::goto_declaration_path_enabled)
+                .map_or(true, PyprojectLspFeatures::goto_declaration_path_enabled)
     }
 
     pub fn document_link_enabled(&self) -> bool {
         self.enabled()
             && self
                 .lsp()
-                .map_or(true, UvLspFeatures::document_link_enabled)
+                .map_or(true, PyprojectLspFeatures::document_link_enabled)
     }
 
     pub fn pyproject_toml_document_link_enabled(&self) -> bool {
         self.enabled()
-            && self
-                .lsp()
-                .map_or(true, UvLspFeatures::pyproject_toml_document_link_enabled)
+            && self.lsp().map_or(
+                true,
+                PyprojectLspFeatures::pyproject_toml_document_link_enabled,
+            )
     }
 
     pub fn pypi_org_document_link_enabled(&self) -> bool {
         self.enabled()
             && self
                 .lsp()
-                .map_or(true, UvLspFeatures::pypi_org_document_link_enabled)
+                .map_or(true, PyprojectLspFeatures::pypi_org_document_link_enabled)
     }
 
     pub fn code_action_enabled(&self) -> bool {
-        self.enabled() && self.lsp().map_or(true, UvLspFeatures::code_action_enabled)
+        self.enabled()
+            && self
+                .lsp()
+                .map_or(true, PyprojectLspFeatures::code_action_enabled)
     }
 
     pub fn use_workspace_dependency_code_action_enabled(&self) -> bool {
         self.enabled()
             && self.lsp().map_or(
                 true,
-                UvLspFeatures::use_workspace_dependency_code_action_enabled,
+                PyprojectLspFeatures::use_workspace_dependency_code_action_enabled,
             )
     }
 
@@ -910,7 +921,7 @@ impl UvExtensionFeatures {
         self.enabled()
             && self.lsp().map_or(
                 true,
-                UvLspFeatures::add_to_workspace_and_use_workspace_dependency_code_action_enabled,
+                PyprojectLspFeatures::add_to_workspace_and_use_workspace_dependency_code_action_enabled,
             )
     }
 }
@@ -921,22 +932,22 @@ impl UvExtensionFeatures {
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct UvExtensionFeatureTree {
-    pub lsp: Option<UvLspFeatures>,
+pub struct PyprojectExtensionFeatureTree {
+    pub lsp: Option<PyprojectLspFeatures>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum UvLspFeatures {
+pub enum PyprojectLspFeatures {
     Enabled(EnabledOnly),
-    Features(UvLspFeatureTree),
+    Features(PyprojectLspFeatureTree),
 }
 
-default_to_features!(UvLspFeatures, UvLspFeatureTree);
+default_to_features!(PyprojectLspFeatures, PyprojectLspFeatureTree);
 
-impl UvLspFeatures {
+impl PyprojectLspFeatures {
     pub fn enabled(&self) -> bool {
         match self {
             Self::Enabled(enabled) => enabled.enabled(),
@@ -944,35 +955,35 @@ impl UvLspFeatures {
         }
     }
 
-    pub fn completion(&self) -> Option<&UvCompletionFeatures> {
+    pub fn completion(&self) -> Option<&PyprojectCompletionFeatures> {
         match self {
             Self::Enabled(_) => None,
             Self::Features(features) => features.completion.as_ref(),
         }
     }
 
-    pub fn goto_definition(&self) -> Option<&UvNavigationFeatures> {
+    pub fn goto_definition(&self) -> Option<&PyprojectNavigationFeatures> {
         match self {
             Self::Enabled(_) => None,
             Self::Features(features) => features.goto_definition.as_ref(),
         }
     }
 
-    pub fn goto_declaration(&self) -> Option<&UvNavigationFeatures> {
+    pub fn goto_declaration(&self) -> Option<&PyprojectNavigationFeatures> {
         match self {
             Self::Enabled(_) => None,
             Self::Features(features) => features.goto_declaration.as_ref(),
         }
     }
 
-    pub fn document_link(&self) -> Option<&UvDocumentLinkFeatures> {
+    pub fn document_link(&self) -> Option<&PyprojectDocumentLinkFeatures> {
         match self {
             Self::Enabled(_) => None,
             Self::Features(features) => features.document_link.as_ref(),
         }
     }
 
-    pub fn code_action(&self) -> Option<&UvCodeActionFeatures> {
+    pub fn code_action(&self) -> Option<&PyprojectCodeActionFeatures> {
         match self {
             Self::Enabled(_) => None,
             Self::Features(features) => features.code_action.as_ref(),
@@ -983,112 +994,113 @@ impl UvLspFeatures {
         self.enabled()
             && self
                 .completion()
-                .map_or(true, UvCompletionFeatures::enabled)
+                .map_or(true, PyprojectCompletionFeatures::enabled)
     }
 
     pub fn path_completion_enabled(&self) -> bool {
         self.enabled()
             && self
                 .completion()
-                .map_or(true, UvCompletionFeatures::path_enabled)
+                .map_or(true, PyprojectCompletionFeatures::path_enabled)
     }
 
     pub fn goto_definition_enabled(&self) -> bool {
         self.enabled()
             && self
                 .goto_definition()
-                .map_or(true, UvNavigationFeatures::enabled)
+                .map_or(true, PyprojectNavigationFeatures::enabled)
     }
 
     pub fn goto_definition_dependency_enabled(&self) -> bool {
         self.enabled()
             && self
                 .goto_definition()
-                .map_or(true, UvNavigationFeatures::dependency_enabled)
+                .map_or(true, PyprojectNavigationFeatures::dependency_enabled)
     }
 
     pub fn goto_definition_member_enabled(&self) -> bool {
         self.enabled()
             && self
                 .goto_definition()
-                .map_or(true, UvNavigationFeatures::member_enabled)
+                .map_or(true, PyprojectNavigationFeatures::member_enabled)
     }
 
     pub fn goto_definition_path_enabled(&self) -> bool {
         self.enabled()
             && self
                 .goto_definition()
-                .map_or(true, UvNavigationFeatures::path_enabled)
+                .map_or(true, PyprojectNavigationFeatures::path_enabled)
     }
 
     pub fn goto_declaration_enabled(&self) -> bool {
         self.enabled()
             && self
                 .goto_declaration()
-                .map_or(true, UvNavigationFeatures::enabled)
+                .map_or(true, PyprojectNavigationFeatures::enabled)
     }
 
     pub fn goto_declaration_dependency_enabled(&self) -> bool {
         self.enabled()
             && self
                 .goto_declaration()
-                .map_or(true, UvNavigationFeatures::dependency_enabled)
+                .map_or(true, PyprojectNavigationFeatures::dependency_enabled)
     }
 
     pub fn goto_declaration_member_enabled(&self) -> bool {
         self.enabled()
             && self
                 .goto_declaration()
-                .map_or(true, UvNavigationFeatures::member_enabled)
+                .map_or(true, PyprojectNavigationFeatures::member_enabled)
     }
 
     pub fn goto_declaration_path_enabled(&self) -> bool {
         self.enabled()
             && self
                 .goto_declaration()
-                .map_or(true, UvNavigationFeatures::path_enabled)
+                .map_or(true, PyprojectNavigationFeatures::path_enabled)
     }
 
     pub fn document_link_enabled(&self) -> bool {
         self.enabled()
             && self
                 .document_link()
-                .map_or(true, UvDocumentLinkFeatures::enabled)
+                .map_or(true, PyprojectDocumentLinkFeatures::enabled)
     }
 
     pub fn pyproject_toml_document_link_enabled(&self) -> bool {
         self.enabled()
             && self
                 .document_link()
-                .map_or(true, UvDocumentLinkFeatures::pyproject_toml_enabled)
+                .map_or(true, PyprojectDocumentLinkFeatures::pyproject_toml_enabled)
     }
 
     pub fn pypi_org_document_link_enabled(&self) -> bool {
         self.enabled()
             && self
                 .document_link()
-                .map_or(true, UvDocumentLinkFeatures::pypi_org_enabled)
+                .map_or(true, PyprojectDocumentLinkFeatures::pypi_org_enabled)
     }
 
     pub fn code_action_enabled(&self) -> bool {
         self.enabled()
             && self
                 .code_action()
-                .map_or(true, UvCodeActionFeatures::enabled)
+                .map_or(true, PyprojectCodeActionFeatures::enabled)
     }
 
     pub fn use_workspace_dependency_code_action_enabled(&self) -> bool {
         self.enabled()
-            && self
-                .code_action()
-                .map_or(true, UvCodeActionFeatures::use_workspace_dependency_enabled)
+            && self.code_action().map_or(
+                true,
+                PyprojectCodeActionFeatures::use_workspace_dependency_enabled,
+            )
     }
 
     pub fn add_to_workspace_and_use_workspace_dependency_code_action_enabled(&self) -> bool {
         self.enabled()
             && self.code_action().map_or(
                 true,
-                UvCodeActionFeatures::add_to_workspace_and_use_workspace_dependency_enabled,
+                PyprojectCodeActionFeatures::add_to_workspace_and_use_workspace_dependency_enabled,
             )
     }
 }
@@ -1099,26 +1111,26 @@ impl UvLspFeatures {
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct UvLspFeatureTree {
-    pub completion: Option<UvCompletionFeatures>,
-    pub goto_definition: Option<UvNavigationFeatures>,
-    pub goto_declaration: Option<UvNavigationFeatures>,
-    pub document_link: Option<UvDocumentLinkFeatures>,
-    pub code_action: Option<UvCodeActionFeatures>,
+pub struct PyprojectLspFeatureTree {
+    pub completion: Option<PyprojectCompletionFeatures>,
+    pub goto_definition: Option<PyprojectNavigationFeatures>,
+    pub goto_declaration: Option<PyprojectNavigationFeatures>,
+    pub document_link: Option<PyprojectDocumentLinkFeatures>,
+    pub code_action: Option<PyprojectCodeActionFeatures>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum UvCompletionFeatures {
+pub enum PyprojectCompletionFeatures {
     Enabled(EnabledOnly),
-    Features(UvCompletionFeatureTree),
+    Features(PyprojectCompletionFeatureTree),
 }
 
-default_to_features!(UvCompletionFeatures, UvCompletionFeatureTree);
+default_to_features!(PyprojectCompletionFeatures, PyprojectCompletionFeatureTree);
 
-impl UvCompletionFeatures {
+impl PyprojectCompletionFeatures {
     pub fn enabled(&self) -> bool {
         match self {
             Self::Enabled(enabled) => enabled.enabled(),
@@ -1143,7 +1155,7 @@ impl UvCompletionFeatures {
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct UvCompletionFeatureTree {
+pub struct PyprojectCompletionFeatureTree {
     pub path: Option<ToggleFeature>,
 }
 
@@ -1151,14 +1163,14 @@ pub struct UvCompletionFeatureTree {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum UvNavigationFeatures {
+pub enum PyprojectNavigationFeatures {
     Enabled(EnabledOnly),
-    Features(UvNavigationFeatureTree),
+    Features(PyprojectNavigationFeatureTree),
 }
 
-default_to_features!(UvNavigationFeatures, UvNavigationFeatureTree);
+default_to_features!(PyprojectNavigationFeatures, PyprojectNavigationFeatureTree);
 
-impl UvNavigationFeatures {
+impl PyprojectNavigationFeatures {
     pub fn enabled(&self) -> bool {
         match self {
             Self::Enabled(enabled) => enabled.enabled(),
@@ -1205,7 +1217,7 @@ impl UvNavigationFeatures {
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct UvNavigationFeatureTree {
+pub struct PyprojectNavigationFeatureTree {
     pub dependency: Option<ToggleFeature>,
     pub member: Option<ToggleFeature>,
     pub path: Option<ToggleFeature>,
@@ -1215,14 +1227,17 @@ pub struct UvNavigationFeatureTree {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum UvDocumentLinkFeatures {
+pub enum PyprojectDocumentLinkFeatures {
     Enabled(EnabledOnly),
-    Features(UvDocumentLinkFeatureTree),
+    Features(PyprojectDocumentLinkFeatureTree),
 }
 
-default_to_features!(UvDocumentLinkFeatures, UvDocumentLinkFeatureTree);
+default_to_features!(
+    PyprojectDocumentLinkFeatures,
+    PyprojectDocumentLinkFeatureTree
+);
 
-impl UvDocumentLinkFeatures {
+impl PyprojectDocumentLinkFeatures {
     pub fn enabled(&self) -> bool {
         match self {
             Self::Enabled(enabled) => enabled.enabled(),
@@ -1259,7 +1274,7 @@ impl UvDocumentLinkFeatures {
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct UvDocumentLinkFeatureTree {
+pub struct PyprojectDocumentLinkFeatureTree {
     pub pyproject_toml: Option<ToggleFeature>,
     pub pypi_org: Option<ToggleFeature>,
 }
@@ -1268,14 +1283,14 @@ pub struct UvDocumentLinkFeatureTree {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum UvCodeActionFeatures {
+pub enum PyprojectCodeActionFeatures {
     Enabled(EnabledOnly),
-    Features(UvCodeActionFeatureTree),
+    Features(PyprojectCodeActionFeatureTree),
 }
 
-default_to_features!(UvCodeActionFeatures, UvCodeActionFeatureTree);
+default_to_features!(PyprojectCodeActionFeatures, PyprojectCodeActionFeatureTree);
 
-impl UvCodeActionFeatures {
+impl PyprojectCodeActionFeatures {
     pub fn enabled(&self) -> bool {
         match self {
             Self::Enabled(enabled) => enabled.enabled(),
@@ -1312,7 +1327,7 @@ impl UvCodeActionFeatures {
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct UvCodeActionFeatureTree {
+pub struct PyprojectCodeActionFeatureTree {
     pub use_workspace_dependency: Option<ToggleFeature>,
     pub add_to_workspace_and_use_workspace_dependency: Option<ToggleFeature>,
 }

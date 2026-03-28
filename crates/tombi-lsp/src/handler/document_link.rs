@@ -94,12 +94,12 @@ pub async fn handle_document_link(
         );
     }
 
-    if config.uv_extension_enabled()
-        && let Some(locations) = tombi_extension_uv::document_link(
+    if config.pyproject_extension_enabled()
+        && let Some(locations) = tombi_extension_pyproject::document_link(
             &text_document_uri,
             &document_tree,
             toml_version,
-            config.uv_extension_features(),
+            config.pyproject_extension_features(),
         )
         .await?
     {

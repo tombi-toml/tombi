@@ -210,8 +210,8 @@ mod completion_labels {
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
                 "tombi-toml/cargo",
+                "tombi-toml/pyproject",
                 "tombi-toml/tombi",
-                "tombi-toml/uv",
             ]);
         }
 

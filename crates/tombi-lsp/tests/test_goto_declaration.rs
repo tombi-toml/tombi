@@ -53,7 +53,7 @@ mod goto_declaration_tests {
         );
     }
 
-    mod pyproject_uv_schema {
+    mod pyproject_schema {
         use super::*;
 
         fn pyproject_workspace_fixtures_path() -> std::path::PathBuf {
@@ -62,7 +62,7 @@ mod goto_declaration_tests {
 
         test_goto_declaration!(
             #[tokio::test]
-            async fn tool_uv_sources_tombi_beta(
+            async fn tool_pyproject_sources_tombi_beta(
                 r#"
                 [tool.uv.sources]
                 tombi-beta█ = { workspace = true }
@@ -73,7 +73,7 @@ mod goto_declaration_tests {
 
         test_goto_declaration!(
             #[tokio::test]
-            async fn tool_uv_sources_tombi_beta_workspace(
+            async fn tool_pyproject_sources_tombi_beta_workspace(
                 r#"
                 [tool.uv.sources]
                 tombi-beta = { workspace█ = true }
@@ -84,7 +84,7 @@ mod goto_declaration_tests {
 
         test_goto_declaration!(
             #[tokio::test]
-            async fn tool_uv_sources_path_dependency(
+            async fn tool_pyproject_sources_path_dependency(
                 r#"
                 [tool.uv.sources]
                 tombi-beta = { path = "members/app█" }
@@ -135,7 +135,7 @@ mod goto_declaration_tests {
 
         test_goto_declaration!(
             #[tokio::test]
-            async fn tool_uv_workspace_members_jump_to_member_project(
+            async fn tool_pyproject_workspace_members_jump_to_member_project(
                 r#"
                 [tool.uv.workspace]
                 members = ["members/app█"]
@@ -148,7 +148,7 @@ mod goto_declaration_tests {
 
         test_goto_declaration!(
             #[tokio::test]
-            async fn tool_uv_workspace_members_glob_multiple_candidates(
+            async fn tool_pyproject_workspace_members_glob_multiple_candidates(
                 r#"
                 [tool.uv.workspace]
                 members = ["members/app█*"]

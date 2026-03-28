@@ -131,7 +131,7 @@ pub async fn handle_hover(
         .await?
         {
             Some(metadata)
-        } else if let Some(metadata) = tombi_extension_uv::hover(
+        } else if let Some(metadata) = tombi_extension_pyproject::hover(
             &text_document_uri,
             &document_tree,
             &accessors,

@@ -51,14 +51,14 @@ pub async fn document_link(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     toml_version: TomlVersion,
-    features: Option<&tombi_config::UvExtensionFeatures>,
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(None);
     }
 
-    if !uv_document_link_root_enabled(features) {
+    if !pyproject_document_link_root_enabled(features) {
         return Ok(None);
     }
 
@@ -81,7 +81,7 @@ pub async fn document_link(
     }
 
     // Collect tool.uv.sources information
-    let uv_sources = if let Some((_, tombi_document_tree::Value::Table(sources))) =
+    let pyproject_sources = if let Some((_, tombi_document_tree::Value::Table(sources))) =
         dig_keys(document_tree, &["tool", "uv", "sources"])
     {
         for (package_name_key, source) in sources.key_values() {
@@ -105,7 +105,7 @@ pub async fn document_link(
     {
         document_links.extend(document_link_for_project_dependencies(
             dependencies,
-            uv_sources,
+            pyproject_sources,
             &pyproject_toml_path,
             toml_version,
             pyproject_toml_document_link_enabled(features),
@@ -119,7 +119,7 @@ pub async fn document_link(
     {
         document_links.extend(document_link_for_optional_dependencies(
             optional_dependencies,
-            uv_sources,
+            pyproject_sources,
             &pyproject_toml_path,
             toml_version,
             pyproject_toml_document_link_enabled(features),
@@ -133,7 +133,7 @@ pub async fn document_link(
     {
         document_links.extend(document_link_for_dependency_groups(
             dependency_groups,
-            uv_sources,
+            pyproject_sources,
             &pyproject_toml_path,
             toml_version,
             pyproject_toml_document_link_enabled(features),
@@ -148,26 +148,30 @@ pub async fn document_link(
     Ok(Some(document_links))
 }
 
-fn uv_document_link_root_enabled(features: Option<&tombi_config::UvExtensionFeatures>) -> bool {
+fn pyproject_document_link_root_enabled(
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
+) -> bool {
     features.map_or(
         true,
-        tombi_config::UvExtensionFeatures::document_link_enabled,
+        tombi_config::PyprojectExtensionFeatures::document_link_enabled,
     )
 }
 
 fn pyproject_toml_document_link_enabled(
-    features: Option<&tombi_config::UvExtensionFeatures>,
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
 ) -> bool {
     features.map_or(
         true,
-        tombi_config::UvExtensionFeatures::pyproject_toml_document_link_enabled,
+        tombi_config::PyprojectExtensionFeatures::pyproject_toml_document_link_enabled,
     )
 }
 
-fn pypi_org_document_link_enabled(features: Option<&tombi_config::UvExtensionFeatures>) -> bool {
+fn pypi_org_document_link_enabled(
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
+) -> bool {
     features.map_or(
         true,
-        tombi_config::UvExtensionFeatures::pypi_org_document_link_enabled,
+        tombi_config::PyprojectExtensionFeatures::pypi_org_document_link_enabled,
     )
 }
 
@@ -291,7 +295,7 @@ fn document_link_for_member_pyproject_toml(
 
 fn document_link_for_project_dependencies(
     dependencies: &tombi_document_tree::Array,
-    uv_sources: Option<&tombi_document_tree::Table>,
+    pyproject_sources: Option<&tombi_document_tree::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,
@@ -307,12 +311,12 @@ fn document_link_for_project_dependencies(
                 let package_name = &requirement.name;
 
                 // Check if this package is in tool.uv.sources
-                let is_local_source =
-                    uv_sources.is_some_and(|sources| sources.contains_key(package_name.as_ref()));
+                let is_local_source = pyproject_sources
+                    .is_some_and(|sources| sources.contains_key(package_name.as_ref()));
 
                 if is_local_source {
                     // For packages in tool.uv.sources, create links to local pyproject.toml
-                    if let Some(sources) = uv_sources
+                    if let Some(sources) = pyproject_sources
                         && let Some((package_key, source_value)) =
                             sources.get_key_value(package_name.as_ref())
                     {
@@ -361,7 +365,7 @@ fn document_link_for_project_dependencies(
 
 fn document_link_for_dependency_groups(
     dependency_groups: &tombi_document_tree::Table,
-    uv_sources: Option<&tombi_document_tree::Table>,
+    pyproject_sources: Option<&tombi_document_tree::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,
@@ -375,7 +379,7 @@ fn document_link_for_dependency_groups(
             // Process each dependency in the group using the same logic as project.dependencies
             document_links.extend(document_link_for_project_dependencies(
                 dependencies,
-                uv_sources,
+                pyproject_sources,
                 pyproject_toml_path,
                 toml_version,
                 pyproject_toml_enabled,
@@ -389,7 +393,7 @@ fn document_link_for_dependency_groups(
 
 fn document_link_for_optional_dependencies(
     optional_dependencies: &tombi_document_tree::Table,
-    uv_sources: Option<&tombi_document_tree::Table>,
+    pyproject_sources: Option<&tombi_document_tree::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,
@@ -403,7 +407,7 @@ fn document_link_for_optional_dependencies(
             // Process each dependency in the group using the same logic as project.dependencies
             document_links.extend(document_link_for_project_dependencies(
                 dependencies,
-                uv_sources,
+                pyproject_sources,
                 pyproject_toml_path,
                 toml_version,
                 pyproject_toml_enabled,

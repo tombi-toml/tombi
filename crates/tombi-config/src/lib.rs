@@ -97,14 +97,16 @@ impl Config {
             .and_then(Extensions::cargo_features)
     }
 
-    pub fn uv_extension_enabled(&self) -> bool {
+    pub fn pyproject_extension_enabled(&self) -> bool {
         self.extensions
             .as_ref()
-            .map_or(true, Extensions::uv_enabled)
+            .map_or(true, Extensions::pyproject_enabled)
     }
 
-    pub fn uv_extension_features(&self) -> Option<&UvExtensionFeatures> {
-        self.extensions.as_ref().and_then(Extensions::uv_features)
+    pub fn pyproject_extension_features(&self) -> Option<&PyprojectExtensionFeatures> {
+        self.extensions
+            .as_ref()
+            .and_then(Extensions::pyproject_features)
     }
 
     pub fn tombi_extension_enabled(&self) -> bool {

@@ -30,20 +30,20 @@ pub(crate) use workspace::{
     goto_definition_for_workspace_pyproject_toml, goto_member_pyprojects,
 };
 
-pub(crate) enum UvNavigationFeature {
+pub(crate) enum PyprojectNavigationFeature {
     Dependency,
     Member,
     Path,
 }
 
-pub(crate) fn classify_uv_navigation_feature(
+pub(crate) fn classify_pyproject_navigation_feature(
     accessors: &[tombi_schema_store::Accessor],
-) -> UvNavigationFeature {
+) -> PyprojectNavigationFeature {
     if matches!(
         accessors.last(),
         Some(tombi_schema_store::Accessor::Key(key)) if key == "path"
     ) {
-        UvNavigationFeature::Path
+        PyprojectNavigationFeature::Path
     } else if matches_accessors!(
         accessors[..accessors.len().min(3)],
         ["tool", "uv", "workspace"]
@@ -51,8 +51,8 @@ pub(crate) fn classify_uv_navigation_feature(
         accessors[..accessors.len().min(3)],
         ["tool", "uv", "sources"]
     ) {
-        UvNavigationFeature::Member
+        PyprojectNavigationFeature::Member
     } else {
-        UvNavigationFeature::Dependency
+        PyprojectNavigationFeature::Dependency
     }
 }

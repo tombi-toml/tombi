@@ -1,4 +1,4 @@
 [project]
-name = "uv-disabled"
+name = "pyproject-disabled"
 version = "0.1.0"
 dependencies = []

@@ -1,2 +1,0 @@
-[extensions]
-"tombi-toml/uv" = { enabled = false }

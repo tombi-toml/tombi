@@ -102,15 +102,15 @@ pub async fn handle_code_action(
         code_actions.extend(extension_code_actions);
     }
 
-    if config.uv_extension_enabled()
-        && let Some(extension_code_actions) = tombi_extension_uv::code_action(
+    if config.pyproject_extension_enabled()
+        && let Some(extension_code_actions) = tombi_extension_pyproject::code_action(
             &text_document_uri,
             &root,
             &document_tree,
             &accessors,
             document_source.toml_version,
             line_index,
-            config.uv_extension_features(),
+            config.pyproject_extension_features(),
         )?
     {
         code_actions.extend(extension_code_actions);
