@@ -1404,12 +1404,12 @@ test_inlay_hint!(
         },
     ) -> Ok(Some(vec![
         expected_hint(
-            tombi_text::Position::new(2, 37),
+            tombi_text::Position::new(1, 37),
             r#" → "8.3.3""#,
             RESOLVED_UV_VERSION_TOOLTIP,
         ),
         expected_hint(
-            tombi_text::Position::new(3, 42),
+            tombi_text::Position::new(2, 42),
             r#" → "2.3.0""#,
             RESOLVED_UV_VERSION_TOOLTIP,
         ),
