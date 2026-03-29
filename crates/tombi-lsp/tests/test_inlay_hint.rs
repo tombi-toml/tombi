@@ -23,6 +23,7 @@ use tombi_lsp::{
 
 const RESOLVED_VERSION_TOOLTIP: &str = "Resolved version in Cargo.lock";
 const RESOLVED_UV_VERSION_TOOLTIP: &str = "Resolved version in uv.lock";
+const WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP: &str = "Inherited value from workspace";
 
 fn test_lock() -> &'static Mutex<()> {
     static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -724,6 +725,65 @@ test_inlay_hint!(
         tombi_text::Position::new(5, 27),
         r#" → "0.0.0-dev""#,
         RESOLVED_VERSION_TOOLTIP,
+    )]));
+);
+
+test_inlay_hint!(
+    #[tokio::test]
+    async fn inlay_hint_for_member_package_workspace_inheritance_uses_workspace_package_value(
+        InlayHintFixture::cargo_workspace_member(
+            r#"
+            [workspace]
+            members = ["crates/app"]
+
+            [workspace.package]
+            version = "0.0.0-dev"
+            authors = ["Tombi", "Cargo"]
+            "#,
+            "crates/app/Cargo.toml",
+            r#"
+            [package]
+            name = "app"
+            version = { workspace = true }
+            authors.workspace = true
+            "#,
+            "",
+        )
+    ) -> Ok(Some(vec![
+        expected_hint(
+            tombi_text::Position::new(2, 28),
+            r#" → "0.0.0-dev""#,
+            WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP,
+        ),
+        expected_hint(
+            tombi_text::Position::new(3, 24),
+            r#" → ["Tombi", "Cargo"]"#,
+            WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP,
+        ),
+    ]));
+);
+
+test_inlay_hint!(
+    #[tokio::test]
+    async fn inlay_hint_for_root_package_workspace_inheritance_uses_same_manifest_workspace_package_value(
+        InlayHintFixture::cargo(
+            r#"
+            [package]
+            name = "app"
+            version = { workspace = true }
+
+            [workspace]
+            members = ["."]
+
+            [workspace.package]
+            version = "0.0.0-dev"
+            "#,
+            "",
+        )
+    ) -> Ok(Some(vec![expected_hint(
+        tombi_text::Position::new(2, 28),
+        r#" → "0.0.0-dev""#,
+        WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP,
     )]));
 );
 
