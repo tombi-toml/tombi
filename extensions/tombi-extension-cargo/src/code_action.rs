@@ -122,7 +122,7 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
 pub fn code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
-    _root: &tombi_ast::Root,
+    root: &tombi_ast::Root,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
@@ -154,6 +154,7 @@ pub fn code_action(
         code_actions.extend(code_actions_for_crate_cargo_toml(
             text_document_uri,
             line_index,
+            root,
             document_tree,
             &cargo_toml_path,
             accessors,
@@ -197,6 +198,7 @@ fn code_actions_for_workspace_cargo_toml(
 fn code_actions_for_crate_cargo_toml(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
+    _root: &tombi_ast::Root,
     document_tree: &tombi_document_tree::DocumentTree,
     cargo_toml_path: &std::path::Path,
     accessors: &[Accessor],
@@ -253,15 +255,18 @@ fn code_actions_for_crate_cargo_toml(
         }
 
         if features.map_or(
-            true,
-            tombi_config::CargoExtensionFeatures::inherit_dependency_from_workspace_code_action_enabled,
-        ) && let Some(action) = use_workspace_dependency_code_action(
-            text_document_uri,
-            line_index,
-            document_tree,
-            accessors,
+        true,
+        tombi_config::CargoExtensionFeatures::inherit_dependency_from_workspace_code_action_enabled,
+    ) && let Some(action) = use_workspace_dependency_code_action(
+        text_document_uri,
+        line_index,
+        document_tree,
+        cargo_toml_path,
+        accessors,
             contexts,
+            &workspace_cargo_toml_path,
             &workspace_document_tree,
+            toml_version,
         ) {
             code_actions.push(CodeActionOrCommand::CodeAction(action));
         }
@@ -379,9 +384,12 @@ fn use_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
     crate_document_tree: &tombi_document_tree::DocumentTree,
+    _crate_cargo_toml_path: &std::path::Path,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
+    _workspace_cargo_toml_path: &std::path::Path,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
+    _toml_version: tombi_config::TomlVersion,
 ) -> Option<CodeAction> {
     if accessors.len() < 2 {
         return None;
@@ -410,13 +418,17 @@ fn use_workspace_dependency_code_action(
     let AccessorContext::Key(crate_key_context) = &contexts[1 + offset] else {
         return None;
     };
+    if dig_keys(
+        workspace_document_tree,
+        &["workspace", "dependencies", crate_name],
+    )
+    .is_none()
+    {
+        return None;
+    }
 
     match value {
         tombi_document_tree::Value::String(version) => {
-            dig_keys(
-                workspace_document_tree,
-                &["workspace", "dependencies", crate_name],
-            )?;
             return Some(CodeAction {
                 title: CodeActionRefactorRewriteName::InheritDependencyFromWorkspace.to_string(),
                 kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
@@ -458,16 +470,19 @@ fn use_workspace_dependency_code_action(
                 return None; // No version to inherit
             };
 
-            let text_edit = if table.kind() == TableKind::KeyValue {
-                TextEdit {
-                    range: (crate_key_context.range + version.range()).into_lsp(line_index),
-                    new_text: format!("{crate_name} = {{ workspace = true }}"),
-                }
+            let edits = if matches!(
+                table.kind(),
+                TableKind::KeyValue | TableKind::InlineTable { .. }
+            ) {
+                vec![OneOf::Left(TextEdit {
+                    range: (crate_key_context.range + table.range()).into_lsp(line_index),
+                    new_text: render_inherited_dependency_inline_table(crate_name, table),
+                })]
             } else {
-                TextEdit {
+                vec![OneOf::Left(TextEdit {
                     range: (key.range() + version.range()).into_lsp(line_index),
                     new_text: "workspace = true".to_string(),
-                }
+                })]
             };
 
             return Some(CodeAction {
@@ -481,7 +496,7 @@ fn use_workspace_dependency_code_action(
                             uri: text_document_uri.to_owned().into(),
                             version: None,
                         },
-                        edits: vec![OneOf::Left(text_edit)],
+                        edits,
                     }])),
                     ..Default::default()
                 }),
@@ -492,6 +507,21 @@ fn use_workspace_dependency_code_action(
     }
 
     None
+}
+fn render_inherited_dependency_inline_table(
+    crate_name: &str,
+    dependency_table: &tombi_document_tree::Table,
+) -> String {
+    let mut entries = vec!["workspace = true".to_string()];
+
+    for (key, value) in dependency_table.key_values() {
+        match key.value.as_str() {
+            "version" | "workspace" => {}
+            _ => entries.push(format!("{} = {}", key.value, value)),
+        }
+    }
+
+    format!("{crate_name} = {{ {} }}", entries.join(", "))
 }
 
 /// Convert a dependency version to a table format.
