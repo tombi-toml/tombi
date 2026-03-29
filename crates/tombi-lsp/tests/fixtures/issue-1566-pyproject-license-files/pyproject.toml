@@ -1,9 +1,9 @@
 [project]
 name = "x"
-dynamic = ["version"]
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "a", email = "a@example.com" }]
 keywords = []
 classifiers = ["Programming Language :: Python :: 3"]
 dependencies = ["requests"]
+dynamic = ["version"]

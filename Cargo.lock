@@ -3739,6 +3739,7 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "tombi-ast",
  "tombi-cache",
@@ -3753,11 +3754,13 @@ dependencies = [
 name = "tombi-extension-cargo"
 version = "0.0.0-dev"
 dependencies = [
+ "futures",
  "glob",
  "itertools 0.14.0",
- "log",
  "serde",
  "serde_json",
+ "tempfile",
+ "tokio",
  "tombi-ast",
  "tombi-cache",
  "tombi-config",
@@ -3785,12 +3788,15 @@ dependencies = [
 name = "tombi-extension-pyproject"
 version = "0.0.0-dev"
 dependencies = [
+ "futures",
  "glob",
  "itertools 0.14.0",
  "log",
  "pep508_rs",
  "serde",
  "serde_json",
+ "tempfile",
+ "tokio",
  "tombi-ast",
  "tombi-cache",
  "tombi-config",

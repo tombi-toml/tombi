@@ -3,4 +3,4 @@ resolver = "2"
 members = ["member"]
 
 [workspace.dependencies]
-serde = { version = "1.0.0" }
+member = { path = "member" }

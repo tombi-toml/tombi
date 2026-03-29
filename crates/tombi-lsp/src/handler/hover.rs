@@ -111,41 +111,60 @@ pub async fn handle_hover(
         let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
         let offline = schema_store.offline();
         let cache_options = schema_store.cache_options();
+        let tombi_hover_enabled = config
+            .tombi_extension_features()
+            .map_or(true, tombi_config::TombiExtensionFeatures::hover_enabled);
+        let cargo_dependency_detail_hover_enabled = config.cargo_extension_features().map_or(
+            true,
+            tombi_config::CargoExtensionFeatures::dependency_detail_hover_enabled,
+        );
+        let pyproject_dependency_detail_hover_enabled =
+            config.pyproject_extension_features().map_or(
+                true,
+                tombi_config::PyprojectExtensionFeatures::dependency_detail_hover_enabled,
+            );
 
-        let extension_hover = if let Some(metadata) = tombi_extension_tombi::hover(
-            &text_document_uri,
-            &document_tree,
-            &accessors,
-            toml_version,
-            offline,
-        )
-        .await?
-        {
-            Some(metadata)
-        } else if let Some(metadata) = tombi_extension_cargo::hover(
-            &text_document_uri,
-            &document_tree,
-            &accessors,
-            toml_version,
-            offline,
-            cache_options,
-        )
-        .await?
-        {
-            Some(metadata)
-        } else if let Some(metadata) = tombi_extension_pyproject::hover(
-            &text_document_uri,
-            &document_tree,
-            &accessors,
-            toml_version,
-            offline,
-            cache_options,
-        )
-        .await?
-        {
-            Some(metadata)
+        let extension_hover = if tombi_hover_enabled {
+            tombi_extension_tombi::hover(
+                &text_document_uri,
+                &document_tree,
+                &accessors,
+                toml_version,
+                offline,
+            )
+            .await?
         } else {
             None
+        };
+        let extension_hover = match extension_hover {
+            some @ Some(_) => some,
+            None if cargo_dependency_detail_hover_enabled => {
+                tombi_extension_cargo::hover(
+                    &text_document_uri,
+                    &document_tree,
+                    &accessors,
+                    toml_version,
+                    offline,
+                    cache_options,
+                )
+                .await?
+            }
+            None => None,
+        };
+        let extension_hover = match extension_hover {
+            some @ Some(_) => some,
+            None if pyproject_dependency_detail_hover_enabled => {
+                tombi_extension_pyproject::hover(
+                    &text_document_uri,
+                    &document_tree,
+                    &accessors,
+                    toml_version,
+                    offline,
+                    cache_options,
+                )
+                .await?
+            }
+            None => None,
         };
 
         if let Some(metadata) = extension_hover {

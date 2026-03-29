@@ -13,19 +13,53 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         .text_document_toml_version(&text_document_uri, &text_document.text)
         .await;
     let encoding_kind = backend.capabilities.read().await.encoding_kind;
+    let document_source = DocumentSource::new(
+        text_document.text,
+        Some(text_document.version),
+        toml_version,
+        encoding_kind,
+    );
+    let document_tree = document_source.document_tree();
 
     let mut document_sources = backend.document_sources.write().await;
 
-    document_sources.insert(
-        text_document_uri.clone(),
-        DocumentSource::new(
-            text_document.text,
-            Some(text_document.version),
-            toml_version,
-            encoding_kind,
-        ),
-    );
+    document_sources.insert(text_document_uri.clone(), document_source);
     drop(document_sources);
+
+    let config_schema_store = backend
+        .config_manager
+        .config_schema_store_for_uri(&text_document_uri)
+        .await;
+    let offline = config_schema_store.schema_store.offline();
+    let cache_options = config_schema_store.schema_store.cache_options();
+
+    if config_schema_store.config.cargo_extension_enabled()
+        && let Err(err) = tombi_extension_cargo::did_open(
+            &text_document_uri,
+            document_tree.as_ref(),
+            toml_version,
+            offline,
+            cache_options,
+            config_schema_store.config.cargo_extension_features(),
+        )
+        .await
+    {
+        log::error!("Cargo did_open extension failed: {err}");
+    }
+
+    if config_schema_store.config.pyproject_extension_enabled()
+        && let Err(err) = tombi_extension_pyproject::did_open(
+            &text_document_uri,
+            document_tree.as_ref(),
+            toml_version,
+            offline,
+            cache_options,
+            config_schema_store.config.pyproject_extension_features(),
+        )
+        .await
+    {
+        log::error!("Pyproject did_open extension failed: {err}");
+    }
 
     // Publish diagnostics for the opened document
     backend.push_diagnostics(text_document_uri).await;

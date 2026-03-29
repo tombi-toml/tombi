@@ -1032,7 +1032,11 @@ fn canonicalize_path_for_matching(path: &std::path::Path) -> std::path::PathBuf 
 
 #[cfg(test)]
 mod tests {
-    use std::{path::{Path, PathBuf}, str::FromStr, time::Duration};
+    use std::{
+        path::{Path, PathBuf},
+        str::FromStr,
+        time::Duration,
+    };
 
     use super::{
         SchemaStore, load_catalog_from_cache_ignoring_ttl,

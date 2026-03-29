@@ -1,0 +1,10 @@
+[project]
+name = "pyproject-hover-disabled"
+version = "0.1.0"
+dependencies = ["member"]
+
+[tool.uv.workspace]
+members = ["member"]
+
+[tool.uv.sources]
+member = { workspace = true }

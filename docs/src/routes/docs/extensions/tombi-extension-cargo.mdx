@@ -13,6 +13,17 @@ Experimentally, we provide additional features when editing `Cargo.toml` files.
 
 The extension provides intelligent code completion for `Cargo.toml` files.
 
+#### Workspace-Aware Dependency Completion
+
+When a member crate belongs to a Cargo workspace, completion can suggest inheriting dependencies directly from `[workspace.dependencies]`.
+
+```toml
+[dependencies]
+ser # <- completion can insert `serde.workspace = true`
+```
+
+This also works in target-specific dependency tables such as `[target.'cfg(unix)'.dependencies]`.
+
 #### Crate Version Completion
 
 Get version suggestions when specifying crate versions:
@@ -54,6 +65,29 @@ The extension is context-aware: when a dependency uses `workspace = true`, it lo
 </Note>
 
 <img src="/Cargo_crate_features_completion.png" alt="Crate Feature Completion" style="display: block; margin: 1rem auto; width: 80%" />
+
+#### Path Completion
+
+The extension also provides file and directory completion for common Cargo path fields, including:
+- `[workspace].members`, `[workspace].exclude`, and `[workspace].default-members`
+- dependency `path` fields
+- target paths such as `[lib].path` and `[[bin]].path`
+- file references such as `readme`, `license-file`, `include`, and `exclude`
+
+### Hover
+
+For dependency entries, Tombi can enrich hover content with crate metadata.
+
+```toml
+[dependencies]
+serde = "1.0" # <- crate name and description from crates.io
+tombi-extension-cargo = { workspace = true } # <- metadata from the local workspace crate
+```
+
+Behavior:
+- workspace and local path dependencies show metadata from the referenced crate's `Cargo.toml`
+- registry dependencies can show crate metadata fetched from crates.io
+- in offline mode, remote crates.io lookups are skipped and only local workspace/path metadata is used
 
 ### Go to Definition
 For example, suppose you have a `Cargo.toml` like the one below:

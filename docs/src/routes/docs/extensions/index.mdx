@@ -6,11 +6,18 @@ import { Warning } from "~/components/Highlight";
 The following features are experimental and may change in the future.
 </Warning>
 
-Tombi may support extensions in the future to provide better editor experiences for configuration files of specific systems (E.g. `Cargo.toml`, `pyproject.toml`).
+Tombi currently ships experimental built-in extensions for well-known TOML ecosystems.
+These extensions provide project-aware editor features that go beyond plain JSON Schema support.
 
-Features that could be enhanced by system-specific extensions include:
-- Go to definition/declaration
-- Hover
-- Completion
+Current extension pages:
+- [Cargo Extension](/docs/extensions/tombi-extension-cargo) for Rust `Cargo.toml`
+- [Pyproject Extension](/docs/extensions/tombi-extension-pyproject) for Python `pyproject.toml`
 
-However, since developing extensions and designing APIs takes time, we will experimentally support some extension-like features built into the core.
+Typical extension features include:
+- workspace-aware go to definition / go to declaration
+- package metadata hover
+- project-specific completion
+- document links to manifests, registries, repositories, and local files
+- refactoring-oriented code actions
+
+You can also enable or disable individual extension features from [`[extensions]`](/docs/configuration#extensions).
