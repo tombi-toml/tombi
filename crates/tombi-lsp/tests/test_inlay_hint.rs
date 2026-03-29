@@ -150,7 +150,7 @@ macro_rules! test_inlay_hint {
             CargoFile $fixture_body:tt
         ) -> Ok($expected:expr);
     ) => {
-        test_inlay_hint!(@fixture $name, $source, CargoFile $fixture_body, $expected);
+        test_inlay_hint!(@cargo $name, $source, $fixture_body, $expected);
     };
     (
         #[tokio::test]
@@ -159,13 +159,7 @@ macro_rules! test_inlay_hint {
             WorkspaceRootFile $fixture_body:tt
         ) -> Ok($expected:expr);
     ) => {
-        test_inlay_hint!(
-            @fixture
-            $name,
-            $source,
-            WorkspaceRootFile $fixture_body,
-            $expected
-        );
+        test_inlay_hint!(@workspace_root $name, $source, $fixture_body, $expected);
     };
     (
         #[tokio::test]
@@ -174,13 +168,7 @@ macro_rules! test_inlay_hint {
             WorkspaceFile $fixture_body:tt
         ) -> Ok($expected:expr);
     ) => {
-        test_inlay_hint!(
-            @fixture
-            $name,
-            $source,
-            WorkspaceFile $fixture_body,
-            $expected
-        );
+        test_inlay_hint!(@workspace_file $name, $source, $fixture_body, $expected);
     };
     (
         #[tokio::test]
@@ -189,19 +177,13 @@ macro_rules! test_inlay_hint {
             PyprojectFile $fixture_body:tt
         ) -> Ok($expected:expr);
     ) => {
-        test_inlay_hint!(
-            @fixture
-            $name,
-            $source,
-            PyprojectFile $fixture_body,
-            $expected
-        );
+        test_inlay_hint!(@pyproject $name, $source, $fixture_body, $expected);
     };
     (
-        @fixture
+        @cargo
         $name:ident,
         $source:expr,
-        CargoFile {
+        {
             $(cargo_lock = $cargo_lock:expr)?
             $(,)?
         },
@@ -219,10 +201,10 @@ macro_rules! test_inlay_hint {
         );
     };
     (
-        @fixture
+        @workspace_root
         $name:ident,
         $source:expr,
-        WorkspaceRootFile {
+        {
             member_path = $member_path:expr,
             member_context = $member_context:expr
             $(, cargo_lock = $cargo_lock:expr)?
@@ -242,10 +224,10 @@ macro_rules! test_inlay_hint {
         );
     };
     (
-        @fixture
+        @workspace_file
         $name:ident,
         $source:expr,
-        WorkspaceFile {
+        {
             path = $path:expr,
             context = $context:expr
             $(, cargo_lock = $cargo_lock:expr)?
@@ -271,10 +253,10 @@ macro_rules! test_inlay_hint {
         );
     };
     (
-        @fixture
+        @pyproject
         $name:ident,
         $source:expr,
-        PyprojectFile {
+        {
             $(uv_lock = $uv_lock:expr)?
             $(,)?
         },
