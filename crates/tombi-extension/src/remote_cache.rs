@@ -1,6 +1,7 @@
 use std::{
     path::{Path, PathBuf},
     str::FromStr,
+    sync::LazyLock,
 };
 
 use serde::de::DeserializeOwned;
@@ -8,6 +9,7 @@ use tombi_cache::{get_cache_file_path, read_from_cache, save_to_cache};
 use tombi_schema_store::HttpClient;
 
 const CACHE_INDEX_FILE_NAME: &str = "__index__.json";
+static HTTP_CLIENT: LazyLock<HttpClient> = LazyLock::new(HttpClient::new);
 
 pub async fn fetch_cached_remote_json<T: DeserializeOwned>(
     url: &str,
@@ -68,7 +70,7 @@ async fn fetch_cached_remote_json_from_path<T: DeserializeOwned>(
         return None;
     }
 
-    let bytes = match HttpClient::new().get_bytes(url).await {
+    let bytes = match HTTP_CLIENT.get_bytes(url).await {
         Ok(bytes) => {
             log::debug!("fetch remote metadata from url: {url}");
             bytes
@@ -115,18 +117,12 @@ async fn warm_remote_json_cache_from_path(
         return false;
     };
 
-    match read_from_cache(Some(cache_file_path), cache_options).await {
-        Ok(Some(_)) => {
-            log::debug!("remote metadata cache is fresh: {url}");
-            return false;
-        }
-        Ok(None) => {}
-        Err(err) => {
-            log::warn!("Failed to read cached remote metadata from {url}: {err}");
-        }
+    if is_cache_fresh(cache_file_path, cache_options) {
+        log::debug!("remote metadata cache is fresh: {url}");
+        return false;
     }
 
-    let bytes = match HttpClient::new().get_bytes(url).await {
+    let bytes = match HTTP_CLIENT.get_bytes(url).await {
         Ok(bytes) => {
             log::debug!("warm remote metadata cache from url: {url}");
             bytes
@@ -142,6 +138,52 @@ async fn warm_remote_json_cache_from_path(
     }
 
     true
+}
+
+fn is_cache_fresh(cache_file_path: &Path, cache_options: Option<&tombi_cache::Options>) -> bool {
+    if !cache_file_path.is_file() {
+        return false;
+    }
+
+    let cache_ttl = cache_options
+        .map(|opts| opts.cache_ttl)
+        .unwrap_or_else(|| tombi_cache::Options::default().cache_ttl);
+    let Some(cache_ttl) = cache_ttl else {
+        return true;
+    };
+
+    let metadata = match std::fs::metadata(cache_file_path) {
+        Ok(metadata) => metadata,
+        Err(err) => {
+            log::warn!(
+                "Failed to read cache metadata from {:?}: {err}",
+                cache_file_path
+            );
+            return false;
+        }
+    };
+
+    let modified = match metadata.modified() {
+        Ok(modified) => modified,
+        Err(err) => {
+            log::warn!(
+                "Failed to read cache modified time from {:?}: {err}",
+                cache_file_path
+            );
+            return false;
+        }
+    };
+
+    match modified.elapsed() {
+        Ok(elapsed) => elapsed <= cache_ttl,
+        Err(err) => {
+            log::warn!(
+                "Failed to calculate cache age for {:?}: {err}",
+                cache_file_path
+            );
+            false
+        }
+    }
 }
 
 async fn load_cached_json<T: DeserializeOwned>(

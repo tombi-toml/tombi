@@ -3,7 +3,7 @@ use std::{collections::BTreeSet, path::Path};
 use futures::stream::{self, StreamExt};
 use tombi_config::{PyprojectExtensionFeatures, TomlVersion};
 use tombi_document_tree::{DocumentTree, Table, Value, dig_keys};
-use tombi_extension::warm_remote_json_cache;
+use tombi_extension::remote_cache::warm_remote_json_cache;
 
 use crate::{collect_dependency_requirements_from_document_tree, find_workspace_pyproject_toml};
 
@@ -22,6 +22,10 @@ pub async fn did_open(
     }
 
     if !pyproject_did_open_enabled(features) {
+        return Ok(());
+    }
+
+    if warming_disabled(offline, cache_options) {
         return Ok(());
     }
 
@@ -51,6 +55,13 @@ pub async fn did_open(
 
 fn pyproject_did_open_enabled(features: Option<&PyprojectExtensionFeatures>) -> bool {
     features.map_or(true, PyprojectExtensionFeatures::enabled)
+}
+
+fn warming_disabled(offline: bool, cache_options: Option<&tombi_cache::Options>) -> bool {
+    offline
+        || cache_options
+            .and_then(|options| options.no_cache)
+            .unwrap_or_default()
 }
 
 fn collect_prefetch_urls(
