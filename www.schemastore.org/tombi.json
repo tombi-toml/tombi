@@ -1432,6 +1432,17 @@
             }
           ]
         },
+        "workspace": {
+          "deprecated": true,
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "workspace-value": {
           "anyOf": [
             {
