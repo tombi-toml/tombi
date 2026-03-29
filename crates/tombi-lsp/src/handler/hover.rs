@@ -132,28 +132,38 @@ pub async fn handle_hover(
                 offline,
             )
             .await?
-        } else if cargo_hover_enabled {
-            tombi_extension_cargo::hover(
-                &text_document_uri,
-                &document_tree,
-                &accessors,
-                toml_version,
-                offline,
-                cache_options,
-            )
-            .await?
-        } else if pyproject_hover_enabled {
-            tombi_extension_pyproject::hover(
-                &text_document_uri,
-                &document_tree,
-                &accessors,
-                toml_version,
-                offline,
-                cache_options,
-            )
-            .await?
         } else {
             None
+        };
+        let extension_hover = match extension_hover {
+            some @ Some(_) => some,
+            None if cargo_hover_enabled => {
+                tombi_extension_cargo::hover(
+                    &text_document_uri,
+                    &document_tree,
+                    &accessors,
+                    toml_version,
+                    offline,
+                    cache_options,
+                )
+                .await?
+            }
+            None => None,
+        };
+        let extension_hover = match extension_hover {
+            some @ Some(_) => some,
+            None if pyproject_hover_enabled => {
+                tombi_extension_pyproject::hover(
+                    &text_document_uri,
+                    &document_tree,
+                    &accessors,
+                    toml_version,
+                    offline,
+                    cache_options,
+                )
+                .await?
+            }
+            None => None,
         };
 
         if let Some(metadata) = extension_hover {
