@@ -86,9 +86,7 @@ fn inlay_hint_impl(
 
     let visible_dependency_hints = collect_dependency_hints(document_tree)
         .into_iter()
-        .filter(|hint| {
-            tombi_text::Range::at(hint.dependency.range().end).intersects(visible_range)
-        })
+        .filter(|hint| tombi_text::Range::at(hint.dependency.range().end).intersects(visible_range))
         .collect::<Vec<_>>();
 
     if visible_dependency_hints.is_empty() {
