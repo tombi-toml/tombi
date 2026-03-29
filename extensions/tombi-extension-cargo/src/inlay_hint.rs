@@ -1558,7 +1558,7 @@ mod tests {
                                     enabled: Some(false.into()),
                                 }),
                                 default_features: None,
-                                workspace: None,
+                                workspace_value: None,
                             },
                         )),
                         ..Default::default()
@@ -1624,7 +1624,7 @@ mod tests {
                             tombi_config::CargoInlayHintFeatureTree {
                                 dependency_version: None,
                                 default_features: None,
-                                workspace: Some(tombi_config::ToggleFeature {
+                                workspace_value: Some(tombi_config::ToggleFeature {
                                     enabled: Some(false.into()),
                                 }),
                             },
