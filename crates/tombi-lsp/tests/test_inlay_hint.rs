@@ -1309,6 +1309,76 @@ test_inlay_hint!(
 
 test_inlay_hint!(
     #[tokio::test]
+    async fn pyproject_inlay_hint_supports_tool_uv_dependency_lists(
+        SourceFile {
+            path = "pyproject.toml",
+            content = r#"
+            [project]
+            name = "demo"
+            version = "0.1.0"
+
+            [tool.uv]
+            dev-dependencies = ["ruff>=0.7.0"]
+            constraint-dependencies = ["pytest<9"]
+            override-dependencies = ["werkzeug==2.2.3"]
+            build-constraint-dependencies = ["setuptools==59.0.0"]
+            "#,
+        },
+        SourceFile {
+            path = "uv.lock",
+            content = r#"
+            version = 1
+
+            [[package]]
+            name = "demo"
+            version = "0.1.0"
+
+            [package.dev-dependencies]
+            dev = [{ name = "ruff" }]
+
+            [[package]]
+            name = "ruff"
+            version = "0.7.4"
+
+            [[package]]
+            name = "pytest"
+            version = "8.3.3"
+
+            [[package]]
+            name = "werkzeug"
+            version = "2.3.0"
+
+            [[package]]
+            name = "setuptools"
+            version = "60.0.0"
+            "#,
+        },
+    ) -> Ok(Some(vec![
+        expected_hint(
+            tombi_text::Position::new(5, 33),
+            r#" → "0.7.4""#,
+            RESOLVED_UV_VERSION_TOOLTIP,
+        ),
+        expected_hint(
+            tombi_text::Position::new(6, 37),
+            r#" → "8.3.3""#,
+            RESOLVED_UV_VERSION_TOOLTIP,
+        ),
+        expected_hint(
+            tombi_text::Position::new(7, 42),
+            r#" → "2.3.0""#,
+            RESOLVED_UV_VERSION_TOOLTIP,
+        ),
+        expected_hint(
+            tombi_text::Position::new(8, 53),
+            r#" → "60.0.0""#,
+            RESOLVED_UV_VERSION_TOOLTIP,
+        ),
+    ]));
+);
+
+test_inlay_hint!(
+    #[tokio::test]
     async fn pyproject_inlay_hint_finds_uv_lock_from_ancestor_directory(
         SourceFile {
             path = "members/app/pyproject.toml",

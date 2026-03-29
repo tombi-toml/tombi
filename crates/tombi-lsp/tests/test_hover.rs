@@ -562,6 +562,31 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn pyproject_tool_uv_constraint_dependency_hover_metadata(
+                r#"
+                [tool.uv]
+                constraint-dependencies = [
+                    "tombi-beta█",
+                ]
+
+                [tool.uv.workspace]
+                members = ["python/tombi-beta"]
+
+                [tool.uv.sources]
+                tombi-beta = { workspace = true }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("pyproject.toml")),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok({
+                "Keys": "tool.uv.constraint-dependencies[0]",
+                "Value": "String",
+                "Title": Some("tombi-beta"),
+                "Description": Some("Add your description here"),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn pyproject_tool_poetry_exclude_tests(
                 r#"
                 [tool.poetry]

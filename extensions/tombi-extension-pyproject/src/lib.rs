@@ -20,7 +20,8 @@ pub use hover::hover;
 pub use inlay_hint::inlay_hint;
 
 pub(crate) use dependency::{
-    DependencyRequirement, collect_dependency_requirements_from_document_tree,
+    DependencyRequirement, collect_all_dependency_requirements_from_document_tree,
+    collect_dependency_requirements_from_document_tree, get_dependency_accessors,
     parse_dependency_requirement, parse_requirement,
 };
 pub(crate) use manifest::{
