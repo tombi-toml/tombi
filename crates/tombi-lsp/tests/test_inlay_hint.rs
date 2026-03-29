@@ -147,14 +147,53 @@ macro_rules! test_inlay_hint {
         #[tokio::test]
         async fn $name:ident(
             $source:expr,
-            $fixture_kind:ident $fixture_body:tt
+            CargoFile $fixture_body:tt
+        ) -> Ok($expected:expr);
+    ) => {
+        test_inlay_hint!(@fixture $name, $source, CargoFile $fixture_body, $expected);
+    };
+    (
+        #[tokio::test]
+        async fn $name:ident(
+            $source:expr,
+            WorkspaceRootFile $fixture_body:tt
         ) -> Ok($expected:expr);
     ) => {
         test_inlay_hint!(
             @fixture
             $name,
             $source,
-            $fixture_kind $fixture_body,
+            WorkspaceRootFile $fixture_body,
+            $expected
+        );
+    };
+    (
+        #[tokio::test]
+        async fn $name:ident(
+            $source:expr,
+            WorkspaceFile $fixture_body:tt
+        ) -> Ok($expected:expr);
+    ) => {
+        test_inlay_hint!(
+            @fixture
+            $name,
+            $source,
+            WorkspaceFile $fixture_body,
+            $expected
+        );
+    };
+    (
+        #[tokio::test]
+        async fn $name:ident(
+            $source:expr,
+            PyprojectFile $fixture_body:tt
+        ) -> Ok($expected:expr);
+    ) => {
+        test_inlay_hint!(
+            @fixture
+            $name,
+            $source,
+            PyprojectFile $fixture_body,
             $expected
         );
     };
