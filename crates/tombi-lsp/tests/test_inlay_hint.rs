@@ -1379,6 +1379,45 @@ test_inlay_hint!(
 
 test_inlay_hint!(
     #[tokio::test]
+    async fn pyproject_inlay_hint_uv_dependency_lists_without_project_table(
+        SourceFile {
+            path = "pyproject.toml",
+            content = r#"
+            [tool.uv]
+            constraint-dependencies = ["pytest<9"]
+            override-dependencies = ["werkzeug==2.2.3"]
+            "#,
+        },
+        SourceFile {
+            path = "uv.lock",
+            content = r#"
+            version = 1
+
+            [[package]]
+            name = "pytest"
+            version = "8.3.3"
+
+            [[package]]
+            name = "werkzeug"
+            version = "2.3.0"
+            "#,
+        },
+    ) -> Ok(Some(vec![
+        expected_hint(
+            tombi_text::Position::new(2, 37),
+            r#" → "8.3.3""#,
+            RESOLVED_UV_VERSION_TOOLTIP,
+        ),
+        expected_hint(
+            tombi_text::Position::new(3, 42),
+            r#" → "2.3.0""#,
+            RESOLVED_UV_VERSION_TOOLTIP,
+        ),
+    ]));
+);
+
+test_inlay_hint!(
+    #[tokio::test]
     async fn pyproject_inlay_hint_finds_uv_lock_from_ancestor_directory(
         SourceFile {
             path = "members/app/pyproject.toml",

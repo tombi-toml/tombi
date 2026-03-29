@@ -119,9 +119,7 @@ fn inlay_hint_impl(
     visible_range: tombi_text::Range,
     uv_lock_cache: Option<UvLockInlayCacheData>,
 ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
-    let Some(current_package) = current_package(document_tree) else {
-        return Ok(None);
-    };
+    let current_package = current_package(document_tree);
 
     let visible_dependency_hints = collect_dependency_hints(document_tree)
         .into_iter()
@@ -140,12 +138,14 @@ fn inlay_hint_impl(
         .into_iter()
         .filter_map(|hint| {
             let resolved_version = match hint.resolution {
-                DependencyHintResolution::CurrentPackage => uv_lock_cache
-                    .resolved_dependency_version(
-                        &current_package.name,
-                        &current_package.version,
+                DependencyHintResolution::CurrentPackage => {
+                    let pkg = current_package.as_ref()?;
+                    uv_lock_cache.resolved_dependency_version(
+                        &pkg.name,
+                        &pkg.version,
                         hint.requirement.name.as_ref(),
-                    ),
+                    )
+                }
                 DependencyHintResolution::UniquePackageVersion => {
                     uv_lock_cache.unique_dependency_version(hint.requirement.name.as_ref())
                 }
