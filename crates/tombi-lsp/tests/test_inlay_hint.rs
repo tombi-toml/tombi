@@ -147,47 +147,11 @@ macro_rules! test_inlay_hint {
         #[tokio::test]
         async fn $name:ident(
             $source:expr,
-            CargoFile $fixture_body:tt
+            CargoFile {
+                $(cargo_lock = $cargo_lock:expr)?
+                $(,)?
+            }
         ) -> Ok($expected:expr);
-    ) => {
-        test_inlay_hint!(@cargo $name, $source, $fixture_body, $expected);
-    };
-    (
-        #[tokio::test]
-        async fn $name:ident(
-            $source:expr,
-            WorkspaceRootFile $fixture_body:tt
-        ) -> Ok($expected:expr);
-    ) => {
-        test_inlay_hint!(@workspace_root $name, $source, $fixture_body, $expected);
-    };
-    (
-        #[tokio::test]
-        async fn $name:ident(
-            $source:expr,
-            WorkspaceFile $fixture_body:tt
-        ) -> Ok($expected:expr);
-    ) => {
-        test_inlay_hint!(@workspace_file $name, $source, $fixture_body, $expected);
-    };
-    (
-        #[tokio::test]
-        async fn $name:ident(
-            $source:expr,
-            PyprojectFile $fixture_body:tt
-        ) -> Ok($expected:expr);
-    ) => {
-        test_inlay_hint!(@pyproject $name, $source, $fixture_body, $expected);
-    };
-    (
-        @cargo
-        $name:ident,
-        $source:expr,
-        {
-            $(cargo_lock = $cargo_lock:expr)?
-            $(,)?
-        },
-        $expected:expr
     ) => {
         test_inlay_hint!(
             @run
@@ -201,16 +165,16 @@ macro_rules! test_inlay_hint {
         );
     };
     (
-        @workspace_root
-        $name:ident,
-        $source:expr,
-        {
-            member_path = $member_path:expr,
-            member_context = $member_context:expr
-            $(, cargo_lock = $cargo_lock:expr)?
-            $(,)?
-        },
-        $expected:expr
+        #[tokio::test]
+        async fn $name:ident(
+            $source:expr,
+            WorkspaceRootFile {
+                member_path = $member_path:expr,
+                member_context = $member_context:expr
+                $(, cargo_lock = $cargo_lock:expr)?
+                $(,)?
+            }
+        ) -> Ok($expected:expr);
     ) => {
         test_inlay_hint!(
             @run
@@ -224,17 +188,17 @@ macro_rules! test_inlay_hint {
         );
     };
     (
-        @workspace_file
-        $name:ident,
-        $source:expr,
-        {
-            path = $path:expr,
-            context = $context:expr
-            $(, cargo_lock = $cargo_lock:expr)?
-            $(, uv_lock = $uv_lock:expr)?
-            $(,)?
-        },
-        $expected:expr
+        #[tokio::test]
+        async fn $name:ident(
+            $source:expr,
+            WorkspaceFile {
+                path = $path:expr,
+                context = $context:expr
+                $(, cargo_lock = $cargo_lock:expr)?
+                $(, uv_lock = $uv_lock:expr)?
+                $(,)?
+            }
+        ) -> Ok($expected:expr);
     ) => {
         test_inlay_hint!(
             @run
@@ -253,14 +217,14 @@ macro_rules! test_inlay_hint {
         );
     };
     (
-        @pyproject
-        $name:ident,
-        $source:expr,
-        {
-            $(uv_lock = $uv_lock:expr)?
-            $(,)?
-        },
-        $expected:expr
+        #[tokio::test]
+        async fn $name:ident(
+            $source:expr,
+            PyprojectFile {
+                $(uv_lock = $uv_lock:expr)?
+                $(,)?
+            }
+        ) -> Ok($expected:expr);
     ) => {
         test_inlay_hint!(
             @run
