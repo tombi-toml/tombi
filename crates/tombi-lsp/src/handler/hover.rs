@@ -114,14 +114,15 @@ pub async fn handle_hover(
         let tombi_hover_enabled = config
             .tombi_extension_features()
             .map_or(true, tombi_config::TombiExtensionFeatures::hover_enabled);
-        let cargo_hover_enabled = config.cargo_extension_features().map_or(
+        let cargo_dependency_detail_hover_enabled = config.cargo_extension_features().map_or(
             true,
             tombi_config::CargoExtensionFeatures::dependency_detail_hover_enabled,
         );
-        let pyproject_hover_enabled = config.pyproject_extension_features().map_or(
-            true,
-            tombi_config::PyprojectExtensionFeatures::dependency_detail_hover_enabled,
-        );
+        let pyproject_dependency_detail_hover_enabled =
+            config.pyproject_extension_features().map_or(
+                true,
+                tombi_config::PyprojectExtensionFeatures::dependency_detail_hover_enabled,
+            );
 
         let extension_hover = if tombi_hover_enabled {
             tombi_extension_tombi::hover(
@@ -137,7 +138,7 @@ pub async fn handle_hover(
         };
         let extension_hover = match extension_hover {
             some @ Some(_) => some,
-            None if cargo_hover_enabled => {
+            None if cargo_dependency_detail_hover_enabled => {
                 tombi_extension_cargo::hover(
                     &text_document_uri,
                     &document_tree,
@@ -152,7 +153,7 @@ pub async fn handle_hover(
         };
         let extension_hover = match extension_hover {
             some @ Some(_) => some,
-            None if pyproject_hover_enabled => {
+            None if pyproject_dependency_detail_hover_enabled => {
                 tombi_extension_pyproject::hover(
                     &text_document_uri,
                     &document_tree,
