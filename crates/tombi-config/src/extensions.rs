@@ -149,6 +149,14 @@ impl CargoExtensionFeatures {
             )
     }
 
+    pub fn default_features_inlay_hint_enabled(&self) -> bool {
+        self.enabled()
+            && self.lsp().map_or(
+                true,
+                CargoLspFeatures::default_features_inlay_hint_enabled,
+            )
+    }
+
     pub fn goto_definition_enabled(&self) -> bool {
         self.enabled()
             && self
@@ -411,6 +419,13 @@ impl CargoLspFeatures {
                 .map_or(true, CargoInlayHintFeatures::dependency_version_enabled)
     }
 
+    pub fn default_features_inlay_hint_enabled(&self) -> bool {
+        self.enabled()
+            && self
+                .inlay_hint()
+                .map_or(true, CargoInlayHintFeatures::default_features_enabled)
+    }
+
     pub fn goto_definition_enabled(&self) -> bool {
         self.enabled()
             && self
@@ -631,6 +646,17 @@ impl CargoInlayHintFeatures {
                     .map_or(true, ToggleFeature::enabled),
             }
     }
+
+    pub fn default_features_enabled(&self) -> bool {
+        self.enabled()
+            && match self {
+                Self::Enabled(_) => true,
+                Self::Features(features) => features
+                    .default_features
+                    .as_ref()
+                    .map_or(true, ToggleFeature::enabled),
+            }
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -651,6 +677,7 @@ pub struct CargoHoverFeatureTree {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct CargoInlayHintFeatureTree {
     pub dependency_version: Option<ToggleFeature>,
+    pub default_features: Option<ToggleFeature>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
