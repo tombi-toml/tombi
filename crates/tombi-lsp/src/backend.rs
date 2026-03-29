@@ -360,7 +360,8 @@ impl tower_lsp::LanguageServer for Backend {
     ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
         let line_index = {
             let document_sources = self.document_sources.read().await;
-            let Some(document_source) = document_sources.get(&params.text_document.uri.clone().into())
+            let Some(document_source) =
+                document_sources.get(&params.text_document.uri.clone().into())
             else {
                 return Ok(None);
             };
