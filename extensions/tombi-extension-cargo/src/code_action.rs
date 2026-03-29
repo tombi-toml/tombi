@@ -1,4 +1,4 @@
-use tombi_document_tree::{TableKind, dig_accessors, dig_keys};
+use tombi_document_tree::{TableKind, Value, dig_accessors, dig_keys};
 use tombi_extension::CodeActionOrCommand;
 use tombi_schema_store::{Accessor, AccessorContext, matches_accessors};
 use tombi_text::IntoLsp;
@@ -7,7 +7,7 @@ use tower_lsp::lsp_types::{
     TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
 
-use crate::{find_workspace_cargo_toml, get_workspace_path};
+use crate::{cargo_lock::load_cargo_lock, dependency_package_name, find_path_crate_cargo_toml, find_workspace_cargo_toml, get_workspace_path};
 
 pub enum CodeActionRefactorRewriteName {
     /// Inherit from Workspace
@@ -259,9 +259,12 @@ fn code_actions_for_crate_cargo_toml(
             text_document_uri,
             line_index,
             document_tree,
+            cargo_toml_path,
             accessors,
             contexts,
+            &workspace_cargo_toml_path,
             &workspace_document_tree,
+            toml_version,
         ) {
             code_actions.push(CodeActionOrCommand::CodeAction(action));
         }
@@ -379,9 +382,12 @@ fn use_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
     crate_document_tree: &tombi_document_tree::DocumentTree,
+    crate_cargo_toml_path: &std::path::Path,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
+    workspace_cargo_toml_path: &std::path::Path,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
+    toml_version: tombi_config::TomlVersion,
 ) -> Option<CodeAction> {
     if accessors.len() < 2 {
         return None;
@@ -458,16 +464,44 @@ fn use_workspace_dependency_code_action(
                 return None; // No version to inherit
             };
 
-            let text_edit = if table.kind() == TableKind::KeyValue {
-                TextEdit {
-                    range: (crate_key_context.range + version.range()).into_lsp(line_index),
-                    new_text: format!("{crate_name} = {{ workspace = true }}"),
-                }
+            let default_feature_additions = inherited_default_feature_additions(
+                crate_document_tree,
+                crate_cargo_toml_path,
+                crate_name,
+                table,
+                workspace_cargo_toml_path,
+                workspace_document_tree,
+                toml_version,
+            );
+
+            let edits = if matches!(
+                table.kind(),
+                TableKind::KeyValue | TableKind::InlineTable { .. }
+            ) {
+                vec![OneOf::Left(TextEdit {
+                    range: (crate_key_context.range + table.range()).into_lsp(line_index),
+                    new_text: render_inherited_dependency_inline_table(
+                        crate_name,
+                        table,
+                        &default_feature_additions,
+                    ),
+                })]
             } else {
-                TextEdit {
+                let mut edits = vec![OneOf::Left(TextEdit {
                     range: (key.range() + version.range()).into_lsp(line_index),
                     new_text: "workspace = true".to_string(),
+                })];
+
+                if !default_feature_additions.is_empty()
+                    && let Some(Value::Array(features)) = table.get("features")
+                {
+                    edits.push(OneOf::Left(TextEdit {
+                        range: features.range().into_lsp(line_index),
+                        new_text: render_feature_array(features, &default_feature_additions),
+                    }));
                 }
+
+                edits
             };
 
             return Some(CodeAction {
@@ -481,7 +515,7 @@ fn use_workspace_dependency_code_action(
                             uri: text_document_uri.to_owned().into(),
                             version: None,
                         },
-                        edits: vec![OneOf::Left(text_edit)],
+                        edits,
                     }])),
                     ..Default::default()
                 }),
@@ -492,6 +526,244 @@ fn use_workspace_dependency_code_action(
     }
 
     None
+}
+
+fn inherited_default_feature_additions(
+    crate_document_tree: &tombi_document_tree::DocumentTree,
+    crate_cargo_toml_path: &std::path::Path,
+    crate_name: &str,
+    dependency_table: &tombi_document_tree::Table,
+    workspace_cargo_toml_path: &std::path::Path,
+    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    toml_version: tombi_config::TomlVersion,
+) -> Vec<String> {
+    let Some(Value::Array(features)) = dependency_table.get("features") else {
+        return Vec::new();
+    };
+
+    if dependency_table
+        .get("default-features")
+        .and_then(|value| match value {
+            Value::Boolean(boolean) => Some(boolean.value()),
+            _ => None,
+        })
+        == Some(false)
+    {
+        return Vec::new();
+    }
+
+    let Some((_, workspace_dependency_value)) = dig_keys(
+        workspace_document_tree,
+        &["workspace", "dependencies", crate_name],
+    ) else {
+        return Vec::new();
+    };
+    let Value::Table(workspace_dependency_table) = workspace_dependency_value else {
+        return Vec::new();
+    };
+
+    if workspace_dependency_table
+        .get("default-features")
+        .and_then(|value| match value {
+            Value::Boolean(boolean) => Some(boolean.value()),
+            _ => None,
+        })
+        != Some(false)
+    {
+        return Vec::new();
+    }
+
+    let Some(resolved_dependency_version) = resolved_dependency_version(
+        crate_document_tree,
+        crate_cargo_toml_path,
+        crate_name,
+        workspace_dependency_value,
+        toml_version,
+    ) else {
+        return Vec::new();
+    };
+
+    let Some(default_features) = workspace_dependency_default_features(
+        crate_name,
+        workspace_dependency_table,
+        workspace_cargo_toml_path,
+        toml_version,
+        &resolved_dependency_version,
+    ) else {
+        return Vec::new();
+    };
+
+    let existing_features = features
+        .values()
+        .iter()
+        .filter_map(|feature| match feature {
+            Value::String(feature) => Some(feature.value()),
+            _ => None,
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+
+    default_features
+        .into_iter()
+        .filter(|feature| !existing_features.contains(feature.as_str()))
+        .collect()
+}
+
+fn resolved_dependency_version(
+    crate_document_tree: &tombi_document_tree::DocumentTree,
+    crate_cargo_toml_path: &std::path::Path,
+    crate_name: &str,
+    workspace_dependency_value: &Value,
+    toml_version: tombi_config::TomlVersion,
+) -> Option<String> {
+    let cargo_lock = load_cargo_lock(crate_cargo_toml_path, toml_version)?;
+    let package_name = current_package_name(crate_document_tree)?;
+    let package_version =
+        package_version(crate_document_tree, crate_cargo_toml_path, toml_version)?;
+    let dependency_name = dependency_package_name(crate_name, workspace_dependency_value);
+
+    cargo_lock.dependency_version_for_package(package_name, &package_version, dependency_name)
+}
+
+fn current_package_name(document_tree: &tombi_document_tree::DocumentTree) -> Option<&str> {
+    let (_, Value::String(package_name)) = dig_keys(document_tree, &["package", "name"])? else {
+        return None;
+    };
+
+    Some(package_name.value())
+}
+
+fn package_version(
+    document_tree: &tombi_document_tree::DocumentTree,
+    cargo_toml_path: &std::path::Path,
+    toml_version: tombi_config::TomlVersion,
+) -> Option<String> {
+    let (_, package_version) = dig_keys(document_tree, &["package", "version"])?;
+
+    match package_version {
+        Value::String(version) => Some(version.value().to_string()),
+        Value::Table(table) => {
+            let Some(Value::Boolean(workspace)) = table.get("workspace") else {
+                return None;
+            };
+            if !workspace.value() {
+                return None;
+            }
+
+            let (_, _, workspace_document_tree) = find_workspace_cargo_toml(
+                cargo_toml_path,
+                get_workspace_path(document_tree),
+                toml_version,
+            )?;
+            let (_, Value::String(version)) = dig_keys(
+                &workspace_document_tree,
+                &["workspace", "package", "version"],
+            )?
+            else {
+                return None;
+            };
+
+            Some(version.value().to_string())
+        }
+        _ => None,
+    }
+}
+
+fn workspace_dependency_default_features(
+    crate_name: &str,
+    workspace_dependency_table: &tombi_document_tree::Table,
+    workspace_cargo_toml_path: &std::path::Path,
+    toml_version: tombi_config::TomlVersion,
+    resolved_dependency_version: &str,
+) -> Option<Vec<String>> {
+    let Some(Value::String(path)) = workspace_dependency_table.get("path") else {
+        return None;
+    };
+
+    let (dependency_cargo_toml_path, _, dependency_document_tree) = find_path_crate_cargo_toml(
+        workspace_cargo_toml_path,
+        std::path::Path::new(path.value()),
+        toml_version,
+    )?;
+    let dependency_value = Value::Table(workspace_dependency_table.clone());
+
+    if current_package_name(&dependency_document_tree)?
+        != dependency_package_name(crate_name, &dependency_value)
+    {
+        return None;
+    }
+
+    if package_version(
+        &dependency_document_tree,
+        &dependency_cargo_toml_path,
+        toml_version,
+    )? != resolved_dependency_version
+    {
+        return None;
+    }
+
+    let (_, Value::Array(default_features)) =
+        dig_keys(&dependency_document_tree, &["features", "default"])?
+    else {
+        return None;
+    };
+
+    let default_features = default_features
+        .values()
+        .iter()
+        .filter_map(|value| match value {
+            Value::String(feature) => Some(feature.value().to_string()),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    (!default_features.is_empty()).then_some(default_features)
+}
+
+fn render_inherited_dependency_inline_table(
+    crate_name: &str,
+    dependency_table: &tombi_document_tree::Table,
+    default_feature_additions: &[String],
+) -> String {
+    let mut entries = vec!["workspace = true".to_string()];
+
+    for (key, value) in dependency_table.key_values() {
+        match key.value.as_str() {
+            "version" | "workspace" => {}
+            "features" => {
+                let Value::Array(features) = value else {
+                    entries.push(format!("{} = {}", key.value, value));
+                    continue;
+                };
+                entries.push(format!(
+                    "{} = {}",
+                    key.value,
+                    render_feature_array(features, default_feature_additions)
+                ));
+            }
+            _ => entries.push(format!("{} = {}", key.value, value)),
+        }
+    }
+
+    format!("{crate_name} = {{ {} }}", entries.join(", "))
+}
+
+fn render_feature_array(
+    features: &tombi_document_tree::Array,
+    default_feature_additions: &[String],
+) -> String {
+    let mut values = features
+        .values()
+        .iter()
+        .map(std::string::ToString::to_string)
+        .collect::<Vec<_>>();
+
+    values.extend(
+        default_feature_additions
+            .iter()
+            .map(|feature| format!("{feature:?}")),
+    );
+
+    format!("[{}]", values.join(", "))
 }
 
 /// Convert a dependency version to a table format.

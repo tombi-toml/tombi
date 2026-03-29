@@ -231,6 +231,56 @@ mod refactor_rewrite {
 
         test_code_action_refactor_rewrite! {
             #[tokio::test]
+            async fn cargo_toml_dependencies_workspace_default_features_are_appended(
+                r#"
+                [package]
+                name = "tombi-cli"
+                version.workspace = true
+
+                [dependencies]
+                tombi-lsp = { version█ = "0.0.0-dev", features = ["clap"] }
+                "#,
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
+                project_root_path().join("rust/tombi-cli/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [package]
+                name = "tombi-cli"
+                version.workspace = true
+
+                [dependencies]
+                tombi-lsp = { workspace = true, features = ["clap", "native"] }
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_dependencies_workspace_default_features_duplicates_are_skipped(
+                r#"
+                [package]
+                name = "tombi-cli"
+                version.workspace = true
+
+                [dependencies]
+                tombi-schema-store = { version█ = "0.0.0-dev", features = ["native"] }
+                "#,
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
+                project_root_path().join("rust/tombi-cli/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [package]
+                name = "tombi-cli"
+                version.workspace = true
+
+                [dependencies]
+                tombi-schema-store = { workspace = true, features = ["native"] }
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
             async fn cargo_toml_dependencies_serde_dotted_keys_workspace(
                 r#"
                 [dependencies]
