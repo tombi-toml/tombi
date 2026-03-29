@@ -33,6 +33,7 @@ pub mod handler {
     mod hover;
     mod initialize;
     mod initialized;
+    mod inlay_hint;
     mod list_schemas;
     mod refresh_cache;
     mod semantic_tokens_full;
@@ -65,6 +66,7 @@ pub mod handler {
     pub use hover::{get_hover_keys_with_range, handle_hover};
     pub use initialize::handle_initialize;
     pub use initialized::handle_initialized;
+    pub use inlay_hint::handle_inlay_hint;
     pub use list_schemas::{ListSchemasParams, ListSchemasResponse, handle_list_schemas};
     pub use refresh_cache::{RefreshCacheParams, handle_refresh_cache};
     pub use semantic_tokens_full::handle_semantic_tokens_full;

@@ -6,6 +6,7 @@ mod document_link;
 mod goto_declaration;
 mod goto_definition;
 mod hover;
+mod inlay_hint;
 mod manifest;
 mod workspace;
 
@@ -16,6 +17,7 @@ pub use document_link::document_link;
 pub use goto_declaration::goto_declaration;
 pub use goto_definition::goto_definition;
 pub use hover::hover;
+pub use inlay_hint::inlay_hint;
 
 pub(crate) use dependency::{
     DependencyRequirement, collect_dependency_requirements_from_document_tree,

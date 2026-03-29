@@ -115,6 +115,10 @@ impl DocumentSource {
         self.line_index.as_ref()
     }
 
+    pub fn line_index_arc(&self) -> Arc<LineIndex<'static>> {
+        Arc::clone(&self.line_index)
+    }
+
     /// Get the parsed AST (always exists)
     pub fn ast(&self) -> Arc<tombi_ast::Root> {
         Arc::clone(&self.ast)

@@ -134,6 +134,21 @@ impl CargoExtensionFeatures {
                 .map_or(true, CargoLspFeatures::path_completion_enabled)
     }
 
+    pub fn inlay_hint_enabled(&self) -> bool {
+        self.enabled()
+            && self
+                .lsp()
+                .map_or(true, CargoLspFeatures::inlay_hint_enabled)
+    }
+
+    pub fn dependency_version_inlay_hint_enabled(&self) -> bool {
+        self.enabled()
+            && self.lsp().map_or(
+                true,
+                CargoLspFeatures::dependency_version_inlay_hint_enabled,
+            )
+    }
+
     pub fn goto_definition_enabled(&self) -> bool {
         self.enabled()
             && self
@@ -312,6 +327,13 @@ impl CargoLspFeatures {
         }
     }
 
+    pub fn inlay_hint(&self) -> Option<&CargoInlayHintFeatures> {
+        match self {
+            Self::Enabled(_) => None,
+            Self::Features(features) => features.inlay_hint.as_ref(),
+        }
+    }
+
     pub fn goto_definition(&self) -> Option<&CargoNavigationFeatures> {
         match self {
             Self::Enabled(_) => None,
@@ -373,6 +395,20 @@ impl CargoLspFeatures {
             && self
                 .completion()
                 .map_or(true, CargoCompletionFeatures::path_enabled)
+    }
+
+    pub fn inlay_hint_enabled(&self) -> bool {
+        self.enabled()
+            && self
+                .inlay_hint()
+                .map_or(true, CargoInlayHintFeatures::enabled)
+    }
+
+    pub fn dependency_version_inlay_hint_enabled(&self) -> bool {
+        self.enabled()
+            && self
+                .inlay_hint()
+                .map_or(true, CargoInlayHintFeatures::dependency_version_enabled)
     }
 
     pub fn goto_definition_enabled(&self) -> bool {
@@ -525,6 +561,7 @@ impl CargoLspFeatures {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct CargoLspFeatureTree {
     pub completion: Option<CargoCompletionFeatures>,
+    pub inlay_hint: Option<CargoInlayHintFeatures>,
     pub goto_definition: Option<CargoNavigationFeatures>,
     pub goto_declaration: Option<CargoNavigationFeatures>,
     pub document_link: Option<CargoDocumentLinkFeatures>,
@@ -564,6 +601,38 @@ impl CargoHoverFeatures {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
+pub enum CargoInlayHintFeatures {
+    Enabled(EnabledOnly),
+    Features(CargoInlayHintFeatureTree),
+}
+
+default_to_features!(CargoInlayHintFeatures, CargoInlayHintFeatureTree);
+
+impl CargoInlayHintFeatures {
+    pub fn enabled(&self) -> bool {
+        match self {
+            Self::Enabled(enabled) => enabled.enabled(),
+            Self::Features(_) => true,
+        }
+    }
+
+    pub fn dependency_version_enabled(&self) -> bool {
+        self.enabled()
+            && match self {
+                Self::Enabled(_) => true,
+                Self::Features(features) => features
+                    .dependency_version
+                    .as_ref()
+                    .map_or(true, ToggleFeature::enabled),
+            }
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
@@ -572,6 +641,16 @@ impl CargoHoverFeatures {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct CargoHoverFeatureTree {
     pub dependency_detail: Option<ToggleFeature>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
+pub struct CargoInlayHintFeatureTree {
+    pub dependency_version: Option<ToggleFeature>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -894,6 +973,21 @@ impl PyprojectExtensionFeatures {
                 .map_or(true, PyprojectLspFeatures::path_completion_enabled)
     }
 
+    pub fn inlay_hint_enabled(&self) -> bool {
+        self.enabled()
+            && self
+                .lsp()
+                .map_or(true, PyprojectLspFeatures::inlay_hint_enabled)
+    }
+
+    pub fn dependency_version_inlay_hint_enabled(&self) -> bool {
+        self.enabled()
+            && self.lsp().map_or(
+                true,
+                PyprojectLspFeatures::dependency_version_inlay_hint_enabled,
+            )
+    }
+
     pub fn goto_definition_enabled(&self) -> bool {
         self.enabled()
             && self
@@ -1045,6 +1139,13 @@ impl PyprojectLspFeatures {
         }
     }
 
+    pub fn inlay_hint(&self) -> Option<&PyprojectInlayHintFeatures> {
+        match self {
+            Self::Enabled(_) => None,
+            Self::Features(features) => features.inlay_hint.as_ref(),
+        }
+    }
+
     pub fn goto_definition(&self) -> Option<&PyprojectNavigationFeatures> {
         match self {
             Self::Enabled(_) => None,
@@ -1092,6 +1193,20 @@ impl PyprojectLspFeatures {
             && self
                 .completion()
                 .map_or(true, PyprojectCompletionFeatures::path_enabled)
+    }
+
+    pub fn inlay_hint_enabled(&self) -> bool {
+        self.enabled()
+            && self
+                .inlay_hint()
+                .map_or(true, PyprojectInlayHintFeatures::enabled)
+    }
+
+    pub fn dependency_version_inlay_hint_enabled(&self) -> bool {
+        self.enabled()
+            && self
+                .inlay_hint()
+                .map_or(true, PyprojectInlayHintFeatures::dependency_version_enabled)
     }
 
     pub fn goto_definition_enabled(&self) -> bool {
@@ -1214,11 +1329,54 @@ impl PyprojectLspFeatures {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct PyprojectLspFeatureTree {
     pub completion: Option<PyprojectCompletionFeatures>,
+    pub inlay_hint: Option<PyprojectInlayHintFeatures>,
     pub goto_definition: Option<PyprojectNavigationFeatures>,
     pub goto_declaration: Option<PyprojectNavigationFeatures>,
     pub document_link: Option<PyprojectDocumentLinkFeatures>,
     pub hover: Option<PyprojectHoverFeatures>,
     pub code_action: Option<PyprojectCodeActionFeatures>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
+pub enum PyprojectInlayHintFeatures {
+    Enabled(EnabledOnly),
+    Features(PyprojectInlayHintFeatureTree),
+}
+
+default_to_features!(PyprojectInlayHintFeatures, PyprojectInlayHintFeatureTree);
+
+impl PyprojectInlayHintFeatures {
+    pub fn enabled(&self) -> bool {
+        match self {
+            Self::Enabled(enabled) => enabled.enabled(),
+            Self::Features(_) => true,
+        }
+    }
+
+    pub fn dependency_version_enabled(&self) -> bool {
+        self.enabled()
+            && match self {
+                Self::Enabled(_) => true,
+                Self::Features(features) => features
+                    .dependency_version
+                    .as_ref()
+                    .map_or(true, ToggleFeature::enabled),
+            }
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
+pub struct PyprojectInlayHintFeatureTree {
+    pub dependency_version: Option<ToggleFeature>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
