@@ -177,10 +177,6 @@ fn collect_dependency_inlay_hints(
             continue;
         };
 
-        if !tombi_text::Range::at(version_hint.position).intersects(visible_range) {
-            continue;
-        }
-
         version_hints.push(version_hint);
     }
 
@@ -207,7 +203,7 @@ fn collect_dependency_inlay_hints(
         None
     };
 
-    let workspace_resolved_versions = if dependency_keys == ["workspace", "dependencies"] {
+    let resolved_versions = if dependency_keys == ["workspace", "dependencies"] {
         workspace_dependency_lock_versions(
             cargo_lock,
             workspace_member_packages.as_deref(),
@@ -216,34 +212,27 @@ fn collect_dependency_inlay_hints(
                 .map(|version_hint| version_hint.dependency_name.as_str()),
         )
     } else {
-        BTreeMap::new()
+        dependency_lock_versions_for_package(
+            cargo_lock,
+            current_package.as_ref(),
+            version_hints
+                .iter()
+                .map(|version_hint| version_hint.dependency_name.as_str()),
+        )
     };
 
     for version_hint in version_hints {
-        let resolved_version = if dependency_keys == ["workspace", "dependencies"] {
-            let Some(resolved_version) =
-                workspace_resolved_versions.get(&version_hint.dependency_name)
-            else {
-                continue;
-            };
-            resolved_version.clone()
-        } else {
-            let Some(resolved_version) = cargo_lock_dependency_version(
-                cargo_lock,
-                dependency_keys,
-                &version_hint.dependency_name,
-                current_package.as_ref(),
-                workspace_member_packages.as_deref(),
-            ) else {
-                continue;
-            };
+        if !tombi_text::Range::at(version_hint.position).intersects(visible_range) {
+            continue;
+        }
 
-            resolved_version
+        let Some(resolved_version) = resolved_versions.get(&version_hint.dependency_name) else {
+            continue;
         };
 
         let Some(label) = version_hint_label(
             version_hint.current_version.as_deref(),
-            &resolved_version,
+            resolved_version,
             version_hint.always_show,
         ) else {
             continue;
@@ -316,50 +305,55 @@ fn dependency_version_hint(
     }
 }
 
-fn cargo_lock_dependency_version(
+fn dependency_lock_versions_for_package<'a>(
     cargo_lock: &CargoLock,
-    dependency_keys: &[&str],
-    dependency_name: &str,
     current_package: Option<&CurrentPackage<'_>>,
-    workspace_member_packages: Option<&[WorkspaceMemberPackage]>,
-) -> Option<String> {
-    if dependency_keys == ["workspace", "dependencies"] {
-        return workspace_dependency_lock_version(
-            cargo_lock,
-            workspace_member_packages,
-            dependency_name,
-        );
+    dependency_names: impl Iterator<Item = &'a str>,
+) -> BTreeMap<String, String> {
+    let Some(current_package) = current_package else {
+        return BTreeMap::new();
+    };
+    let Some(lock_package) = cargo_lock.package(current_package.name, &current_package.version)
+    else {
+        return BTreeMap::new();
+    };
+
+    let dependency_names = dependency_names
+        .map(str::to_string)
+        .collect::<BTreeSet<_>>();
+    if dependency_names.is_empty() {
+        return BTreeMap::new();
     }
 
-    let current_package = current_package?;
-    cargo_lock.dependency_version_for_package(
-        current_package.name,
-        &current_package.version,
-        dependency_name,
-    )
-}
+    let mut resolved_versions = dependency_names
+        .into_iter()
+        .map(|dependency_name| (dependency_name, BTreeSet::new()))
+        .collect::<BTreeMap<_, _>>();
 
-fn workspace_dependency_lock_version(
-    cargo_lock: &CargoLock,
-    workspace_member_packages: Option<&[WorkspaceMemberPackage]>,
-    dependency_name: &str,
-) -> Option<String> {
-    let workspace_member_packages = workspace_member_packages?;
+    for dependency in &lock_package.dependencies {
+        let Some(versions) = resolved_versions.get_mut(&dependency.name) else {
+            continue;
+        };
+        let Some(resolved_version) = cargo_lock.resolved_dependency_version(dependency) else {
+            continue;
+        };
 
-    let resolved_versions = workspace_member_packages
-        .iter()
-        .filter_map(|package| {
-            cargo_lock.dependency_version_for_package(
-                &package.name,
-                &package.version,
-                dependency_name,
-            )
+        versions.insert(resolved_version);
+    }
+
+    resolved_versions
+        .into_iter()
+        .filter_map(|(dependency_name, versions)| match versions.len() {
+            0 => cargo_lock
+                .unique_package_version(&dependency_name)
+                .map(|version| (dependency_name, version)),
+            1 => versions
+                .into_iter()
+                .next()
+                .map(|version| (dependency_name, version)),
+            _ => None,
         })
-        .collect::<BTreeSet<_>>();
-
-    (resolved_versions.len() == 1)
-        .then(|| resolved_versions.into_iter().next())
-        .flatten()
+        .collect()
 }
 
 fn workspace_dependency_lock_versions<'a>(
@@ -643,32 +637,6 @@ impl CargoLock {
             .then(|| package_versions.into_iter().next())
             .flatten()
     }
-
-    fn dependency_version_for_package(
-        &self,
-        package_name: &str,
-        package_version: &str,
-        dependency_name: &str,
-    ) -> Option<String> {
-        let package = self.package(package_name, package_version)?;
-
-        let explicit_versions = package
-            .dependencies
-            .iter()
-            .filter(|dependency| dependency.name == dependency_name)
-            .filter_map(|dependency| dependency.version.clone())
-            .collect::<BTreeSet<_>>();
-
-        if explicit_versions.len() == 1 {
-            return explicit_versions.into_iter().next();
-        }
-
-        if explicit_versions.len() > 1 {
-            return None;
-        }
-
-        self.unique_package_version(dependency_name)
-    }
 }
 
 impl CargoLockPackage {
@@ -774,5 +742,55 @@ mod tests {
 
         assert_eq!(dependency.name, "serde");
         assert_eq!(dependency.version, None);
+    }
+
+    #[test]
+    fn resolves_requested_dependency_versions_for_the_entire_package() {
+        let cargo_lock = CargoLock {
+            packages: vec![
+                CargoLockPackage {
+                    name: "demo".to_string(),
+                    version: "0.1.0".to_string(),
+                    dependencies: vec![
+                        CargoLockDependency {
+                            name: "serde".to_string(),
+                            version: Some("1.0.228".to_string()),
+                        },
+                        CargoLockDependency {
+                            name: "tokio".to_string(),
+                            version: Some("1.47.1".to_string()),
+                        },
+                    ],
+                },
+                CargoLockPackage {
+                    name: "serde".to_string(),
+                    version: "1.0.228".to_string(),
+                    dependencies: Vec::new(),
+                },
+                CargoLockPackage {
+                    name: "tokio".to_string(),
+                    version: "1.47.1".to_string(),
+                    dependencies: Vec::new(),
+                },
+            ],
+        };
+        let current_package = CurrentPackage {
+            name: "demo",
+            version: "0.1.0".to_string(),
+        };
+
+        let resolved_versions = dependency_lock_versions_for_package(
+            &cargo_lock,
+            Some(&current_package),
+            ["serde", "tokio"].into_iter(),
+        );
+
+        assert_eq!(
+            resolved_versions,
+            BTreeMap::from([
+                ("serde".to_string(), "1.0.228".to_string()),
+                ("tokio".to_string(), "1.47.1".to_string()),
+            ])
+        );
     }
 }

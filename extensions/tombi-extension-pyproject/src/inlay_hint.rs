@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, path::Path, str::FromStr};
+use std::{collections::{BTreeMap, BTreeSet}, path::Path, str::FromStr};
 
 use pep508_rs::{
     VerbatimUrl, VersionOrUrl,
@@ -84,14 +84,8 @@ fn inlay_hint_impl(
         return Ok(None);
     };
 
-    let visible_dependency_hints = collect_dependency_hints(document_tree)
-        .into_iter()
-        .filter(|hint| {
-            tombi_text::Range::at(hint.dependency.range().end).intersects(visible_range)
-        })
-        .collect::<Vec<_>>();
-
-    if visible_dependency_hints.is_empty() {
+    let dependency_hints = collect_dependency_hints(document_tree);
+    if dependency_hints.is_empty() {
         return Ok(None);
     }
 
@@ -99,17 +93,25 @@ fn inlay_hint_impl(
         return Ok(None);
     };
 
-    let hints = visible_dependency_hints
+    let resolved_versions = uv_lock.dependency_versions_for_package(
+        &current_package.name,
+        &current_package.version,
+        dependency_hints
+            .iter()
+            .map(|hint| hint.requirement.name.as_ref()),
+    );
+
+    let hints = dependency_hints
         .into_iter()
         .filter_map(|hint| {
-            let resolved_version = uv_lock.dependency_version_for_package(
-                &current_package.name,
-                &current_package.version,
-                hint.requirement.name.as_ref(),
-            )?;
+            if !tombi_text::Range::at(hint.dependency.range().end).intersects(visible_range) {
+                return None;
+            }
+
+            let resolved_version = resolved_versions.get(hint.requirement.name.as_ref())?;
 
             let current_version = exact_pinned_version(&hint.requirement);
-            let label = version_hint_label(current_version.as_deref(), &resolved_version)?;
+            let label = version_hint_label(current_version.as_deref(), resolved_version)?;
 
             Some(InlayHint {
                 position: hint.dependency.range().end,
@@ -305,23 +307,52 @@ impl UvLock {
             .or_else(|| self.unique_package_version(&dependency.name))
     }
 
-    fn dependency_version_for_package(
+    fn dependency_versions_for_package<'a>(
         &self,
         package_name: &str,
         package_version: &str,
-        dependency_name: &str,
-    ) -> Option<String> {
-        let package = self.package(package_name, package_version)?;
-        let versions = package
-            .direct_dependencies
-            .iter()
-            .filter(|dependency| dependency.name == dependency_name)
-            .filter_map(|dependency| self.resolved_dependency_version(dependency))
-            .collect::<BTreeSet<_>>();
+        dependency_names: impl Iterator<Item = &'a str>,
+    ) -> BTreeMap<String, String> {
+        let Some(package) = self.package(package_name, package_version) else {
+            return BTreeMap::new();
+        };
 
-        (versions.len() == 1)
-            .then(|| versions.into_iter().next())
-            .flatten()
+        let dependency_names = dependency_names
+            .map(str::to_string)
+            .collect::<BTreeSet<_>>();
+        if dependency_names.is_empty() {
+            return BTreeMap::new();
+        }
+
+        let mut versions_by_dependency = dependency_names
+            .into_iter()
+            .map(|dependency_name| (dependency_name, BTreeSet::new()))
+            .collect::<BTreeMap<_, _>>();
+
+        for dependency in &package.direct_dependencies {
+            let Some(versions) = versions_by_dependency.get_mut(&dependency.name) else {
+                continue;
+            };
+            let Some(resolved_version) = self.resolved_dependency_version(dependency) else {
+                continue;
+            };
+
+            versions.insert(resolved_version);
+        }
+
+        versions_by_dependency
+            .into_iter()
+            .filter_map(|(dependency_name, versions)| {
+                (versions.len() == 1)
+                    .then(|| {
+                        versions
+                            .into_iter()
+                            .next()
+                            .map(|version| (dependency_name, version))
+                    })
+                    .flatten()
+            })
+            .collect()
     }
 }
 
@@ -382,6 +413,57 @@ fn uv_dependency_groups(value: Option<&Value>) -> Vec<UvLockDependency> {
         })
         .flatten()
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolves_requested_dependency_versions_for_the_entire_package() {
+        let uv_lock = UvLock {
+            packages: vec![
+                UvLockPackage {
+                    name: "demo".to_string(),
+                    version: "0.1.0".to_string(),
+                    direct_dependencies: vec![
+                        UvLockDependency {
+                            name: "pytest".to_string(),
+                            version: Some("8.3.3".to_string()),
+                        },
+                        UvLockDependency {
+                            name: "ruff".to_string(),
+                            version: Some("0.7.4".to_string()),
+                        },
+                    ],
+                },
+                UvLockPackage {
+                    name: "pytest".to_string(),
+                    version: "8.3.3".to_string(),
+                    direct_dependencies: Vec::new(),
+                },
+                UvLockPackage {
+                    name: "ruff".to_string(),
+                    version: "0.7.4".to_string(),
+                    direct_dependencies: Vec::new(),
+                },
+            ],
+        };
+
+        let resolved_versions = uv_lock.dependency_versions_for_package(
+            "demo",
+            "0.1.0",
+            ["pytest", "ruff"].into_iter(),
+        );
+
+        assert_eq!(
+            resolved_versions,
+            BTreeMap::from([
+                ("pytest".to_string(), "8.3.3".to_string()),
+                ("ruff".to_string(), "0.7.4".to_string()),
+            ])
+        );
+    }
 }
 
 impl UvLockDependency {

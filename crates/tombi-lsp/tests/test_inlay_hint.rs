@@ -158,6 +158,24 @@ async fn collect_inlay_hints(
     source: &str,
     source_path: PathBuf,
 ) -> Result<Option<Vec<InlayHint>>, Box<dyn std::error::Error>> {
+    let toml_text = textwrap::dedent(source).trim().to_string();
+    let lines = toml_text.lines().collect::<Vec<_>>();
+    let last_line = lines.len().saturating_sub(1) as u32;
+    let last_column = lines.last().map_or(0, |line| line.len() as u32);
+
+    collect_inlay_hints_in_range(
+        source,
+        source_path,
+        Range::new(Position::new(0, 0), Position::new(last_line, last_column)),
+    )
+    .await
+}
+
+async fn collect_inlay_hints_in_range(
+    source: &str,
+    source_path: PathBuf,
+    range: Range,
+) -> Result<Option<Vec<InlayHint>>, Box<dyn std::error::Error>> {
     let (service, _) = LspService::new(|client| {
         Backend::new(
             client,
@@ -186,15 +204,11 @@ async fn collect_inlay_hints(
     )
     .await;
 
-    let lines = toml_text.lines().collect::<Vec<_>>();
-    let last_line = lines.len().saturating_sub(1) as u32;
-    let last_column = lines.last().map_or(0, |line| line.len() as u32);
-
     Ok(handle_inlay_hint(
         backend,
         InlayHintParams {
             text_document: TextDocumentIdentifier { uri: toml_file_url },
-            range: Range::new(Position::new(0, 0), Position::new(last_line, last_column)),
+            range,
             work_done_progress_params: WorkDoneProgressParams::default(),
         },
     )
@@ -663,3 +677,114 @@ test_inlay_hint!(
         RESOLVED_UV_VERSION_TOOLTIP,
     )]));
 );
+
+#[tokio::test]
+async fn cargo_inlay_hint_returns_only_hints_in_the_visible_range() -> Result<(), Box<dyn std::error::Error>> {
+    let _guard = test_lock()
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    tombi_test_lib::init_log();
+
+    let fixture = InlayHintFixture::cargo(
+        r#"
+        [package]
+        name = "demo"
+        version = "0.1.0"
+
+        [dependencies]
+        serde = "1.0.219"
+        tokio = "1.45.0"
+        "#,
+        r#"
+        version = 4
+
+        [[package]]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = ["serde 1.0.228", "tokio 1.47.1"]
+
+        [[package]]
+        name = "serde"
+        version = "1.0.228"
+
+        [[package]]
+        name = "tokio"
+        version = "1.47.1"
+        "#,
+    )?;
+
+    let result = collect_inlay_hints_in_range(
+        &fixture.source,
+        fixture.source_path,
+        Range::new(Position::new(5, 0), Position::new(5, 18)),
+    )
+    .await?;
+
+    pretty_assertions::assert_eq!(
+        result,
+        Some(vec![expected_hint(
+            tombi_text::Position::new(5, 17),
+            r#" → "1.0.228""#,
+            RESOLVED_VERSION_TOOLTIP,
+        )])
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn pyproject_inlay_hint_returns_only_hints_in_the_visible_range() -> Result<(), Box<dyn std::error::Error>> {
+    let _guard = test_lock()
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    tombi_test_lib::init_log();
+
+    let fixture = InlayHintFixture::pyproject(
+        r#"
+        [project]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = ["pytest>=8.0"]
+
+        [dependency-groups]
+        dev = ["ruff>=0.7.0"]
+        "#,
+        r#"
+        version = 1
+
+        [[package]]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = [{ name = "pytest" }]
+
+        [package.dev-dependencies]
+        dev = [{ name = "ruff" }]
+
+        [[package]]
+        name = "pytest"
+        version = "8.3.3"
+
+        [[package]]
+        name = "ruff"
+        version = "0.7.4"
+        "#,
+    )?;
+
+    let result = collect_inlay_hints_in_range(
+        &fixture.source,
+        fixture.source_path,
+        Range::new(Position::new(3, 0), Position::new(3, 29)),
+    )
+    .await?;
+
+    pretty_assertions::assert_eq!(
+        result,
+        Some(vec![expected_hint(
+            tombi_text::Position::new(3, 29),
+            r#" → "8.3.3""#,
+            RESOLVED_UV_VERSION_TOOLTIP,
+        )])
+    );
+
+    Ok(())
+}
