@@ -129,6 +129,7 @@ pub async fn handle_hover(
                 &text_document_uri,
                 &document_tree,
                 &accessors,
+                position,
                 toml_version,
                 offline,
             )
@@ -143,6 +144,7 @@ pub async fn handle_hover(
                     &text_document_uri,
                     &document_tree,
                     &accessors,
+                    position,
                     toml_version,
                     offline,
                     cache_options,
@@ -158,6 +160,7 @@ pub async fn handle_hover(
                     &text_document_uri,
                     &document_tree,
                     &accessors,
+                    position,
                     toml_version,
                     offline,
                     cache_options,

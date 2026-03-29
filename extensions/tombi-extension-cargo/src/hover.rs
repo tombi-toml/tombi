@@ -27,6 +27,7 @@ pub async fn hover(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
+    position: tombi_text::Position,
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
@@ -39,7 +40,7 @@ pub async fn hover(
         return Ok(None);
     };
 
-    if accessors.len() != dependency_accessors.len() {
+    if !is_hovering_dependency_key(document_tree, dependency_accessors, position) {
         return Ok(None);
     }
 
@@ -75,29 +76,40 @@ pub async fn hover(
 }
 
 fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
-    if matches_accessors!(accessors, ["workspace", "dependencies", _])
-        || matches_accessors!(accessors, ["workspace", "dependencies", _, _])
-    {
-        Some(&accessors[..3])
+    if matches_accessors!(accessors, ["workspace", "dependencies", _]) {
+        Some(accessors)
     } else if matches_accessors!(accessors, ["dependencies", _])
-        || matches_accessors!(accessors, ["dependencies", _, _])
         || matches_accessors!(accessors, ["dev-dependencies", _])
-        || matches_accessors!(accessors, ["dev-dependencies", _, _])
         || matches_accessors!(accessors, ["build-dependencies", _])
-        || matches_accessors!(accessors, ["build-dependencies", _, _])
     {
-        Some(&accessors[..2])
+        Some(accessors)
     } else if matches_accessors!(accessors, ["target", _, "dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "dependencies", _, _])
         || matches_accessors!(accessors, ["target", _, "dev-dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _, _])
         || matches_accessors!(accessors, ["target", _, "build-dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "build-dependencies", _, _])
     {
-        Some(&accessors[..4])
+        Some(accessors)
     } else {
         None
     }
+}
+
+fn is_hovering_dependency_key(
+    document_tree: &tombi_document_tree::DocumentTree,
+    dependency_accessors: &[Accessor],
+    position: tombi_text::Position,
+) -> bool {
+    let dependency_keys = dependency_accessors
+        .iter()
+        .map(Accessor::as_key)
+        .collect::<Option<Vec<_>>>();
+    let Some(dependency_keys) = dependency_keys else {
+        return false;
+    };
+    let Some((dependency_key, _)) = dig_keys(document_tree, &dependency_keys) else {
+        return false;
+    };
+
+    dependency_key.range().contains(position)
 }
 
 fn resolve_local_dependency_metadata(
@@ -251,6 +263,9 @@ async fn fetch_crates_io_metadata(
 
 #[cfg(test)]
 mod tests {
+    use tombi_ast::AstNode;
+    use tombi_document_tree::TryIntoDocumentTree;
+
     use super::*;
 
     #[test]
@@ -270,5 +285,51 @@ mod tests {
             response.crate_info.description.as_deref(),
             Some("A generic serialization/deserialization framework")
         );
+    }
+
+    #[test]
+    fn only_matches_exact_dependency_paths() {
+        let dependency_accessors = [
+            Accessor::Key("dependencies".into()),
+            Accessor::Key("serde".into()),
+        ];
+        let nested_accessors = [
+            Accessor::Key("dependencies".into()),
+            Accessor::Key("serde".into()),
+            Accessor::Key("version".into()),
+        ];
+
+        assert_eq!(
+            get_dependency_accessors(&dependency_accessors),
+            Some(&dependency_accessors[..])
+        );
+        assert_eq!(get_dependency_accessors(&nested_accessors), None);
+    }
+
+    #[test]
+    fn hovering_dependency_value_does_not_count_as_hovering_key() {
+        let source = "[dependencies]\nserde = \"1.0\"\n";
+        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node()).unwrap();
+        let document_tree = root.try_into_document_tree(TomlVersion::V1_0_0).unwrap();
+        let dependency_accessors = [
+            Accessor::Key("dependencies".into()),
+            Accessor::Key("serde".into()),
+        ];
+
+        let key_position = tombi_text::Position::default()
+            + tombi_text::RelativePosition::of("[dependencies]\nse");
+        let value_position = tombi_text::Position::default()
+            + tombi_text::RelativePosition::of("[dependencies]\nserde = \"1");
+
+        assert!(is_hovering_dependency_key(
+            &document_tree,
+            &dependency_accessors,
+            key_position,
+        ));
+        assert!(!is_hovering_dependency_key(
+            &document_tree,
+            &dependency_accessors,
+            value_position,
+        ));
     }
 }

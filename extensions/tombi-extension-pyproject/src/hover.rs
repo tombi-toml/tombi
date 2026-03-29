@@ -27,6 +27,7 @@ pub async fn hover(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
+    _position: tombi_text::Position,
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
