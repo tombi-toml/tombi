@@ -203,7 +203,7 @@ fn collect_dependency_inlay_hints(
         None
     };
 
-    let resolved_versions = if dependency_keys == ["workspace", "dependencies"] {
+    let workspace_resolved_versions = if dependency_keys == ["workspace", "dependencies"] {
         workspace_dependency_lock_versions(
             cargo_lock,
             workspace_member_packages.as_deref(),
@@ -212,7 +212,7 @@ fn collect_dependency_inlay_hints(
                 .map(|version_hint| version_hint.dependency_name.as_str()),
         )
     } else {
-        dependency_lock_versions_for_package(
+        cargo_lock_dependency_version(
             cargo_lock,
             current_package.as_ref(),
             version_hints
@@ -226,8 +226,20 @@ fn collect_dependency_inlay_hints(
             continue;
         }
 
-        let Some(resolved_version) = resolved_versions.get(&version_hint.dependency_name) else {
-            continue;
+        let resolved_version = if dependency_keys == ["workspace", "dependencies"] {
+            let Some(resolved_version) =
+                workspace_resolved_versions.get(&version_hint.dependency_name)
+            else {
+                continue;
+            };
+            resolved_version
+        } else {
+            let Some(resolved_version) =
+                workspace_resolved_versions.get(&version_hint.dependency_name)
+            else {
+                continue;
+            };
+            resolved_version
         };
 
         let Some(label) = version_hint_label(
@@ -305,7 +317,7 @@ fn dependency_version_hint(
     }
 }
 
-fn dependency_lock_versions_for_package<'a>(
+fn cargo_lock_dependency_version<'a>(
     cargo_lock: &CargoLock,
     current_package: Option<&CurrentPackage<'_>>,
     dependency_names: impl Iterator<Item = &'a str>,
@@ -779,7 +791,7 @@ mod tests {
             version: "0.1.0".to_string(),
         };
 
-        let resolved_versions = dependency_lock_versions_for_package(
+        let resolved_versions = cargo_lock_dependency_version(
             &cargo_lock,
             Some(&current_package),
             ["serde", "tokio"].into_iter(),
