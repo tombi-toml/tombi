@@ -37,6 +37,7 @@ const WORKSPACE_PACKAGE_ITEMS: [&str; 16] = [
 
 enum CargoInlayHintFeature {
     DependencyVersion,
+    Workspace,
 }
 
 #[derive(Debug)]
@@ -136,13 +137,15 @@ fn inlay_hint_impl(
     let mut hints = Vec::new();
     let mut cargo_lock = None;
 
-    collect_workspace_package_inlay_hints(
-        document_tree,
-        &cargo_toml_path,
-        toml_version,
-        visible_range,
-        &mut hints,
-    );
+    if cargo_inlay_hint_enabled(features, CargoInlayHintFeature::Workspace) {
+        collect_workspace_package_inlay_hints(
+            document_tree,
+            &cargo_toml_path,
+            toml_version,
+            visible_range,
+            &mut hints,
+        );
+    }
 
     if cargo_inlay_hint_enabled(features, CargoInlayHintFeature::DependencyVersion) {
         for dependency_key in ["dependencies", "dev-dependencies", "build-dependencies"] {
@@ -736,6 +739,10 @@ fn cargo_inlay_hint_enabled(
             true,
             tombi_config::CargoExtensionFeatures::dependency_version_inlay_hint_enabled,
         ),
+        CargoInlayHintFeature::Workspace => features.map_or(
+            true,
+            tombi_config::CargoExtensionFeatures::workspace_inlay_hint_enabled,
+        ),
     }
 }
 
@@ -976,6 +983,7 @@ mod tests {
                                 dependency_version: Some(tombi_config::ToggleFeature {
                                     enabled: Some(false.into()),
                                 }),
+                                workspace: None,
                             },
                         )),
                         ..Default::default()
@@ -1007,6 +1015,62 @@ mod tests {
                 padding_right: Some(false),
             }])
         );
+    }
+
+    #[test]
+    fn disables_workspace_package_hints_when_workspace_inlay_hints_are_disabled() {
+        let temp_dir = tempfile::tempdir().expect("expected temp dir");
+        let cargo_toml_path = temp_dir.path().join("Cargo.toml");
+        fs::write(
+            &cargo_toml_path,
+            r#"
+            [package]
+            name = "app"
+            version = { workspace = true }
+
+            [workspace]
+            members = ["."]
+
+            [workspace.package]
+            version = "0.0.0-dev"
+            "#,
+        )
+        .expect("expected Cargo.toml");
+
+        let (_, document_tree) =
+            load_cargo_toml(&cargo_toml_path, TomlVersion::default()).expect("expected manifest");
+        let uri = tombi_uri::Uri::from_file_path(&cargo_toml_path).expect("expected uri");
+        let features = tombi_config::CargoExtensionFeatures::Features(
+            tombi_config::CargoExtensionFeatureTree {
+                lsp: Some(tombi_config::CargoLspFeatures::Features(
+                    tombi_config::CargoLspFeatureTree {
+                        inlay_hint: Some(tombi_config::CargoInlayHintFeatures::Features(
+                            tombi_config::CargoInlayHintFeatureTree {
+                                dependency_version: None,
+                                workspace: Some(tombi_config::ToggleFeature {
+                                    enabled: Some(false.into()),
+                                }),
+                            },
+                        )),
+                        ..Default::default()
+                    },
+                )),
+            },
+        );
+
+        let hints = inlay_hint_impl(
+            &uri,
+            &document_tree,
+            tombi_text::Range::new(
+                tombi_text::Position::new(0, 0),
+                tombi_text::Position::new(8, 0),
+            ),
+            TomlVersion::default(),
+            Some(&features),
+        )
+        .expect("expected inlay hint result");
+
+        assert_eq!(hints, None);
     }
 
     #[test]
