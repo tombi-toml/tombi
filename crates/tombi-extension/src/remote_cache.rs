@@ -20,6 +20,16 @@ pub async fn fetch_cached_remote_json<T: DeserializeOwned>(
         .await
 }
 
+pub async fn warm_remote_json_cache(
+    url: &str,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
+) -> bool {
+    let cache_file_path = get_cached_remote_json_file_path(url).await;
+
+    warm_remote_json_cache_from_path(url, cache_file_path.as_deref(), offline, cache_options).await
+}
+
 async fn get_cached_remote_json_file_path(url: &str) -> Option<PathBuf> {
     let uri = tombi_uri::Uri::from_str(url)
         .inspect_err(|err| log::warn!("Invalid URL for remote cache {url}: {err}"))
@@ -81,6 +91,59 @@ async fn fetch_cached_remote_json_from_path<T: DeserializeOwned>(
     parse_json(url, &bytes)
 }
 
+async fn warm_remote_json_cache_from_path(
+    url: &str,
+    cache_file_path: Option<&Path>,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
+) -> bool {
+    if offline {
+        log::debug!("offline mode, skip warming remote metadata from url: {url}");
+        return false;
+    }
+
+    if cache_options
+        .and_then(|options| options.no_cache)
+        .unwrap_or_default()
+    {
+        log::debug!("no_cache enabled, skip warming remote metadata from url: {url}");
+        return false;
+    }
+
+    let Some(cache_file_path) = cache_file_path else {
+        log::debug!("cache file path unavailable, skip warming remote metadata from url: {url}");
+        return false;
+    };
+
+    match read_from_cache(Some(cache_file_path), cache_options).await {
+        Ok(Some(_)) => {
+            log::debug!("remote metadata cache is fresh: {url}");
+            return false;
+        }
+        Ok(None) => {}
+        Err(err) => {
+            log::warn!("Failed to read cached remote metadata from {url}: {err}");
+        }
+    }
+
+    let bytes = match HttpClient::new().get_bytes(url).await {
+        Ok(bytes) => {
+            log::debug!("warm remote metadata cache from url: {url}");
+            bytes
+        }
+        Err(err) => {
+            log::warn!("Failed to warm remote metadata cache from {url}: {err}");
+            return false;
+        }
+    };
+
+    if let Err(err) = save_to_cache(Some(cache_file_path), &bytes).await {
+        log::warn!("{err}");
+    }
+
+    true
+}
+
 async fn load_cached_json<T: DeserializeOwned>(
     url: &str,
     cache_file_path: &Path,
@@ -127,7 +190,11 @@ fn parse_json<T: DeserializeOwned>(url: &str, bytes: &[u8]) -> Option<T> {
 mod tests {
     use std::{
         ffi::OsString,
+        io::{Read, Write},
+        net::TcpListener,
+        sync::atomic::{AtomicBool, AtomicUsize, Ordering},
         sync::{LazyLock, Mutex, MutexGuard},
+        thread,
         time::Duration,
     };
 
@@ -185,6 +252,52 @@ mod tests {
             .unwrap()
             .as_nanos();
         std::env::temp_dir().join(format!("tombi-{test_name}-{unique}.json"))
+    }
+
+    fn spawn_test_server(
+        body: &'static str,
+    ) -> (
+        String,
+        std::sync::Arc<AtomicUsize>,
+        std::sync::Arc<AtomicBool>,
+        thread::JoinHandle<()>,
+    ) {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let address = listener.local_addr().unwrap();
+        let request_count = std::sync::Arc::new(AtomicUsize::new(0));
+        let stop = std::sync::Arc::new(AtomicBool::new(false));
+        let request_count_for_thread = request_count.clone();
+        let stop_for_thread = stop.clone();
+        let handle = thread::spawn(move || {
+            while !stop_for_thread.load(Ordering::SeqCst) {
+                match listener.accept() {
+                    Ok((mut stream, _)) => {
+                        request_count_for_thread.fetch_add(1, Ordering::SeqCst);
+                        let mut buffer = [0; 1024];
+                        let _ = stream.read(&mut buffer);
+                        let response = format!(
+                            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{}",
+                            body.len(),
+                            body
+                        );
+                        let _ = stream.write_all(response.as_bytes());
+                        let _ = stream.flush();
+                    }
+                    Err(err) if err.kind() == std::io::ErrorKind::WouldBlock => {
+                        thread::sleep(Duration::from_millis(10));
+                    }
+                    Err(_) => break,
+                }
+            }
+        });
+
+        (
+            format!("http://{address}/metadata.json"),
+            request_count,
+            stop,
+            handle,
+        )
     }
 
     #[tokio::test(flavor = "current_thread")]
@@ -351,5 +464,56 @@ mod tests {
         assert_eq!(cached, None);
 
         let _ = std::fs::remove_file(cache_path);
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn warms_missing_cache() {
+        let _cache_home = TestCacheHome::new();
+        let (url, request_count, stop, handle) = spawn_test_server(r#"{"name":"cached"}"#);
+
+        let warmed = warm_remote_json_cache(&url, false, None).await;
+        let cache_path = get_cached_remote_json_file_path(&url).await.unwrap();
+        stop.store(true, Ordering::SeqCst);
+        handle.join().unwrap();
+
+        assert!(warmed);
+        assert_eq!(request_count.load(Ordering::SeqCst), 1);
+        assert_eq!(
+            std::fs::read_to_string(cache_path).unwrap(),
+            r#"{"name":"cached"}"#
+        );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn skips_warming_fresh_cache() {
+        let _cache_home = TestCacheHome::new();
+        let (url, request_count, stop, handle) = spawn_test_server(r#"{"name":"network"}"#);
+        let cache_path = get_cached_remote_json_file_path(&url).await.unwrap();
+        std::fs::create_dir_all(cache_path.parent().unwrap()).unwrap();
+        std::fs::write(&cache_path, r#"{"name":"cached"}"#).unwrap();
+
+        let warmed = warm_remote_json_cache(&url, false, None).await;
+        stop.store(true, Ordering::SeqCst);
+        handle.join().unwrap();
+
+        assert!(!warmed);
+        assert_eq!(request_count.load(Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn skips_warming_when_no_cache_is_enabled() {
+        let _cache_home = TestCacheHome::new();
+        let (url, request_count, stop, handle) = spawn_test_server(r#"{"name":"network"}"#);
+        let cache_options = tombi_cache::Options {
+            no_cache: Some(true),
+            cache_ttl: Some(Duration::from_secs(60)),
+        };
+
+        let warmed = warm_remote_json_cache(&url, false, Some(&cache_options)).await;
+        stop.store(true, Ordering::SeqCst);
+        handle.join().unwrap();
+
+        assert!(!warmed);
+        assert_eq!(request_count.load(Ordering::SeqCst), 0);
     }
 }
