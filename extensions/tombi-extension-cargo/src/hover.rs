@@ -35,11 +35,15 @@ pub async fn hover(
         return Ok(None);
     }
 
-    let Ok(cargo_toml_path) = text_document_uri.to_file_path() else {
+    let Some(dependency_accessors) = get_dependency_accessors(accessors) else {
         return Ok(None);
     };
 
-    let Some(dependency_accessors) = get_dependency_accessors(accessors) else {
+    if accessors.len() != dependency_accessors.len() {
+        return Ok(None);
+    }
+
+    let Ok(cargo_toml_path) = text_document_uri.to_file_path() else {
         return Ok(None);
     };
 

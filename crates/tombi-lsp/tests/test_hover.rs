@@ -387,6 +387,23 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn cargo_dependency_table_field_hover_keeps_schema_metadata(
+                r#"
+                [dependencies]
+                tombi-extension-cargo = { version█ = "0.0.0", workspace = true }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("crates/tombi-lsp/Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok({
+                "Keys": "dependencies.tombi-extension-cargo.version",
+                "Value": "String?",
+                "Title": Some("Semantic Version Requirement"),
+                "Description": Some("The [version requirement](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html) of the target dependency."),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn cargo_workspace_dependency_hover_metadata_disabled_by_extensions(
                 r#"
                 [dependencies]
