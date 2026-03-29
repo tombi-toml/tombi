@@ -2,6 +2,7 @@ mod error;
 mod options;
 pub use error::Error;
 pub use options::{DEFAULT_CACHE_TTL, Options};
+pub const CACHE_INDEX_FILE_NAME: &str = "__index__.json";
 
 pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
     if let Ok(xdg_cache_home) = std::env::var("XDG_CACHE_HOME") {
@@ -43,6 +44,11 @@ pub async fn get_cache_file_path(cache_file_uri: &tombi_uri::Uri) -> Option<std:
             for segment in path_segments {
                 dir_path.push(segment)
             }
+        }
+        if matches!(cache_file_uri.scheme(), "http" | "https")
+            && !cache_file_uri.path().ends_with(".json")
+        {
+            dir_path.push(CACHE_INDEX_FILE_NAME);
         }
 
         dir_path
@@ -142,4 +148,93 @@ pub async fn refresh_cache() -> Result<bool, crate::Error> {
     }
 
     Ok(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        ffi::OsString,
+        str::FromStr,
+        sync::{LazyLock, Mutex, MutexGuard},
+    };
+
+    use super::*;
+
+    static CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
+    struct TestCacheHome {
+        _guard: MutexGuard<'static, ()>,
+        previous: Option<OsString>,
+        temp_dir: std::path::PathBuf,
+    }
+
+    impl TestCacheHome {
+        fn new() -> Self {
+            let guard = CACHE_ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+            let unique = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let temp_dir = std::env::temp_dir().join(format!("tombi-cache-test-{unique}"));
+            std::fs::create_dir_all(&temp_dir).unwrap();
+            let previous = std::env::var_os("XDG_CACHE_HOME");
+            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
+            // remains scoped to one test at a time.
+            unsafe {
+                std::env::set_var("XDG_CACHE_HOME", &temp_dir);
+            }
+            Self {
+                _guard: guard,
+                previous,
+                temp_dir,
+            }
+        }
+    }
+
+    impl Drop for TestCacheHome {
+        fn drop(&mut self) {
+            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
+            // remains scoped to one test at a time.
+            unsafe {
+                if let Some(previous) = &self.previous {
+                    std::env::set_var("XDG_CACHE_HOME", previous);
+                } else {
+                    std::env::remove_var("XDG_CACHE_HOME");
+                }
+            }
+            let _ = std::fs::remove_dir_all(&self.temp_dir);
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn appends_index_file_to_non_json_http_paths() {
+        let _cache_home = TestCacheHome::new();
+        let uri = tombi_uri::Uri::from_str("https://crates.io/api/v1/crates/countme").unwrap();
+
+        let cache_path = get_cache_file_path(&uri).await.unwrap();
+
+        assert_eq!(cache_path.file_name().unwrap(), CACHE_INDEX_FILE_NAME);
+        assert_eq!(cache_path.parent().unwrap().file_name().unwrap(), "countme");
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn preserves_json_http_paths() {
+        let _cache_home = TestCacheHome::new();
+        let uri =
+            tombi_uri::Uri::from_str("https://www.schemastore.org/api/json/catalog.json").unwrap();
+
+        let cache_path = get_cache_file_path(&uri).await.unwrap();
+
+        assert_eq!(cache_path.file_name().unwrap(), "catalog.json");
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn preserves_non_http_paths() {
+        let _cache_home = TestCacheHome::new();
+        let uri = tombi_uri::Uri::from_str("file:///tmp/example.toml").unwrap();
+
+        let cache_path = get_cache_file_path(&uri).await.unwrap();
+
+        assert_eq!(cache_path.file_name().unwrap(), "example.toml");
+    }
 }

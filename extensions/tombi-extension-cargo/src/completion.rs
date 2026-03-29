@@ -946,10 +946,7 @@ mod tests {
     }
 
     async fn cached_remote_json_file_path(url: &str) -> std::path::PathBuf {
-        let mut uri = tombi_uri::Uri::from_str(url).unwrap();
-        if !uri.path().ends_with(".json") {
-            uri.path_segments_mut().unwrap().push("__index__.json");
-        }
+        let uri = tombi_uri::Uri::from_str(url).unwrap();
         tombi_cache::get_cache_file_path(&uri).await.unwrap()
     }
 
