@@ -52,9 +52,7 @@ where
 #[cfg(test)]
 mod tests {
     use std::sync::{
-        Arc,
-        Mutex,
-        OnceLock,
+        Arc, Mutex, OnceLock,
         atomic::{AtomicUsize, Ordering},
     };
 
@@ -96,8 +94,14 @@ mod tests {
         })
         .await;
 
-        assert_eq!(first.as_deref(), Some(&serde_json::json!({"name": "first"})));
-        assert_eq!(second.as_deref(), Some(&serde_json::json!({"name": "first"})));
+        assert_eq!(
+            first.as_deref(),
+            Some(&serde_json::json!({"name": "first"}))
+        );
+        assert_eq!(
+            second.as_deref(),
+            Some(&serde_json::json!({"name": "first"}))
+        );
         assert_eq!(counter.load(Ordering::SeqCst), 1);
     }
 
@@ -111,11 +115,15 @@ mod tests {
         let key = "test:version-change";
 
         assert_eq!(
-            get_or_load_json(key, Some(1), || async { Some(serde_json::json!(1)) }).await.as_deref(),
+            get_or_load_json(key, Some(1), || async { Some(serde_json::json!(1)) })
+                .await
+                .as_deref(),
             Some(&serde_json::json!(1))
         );
         assert_eq!(
-            get_or_load_json(key, Some(2), || async { Some(serde_json::json!(2)) }).await.as_deref(),
+            get_or_load_json(key, Some(2), || async { Some(serde_json::json!(2)) })
+                .await
+                .as_deref(),
             Some(&serde_json::json!(2))
         );
     }
@@ -130,11 +138,15 @@ mod tests {
         let key = "test:none-version";
 
         assert_eq!(
-            get_or_load_json(key, Some(1), || async { Some(serde_json::json!("cached")) }).await.as_deref(),
+            get_or_load_json(key, Some(1), || async { Some(serde_json::json!("cached")) })
+                .await
+                .as_deref(),
             Some(&serde_json::json!("cached"))
         );
         assert_eq!(
-            get_or_load_json(key, None, || async { Some(serde_json::json!("new")) }).await.as_deref(),
+            get_or_load_json(key, None, || async { Some(serde_json::json!("new")) })
+                .await
+                .as_deref(),
             Some(&serde_json::json!("cached"))
         );
     }
@@ -152,7 +164,8 @@ mod tests {
                 Some(1),
                 || async { Some(serde_json::json!("a")) }
             )
-            .await.as_deref(),
+            .await
+            .as_deref(),
             Some(&serde_json::json!("a"))
         );
         assert_eq!(
@@ -161,7 +174,8 @@ mod tests {
                 Some(1),
                 || async { Some(serde_json::json!("b")) }
             )
-            .await.as_deref(),
+            .await
+            .as_deref(),
             Some(&serde_json::json!("b"))
         );
     }
@@ -176,11 +190,15 @@ mod tests {
         let key = "test:reload-failure";
 
         assert_eq!(
-            get_or_load_json(key, Some(1), || async { Some(serde_json::json!("cached")) }).await.as_deref(),
+            get_or_load_json(key, Some(1), || async { Some(serde_json::json!("cached")) })
+                .await
+                .as_deref(),
             Some(&serde_json::json!("cached"))
         );
         assert_eq!(
-            get_or_load_json(key, Some(2), || async { None }).await.as_deref(),
+            get_or_load_json(key, Some(2), || async { None })
+                .await
+                .as_deref(),
             Some(&serde_json::json!("cached"))
         );
     }
