@@ -189,6 +189,33 @@ fn expected_default_features_tooltip(features: &[&str]) -> String {
     )
 }
 
+macro_rules! source_files {
+    ($(SourceFile { path = $path:expr, content = $content:expr $(,)? }),* $(,)?) => {
+        vec![$(($path, $content)),*]
+    };
+}
+
+macro_rules! source_fixture {
+    (
+        SourceFile { path = $source_path:expr, content = $source:expr $(,)? }
+        $(,
+            SourceFile { path = $path:expr, content = $content:expr $(,)? }
+        )*
+        $(,)?
+    ) => {
+        create_temp_fixture(
+            $source_path,
+            $source,
+            source_files!(
+                $(SourceFile {
+                    path = $path,
+                    content = $content,
+                },)*
+            ),
+        )
+    };
+}
+
 macro_rules! test_inlay_hint {
     (@run $name:ident, $fixture:expr, $expected:expr) => {
         #[tokio::test]
@@ -209,97 +236,28 @@ macro_rules! test_inlay_hint {
     (
         #[tokio::test]
         async fn $name:ident(
-            $source:expr,
-            CargoFile {
-                $(dependency_path = $dependency_path:expr,
-                dependency_context = $dependency_context:expr,)?
-                $(cargo_lock = $cargo_lock:expr)?
-                $(,)?
-            }
+            SourceFile { path = $source_path:expr, content = $source:expr $(,)? }
+            $(,
+                SourceFile { path = $path:expr, content = $content:expr $(,)? }
+            )*
+            $(,)?
         ) -> Ok($expected:expr);
     ) => {
         test_inlay_hint!(
             @run
             $name,
-            create_temp_fixture("Cargo.toml", $source, {
-                let mut files = Vec::new();
-                $(files.push(($dependency_path, $dependency_context));)?
-                $(files.push(("Cargo.lock", $cargo_lock));)?
-                files
-            }),
-            $expected
-        );
-    };
-    (
-        #[tokio::test]
-        async fn $name:ident(
-            $source:expr,
-            WorkspaceRootFile {
-                member_path = $member_path:expr,
-                member_context = $member_context:expr
-                $(, cargo_lock = $cargo_lock:expr)?
-                $(,)?
-            }
-        ) -> Ok($expected:expr);
-    ) => {
-        test_inlay_hint!(
-            @run
-            $name,
-            create_temp_fixture("Cargo.toml", $source, {
-                let mut files = vec![($member_path, $member_context)];
-                $(files.push(("Cargo.lock", $cargo_lock));)?
-                files
-            }),
-            $expected
-        );
-    };
-    (
-        #[tokio::test]
-        async fn $name:ident(
-            $source:expr,
-            WorkspaceFile {
-                path = $path:expr,
-                context = $context:expr
-                $(, cargo_lock = $cargo_lock:expr)?
-                $(, uv_lock = $uv_lock:expr)?
-                $(,)?
-            }
-        ) -> Ok($expected:expr);
-    ) => {
-        test_inlay_hint!(
-            @run
-            $name,
-            create_temp_fixture($path, $source, {
-                let context = $context;
-                let mut files = Vec::new();
-                if !context.is_empty() {
-                    files.push(("Cargo.toml", context));
+            source_fixture!(
+                SourceFile {
+                    path = $source_path,
+                    content = $source,
                 }
-                $(files.push(("Cargo.lock", $cargo_lock));)?
-                $(files.push(("uv.lock", $uv_lock));)?
-                files
-            }),
-            $expected
-        );
-    };
-    (
-        #[tokio::test]
-        async fn $name:ident(
-            $source:expr,
-            PyprojectFile {
-                $(uv_lock = $uv_lock:expr)?
-                $(,)?
-            }
-        ) -> Ok($expected:expr);
-    ) => {
-        test_inlay_hint!(
-            @run
-            $name,
-            create_temp_fixture("pyproject.toml", $source, {
-                let mut files = Vec::new();
-                $(files.push(("uv.lock", $uv_lock));)?
-                files
-            }),
+                $(,
+                    SourceFile {
+                        path = $path,
+                        content = $content,
+                    }
+                )*
+            ),
             $expected
         );
     };
@@ -308,16 +266,20 @@ macro_rules! test_inlay_hint {
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_string_dependency_uses_the_resolved_lockfile_version(
-        r#"
-        [package]
-        name = "demo"
-        version = "0.1.0"
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
 
-        [dependencies]
-        serde = "1.0.219"
-        "#,
-        CargoFile {
-            cargo_lock = r#"
+            [dependencies]
+            serde = "1.0.219"
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -329,7 +291,7 @@ test_inlay_hint!(
             name = "serde"
             version = "1.0.228"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(5, 17),
         r#" → "1.0.228""#,
@@ -338,8 +300,8 @@ test_inlay_hint!(
 );
 
 #[tokio::test]
-async fn inlay_hint_for_registry_default_features_is_rendered(
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn inlay_hint_for_registry_default_features_is_rendered()
+-> Result<(), Box<dyn std::error::Error>> {
     let _cache_home = TestCacheHome::new();
     tombi_test_lib::init_log();
 
@@ -349,40 +311,40 @@ async fn inlay_hint_for_registry_default_features_is_rendered(
     )
     .await;
 
-    let fixture = create_temp_fixture(
-        "Cargo.toml",
-        r#"
-        [workspace]
-        members = ["crates/app"]
+    let fixture = source_fixture!(
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [workspace]
+            members = ["crates/app"]
 
-        [workspace.dependencies]
-        serde_json = { version = "1.0.140", features = ["preserve_order", "std"] }
-        "#,
-        vec![
-            (
-                "crates/app/Cargo.toml",
-                r#"
-                [package]
-                name = "app"
-                version = "0.1.0"
-                "#,
-            ),
-            (
-                "Cargo.lock",
-                r#"
-                version = 4
+            [workspace.dependencies]
+            serde_json = { version = "1.0.140", features = ["preserve_order", "std"] }
+            "#,
+        },
+        SourceFile {
+            path = "crates/app/Cargo.toml",
+            content = r#"
+            [package]
+            name = "app"
+            version = "0.1.0"
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
+            version = 4
 
-                [[package]]
-                name = "app"
-                version = "0.1.0"
-                dependencies = ["serde_json 1.0.142"]
+            [[package]]
+            name = "app"
+            version = "0.1.0"
+            dependencies = ["serde_json 1.0.142"]
 
-                [[package]]
-                name = "serde_json"
-                version = "1.0.142"
-                "#,
-            ),
-        ],
+            [[package]]
+            name = "serde_json"
+            version = "1.0.142"
+            "#,
+        },
     )?;
 
     let result = collect_inlay_hints(&fixture.source, fixture.source_path).await?;
@@ -407,8 +369,8 @@ async fn inlay_hint_for_registry_default_features_is_rendered(
 }
 
 #[tokio::test]
-async fn inlay_hint_for_registry_default_features_is_not_rendered_when_disabled_explicitly(
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn inlay_hint_for_registry_default_features_is_not_rendered_when_disabled_explicitly()
+-> Result<(), Box<dyn std::error::Error>> {
     let _cache_home = TestCacheHome::new();
     tombi_test_lib::init_log();
 
@@ -418,40 +380,40 @@ async fn inlay_hint_for_registry_default_features_is_not_rendered_when_disabled_
     )
     .await;
 
-    let fixture = create_temp_fixture(
-        "Cargo.toml",
-        r#"
-        [workspace]
-        members = ["crates/app"]
+    let fixture = source_fixture!(
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [workspace]
+            members = ["crates/app"]
 
-        [workspace.dependencies]
-        serde_json = { version = "1.0.140", default-features = false, features = ["preserve_order"] }
-        "#,
-        vec![
-            (
-                "crates/app/Cargo.toml",
-                r#"
-                [package]
-                name = "app"
-                version = "0.1.0"
-                "#,
-            ),
-            (
-                "Cargo.lock",
-                r#"
-                version = 4
+            [workspace.dependencies]
+            serde_json = { version = "1.0.140", default-features = false, features = ["preserve_order"] }
+            "#,
+        },
+        SourceFile {
+            path = "crates/app/Cargo.toml",
+            content = r#"
+            [package]
+            name = "app"
+            version = "0.1.0"
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
+            version = 4
 
-                [[package]]
-                name = "app"
-                version = "0.1.0"
-                dependencies = ["serde_json 1.0.142"]
+            [[package]]
+            name = "app"
+            version = "0.1.0"
+            dependencies = ["serde_json 1.0.142"]
 
-                [[package]]
-                name = "serde_json"
-                version = "1.0.142"
-                "#,
-            ),
-        ],
+            [[package]]
+            name = "serde_json"
+            version = "1.0.142"
+            "#,
+        },
     )?;
 
     let result = collect_inlay_hints(&fixture.source, fixture.source_path).await?;
@@ -471,16 +433,20 @@ async fn inlay_hint_for_registry_default_features_is_not_rendered_when_disabled_
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_dotted_version_key_is_rendered_after_the_version_literal(
-        r#"
-        [package]
-        name = "demo"
-        version = "0.1.0"
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
 
-        [dependencies]
-        addr.version = "0.15.5"
-        "#,
-        CargoFile {
-            cargo_lock = r#"
+            [dependencies]
+            addr.version = "0.15.5"
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -492,7 +458,7 @@ test_inlay_hint!(
             name = "addr"
             version = "0.15.6"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(5, 23),
         r#" → "0.15.6""#,
@@ -503,16 +469,20 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_inline_table_version_uses_the_resolved_lockfile_version(
-        r#"
-        [package]
-        name = "demo"
-        version = "0.1.0"
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
 
-        [dependencies]
-        tokio = { version = "1.45.0", features = ["fs"] }
-        "#,
-        CargoFile {
-            cargo_lock = r#"
+            [dependencies]
+            tokio = { version = "1.45.0", features = ["fs"] }
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -524,7 +494,7 @@ test_inlay_hint!(
             name = "tokio"
             version = "1.47.1"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(5, 28),
         r#" → "1.47.1""#,
@@ -535,21 +505,27 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_workspace_dependencies_uses_workspace_members_lockfile_resolution(
-        r#"
-        [workspace]
-        members = ["crates/app"]
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [workspace]
+            members = ["crates/app"]
 
-        [workspace.dependencies]
-        serde = "1.0.219"
-        "#,
-        WorkspaceRootFile {
-            member_path = "crates/app/Cargo.toml",
-            member_context = r#"
+            [workspace.dependencies]
+            serde = "1.0.219"
+            "#,
+        },
+        SourceFile {
+            path = "crates/app/Cargo.toml",
+            content = r#"
             [package]
             name = "app"
             version = "0.1.0"
             "#,
-            cargo_lock = r#"
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -561,7 +537,7 @@ test_inlay_hint!(
             name = "serde"
             version = "1.0.228"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(4, 17),
         r#" → "1.0.228""#,
@@ -572,21 +548,27 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_workspace_inline_table_dependency_uses_the_resolved_lockfile_version(
-        r#"
-        [workspace]
-        members = ["crates/app"]
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [workspace]
+            members = ["crates/app"]
 
-        [workspace.dependencies]
-        serde_json = { version = "1.0.140", default-features = false, features = ["preserve_order"] }
-        "#,
-        WorkspaceRootFile {
-            member_path = "crates/app/Cargo.toml",
-            member_context = r#"
+            [workspace.dependencies]
+            serde_json = { version = "1.0.140", default-features = false, features = ["preserve_order"] }
+            "#,
+        },
+        SourceFile {
+            path = "crates/app/Cargo.toml",
+            content = r#"
             [package]
             name = "app"
             version = "0.1.0"
             "#,
-            cargo_lock = r#"
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -598,7 +580,7 @@ test_inlay_hint!(
             name = "serde_json"
             version = "1.0.142"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![
         expected_hint(
             tombi_text::Position::new(4, 34),
@@ -611,21 +593,27 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_workspace_inheritance_is_rendered_even_when_versions_match(
-        r#"
-        [package]
-        name = "app"
-        version = "0.1.0"
-
-        [dependencies]
-        addr.workspace = true
-        "#,
-        WorkspaceFile {
+        SourceFile {
             path = "crates/app/Cargo.toml",
-            context = r#"
+            content = r#"
+            [package]
+            name = "app"
+            version = "0.1.0"
+
+            [dependencies]
+            addr.workspace = true
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
             [workspace]
             members = ["crates/app"]
             "#,
-            cargo_lock = r#"
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -637,7 +625,7 @@ test_inlay_hint!(
             name = "addr"
             version = "0.15.6"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(5, 21),
         r#" → "0.15.6""#,
@@ -648,24 +636,30 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_workspace_default_features_is_not_rendered_without_member_override(
-        r#"
-        [package]
-        name = "app"
-        version = "0.1.0"
-
-        [dependencies]
-        serde_json = { workspace = true, features = ["preserve_order"] }
-        "#,
-        WorkspaceFile {
+        SourceFile {
             path = "crates/app/Cargo.toml",
-            context = r#"
+            content = r#"
+            [package]
+            name = "app"
+            version = "0.1.0"
+
+            [dependencies]
+            serde_json = { workspace = true, features = ["preserve_order"] }
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
             [workspace]
             members = ["crates/app"]
 
             [workspace.dependencies]
             serde_json = { version = "1.0.140", default-features = false }
             "#,
-            cargo_lock = r#"
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -677,7 +671,7 @@ test_inlay_hint!(
             name = "serde_json"
             version = "1.0.142"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(5, 31),
         r#" → "1.0.142""#,
@@ -688,16 +682,20 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_is_not_rendered_when_the_version_already_matches_the_lockfile(
-        r#"
-        [package]
-        name = "demo"
-        version = "0.1.0"
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
 
-        [dependencies]
-        serde = "1.0.228"
-        "#,
-        CargoFile {
-            cargo_lock = r#"
+            [dependencies]
+            serde = "1.0.228"
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -709,28 +707,34 @@ test_inlay_hint!(
             name = "serde"
             version = "1.0.228"
             "#,
-        }
+        },
     ) -> Ok(None);
 );
 
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_workspace_path_crate_is_rendered_from_the_lockfile(
-        r#"
-        [package]
-        name = "app"
-        version = "0.1.0"
-
-        [dependencies]
-        tombi-text.workspace = true
-        "#,
-        WorkspaceFile {
+        SourceFile {
             path = "crates/app/Cargo.toml",
-            context = r#"
+            content = r#"
+            [package]
+            name = "app"
+            version = "0.1.0"
+
+            [dependencies]
+            tombi-text.workspace = true
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
             [workspace]
             members = ["crates/app"]
             "#,
-            cargo_lock = r#"
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -742,7 +746,7 @@ test_inlay_hint!(
             name = "tombi-text"
             version = "0.0.0-dev"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(5, 27),
         r#" → "0.0.0-dev""#,
@@ -753,15 +757,18 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_member_package_workspace_inheritance_uses_workspace_package_value(
-        r#"
-        [package]
-        name = "app"
-        version = { workspace = true }
-        authors.workspace = true
-        "#,
-        WorkspaceFile {
+        SourceFile {
             path = "crates/app/Cargo.toml",
-            context = r#"
+            content = r#"
+            [package]
+            name = "app"
+            version = { workspace = true }
+            authors.workspace = true
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
             [workspace]
             members = ["crates/app"]
 
@@ -769,8 +776,11 @@ test_inlay_hint!(
             version = "0.0.0-dev"
             authors = ["Tombi", "Cargo"]
             "#,
-            cargo_lock = "",
-        }
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = "",
+        },
     ) -> Ok(Some(vec![
         expected_hint(
             tombi_text::Position::new(2, 28),
@@ -788,20 +798,24 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_root_package_workspace_inheritance_uses_same_manifest_workspace_package_value(
-        r#"
-        [package]
-        name = "app"
-        version = { workspace = true }
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [package]
+            name = "app"
+            version = { workspace = true }
 
-        [workspace]
-        members = ["."]
+            [workspace]
+            members = ["."]
 
-        [workspace.package]
-        version = "0.0.0-dev"
-        "#,
-        CargoFile {
-            cargo_lock = "",
-        }
+            [workspace.package]
+            version = "0.0.0-dev"
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = "",
+        },
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(2, 28),
         r#" → "0.0.0-dev""#,
@@ -812,16 +826,20 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_path_dependency_is_rendered_after_the_path_value(
-        r#"
-        [package]
-        name = "demo"
-        version = "0.1.0"
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
 
-        [dependencies]
-        serde = { path = "vendor/serde" }
-        "#,
-        CargoFile {
-            cargo_lock = r#"
+            [dependencies]
+            serde = { path = "vendor/serde" }
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -833,7 +851,7 @@ test_inlay_hint!(
             name = "serde"
             version = "1.0.228"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(5, 31),
         r#" → "1.0.228""#,
@@ -844,17 +862,20 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_default_features_is_rendered_after_the_features_array(
-        r#"
-        [package]
-        name = "demo"
-        version = "0.1.0"
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
 
-        [dependencies]
-        dep = { path = "vendor/dep", features = ["default1", "extra"] }
-        "#,
-        CargoFile {
-            dependency_path = "vendor/dep/Cargo.toml",
-            dependency_context = r#"
+            [dependencies]
+            dep = { path = "vendor/dep", features = ["default1", "extra"] }
+            "#,
+        },
+        SourceFile {
+            path = "vendor/dep/Cargo.toml",
+            content = r#"
             [package]
             name = "dep"
             version = "0.2.0"
@@ -863,7 +884,10 @@ test_inlay_hint!(
             default = ["default1", "default2"]
             extra = []
             "#,
-            cargo_lock = r#"
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -875,7 +899,7 @@ test_inlay_hint!(
             name = "dep"
             version = "0.2.0"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![
         expected_hint(
             tombi_text::Position::new(5, 27),
@@ -893,17 +917,20 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_default_features_is_not_rendered_when_disabled_explicitly(
-        r#"
-        [package]
-        name = "demo"
-        version = "0.1.0"
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
 
-        [dependencies]
-        dep = { path = "vendor/dep", default-features = false, features = ["extra"] }
-        "#,
-        CargoFile {
-            dependency_path = "vendor/dep/Cargo.toml",
-            dependency_context = r#"
+            [dependencies]
+            dep = { path = "vendor/dep", default-features = false, features = ["extra"] }
+            "#,
+        },
+        SourceFile {
+            path = "vendor/dep/Cargo.toml",
+            content = r#"
             [package]
             name = "dep"
             version = "0.2.0"
@@ -912,7 +939,10 @@ test_inlay_hint!(
             default = ["default1", "default2"]
             extra = []
             "#,
-            cargo_lock = r#"
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -924,7 +954,7 @@ test_inlay_hint!(
             name = "dep"
             version = "0.2.0"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(5, 27),
         r#" → "0.2.0""#,
@@ -935,16 +965,20 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn inlay_hint_for_git_dependency_is_rendered_after_the_git_value(
-        r#"
-        [package]
-        name = "demo"
-        version = "0.1.0"
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
 
-        [dependencies]
-        serde = { git = "https://github.com/serde-rs/serde" }
-        "#,
-        CargoFile {
-            cargo_lock = r#"
+            [dependencies]
+            serde = { git = "https://github.com/serde-rs/serde" }
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
             version = 4
 
             [[package]]
@@ -957,7 +991,7 @@ test_inlay_hint!(
             version = "1.0.228"
             source = "git+https://github.com/serde-rs/serde"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(5, 51),
         r#" → "1.0.228""#,
@@ -968,17 +1002,21 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn pyproject_inlay_hint_uses_uv_lock_for_project_dependencies(
-        r#"
-        [project]
-        name = "demo"
-        version = "0.1.0"
-        dependencies = ["pytest>=8.0"]
+        SourceFile {
+            path = "pyproject.toml",
+            content = r#"
+            [project]
+            name = "demo"
+            version = "0.1.0"
+            dependencies = ["pytest>=8.0"]
 
-        [dependency-groups]
-        dev = ["ruff>=0.7.0"]
-        "#,
-        PyprojectFile {
-            uv_lock = r#"
+            [dependency-groups]
+            dev = ["ruff>=0.7.0"]
+            "#,
+        },
+        SourceFile {
+            path = "uv.lock",
+            content = r#"
             version = 1
 
             [[package]]
@@ -997,7 +1035,7 @@ test_inlay_hint!(
             name = "ruff"
             version = "0.7.4"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![
         expected_hint(
             tombi_text::Position::new(3, 29),
@@ -1015,16 +1053,18 @@ test_inlay_hint!(
 test_inlay_hint!(
     #[tokio::test]
     async fn pyproject_inlay_hint_finds_uv_lock_from_ancestor_directory(
-        r#"
-        [project]
-        name = "app"
-        version = "0.1.0"
-        dependencies = ["pytest>=8.0"]
-        "#,
-        WorkspaceFile {
+        SourceFile {
             path = "members/app/pyproject.toml",
-            context = "",
-            uv_lock = r#"
+            content = r#"
+            [project]
+            name = "app"
+            version = "0.1.0"
+            dependencies = ["pytest>=8.0"]
+            "#,
+        },
+        SourceFile {
+            path = "uv.lock",
+            content = r#"
             version = 1
 
             [[package]]
@@ -1036,7 +1076,7 @@ test_inlay_hint!(
             name = "pytest"
             version = "8.3.3"
             "#,
-        }
+        },
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(3, 29),
         r#" → "8.3.3""#,
