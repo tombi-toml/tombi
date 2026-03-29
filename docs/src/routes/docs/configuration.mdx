@@ -242,11 +242,6 @@ tables-out-of-order = "error"
       dependency-version.enabled = true,
       path.enabled = true,
     },
-    inlay-hint = {
-      default-features.enabled = true,
-      dependency-version.enabled = true,
-      workspace-value.enabled = true,
-    },
     document-link = {
       cargo-toml.enabled = true,
       crates-io.enabled = true,
@@ -262,6 +257,11 @@ tables-out-of-order = "error"
       dependency.enabled = true,
       member.enabled = true,
       path.enabled = true,
+    },
+    inlay-hint = {
+      default-features.enabled = true,
+      dependency-version.enabled = true,
+      workspace-value.enabled = true,
     },
   }
 }
@@ -1027,66 +1027,6 @@ Enable or disable path completion for Cargo manifests.
 - Type: `Boolean`
 - Default: `true`
 
-### extensions."tombi-toml/cargo".lsp.inlay-hint
-
-Configure Cargo-specific inlay hints.
-
-See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay-hints).
-
-- Type: `Table`
-
-### extensions."tombi-toml/cargo".lsp.inlay-hint.enabled
-
-Enable or disable all Cargo inlay hints.
-
-- Type: `Boolean`
-- Default: `true`
-
-### extensions."tombi-toml/cargo".lsp.inlay-hint.dependency-version
-
-Configure resolved-version inlay hints for Cargo dependencies.
-
-See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay-hints).
-
-- Type: `Table`
-
-### extensions."tombi-toml/cargo".lsp.inlay-hint.dependency-version.enabled
-
-Enable or disable resolved-version inlay hints for Cargo dependencies.
-
-- Type: `Boolean`
-- Default: `true`
-
-### extensions."tombi-toml/cargo".lsp.inlay-hint.default-features
-
-Configure default-features inlay hints for Cargo dependencies.
-
-See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay-hints).
-
-- Type: `Table`
-
-### extensions."tombi-toml/cargo".lsp.inlay-hint.default-features.enabled
-
-Enable or disable default-features inlay hints for Cargo dependencies.
-
-- Type: `Boolean`
-- Default: `true`
-
-### extensions."tombi-toml/cargo".lsp.inlay-hint.workspace-value
-
-Configure workspace-value inlay hints for Cargo package inheritance.
-
-See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay-hints).
-
-- Type: `Table`
-
-### extensions."tombi-toml/cargo".lsp.inlay-hint.workspace-value.enabled
-
-Enable or disable workspace-value inlay hints for Cargo package inheritance.
-
-- Type: `Boolean`
-- Default: `true`
-
 ### extensions."tombi-toml/cargo".lsp.goto-definition
 
 Configure Cargo-specific go to definition features.
@@ -1367,6 +1307,66 @@ See [Cargo Extension > Code Actions](/docs/extensions/tombi-extension-cargo#code
 ### extensions."tombi-toml/cargo".lsp.code-action.add-to-workspace-and-inherit-dependency.enabled
 
 Enable or disable the "Add to Workspace and Inherit Dependency" code action for Cargo manifests.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint
+
+Configure Cargo-specific inlay hints.
+
+See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay-hints).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.enabled
+
+Enable or disable all Cargo inlay hints.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.dependency-version
+
+Configure resolved-version inlay hints for Cargo dependencies.
+
+See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay-hints).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.dependency-version.enabled
+
+Enable or disable resolved-version inlay hints for Cargo dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.default-features
+
+Configure default-features inlay hints for Cargo dependencies.
+
+See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay-hints).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.default-features.enabled
+
+Enable or disable default-features inlay hints for Cargo dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.workspace-value
+
+Configure workspace-value inlay hints for Cargo package inheritance.
+
+See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay-hints).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.workspace-value.enabled
+
+Enable or disable workspace-value inlay hints for Cargo package inheritance.
 
 - Type: `Boolean`
 - Default: `true`
