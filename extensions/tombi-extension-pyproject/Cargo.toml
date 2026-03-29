@@ -21,12 +21,13 @@ tombi-config.workspace = true
 tombi-document-tree.workspace = true
 tombi-extension.workspace = true
 tombi-extension-manifest.workspace = true
+tombi-hashmap.workspace = true
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true
 tombi-version-sort.workspace = true
-tokio = { workspace = true, features = ["rt"] }
+tokio = { workspace = true, features = ["fs", "rt"] }
 tower-lsp.workspace = true
 
 [dev-dependencies]

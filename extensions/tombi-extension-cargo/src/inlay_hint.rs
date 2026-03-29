@@ -1,15 +1,16 @@
 use std::{
-    collections::{BTreeMap, BTreeSet},
-    path::Path,
+    borrow::Borrow,
+    path::{Path, PathBuf},
 };
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_keys};
-use tombi_extension::{InlayHint, fetch_cached_remote_json};
+use tombi_extension::{InlayHint, fetch_cached_remote_json, file_cache_version, get_or_load_json};
+use tombi_hashmap::{HashMap, HashSet};
 
 use crate::{
-    cargo_lock::{CargoLock, load_cargo_lock},
+    cargo_lock::{CargoLock, CargoLockPackage, find_cargo_lock_path, load_cargo_lock_from_path},
     dependency_package_name, find_workspace_cargo_toml, get_workspace_path, load_cargo_toml,
     workspace::{extract_exclude_patterns, find_package_cargo_toml_paths},
 };
@@ -17,6 +18,8 @@ use crate::{
 const RESOLVED_VERSION_TOOLTIP: &str = "Resolved version in Cargo.lock";
 const WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP: &str = "Inherited value from workspace";
 const MAX_WORKSPACE_VALUE_HINT_CHARS: usize = 80;
+const CARGO_EXTENSION_ID: &str = "tombi-toml/cargo";
+const INLAY_HINT_LOCKFILE_KEY: &str = "inlay_hint.lockfile";
 const WORKSPACE_PACKAGE_ITEMS: [&str; 16] = [
     "authors",
     "categories",
@@ -40,6 +43,36 @@ enum CargoInlayHintFeature {
     DependencyVersion,
     DefaultFeatures,
     Workspace,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+struct CrateName(String);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+struct CrateVersion(String);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+struct DependencyCrateName(String);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ResolvedDependencyVersion {
+    version: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct CrateResolvedDependencies {
+    by_dependency: tombi_hashmap::HashMap<DependencyCrateName, ResolvedDependencyVersion>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct CargoLockInlayCacheData {
+    crates: tombi_hashmap::HashMap<
+        CrateName,
+        tombi_hashmap::HashMap<CrateVersion, CrateResolvedDependencies>,
+    >,
 }
 
 struct DependencyVersionHint {
@@ -86,7 +119,7 @@ struct CratesIoVersionDetailResponse {
 
 #[derive(Debug, Deserialize)]
 struct CratesIoVersion {
-    features: BTreeMap<String, Vec<String>>,
+    features: HashMap<String, Vec<String>>,
 }
 
 pub async fn inlay_hint(
@@ -98,17 +131,36 @@ pub async fn inlay_hint(
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
+    if !text_document_uri.path().ends_with("Cargo.toml") {
+        return Ok(None);
+    }
+
+    if !cargo_inlay_hint_root_enabled(features) {
+        return Ok(None);
+    }
+
+    let Ok(cargo_toml_path) = text_document_uri.to_file_path() else {
+        return Ok(None);
+    };
+
     let text_document_uri = text_document_uri.clone();
     let document_tree = document_tree.clone();
     let features = features.cloned();
     let sync_text_document_uri = text_document_uri.clone();
     let sync_document_tree = document_tree.clone();
     let sync_features = features.clone();
+    let cargo_lock_cache =
+        if cargo_inlay_hint_enabled(features.as_ref(), CargoInlayHintFeature::DependencyVersion) {
+            load_cargo_lock_cache(&cargo_toml_path, toml_version).await
+        } else {
+            None
+        };
     let sync_hints = tokio::task::spawn_blocking(move || {
         inlay_hint_impl(
             &sync_text_document_uri,
             &sync_document_tree,
             visible_range,
+            cargo_lock_cache,
             toml_version,
             sync_features.as_ref(),
         )
@@ -146,6 +198,7 @@ fn inlay_hint_impl(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     visible_range: tombi_text::Range,
+    cargo_lock_cache: Option<CargoLockInlayCacheData>,
     toml_version: TomlVersion,
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
@@ -171,7 +224,6 @@ fn inlay_hint_impl(
     };
 
     let mut hints = Vec::new();
-    let mut cargo_lock = None;
 
     if workspace_enabled {
         collect_workspace_package_inlay_hints(
@@ -189,7 +241,7 @@ fn inlay_hint_impl(
                 document_tree,
                 &[dependency_key],
                 &cargo_toml_path,
-                &mut cargo_lock,
+                cargo_lock_cache.as_ref(),
                 toml_version,
                 visible_range,
                 dependency_version_enabled,
@@ -202,7 +254,7 @@ fn inlay_hint_impl(
             document_tree,
             &["workspace", "dependencies"],
             &cargo_toml_path,
-            &mut cargo_lock,
+            cargo_lock_cache.as_ref(),
             toml_version,
             visible_range,
             dependency_version_enabled,
@@ -221,7 +273,7 @@ fn inlay_hint_impl(
                         document_tree,
                         &["target", target_key.value.as_str(), dependency_key],
                         &cargo_toml_path,
-                        &mut cargo_lock,
+                        cargo_lock_cache.as_ref(),
                         toml_version,
                         visible_range,
                         dependency_version_enabled,
@@ -239,150 +291,6 @@ fn inlay_hint_impl(
         hints.sort_by_key(|hint| hint.position);
         Ok(Some(hints))
     }
-}
-
-fn collect_dependency_inlay_hints(
-    document_tree: &tombi_document_tree::DocumentTree,
-    dependency_keys: &[&str],
-    cargo_toml_path: &Path,
-    cargo_lock: &mut Option<CargoLock>,
-    toml_version: TomlVersion,
-    visible_range: tombi_text::Range,
-    dependency_version_enabled: bool,
-    default_features_enabled: bool,
-    hints: &mut Vec<InlayHint>,
-) {
-    let Some((_, Value::Table(dependencies))) = dig_keys(document_tree, dependency_keys) else {
-        return;
-    };
-
-    let mut version_hints = Vec::new();
-    let mut default_feature_hints = Vec::new();
-
-    for (dependency_key, dependency_value) in dependencies.key_values() {
-        if dependency_version_enabled
-            && let Some(version_hint) = dependency_version_hint(
-                dependency_package_name(&dependency_key.value, dependency_value),
-                dependency_value,
-            )
-            && tombi_text::Range::at(version_hint.position).intersects(visible_range)
-        {
-            version_hints.push(version_hint);
-        }
-
-        if default_features_enabled
-            && let Some(default_features_hint) = dependency_default_features_hint(
-                document_tree,
-                &dependency_key.value,
-                dependency_value,
-                cargo_toml_path,
-                toml_version,
-            )
-            && tombi_text::Range::at(default_features_hint.position).intersects(visible_range)
-        {
-            default_feature_hints.push(default_features_hint);
-        }
-    }
-
-    if version_hints.is_empty() && default_feature_hints.is_empty() {
-        return;
-    }
-
-    if dependency_version_enabled && !version_hints.is_empty() && cargo_lock.is_none() {
-        *cargo_lock = load_cargo_lock(cargo_toml_path, toml_version);
-    }
-
-    let cargo_lock = cargo_lock.as_ref();
-
-    let current_package = if dependency_version_enabled && !version_hints.is_empty() {
-        if dependency_keys == ["workspace", "dependencies"] {
-            None
-        } else {
-            current_package(document_tree, cargo_toml_path, toml_version)
-        }
-    } else {
-        None
-    };
-
-    let workspace_member_packages = if dependency_version_enabled && !version_hints.is_empty() {
-        if dependency_keys == ["workspace", "dependencies"] {
-            workspace_member_packages(document_tree, cargo_toml_path, toml_version)
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-
-    let workspace_resolved_versions = if dependency_version_enabled
-        && !version_hints.is_empty()
-        && dependency_keys == ["workspace", "dependencies"]
-    {
-        let Some(cargo_lock) = cargo_lock else {
-            return;
-        };
-        workspace_dependency_lock_versions(
-            cargo_lock,
-            workspace_member_packages.as_deref(),
-            version_hints
-                .iter()
-                .map(|version_hint| version_hint.dependency_name.as_str()),
-        )
-    } else {
-        BTreeMap::new()
-    };
-
-    for version_hint in version_hints {
-        let Some(cargo_lock) = cargo_lock else {
-            continue;
-        };
-        let resolved_version = if dependency_keys == ["workspace", "dependencies"] {
-            let Some(resolved_version) =
-                workspace_resolved_versions.get(&version_hint.dependency_name)
-            else {
-                continue;
-            };
-            resolved_version.clone()
-        } else {
-            let Some(resolved_version) = cargo_lock_dependency_version(
-                cargo_lock,
-                dependency_keys,
-                &version_hint.dependency_name,
-                current_package.as_ref(),
-                workspace_member_packages.as_deref(),
-            ) else {
-                continue;
-            };
-
-            resolved_version
-        };
-
-        let Some(label) = version_hint_label(
-            version_hint.current_version.as_deref(),
-            &resolved_version,
-            version_hint.always_show,
-        ) else {
-            continue;
-        };
-
-        hints.push(InlayHint {
-            position: version_hint.position,
-            label,
-            kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
-            tooltip: Some(RESOLVED_VERSION_TOOLTIP.to_string()),
-            padding_left: Some(true),
-            padding_right: Some(false),
-        });
-    }
-
-    hints.extend(default_feature_hints.into_iter().map(|hint| InlayHint {
-        position: hint.position,
-        label: hint.label,
-        kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
-        tooltip: Some(hint.tooltip),
-        padding_left: Some(true),
-        padding_right: Some(false),
-    }));
 }
 
 fn collect_workspace_package_inlay_hints(
@@ -439,6 +347,143 @@ fn collect_workspace_package_inlay_hints(
     }
 }
 
+fn collect_dependency_inlay_hints(
+    document_tree: &tombi_document_tree::DocumentTree,
+    dependency_keys: &[&str],
+    cargo_toml_path: &Path,
+    cargo_lock_cache: Option<&CargoLockInlayCacheData>,
+    toml_version: TomlVersion,
+    visible_range: tombi_text::Range,
+    dependency_version_enabled: bool,
+    default_features_enabled: bool,
+    hints: &mut Vec<InlayHint>,
+) {
+    let Some((_, Value::Table(dependencies))) = dig_keys(document_tree, dependency_keys) else {
+        return;
+    };
+
+    let mut version_hints = Vec::new();
+    let mut default_feature_hints = Vec::new();
+
+    for (dependency_key, dependency_value) in dependencies.key_values() {
+        if dependency_version_enabled
+            && let Some(version_hint) = dependency_version_hint(
+                dependency_package_name(&dependency_key.value, dependency_value),
+                dependency_value,
+            )
+            && tombi_text::Range::at(version_hint.position).intersects(visible_range)
+        {
+            version_hints.push(version_hint);
+        }
+
+        if default_features_enabled
+            && let Some(default_features_hint) = dependency_default_features_hint(
+                document_tree,
+                &dependency_key.value,
+                dependency_value,
+                cargo_toml_path,
+                toml_version,
+            )
+            && tombi_text::Range::at(default_features_hint.position).intersects(visible_range)
+        {
+            default_feature_hints.push(default_features_hint);
+        }
+    }
+
+    if version_hints.is_empty() && default_feature_hints.is_empty() {
+        return;
+    }
+
+    let current_package = if dependency_version_enabled && !version_hints.is_empty() {
+        if dependency_keys == ["workspace", "dependencies"] {
+            None
+        } else {
+            current_package(document_tree, cargo_toml_path, toml_version)
+        }
+    } else {
+        None
+    };
+
+    let workspace_member_packages = if dependency_version_enabled && !version_hints.is_empty() {
+        if dependency_keys == ["workspace", "dependencies"] {
+            workspace_member_packages(document_tree, cargo_toml_path, toml_version)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    let workspace_resolved_versions = if dependency_version_enabled
+        && !version_hints.is_empty()
+        && dependency_keys == ["workspace", "dependencies"]
+    {
+        let Some(cargo_lock_cache) = cargo_lock_cache else {
+            return;
+        };
+        workspace_dependency_lock_versions(
+            cargo_lock_cache,
+            workspace_member_packages.as_deref(),
+            version_hints
+                .iter()
+                .map(|version_hint| version_hint.dependency_name.as_str()),
+        )
+    } else {
+        HashMap::new()
+    };
+
+    for version_hint in version_hints {
+        let Some(cargo_lock_cache) = cargo_lock_cache else {
+            continue;
+        };
+        let resolved_version = if dependency_keys == ["workspace", "dependencies"] {
+            let Some(resolved_version) =
+                workspace_resolved_versions.get(&version_hint.dependency_name)
+            else {
+                continue;
+            };
+            resolved_version.clone()
+        } else {
+            let Some(resolved_version) = cargo_lock_dependency_version(
+                cargo_lock_cache,
+                dependency_keys,
+                &version_hint.dependency_name,
+                current_package.as_ref(),
+                workspace_member_packages.as_deref(),
+            ) else {
+                continue;
+            };
+
+            resolved_version
+        };
+
+        let Some(label) = version_hint_label(
+            version_hint.current_version.as_deref(),
+            &resolved_version,
+            version_hint.always_show,
+        ) else {
+            continue;
+        };
+
+        hints.push(InlayHint {
+            position: version_hint.position,
+            label,
+            kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
+            tooltip: Some(RESOLVED_VERSION_TOOLTIP.to_string()),
+            padding_left: Some(true),
+            padding_right: Some(false),
+        });
+    }
+
+    hints.extend(default_feature_hints.into_iter().map(|hint| InlayHint {
+        position: hint.position,
+        label: hint.label,
+        kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
+        tooltip: Some(hint.tooltip),
+        padding_left: Some(true),
+        padding_right: Some(false),
+    }));
+}
 fn dependency_version_hint(
     dependency_name: &str,
     dependency_value: &Value,
@@ -785,7 +830,7 @@ async fn fetch_registry_crate_features(
     version: &str,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Option<BTreeMap<String, Vec<String>>> {
+) -> Option<HashMap<String, Vec<String>>> {
     let url = format!("https://crates.io/api/v1/crates/{crate_name}/{version}");
     let resp =
         fetch_cached_remote_json::<CratesIoVersionDetailResponse>(&url, offline, cache_options)
@@ -808,7 +853,7 @@ fn load_local_dependency_document_tree(
     Some((dependency_cargo_toml_path, dependency_document_tree))
 }
 
-fn collect_feature_names(features: &tombi_document_tree::Array) -> BTreeSet<String> {
+fn collect_feature_names(features: &tombi_document_tree::Array) -> HashSet<String> {
     features
         .values()
         .iter()
@@ -831,7 +876,7 @@ fn dependency_table_default_features_disabled(table: &tombi_document_tree::Table
 fn build_default_features_hint(
     position: tombi_text::Position,
     mut default_features: Vec<String>,
-    existing_features: &BTreeSet<String>,
+    existing_features: &HashSet<String>,
 ) -> Option<DefaultFeaturesHint> {
     default_features.sort();
 
@@ -896,7 +941,7 @@ fn package_default_features(
 }
 
 fn cargo_lock_dependency_version(
-    cargo_lock: &CargoLock,
+    cargo_lock_cache: &CargoLockInlayCacheData,
     dependency_keys: &[&str],
     dependency_name: &str,
     current_package: Option<&CurrentPackage<'_>>,
@@ -904,14 +949,14 @@ fn cargo_lock_dependency_version(
 ) -> Option<String> {
     if dependency_keys == ["workspace", "dependencies"] {
         return workspace_dependency_lock_version(
-            cargo_lock,
+            cargo_lock_cache,
             workspace_member_packages,
             dependency_name,
         );
     }
 
     let current_package = current_package?;
-    cargo_lock.dependency_version_for_package(
+    cargo_lock_cache.resolved_dependency_version(
         current_package.name,
         &current_package.version,
         dependency_name,
@@ -919,7 +964,7 @@ fn cargo_lock_dependency_version(
 }
 
 fn workspace_dependency_lock_version(
-    cargo_lock: &CargoLock,
+    cargo_lock_cache: &CargoLockInlayCacheData,
     workspace_member_packages: Option<&[WorkspaceMemberPackage]>,
     dependency_name: &str,
 ) -> Option<String> {
@@ -928,13 +973,13 @@ fn workspace_dependency_lock_version(
     let resolved_versions = workspace_member_packages
         .iter()
         .filter_map(|package| {
-            cargo_lock.dependency_version_for_package(
+            cargo_lock_cache.resolved_dependency_version(
                 &package.name,
                 &package.version,
                 dependency_name,
             )
         })
-        .collect::<BTreeSet<_>>();
+        .collect::<HashSet<_>>();
 
     (resolved_versions.len() == 1)
         .then(|| resolved_versions.into_iter().next())
@@ -942,39 +987,33 @@ fn workspace_dependency_lock_version(
 }
 
 fn workspace_dependency_lock_versions<'a>(
-    cargo_lock: &CargoLock,
+    cargo_lock_cache: &CargoLockInlayCacheData,
     workspace_member_packages: Option<&[WorkspaceMemberPackage]>,
     dependency_names: impl Iterator<Item = &'a str>,
-) -> BTreeMap<String, String> {
+) -> HashMap<String, String> {
     let Some(workspace_member_packages) = workspace_member_packages else {
-        return BTreeMap::new();
+        return HashMap::new();
     };
 
-    let dependency_names = dependency_names
-        .map(str::to_string)
-        .collect::<BTreeSet<_>>();
+    let dependency_names = dependency_names.map(str::to_string).collect::<HashSet<_>>();
     if dependency_names.is_empty() {
-        return BTreeMap::new();
+        return HashMap::new();
     }
 
     let mut resolved_versions = dependency_names
         .into_iter()
-        .map(|dependency_name| (dependency_name, BTreeSet::new()))
-        .collect::<BTreeMap<_, _>>();
+        .map(|dependency_name| (dependency_name, HashSet::new()))
+        .collect::<HashMap<_, _>>();
 
     for package in workspace_member_packages {
-        let Some(lock_package) = cargo_lock.package(&package.name, &package.version) else {
-            continue;
-        };
-
-        for dependency in &lock_package.dependencies {
-            let Some(versions) = resolved_versions.get_mut(&dependency.name) else {
+        for (dependency_name, versions) in &mut resolved_versions {
+            let Some(resolved_version) = cargo_lock_cache.resolved_dependency_version(
+                &package.name,
+                &package.version,
+                dependency_name,
+            ) else {
                 continue;
             };
-            let Some(resolved_version) = cargo_lock.resolved_dependency_version(dependency) else {
-                continue;
-            };
-
             versions.insert(resolved_version);
         }
     }
@@ -1094,6 +1133,48 @@ fn workspace_member_patterns(
     }
 }
 
+async fn load_cargo_lock_cache(
+    cargo_toml_path: &Path,
+    toml_version: TomlVersion,
+) -> Option<CargoLockInlayCacheData> {
+    let cargo_lock_path = find_cargo_lock_path(cargo_toml_path)?;
+    let cache_key = cargo_lock_cache_key(&cargo_lock_path);
+    let cache_version = file_cache_version(&cargo_lock_path);
+
+    let cache_value = get_or_load_json(&cache_key, cache_version, {
+        let cargo_lock_path = cargo_lock_path.clone();
+        move || async move { load_cargo_lock_cache_json(cargo_lock_path, toml_version).await }
+    })
+    .await?;
+
+    CargoLockInlayCacheData::deserialize(cache_value.as_ref()).ok()
+}
+
+async fn load_cargo_lock_cache_json(
+    cargo_lock_path: PathBuf,
+    toml_version: TomlVersion,
+) -> Option<serde_json::Value> {
+    tokio::task::spawn_blocking(move || parse_cargo_lock_cache_json(&cargo_lock_path, toml_version))
+        .await
+        .ok()
+        .flatten()
+}
+
+fn parse_cargo_lock_cache_json(
+    cargo_lock_path: &Path,
+    toml_version: TomlVersion,
+) -> Option<serde_json::Value> {
+    let cargo_lock = load_cargo_lock_from_path(cargo_lock_path, toml_version)?;
+    serde_json::to_value(cargo_lock.into_inlay_cache_data()).ok()
+}
+
+fn cargo_lock_cache_key(cargo_lock_path: &Path) -> String {
+    format!(
+        "{CARGO_EXTENSION_ID}:{INLAY_HINT_LOCKFILE_KEY}:{}",
+        cargo_lock_path.display()
+    )
+}
+
 fn package_version(
     document_tree: &tombi_document_tree::DocumentTree,
     cargo_toml_path: &Path,
@@ -1208,9 +1289,174 @@ fn cargo_inlay_hint_enabled(
     }
 }
 
+impl CargoLock {
+    fn into_inlay_cache_data(self) -> CargoLockInlayCacheData {
+        let unique_package_versions = self.unique_package_versions();
+        let mut crates = HashMap::new();
+
+        for package in &self.packages {
+            crates
+                .entry(CrateName::new(&package.name))
+                .or_insert_with(HashMap::new)
+                .insert(
+                    CrateVersion::new(&package.version),
+                    package.resolved_dependencies(&unique_package_versions),
+                );
+        }
+
+        CargoLockInlayCacheData { crates }
+    }
+
+    fn unique_package_versions(&self) -> HashMap<String, Option<String>> {
+        let mut package_versions = HashMap::<String, HashSet<String>>::new();
+
+        for package in &self.packages {
+            package_versions
+                .entry(package.name.clone())
+                .or_default()
+                .insert(package.version.clone());
+        }
+
+        package_versions
+            .into_iter()
+            .map(|(crate_name, versions)| {
+                let version = (versions.len() == 1)
+                    .then(|| versions.into_iter().next())
+                    .flatten();
+                (crate_name, version)
+            })
+            .collect()
+    }
+}
+
+impl CargoLockPackage {
+    fn resolved_dependencies(
+        &self,
+        unique_package_versions: &HashMap<String, Option<String>>,
+    ) -> CrateResolvedDependencies {
+        let dependency_names = self
+            .dependencies
+            .iter()
+            .map(|dependency| dependency.name.clone())
+            .collect::<HashSet<_>>();
+
+        let by_dependency = dependency_names
+            .into_iter()
+            .filter_map(|dependency_name| {
+                let resolved_version =
+                    self.resolved_dependency_version(&dependency_name, unique_package_versions)?;
+                Some((
+                    DependencyCrateName::new(&dependency_name),
+                    ResolvedDependencyVersion::new(resolved_version),
+                ))
+            })
+            .collect();
+
+        CrateResolvedDependencies { by_dependency }
+    }
+
+    fn resolved_dependency_version(
+        &self,
+        dependency_name: &str,
+        unique_package_versions: &HashMap<String, Option<String>>,
+    ) -> Option<String> {
+        let explicit_versions = self
+            .dependencies
+            .iter()
+            .filter(|dependency| dependency.name == dependency_name)
+            .filter_map(|dependency| dependency.version.clone())
+            .collect::<HashSet<_>>();
+
+        if explicit_versions.len() == 1 {
+            return explicit_versions.into_iter().next();
+        }
+
+        if explicit_versions.len() > 1 {
+            return None;
+        }
+
+        unique_package_versions
+            .get(dependency_name)
+            .cloned()
+            .flatten()
+    }
+}
+
+impl CrateName {
+    fn new(crate_name: &str) -> Self {
+        Self(crate_name.to_string())
+    }
+}
+
+impl Borrow<str> for CrateName {
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
+impl CrateVersion {
+    fn new(crate_version: &str) -> Self {
+        Self(crate_version.to_string())
+    }
+}
+
+impl Borrow<str> for CrateVersion {
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
+impl DependencyCrateName {
+    fn new(dependency_name: &str) -> Self {
+        Self(dependency_name.to_string())
+    }
+}
+
+impl Borrow<str> for DependencyCrateName {
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
+impl ResolvedDependencyVersion {
+    fn new(version: String) -> Self {
+        Self { version }
+    }
+}
+
+impl CargoLockInlayCacheData {
+    fn resolved_dependency_version(
+        &self,
+        crate_name: &str,
+        crate_version: &str,
+        dependency_name: &str,
+    ) -> Option<String> {
+        self.crates
+            .get(crate_name)
+            .and_then(|versions| versions.get(crate_version))
+            .and_then(|dependencies| dependencies.by_dependency.get(dependency_name))
+            .map(|resolved| resolved.version.clone())
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use super::*;
+    use crate::cargo_lock::CargoLockDependency;
+    use tombi_ast::AstNode;
+    use tombi_document_tree::TryIntoDocumentTree;
+
+    fn parse_value(source: &str) -> Value {
+        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node())
+            .expect("expected root");
+        let document_tree = root
+            .try_into_document_tree(TomlVersion::default())
+            .expect("expected document tree");
+        let (_, value) = dig_keys(&document_tree, &["value"]).expect("expected value");
+        value.clone()
+    }
 
     #[test]
     fn adds_plain_version_label() {
@@ -1238,6 +1484,229 @@ mod tests {
         assert_eq!(
             version_hint_label(Some("0.15.8"), "0.15.8", true),
             Some(r#" → "0.15.8""#.to_string())
+        );
+    }
+
+    #[test]
+    fn renders_workspace_value_hint_label() {
+        let value = parse_value(r#"value = ["tombi", "cargo"]"#);
+
+        assert_eq!(
+            workspace_value_hint_label(&value),
+            Some(r#" → ["tombi", "cargo"]"#.to_string())
+        );
+    }
+
+    #[test]
+    fn normalizes_workspace_value_hint_label_to_single_line() {
+        let value = parse_value(
+            r#"
+            value = """
+            hello
+            world
+            """
+            "#,
+        );
+
+        let label = workspace_value_hint_label(&value).expect("expected label");
+        assert!(!label.contains('\n'));
+        assert!(label.contains("\\n"));
+    }
+
+    #[test]
+    fn truncates_workspace_value_hint_label() {
+        let value = parse_value(
+            r#"value = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz""#,
+        );
+
+        let label = workspace_value_hint_label(&value).expect("expected label");
+        assert!(label.ends_with("..."));
+        assert!(label.chars().count() <= MAX_WORKSPACE_VALUE_HINT_CHARS + 3);
+    }
+
+    #[test]
+    fn keeps_workspace_package_hints_when_dependency_version_hints_are_disabled() {
+        let temp_dir = tempfile::tempdir().expect("expected temp dir");
+        let cargo_toml_path = temp_dir.path().join("Cargo.toml");
+        fs::write(
+            &cargo_toml_path,
+            r#"
+            [package]
+            name = "app"
+            version = { workspace = true }
+
+            [workspace]
+            members = ["."]
+
+            [workspace.package]
+            version = "0.0.0-dev"
+            "#,
+        )
+        .expect("expected Cargo.toml");
+
+        let (_, document_tree) =
+            load_cargo_toml(&cargo_toml_path, TomlVersion::default()).expect("expected manifest");
+        let uri = tombi_uri::Uri::from_file_path(&cargo_toml_path).expect("expected uri");
+        let features = tombi_config::CargoExtensionFeatures::Features(
+            tombi_config::CargoExtensionFeatureTree {
+                lsp: Some(tombi_config::CargoLspFeatures::Features(
+                    tombi_config::CargoLspFeatureTree {
+                        inlay_hint: Some(tombi_config::CargoInlayHintFeatures::Features(
+                            tombi_config::CargoInlayHintFeatureTree {
+                                dependency_version: Some(tombi_config::ToggleFeature {
+                                    enabled: Some(false.into()),
+                                }),
+                                default_features: None,
+                                workspace: None,
+                            },
+                        )),
+                        ..Default::default()
+                    },
+                )),
+            },
+        );
+
+        let hints = inlay_hint_impl(
+            &uri,
+            &document_tree,
+            tombi_text::Range::new(
+                tombi_text::Position::new(0, 0),
+                tombi_text::Position::new(8, 0),
+            ),
+            None,
+            TomlVersion::default(),
+            Some(&features),
+        )
+        .expect("expected inlay hint result");
+
+        assert_eq!(
+            hints,
+            Some(vec![InlayHint {
+                position: tombi_text::Position::new(3, 40),
+                label: r#" → "0.0.0-dev""#.to_string(),
+                kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
+                tooltip: Some(WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP.to_string()),
+                padding_left: Some(true),
+                padding_right: Some(false),
+            }])
+        );
+    }
+
+    #[test]
+    fn disables_workspace_package_hints_when_workspace_inlay_hints_are_disabled() {
+        let temp_dir = tempfile::tempdir().expect("expected temp dir");
+        let cargo_toml_path = temp_dir.path().join("Cargo.toml");
+        fs::write(
+            &cargo_toml_path,
+            r#"
+            [package]
+            name = "app"
+            version = { workspace = true }
+
+            [workspace]
+            members = ["."]
+
+            [workspace.package]
+            version = "0.0.0-dev"
+            "#,
+        )
+        .expect("expected Cargo.toml");
+
+        let (_, document_tree) =
+            load_cargo_toml(&cargo_toml_path, TomlVersion::default()).expect("expected manifest");
+        let uri = tombi_uri::Uri::from_file_path(&cargo_toml_path).expect("expected uri");
+        let features = tombi_config::CargoExtensionFeatures::Features(
+            tombi_config::CargoExtensionFeatureTree {
+                lsp: Some(tombi_config::CargoLspFeatures::Features(
+                    tombi_config::CargoLspFeatureTree {
+                        inlay_hint: Some(tombi_config::CargoInlayHintFeatures::Features(
+                            tombi_config::CargoInlayHintFeatureTree {
+                                dependency_version: None,
+                                default_features: None,
+                                workspace: Some(tombi_config::ToggleFeature {
+                                    enabled: Some(false.into()),
+                                }),
+                            },
+                        )),
+                        ..Default::default()
+                    },
+                )),
+            },
+        );
+
+        let hints = inlay_hint_impl(
+            &uri,
+            &document_tree,
+            tombi_text::Range::new(
+                tombi_text::Position::new(0, 0),
+                tombi_text::Position::new(8, 0),
+            ),
+            None,
+            TomlVersion::default(),
+            Some(&features),
+        )
+        .expect("expected inlay hint result");
+
+        assert_eq!(hints, None);
+    }
+
+    #[test]
+    fn cargo_lock_cache_data_resolves_dependency_version() {
+        let cargo_lock = CargoLock {
+            packages: vec![
+                CargoLockPackage {
+                    name: "demo".to_string(),
+                    version: "0.1.0".to_string(),
+                    dependencies: vec![CargoLockDependency {
+                        name: "serde".to_string(),
+                        version: Some("1.0.228".to_string()),
+                    }],
+                },
+                CargoLockPackage {
+                    name: "serde".to_string(),
+                    version: "1.0.228".to_string(),
+                    dependencies: Vec::new(),
+                },
+            ],
+        };
+
+        let cache_data = cargo_lock.into_inlay_cache_data();
+
+        assert_eq!(
+            cache_data.resolved_dependency_version("demo", "0.1.0", "serde"),
+            Some("1.0.228".to_string())
+        );
+    }
+
+    #[test]
+    fn cargo_lock_cache_data_survives_json_roundtrip() {
+        let cargo_lock = CargoLock {
+            packages: vec![
+                CargoLockPackage {
+                    name: "demo".to_string(),
+                    version: "0.1.0".to_string(),
+                    dependencies: vec![CargoLockDependency {
+                        name: "tokio".to_string(),
+                        version: Some("1.47.1".to_string()),
+                    }],
+                },
+                CargoLockPackage {
+                    name: "tokio".to_string(),
+                    version: "1.47.1".to_string(),
+                    dependencies: Vec::new(),
+                },
+            ],
+        };
+
+        let cache_data = cargo_lock.into_inlay_cache_data();
+        let roundtrip = serde_json::from_value::<CargoLockInlayCacheData>(
+            serde_json::to_value(&cache_data).expect("expected json value"),
+        )
+        .expect("expected cache data");
+
+        assert_eq!(
+            roundtrip.resolved_dependency_version("demo", "0.1.0", "tokio"),
+            Some("1.47.1".to_string())
         );
     }
 }

@@ -1,9 +1,10 @@
 use std::{
     ffi::OsString,
     fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
     str::FromStr,
     sync::{Mutex, MutexGuard, OnceLock},
+    time::Duration,
 };
 
 use tempfile::TempDir;
@@ -93,6 +94,14 @@ impl InlayHintFixture {
             source_path,
         }
     }
+
+    fn cargo(source: &str, cargo_lock: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        create_temp_fixture("Cargo.toml", source, vec![("Cargo.lock", cargo_lock)])
+    }
+
+    fn pyproject(source: &str, uv_lock: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        create_temp_fixture("pyproject.toml", source, vec![("uv.lock", uv_lock)])
+    }
 }
 
 fn create_temp_fixture(
@@ -120,10 +129,7 @@ fn create_temp_fixture(
     Ok(InlayHintFixture::new(Some(temp_dir), source, source_path))
 }
 
-async fn collect_inlay_hints(
-    source: &str,
-    source_path: PathBuf,
-) -> Result<Option<Vec<InlayHint>>, Box<dyn std::error::Error>> {
+fn new_service() -> LspService<Backend> {
     let (service, _) = LspService::new(|client| {
         Backend::new(
             client,
@@ -133,8 +139,23 @@ async fn collect_inlay_hints(
             },
         )
     });
-    let backend = service.inner();
 
+    service
+}
+
+fn inlay_hint_range(source: &str) -> Range {
+    let lines = source.lines().collect::<Vec<_>>();
+    let last_line = lines.len().saturating_sub(1) as u32;
+    let last_column = lines.last().map_or(0, |line| line.len() as u32);
+
+    Range::new(Position::new(0, 0), Position::new(last_line, last_column))
+}
+
+async fn collect_inlay_hints_with_backend(
+    backend: &Backend,
+    source: &str,
+    source_path: PathBuf,
+) -> Result<Option<Vec<InlayHint>>, Box<dyn std::error::Error>> {
     let toml_text = textwrap::dedent(source).trim().to_string();
     let toml_file_url =
         Url::from_file_path(&source_path).expect("failed to convert source file path to URL");
@@ -152,19 +173,25 @@ async fn collect_inlay_hints(
     )
     .await;
 
-    let lines = toml_text.lines().collect::<Vec<_>>();
-    let last_line = lines.len().saturating_sub(1) as u32;
-    let last_column = lines.last().map_or(0, |line| line.len() as u32);
-
     Ok(handle_inlay_hint(
         backend,
         InlayHintParams {
             text_document: TextDocumentIdentifier { uri: toml_file_url },
-            range: Range::new(Position::new(0, 0), Position::new(last_line, last_column)),
+            range: inlay_hint_range(&toml_text),
             work_done_progress_params: WorkDoneProgressParams::default(),
         },
     )
     .await?)
+}
+
+async fn collect_inlay_hints(
+    source: &str,
+    source_path: PathBuf,
+) -> Result<Option<Vec<InlayHint>>, Box<dyn std::error::Error>> {
+    let service = new_service();
+    let backend = service.inner();
+
+    collect_inlay_hints_with_backend(backend, source, source_path).await
 }
 
 fn expected_hint(position: tombi_text::Position, label: &str, tooltip: &str) -> InlayHint {
@@ -261,6 +288,14 @@ macro_rules! test_inlay_hint {
             $expected
         );
     };
+}
+
+fn bump_modified(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let file = fs::File::options().write(true).open(path)?;
+    let modified = file.metadata()?.modified()? + Duration::from_secs(1);
+    file.set_modified(modified)?;
+
+    Ok(())
 }
 
 test_inlay_hint!(
@@ -424,6 +459,228 @@ async fn inlay_hint_for_registry_default_features_is_not_rendered_when_disabled_
             tombi_text::Position::new(4, 34),
             r#" → "1.0.142""#,
             RESOLVED_VERSION_TOOLTIP,
+        )])
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn cargo_inlay_hint_reloads_when_cargo_lock_changes() -> Result<(), Box<dyn std::error::Error>>
+{
+    let _guard = test_lock()
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    tombi_test_lib::init_log();
+
+    let fixture = InlayHintFixture::cargo(
+        r#"
+        [package]
+        name = "demo"
+        version = "0.1.0"
+
+        [dependencies]
+        serde = "1.0.219"
+        "#,
+        r#"
+        version = 4
+
+        [[package]]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = ["serde 1.0.228"]
+
+        [[package]]
+        name = "serde"
+        version = "1.0.228"
+        "#,
+    )?;
+    let cargo_lock_path = fixture
+        .source_path
+        .parent()
+        .expect("expected parent")
+        .join("Cargo.lock");
+
+    let service = new_service();
+    let backend = service.inner();
+    let first =
+        collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone())
+            .await?;
+    pretty_assertions::assert_eq!(
+        first,
+        Some(vec![expected_hint(
+            tombi_text::Position::new(5, 17),
+            r#" → "1.0.228""#,
+            RESOLVED_VERSION_TOOLTIP,
+        )])
+    );
+
+    fs::write(
+        &cargo_lock_path,
+        textwrap::dedent(
+            r#"
+            version = 4
+
+            [[package]]
+            name = "demo"
+            version = "0.1.0"
+            dependencies = ["serde 1.0.229"]
+
+            [[package]]
+            name = "serde"
+            version = "1.0.229"
+            "#,
+        )
+        .trim(),
+    )?;
+    bump_modified(&cargo_lock_path)?;
+
+    let second =
+        collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone())
+            .await?;
+    pretty_assertions::assert_eq!(
+        second,
+        Some(vec![expected_hint(
+            tombi_text::Position::new(5, 17),
+            r#" → "1.0.229""#,
+            RESOLVED_VERSION_TOOLTIP,
+        )])
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn cargo_inlay_hint_uses_cached_value_when_reloading_invalid_lockfile()
+-> Result<(), Box<dyn std::error::Error>> {
+    let _guard = test_lock()
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    tombi_test_lib::init_log();
+
+    let fixture = InlayHintFixture::cargo(
+        r#"
+        [package]
+        name = "demo"
+        version = "0.1.0"
+
+        [dependencies]
+        serde = "1.0.219"
+        "#,
+        r#"
+        version = 4
+
+        [[package]]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = ["serde 1.0.228"]
+
+        [[package]]
+        name = "serde"
+        version = "1.0.228"
+        "#,
+    )?;
+    let cargo_lock_path = fixture
+        .source_path
+        .parent()
+        .expect("expected parent")
+        .join("Cargo.lock");
+
+    let service = new_service();
+    let backend = service.inner();
+    let first =
+        collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone())
+            .await?;
+
+    fs::write(&cargo_lock_path, "not-a-lockfile = [")?;
+    bump_modified(&cargo_lock_path)?;
+
+    let second =
+        collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone())
+            .await?;
+
+    pretty_assertions::assert_eq!(second, first);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn pyproject_inlay_hint_reloads_when_uv_lock_changes()
+-> Result<(), Box<dyn std::error::Error>> {
+    let _guard = test_lock()
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    tombi_test_lib::init_log();
+
+    let fixture = InlayHintFixture::pyproject(
+        r#"
+        [project]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = ["pytest>=8.0"]
+        "#,
+        r#"
+        version = 1
+
+        [[package]]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = [{ name = "pytest" }]
+
+        [[package]]
+        name = "pytest"
+        version = "8.3.3"
+        "#,
+    )?;
+    let uv_lock_path = fixture
+        .source_path
+        .parent()
+        .expect("expected parent")
+        .join("uv.lock");
+
+    let service = new_service();
+    let backend = service.inner();
+    let first =
+        collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone())
+            .await?;
+    pretty_assertions::assert_eq!(
+        first,
+        Some(vec![expected_hint(
+            tombi_text::Position::new(3, 29),
+            r#" → "8.3.3""#,
+            RESOLVED_UV_VERSION_TOOLTIP,
+        )])
+    );
+
+    fs::write(
+        &uv_lock_path,
+        textwrap::dedent(
+            r#"
+            version = 1
+
+            [[package]]
+            name = "demo"
+            version = "0.1.0"
+            dependencies = [{ name = "pytest" }]
+
+            [[package]]
+            name = "pytest"
+            version = "8.3.4"
+            "#,
+        )
+        .trim(),
+    )?;
+    bump_modified(&uv_lock_path)?;
+
+    let second =
+        collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone())
+            .await?;
+    pretty_assertions::assert_eq!(
+        second,
+        Some(vec![expected_hint(
+            tombi_text::Position::new(3, 29),
+            r#" → "8.3.4""#,
+            RESOLVED_UV_VERSION_TOOLTIP,
         )])
     );
 
