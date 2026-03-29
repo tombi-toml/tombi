@@ -53,6 +53,11 @@ impl Range {
     pub fn contains(&self, position: Position) -> bool {
         self.start <= position && position <= self.end
     }
+
+    #[inline]
+    pub fn intersects(&self, other: Range) -> bool {
+        self.start <= other.end && other.start <= self.end
+    }
 }
 
 impl std::fmt::Display for Range {

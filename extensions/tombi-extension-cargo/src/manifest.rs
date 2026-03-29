@@ -105,6 +105,19 @@ pub(crate) fn get_workspace_path(
     })
 }
 
+pub(crate) fn dependency_package_name<'a>(
+    dependency_key: &'a str,
+    dependency_value: &'a tombi_document_tree::Value,
+) -> &'a str {
+    match dependency_value {
+        tombi_document_tree::Value::Table(table) => match table.get("package") {
+            Some(tombi_document_tree::Value::String(package)) => package.value(),
+            _ => dependency_key,
+        },
+        _ => dependency_key,
+    }
+}
+
 pub(crate) fn get_uri_relative_to_cargo_toml(
     relative_path: &Path,
     cargo_toml_path: &Path,

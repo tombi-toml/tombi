@@ -2,6 +2,7 @@ mod completion;
 mod definition;
 mod document_link;
 mod hover;
+mod inlay_hint;
 #[doc(hidden)]
 pub mod remote_cache;
 mod text_edit;
@@ -10,6 +11,7 @@ pub use completion::*;
 pub use definition::*;
 pub use document_link::*;
 pub use hover::*;
+pub use inlay_hint::*;
 pub use remote_cache::fetch_cached_remote_json;
 
 // Export completion-specific TextEdit (uses tombi_text::Range internally)
