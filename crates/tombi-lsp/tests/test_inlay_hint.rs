@@ -665,6 +665,46 @@ test_inlay_hint!(
 
 test_inlay_hint!(
     #[tokio::test]
+    async fn inlay_hint_for_workspace_default_features_is_not_rendered_without_member_override(
+        InlayHintFixture::cargo_workspace_member(
+            r#"
+            [workspace]
+            members = ["crates/app"]
+
+            [workspace.dependencies]
+            serde_json = { version = "1.0.140", default-features = false }
+            "#,
+            "crates/app/Cargo.toml",
+            r#"
+            [package]
+            name = "app"
+            version = "0.1.0"
+
+            [dependencies]
+            serde_json = { workspace = true, features = ["preserve_order"] }
+            "#,
+            r#"
+            version = 4
+
+            [[package]]
+            name = "app"
+            version = "0.1.0"
+            dependencies = ["serde_json 1.0.142"]
+
+            [[package]]
+            name = "serde_json"
+            version = "1.0.142"
+            "#,
+        )
+    ) -> Ok(Some(vec![expected_hint(
+        tombi_text::Position::new(5, 31),
+        r#" → "1.0.142""#,
+        RESOLVED_VERSION_TOOLTIP,
+    )]));
+);
+
+test_inlay_hint!(
+    #[tokio::test]
     async fn inlay_hint_is_not_rendered_when_the_version_already_matches_the_lockfile(
         InlayHintFixture::cargo(
             r#"
