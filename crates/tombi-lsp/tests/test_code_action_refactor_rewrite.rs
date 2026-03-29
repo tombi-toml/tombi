@@ -256,6 +256,123 @@ mod refactor_rewrite {
 
         test_code_action_refactor_rewrite! {
             #[tokio::test]
+            async fn cargo_toml_dependencies_workspace_default_features_are_added_when_missing(
+                r#"
+                [package]
+                name = "tombi-cli"
+                version.workspace = true
+
+                [dependencies]
+                tombi-lsp█ = "0.0.0-dev"
+                "#,
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
+                project_root_path().join("rust/tombi-cli/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [package]
+                name = "tombi-cli"
+                version.workspace = true
+
+                [dependencies]
+                tombi-lsp = { workspace = true, features = ["clap", "native"] }
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_dependency_table_workspace_default_features_are_added_when_missing(
+                r#"
+                [package]
+                name = "tombi-cli"
+                version.workspace = true
+
+                [dependencies.tombi-lsp]
+                version█ = "0.0.0-dev"
+                "#,
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
+                project_root_path().join("rust/tombi-cli/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [package]
+                name = "tombi-cli"
+                version.workspace = true
+
+                [dependencies.tombi-lsp]
+                workspace = true
+                features = ["clap", "native"]
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_dependency_table_workspace_default_features_preserve_multiline_array(
+                r#"
+                [package]
+                name = "tombi-cli"
+                version.workspace = true
+
+                [dependencies.tombi-lsp]
+                version█ = "0.0.0-dev"
+                features = [
+                    "clap",
+                ]
+                "#,
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
+                project_root_path().join("rust/tombi-cli/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [package]
+                name = "tombi-cli"
+                version.workspace = true
+
+                [dependencies.tombi-lsp]
+                workspace = true
+                features = [
+                    "clap",
+                    "native",
+                ]
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_dependency_table_workspace_default_features_preserve_array_comments(
+                r#"
+                [package]
+                name = "tombi-cli"
+                version.workspace = true
+
+                [dependencies.tombi-lsp]
+                version█ = "0.0.0-dev"
+                features = [
+                    "clap",
+                    # keep this comment
+                ]
+                "#,
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
+                project_root_path().join("rust/tombi-cli/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [package]
+                name = "tombi-cli"
+                version.workspace = true
+
+                [dependencies.tombi-lsp]
+                workspace = true
+                features = [
+                    "clap",
+                    "native",
+                    # keep this comment
+                ]
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
             async fn cargo_toml_dependencies_workspace_default_features_duplicates_are_skipped(
                 r#"
                 [package]
