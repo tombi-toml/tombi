@@ -7,8 +7,8 @@ use tombi_extension::{HoverMetadata, fetch_cached_remote_json};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
-    find_path_crate_cargo_toml, find_workspace_cargo_toml, get_workspace_path, load_cargo_toml,
-    sanitize_dependency_key,
+    dependency_package_name, find_path_crate_cargo_toml, find_workspace_cargo_toml,
+    get_workspace_path, load_cargo_toml, sanitize_dependency_key,
 };
 
 #[derive(Debug, Deserialize)]
@@ -179,16 +179,6 @@ fn resolve_workspace_dependency_metadata(
     )?;
 
     load_package_metadata(&resolved_cargo_toml_path, toml_version)
-}
-
-fn dependency_package_name<'a>(dependency_key: &'a str, dependency_value: &'a Value) -> &'a str {
-    match dependency_value {
-        Value::Table(table) => match table.get("package") {
-            Some(Value::String(package)) => package.value(),
-            _ => dependency_key,
-        },
-        _ => dependency_key,
-    }
 }
 
 fn is_unsupported_remote_dependency(dependency_value: &Value) -> bool {

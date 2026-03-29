@@ -11,8 +11,8 @@ use tower_lsp::lsp_types::{
     DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentLink, DocumentLinkParams,
     DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
     GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
-    InitializeResult, InitializedParams, SemanticTokensParams, SemanticTokensResult,
-    TextDocumentIdentifier, Url,
+    InitializeResult, InitializedParams, InlayHint, InlayHintParams, SemanticTokensParams,
+    SemanticTokensResult, TextDocumentIdentifier, Url,
     request::{
         GotoDeclarationParams, GotoDeclarationResponse, GotoTypeDefinitionParams,
         GotoTypeDefinitionResponse,
@@ -32,9 +32,9 @@ use crate::{
         handle_did_open, handle_did_save, handle_document_link, handle_document_symbol,
         handle_folding_range, handle_formatting, handle_get_status, handle_get_toml_version,
         handle_goto_declaration, handle_goto_definition, handle_goto_type_definition, handle_hover,
-        handle_initialize, handle_initialized, handle_list_schemas, handle_refresh_cache,
-        handle_semantic_tokens_full, handle_shutdown, handle_update_config, handle_update_schema,
-        push_diagnostics,
+        handle_initialize, handle_initialized, handle_inlay_hint, handle_list_schemas,
+        handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown, handle_update_config,
+        handle_update_schema, push_diagnostics,
     },
 };
 
@@ -352,6 +352,29 @@ impl tower_lsp::LanguageServer for Backend {
         handle_hover(self, params)
             .await
             .map(|response| response.map(|content| content.into_lsp(line_index)))
+    }
+
+    async fn inlay_hint(
+        &self,
+        params: InlayHintParams,
+    ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
+        let line_index = {
+            let document_sources = self.document_sources.read().await;
+            let Some(document_source) = document_sources.get(&params.text_document.uri.clone().into())
+            else {
+                return Ok(None);
+            };
+            document_source.line_index_arc()
+        };
+
+        handle_inlay_hint(self, params).await.map(|response| {
+            response.map(|hints| {
+                hints
+                    .into_iter()
+                    .map(|hint| hint.into_lsp(line_index.as_ref()))
+                    .collect()
+            })
+        })
     }
 
     async fn folding_range(
