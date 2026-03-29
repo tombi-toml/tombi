@@ -14,7 +14,7 @@ use crate::{
 };
 
 const RESOLVED_VERSION_TOOLTIP: &str = "Resolved version in Cargo.lock";
-const WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP: &str = "Inherited value from workspace.package";
+const WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP: &str = "Inherited value from workspace";
 const MAX_WORKSPACE_VALUE_HINT_CHARS: usize = 80;
 const WORKSPACE_PACKAGE_ITEMS: [&str; 16] = [
     "authors",

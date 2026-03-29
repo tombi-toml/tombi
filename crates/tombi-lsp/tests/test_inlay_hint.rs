@@ -21,7 +21,7 @@ use tombi_lsp::{
 
 const RESOLVED_VERSION_TOOLTIP: &str = "Resolved version in Cargo.lock";
 const RESOLVED_UV_VERSION_TOOLTIP: &str = "Resolved version in uv.lock";
-const WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP: &str = "Inherited value from workspace.package";
+const WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP: &str = "Inherited value from workspace";
 
 fn test_lock() -> &'static Mutex<()> {
     static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
