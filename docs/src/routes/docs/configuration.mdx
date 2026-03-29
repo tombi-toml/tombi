@@ -242,6 +242,10 @@ tables-out-of-order = "error"
       dependency-version.enabled = true,
       path.enabled = true,
     },
+    inlay-hint = {
+      default-features.enabled = true,
+      dependency-version.enabled = true,
+    },
     document-link = {
       cargo-toml.enabled = true,
       crates-io.enabled = true,
@@ -1018,6 +1022,51 @@ See [Cargo Extension > Code Completion](/docs/extensions/tombi-extension-cargo#c
 ### extensions."tombi-toml/cargo".lsp.completion.path.enabled
 
 Enable or disable path completion for Cargo manifests.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint
+
+Configure Cargo-specific inlay hints.
+
+See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay-hints).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.enabled
+
+Enable or disable all Cargo inlay hints.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.dependency-version
+
+Configure resolved-version inlay hints for Cargo dependencies.
+
+See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay-hints).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.dependency-version.enabled
+
+Enable or disable resolved-version inlay hints for Cargo dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.default-features
+
+Configure default-features inlay hints for Cargo dependencies.
+
+See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay-hints).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.default-features.enabled
+
+Enable or disable default-features inlay hints for Cargo dependencies.
 
 - Type: `Boolean`
 - Default: `true`

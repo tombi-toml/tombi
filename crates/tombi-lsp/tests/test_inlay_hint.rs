@@ -1,7 +1,9 @@
 use std::{
+    ffi::OsString,
     fs,
     path::PathBuf,
-    sync::{Mutex, OnceLock},
+    str::FromStr,
+    sync::{Mutex, MutexGuard, OnceLock},
 };
 
 use tempfile::TempDir;
@@ -28,6 +30,55 @@ fn test_lock() -> &'static Mutex<()> {
     LOCK.get_or_init(|| Mutex::new(()))
 }
 
+struct TestCacheHome {
+    _guard: MutexGuard<'static, ()>,
+    previous: Option<OsString>,
+    _temp_dir: TempDir,
+}
+
+impl TestCacheHome {
+    fn new() -> Self {
+        let guard = test_lock()
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let temp_dir = tempfile::tempdir().unwrap();
+        let previous = std::env::var_os("XDG_CACHE_HOME");
+        unsafe {
+            std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
+        }
+        Self {
+            _guard: guard,
+            previous,
+            _temp_dir: temp_dir,
+        }
+    }
+}
+
+impl Drop for TestCacheHome {
+    fn drop(&mut self) {
+        unsafe {
+            if let Some(previous) = &self.previous {
+                std::env::set_var("XDG_CACHE_HOME", previous);
+            } else {
+                std::env::remove_var("XDG_CACHE_HOME");
+            }
+        }
+    }
+}
+
+async fn cached_remote_json_file_path(url: &str) -> PathBuf {
+    let uri = tombi_uri::Uri::from_str(url).unwrap();
+    tombi_cache::get_cache_file_path(&uri).await.unwrap()
+}
+
+async fn write_cached_response(url: &str, body: &str) {
+    let cache_path = cached_remote_json_file_path(url).await;
+    if let Some(parent) = cache_path.parent() {
+        fs::create_dir_all(parent).unwrap();
+    }
+    fs::write(&cache_path, body).unwrap();
+}
+
 struct InlayHintFixture {
     _temp_dir: Option<TempDir>,
     source: String,
@@ -46,6 +97,21 @@ impl InlayHintFixture {
     fn cargo(source: &str, cargo_lock: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let (temp_dir, cargo_toml_path) = create_temp_cargo_project(source, cargo_lock)?;
         Ok(Self::new(Some(temp_dir), source, cargo_toml_path))
+    }
+
+    fn cargo_with_local_dependency(
+        cargo_toml: &str,
+        dependency_manifest_path: &str,
+        dependency_cargo_toml: &str,
+        cargo_lock: &str,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let (temp_dir, cargo_toml_path) = create_temp_cargo_project_with_local_dependency(
+            cargo_toml,
+            dependency_manifest_path,
+            dependency_cargo_toml,
+            cargo_lock,
+        )?;
+        Ok(Self::new(Some(temp_dir), cargo_toml, cargo_toml_path))
     }
 
     fn cargo_workspace_root(
@@ -99,6 +165,33 @@ fn create_temp_cargo_project(
     let temp_dir = tempfile::tempdir()?;
     let cargo_toml_path = temp_dir.path().join("Cargo.toml");
     fs::write(&cargo_toml_path, textwrap::dedent(cargo_toml).trim())?;
+    fs::write(
+        temp_dir.path().join("Cargo.lock"),
+        textwrap::dedent(cargo_lock).trim(),
+    )?;
+
+    Ok((temp_dir, cargo_toml_path))
+}
+
+fn create_temp_cargo_project_with_local_dependency(
+    cargo_toml: &str,
+    dependency_manifest_path: &str,
+    dependency_cargo_toml: &str,
+    cargo_lock: &str,
+) -> Result<(TempDir, PathBuf), Box<dyn std::error::Error>> {
+    let temp_dir = tempfile::tempdir()?;
+    let cargo_toml_path = temp_dir.path().join("Cargo.toml");
+    let dependency_cargo_toml_path = temp_dir.path().join(dependency_manifest_path);
+
+    if let Some(parent) = dependency_cargo_toml_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    fs::write(&cargo_toml_path, textwrap::dedent(cargo_toml).trim())?;
+    fs::write(
+        &dependency_cargo_toml_path,
+        textwrap::dedent(dependency_cargo_toml).trim(),
+    )?;
     fs::write(
         temp_dir.path().join("Cargo.lock"),
         textwrap::dedent(cargo_lock).trim(),
@@ -213,6 +306,17 @@ fn expected_hint(position: tombi_text::Position, label: &str, tooltip: &str) -> 
     }
 }
 
+fn expected_default_features_tooltip(features: &[&str]) -> String {
+    format!(
+        "Default Features:\n{}",
+        features
+            .iter()
+            .map(|feature| format!("- {feature:?}"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    )
+}
+
 macro_rules! test_inlay_hint {
     (
         #[tokio::test]
@@ -266,6 +370,121 @@ test_inlay_hint!(
         RESOLVED_VERSION_TOOLTIP,
     )]));
 );
+
+#[tokio::test]
+async fn inlay_hint_for_registry_default_features_is_rendered(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let _cache_home = TestCacheHome::new();
+    tombi_test_lib::init_log();
+
+    write_cached_response(
+        "https://crates.io/api/v1/crates/serde_json/1.0.140",
+        r#"{"version":{"features":{"default":["std","alloc"],"preserve_order":["indexmap","std"],"std":["memchr/std","serde/std"]}}}"#,
+    )
+    .await;
+
+    let fixture = InlayHintFixture::cargo_workspace_root(
+        r#"
+        [workspace]
+        members = ["crates/app"]
+
+        [workspace.dependencies]
+        serde_json = { version = "1.0.140", features = ["preserve_order", "std"] }
+        "#,
+        "crates/app/Cargo.toml",
+        r#"
+        [package]
+        name = "app"
+        version = "0.1.0"
+        "#,
+        r#"
+        version = 4
+
+        [[package]]
+        name = "app"
+        version = "0.1.0"
+        dependencies = ["serde_json 1.0.142"]
+
+        [[package]]
+        name = "serde_json"
+        version = "1.0.142"
+        "#,
+    )?;
+
+    let result = collect_inlay_hints(&fixture.source, fixture.source_path).await?;
+
+    pretty_assertions::assert_eq!(
+        result,
+        Some(vec![
+            expected_hint(
+                tombi_text::Position::new(4, 34),
+                r#" → "1.0.142""#,
+                RESOLVED_VERSION_TOOLTIP,
+            ),
+            expected_hint(
+                tombi_text::Position::new(4, 72),
+                r#" + ["alloc"]"#,
+                &expected_default_features_tooltip(&["alloc", "std"]),
+            ),
+        ])
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn inlay_hint_for_registry_default_features_is_not_rendered_when_disabled_explicitly(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let _cache_home = TestCacheHome::new();
+    tombi_test_lib::init_log();
+
+    write_cached_response(
+        "https://crates.io/api/v1/crates/serde_json/1.0.140",
+        r#"{"version":{"features":{"default":["std"],"preserve_order":["indexmap","std"],"std":["memchr/std","serde/std"]}}}"#,
+    )
+    .await;
+
+    let fixture = InlayHintFixture::cargo_workspace_root(
+        r#"
+        [workspace]
+        members = ["crates/app"]
+
+        [workspace.dependencies]
+        serde_json = { version = "1.0.140", default-features = false, features = ["preserve_order"] }
+        "#,
+        "crates/app/Cargo.toml",
+        r#"
+        [package]
+        name = "app"
+        version = "0.1.0"
+        "#,
+        r#"
+        version = 4
+
+        [[package]]
+        name = "app"
+        version = "0.1.0"
+        dependencies = ["serde_json 1.0.142"]
+
+        [[package]]
+        name = "serde_json"
+        version = "1.0.142"
+        "#,
+    )?;
+
+    let result = collect_inlay_hints(&fixture.source, fixture.source_path).await?;
+
+    pretty_assertions::assert_eq!(
+        result,
+        Some(vec![expected_hint(
+            tombi_text::Position::new(4, 34),
+            r#" → "1.0.142""#,
+            RESOLVED_VERSION_TOOLTIP,
+        )])
+    );
+
+    Ok(())
+}
 
 test_inlay_hint!(
     #[tokio::test]
@@ -377,7 +596,7 @@ test_inlay_hint!(
             members = ["crates/app"]
 
             [workspace.dependencies]
-            serde_json = { version = "1.0.140", features = ["preserve_order"] }
+            serde_json = { version = "1.0.140", default-features = false, features = ["preserve_order"] }
             "#,
             "crates/app/Cargo.toml",
             r#"
@@ -398,11 +617,13 @@ test_inlay_hint!(
             version = "1.0.142"
             "#,
         )
-    ) -> Ok(Some(vec![expected_hint(
-        tombi_text::Position::new(4, 34),
-        r#" → "1.0.142""#,
-        RESOLVED_VERSION_TOOLTIP,
-    )]));
+    ) -> Ok(Some(vec![
+        expected_hint(
+            tombi_text::Position::new(4, 34),
+            r#" → "1.0.142""#,
+            RESOLVED_VERSION_TOOLTIP,
+        ),
+    ]));
 );
 
 test_inlay_hint!(
@@ -438,6 +659,46 @@ test_inlay_hint!(
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(5, 21),
         r#" → "0.15.6""#,
+        RESOLVED_VERSION_TOOLTIP,
+    )]));
+);
+
+test_inlay_hint!(
+    #[tokio::test]
+    async fn inlay_hint_for_workspace_default_features_is_not_rendered_without_member_override(
+        InlayHintFixture::cargo_workspace_member(
+            r#"
+            [workspace]
+            members = ["crates/app"]
+
+            [workspace.dependencies]
+            serde_json = { version = "1.0.140", default-features = false }
+            "#,
+            "crates/app/Cargo.toml",
+            r#"
+            [package]
+            name = "app"
+            version = "0.1.0"
+
+            [dependencies]
+            serde_json = { workspace = true, features = ["preserve_order"] }
+            "#,
+            r#"
+            version = 4
+
+            [[package]]
+            name = "app"
+            version = "0.1.0"
+            dependencies = ["serde_json 1.0.142"]
+
+            [[package]]
+            name = "serde_json"
+            version = "1.0.142"
+            "#,
+        )
+    ) -> Ok(Some(vec![expected_hint(
+        tombi_text::Position::new(5, 31),
+        r#" → "1.0.142""#,
         RESOLVED_VERSION_TOOLTIP,
     )]));
 );
@@ -594,6 +855,97 @@ test_inlay_hint!(
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(5, 31),
         r#" → "1.0.228""#,
+        RESOLVED_VERSION_TOOLTIP,
+    )]));
+);
+
+test_inlay_hint!(
+    #[tokio::test]
+    async fn inlay_hint_for_default_features_is_rendered_after_the_features_array(
+        InlayHintFixture::cargo_with_local_dependency(
+            r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
+
+            [dependencies]
+            dep = { path = "vendor/dep", features = ["default1", "extra"] }
+            "#,
+            "vendor/dep/Cargo.toml",
+            r#"
+            [package]
+            name = "dep"
+            version = "0.2.0"
+
+            [features]
+            default = ["default1", "default2"]
+            extra = []
+            "#,
+            r#"
+            version = 4
+
+            [[package]]
+            name = "demo"
+            version = "0.1.0"
+            dependencies = ["dep 0.2.0"]
+
+            [[package]]
+            name = "dep"
+            version = "0.2.0"
+            "#,
+        )
+    ) -> Ok(Some(vec![
+        expected_hint(
+            tombi_text::Position::new(5, 27),
+            r#" → "0.2.0""#,
+            RESOLVED_VERSION_TOOLTIP,
+        ),
+        expected_hint(
+            tombi_text::Position::new(5, 61),
+            r#" + ["default2"]"#,
+            &expected_default_features_tooltip(&["default1", "default2"]),
+        ),
+    ]));
+);
+
+test_inlay_hint!(
+    #[tokio::test]
+    async fn inlay_hint_for_default_features_is_not_rendered_when_disabled_explicitly(
+        InlayHintFixture::cargo_with_local_dependency(
+            r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
+
+            [dependencies]
+            dep = { path = "vendor/dep", default-features = false, features = ["extra"] }
+            "#,
+            "vendor/dep/Cargo.toml",
+            r#"
+            [package]
+            name = "dep"
+            version = "0.2.0"
+
+            [features]
+            default = ["default1", "default2"]
+            extra = []
+            "#,
+            r#"
+            version = 4
+
+            [[package]]
+            name = "demo"
+            version = "0.1.0"
+            dependencies = ["dep 0.2.0"]
+
+            [[package]]
+            name = "dep"
+            version = "0.2.0"
+            "#,
+        )
+    ) -> Ok(Some(vec![expected_hint(
+        tombi_text::Position::new(5, 27),
+        r#" → "0.2.0""#,
         RESOLVED_VERSION_TOOLTIP,
     )]));
 );

@@ -1,3 +1,4 @@
+mod cargo_lock;
 mod code_action;
 mod completion;
 mod did_open;
