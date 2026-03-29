@@ -8,7 +8,6 @@ use serde::de::DeserializeOwned;
 use tombi_cache::{get_cache_file_path, read_from_cache, save_to_cache};
 use tombi_schema_store::HttpClient;
 
-const CACHE_INDEX_FILE_NAME: &str = "__index__.json";
 static HTTP_CLIENT: LazyLock<HttpClient> = LazyLock::new(HttpClient::new);
 
 pub async fn fetch_cached_remote_json<T: DeserializeOwned>(
@@ -37,15 +36,7 @@ async fn get_cached_remote_json_file_path(url: &str) -> Option<PathBuf> {
         .inspect_err(|err| log::warn!("Invalid URL for remote cache {url}: {err}"))
         .ok()?;
 
-    let cache_uri = if uri.path().ends_with(".json") {
-        uri
-    } else {
-        let mut u = uri;
-        u.path_segments_mut().ok()?.push(CACHE_INDEX_FILE_NAME);
-        u
-    };
-
-    get_cache_file_path(&cache_uri).await
+    get_cache_file_path(&uri).await
 }
 
 async fn fetch_cached_remote_json_from_path<T: DeserializeOwned>(
@@ -242,6 +233,7 @@ mod tests {
 
     use super::*;
     use serde::Deserialize;
+    use tombi_cache::CACHE_INDEX_FILE_NAME;
 
     static CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 

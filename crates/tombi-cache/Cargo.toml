@@ -12,3 +12,6 @@ log.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["fs"] }
 tombi-uri.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
