@@ -106,6 +106,8 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
       - [extensions."tombi-toml/cargo".lsp.goto-declaration](#extensions-tombi-tomlcargo-lsp-goto-declaration)
       - [extensions."tombi-toml/cargo".lsp.document-link](#extensions-tombi-tomlcargo-lsp-document-link)
       - [extensions."tombi-toml/cargo".lsp.code-action](#extensions-tombi-tomlcargo-lsp-code-action)
+      - [extensions."tombi-toml/cargo".lsp.hover](#extensions-tombi-tomlcargo-lsp-hover)
+      - [extensions."tombi-toml/cargo".lsp.inlay-hint](#extensions-tombi-tomlcargo-lsp-inlay-hint)
   - [extensions."tombi-toml/pyproject"](#extensions-tombi-tomlpyproject)
     - [extensions."tombi-toml/pyproject".lsp](#extensions-tombi-tomlpyproject-lsp)
       - [extensions."tombi-toml/pyproject".lsp.completion](#extensions-tombi-tomlpyproject-lsp-completion)
@@ -113,11 +115,14 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
       - [extensions."tombi-toml/pyproject".lsp.goto-declaration](#extensions-tombi-tomlpyproject-lsp-goto-declaration)
       - [extensions."tombi-toml/pyproject".lsp.document-link](#extensions-tombi-tomlpyproject-lsp-document-link)
       - [extensions."tombi-toml/pyproject".lsp.code-action](#extensions-tombi-tomlpyproject-lsp-code-action)
+      - [extensions."tombi-toml/pyproject".lsp.hover](#extensions-tombi-tomlpyproject-lsp-hover)
+      - [extensions."tombi-toml/pyproject".lsp.inlay-hint](#extensions-tombi-tomlpyproject-lsp-inlay-hint)
   - [extensions."tombi-toml/tombi"](#extensions-tombi-tomltombi)
     - [extensions."tombi-toml/tombi".lsp](#extensions-tombi-tomltombi-lsp)
       - [extensions."tombi-toml/tombi".lsp.completion](#extensions-tombi-tomltombi-lsp-completion)
       - [extensions."tombi-toml/tombi".lsp.goto-definition](#extensions-tombi-tomltombi-lsp-goto-definition)
       - [extensions."tombi-toml/tombi".lsp.document-link](#extensions-tombi-tomltombi-lsp-document-link)
+      - [extensions."tombi-toml/tombi".lsp.hover](#extensions-tombi-tomltombi-lsp-hover)
 
 ## Full Structure
 
@@ -258,6 +263,9 @@ tables-out-of-order = "error"
       member.enabled = true,
       path.enabled = true,
     },
+    hover = {
+      dependency-detail.enabled = true,
+    },
     inlay-hint = {
       default-features.enabled = true,
       dependency-version.enabled = true,
@@ -288,6 +296,12 @@ tables-out-of-order = "error"
       member.enabled = true,
       path.enabled = true,
     },
+    hover = {
+      dependency-detail.enabled = true,
+    },
+    inlay-hint = {
+      dependency-version.enabled = true,
+    },
   }
 }
 "tombi-toml/tombi" = {
@@ -301,6 +315,7 @@ tables-out-of-order = "error"
     goto-definition = {
       path.enabled = true,
     },
+    hover.enabled = true,
   }
 }
 ```
@@ -341,7 +356,7 @@ Configure formatting styles.
 If you want to know Tombi's recommended formatting style, simply use the default settings.
 
 Originally, Tombi enforced strict formatting rules similar to [black](https://github.com/psf/black),
-but we relaxed some requirements to welcome Taplo users. 
+but we relaxed some requirements to welcome Taplo users.
 Even so, we still encourage you to stick with the defaults to avoid wasting time on style debates and maintain consistency.
 </Tip>
 
@@ -930,9 +945,9 @@ If an extension or feature is omitted, it is enabled by default.
 ```
 
 Available extension IDs:
-- `tombi-toml/cargo`: Cargo-specific completion, navigation, document links, and code actions for `Cargo.toml`
-- `tombi-toml/pyproject`: `pyproject.toml`-specific completion, navigation, document links, and code actions
-- `tombi-toml/tombi`: Tombi's own config-oriented path completion, navigation, and document links
+- `tombi-toml/cargo`: Cargo-specific completion, navigation, document links, code actions, hover, and inlay hints for `Cargo.toml`
+- `tombi-toml/pyproject`: `pyproject.toml`-specific completion, navigation, document links, code actions, hover, and inlay hints
+- `tombi-toml/tombi`: Tombi's own config-oriented path completion, navigation, document links, and hover
 
 ### extensions."tombi-toml/cargo"
 
@@ -1311,6 +1326,36 @@ Enable or disable the "Add to Workspace and Inherit Dependency" code action for 
 - Type: `Boolean`
 - Default: `true`
 
+### extensions."tombi-toml/cargo".lsp.hover
+
+Configure Cargo-specific hover features.
+
+See [Cargo Extension > Hover](/docs/extensions/tombi-extension-cargo#hover).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.hover.enabled
+
+Enable or disable all Cargo hover features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.hover.dependency-detail
+
+Configure dependency detail hover for Cargo dependencies.
+
+See [Cargo Extension > Hover](/docs/extensions/tombi-extension-cargo#hover).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.hover.dependency-detail.enabled
+
+Enable or disable dependency detail hover for Cargo dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
 ### extensions."tombi-toml/cargo".lsp.inlay-hint
 
 Configure Cargo-specific inlay hints.
@@ -1652,6 +1697,66 @@ Enable or disable the "Add to Workspace and Use Workspace Dependency" code actio
 - Type: `Boolean`
 - Default: `true`
 
+### extensions."tombi-toml/pyproject".lsp.hover
+
+Configure `pyproject.toml`-specific hover features.
+
+See [Pyproject Extension > Hover](/docs/extensions/tombi-extension-pyproject#hover).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.hover.enabled
+
+Enable or disable all `pyproject.toml` hover features provided by the extension.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.hover.dependency-detail
+
+Configure dependency detail hover for `pyproject.toml` dependencies.
+
+See [Pyproject Extension > Hover](/docs/extensions/tombi-extension-pyproject#hover).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.hover.dependency-detail.enabled
+
+Enable or disable dependency detail hover for `pyproject.toml` dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.inlay-hint
+
+Configure `pyproject.toml`-specific inlay hints.
+
+See [Pyproject Extension > Inlay Hints](/docs/extensions/tombi-extension-pyproject#inlay-hints).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.inlay-hint.enabled
+
+Enable or disable all `pyproject.toml` inlay hints.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.inlay-hint.dependency-version
+
+Configure resolved-version inlay hints for `pyproject.toml` dependencies.
+
+See [Pyproject Extension > Inlay Hints](/docs/extensions/tombi-extension-pyproject#inlay-hints).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.inlay-hint.dependency-version.enabled
+
+Enable or disable resolved-version inlay hints for `pyproject.toml` dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
 ### extensions."tombi-toml/tombi"
 
 Configure the experimental Tombi configuration extension used while editing `tombi.toml`.
@@ -1755,6 +1860,19 @@ This opens local paths referenced from `tombi.toml`.
 ### extensions."tombi-toml/tombi".lsp.document-link.path.enabled
 
 Enable or disable document links to paths referenced from Tombi configuration files.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/tombi".lsp.hover
+
+Configure Tombi configuration hover features.
+
+- Type: `Table`
+
+### extensions."tombi-toml/tombi".lsp.hover.enabled
+
+Enable or disable all Tombi configuration hover features.
 
 - Type: `Boolean`
 - Default: `true`
