@@ -1,7 +1,7 @@
 use std::{
+    borrow::Borrow,
     path::{Path, PathBuf},
     str::FromStr,
-    time::UNIX_EPOCH,
 };
 
 use pep508_rs::{
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{TryIntoDocumentTree, Value, dig_keys};
-use tombi_extension::{InlayHint, get_or_load_json};
+use tombi_extension::{InlayHint, file_cache_version, get_or_load_json};
 use tombi_hashmap::{HashMap, HashSet};
 
 const RESOLVED_VERSION_TOOLTIP: &str = "Resolved version in uv.lock";
@@ -49,10 +49,6 @@ struct ProjectVersion(String);
 #[serde(transparent)]
 struct DependencyProjectName(String);
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-struct ProjectReleaseKey(String);
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct ResolvedProjectDependencyVersion {
     version: String,
@@ -65,7 +61,10 @@ struct ProjectResolvedDependencies {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct UvLockInlayCacheData {
-    projects: tombi_hashmap::HashMap<ProjectReleaseKey, ProjectResolvedDependencies>,
+    projects: tombi_hashmap::HashMap<
+        ProjectName,
+        tombi_hashmap::HashMap<ProjectVersion, ProjectResolvedDependencies>,
+    >,
 }
 
 struct PyprojectDependencyHint<'a> {
@@ -106,7 +105,6 @@ pub async fn inlay_hint(
             &document_tree,
             visible_range,
             uv_lock_cache,
-            toml_version,
             features.as_ref(),
         )
     })
@@ -119,7 +117,6 @@ fn inlay_hint_impl(
     document_tree: &tombi_document_tree::DocumentTree,
     visible_range: tombi_text::Range,
     uv_lock_cache: Option<UvLockInlayCacheData>,
-    _toml_version: TomlVersion,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
 ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("pyproject.toml") {
@@ -293,7 +290,7 @@ async fn load_uv_lock_cache(
 ) -> Option<UvLockInlayCacheData> {
     let uv_lock_path = find_uv_lock_path(pyproject_toml_path)?;
     let cache_key = uv_lock_cache_key(&uv_lock_path);
-    let cache_version = lockfile_cache_version(&uv_lock_path);
+    let cache_version = file_cache_version(&uv_lock_path);
 
     let cache_value = get_or_load_json(&cache_key, cache_version, {
         let uv_lock_path = uv_lock_path.clone();
@@ -301,7 +298,7 @@ async fn load_uv_lock_cache(
     })
     .await?;
 
-    serde_json::from_value(cache_value.as_ref().clone()).ok()
+    UvLockInlayCacheData::deserialize(cache_value.as_ref()).ok()
 }
 
 fn find_uv_lock_path(pyproject_toml_path: &Path) -> Option<std::path::PathBuf> {
@@ -352,13 +349,6 @@ fn uv_lock_cache_key(uv_lock_path: &Path) -> String {
     )
 }
 
-fn lockfile_cache_version(lockfile_path: &Path) -> Option<u64> {
-    let modified = std::fs::metadata(lockfile_path).ok()?.modified().ok()?;
-    let duration = modified.duration_since(UNIX_EPOCH).ok()?;
-
-    u64::try_from(duration.as_millis()).ok()
-}
-
 impl UvLock {
     fn from_document_tree(document_tree: &tombi_document_tree::DocumentTree) -> Option<Self> {
         let (_, Value::Array(packages)) = dig_keys(document_tree, &["package"])? else {
@@ -375,16 +365,17 @@ impl UvLock {
 
     fn into_inlay_cache_data(self) -> UvLockInlayCacheData {
         let unique_package_versions = self.unique_package_versions();
-        let projects = self
-            .packages
-            .iter()
-            .map(|package| {
-                (
-                    ProjectReleaseKey::new(&package.name, &normalize_version(&package.version)),
+        let mut projects = HashMap::new();
+
+        for package in &self.packages {
+            projects
+                .entry(ProjectName::new(&package.name))
+                .or_insert_with(HashMap::new)
+                .insert(
+                    ProjectVersion::new(&normalize_version(&package.version)),
                     package.resolved_dependencies(&unique_package_versions),
-                )
-            })
-            .collect();
+                );
+        }
 
         UvLockInlayCacheData { projects }
     }
@@ -454,7 +445,7 @@ impl UvLockPackage {
                 let resolved_version =
                     self.resolved_dependency_version(&dependency_name, unique_package_versions)?;
                 Some((
-                    DependencyProjectName::from(dependency_name),
+                    DependencyProjectName::new(&dependency_name),
                     ResolvedProjectDependencyVersion::new(resolved_version),
                 ))
             })
@@ -542,8 +533,10 @@ impl ProjectName {
     fn new(project_name: &str) -> Self {
         Self(project_name.to_string())
     }
+}
 
-    fn as_str(&self) -> &str {
+impl Borrow<str> for ProjectName {
+    fn borrow(&self) -> &str {
         &self.0
     }
 }
@@ -552,8 +545,10 @@ impl ProjectVersion {
     fn new(project_version: &str) -> Self {
         Self(project_version.to_string())
     }
+}
 
-    fn as_str(&self) -> &str {
+impl Borrow<str> for ProjectVersion {
+    fn borrow(&self) -> &str {
         &self.0
     }
 }
@@ -564,22 +559,9 @@ impl DependencyProjectName {
     }
 }
 
-impl From<String> for DependencyProjectName {
-    fn from(value: String) -> Self {
-        Self(value)
-    }
-}
-
-impl ProjectReleaseKey {
-    fn new(project_name: &str, project_version: &str) -> Self {
-        let project_name = ProjectName::new(project_name);
-        let project_version = ProjectVersion::new(project_version);
-
-        Self(format!(
-            "{}@{}",
-            project_name.as_str(),
-            project_version.as_str()
-        ))
+impl Borrow<str> for DependencyProjectName {
+    fn borrow(&self) -> &str {
+        &self.0
     }
 }
 
@@ -597,12 +579,9 @@ impl UvLockInlayCacheData {
         dependency_name: &str,
     ) -> Option<String> {
         self.projects
-            .get(&ProjectReleaseKey::new(project_name, project_version))
-            .and_then(|dependencies| {
-                dependencies
-                    .by_dependency
-                    .get(&DependencyProjectName::new(dependency_name))
-            })
+            .get(project_name)
+            .and_then(|versions| versions.get(project_version))
+            .and_then(|dependencies| dependencies.by_dependency.get(dependency_name))
             .map(|resolved| resolved.version.clone())
     }
 }
@@ -654,7 +633,8 @@ mod tests {
         assert!(
             cache_data
                 .projects
-                .contains_key(&ProjectReleaseKey::new("demo", "1.0"))
+                .get("demo")
+                .is_some_and(|versions| versions.contains_key("1.0"))
         );
     }
 

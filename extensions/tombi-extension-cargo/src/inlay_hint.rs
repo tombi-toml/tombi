@@ -1,12 +1,12 @@
 use std::{
+    borrow::Borrow,
     path::{Path, PathBuf},
-    time::UNIX_EPOCH,
 };
 
 use serde::{Deserialize, Serialize};
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_keys};
-use tombi_extension::{InlayHint, fetch_cached_remote_json, get_or_load_json};
+use tombi_extension::{InlayHint, fetch_cached_remote_json, file_cache_version, get_or_load_json};
 use tombi_hashmap::{HashMap, HashSet};
 
 use crate::{
@@ -47,11 +47,15 @@ enum CargoInlayHintFeature {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
-struct DependencyCrateName(String);
+struct CrateName(String);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
-struct CrateReleaseKey(String);
+struct CrateVersion(String);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+struct DependencyCrateName(String);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct ResolvedDependencyVersion {
@@ -65,7 +69,10 @@ struct CrateResolvedDependencies {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct CargoLockInlayCacheData {
-    crates: tombi_hashmap::HashMap<CrateReleaseKey, CrateResolvedDependencies>,
+    crates: tombi_hashmap::HashMap<
+        CrateName,
+        tombi_hashmap::HashMap<CrateVersion, CrateResolvedDependencies>,
+    >,
 }
 
 struct DependencyVersionHint {
@@ -1132,7 +1139,7 @@ async fn load_cargo_lock_cache(
 ) -> Option<CargoLockInlayCacheData> {
     let cargo_lock_path = find_cargo_lock_path(cargo_toml_path)?;
     let cache_key = cargo_lock_cache_key(&cargo_lock_path);
-    let cache_version = lockfile_cache_version(&cargo_lock_path);
+    let cache_version = file_cache_version(&cargo_lock_path);
 
     let cache_value = get_or_load_json(&cache_key, cache_version, {
         let cargo_lock_path = cargo_lock_path.clone();
@@ -1140,7 +1147,7 @@ async fn load_cargo_lock_cache(
     })
     .await?;
 
-    serde_json::from_value(cache_value.as_ref().clone()).ok()
+    CargoLockInlayCacheData::deserialize(cache_value.as_ref()).ok()
 }
 
 async fn load_cargo_lock_cache_json(
@@ -1166,13 +1173,6 @@ fn cargo_lock_cache_key(cargo_lock_path: &Path) -> String {
         "{CARGO_EXTENSION_ID}:{INLAY_HINT_LOCKFILE_KEY}:{}",
         cargo_lock_path.display()
     )
-}
-
-fn lockfile_cache_version(lockfile_path: &Path) -> Option<u64> {
-    let modified = std::fs::metadata(lockfile_path).ok()?.modified().ok()?;
-    let duration = modified.duration_since(UNIX_EPOCH).ok()?;
-
-    u64::try_from(duration.as_millis()).ok()
 }
 
 fn package_version(
@@ -1292,16 +1292,17 @@ fn cargo_inlay_hint_enabled(
 impl CargoLock {
     fn into_inlay_cache_data(self) -> CargoLockInlayCacheData {
         let unique_package_versions = self.unique_package_versions();
-        let crates = self
-            .packages
-            .iter()
-            .map(|package| {
-                (
-                    CrateReleaseKey::new(&package.name, &package.version),
+        let mut crates = HashMap::new();
+
+        for package in &self.packages {
+            crates
+                .entry(CrateName::new(&package.name))
+                .or_insert_with(HashMap::new)
+                .insert(
+                    CrateVersion::new(&package.version),
                     package.resolved_dependencies(&unique_package_versions),
-                )
-            })
-            .collect();
+                );
+        }
 
         CargoLockInlayCacheData { crates }
     }
@@ -1345,7 +1346,7 @@ impl CargoLockPackage {
                 let resolved_version =
                     self.resolved_dependency_version(&dependency_name, unique_package_versions)?;
                 Some((
-                    DependencyCrateName::from(dependency_name),
+                    DependencyCrateName::new(&dependency_name),
                     ResolvedDependencyVersion::new(resolved_version),
                 ))
             })
@@ -1381,21 +1382,39 @@ impl CargoLockPackage {
     }
 }
 
+impl CrateName {
+    fn new(crate_name: &str) -> Self {
+        Self(crate_name.to_string())
+    }
+}
+
+impl Borrow<str> for CrateName {
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
+impl CrateVersion {
+    fn new(crate_version: &str) -> Self {
+        Self(crate_version.to_string())
+    }
+}
+
+impl Borrow<str> for CrateVersion {
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
 impl DependencyCrateName {
     fn new(dependency_name: &str) -> Self {
         Self(dependency_name.to_string())
     }
 }
 
-impl From<String> for DependencyCrateName {
-    fn from(value: String) -> Self {
-        Self(value)
-    }
-}
-
-impl CrateReleaseKey {
-    fn new(crate_name: &str, crate_version: &str) -> Self {
-        Self(format!("{crate_name}@{crate_version}"))
+impl Borrow<str> for DependencyCrateName {
+    fn borrow(&self) -> &str {
+        &self.0
     }
 }
 
@@ -1413,12 +1432,9 @@ impl CargoLockInlayCacheData {
         dependency_name: &str,
     ) -> Option<String> {
         self.crates
-            .get(&CrateReleaseKey::new(crate_name, crate_version))
-            .and_then(|dependencies| {
-                dependencies
-                    .by_dependency
-                    .get(&DependencyCrateName::new(dependency_name))
-            })
+            .get(crate_name)
+            .and_then(|versions| versions.get(crate_version))
+            .and_then(|dependencies| dependencies.by_dependency.get(dependency_name))
             .map(|resolved| resolved.version.clone())
     }
 }

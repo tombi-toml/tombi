@@ -96,19 +96,11 @@ impl InlayHintFixture {
     }
 
     fn cargo(source: &str, cargo_lock: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        create_temp_fixture(
-            "Cargo.toml",
-            source,
-            vec![("Cargo.lock", cargo_lock)],
-        )
+        create_temp_fixture("Cargo.toml", source, vec![("Cargo.lock", cargo_lock)])
     }
 
     fn pyproject(source: &str, uv_lock: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        create_temp_fixture(
-            "pyproject.toml",
-            source,
-            vec![("uv.lock", uv_lock)],
-        )
+        create_temp_fixture("pyproject.toml", source, vec![("uv.lock", uv_lock)])
     }
 }
 
