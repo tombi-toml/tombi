@@ -41,6 +41,50 @@ impl InlayHintFixture {
             source_path,
         }
     }
+
+    #[allow(dead_code)]
+    fn cargo(source: &str, cargo_lock: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        create_temp_fixture("Cargo.toml", source, vec![("Cargo.lock", cargo_lock)])
+    }
+
+    #[allow(dead_code)]
+    fn cargo_workspace_root(
+        workspace_cargo_toml: &str,
+        member_manifest_path: &str,
+        member_cargo_toml: &str,
+        cargo_lock: &str,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        create_temp_fixture(
+            "Cargo.toml",
+            workspace_cargo_toml,
+            vec![
+                (member_manifest_path, member_cargo_toml),
+                ("Cargo.lock", cargo_lock),
+            ],
+        )
+    }
+
+    #[allow(dead_code)]
+    fn cargo_workspace_member(
+        workspace_cargo_toml: &str,
+        member_manifest_path: &str,
+        member_cargo_toml: &str,
+        cargo_lock: &str,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        create_temp_fixture(
+            member_manifest_path,
+            member_cargo_toml,
+            vec![
+                ("Cargo.toml", workspace_cargo_toml),
+                ("Cargo.lock", cargo_lock),
+            ],
+        )
+    }
+
+    #[allow(dead_code)]
+    fn pyproject(source: &str, uv_lock: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        create_temp_fixture("pyproject.toml", source, vec![("uv.lock", uv_lock)])
+    }
 }
 
 fn create_temp_fixture(
@@ -142,6 +186,12 @@ macro_rules! test_inlay_hint {
 
             Ok(())
         }
+    };
+    (
+        #[tokio::test]
+        async fn $name:ident($fixture:expr) -> Ok($expected:expr);
+    ) => {
+        test_inlay_hint!(@run $name, $fixture, $expected);
     };
     (
         #[tokio::test]
