@@ -172,7 +172,7 @@
   },
   {
     "title": "Extensions",
-    "description": "Project-specific extensions for Cargo and uv.",
+    "description": "Project-specific extensions for Cargo and pyproject.toml.",
     "path": "/docs/extensions",
     "children": [
       {
@@ -181,9 +181,9 @@
         "path": "/docs/extensions/tombi-extension-cargo"
       },
       {
-        "title": "uv Extension",
-        "description": "Python uv project specific features and validations.",
-        "path": "/docs/extensions/tombi-extension-uv"
+        "title": "Pyproject Extension",
+        "description": "Python pyproject.toml specific features and validations.",
+        "path": "/docs/extensions/tombi-extension-pyproject"
       }
     ]
   },
