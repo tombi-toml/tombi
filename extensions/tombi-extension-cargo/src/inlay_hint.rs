@@ -42,7 +42,7 @@ const WORKSPACE_PACKAGE_ITEMS: [&str; 16] = [
 enum CargoInlayHintFeature {
     DependencyVersion,
     DefaultFeatures,
-    Workspace,
+    WorkspaceValue,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -214,8 +214,9 @@ fn inlay_hint_impl(
         cargo_inlay_hint_enabled(features, CargoInlayHintFeature::DependencyVersion);
     let default_features_enabled =
         cargo_inlay_hint_enabled(features, CargoInlayHintFeature::DefaultFeatures);
-    let workspace_enabled = cargo_inlay_hint_enabled(features, CargoInlayHintFeature::Workspace);
-    if !dependency_version_enabled && !default_features_enabled && !workspace_enabled {
+    let workspace_value_enabled =
+        cargo_inlay_hint_enabled(features, CargoInlayHintFeature::WorkspaceValue);
+    if !dependency_version_enabled && !default_features_enabled && !workspace_value_enabled {
         return Ok(None);
     }
 
@@ -225,7 +226,7 @@ fn inlay_hint_impl(
 
     let mut hints = Vec::new();
 
-    if workspace_enabled {
+    if workspace_value_enabled {
         collect_workspace_package_inlay_hints(
             document_tree,
             &cargo_toml_path,
@@ -1282,9 +1283,9 @@ fn cargo_inlay_hint_enabled(
             true,
             tombi_config::CargoExtensionFeatures::default_features_inlay_hint_enabled,
         ),
-        CargoInlayHintFeature::Workspace => features.map_or(
+        CargoInlayHintFeature::WorkspaceValue => features.map_or(
             true,
-            tombi_config::CargoExtensionFeatures::workspace_inlay_hint_enabled,
+            tombi_config::CargoExtensionFeatures::workspace_value_inlay_hint_enabled,
         ),
     }
 }
@@ -1557,7 +1558,7 @@ mod tests {
                                     enabled: Some(false.into()),
                                 }),
                                 default_features: None,
-                                workspace: None,
+                                workspace_value: None,
                             },
                         )),
                         ..Default::default()
@@ -1623,7 +1624,7 @@ mod tests {
                             tombi_config::CargoInlayHintFeatureTree {
                                 dependency_version: None,
                                 default_features: None,
-                                workspace: Some(tombi_config::ToggleFeature {
+                                workspace_value: Some(tombi_config::ToggleFeature {
                                     enabled: Some(false.into()),
                                 }),
                             },

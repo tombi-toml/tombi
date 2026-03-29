@@ -156,11 +156,11 @@ impl CargoExtensionFeatures {
                 .map_or(true, CargoLspFeatures::default_features_inlay_hint_enabled)
     }
 
-    pub fn workspace_inlay_hint_enabled(&self) -> bool {
+    pub fn workspace_value_inlay_hint_enabled(&self) -> bool {
         self.enabled()
             && self
                 .lsp()
-                .map_or(true, CargoLspFeatures::workspace_inlay_hint_enabled)
+                .map_or(true, CargoLspFeatures::workspace_value_inlay_hint_enabled)
     }
 
     pub fn goto_definition_enabled(&self) -> bool {
@@ -432,11 +432,11 @@ impl CargoLspFeatures {
                 .map_or(true, CargoInlayHintFeatures::default_features_enabled)
     }
 
-    pub fn workspace_inlay_hint_enabled(&self) -> bool {
+    pub fn workspace_value_inlay_hint_enabled(&self) -> bool {
         self.enabled()
             && self
                 .inlay_hint()
-                .map_or(true, CargoInlayHintFeatures::workspace_enabled)
+                .map_or(true, CargoInlayHintFeatures::workspace_value_enabled)
     }
 
     pub fn goto_definition_enabled(&self) -> bool {
@@ -671,12 +671,12 @@ impl CargoInlayHintFeatures {
             }
     }
 
-    pub fn workspace_enabled(&self) -> bool {
+    pub fn workspace_value_enabled(&self) -> bool {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
                 Self::Features(features) => features
-                    .workspace
+                    .workspace_value
                     .as_ref()
                     .map_or(true, ToggleFeature::enabled),
             }
@@ -702,7 +702,7 @@ pub struct CargoHoverFeatureTree {
 pub struct CargoInlayHintFeatureTree {
     pub dependency_version: Option<ToggleFeature>,
     pub default_features: Option<ToggleFeature>,
-    pub workspace: Option<ToggleFeature>,
+    pub workspace_value: Option<ToggleFeature>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -2011,5 +2011,47 @@ pub struct ToggleFeature {
 impl ToggleFeature {
     pub fn enabled(&self) -> bool {
         self.enabled.unwrap_or_default().value()
+    }
+}
+
+#[cfg(all(test, feature = "serde"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cargo_inlay_hint_feature_tree_deserializes_workspace_value_key() {
+        let features: CargoInlayHintFeatureTree = serde_json::from_value(serde_json::json!({
+            "workspace-value": {
+                "enabled": false
+            }
+        }))
+        .expect("workspace-value should deserialize");
+
+        assert_eq!(
+            features.workspace_value,
+            Some(ToggleFeature {
+                enabled: Some(BoolDefaultTrue::from(false)),
+            })
+        );
+    }
+
+    #[test]
+    fn cargo_inlay_hint_feature_tree_serializes_workspace_value_key() {
+        let value = serde_json::to_value(CargoInlayHintFeatureTree {
+            dependency_version: None,
+            default_features: None,
+            workspace_value: Some(ToggleFeature {
+                enabled: Some(BoolDefaultTrue::from(false)),
+            }),
+        })
+        .expect("workspace-value should serialize");
+
+        assert_eq!(
+            value.get("workspace-value"),
+            Some(&serde_json::json!({
+                "enabled": false
+            }))
+        );
+        assert!(value.get("workspace").is_none());
     }
 }
