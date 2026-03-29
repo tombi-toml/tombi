@@ -1301,6 +1301,16 @@
             }
           ]
         },
+        "hover": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CargoHoverFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "code-action": {
           "anyOf": [
             {
@@ -1482,6 +1492,34 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
+    "CargoHoverFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/CargoHoverFeatureTree"
+        }
+      ],
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "CargoHoverFeatureTree": {
+      "type": "object",
+      "properties": {
+        "dependency-detail": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
     "CargoCodeActionFeatures": {
       "anyOf": [
         {
@@ -1619,6 +1657,16 @@
             }
           ]
         },
+        "hover": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PyprojectHoverFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "code-action": {
           "anyOf": [
             {
@@ -1744,6 +1792,34 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
+    "PyprojectHoverFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/PyprojectHoverFeatureTree"
+        }
+      ],
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "PyprojectHoverFeatureTree": {
+      "type": "object",
+      "properties": {
+        "dependency-detail": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
     "PyprojectCodeActionFeatures": {
       "anyOf": [
         {
@@ -1846,6 +1922,16 @@
           "anyOf": [
             {
               "$ref": "#/definitions/TombiDocumentLinkFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hover": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/EnabledOnly"
             },
             {
               "type": "null"

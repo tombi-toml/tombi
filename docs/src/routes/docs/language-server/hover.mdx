@@ -36,5 +36,14 @@ if you are using the correct JSON Schema.
 </Tip>
 
 For dependency entries, Tombi can also enrich hover content with package metadata such as the
-resolved package name and description. In offline mode, remote registry lookups are skipped and
-only local workspace or path metadata is used.
+resolved package name and description.
+
+Examples:
+- in `Cargo.toml`, hover can show metadata from workspace crates, path dependencies, or crates.io
+- in `pyproject.toml`, hover can show metadata from workspace packages, local path sources, or PyPI
+
+In offline mode, remote registry lookups are skipped and only local workspace or path metadata is used.
+
+See also:
+- [Cargo Extension](/docs/extensions/tombi-extension-cargo)
+- [Pyproject Extension](/docs/extensions/tombi-extension-pyproject)

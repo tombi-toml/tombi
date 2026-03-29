@@ -85,6 +85,9 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
   - [schemas[\*].root](#sub-schema)
   - [schemas[\*].path](#root-schema)
   - [schemas[\*].include](#root-schema)
+  - [schemas[\*].lint](#schemas-lint)
+    - [schemas[\*].lint.rules](#schemas-lint-rules)
+      - [schemas[\*].lint.rules.deprecated](#schemas-lint-rules-deprecated)
 - [overrides](#overrides)
   - [overrides[\*].files](#overrides-files)
     - [overrides[\*].files.include](#overrides-files-include)
@@ -95,6 +98,26 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
   - [overrides[\*].lint](#overrides-lint)
     - [overrides[\*].lint.enabled](#overrides-lint-enabled)
     - [overrides[\*].lint.rules](#overrides-lint-rules)
+- [extensions](#extensions)
+  - [extensions."tombi-toml/cargo"](#extensions-tombi-tomlcargo)
+    - [extensions."tombi-toml/cargo".lsp](#extensions-tombi-tomlcargo-lsp)
+      - [extensions."tombi-toml/cargo".lsp.completion](#extensions-tombi-tomlcargo-lsp-completion)
+      - [extensions."tombi-toml/cargo".lsp.goto-definition](#extensions-tombi-tomlcargo-lsp-goto-definition)
+      - [extensions."tombi-toml/cargo".lsp.goto-declaration](#extensions-tombi-tomlcargo-lsp-goto-declaration)
+      - [extensions."tombi-toml/cargo".lsp.document-link](#extensions-tombi-tomlcargo-lsp-document-link)
+      - [extensions."tombi-toml/cargo".lsp.code-action](#extensions-tombi-tomlcargo-lsp-code-action)
+  - [extensions."tombi-toml/pyproject"](#extensions-tombi-tomlpyproject)
+    - [extensions."tombi-toml/pyproject".lsp](#extensions-tombi-tomlpyproject-lsp)
+      - [extensions."tombi-toml/pyproject".lsp.completion](#extensions-tombi-tomlpyproject-lsp-completion)
+      - [extensions."tombi-toml/pyproject".lsp.goto-definition](#extensions-tombi-tomlpyproject-lsp-goto-definition)
+      - [extensions."tombi-toml/pyproject".lsp.goto-declaration](#extensions-tombi-tomlpyproject-lsp-goto-declaration)
+      - [extensions."tombi-toml/pyproject".lsp.document-link](#extensions-tombi-tomlpyproject-lsp-document-link)
+      - [extensions."tombi-toml/pyproject".lsp.code-action](#extensions-tombi-tomlpyproject-lsp-code-action)
+  - [extensions."tombi-toml/tombi"](#extensions-tombi-tomltombi)
+    - [extensions."tombi-toml/tombi".lsp](#extensions-tombi-tomltombi-lsp)
+      - [extensions."tombi-toml/tombi".lsp.completion](#extensions-tombi-tomltombi-lsp-completion)
+      - [extensions."tombi-toml/tombi".lsp.goto-definition](#extensions-tombi-tomltombi-lsp-goto-definition)
+      - [extensions."tombi-toml/tombi".lsp.document-link](#extensions-tombi-tomltombi-lsp-document-link)
 
 ## Full Structure
 
@@ -158,11 +181,17 @@ toml-version = "v1.0.0"
 path = "https://example.com/schema.json"
 include = ["example.toml"]
 
+[schemas.lint.rules]
+deprecated = "error"
+
 # Sub Schema
 [[schemas]]
 root = "tool.taskipy"
 path = "schemas/partial-taskipy.schema.json"
 include = ["pyproject.toml"]
+
+[schemas.lint.rules]
+deprecated = "warn"
 
 # Override config
 [[overrides]]
@@ -198,6 +227,77 @@ enabled = true
 dotted-keys-out-of-order = "error"
 key-empty = "error"
 tables-out-of-order = "error"
+
+[extensions]
+"tombi-toml/cargo" = {
+  lsp = {
+    code-action = {
+      add-to-workspace-and-inherit-dependency.enabled = true,
+      convert-dependency-to-table-format.enabled = true,
+      inherit-dependency-from-workspace.enabled = true,
+      inherit-from-workspace.enabled = true,
+    },
+    completion = {
+      dependency-feature.enabled = true,
+      dependency-version.enabled = true,
+      path.enabled = true,
+    },
+    document-link = {
+      cargo-toml.enabled = true,
+      crates-io.enabled = true,
+      git.enabled = true,
+      path.enabled = true,
+    },
+    goto-declaration = {
+      dependency.enabled = true,
+      member.enabled = true,
+      path.enabled = true,
+    },
+    goto-definition = {
+      dependency.enabled = true,
+      member.enabled = true,
+      path.enabled = true,
+    },
+  }
+}
+"tombi-toml/pyproject" = {
+  lsp = {
+    code-action = {
+      add-to-workspace-and-use-workspace-dependency.enabled = true,
+      use-workspace-dependency.enabled = true,
+    },
+    completion = {
+      path.enabled = true,
+    },
+    document-link = {
+      pypi-org.enabled = true,
+      pyproject-toml.enabled = true,
+    },
+    goto-declaration = {
+      dependency.enabled = true,
+      member.enabled = true,
+      path.enabled = true,
+    },
+    goto-definition = {
+      dependency.enabled = true,
+      member.enabled = true,
+      path.enabled = true,
+    },
+  }
+}
+"tombi-toml/tombi" = {
+  lsp = {
+    completion = {
+      path.enabled = true,
+    },
+    document-link = {
+      path.enabled = true,
+    },
+    goto-definition = {
+      path.enabled = true,
+    },
+  }
+}
 ```
 
 ### toml-version
@@ -720,6 +820,26 @@ deprecated = "warn"
 - `include`: File match patterns to apply this schema (supports glob patterns)
 - `lint.rules.deprecated`(optional): Override the deprecated diagnostic level for this schema with `"off"`, `"warn"`, or `"error"`
 
+### schemas[*].lint
+
+Configure schema-specific lint settings.
+
+- Type: `Table`
+
+### schemas[*].lint.rules
+
+Configure schema-specific lint rules.
+
+- Type: `Table`
+
+### schemas[*].lint.rules.deprecated
+
+Override the deprecated diagnostic level for the schema.
+This applies when the matched JSON Schema marks a value as `deprecated: true`.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
+
 ### overrides
 
 Override configuration settings for specific file patterns. You can define multiple override rules, and matching settings will be applied to files.
@@ -789,3 +909,787 @@ Enable or disable linting feature.
 Override lint rules. Only the specified rules will be overridden, and the rest will use the base configuration.
 
 Available rules are the same as [lint.rules](#lint-rules).
+
+
+### extensions
+
+Configure experimental built-in extensions and their feature flags.
+
+If an extension or feature is omitted, it is enabled by default.
+
+```toml
+[extensions]
+"tombi-toml/cargo" = { lsp.completion.path.enabled = false }
+"tombi-toml/pyproject" = { lsp.document-link.pypi-org.enabled = false }
+"tombi-toml/tombi" = { lsp.document-link.path.enabled = false }
+```
+
+Available extension IDs:
+- `tombi-toml/cargo`: Cargo-specific completion, navigation, document links, and code actions for `Cargo.toml`
+- `tombi-toml/pyproject`: `pyproject.toml`-specific completion, navigation, document links, and code actions
+- `tombi-toml/tombi`: Tombi's own config-oriented path completion, navigation, and document links
+
+### extensions."tombi-toml/cargo"
+
+Configure the experimental Cargo extension for `Cargo.toml`.
+
+See [Cargo Extension](/docs/extensions/tombi-extension-cargo) for the supported Cargo-specific editor features.
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".enabled
+
+Enable or disable the entire Cargo extension.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp
+
+Configure Cargo extension language-server features such as completion, navigation, document links, and code actions.
+
+See [Cargo Extension](/docs/extensions/tombi-extension-cargo) for feature details.
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.enabled
+
+Enable or disable all Cargo extension language-server features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.completion
+
+Configure Cargo-specific completion features.
+
+See [Cargo Extension > Code Completion](/docs/extensions/tombi-extension-cargo#code-completion).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.completion.enabled
+
+Enable or disable all Cargo completion features provided by the extension.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.completion.dependency-version
+
+Configure registry version completion for Cargo dependencies.
+This powers the version suggestions shown while editing dependency requirements.
+
+See [Cargo Extension > Code Completion](/docs/extensions/tombi-extension-cargo#code-completion).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.completion.dependency-version.enabled
+
+Enable or disable version completion for Cargo dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.completion.dependency-feature
+
+Configure feature completion for Cargo dependencies.
+This powers feature-name suggestions for crate dependencies, including workspace-aware lookups.
+
+See [Cargo Extension > Code Completion](/docs/extensions/tombi-extension-cargo#code-completion).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.completion.dependency-feature.enabled
+
+Enable or disable feature completion for Cargo dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.completion.path
+
+Configure path completion for Cargo manifests.
+This covers member paths, dependency paths, target source paths, and file references such as `readme`.
+
+See [Cargo Extension > Code Completion](/docs/extensions/tombi-extension-cargo#code-completion).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.completion.path.enabled
+
+Enable or disable path completion for Cargo manifests.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.goto-definition
+
+Configure Cargo-specific go to definition features.
+
+See [Cargo Extension > Go to Definition](/docs/extensions/tombi-extension-cargo#go-to-definition).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.goto-definition.enabled
+
+Enable or disable all Cargo go to definition features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.goto-definition.dependency
+
+Configure go to definition for Cargo dependencies.
+This resolves dependency entries to workspace definitions or referenced crates when possible.
+
+See [Cargo Extension > Go to Definition](/docs/extensions/tombi-extension-cargo#go-to-definition).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.goto-definition.dependency.enabled
+
+Enable or disable go to definition for Cargo dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.goto-definition.member
+
+Configure go to definition for Cargo workspace members.
+This resolves workspace member references such as member manifests and managed crates.
+
+See [Cargo Extension > Go to Definition](/docs/extensions/tombi-extension-cargo#go-to-definition).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.goto-definition.member.enabled
+
+Enable or disable go to definition for Cargo workspace members.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.goto-definition.path
+
+Configure go to definition for Cargo path targets.
+This resolves local `path` references in Cargo manifests.
+
+See [Cargo Extension > Go to Definition](/docs/extensions/tombi-extension-cargo#go-to-definition).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.goto-definition.path.enabled
+
+Enable or disable go to definition for Cargo path targets.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.goto-declaration
+
+Configure Cargo-specific go to declaration features.
+
+See [Cargo Extension > Go to Declaration](/docs/extensions/tombi-extension-cargo#go-to-declaration).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.goto-declaration.enabled
+
+Enable or disable all Cargo go to declaration features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.goto-declaration.dependency
+
+Configure go to declaration for Cargo dependencies.
+This resolves dependency entries back to their declared workspace location when applicable.
+
+See [Cargo Extension > Go to Declaration](/docs/extensions/tombi-extension-cargo#go-to-declaration).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.goto-declaration.dependency.enabled
+
+Enable or disable go to declaration for Cargo dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.goto-declaration.member
+
+Configure go to declaration for Cargo workspace members.
+This resolves workspace member references back to the manifest that declares them.
+
+See [Cargo Extension > Go to Declaration](/docs/extensions/tombi-extension-cargo#go-to-declaration).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.goto-declaration.member.enabled
+
+Enable or disable go to declaration for Cargo workspace members.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.goto-declaration.path
+
+Configure go to declaration for Cargo path targets.
+This resolves declaration-like navigation for local `path` references in Cargo manifests.
+
+See [Cargo Extension > Go to Declaration](/docs/extensions/tombi-extension-cargo#go-to-declaration).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.goto-declaration.path.enabled
+
+Enable or disable go to declaration for Cargo path targets.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.document-link
+
+Configure Cargo-specific document links.
+
+See [Cargo Extension > Document Links](/docs/extensions/tombi-extension-cargo#document-links).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.document-link.enabled
+
+Enable or disable all Cargo document links.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.document-link.cargo-toml
+
+Configure document links to `Cargo.toml` files.
+These links jump to member manifests or workspace manifests referenced from the current file.
+
+See [Cargo Extension > Document Links](/docs/extensions/tombi-extension-cargo#document-links).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.document-link.cargo-toml.enabled
+
+Enable or disable document links to `Cargo.toml` files.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.document-link.git
+
+Configure document links to Git repositories referenced from Cargo manifests.
+These links open repository URLs referenced by Cargo dependency tables.
+
+See [Cargo Extension > Document Links](/docs/extensions/tombi-extension-cargo#document-links).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.document-link.git.enabled
+
+Enable or disable document links to Git repositories referenced from Cargo manifests.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.document-link.path
+
+Configure document links to local paths referenced from Cargo manifests.
+These links open local files or directories referenced by Cargo manifest fields.
+
+See [Cargo Extension > Document Links](/docs/extensions/tombi-extension-cargo#document-links).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.document-link.path.enabled
+
+Enable or disable document links to local paths referenced from Cargo manifests.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.document-link.crates-io
+
+Configure document links to crates.io pages referenced from Cargo manifests.
+These links open crates.io package pages for registry dependencies.
+
+See [Cargo Extension > Document Links](/docs/extensions/tombi-extension-cargo#document-links).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.document-link.crates-io.enabled
+
+Enable or disable document links to crates.io pages referenced from Cargo manifests.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.code-action
+
+Configure Cargo-specific code actions.
+
+See [Cargo Extension > Code Actions](/docs/extensions/tombi-extension-cargo#code-actions).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.code-action.enabled
+
+Enable or disable all Cargo code actions.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.code-action.inherit-from-workspace
+
+Configure the "Inherit from Workspace" code action for Cargo manifests.
+This refactor converts package fields to workspace inheritance.
+
+See [Cargo Extension > Code Actions](/docs/extensions/tombi-extension-cargo#code-actions).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.code-action.inherit-from-workspace.enabled
+
+Enable or disable the "Inherit from Workspace" code action for Cargo manifests.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.code-action.inherit-dependency-from-workspace
+
+Configure the "Inherit Dependency from Workspace" code action for Cargo manifests.
+This refactor rewrites dependencies to use workspace-managed versions.
+
+See [Cargo Extension > Code Actions](/docs/extensions/tombi-extension-cargo#code-actions).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.code-action.inherit-dependency-from-workspace.enabled
+
+Enable or disable the "Inherit Dependency from Workspace" code action for Cargo manifests.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.code-action.convert-dependency-to-table-format
+
+Configure the "Convert Dependency to Table Format" code action for Cargo manifests.
+This refactor expands a simple string dependency into table form for further editing.
+
+See [Cargo Extension > Code Actions](/docs/extensions/tombi-extension-cargo#code-actions).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.code-action.convert-dependency-to-table-format.enabled
+
+Enable or disable the "Convert Dependency to Table Format" code action for Cargo manifests.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.code-action.add-to-workspace-and-inherit-dependency
+
+Configure the "Add to Workspace and Inherit Dependency" code action for Cargo manifests.
+This refactor promotes a member dependency into `[workspace.dependencies]` and rewrites the member entry to inherit it.
+
+See [Cargo Extension > Code Actions](/docs/extensions/tombi-extension-cargo#code-actions).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.code-action.add-to-workspace-and-inherit-dependency.enabled
+
+Enable or disable the "Add to Workspace and Inherit Dependency" code action for Cargo manifests.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject"
+
+Configure the experimental `pyproject.toml` extension.
+
+See [Pyproject Extension](/docs/extensions/tombi-extension-pyproject) for the supported `pyproject.toml` editor features.
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".enabled
+
+Enable or disable the entire `pyproject.toml` extension.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp
+
+Configure `pyproject.toml` extension language-server features such as completion, navigation, document links, and code actions.
+
+See [Pyproject Extension](/docs/extensions/tombi-extension-pyproject) for feature details.
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.enabled
+
+Enable or disable all `pyproject.toml` extension language-server features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.completion
+
+Configure `pyproject.toml`-specific completion features.
+
+See [Pyproject Extension > Completion](/docs/extensions/tombi-extension-pyproject#completion).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.completion.enabled
+
+Enable or disable all `pyproject.toml` completion features provided by the extension.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.completion.path
+
+Configure path completion for `pyproject.toml`.
+This covers workspace member paths, source paths, and file references such as `readme` and `license.file`.
+
+See [Pyproject Extension > Completion](/docs/extensions/tombi-extension-pyproject#completion).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.completion.path.enabled
+
+Enable or disable path completion for `pyproject.toml`.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.goto-definition
+
+Configure `pyproject.toml`-specific go to definition features.
+
+See [Pyproject Extension > Go to Definition](/docs/extensions/tombi-extension-pyproject#go-to-definition).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.goto-definition.enabled
+
+Enable or disable all `pyproject.toml` go to definition features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.goto-definition.dependency
+
+Configure go to definition for `pyproject.toml` dependencies.
+This resolves dependency strings or source entries to workspace-managed packages when possible.
+
+See [Pyproject Extension > Go to Definition](/docs/extensions/tombi-extension-pyproject#go-to-definition).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.goto-definition.dependency.enabled
+
+Enable or disable go to definition for `pyproject.toml` dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.goto-definition.member
+
+Configure go to definition for `pyproject.toml` workspace members.
+This resolves uv workspace member references to the corresponding member project.
+
+See [Pyproject Extension > Go to Definition](/docs/extensions/tombi-extension-pyproject#go-to-definition).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.goto-definition.member.enabled
+
+Enable or disable go to definition for `pyproject.toml` workspace members.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.goto-definition.path
+
+Configure go to definition for `pyproject.toml` path targets.
+This resolves local `path` references in `tool.uv.sources` and related fields.
+
+See [Pyproject Extension > Go to Definition](/docs/extensions/tombi-extension-pyproject#go-to-definition).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.goto-definition.path.enabled
+
+Enable or disable go to definition for `pyproject.toml` path targets.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.goto-declaration
+
+Configure `pyproject.toml`-specific go to declaration features.
+
+See [Pyproject Extension > Go to Declaration](/docs/extensions/tombi-extension-pyproject#go-to-declaration).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.goto-declaration.enabled
+
+Enable or disable all `pyproject.toml` go to declaration features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.goto-declaration.dependency
+
+Configure go to declaration for `pyproject.toml` dependencies.
+This resolves dependency references back to their workspace declaration.
+
+See [Pyproject Extension > Go to Declaration](/docs/extensions/tombi-extension-pyproject#go-to-declaration).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.goto-declaration.dependency.enabled
+
+Enable or disable go to declaration for `pyproject.toml` dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.goto-declaration.member
+
+Configure go to declaration for `pyproject.toml` workspace members.
+This resolves uv workspace member references back to the workspace manifest that declares them.
+
+See [Pyproject Extension > Go to Declaration](/docs/extensions/tombi-extension-pyproject#go-to-declaration).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.goto-declaration.member.enabled
+
+Enable or disable go to declaration for `pyproject.toml` workspace members.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.goto-declaration.path
+
+Configure go to declaration for `pyproject.toml` path targets.
+This resolves declaration-like navigation for local path references in `pyproject.toml`.
+
+See [Pyproject Extension > Go to Declaration](/docs/extensions/tombi-extension-pyproject#go-to-declaration).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.goto-declaration.path.enabled
+
+Enable or disable go to declaration for `pyproject.toml` path targets.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.document-link
+
+Configure `pyproject.toml`-specific document links.
+
+See [Pyproject Extension > Document Links](/docs/extensions/tombi-extension-pyproject#document-links).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.document-link.enabled
+
+Enable or disable all `pyproject.toml` document links.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.document-link.pyproject-toml
+
+Configure document links to `pyproject.toml` files.
+These links open member manifests and workspace manifests discovered from uv metadata.
+
+See [Pyproject Extension > Document Links](/docs/extensions/tombi-extension-pyproject#document-links).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.document-link.pyproject-toml.enabled
+
+Enable or disable document links to `pyproject.toml` files.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.document-link.pypi-org
+
+Configure document links to PyPI pages referenced from `pyproject.toml`.
+These links open PyPI package pages for dependency strings when no local workspace target applies.
+
+See [Pyproject Extension > Document Links](/docs/extensions/tombi-extension-pyproject#document-links).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.document-link.pypi-org.enabled
+
+Enable or disable document links to PyPI pages referenced from `pyproject.toml`.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.code-action
+
+Configure `pyproject.toml`-specific code actions.
+
+See [Pyproject Extension > Code Actions](/docs/extensions/tombi-extension-pyproject#code-actions).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.code-action.enabled
+
+Enable or disable all `pyproject.toml` code actions.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.code-action.use-workspace-dependency
+
+Configure the "Use Workspace Dependency" code action for `pyproject.toml`.
+This refactor rewrites a member dependency so it follows the workspace-managed dependency definition.
+
+See [Pyproject Extension > Code Actions](/docs/extensions/tombi-extension-pyproject#code-actions).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.code-action.use-workspace-dependency.enabled
+
+Enable or disable the "Use Workspace Dependency" code action for `pyproject.toml`.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.code-action.add-to-workspace-and-use-workspace-dependency
+
+Configure the "Add to Workspace and Use Workspace Dependency" code action for `pyproject.toml`.
+This refactor adds the dependency to the workspace and rewrites the member entry to use the shared definition.
+
+See [Pyproject Extension > Code Actions](/docs/extensions/tombi-extension-pyproject#code-actions).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.code-action.add-to-workspace-and-use-workspace-dependency.enabled
+
+Enable or disable the "Add to Workspace and Use Workspace Dependency" code action for `pyproject.toml`.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/tombi"
+
+Configure the experimental Tombi configuration extension used while editing `tombi.toml`.
+
+- Type: `Table`
+
+### extensions."tombi-toml/tombi".enabled
+
+Enable or disable the entire Tombi configuration extension.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/tombi".lsp
+
+Configure Tombi configuration language-server features such as path completion, path navigation, and path document links.
+
+- Type: `Table`
+
+### extensions."tombi-toml/tombi".lsp.enabled
+
+Enable or disable all Tombi configuration language-server features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/tombi".lsp.completion
+
+Configure Tombi configuration completion features.
+
+- Type: `Table`
+
+### extensions."tombi-toml/tombi".lsp.completion.enabled
+
+Enable or disable all Tombi configuration completion features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/tombi".lsp.completion.path
+
+Configure path completion for Tombi configuration files.
+This covers local file and directory references used in Tombi configuration.
+
+- Type: `Table`
+
+### extensions."tombi-toml/tombi".lsp.completion.path.enabled
+
+Enable or disable path completion for Tombi configuration files.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/tombi".lsp.goto-definition
+
+Configure Tombi configuration go to definition features.
+
+- Type: `Table`
+
+### extensions."tombi-toml/tombi".lsp.goto-definition.enabled
+
+Enable or disable all Tombi configuration go to definition features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/tombi".lsp.goto-definition.path
+
+Configure go to definition for paths referenced from Tombi configuration files.
+This resolves local paths referenced from `tombi.toml`.
+
+- Type: `Table`
+
+### extensions."tombi-toml/tombi".lsp.goto-definition.path.enabled
+
+Enable or disable go to definition for paths referenced from Tombi configuration files.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/tombi".lsp.document-link
+
+Configure Tombi configuration document links.
+
+- Type: `Table`
+
+### extensions."tombi-toml/tombi".lsp.document-link.enabled
+
+Enable or disable all Tombi configuration document links.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/tombi".lsp.document-link.path
+
+Configure document links to paths referenced from Tombi configuration files.
+This opens local paths referenced from `tombi.toml`.
+
+- Type: `Table`
+
+### extensions."tombi-toml/tombi".lsp.document-link.path.enabled
+
+Enable or disable document links to paths referenced from Tombi configuration files.
+
+- Type: `Boolean`
+- Default: `true`
