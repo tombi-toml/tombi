@@ -39,7 +39,7 @@ pub async fn handle_inlay_hint(
         )
     };
 
-    if config.cargo_extension_enabled() {
+    if config.cargo_inlay_hint_enabled() {
         if let Some(hints) = tombi_extension_cargo::inlay_hint(
             &text_document_uri,
             &document_tree,
@@ -55,7 +55,7 @@ pub async fn handle_inlay_hint(
         }
     }
 
-    if config.pyproject_extension_enabled() {
+    if config.pyproject_inlay_hint_enabled() {
         if let Some(hints) = tombi_extension_pyproject::inlay_hint(
             &text_document_uri,
             &document_tree,

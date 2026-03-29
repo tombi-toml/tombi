@@ -97,6 +97,11 @@ impl Config {
             .and_then(Extensions::cargo_features)
     }
 
+    pub fn cargo_inlay_hint_enabled(&self) -> bool {
+        self.cargo_extension_features()
+            .map_or(true, CargoExtensionFeatures::inlay_hint_enabled)
+    }
+
     pub fn pyproject_extension_enabled(&self) -> bool {
         self.extensions
             .as_ref()
@@ -107,6 +112,11 @@ impl Config {
         self.extensions
             .as_ref()
             .and_then(Extensions::pyproject_features)
+    }
+
+    pub fn pyproject_inlay_hint_enabled(&self) -> bool {
+        self.pyproject_extension_features()
+            .map_or(true, PyprojectExtensionFeatures::inlay_hint_enabled)
     }
 
     pub fn tombi_extension_enabled(&self) -> bool {

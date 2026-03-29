@@ -39,8 +39,10 @@ pub async fn inlay_hint(
     document_tree: &tombi_document_tree::DocumentTree,
     visible_range: tombi_text::Range,
     toml_version: TomlVersion,
-    _features: Option<&tombi_config::PyprojectExtensionFeatures>,
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
 ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
+    let features = features.cloned();
+
     let text_document_uri = text_document_uri.clone();
     let document_tree = document_tree.clone();
 
@@ -50,6 +52,7 @@ pub async fn inlay_hint(
             &document_tree,
             visible_range,
             toml_version,
+            features.as_ref(),
         )
     })
     .await
@@ -61,8 +64,15 @@ fn inlay_hint_impl(
     document_tree: &tombi_document_tree::DocumentTree,
     visible_range: tombi_text::Range,
     toml_version: TomlVersion,
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
 ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("pyproject.toml") {
+        return Ok(None);
+    }
+
+    if !pyproject_inlay_hint_root_enabled(features)
+        || !pyproject_inlay_hint_dependency_version_enabled(features)
+    {
         return Ok(None);
     }
 
@@ -117,6 +127,24 @@ fn inlay_hint_impl(
     } else {
         Ok(Some(hints))
     }
+}
+
+fn pyproject_inlay_hint_root_enabled(
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::PyprojectExtensionFeatures::inlay_hint_enabled,
+    )
+}
+
+fn pyproject_inlay_hint_dependency_version_enabled(
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::PyprojectExtensionFeatures::dependency_version_inlay_hint_enabled,
+    )
 }
 
 struct CurrentPackage {
