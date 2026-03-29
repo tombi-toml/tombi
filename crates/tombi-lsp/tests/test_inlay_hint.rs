@@ -219,9 +219,10 @@ macro_rules! test_inlay_hint {
             @run
             $name,
             create_temp_fixture($path, $source, {
+                let context = $context;
                 let mut files = Vec::new();
-                if !$context.is_empty() {
-                    files.push(("Cargo.toml", $context));
+                if !context.is_empty() {
+                    files.push(("Cargo.toml", context));
                 }
                 $(files.push(("Cargo.lock", $cargo_lock));)?
                 $(files.push(("uv.lock", $uv_lock));)?
