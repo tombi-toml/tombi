@@ -337,7 +337,9 @@ fn collect_dependency_inlay_hints(
             continue;
         };
         let resolved_version = if dependency_keys == ["workspace", "dependencies"] {
-            let Some(resolved_version) = workspace_resolved_versions.get(&version_hint.dependency_name) else {
+            let Some(resolved_version) =
+                workspace_resolved_versions.get(&version_hint.dependency_name)
+            else {
                 continue;
             };
             resolved_version.clone()
@@ -415,9 +417,10 @@ fn collect_workspace_package_inlay_hints(
             return;
         };
 
-        let Some((_, workspace_value)) =
-            dig_keys(workspace_document_tree, &["workspace", "package", package_item])
-        else {
+        let Some((_, workspace_value)) = dig_keys(
+            workspace_document_tree,
+            &["workspace", "package", package_item],
+        ) else {
             continue;
         };
 
@@ -519,7 +522,11 @@ fn dependency_default_features_hint(
         toml_version,
     )?;
 
-    build_default_features_hint(features.range().end, default_features, &collect_feature_names(features))
+    build_default_features_hint(
+        features.range().end,
+        default_features,
+        &collect_feature_names(features),
+    )
 }
 
 fn dependency_default_features(
@@ -534,11 +541,8 @@ fn dependency_default_features(
     };
 
     if let Some(Value::String(path)) = table.get("path") {
-        let (_, dependency_document_tree) = load_local_dependency_document_tree(
-            cargo_toml_path,
-            path.value(),
-            toml_version,
-        )?;
+        let (_, dependency_document_tree) =
+            load_local_dependency_document_tree(cargo_toml_path, path.value(), toml_version)?;
         return package_default_features(&dependency_document_tree);
     }
 
@@ -554,8 +558,10 @@ fn dependency_default_features(
         get_workspace_path(document_tree),
         toml_version,
     )?;
-    let (_, workspace_dependency_value) =
-        dig_keys(&workspace_document_tree, &["workspace", "dependencies", dependency_key])?;
+    let (_, workspace_dependency_value) = dig_keys(
+        &workspace_document_tree,
+        &["workspace", "dependencies", dependency_key],
+    )?;
     let Value::Table(workspace_dependency_table) = workspace_dependency_value else {
         return None;
     };
@@ -717,18 +723,19 @@ async fn registry_dependency_default_features_hint(
             dependency_package_name(dependency_key, dependency_value).to_string(),
             version.value().to_string(),
         ))
-    } else if matches!(table.get("workspace"), Some(Value::Boolean(workspace)) if workspace.value()) {
+    } else if matches!(table.get("workspace"), Some(Value::Boolean(workspace)) if workspace.value())
+    {
         let Some((_, _, workspace_document_tree)) = find_workspace_cargo_toml(
             cargo_toml_path,
             get_workspace_path(document_tree),
             toml_version,
-        )
-        else {
+        ) else {
             return Ok(None);
         };
-        let Some((_, workspace_dependency_value)) =
-            dig_keys(&workspace_document_tree, &["workspace", "dependencies", dependency_key])
-        else {
+        let Some((_, workspace_dependency_value)) = dig_keys(
+            &workspace_document_tree,
+            &["workspace", "dependencies", dependency_key],
+        ) else {
             return Ok(None);
         };
         let Value::Table(workspace_dependency_table) = workspace_dependency_value else {
@@ -813,10 +820,12 @@ fn collect_feature_names(features: &tombi_document_tree::Array) -> BTreeSet<Stri
 }
 
 fn dependency_table_default_features_disabled(table: &tombi_document_tree::Table) -> bool {
-    table.get("default-features").is_some_and(|value| match value {
-        Value::Boolean(boolean) => !boolean.value(),
-        _ => false,
-    })
+    table
+        .get("default-features")
+        .is_some_and(|value| match value {
+            Value::Boolean(boolean) => !boolean.value(),
+            _ => false,
+        })
 }
 
 fn build_default_features_hint(

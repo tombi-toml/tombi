@@ -151,10 +151,9 @@ impl CargoExtensionFeatures {
 
     pub fn default_features_inlay_hint_enabled(&self) -> bool {
         self.enabled()
-            && self.lsp().map_or(
-                true,
-                CargoLspFeatures::default_features_inlay_hint_enabled,
-            )
+            && self
+                .lsp()
+                .map_or(true, CargoLspFeatures::default_features_inlay_hint_enabled)
     }
 
     pub fn workspace_inlay_hint_enabled(&self) -> bool {
