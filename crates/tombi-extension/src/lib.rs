@@ -2,7 +2,8 @@ mod completion;
 mod definition;
 mod document_link;
 mod hover;
-mod remote_cache;
+#[doc(hidden)]
+pub mod remote_cache;
 mod text_edit;
 
 pub use completion::*;

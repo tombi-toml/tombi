@@ -8,6 +8,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+futures.workspace = true
 glob.workspace = true
 itertools.workspace = true
 log.workspace = true
@@ -25,4 +26,9 @@ tombi-schema-store.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true
 tombi-version-sort.workspace = true
+tokio = { workspace = true, features = ["rt"] }
 tower-lsp.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
