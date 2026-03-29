@@ -4,6 +4,13 @@ use pep508_rs::{Requirement, VerbatimUrl, VersionOrUrl};
 use tombi_document_tree::dig_keys;
 use tombi_schema_store::{Accessor, matches_accessors};
 
+pub(crate) const UV_DEPENDENCY_KEYS: &[&str] = &[
+    "dev-dependencies",
+    "constraint-dependencies",
+    "override-dependencies",
+    "build-constraint-dependencies",
+];
+
 #[derive(Debug, Clone)]
 pub(crate) struct DependencyRequirement<'a> {
     pub(crate) dependency: &'a tombi_document_tree::String,
@@ -56,26 +63,13 @@ pub(crate) fn collect_all_dependency_requirements_from_document_tree<'a>(
     let mut dependency_requirements =
         collect_dependency_requirements_from_document_tree(document_tree);
 
-    collect_dependency_requirements_from_array_path(
-        document_tree,
-        &["tool", "uv", "dev-dependencies"],
-        &mut dependency_requirements,
-    );
-    collect_dependency_requirements_from_array_path(
-        document_tree,
-        &["tool", "uv", "constraint-dependencies"],
-        &mut dependency_requirements,
-    );
-    collect_dependency_requirements_from_array_path(
-        document_tree,
-        &["tool", "uv", "override-dependencies"],
-        &mut dependency_requirements,
-    );
-    collect_dependency_requirements_from_array_path(
-        document_tree,
-        &["tool", "uv", "build-constraint-dependencies"],
-        &mut dependency_requirements,
-    );
+    for key in UV_DEPENDENCY_KEYS {
+        collect_dependency_requirements_from_array_path(
+            document_tree,
+            &["tool", "uv", key],
+            &mut dependency_requirements,
+        );
+    }
 
     dependency_requirements
 }
@@ -87,20 +81,25 @@ pub(crate) fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Acces
         Some(&accessors[..4])
     } else if matches_accessors!(accessors, ["dependency-groups", _, _]) {
         Some(&accessors[..3])
-    } else if matches_accessors!(accessors, ["tool", "uv", "dev-dependencies", _]) {
-        Some(&accessors[..4])
-    } else if matches_accessors!(accessors, ["tool", "uv", "constraint-dependencies", _]) {
-        Some(&accessors[..4])
-    } else if matches_accessors!(accessors, ["tool", "uv", "override-dependencies", _]) {
-        Some(&accessors[..4])
-    } else if matches_accessors!(
-        accessors,
-        ["tool", "uv", "build-constraint-dependencies", _]
-    ) {
+    } else if is_uv_dependency_accessor(accessors) {
         Some(&accessors[..4])
     } else {
         None
     }
+}
+
+fn is_uv_dependency_accessor(accessors: &[Accessor]) -> bool {
+    if accessors.len() != 4 {
+        return false;
+    }
+    matches!(
+        (&accessors[0], &accessors[1], &accessors[3]),
+        (Accessor::Key(a), Accessor::Key(b), Accessor::Index(_))
+        if a == "tool" && b == "uv"
+    ) && matches!(
+        &accessors[2],
+        Accessor::Key(key) if UV_DEPENDENCY_KEYS.contains(&key.as_str())
+    )
 }
 
 fn collect_standard_dependency_requirements<'a>(
