@@ -36,3 +36,89 @@ include = ["type-test.toml"]
 [[schemas]]
 path = "tombi://www.schemastore.org/tombi.json"
 include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+
+[extensions]
+"tombi-toml/cargo" = {
+  lsp = {
+    code-action = {
+      add-to-workspace-and-inherit-dependency.enabled = true,
+      convert-dependency-to-table-format.enabled = true,
+      inherit-dependency-from-workspace.enabled = true,
+      inherit-from-workspace.enabled = true,
+    },
+    completion = {
+      dependency-feature.enabled = true,
+      dependency-version.enabled = true,
+      path.enabled = true,
+    },
+    document-link = {
+      cargo-toml.enabled = true,
+      crates-io.enabled = true,
+      git.enabled = true,
+      path.enabled = true,
+    },
+    goto-declaration = {
+      dependency.enabled = true,
+      member.enabled = true,
+      path.enabled = true,
+    },
+    goto-definition = {
+      dependency.enabled = true,
+      member.enabled = true,
+      path.enabled = true,
+    },
+    hover = {
+      dependency-detail.enabled = true,
+    },
+    inlay-hint = {
+      default-features.enabled = true,
+      dependency-version.enabled = true,
+      workspace-value.enabled = true,
+    },
+  }
+}
+"tombi-toml/pyproject" = {
+  lsp = {
+    code-action = {
+      add-to-workspace-and-use-workspace-dependency.enabled = true,
+      use-workspace-dependency.enabled = true,
+    },
+    completion = {
+      path.enabled = true,
+    },
+    document-link = {
+      pypi-org.enabled = true,
+      pyproject-toml.enabled = true,
+    },
+    goto-declaration = {
+      dependency.enabled = true,
+      member.enabled = true,
+      path.enabled = true,
+    },
+    goto-definition = {
+      dependency.enabled = true,
+      member.enabled = true,
+      path.enabled = true,
+    },
+    hover = {
+      dependency-detail.enabled = true,
+    },
+    inlay-hint = {
+      dependency-version.enabled = true,
+    },
+  }
+}
+"tombi-toml/tombi" = {
+  lsp = {
+    completion = {
+      path.enabled = true,
+    },
+    document-link = {
+      path.enabled = true,
+    },
+    goto-definition = {
+      path.enabled = true,
+    },
+    hover.enabled = true,
+  }
+}
