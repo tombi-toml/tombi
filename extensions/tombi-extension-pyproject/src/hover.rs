@@ -8,8 +8,9 @@ use tombi_extension::{HoverMetadata, fetch_cached_remote_json};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
-    find_member_project_toml, find_workspace_pyproject_toml, get_project_name,
-    load_pyproject_toml_document_tree, parse_requirement, resolve_member_pyproject_toml_path,
+    find_member_project_toml, find_workspace_pyproject_toml, get_dependency_accessors,
+    get_project_name, load_pyproject_toml_document_tree, parse_requirement,
+    resolve_member_pyproject_toml_path,
 };
 
 #[derive(Debug, Deserialize)]
@@ -84,18 +85,6 @@ pub async fn hover(
     }
 
     fetch_pypi_metadata(package_name, offline, cache_options).await
-}
-
-fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
-    if matches_accessors!(accessors, ["project", "dependencies", _]) {
-        Some(&accessors[..3])
-    } else if matches_accessors!(accessors, ["project", "optional-dependencies", _, _]) {
-        Some(&accessors[..4])
-    } else if matches_accessors!(accessors, ["dependency-groups", _, _]) {
-        Some(&accessors[..3])
-    } else {
-        None
-    }
 }
 
 fn resolve_pyproject_dependency_metadata_from_sources(

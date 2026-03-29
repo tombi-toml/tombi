@@ -15,6 +15,8 @@ use tombi_document_tree::{TryIntoDocumentTree, Value, dig_keys};
 use tombi_extension::{InlayHint, file_cache_version, get_or_load_json};
 use tombi_hashmap::{HashMap, HashSet};
 
+use crate::{UV_DEPENDENCY_KEYS, parse_dependency_requirement};
+
 const RESOLVED_VERSION_TOOLTIP: &str = "Resolved version in uv.lock";
 const PYPROJECT_EXTENSION_ID: &str = "tombi-toml/pyproject";
 const INLAY_HINT_LOCKFILE_KEY: &str = "inlay_hint.lockfile";
@@ -65,11 +67,20 @@ struct UvLockInlayCacheData {
         ProjectName,
         tombi_hashmap::HashMap<ProjectVersion, ProjectResolvedDependencies>,
     >,
+    unique_versions:
+        tombi_hashmap::HashMap<DependencyProjectName, ResolvedProjectDependencyVersion>,
+}
+
+#[derive(Clone, Copy)]
+enum DependencyHintResolution {
+    CurrentPackage,
+    UniquePackageVersion,
 }
 
 struct PyprojectDependencyHint<'a> {
     dependency: &'a tombi_document_tree::String,
     requirement: pep508_rs::Requirement<VerbatimUrl>,
+    resolution: DependencyHintResolution,
 }
 
 pub async fn inlay_hint(
@@ -93,45 +104,22 @@ pub async fn inlay_hint(
         return Ok(None);
     };
 
-    let features = features.cloned();
-
-    let text_document_uri = text_document_uri.clone();
     let document_tree = document_tree.clone();
     let uv_lock_cache = load_uv_lock_cache(&pyproject_toml_path, toml_version).await;
 
     tokio::task::spawn_blocking(move || {
-        inlay_hint_impl(
-            &text_document_uri,
-            &document_tree,
-            visible_range,
-            uv_lock_cache,
-            features.as_ref(),
-        )
+        inlay_hint_impl(&document_tree, visible_range, uv_lock_cache)
     })
     .await
     .map_err(|_| tower_lsp::jsonrpc::Error::new(tower_lsp::jsonrpc::ErrorCode::InternalError))?
 }
 
 fn inlay_hint_impl(
-    text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     visible_range: tombi_text::Range,
     uv_lock_cache: Option<UvLockInlayCacheData>,
-    features: Option<&tombi_config::PyprojectExtensionFeatures>,
 ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
-    if !text_document_uri.path().ends_with("pyproject.toml") {
-        return Ok(None);
-    }
-
-    if !pyproject_inlay_hint_root_enabled(features)
-        || !pyproject_inlay_hint_dependency_version_enabled(features)
-    {
-        return Ok(None);
-    }
-
-    let Some(current_package) = current_package(document_tree) else {
-        return Ok(None);
-    };
+    let current_package = current_package(document_tree);
 
     let visible_dependency_hints = collect_dependency_hints(document_tree)
         .into_iter()
@@ -149,11 +137,19 @@ fn inlay_hint_impl(
     let hints = visible_dependency_hints
         .into_iter()
         .filter_map(|hint| {
-            let resolved_version = uv_lock_cache.resolved_dependency_version(
-                &current_package.name,
-                &current_package.version,
-                hint.requirement.name.as_ref(),
-            )?;
+            let resolved_version = match hint.resolution {
+                DependencyHintResolution::CurrentPackage => {
+                    let pkg = current_package.as_ref()?;
+                    uv_lock_cache.resolved_dependency_version(
+                        &pkg.name,
+                        &pkg.version,
+                        hint.requirement.name.as_ref(),
+                    )
+                }
+                DependencyHintResolution::UniquePackageVersion => {
+                    uv_lock_cache.unique_dependency_version(hint.requirement.name.as_ref())
+                }
+            }?;
 
             let current_version = exact_pinned_version(&hint.requirement);
             let label = version_hint_label(current_version.as_deref(), &resolved_version)?;
@@ -218,28 +214,40 @@ fn collect_dependency_hints<'a>(
 ) -> Vec<PyprojectDependencyHint<'a>> {
     let mut hints = Vec::new();
 
-    if let Some((_, Value::Array(dependencies))) =
-        dig_keys(document_tree, &["project", "dependencies"])
-    {
-        hints.extend(dependencies.iter().filter_map(pyproject_dependency_hint));
-    }
+    collect_dependency_hints_from_array_path(
+        document_tree,
+        &["project", "dependencies"],
+        DependencyHintResolution::CurrentPackage,
+        &mut hints,
+    );
 
-    if let Some((_, Value::Table(optional_dependencies))) =
-        dig_keys(document_tree, &["project", "optional-dependencies"])
-    {
-        for value in optional_dependencies.values() {
-            if let Value::Array(dependencies) = value {
-                hints.extend(dependencies.iter().filter_map(pyproject_dependency_hint));
-            }
-        }
-    }
+    collect_dependency_hints_from_table_arrays_path(
+        document_tree,
+        &["project", "optional-dependencies"],
+        DependencyHintResolution::CurrentPackage,
+        &mut hints,
+    );
 
-    if let Some((_, Value::Table(dependency_groups))) =
-        dig_keys(document_tree, &["dependency-groups"])
-    {
-        for value in dependency_groups.values() {
-            if let Value::Array(dependencies) = value {
-                hints.extend(dependencies.iter().filter_map(pyproject_dependency_hint));
+    collect_dependency_hints_from_table_arrays_path(
+        document_tree,
+        &["dependency-groups"],
+        DependencyHintResolution::CurrentPackage,
+        &mut hints,
+    );
+
+    if let Some((_, Value::Table(uv_table))) = dig_keys(document_tree, &["tool", "uv"]) {
+        for key in UV_DEPENDENCY_KEYS {
+            let resolution = if *key == "dev-dependencies" {
+                DependencyHintResolution::CurrentPackage
+            } else {
+                DependencyHintResolution::UniquePackageVersion
+            };
+            if let Some(Value::Array(dependencies)) = uv_table.get(*key) {
+                hints.extend(
+                    dependencies
+                        .iter()
+                        .filter_map(|value| pyproject_dependency_hint(value, resolution)),
+                );
             }
         }
     }
@@ -247,17 +255,53 @@ fn collect_dependency_hints<'a>(
     hints
 }
 
+fn collect_dependency_hints_from_array_path<'a>(
+    document_tree: &'a tombi_document_tree::DocumentTree,
+    path: &[&str],
+    resolution: DependencyHintResolution,
+    hints: &mut Vec<PyprojectDependencyHint<'a>>,
+) {
+    if let Some((_, Value::Array(dependencies))) = dig_keys(document_tree, path) {
+        hints.extend(
+            dependencies
+                .iter()
+                .filter_map(|value| pyproject_dependency_hint(value, resolution)),
+        );
+    }
+}
+
+fn collect_dependency_hints_from_table_arrays_path<'a>(
+    document_tree: &'a tombi_document_tree::DocumentTree,
+    path: &[&str],
+    resolution: DependencyHintResolution,
+    hints: &mut Vec<PyprojectDependencyHint<'a>>,
+) {
+    if let Some((_, Value::Table(groups))) = dig_keys(document_tree, path) {
+        for value in groups.values() {
+            if let Value::Array(dependencies) = value {
+                hints.extend(
+                    dependencies
+                        .iter()
+                        .filter_map(|value| pyproject_dependency_hint(value, resolution)),
+                );
+            }
+        }
+    }
+}
+
 fn pyproject_dependency_hint(
     value: &tombi_document_tree::Value,
+    resolution: DependencyHintResolution,
 ) -> Option<PyprojectDependencyHint<'_>> {
     let Value::String(dependency) = value else {
         return None;
     };
+    let requirement = parse_dependency_requirement(dependency)?;
 
-    let requirement = pep508_rs::Requirement::<VerbatimUrl>::from_str(dependency.value()).ok()?;
     Some(PyprojectDependencyHint {
-        dependency,
-        requirement,
+        dependency: requirement.dependency,
+        requirement: requirement.requirement,
+        resolution,
     })
 }
 
@@ -377,7 +421,20 @@ impl UvLock {
                 );
         }
 
-        UvLockInlayCacheData { projects }
+        let unique_versions = unique_package_versions
+            .iter()
+            .filter_map(|(package_name, version)| {
+                Some((
+                    DependencyProjectName::new(package_name),
+                    ResolvedProjectDependencyVersion::new(version.clone()?),
+                ))
+            })
+            .collect();
+
+        UvLockInlayCacheData {
+            projects,
+            unique_versions,
+        }
     }
 
     fn unique_package_versions(&self) -> HashMap<String, Option<String>> {
@@ -584,6 +641,12 @@ impl UvLockInlayCacheData {
             .and_then(|dependencies| dependencies.by_dependency.get(dependency_name))
             .map(|resolved| resolved.version.clone())
     }
+
+    fn unique_dependency_version(&self, dependency_name: &str) -> Option<String> {
+        self.unique_versions
+            .get(dependency_name)
+            .map(|resolved| resolved.version.clone())
+    }
 }
 
 #[cfg(test)]
@@ -614,6 +677,10 @@ mod tests {
 
         assert_eq!(
             cache_data.resolved_dependency_version("demo", "0.1.0", "pytest"),
+            Some("8.3.3".to_string())
+        );
+        assert_eq!(
+            cache_data.unique_dependency_version("pytest"),
             Some("8.3.3".to_string())
         );
     }

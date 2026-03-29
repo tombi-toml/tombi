@@ -5,7 +5,9 @@ use tombi_config::{PyprojectExtensionFeatures, TomlVersion};
 use tombi_document_tree::{DocumentTree, Table, Value, dig_keys};
 use tombi_extension::remote_cache::warm_remote_json_cache;
 
-use crate::{collect_dependency_requirements_from_document_tree, find_workspace_pyproject_toml};
+use crate::{
+    collect_all_dependency_requirements_from_document_tree, find_workspace_pyproject_toml,
+};
 
 const PREFETCH_CONCURRENCY: usize = 10;
 
@@ -74,7 +76,8 @@ fn collect_prefetch_urls(
         workspace_pyproject_sources(document_tree, pyproject_toml_path, toml_version);
     let mut package_names = BTreeSet::new();
 
-    for dependency_requirement in collect_dependency_requirements_from_document_tree(document_tree)
+    for dependency_requirement in
+        collect_all_dependency_requirements_from_document_tree(document_tree)
     {
         if matches!(
             dependency_requirement.version_or_url(),
