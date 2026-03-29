@@ -1,15 +1,23 @@
-use std::{collections::BTreeSet, path::Path, str::FromStr};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+    time::UNIX_EPOCH,
+};
 
 use pep508_rs::{
     VerbatimUrl, VersionOrUrl,
     pep440_rs::{Operator, Version},
 };
+use serde::{Deserialize, Serialize};
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{TryIntoDocumentTree, Value, dig_keys};
-use tombi_extension::InlayHint;
+use tombi_extension::{InlayHint, get_or_load_json};
+use tombi_hashmap::{HashMap, HashSet};
 
 const RESOLVED_VERSION_TOOLTIP: &str = "Resolved version in uv.lock";
+const PYPROJECT_EXTENSION_ID: &str = "tombi-toml/pyproject";
+const INLAY_HINT_LOCKFILE_KEY: &str = "inlay_hint.lockfile";
 
 #[derive(Debug)]
 struct UvLock {
@@ -29,37 +37,43 @@ struct UvLockDependency {
     version: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+struct ProjectName(String);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+struct ProjectVersion(String);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+struct DependencyProjectName(String);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+struct ProjectReleaseKey(String);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ResolvedProjectDependencyVersion {
+    version: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ProjectResolvedDependencies {
+    by_dependency: tombi_hashmap::HashMap<DependencyProjectName, ResolvedProjectDependencyVersion>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct UvLockInlayCacheData {
+    projects: tombi_hashmap::HashMap<ProjectReleaseKey, ProjectResolvedDependencies>,
+}
+
 struct PyprojectDependencyHint<'a> {
     dependency: &'a tombi_document_tree::String,
     requirement: pep508_rs::Requirement<VerbatimUrl>,
 }
 
 pub async fn inlay_hint(
-    text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
-    visible_range: tombi_text::Range,
-    toml_version: TomlVersion,
-    features: Option<&tombi_config::PyprojectExtensionFeatures>,
-) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
-    let features = features.cloned();
-
-    let text_document_uri = text_document_uri.clone();
-    let document_tree = document_tree.clone();
-
-    tokio::task::spawn_blocking(move || {
-        inlay_hint_impl(
-            &text_document_uri,
-            &document_tree,
-            visible_range,
-            toml_version,
-            features.as_ref(),
-        )
-    })
-    .await
-    .map_err(|_| tower_lsp::jsonrpc::Error::new(tower_lsp::jsonrpc::ErrorCode::InternalError))?
-}
-
-fn inlay_hint_impl(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     visible_range: tombi_text::Range,
@@ -80,6 +94,44 @@ fn inlay_hint_impl(
         return Ok(None);
     };
 
+    let features = features.cloned();
+
+    let text_document_uri = text_document_uri.clone();
+    let document_tree = document_tree.clone();
+    let uv_lock_cache = load_uv_lock_cache(&pyproject_toml_path, toml_version).await;
+
+    tokio::task::spawn_blocking(move || {
+        inlay_hint_impl(
+            &text_document_uri,
+            &document_tree,
+            visible_range,
+            uv_lock_cache,
+            toml_version,
+            features.as_ref(),
+        )
+    })
+    .await
+    .map_err(|_| tower_lsp::jsonrpc::Error::new(tower_lsp::jsonrpc::ErrorCode::InternalError))?
+}
+
+fn inlay_hint_impl(
+    text_document_uri: &tombi_uri::Uri,
+    document_tree: &tombi_document_tree::DocumentTree,
+    visible_range: tombi_text::Range,
+    uv_lock_cache: Option<UvLockInlayCacheData>,
+    _toml_version: TomlVersion,
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
+) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
+    if !text_document_uri.path().ends_with("pyproject.toml") {
+        return Ok(None);
+    }
+
+    if !pyproject_inlay_hint_root_enabled(features)
+        || !pyproject_inlay_hint_dependency_version_enabled(features)
+    {
+        return Ok(None);
+    }
+
     let Some(current_package) = current_package(document_tree) else {
         return Ok(None);
     };
@@ -93,14 +145,14 @@ fn inlay_hint_impl(
         return Ok(None);
     }
 
-    let Some(uv_lock) = load_uv_lock(&pyproject_toml_path, toml_version) else {
+    let Some(uv_lock_cache) = uv_lock_cache else {
         return Ok(None);
     };
 
     let hints = visible_dependency_hints
         .into_iter()
         .filter_map(|hint| {
-            let resolved_version = uv_lock.dependency_version_for_package(
+            let resolved_version = uv_lock_cache.resolved_dependency_version(
                 &current_package.name,
                 &current_package.version,
                 hint.requirement.name.as_ref(),
@@ -235,13 +287,21 @@ fn exact_pinned_version(requirement: &pep508_rs::Requirement<VerbatimUrl>) -> Op
     }
 }
 
-fn load_uv_lock(pyproject_toml_path: &Path, toml_version: TomlVersion) -> Option<UvLock> {
+async fn load_uv_lock_cache(
+    pyproject_toml_path: &Path,
+    toml_version: TomlVersion,
+) -> Option<UvLockInlayCacheData> {
     let uv_lock_path = find_uv_lock_path(pyproject_toml_path)?;
-    let uv_lock_text = std::fs::read_to_string(uv_lock_path).ok()?;
-    let root = tombi_ast::Root::cast(tombi_parser::parse(&uv_lock_text).into_syntax_node())?;
-    let document_tree = root.try_into_document_tree(toml_version).ok()?;
+    let cache_key = uv_lock_cache_key(&uv_lock_path);
+    let cache_version = lockfile_cache_version(&uv_lock_path);
 
-    UvLock::from_document_tree(&document_tree)
+    let cache_value = get_or_load_json(&cache_key, cache_version, {
+        let uv_lock_path = uv_lock_path.clone();
+        move || async move { load_uv_lock_cache_json(uv_lock_path, toml_version).await }
+    })
+    .await?;
+
+    serde_json::from_value(cache_value.as_ref().clone()).ok()
 }
 
 fn find_uv_lock_path(pyproject_toml_path: &Path) -> Option<std::path::PathBuf> {
@@ -263,6 +323,42 @@ fn normalize_version(version: &str) -> String {
         .unwrap_or_else(|_| version.to_string())
 }
 
+async fn load_uv_lock_cache_json(
+    uv_lock_path: PathBuf,
+    toml_version: TomlVersion,
+) -> Option<serde_json::Value> {
+    let uv_lock_text = tokio::fs::read_to_string(&uv_lock_path).await.ok()?;
+    tokio::task::spawn_blocking(move || parse_uv_lock_cache_json(uv_lock_text, toml_version))
+        .await
+        .ok()
+        .flatten()
+}
+
+fn parse_uv_lock_cache_json(
+    uv_lock_text: String,
+    toml_version: TomlVersion,
+) -> Option<serde_json::Value> {
+    let root = tombi_ast::Root::cast(tombi_parser::parse(&uv_lock_text).into_syntax_node())?;
+    let document_tree = root.try_into_document_tree(toml_version).ok()?;
+    let uv_lock = UvLock::from_document_tree(&document_tree)?;
+
+    serde_json::to_value(uv_lock.into_inlay_cache_data()).ok()
+}
+
+fn uv_lock_cache_key(uv_lock_path: &Path) -> String {
+    format!(
+        "{PYPROJECT_EXTENSION_ID}:{INLAY_HINT_LOCKFILE_KEY}:{}",
+        uv_lock_path.display()
+    )
+}
+
+fn lockfile_cache_version(lockfile_path: &Path) -> Option<u64> {
+    let modified = std::fs::metadata(lockfile_path).ok()?.modified().ok()?;
+    let duration = modified.duration_since(UNIX_EPOCH).ok()?;
+
+    u64::try_from(duration.as_millis()).ok()
+}
+
 impl UvLock {
     fn from_document_tree(document_tree: &tombi_document_tree::DocumentTree) -> Option<Self> {
         let (_, Value::Array(packages)) = dig_keys(document_tree, &["package"])? else {
@@ -277,49 +373,41 @@ impl UvLock {
         })
     }
 
-    fn package(&self, package_name: &str, package_version: &str) -> Option<&UvLockPackage> {
-        self.packages.iter().find(|package| {
-            package.name == package_name && normalize_version(&package.version) == package_version
-        })
-    }
-
-    fn unique_package_version(&self, dependency_name: &str) -> Option<String> {
-        let versions = self
+    fn into_inlay_cache_data(self) -> UvLockInlayCacheData {
+        let unique_package_versions = self.unique_package_versions();
+        let projects = self
             .packages
             .iter()
-            .filter(|package| package.name == dependency_name)
-            .map(|package| package.version.clone())
-            .collect::<BTreeSet<_>>();
+            .map(|package| {
+                (
+                    ProjectReleaseKey::new(&package.name, &normalize_version(&package.version)),
+                    package.resolved_dependencies(&unique_package_versions),
+                )
+            })
+            .collect();
 
-        (versions.len() == 1)
-            .then(|| versions.into_iter().next())
-            .flatten()
+        UvLockInlayCacheData { projects }
     }
 
-    fn resolved_dependency_version(&self, dependency: &UvLockDependency) -> Option<String> {
-        dependency
-            .version
-            .clone()
-            .or_else(|| self.unique_package_version(&dependency.name))
-    }
+    fn unique_package_versions(&self) -> HashMap<String, Option<String>> {
+        let mut package_versions = HashMap::<String, HashSet<String>>::new();
 
-    fn dependency_version_for_package(
-        &self,
-        package_name: &str,
-        package_version: &str,
-        dependency_name: &str,
-    ) -> Option<String> {
-        let package = self.package(package_name, package_version)?;
-        let versions = package
-            .direct_dependencies
-            .iter()
-            .filter(|dependency| dependency.name == dependency_name)
-            .filter_map(|dependency| self.resolved_dependency_version(dependency))
-            .collect::<BTreeSet<_>>();
+        for package in &self.packages {
+            package_versions
+                .entry(package.name.clone())
+                .or_default()
+                .insert(package.version.clone());
+        }
 
-        (versions.len() == 1)
-            .then(|| versions.into_iter().next())
-            .flatten()
+        package_versions
+            .into_iter()
+            .map(|(package_name, versions)| {
+                let version = (versions.len() == 1)
+                    .then(|| versions.into_iter().next())
+                    .flatten();
+                (package_name, version)
+            })
+            .collect()
     }
 }
 
@@ -348,6 +436,55 @@ impl UvLockPackage {
             version,
             direct_dependencies,
         })
+    }
+
+    fn resolved_dependencies(
+        &self,
+        unique_package_versions: &HashMap<String, Option<String>>,
+    ) -> ProjectResolvedDependencies {
+        let dependency_names = self
+            .direct_dependencies
+            .iter()
+            .map(|dependency| dependency.name.clone())
+            .collect::<HashSet<_>>();
+
+        let by_dependency = dependency_names
+            .into_iter()
+            .filter_map(|dependency_name| {
+                let resolved_version =
+                    self.resolved_dependency_version(&dependency_name, unique_package_versions)?;
+                Some((
+                    DependencyProjectName::from(dependency_name),
+                    ResolvedProjectDependencyVersion::new(resolved_version),
+                ))
+            })
+            .collect();
+
+        ProjectResolvedDependencies { by_dependency }
+    }
+
+    fn resolved_dependency_version(
+        &self,
+        dependency_name: &str,
+        unique_package_versions: &HashMap<String, Option<String>>,
+    ) -> Option<String> {
+        let versions = self
+            .direct_dependencies
+            .iter()
+            .filter(|dependency| dependency.name == dependency_name)
+            .filter_map(|dependency| {
+                dependency.version.clone().or_else(|| {
+                    unique_package_versions
+                        .get(&dependency.name)
+                        .cloned()
+                        .flatten()
+                })
+            })
+            .collect::<HashSet<_>>();
+
+        (versions.len() == 1)
+            .then(|| versions.into_iter().next())
+            .flatten()
     }
 }
 
@@ -398,5 +535,158 @@ impl UvLockDependency {
         };
 
         Some(Self { name, version })
+    }
+}
+
+impl ProjectName {
+    fn new(project_name: &str) -> Self {
+        Self(project_name.to_string())
+    }
+
+    fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl ProjectVersion {
+    fn new(project_version: &str) -> Self {
+        Self(project_version.to_string())
+    }
+
+    fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl DependencyProjectName {
+    fn new(dependency_name: &str) -> Self {
+        Self(dependency_name.to_string())
+    }
+}
+
+impl From<String> for DependencyProjectName {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl ProjectReleaseKey {
+    fn new(project_name: &str, project_version: &str) -> Self {
+        let project_name = ProjectName::new(project_name);
+        let project_version = ProjectVersion::new(project_version);
+
+        Self(format!(
+            "{}@{}",
+            project_name.as_str(),
+            project_version.as_str()
+        ))
+    }
+}
+
+impl ResolvedProjectDependencyVersion {
+    fn new(version: String) -> Self {
+        Self { version }
+    }
+}
+
+impl UvLockInlayCacheData {
+    fn resolved_dependency_version(
+        &self,
+        project_name: &str,
+        project_version: &str,
+        dependency_name: &str,
+    ) -> Option<String> {
+        self.projects
+            .get(&ProjectReleaseKey::new(project_name, project_version))
+            .and_then(|dependencies| {
+                dependencies
+                    .by_dependency
+                    .get(&DependencyProjectName::new(dependency_name))
+            })
+            .map(|resolved| resolved.version.clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn uv_lock_cache_data_resolves_dependency_version() {
+        let uv_lock = UvLock {
+            packages: vec![
+                UvLockPackage {
+                    name: "demo".to_string(),
+                    version: "0.1.0".to_string(),
+                    direct_dependencies: vec![UvLockDependency {
+                        name: "pytest".to_string(),
+                        version: None,
+                    }],
+                },
+                UvLockPackage {
+                    name: "pytest".to_string(),
+                    version: "8.3.3".to_string(),
+                    direct_dependencies: Vec::new(),
+                },
+            ],
+        };
+
+        let cache_data = uv_lock.into_inlay_cache_data();
+
+        assert_eq!(
+            cache_data.resolved_dependency_version("demo", "0.1.0", "pytest"),
+            Some("8.3.3".to_string())
+        );
+    }
+
+    #[test]
+    fn uv_lock_cache_data_uses_normalized_project_version() {
+        let uv_lock = UvLock {
+            packages: vec![UvLockPackage {
+                name: "demo".to_string(),
+                version: "1.0".to_string(),
+                direct_dependencies: Vec::new(),
+            }],
+        };
+
+        let cache_data = uv_lock.into_inlay_cache_data();
+
+        assert!(
+            cache_data
+                .projects
+                .contains_key(&ProjectReleaseKey::new("demo", "1.0"))
+        );
+    }
+
+    #[test]
+    fn uv_lock_cache_data_survives_json_roundtrip() {
+        let uv_lock = UvLock {
+            packages: vec![
+                UvLockPackage {
+                    name: "demo".to_string(),
+                    version: "0.1.0".to_string(),
+                    direct_dependencies: vec![UvLockDependency {
+                        name: "ruff".to_string(),
+                        version: Some("0.7.4".to_string()),
+                    }],
+                },
+                UvLockPackage {
+                    name: "ruff".to_string(),
+                    version: "0.7.4".to_string(),
+                    direct_dependencies: Vec::new(),
+                },
+            ],
+        };
+
+        let cache_data = uv_lock.into_inlay_cache_data();
+        let roundtrip = serde_json::from_value::<UvLockInlayCacheData>(
+            serde_json::to_value(&cache_data).expect("expected json value"),
+        )
+        .expect("expected cache data");
+
+        assert_eq!(
+            roundtrip.resolved_dependency_version("demo", "0.1.0", "ruff"),
+            Some("0.7.4".to_string())
+        );
     }
 }

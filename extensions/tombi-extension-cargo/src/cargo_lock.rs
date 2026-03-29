@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, path::Path};
+use std::path::Path;
 
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
@@ -22,11 +22,10 @@ pub(crate) struct CargoLockDependency {
     pub(crate) version: Option<String>,
 }
 
-pub(crate) fn load_cargo_lock(
-    cargo_toml_path: &Path,
+pub(crate) fn load_cargo_lock_from_path(
+    cargo_lock_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<CargoLock> {
-    let cargo_lock_path = find_cargo_lock_path(cargo_toml_path)?;
     let cargo_lock_text = std::fs::read_to_string(cargo_lock_path).ok()?;
     let root = tombi_ast::Root::cast(tombi_parser::parse(&cargo_lock_text).into_syntax_node())?;
     let document_tree = root.try_into_document_tree(toml_version).ok()?;
@@ -34,7 +33,7 @@ pub(crate) fn load_cargo_lock(
     CargoLock::from_document_tree(&document_tree)
 }
 
-fn find_cargo_lock_path(cargo_toml_path: &Path) -> Option<std::path::PathBuf> {
+pub(crate) fn find_cargo_lock_path(cargo_toml_path: &Path) -> Option<std::path::PathBuf> {
     let mut current_dir = cargo_toml_path.parent()?;
 
     loop {
@@ -59,65 +58,6 @@ impl CargoLock {
                 .filter_map(CargoLockPackage::from_value)
                 .collect(),
         })
-    }
-
-    pub(crate) fn package(
-        &self,
-        package_name: &str,
-        package_version: &str,
-    ) -> Option<&CargoLockPackage> {
-        self.packages
-            .iter()
-            .find(|package| package.name == package_name && package.version == package_version)
-    }
-
-    pub(crate) fn resolved_dependency_version(
-        &self,
-        dependency: &CargoLockDependency,
-    ) -> Option<String> {
-        dependency
-            .version
-            .clone()
-            .or_else(|| self.unique_package_version(&dependency.name))
-    }
-
-    pub(crate) fn dependency_version_for_package(
-        &self,
-        package_name: &str,
-        package_version: &str,
-        dependency_name: &str,
-    ) -> Option<String> {
-        let package = self.package(package_name, package_version)?;
-
-        let explicit_versions = package
-            .dependencies
-            .iter()
-            .filter(|dependency| dependency.name == dependency_name)
-            .filter_map(|dependency| dependency.version.clone())
-            .collect::<BTreeSet<_>>();
-
-        if explicit_versions.len() == 1 {
-            return explicit_versions.into_iter().next();
-        }
-
-        if explicit_versions.len() > 1 {
-            return None;
-        }
-
-        self.unique_package_version(dependency_name)
-    }
-
-    fn unique_package_version(&self, dependency_name: &str) -> Option<String> {
-        let package_versions = self
-            .packages
-            .iter()
-            .filter(|package| package.name == dependency_name)
-            .map(|package| package.version.clone())
-            .collect::<BTreeSet<_>>();
-
-        (package_versions.len() == 1)
-            .then(|| package_versions.into_iter().next())
-            .flatten()
     }
 }
 
