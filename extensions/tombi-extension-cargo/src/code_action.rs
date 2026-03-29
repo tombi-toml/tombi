@@ -517,7 +517,6 @@ fn render_inherited_dependency_inline_table(
     for (key, value) in dependency_table.key_values() {
         match key.value.as_str() {
             "version" | "workspace" => {}
-            "features" => entries.push(format!("{} = {}", key.value, value)),
             _ => entries.push(format!("{} = {}", key.value, value)),
         }
     }

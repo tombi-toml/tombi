@@ -519,16 +519,7 @@ fn dependency_default_features_hint(
         toml_version,
     )?;
 
-    let existing_features = features
-        .values()
-        .iter()
-        .filter_map(|feature| match feature {
-            Value::String(feature) => Some(feature.value().to_string()),
-            _ => None,
-        })
-        .collect::<BTreeSet<_>>();
-
-    build_default_features_hint(features.range().end, default_features, &existing_features)
+    build_default_features_hint(features.range().end, default_features, &collect_feature_names(features))
 }
 
 fn dependency_default_features(
@@ -775,19 +766,10 @@ async fn registry_dependency_default_features_hint(
         return Ok(None);
     };
 
-    let existing_features = features
-        .values()
-        .iter()
-        .filter_map(|feature| match feature {
-            Value::String(feature) => Some(feature.value().to_string()),
-            _ => None,
-        })
-        .collect::<BTreeSet<_>>();
-
     Ok(build_default_features_hint(
         features.range().end,
         default_features.clone(),
-        &existing_features,
+        &collect_feature_names(features),
     ))
 }
 
@@ -817,6 +799,17 @@ fn load_local_dependency_document_tree(
         )?;
 
     Some((dependency_cargo_toml_path, dependency_document_tree))
+}
+
+fn collect_feature_names(features: &tombi_document_tree::Array) -> BTreeSet<String> {
+    features
+        .values()
+        .iter()
+        .filter_map(|feature| match feature {
+            Value::String(feature) => Some(feature.value().to_string()),
+            _ => None,
+        })
+        .collect()
 }
 
 fn dependency_table_default_features_disabled(table: &tombi_document_tree::Table) -> bool {
