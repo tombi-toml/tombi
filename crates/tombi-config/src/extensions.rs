@@ -697,44 +697,12 @@ pub struct CargoHoverFeatureTree {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct CargoInlayHintFeatureTree {
     pub dependency_version: Option<ToggleFeature>,
     pub default_features: Option<ToggleFeature>,
-    #[cfg_attr(feature = "serde", serde(alias = "workspace"))]
     pub workspace_value: Option<ToggleFeature>,
-}
-
-#[cfg(feature = "jsonschema")]
-impl schemars::JsonSchema for CargoInlayHintFeatureTree {
-    fn schema_name() -> std::borrow::Cow<'static, str> {
-        "CargoInlayHintFeatureTree".into()
-    }
-
-    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
-        let toggle_feature = generator.subschema_for::<Option<ToggleFeature>>();
-
-        schemars::json_schema!({
-            "type": "object",
-            "properties": {
-                "dependency-version": toggle_feature,
-                "default-features": toggle_feature,
-                "workspace": {
-                    "deprecated": true,
-                    "anyOf": [
-                        {
-                            "$ref": "#/definitions/ToggleFeature"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ]
-                },
-                "workspace-value": toggle_feature
-            },
-            "additionalProperties": false,
-            "x-tombi-table-keys-order": "ascending"
-        })
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -2058,23 +2026,6 @@ mod tests {
             }
         }))
         .expect("workspace-value should deserialize");
-
-        assert_eq!(
-            features.workspace_value,
-            Some(ToggleFeature {
-                enabled: Some(BoolDefaultTrue::from(false)),
-            })
-        );
-    }
-
-    #[test]
-    fn cargo_inlay_hint_feature_tree_deserializes_legacy_workspace_key() {
-        let features: CargoInlayHintFeatureTree = serde_json::from_value(serde_json::json!({
-            "workspace": {
-                "enabled": false
-            }
-        }))
-        .expect("legacy workspace key should deserialize");
 
         assert_eq!(
             features.workspace_value,
