@@ -1271,6 +1271,16 @@
             }
           ]
         },
+        "inlay-hint": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CargoInlayHintFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "goto-definition": {
           "anyOf": [
             {
@@ -1387,6 +1397,34 @@
         }
       },
       "additionalProperties": false
+    },
+    "CargoInlayHintFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/CargoInlayHintFeatureTree"
+        }
+      ],
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "CargoInlayHintFeatureTree": {
+      "type": "object",
+      "properties": {
+        "dependency-version": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
     },
     "CargoNavigationFeatures": {
       "anyOf": [

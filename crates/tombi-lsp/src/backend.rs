@@ -358,18 +358,20 @@ impl tower_lsp::LanguageServer for Backend {
         &self,
         params: InlayHintParams,
     ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
-        let document_source = self.document_sources.read().await;
-        let Some(document_source) = document_source.get(&params.text_document.uri.clone().into())
-        else {
-            return Ok(None);
+        let line_index = {
+            let document_sources = self.document_sources.read().await;
+            let Some(document_source) = document_sources.get(&params.text_document.uri.clone().into())
+            else {
+                return Ok(None);
+            };
+            document_source.line_index_arc()
         };
-        let line_index = document_source.line_index();
 
         handle_inlay_hint(self, params).await.map(|response| {
             response.map(|hints| {
                 hints
                     .into_iter()
-                    .map(|hint| hint.into_lsp(line_index))
+                    .map(|hint| hint.into_lsp(line_index.as_ref()))
                     .collect()
             })
         })

@@ -6,7 +6,6 @@ use std::{
 
 use tempfile::TempDir;
 use tombi_extension::InlayHint;
-use tombi_test_lib::project_root_path;
 use tower_lsp::{
     LspService,
     lsp_types::{
@@ -41,6 +40,36 @@ fn create_temp_cargo_project(
     )?;
 
     Ok((temp_dir, cargo_toml_path))
+}
+
+fn create_temp_cargo_workspace(
+    workspace_cargo_toml: &str,
+    member_manifest_path: &str,
+    member_cargo_toml: &str,
+    cargo_lock: &str,
+) -> Result<(TempDir, PathBuf, PathBuf), Box<dyn std::error::Error>> {
+    let temp_dir = tempfile::tempdir()?;
+    let workspace_cargo_toml_path = temp_dir.path().join("Cargo.toml");
+    let member_cargo_toml_path = temp_dir.path().join(member_manifest_path);
+
+    if let Some(parent) = member_cargo_toml_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    fs::write(
+        &workspace_cargo_toml_path,
+        textwrap::dedent(workspace_cargo_toml).trim(),
+    )?;
+    fs::write(
+        &member_cargo_toml_path,
+        textwrap::dedent(member_cargo_toml).trim(),
+    )?;
+    fs::write(
+        temp_dir.path().join("Cargo.lock"),
+        textwrap::dedent(cargo_lock).trim(),
+    )?;
+
+    Ok((temp_dir, workspace_cargo_toml_path, member_cargo_toml_path))
 }
 
 fn create_temp_pyproject(
@@ -116,18 +145,29 @@ async fn inlay_hint_for_string_dependency_uses_the_resolved_lockfile_version()
         .unwrap_or_else(|error| error.into_inner());
     tombi_test_lib::init_log();
 
-    let result = collect_inlay_hints(
-        r#"
+    let source = r#"
         [package]
-        name = "tombi-lsp"
-        version.workspace = true
+        name = "demo"
+        version = "0.1.0"
 
         [dependencies]
         serde = "1.0.219"
-        "#,
-        project_root_path().join("crates/tombi-lsp/Cargo.toml"),
-    )
-    .await?;
+        "#;
+    let lock = r#"
+        version = 4
+
+        [[package]]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = ["serde 1.0.228"]
+
+        [[package]]
+        name = "serde"
+        version = "1.0.228"
+    "#;
+    let (_temp_dir, cargo_toml_path) = create_temp_cargo_project(source, lock)?;
+
+    let result = collect_inlay_hints(source, cargo_toml_path).await?;
 
     pretty_assertions::assert_eq!(
         result,
@@ -152,18 +192,29 @@ async fn inlay_hint_for_dotted_version_key_is_rendered_after_the_version_literal
         .unwrap_or_else(|error| error.into_inner());
     tombi_test_lib::init_log();
 
-    let result = collect_inlay_hints(
-        r#"
+    let source = r#"
         [package]
-        name = "tombi-validator"
-        version.workspace = true
+        name = "demo"
+        version = "0.1.0"
 
         [dependencies]
         addr.version = "0.15.5"
-        "#,
-        project_root_path().join("crates/tombi-validator/Cargo.toml"),
-    )
-    .await?;
+        "#;
+    let lock = r#"
+        version = 4
+
+        [[package]]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = ["addr 0.15.6"]
+
+        [[package]]
+        name = "addr"
+        version = "0.15.6"
+    "#;
+    let (_temp_dir, cargo_toml_path) = create_temp_cargo_project(source, lock)?;
+
+    let result = collect_inlay_hints(source, cargo_toml_path).await?;
 
     pretty_assertions::assert_eq!(
         result,
@@ -188,18 +239,29 @@ async fn inlay_hint_for_inline_table_version_uses_the_resolved_lockfile_version(
         .unwrap_or_else(|error| error.into_inner());
     tombi_test_lib::init_log();
 
-    let result = collect_inlay_hints(
-        r#"
+    let source = r#"
         [package]
-        name = "tombi-cli"
-        version.workspace = true
+        name = "demo"
+        version = "0.1.0"
 
         [dependencies]
         tokio = { version = "1.45.0", features = ["fs"] }
-        "#,
-        project_root_path().join("rust/tombi-cli/Cargo.toml"),
-    )
-    .await?;
+        "#;
+    let lock = r#"
+        version = 4
+
+        [[package]]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = ["tokio 1.47.1"]
+
+        [[package]]
+        name = "tokio"
+        version = "1.47.1"
+    "#;
+    let (_temp_dir, cargo_toml_path) = create_temp_cargo_project(source, lock)?;
+
+    let result = collect_inlay_hints(source, cargo_toml_path).await?;
 
     pretty_assertions::assert_eq!(
         result,
@@ -224,17 +286,38 @@ async fn inlay_hint_for_workspace_dependencies_uses_workspace_members_lockfile_r
         .unwrap_or_else(|error| error.into_inner());
     tombi_test_lib::init_log();
 
-    let result = collect_inlay_hints(
-        r#"
+    let workspace_source = r#"
         [workspace]
-        members = ["crates/tombi-lsp"]
+        members = ["crates/app"]
 
         [workspace.dependencies]
         serde = "1.0.219"
-        "#,
-        project_root_path().join("Cargo.toml"),
-    )
-    .await?;
+        "#;
+    let member_source = r#"
+        [package]
+        name = "app"
+        version = "0.1.0"
+    "#;
+    let lock = r#"
+        version = 4
+
+        [[package]]
+        name = "app"
+        version = "0.1.0"
+        dependencies = ["serde 1.0.228"]
+
+        [[package]]
+        name = "serde"
+        version = "1.0.228"
+    "#;
+    let (_temp_dir, workspace_cargo_toml_path, _) = create_temp_cargo_workspace(
+        workspace_source,
+        "crates/app/Cargo.toml",
+        member_source,
+        lock,
+    )?;
+
+    let result = collect_inlay_hints(workspace_source, workspace_cargo_toml_path).await?;
 
     pretty_assertions::assert_eq!(
         result,
@@ -259,17 +342,38 @@ async fn inlay_hint_for_workspace_inline_table_dependency_uses_the_resolved_lock
         .unwrap_or_else(|error| error.into_inner());
     tombi_test_lib::init_log();
 
-    let result = collect_inlay_hints(
-        r#"
+    let workspace_source = r#"
         [workspace]
-        members = ["crates/tombi-lsp"]
+        members = ["crates/app"]
 
         [workspace.dependencies]
         serde_json = { version = "1.0.140", features = ["preserve_order"] }
-        "#,
-        project_root_path().join("Cargo.toml"),
-    )
-    .await?;
+        "#;
+    let member_source = r#"
+        [package]
+        name = "app"
+        version = "0.1.0"
+    "#;
+    let lock = r#"
+        version = 4
+
+        [[package]]
+        name = "app"
+        version = "0.1.0"
+        dependencies = ["serde_json 1.0.142"]
+
+        [[package]]
+        name = "serde_json"
+        version = "1.0.142"
+    "#;
+    let (_temp_dir, workspace_cargo_toml_path, _) = create_temp_cargo_workspace(
+        workspace_source,
+        "crates/app/Cargo.toml",
+        member_source,
+        lock,
+    )?;
+
+    let result = collect_inlay_hints(workspace_source, workspace_cargo_toml_path).await?;
 
     pretty_assertions::assert_eq!(
         result,
@@ -294,18 +398,38 @@ async fn inlay_hint_for_workspace_inheritance_is_rendered_even_when_versions_mat
         .unwrap_or_else(|error| error.into_inner());
     tombi_test_lib::init_log();
 
-    let result = collect_inlay_hints(
-        r#"
+    let workspace_source = r#"
+        [workspace]
+        members = ["crates/app"]
+    "#;
+    let member_source = r#"
         [package]
-        name = "tombi-validator"
-        version.workspace = true
+        name = "app"
+        version = "0.1.0"
 
         [dependencies]
         addr.workspace = true
-        "#,
-        project_root_path().join("crates/tombi-validator/Cargo.toml"),
-    )
-    .await?;
+        "#;
+    let lock = r#"
+        version = 4
+
+        [[package]]
+        name = "app"
+        version = "0.1.0"
+        dependencies = ["addr 0.15.6"]
+
+        [[package]]
+        name = "addr"
+        version = "0.15.6"
+    "#;
+    let (_temp_dir, _, member_cargo_toml_path) = create_temp_cargo_workspace(
+        workspace_source,
+        "crates/app/Cargo.toml",
+        member_source,
+        lock,
+    )?;
+
+    let result = collect_inlay_hints(member_source, member_cargo_toml_path).await?;
 
     pretty_assertions::assert_eq!(
         result,
@@ -330,18 +454,29 @@ async fn inlay_hint_is_not_rendered_when_the_version_already_matches_the_lockfil
         .unwrap_or_else(|error| error.into_inner());
     tombi_test_lib::init_log();
 
-    let result = collect_inlay_hints(
-        r#"
+    let source = r#"
         [package]
-        name = "tombi-lsp"
-        version.workspace = true
+        name = "demo"
+        version = "0.1.0"
 
         [dependencies]
         serde = "1.0.228"
-        "#,
-        project_root_path().join("crates/tombi-lsp/Cargo.toml"),
-    )
-    .await?;
+        "#;
+    let lock = r#"
+        version = 4
+
+        [[package]]
+        name = "demo"
+        version = "0.1.0"
+        dependencies = ["serde 1.0.228"]
+
+        [[package]]
+        name = "serde"
+        version = "1.0.228"
+    "#;
+    let (_temp_dir, cargo_toml_path) = create_temp_cargo_project(source, lock)?;
+
+    let result = collect_inlay_hints(source, cargo_toml_path).await?;
 
     pretty_assertions::assert_eq!(result, None);
 
@@ -356,18 +491,38 @@ async fn inlay_hint_for_workspace_path_crate_is_rendered_from_the_lockfile()
         .unwrap_or_else(|error| error.into_inner());
     tombi_test_lib::init_log();
 
-    let result = collect_inlay_hints(
-        r#"
+    let workspace_source = r#"
+        [workspace]
+        members = ["crates/app"]
+    "#;
+    let member_source = r#"
         [package]
-        name = "tombi-validator"
-        version.workspace = true
+        name = "app"
+        version = "0.1.0"
 
         [dependencies]
         tombi-text.workspace = true
-        "#,
-        project_root_path().join("crates/tombi-validator/Cargo.toml"),
-    )
-    .await?;
+        "#;
+    let lock = r#"
+        version = 4
+
+        [[package]]
+        name = "app"
+        version = "0.1.0"
+        dependencies = ["tombi-text 0.0.0-dev"]
+
+        [[package]]
+        name = "tombi-text"
+        version = "0.0.0-dev"
+    "#;
+    let (_temp_dir, _, member_cargo_toml_path) = create_temp_cargo_workspace(
+        workspace_source,
+        "crates/app/Cargo.toml",
+        member_source,
+        lock,
+    )?;
+
+    let result = collect_inlay_hints(member_source, member_cargo_toml_path).await?;
 
     pretty_assertions::assert_eq!(
         result,
