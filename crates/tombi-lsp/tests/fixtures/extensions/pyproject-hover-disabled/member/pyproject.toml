@@ -1,0 +1,4 @@
+[project]
+name = "member"
+version = "0.1.0"
+description = "fixture pyproject member"
