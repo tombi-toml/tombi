@@ -147,16 +147,14 @@ macro_rules! test_inlay_hint {
         #[tokio::test]
         async fn $name:ident(
             $source:expr,
-            $fixture_kind:ident {
-                $($fixture_body:tt)*
-            }
+            $($fixture:tt)+
         ) -> Ok($expected:expr);
     ) => {
         test_inlay_hint!(
             @fixture
             $name,
             $source,
-            $fixture_kind { $($fixture_body)* },
+            $($fixture)+,
             $expected
         );
     };
