@@ -85,6 +85,9 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
   - [schemas[\*].root](#sub-schema)
   - [schemas[\*].path](#root-schema)
   - [schemas[\*].include](#root-schema)
+  - [schemas[\*].lint](#schemaslint)
+    - [schemas[\*].lint.rules](#schemaslintrules)
+      - [schemas[\*].lint.rules.deprecated](#schemaslintrulesdeprecated)
 - [overrides](#overrides)
   - [overrides[\*].files](#overrides-files)
     - [overrides[\*].files.include](#overrides-files-include)
@@ -178,11 +181,17 @@ toml-version = "v1.0.0"
 path = "https://example.com/schema.json"
 include = ["example.toml"]
 
+[schemas.lint.rules]
+deprecated = "error"
+
 # Sub Schema
 [[schemas]]
 root = "tool.taskipy"
 path = "schemas/partial-taskipy.schema.json"
 include = ["pyproject.toml"]
+
+[schemas.lint.rules]
+deprecated = "warn"
 
 # Override config
 [[overrides]]
@@ -810,6 +819,26 @@ deprecated = "warn"
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
 - `lint.rules.deprecated`(optional): Override the deprecated diagnostic level for this schema with `"off"`, `"warn"`, or `"error"`
+
+### schemas[*].lint
+
+Configure schema-specific lint settings.
+
+- Type: `Table`
+
+### schemas[*].lint.rules
+
+Configure schema-specific lint rules.
+
+- Type: `Table`
+
+### schemas[*].lint.rules.deprecated
+
+Override the deprecated diagnostic level for the schema.
+This applies when the matched JSON Schema marks a value as `deprecated: true`.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
 
 ### overrides
 
