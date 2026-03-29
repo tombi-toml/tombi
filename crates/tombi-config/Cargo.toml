@@ -17,6 +17,7 @@ tombi-x-keyword.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true
+serde_json.workspace = true
 
 [features]
 default = ["serde"]

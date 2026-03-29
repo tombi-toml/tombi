@@ -245,6 +245,7 @@ tables-out-of-order = "error"
     inlay-hint = {
       default-features.enabled = true,
       dependency-version.enabled = true,
+      workspace-value.enabled = true,
     },
     document-link = {
       cargo-toml.enabled = true,
@@ -1067,6 +1068,21 @@ See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay
 ### extensions."tombi-toml/cargo".lsp.inlay-hint.default-features.enabled
 
 Enable or disable default-features inlay hints for Cargo dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.workspace-value
+
+Configure workspace-value inlay hints for Cargo package inheritance.
+
+See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay-hints).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.inlay-hint.workspace-value.enabled
+
+Enable or disable workspace-value inlay hints for Cargo package inheritance.
 
 - Type: `Boolean`
 - Default: `true`
