@@ -24,7 +24,7 @@ use tombi_lsp::{
 
 const RESOLVED_VERSION_TOOLTIP: &str = "Resolved version in Cargo.lock";
 const RESOLVED_UV_VERSION_TOOLTIP: &str = "Resolved version in uv.lock";
-const WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP: &str = "Inherited value from workspace";
+const WORKSPACE_INHERITED_VALUE_TOOLTIP: &str = "Inherited value from workspace";
 
 fn test_lock() -> &'static Mutex<()> {
     static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -1042,12 +1042,12 @@ test_inlay_hint!(
         expected_hint(
             tombi_text::Position::new(2, 28),
             r#" → "0.0.0-dev""#,
-            WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP,
+            WORKSPACE_INHERITED_VALUE_TOOLTIP,
         ),
         expected_hint(
             tombi_text::Position::new(3, 24),
             r#" → ["Tombi", "Cargo"]"#,
-            WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP,
+            WORKSPACE_INHERITED_VALUE_TOOLTIP,
         ),
     ]));
 );
@@ -1076,7 +1076,42 @@ test_inlay_hint!(
     ) -> Ok(Some(vec![expected_hint(
         tombi_text::Position::new(2, 28),
         r#" → "0.0.0-dev""#,
-        WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP,
+        WORKSPACE_INHERITED_VALUE_TOOLTIP,
+    )]));
+);
+
+test_inlay_hint!(
+    #[tokio::test]
+    async fn inlay_hint_for_workspace_lints_inheritance_uses_workspace_lints_value(
+        SourceFile {
+            path = "crates/app/Cargo.toml",
+            content = r#"
+            [package]
+            name = "app"
+            version = "0.1.0"
+
+            [lints]
+            workspace = true
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [workspace]
+            members = ["crates/app"]
+
+            [workspace.lints.rust]
+            unsafe_code = "forbid"
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = "",
+        },
+    ) -> Ok(Some(vec![expected_hint(
+        tombi_text::Position::new(5, 16),
+        r#" → { rust = { unsafe_code = "forbid" } }"#,
+        WORKSPACE_INHERITED_VALUE_TOOLTIP,
     )]));
 );
 

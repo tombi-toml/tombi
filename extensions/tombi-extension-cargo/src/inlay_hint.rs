@@ -16,7 +16,7 @@ use crate::{
 };
 
 const RESOLVED_VERSION_TOOLTIP: &str = "Resolved version in Cargo.lock";
-const WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP: &str = "Inherited value from workspace";
+const WORKSPACE_INHERITED_VALUE_TOOLTIP: &str = "Inherited value from workspace";
 const MAX_WORKSPACE_VALUE_HINT_CHARS: usize = 80;
 const CARGO_EXTENSION_ID: &str = "tombi-toml/cargo";
 const INLAY_HINT_LOCKFILE_KEY: &str = "inlay_hint.lockfile";
@@ -227,7 +227,7 @@ fn inlay_hint_impl(
     let mut hints = Vec::new();
 
     if workspace_value_enabled {
-        collect_workspace_package_inlay_hints(
+        collect_workspace_value_inlay_hints(
             document_tree,
             &cargo_toml_path,
             toml_version,
@@ -294,37 +294,53 @@ fn inlay_hint_impl(
     }
 }
 
-fn collect_workspace_package_inlay_hints(
+fn collect_workspace_value_inlay_hints(
     document_tree: &tombi_document_tree::DocumentTree,
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
     visible_range: tombi_text::Range,
     hints: &mut Vec<InlayHint>,
 ) {
-    let mut resolved_workspace_document_tree = None;
+    if !has_visible_workspace_value_targets(document_tree, visible_range) {
+        return;
+    }
 
+    let Some(workspace_document_tree) =
+        workspace_document_tree(document_tree, cargo_toml_path, toml_version)
+    else {
+        return;
+    };
+    let workspace_document_tree = workspace_document_tree.as_tree();
+
+    collect_workspace_package_inlay_hints(
+        document_tree,
+        workspace_document_tree,
+        visible_range,
+        hints,
+    );
+    collect_workspace_lints_inlay_hints(
+        document_tree,
+        workspace_document_tree,
+        visible_range,
+        hints,
+    );
+}
+
+fn collect_workspace_package_inlay_hints(
+    document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    visible_range: tombi_text::Range,
+    hints: &mut Vec<InlayHint>,
+) {
     for package_item in WORKSPACE_PACKAGE_ITEMS {
         let Some((_, Value::Boolean(workspace))) =
             dig_keys(document_tree, &["package", package_item, "workspace"])
         else {
             continue;
         };
-        if !workspace.value()
-            || !tombi_text::Range::at(workspace.range().end).intersects(visible_range)
-        {
+        if !workspace.value() {
             continue;
         }
-
-        if resolved_workspace_document_tree.is_none() {
-            resolved_workspace_document_tree =
-                workspace_document_tree(document_tree, cargo_toml_path, toml_version);
-        }
-        let Some(workspace_document_tree) = resolved_workspace_document_tree
-            .as_ref()
-            .map(WorkspaceDocumentTree::as_tree)
-        else {
-            return;
-        };
 
         let Some((_, workspace_value)) = dig_keys(
             workspace_document_tree,
@@ -333,19 +349,73 @@ fn collect_workspace_package_inlay_hints(
             continue;
         };
 
-        let Some(label) = workspace_value_hint_label(workspace_value) else {
-            continue;
-        };
-
-        hints.push(InlayHint {
-            position: workspace.range().end,
-            label,
-            kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
-            tooltip: Some(WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP.to_string()),
-            padding_left: Some(true),
-            padding_right: Some(false),
-        });
+        push_workspace_value_hint(workspace, workspace_value, visible_range, hints);
     }
+}
+
+fn collect_workspace_lints_inlay_hints(
+    document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    visible_range: tombi_text::Range,
+    hints: &mut Vec<InlayHint>,
+) {
+    let Some((_, Value::Boolean(workspace))) = dig_keys(document_tree, &["lints", "workspace"])
+    else {
+        return;
+    };
+    if !workspace.value() {
+        return;
+    }
+
+    let Some((_, workspace_value)) = dig_keys(workspace_document_tree, &["workspace", "lints"])
+    else {
+        return;
+    };
+
+    push_workspace_value_hint(workspace, workspace_value, visible_range, hints);
+}
+
+fn has_visible_workspace_value_targets(
+    document_tree: &tombi_document_tree::DocumentTree,
+    visible_range: tombi_text::Range,
+) -> bool {
+    WORKSPACE_PACKAGE_ITEMS.iter().any(|package_item| {
+        matches!(
+            dig_keys(document_tree, &["package", package_item, "workspace"]),
+            Some((_, Value::Boolean(workspace)))
+                if workspace.value()
+                    && tombi_text::Range::at(workspace.range().end).intersects(visible_range)
+        )
+    }) || matches!(
+        dig_keys(document_tree, &["lints", "workspace"]),
+        Some((_, Value::Boolean(workspace)))
+            if workspace.value()
+                && tombi_text::Range::at(workspace.range().end).intersects(visible_range)
+    )
+}
+
+fn push_workspace_value_hint(
+    workspace: &tombi_document_tree::Boolean,
+    workspace_value: &Value,
+    visible_range: tombi_text::Range,
+    hints: &mut Vec<InlayHint>,
+) {
+    if !tombi_text::Range::at(workspace.range().end).intersects(visible_range) {
+        return;
+    }
+
+    let Some(label) = workspace_value_hint_label(workspace_value) else {
+        return;
+    };
+
+    hints.push(InlayHint {
+        position: workspace.range().end,
+        label,
+        kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
+        tooltip: Some(WORKSPACE_INHERITED_VALUE_TOOLTIP.to_string()),
+        padding_left: Some(true),
+        padding_right: Some(false),
+    });
 }
 
 fn collect_dependency_inlay_hints(
@@ -1586,7 +1656,7 @@ mod tests {
                 position: tombi_text::Position::new(3, 40),
                 label: r#" → "0.0.0-dev""#.to_string(),
                 kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
-                tooltip: Some(WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP.to_string()),
+                tooltip: Some(WORKSPACE_INHERITED_VALUE_TOOLTIP.to_string()),
                 padding_left: Some(true),
                 padding_right: Some(false),
             }])
