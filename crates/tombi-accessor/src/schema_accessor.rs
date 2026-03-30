@@ -11,6 +11,19 @@ pub enum SchemaAccessor {
 }
 
 impl SchemaAccessor {
+    #[inline]
+    pub fn is_key(&self) -> bool {
+        matches!(self, SchemaAccessor::Key(_))
+    }
+
+    #[inline]
+    pub fn as_key(&self) -> Option<&str> {
+        match self {
+            SchemaAccessor::Key(key) => Some(key),
+            _ => None,
+        }
+    }
+
     /// Parse a schema access path into a sequence of accessors.
     ///
     /// # Examples
@@ -223,5 +236,14 @@ mod tests {
             SchemaAccessor::Key("tombi-toml/cargo".to_string()),
         ]);
         assert_eq!(format!("{accessors}"), r#"extensions."tombi-toml/cargo""#);
+    }
+
+    #[test]
+    fn test_schema_accessor_as_key() {
+        let key = SchemaAccessor::Key("extensions".to_string());
+        let index = SchemaAccessor::Index;
+
+        assert_eq!(key.as_key(), Some("extensions"));
+        assert_eq!(index.as_key(), None);
     }
 }

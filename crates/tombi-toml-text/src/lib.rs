@@ -308,11 +308,15 @@ pub fn to_basic_string(value: &str) -> String {
 }
 
 pub fn to_key_string(value: &str) -> String {
-    if try_from_bare_key(value).is_ok() {
+    if is_variable_placeholder(value) || try_from_bare_key(value).is_ok() {
         value.to_string()
     } else {
         to_basic_string(value)
     }
+}
+
+fn is_variable_placeholder(value: &str) -> bool {
+    value.starts_with("${") && value.ends_with('}')
 }
 
 pub fn to_literal_string(value: &str) -> String {
@@ -344,5 +348,10 @@ mod tests {
     #[test]
     fn key_string_escapes_basic_string_characters() {
         assert_eq!(to_key_string(r#"quote"slash\"#), r#""quote\"slash\\""#);
+    }
+
+    #[test]
+    fn key_string_keeps_variable_placeholder_unquoted() {
+        assert_eq!(to_key_string("${mod_id}"), "${mod_id}");
     }
 }

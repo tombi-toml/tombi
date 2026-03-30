@@ -3749,6 +3749,7 @@ dependencies = [
  "tombi-hashmap",
  "tombi-schema-store",
  "tombi-text",
+ "tombi-toml-text",
  "tombi-uri",
  "tower-lsp",
 ]
