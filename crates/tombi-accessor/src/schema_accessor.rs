@@ -118,7 +118,7 @@ impl From<&Accessor> for SchemaAccessor {
 impl std::fmt::Display for SchemaAccessor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SchemaAccessor::Key(key) => write!(f, "{key}"),
+            SchemaAccessor::Key(key) => write!(f, "{}", tombi_toml_text::to_key_string(key)),
             SchemaAccessor::Index => write!(f, "[*]"),
         }
     }
@@ -214,5 +214,14 @@ mod tests {
     fn test_schema_accessor(#[case] input: &str, #[case] expected: Vec<SchemaAccessor>) {
         let result = SchemaAccessor::parse(input).unwrap();
         pretty_assertions::assert_eq!(result, expected, "Failed for input: {}", input);
+    }
+
+    #[test]
+    fn test_schema_accessors_display_quotes_non_bare_keys() {
+        let accessors = SchemaAccessors::from(vec![
+            SchemaAccessor::Key("extensions".to_string()),
+            SchemaAccessor::Key("tombi-toml/cargo".to_string()),
+        ]);
+        assert_eq!(format!("{accessors}"), r#"extensions."tombi-toml/cargo""#);
     }
 }

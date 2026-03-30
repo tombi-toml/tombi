@@ -39,7 +39,7 @@ impl Accessor {
 impl std::fmt::Display for Accessor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Accessor::Key(key) => write!(f, "{key}"),
+            Accessor::Key(key) => write!(f, "{}", tombi_toml_text::to_key_string(key)),
             Accessor::Index(index) => write!(f, "[{index}]"),
         }
     }
@@ -176,5 +176,20 @@ mod tests {
             Accessor::Index(2),
         ]);
         assert_eq!(format!("{}", accessors), "array[0][1][2]");
+    }
+
+    #[test]
+    fn test_accessors_display_quotes_non_bare_keys() {
+        let accessors = Accessors::from(vec![
+            Accessor::Key("extensions".to_string()),
+            Accessor::Key("tombi-toml/cargo".to_string()),
+        ]);
+        assert_eq!(format!("{}", accessors), r#"extensions."tombi-toml/cargo""#);
+    }
+
+    #[test]
+    fn test_accessors_display_escapes_quoted_keys() {
+        let accessors = Accessors::from(vec![Accessor::Key(r#"quote"slash\"#.to_string())]);
+        assert_eq!(format!("{}", accessors), r#""quote\"slash\\""#);
     }
 }

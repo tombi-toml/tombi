@@ -3535,6 +3535,7 @@ dependencies = [
  "rstest",
  "tombi-hashmap",
  "tombi-text",
+ "tombi-toml-text",
 ]
 
 [[package]]
@@ -4014,6 +4015,7 @@ dependencies = [
  "tombi-syntax",
  "tombi-test-lib",
  "tombi-text",
+ "tombi-toml-text",
  "tombi-uri",
  "tombi-validator",
  "tombi-x-keyword",

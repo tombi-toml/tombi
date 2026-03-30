@@ -307,6 +307,14 @@ pub fn to_basic_string(value: &str) -> String {
     result
 }
 
+pub fn to_key_string(value: &str) -> String {
+    if try_from_bare_key(value).is_ok() {
+        value.to_string()
+    } else {
+        to_basic_string(value)
+    }
+}
+
 pub fn to_literal_string(value: &str) -> String {
     format!("'{value}'")
 }
@@ -317,4 +325,24 @@ pub fn to_multi_line_basic_string(value: &str) -> String {
 
 pub fn to_multi_line_literal_string(value: &str) -> String {
     format!("'''\n{value}'''")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn key_string_keeps_bare_key_when_valid() {
+        assert_eq!(to_key_string("tombi-toml"), "tombi-toml");
+    }
+
+    #[test]
+    fn key_string_quotes_non_bare_key() {
+        assert_eq!(to_key_string("tombi-toml/cargo"), r#""tombi-toml/cargo""#);
+    }
+
+    #[test]
+    fn key_string_escapes_basic_string_characters() {
+        assert_eq!(to_key_string(r#"quote"slash\"#), r#""quote\"slash\\""#);
+    }
 }
