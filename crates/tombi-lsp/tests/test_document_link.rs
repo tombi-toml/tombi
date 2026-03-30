@@ -520,6 +520,41 @@ mod document_link_tests {
                 )),
             ) -> Ok(None);
         );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn pyproject_tool_uv_dependency_lists(
+                r#"
+                [tool.uv]
+                dev-dependencies = ["ruff>=0.7"]
+                constraint-dependencies = ["pytest<9"]
+                override-dependencies = ["werkzeug==2.3.0"]
+                build-constraint-dependencies = ["setuptools==60.0.0"]
+                "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok(Some(vec![
+                {
+                    url: "https://pypi.org/project/ruff/",
+                    range: 1:21..1:30,
+                    tooltip: "Open PyPI Package",
+                },
+                {
+                    url: "https://pypi.org/project/pytest/",
+                    range: 2:28..2:36,
+                    tooltip: "Open PyPI Package",
+                },
+                {
+                    url: "https://pypi.org/project/werkzeug/",
+                    range: 3:26..3:41,
+                    tooltip: "Open PyPI Package",
+                },
+                {
+                    url: "https://pypi.org/project/setuptools/",
+                    range: 4:34..4:52,
+                    tooltip: "Open PyPI Package",
+                }
+            ]));
+        );
     }
 }
 
