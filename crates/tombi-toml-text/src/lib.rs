@@ -320,7 +320,7 @@ fn is_variable_placeholder(value: &str) -> bool {
 }
 
 fn is_display_bare_key(value: &str) -> bool {
-    !value.contains('.') && try_from_bare_key(value).is_ok()
+    !value.is_empty() && !value.contains('.') && try_from_bare_key(value).is_ok()
 }
 
 pub fn to_literal_string(value: &str) -> String {
@@ -362,5 +362,10 @@ mod tests {
     #[test]
     fn key_string_quotes_key_containing_dot() {
         assert_eq!(to_key_string("a.b"), r#""a.b""#);
+    }
+
+    #[test]
+    fn key_string_quotes_empty_key() {
+        assert_eq!(to_key_string(""), r#""""#);
     }
 }

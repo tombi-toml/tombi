@@ -266,6 +266,9 @@ mod tests {
         SchemaAccessor::Key("extensions".to_string()),
         SchemaAccessor::Key("tombi-toml/cargo".to_string()),
     ])]
+    #[case(r#""""#, vec![
+        SchemaAccessor::Key("".to_string()),
+    ])]
     #[case(r#""a.b".key"#, vec![
         SchemaAccessor::Key("a.b".to_string()),
         SchemaAccessor::Key("key".to_string()),
@@ -297,6 +300,7 @@ mod tests {
     fn test_schema_accessors_display_parse_roundtrip_with_quoted_key() {
         let accessors = SchemaAccessors::from(vec![
             SchemaAccessor::Key("extensions".to_string()),
+            SchemaAccessor::Key("".to_string()),
             SchemaAccessor::Key(r#"quote"slash\"#.to_string()),
             SchemaAccessor::Key("a.b".to_string()),
         ]);
