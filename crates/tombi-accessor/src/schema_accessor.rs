@@ -52,7 +52,6 @@ impl SchemaAccessor {
             match chars[i] {
                 '"' => {
                     if !current_key.is_empty() {
-                        log::warn!("Invalid schema accessor: {path}");
                         return None;
                     }
 
@@ -76,7 +75,6 @@ impl SchemaAccessor {
                     } else if index_str.parse::<usize>().is_ok() {
                         accessors.push(SchemaAccessor::Index);
                     } else {
-                        log::warn!("Invalid schema accessor: {path}");
                         return None;
                     }
                 }
