@@ -69,6 +69,23 @@ test_lint! {
 
 test_lint! {
     #[test]
+    fn test_tombi_schema_lsp_feature_tree(
+        r#"
+        [lsp]
+        completion = { directive.enabled = false, schema.enabled = true, extension.enabled = false }
+        hover = { directive.enabled = false, schema.enabled = true, extension.enabled = false }
+        document-link = { schema.enabled = false, extension.enabled = true }
+        goto-definition = { schema.enabled = false, extension.enabled = true }
+        goto-declaration = { extension.enabled = false }
+        goto-type-definition = { directive.enabled = false, schema.enabled = true }
+        code-action = { dot-keys-to-inline-table.enabled = false, inline-table-to-dot-keys.enabled = true, extension.enabled = false }
+        "#,
+        SchemaPath(tombi_schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
     fn test_tombi_schema_lint_rules_deprecated(
         r#"
         [[schemas]]

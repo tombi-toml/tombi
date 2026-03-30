@@ -27,14 +27,7 @@ pub async fn handle_goto_definition(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    if !config
-        .lsp
-        .as_ref()
-        .and_then(|server| server.goto_definition.as_ref())
-        .and_then(|goto_definition| goto_definition.enabled)
-        .unwrap_or_default()
-        .value()
-    {
+    if !config.lsp_goto_definition_enabled() {
         log::debug!("`server.goto_definition.enabled` is false");
         return Ok(Default::default());
     }
@@ -50,7 +43,9 @@ pub async fn handle_goto_definition(
 
     let position = position.into_lsp(line_index);
 
-    if let Some(location) = resolve_schema_definition_location(&root, &text_document_uri, position)
+    if config.lsp_goto_definition_schema_enabled()
+        && let Some(location) =
+            resolve_schema_definition_location(&root, &text_document_uri, position)
     {
         return Ok(Some(vec![location]));
     }
@@ -62,7 +57,8 @@ pub async fn handle_goto_definition(
     let document_tree = document_source.document_tree();
     let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
 
-    if config.cargo_extension_enabled()
+    if config.lsp_goto_definition_extension_enabled()
+        && config.cargo_extension_enabled()
         && let Some(locations) = tombi_extension_cargo::goto_definition(
             &text_document_uri,
             &document_tree,
@@ -75,7 +71,8 @@ pub async fn handle_goto_definition(
         return Ok(locations.into());
     }
 
-    if config.pyproject_extension_enabled()
+    if config.lsp_goto_definition_extension_enabled()
+        && config.pyproject_extension_enabled()
         && let Some(locations) = tombi_extension_pyproject::goto_definition(
             &text_document_uri,
             &document_tree,
@@ -88,7 +85,8 @@ pub async fn handle_goto_definition(
         return Ok(locations.into());
     }
 
-    if config.tombi_extension_enabled()
+    if config.lsp_goto_definition_extension_enabled()
+        && config.tombi_extension_enabled()
         && let Some(locations) = tombi_extension_tombi::goto_definition(
             &text_document_uri,
             &document_tree,

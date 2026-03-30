@@ -35,14 +35,7 @@ pub async fn handle_formatting(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    if !config
-        .lsp
-        .as_ref()
-        .and_then(|server| server.formatting.as_ref())
-        .and_then(|formatting| formatting.enabled)
-        .unwrap_or_default()
-        .value()
-    {
+    if !config.lsp_formatting_enabled() {
         log::debug!("`server.formatting.enabled` is false");
         return Ok(None);
     }

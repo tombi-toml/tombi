@@ -29,14 +29,7 @@ pub async fn handle_code_action(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    if !config
-        .lsp
-        .as_ref()
-        .and_then(|server| server.code_action.as_ref())
-        .and_then(|code_action| code_action.enabled)
-        .unwrap_or_default()
-        .value()
-    {
+    if !config.lsp_code_action_enabled() {
         log::debug!("`server.code_action.enabled` is false");
         return Ok(None);
     }
@@ -65,29 +58,34 @@ pub async fn handle_code_action(
 
     let mut code_actions = Vec::new();
 
-    if let Some(code_action) = dot_keys_to_inline_table_code_action(
-        &text_document_uri,
-        line_index,
-        &root,
-        &document_tree,
-        &accessors,
-        &accessor_contexts,
-    ) {
+    if config.lsp_code_action_dot_keys_to_inline_table_enabled()
+        && let Some(code_action) = dot_keys_to_inline_table_code_action(
+            &text_document_uri,
+            line_index,
+            &root,
+            &document_tree,
+            &accessors,
+            &accessor_contexts,
+        )
+    {
         code_actions.push(CodeActionOrCommand::CodeAction(code_action));
     }
 
-    if let Some(code_action) = inline_table_to_dot_keys_code_action(
-        &text_document_uri,
-        line_index,
-        &root,
-        &document_tree,
-        &accessors,
-        &accessor_contexts,
-    ) {
+    if config.lsp_code_action_inline_table_to_dot_keys_enabled()
+        && let Some(code_action) = inline_table_to_dot_keys_code_action(
+            &text_document_uri,
+            line_index,
+            &root,
+            &document_tree,
+            &accessors,
+            &accessor_contexts,
+        )
+    {
         code_actions.push(CodeActionOrCommand::CodeAction(code_action));
     }
 
-    if config.cargo_extension_enabled()
+    if config.lsp_code_action_extension_enabled()
+        && config.cargo_extension_enabled()
         && let Some(extension_code_actions) = tombi_extension_cargo::code_action(
             &text_document_uri,
             line_index,
@@ -102,7 +100,8 @@ pub async fn handle_code_action(
         code_actions.extend(extension_code_actions);
     }
 
-    if config.pyproject_extension_enabled()
+    if config.lsp_code_action_extension_enabled()
+        && config.pyproject_extension_enabled()
         && let Some(extension_code_actions) = tombi_extension_pyproject::code_action(
             &text_document_uri,
             &root,

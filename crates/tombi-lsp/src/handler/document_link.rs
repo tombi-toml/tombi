@@ -20,14 +20,7 @@ pub async fn handle_document_link(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    if !config
-        .lsp
-        .as_ref()
-        .and_then(|server| server.document_link.as_ref())
-        .and_then(|document_link| document_link.enabled)
-        .unwrap_or_default()
-        .value()
-    {
+    if !config.lsp_document_link_enabled() {
         log::debug!("`server.document_link.enabled` is false");
         return Ok(None);
     }
@@ -43,11 +36,13 @@ pub async fn handle_document_link(
 
     let mut document_links = vec![];
 
-    if let Some(SchemaDocumentCommentDirective {
-        uri: Ok(schema_uri),
-        uri_range: range,
-        ..
-    }) = root.schema_document_comment_directive(text_document_uri.to_file_path().ok().as_deref())
+    if config.lsp_document_link_schema_enabled()
+        && let Some(SchemaDocumentCommentDirective {
+            uri: Ok(schema_uri),
+            uri_range: range,
+            ..
+        }) =
+            root.schema_document_comment_directive(text_document_uri.to_file_path().ok().as_deref())
     {
         let tooltip = "Open JSON Schema".into();
         document_links.push(
@@ -62,7 +57,8 @@ pub async fn handle_document_link(
 
     let document_tree = document_source.document_tree();
 
-    if config.cargo_extension_enabled()
+    if config.lsp_document_link_extension_enabled()
+        && config.cargo_extension_enabled()
         && let Some(locations) = tombi_extension_cargo::document_link(
             &text_document_uri,
             &document_tree,
@@ -78,7 +74,8 @@ pub async fn handle_document_link(
         );
     }
 
-    if config.tombi_extension_enabled()
+    if config.lsp_document_link_extension_enabled()
+        && config.tombi_extension_enabled()
         && let Some(locations) = tombi_extension_tombi::document_link(
             &text_document_uri,
             &document_tree,
@@ -94,7 +91,8 @@ pub async fn handle_document_link(
         );
     }
 
-    if config.pyproject_extension_enabled()
+    if config.lsp_document_link_extension_enabled()
+        && config.pyproject_extension_enabled()
         && let Some(locations) = tombi_extension_pyproject::document_link(
             &text_document_uri,
             &document_tree,

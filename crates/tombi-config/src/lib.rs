@@ -131,6 +131,162 @@ impl Config {
             .and_then(Extensions::tombi_features)
     }
 
+    pub fn lsp_code_action_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::code_action_enabled)
+    }
+
+    pub fn lsp_code_action_dot_keys_to_inline_table_enabled(&self) -> bool {
+        self.lsp.as_ref().map_or(
+            true,
+            LspOptions::code_action_dot_keys_to_inline_table_enabled,
+        )
+    }
+
+    pub fn lsp_code_action_inline_table_to_dot_keys_enabled(&self) -> bool {
+        self.lsp.as_ref().map_or(
+            true,
+            LspOptions::code_action_inline_table_to_dot_keys_enabled,
+        )
+    }
+
+    pub fn lsp_code_action_extension_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::code_action_extension_enabled)
+    }
+
+    pub fn lsp_completion_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::completion_enabled)
+    }
+
+    pub fn lsp_completion_directive_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::completion_directive_enabled)
+    }
+
+    pub fn lsp_completion_schema_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::completion_schema_enabled)
+    }
+
+    pub fn lsp_completion_extension_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::completion_extension_enabled)
+    }
+
+    pub fn lsp_diagnostic_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::diagnostic_enabled)
+    }
+
+    pub fn lsp_document_link_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::document_link_enabled)
+    }
+
+    pub fn lsp_document_link_schema_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::document_link_schema_enabled)
+    }
+
+    pub fn lsp_document_link_extension_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::document_link_extension_enabled)
+    }
+
+    pub fn lsp_formatting_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::formatting_enabled)
+    }
+
+    pub fn lsp_goto_declaration_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::goto_declaration_enabled)
+    }
+
+    pub fn lsp_goto_declaration_extension_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::goto_declaration_extension_enabled)
+    }
+
+    pub fn lsp_goto_definition_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::goto_definition_enabled)
+    }
+
+    pub fn lsp_goto_definition_schema_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::goto_definition_schema_enabled)
+    }
+
+    pub fn lsp_goto_definition_extension_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::goto_definition_extension_enabled)
+    }
+
+    pub fn lsp_goto_type_definition_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::goto_type_definition_enabled)
+    }
+
+    pub fn lsp_goto_type_definition_directive_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::goto_type_definition_directive_enabled)
+    }
+
+    pub fn lsp_goto_type_definition_schema_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::goto_type_definition_schema_enabled)
+    }
+
+    pub fn lsp_hover_enabled(&self) -> bool {
+        self.lsp.as_ref().map_or(true, LspOptions::hover_enabled)
+    }
+
+    pub fn lsp_hover_directive_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::hover_directive_enabled)
+    }
+
+    pub fn lsp_hover_schema_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::hover_schema_enabled)
+    }
+
+    pub fn lsp_hover_extension_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::hover_extension_enabled)
+    }
+
+    pub fn lsp_workspace_diagnostic_enabled(&self) -> bool {
+        self.lsp
+            .as_ref()
+            .map_or(true, LspOptions::workspace_diagnostic_enabled)
+    }
+
     pub fn merge_format(&self, override_options: Option<&OverrideFormatOptions>) -> FormatOptions {
         let options = self.format.clone().unwrap_or_default();
         let base_rules = options.rules.unwrap_or_default();

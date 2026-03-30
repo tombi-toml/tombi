@@ -567,7 +567,7 @@
       "type": "object",
       "properties": {
         "code-action": {
-          "title": "Code Action Feature options",
+          "title": "Code Action feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspCodeAction"
@@ -578,7 +578,7 @@
           ]
         },
         "completion": {
-          "title": "Completion Feature options",
+          "title": "Completion feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspCompletion"
@@ -589,7 +589,7 @@
           ]
         },
         "diagnostic": {
-          "title": "Diagnostic Feature options",
+          "title": "Diagnostic feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspDiagnostic"
@@ -600,7 +600,7 @@
           ]
         },
         "document-link": {
-          "title": "Document Link Feature options",
+          "title": "Document Link feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspDocumentLink"
@@ -611,7 +611,7 @@
           ]
         },
         "formatting": {
-          "title": "Formatting Feature options",
+          "title": "Formatting feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspFormatting"
@@ -622,10 +622,10 @@
           ]
         },
         "goto-declaration": {
-          "title": "Goto Declaration Feature options",
+          "title": "Goto Declaration feature options",
           "anyOf": [
             {
-              "$ref": "#/definitions/LspGotoDefinition"
+              "$ref": "#/definitions/LspGotoDeclaration"
             },
             {
               "type": "null"
@@ -633,7 +633,7 @@
           ]
         },
         "goto-definition": {
-          "title": "Goto Definition Feature options",
+          "title": "Goto Definition feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspGotoDefinition"
@@ -644,10 +644,10 @@
           ]
         },
         "goto-type-definition": {
-          "title": "Goto Type Definition Feature options",
+          "title": "Goto Type Definition feature options",
           "anyOf": [
             {
-              "$ref": "#/definitions/LspGotoDefinition"
+              "$ref": "#/definitions/LspGotoTypeDefinition"
             },
             {
               "type": "null"
@@ -655,7 +655,7 @@
           ]
         },
         "hover": {
-          "title": "Hover Feature options",
+          "title": "Hover feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspHover"
@@ -666,7 +666,7 @@
           ]
         },
         "workspace-diagnostic": {
-          "title": "Workspace Diagnostics Feature options",
+          "title": "Workspace Diagnostics feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspWorkspaceDiagnostic"
@@ -681,11 +681,21 @@
       "x-tombi-table-keys-order": "ascending"
     },
     "LspCodeAction": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/LspCodeActionFeatureTree"
+        }
+      ]
+    },
+    "EnabledOnly": {
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable code action feature",
-          "description": "Whether to enable code action.",
+          "title": "Enable feature",
+          "description": "Whether this feature is enabled.",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
@@ -702,12 +712,55 @@
       "type": "boolean",
       "default": true
     },
-    "LspCompletion": {
+    "LspCodeActionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "dot-keys-to-inline-table": {
+          "title": "Dot-keys to inline-table code action feature",
+          "description": "Whether the code action converting dot-keys to inline tables is enabled.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "inline-table-to-dot-keys": {
+          "title": "Inline-table to dot-keys code action feature",
+          "description": "Whether the code action converting inline tables to dot-keys is enabled.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extension": {
+          "title": "Extension code action feature",
+          "description": "Whether extension-provided code actions are enabled.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "ToggleFeature": {
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable completion feature",
-          "description": "Whether to enable completion.",
+          "title": "Enable feature",
+          "description": "Whether this nested feature is enabled.",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
@@ -720,12 +773,65 @@
       },
       "additionalProperties": false
     },
+    "LspCompletion": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/LspCompletionFeatureTree"
+        }
+      ]
+    },
+    "LspCompletionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "directive": {
+          "title": "Directive completion feature",
+          "description": "Whether completion is available in Tombi comment directives.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schema": {
+          "title": "Schema completion feature",
+          "description": "Whether schema-driven completion is enabled.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extension": {
+          "title": "Extension completion feature",
+          "description": "Whether extension-provided completion is enabled.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
     "LspDiagnostic": {
       "type": "object",
       "properties": {
         "enabled": {
           "title": "Enable diagnostic feature",
-          "description": "Whether to enable diagnostic.",
+          "description": "Whether to enable diagnostics.",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
@@ -739,14 +845,36 @@
       "additionalProperties": false
     },
     "LspDocumentLink": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/LspDocumentLinkFeatureTree"
+        }
+      ]
+    },
+    "LspDocumentLinkFeatureTree": {
       "type": "object",
       "properties": {
-        "enabled": {
-          "title": "Enable document link feature",
-          "description": "Whether to enable document link.",
+        "schema": {
+          "title": "Schema document link feature",
+          "description": "Whether schema directives produce document links.",
           "anyOf": [
             {
-              "$ref": "#/definitions/BoolDefaultTrue"
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extension": {
+          "title": "Extension document link feature",
+          "description": "Whether extension-provided document links are enabled.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
             },
             {
               "type": "null"
@@ -754,7 +882,8 @@
           ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
     },
     "LspFormatting": {
       "type": "object",
@@ -774,15 +903,25 @@
       },
       "additionalProperties": false
     },
-    "LspGotoDefinition": {
+    "LspGotoDeclaration": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/LspGotoDeclarationFeatureTree"
+        }
+      ]
+    },
+    "LspGotoDeclarationFeatureTree": {
       "type": "object",
       "properties": {
-        "enabled": {
-          "title": "Enable goto definition feature",
-          "description": "Whether to enable goto definition.",
+        "extension": {
+          "title": "Extension go-to-declaration feature",
+          "description": "Whether extension-provided go-to-declaration is enabled.",
           "anyOf": [
             {
-              "$ref": "#/definitions/BoolDefaultTrue"
+              "$ref": "#/definitions/ToggleFeature"
             },
             {
               "type": "null"
@@ -790,17 +929,134 @@
           ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "LspGotoDefinition": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/LspGotoDefinitionFeatureTree"
+        }
+      ]
+    },
+    "LspGotoDefinitionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "title": "Schema go-to-definition feature",
+          "description": "Whether go-to-definition resolves schema directives.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extension": {
+          "title": "Extension go-to-definition feature",
+          "description": "Whether extension-provided go-to-definition is enabled.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "LspGotoTypeDefinition": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/LspGotoTypeDefinitionFeatureTree"
+        }
+      ]
+    },
+    "LspGotoTypeDefinitionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "directive": {
+          "title": "Directive go-to-type-definition feature",
+          "description": "Whether go-to-type-definition resolves Tombi comment directives.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schema": {
+          "title": "Schema go-to-type-definition feature",
+          "description": "Whether go-to-type-definition resolves schema-backed types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
     },
     "LspHover": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/LspHoverFeatureTree"
+        }
+      ]
+    },
+    "LspHoverFeatureTree": {
       "type": "object",
       "properties": {
-        "enabled": {
-          "title": "Enable hover feature",
-          "description": "Whether to enable hover.",
+        "directive": {
+          "title": "Directive hover feature",
+          "description": "Whether hover is available in Tombi comment directives.",
           "anyOf": [
             {
-              "$ref": "#/definitions/BoolDefaultTrue"
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schema": {
+          "title": "Schema hover feature",
+          "description": "Whether schema-derived hover is enabled.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extension": {
+          "title": "Extension hover feature",
+          "description": "Whether extension-provided hover is enabled.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
             },
             {
               "type": "null"
@@ -808,14 +1064,15 @@
           ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
     },
     "LspWorkspaceDiagnostic": {
       "type": "object",
       "properties": {
         "enabled": {
           "title": "Enable workspace diagnostic feature",
-          "description": "Whether to enable workspace diagnostic.",
+          "description": "Whether to enable workspace diagnostics.",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
@@ -1223,24 +1480,6 @@
         }
       ]
     },
-    "EnabledOnly": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "title": "Enable feature",
-          "description": "Whether this feature is enabled.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/BoolDefaultTrue"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
     "CargoExtensionFeatureTree": {
       "type": "object",
       "properties": {
@@ -1405,24 +1644,6 @@
       },
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
-    },
-    "ToggleFeature": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "title": "Enable feature",
-          "description": "Whether this nested feature is enabled.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/BoolDefaultTrue"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
     },
     "CargoInlayHintFeatures": {
       "anyOf": [

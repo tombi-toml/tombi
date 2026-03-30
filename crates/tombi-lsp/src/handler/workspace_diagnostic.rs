@@ -107,14 +107,7 @@ async fn publish_workspace_diagnostics(
 /// Check if workspace diagnostic is enabled for the given workspace config
 #[inline]
 fn is_workspace_diagnostic_enabled(workspace_config: &WorkspaceConfig) -> bool {
-    workspace_config
-        .config
-        .lsp
-        .as_ref()
-        .and_then(|lsp| lsp.workspace_diagnostic.as_ref())
-        .and_then(|workspace_diagnostic| workspace_diagnostic.enabled)
-        .unwrap_or_default()
-        .value()
+    workspace_config.config.lsp_workspace_diagnostic_enabled()
 }
 
 pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_uri::Uri) -> bool {

@@ -28,14 +28,7 @@ pub async fn handle_goto_declaration(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    if !config
-        .lsp
-        .as_ref()
-        .and_then(|server| server.goto_declaration.as_ref())
-        .and_then(|goto_declaration| goto_declaration.enabled)
-        .unwrap_or_default()
-        .value()
-    {
+    if !config.lsp_goto_declaration_enabled() {
         log::debug!("`server.goto_declaration.enabled` is false");
         return Ok(None);
     }
@@ -58,7 +51,8 @@ pub async fn handle_goto_declaration(
     let document_tree = document_source.document_tree();
     let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
 
-    if config.cargo_extension_enabled()
+    if config.lsp_goto_declaration_extension_enabled()
+        && config.cargo_extension_enabled()
         && let Some(locations) = tombi_extension_cargo::goto_declaration(
             &text_document_uri,
             &document_tree,
@@ -71,7 +65,8 @@ pub async fn handle_goto_declaration(
         return Ok(locations.into());
     }
 
-    if config.pyproject_extension_enabled()
+    if config.lsp_goto_declaration_extension_enabled()
+        && config.pyproject_extension_enabled()
         && let Some(locations) = tombi_extension_pyproject::goto_declaration(
             &text_document_uri,
             &document_tree,

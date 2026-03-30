@@ -42,26 +42,8 @@ pub async fn handle_completion(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    if !config
-        .lsp
-        .as_ref()
-        .and_then(|server| server.completion.as_ref())
-        .and_then(|completion| completion.enabled)
-        .unwrap_or_default()
-        .value()
-    {
+    if !config.lsp_completion_enabled() {
         log::debug!("`server.completion.enabled` is false");
-        return Ok(None);
-    }
-
-    if !config
-        .schema
-        .as_ref()
-        .and_then(|s| s.enabled)
-        .unwrap_or_default()
-        .value()
-    {
-        log::debug!("`schema.enabled` is false");
         return Ok(None);
     }
 
@@ -109,16 +91,32 @@ pub async fn handle_completion(
     let mut completion_items = Vec::new();
 
     let comment_context = get_comment_context(&root, position);
+    let directive_completion_enabled = config.lsp_completion_directive_enabled();
+    let schema_completion_enabled = config.lsp_completion_schema_enabled()
+        && config
+            .schema
+            .as_ref()
+            .and_then(|s| s.enabled)
+            .unwrap_or_default()
+            .value();
+    let extension_completion_enabled = config.lsp_completion_extension_enabled();
+
+    if comment_context.is_some() && !directive_completion_enabled {
+        log::debug!("`lsp.completion.directive.enabled` is false");
+        return Ok(Some(Vec::with_capacity(0)));
+    }
+
     let (keys, completion_hint) = match &comment_context {
         Some(CommentContext::DocumentDirective(comment)) => {
-            if let Some(comment_completion_contents) =
-                get_document_comment_directive_completion_contents(
-                    &root,
-                    comment,
-                    position,
-                    &text_document_uri,
-                )
-                .await
+            if directive_completion_enabled
+                && let Some(comment_completion_contents) =
+                    get_document_comment_directive_completion_contents(
+                        &root,
+                        comment,
+                        position,
+                        &text_document_uri,
+                    )
+                    .await
             {
                 return Ok(Some(comment_completion_contents));
             }
@@ -157,16 +155,18 @@ pub async fn handle_completion(
                 strict: None,
             };
 
-            completion_items.extend(
-                find_completion_contents_with_tree(
-                    &document_tree,
-                    position,
-                    &keys,
-                    &schema_context,
-                    completion_hint,
-                )
-                .await,
-            );
+            if schema_completion_enabled {
+                completion_items.extend(
+                    find_completion_contents_with_tree(
+                        &document_tree,
+                        position,
+                        &keys,
+                        &schema_context,
+                        completion_hint,
+                    )
+                    .await,
+                );
+            }
 
             (keys, completion_hint)
         }
@@ -187,7 +187,8 @@ pub async fn handle_completion(
     let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
     let offline = schema_store.offline();
     let cache_options = schema_store.cache_options();
-    if config.tombi_extension_enabled()
+    if extension_completion_enabled
+        && config.tombi_extension_enabled()
         && let Some(items) = tombi_extension_tombi::completion(
             &text_document_uri,
             &document_tree,
@@ -202,7 +203,8 @@ pub async fn handle_completion(
     {
         completion_items.extend(items);
     }
-    if config.cargo_extension_enabled()
+    if extension_completion_enabled
+        && config.cargo_extension_enabled()
         && let Some(items) = tombi_extension_cargo::completion(
             &text_document_uri,
             &document_tree,
@@ -219,7 +221,8 @@ pub async fn handle_completion(
     {
         completion_items.extend(items);
     }
-    if config.pyproject_extension_enabled()
+    if extension_completion_enabled
+        && config.pyproject_extension_enabled()
         && let Some(items) = tombi_extension_pyproject::completion(
             &text_document_uri,
             &document_tree,

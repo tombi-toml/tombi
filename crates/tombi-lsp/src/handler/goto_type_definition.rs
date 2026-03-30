@@ -39,14 +39,7 @@ pub async fn handle_goto_type_definition(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    if !config
-        .lsp
-        .as_ref()
-        .and_then(|server| server.goto_type_definition.as_ref())
-        .and_then(|goto_type_definition| goto_type_definition.enabled)
-        .unwrap_or_default()
-        .value()
-    {
+    if !config.lsp_goto_type_definition_enabled() {
         log::debug!("`server.goto_type_definition.enabled` is false");
         return Ok(Default::default());
     }
@@ -62,8 +55,9 @@ pub async fn handle_goto_type_definition(
 
     let position = position.into_lsp(line_index);
 
-    if let Some(type_definition) =
-        get_tombi_document_comment_directive_type_definition(&root, position).await
+    if config.lsp_goto_type_definition_directive_enabled()
+        && let Some(type_definition) =
+            get_tombi_document_comment_directive_type_definition(&root, position).await
     {
         return Ok(Some(vec![tombi_extension::DefinitionLocation {
             uri: type_definition.schema_uri.into(),
@@ -82,6 +76,10 @@ pub async fn handle_goto_type_definition(
     };
 
     if keys.is_empty() && range.is_none() {
+        return Ok(Default::default());
+    }
+
+    if !config.lsp_goto_type_definition_schema_enabled() {
         return Ok(Default::default());
     }
 

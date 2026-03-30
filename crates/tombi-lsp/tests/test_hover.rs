@@ -434,6 +434,145 @@ mod hover_keys_value {
             });
         );
 
+        #[tokio::test]
+        async fn cargo_workspace_dependency_hover_metadata_with_lsp_schema_disabled()
+        -> Result<(), Box<dyn std::error::Error>> {
+            use std::io::Write;
+
+            use tombi_lsp::Backend;
+            use tombi_lsp::handler::{handle_did_open, handle_hover};
+            use tombi_text::IntoLsp;
+            use tower_lsp::{
+                LspService,
+                lsp_types::{
+                    DidOpenTextDocumentParams, HoverParams, TextDocumentIdentifier,
+                    TextDocumentItem, TextDocumentPositionParams, Url, WorkDoneProgressParams,
+                },
+            };
+
+            tombi_test_lib::init_log();
+
+            let source_path =
+                tombi_test_lib::project_root_path().join("crates/tombi-lsp/Cargo.toml");
+            let schema_file_path = cargo_schema_path();
+            let source = textwrap::dedent(
+                r#"
+                [dependencies]
+                tombi-extension-cargo█ = { workspace = true }
+                "#,
+            )
+            .trim()
+            .to_string();
+
+            let index = source
+                .find('█')
+                .ok_or("failed to find hover position marker")?;
+            let mut toml_text = source;
+            toml_text.remove(index);
+
+            let mut temp_file = tempfile::NamedTempFile::new()?;
+            temp_file.write_all(toml_text.as_bytes())?;
+
+            let line_index =
+                tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
+
+            let (service, _) = LspService::new(|client| Backend::new(client, &Default::default()));
+            let backend = service.inner();
+
+            let config_schema_store = backend
+                .config_manager
+                .config_schema_store_for_file(&source_path)
+                .await;
+
+            let mut test_config = config_schema_store.config;
+            let lsp_config: tombi_config::Config = serde_tombi::from_str_async(
+                r#"
+                [lsp.hover]
+                schema.enabled = false
+                extension.enabled = true
+                "#,
+            )
+            .await?;
+            test_config.lsp = lsp_config.lsp;
+
+            let schema_uri = tombi_schema_store::SchemaUri::from_file_path(&schema_file_path)
+                .map_err(|_| "failed to convert schema path to URL")?;
+            let mut existing_schemas = test_config.schemas.take().unwrap_or_default();
+            existing_schemas.push(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                toml_version: None,
+                path: schema_uri.to_string(),
+                include: vec!["*.toml".to_string()],
+                lint: None,
+            }));
+            test_config.schemas = Some(existing_schemas);
+
+            if let Some(config_path) = config_schema_store.config_path {
+                backend
+                    .config_manager
+                    .update_config_with_path(test_config, &config_path)
+                    .await?;
+            } else {
+                backend
+                    .config_manager
+                    .update_editor_config(test_config)
+                    .await;
+            }
+
+            let toml_file_url = Url::from_file_path(&source_path)
+                .map_err(|_| "failed to convert file path to URL")?;
+
+            handle_did_open(
+                backend,
+                DidOpenTextDocumentParams {
+                    text_document: TextDocumentItem {
+                        uri: toml_file_url.clone(),
+                        language_id: "toml".to_string(),
+                        version: 0,
+                        text: toml_text.clone(),
+                    },
+                },
+            )
+            .await;
+
+            let hover = handle_hover(
+                &backend,
+                HoverParams {
+                    text_document_position_params: TextDocumentPositionParams {
+                        text_document: TextDocumentIdentifier { uri: toml_file_url },
+                        position: (tombi_text::Position::default()
+                            + tombi_text::RelativePosition::of(&toml_text[..index]))
+                        .into_lsp(&line_index),
+                    },
+                    work_done_progress_params: WorkDoneProgressParams::default(),
+                },
+            )
+            .await?;
+
+            let Some(tombi_lsp::HoverContent::Value(hover_content)) = hover else {
+                return Err("failed to handle hover content".into());
+            };
+
+            assert!(
+                hover_content.schema_uri.is_none(),
+                "schema metadata should be disabled"
+            );
+            pretty_assertions::assert_eq!(
+                hover_content.accessors.to_string(),
+                "dependencies.tombi-extension-cargo"
+            );
+            pretty_assertions::assert_eq!(hover_content.value_type.to_string(), "Table");
+            pretty_assertions::assert_eq!(
+                hover_content.title.as_deref(),
+                Some("tombi-extension-cargo")
+            );
+            pretty_assertions::assert_eq!(
+                hover_content.description.as_deref(),
+                Some("Tombi extension for Cargo.toml")
+            );
+
+            Ok(())
+        }
+
         test_hover_keys_value!(
             #[tokio::test]
             async fn cargo_remote_dependency_hover_offline(

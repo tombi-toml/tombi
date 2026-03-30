@@ -37,14 +37,7 @@ pub async fn handle_hover(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    if !config
-        .lsp
-        .as_ref()
-        .and_then(|server| server.hover.as_ref())
-        .and_then(|hover| hover.enabled)
-        .unwrap_or_default()
-        .value()
-    {
+    if !config.lsp_hover_enabled() {
         log::debug!("`server.hover.enabled` is false");
         return Ok(None);
     }
@@ -70,9 +63,13 @@ pub async fn handle_hover(
         .flatten();
 
     let source_path = text_document_uri.to_file_path().ok();
+    let schema_hover_enabled = config.lsp_hover_schema_enabled();
+    let extension_hover_enabled = config.lsp_hover_extension_enabled();
     // Check if position is in a #:tombi comment directive
-    if let Some(content) =
-        get_document_comment_directive_hover_content(&root, position, source_path.as_deref()).await
+    if config.lsp_hover_directive_enabled()
+        && let Some(content) =
+            get_document_comment_directive_hover_content(&root, position, source_path.as_deref())
+                .await
     {
         return Ok(Some(content));
     }
@@ -87,98 +84,117 @@ pub async fn handle_hover(
         return Ok(None);
     }
 
-    let mut hover_content = get_hover_content(
-        &document_tree,
-        position,
-        &keys,
-        &SchemaContext {
-            toml_version,
-            root_schema: source_schema
-                .as_ref()
-                .and_then(|s| s.root_schema.as_deref()),
-            sub_schema_uri_map: source_schema.as_ref().map(|s| &s.sub_schema_uri_map),
-            deprecated_lint_level: source_schema.as_ref().and_then(|s| s.deprecated_lint_level),
-            schema_visits: Default::default(),
-            store: &schema_store,
-            strict: None,
-        },
-    )
-    .await;
+    let mut hover_content = if schema_hover_enabled || extension_hover_enabled {
+        get_hover_content(
+            &document_tree,
+            position,
+            &keys,
+            &SchemaContext {
+                toml_version,
+                root_schema: if schema_hover_enabled {
+                    source_schema
+                        .as_ref()
+                        .and_then(|s| s.root_schema.as_deref())
+                } else {
+                    None
+                },
+                sub_schema_uri_map: if schema_hover_enabled {
+                    source_schema.as_ref().map(|s| &s.sub_schema_uri_map)
+                } else {
+                    None
+                },
+                deprecated_lint_level: if schema_hover_enabled {
+                    source_schema.as_ref().and_then(|s| s.deprecated_lint_level)
+                } else {
+                    None
+                },
+                schema_visits: Default::default(),
+                store: &schema_store,
+                strict: None,
+            },
+        )
+        .await
+    } else {
+        None
+    };
 
     if let Some(HoverContent::Value(hover_value_content)) = &mut hover_content {
         hover_value_content.range = range;
 
-        let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
-        let offline = schema_store.offline();
-        let cache_options = schema_store.cache_options();
-        let tombi_hover_enabled = config
-            .tombi_extension_features()
-            .map_or(true, tombi_config::TombiExtensionFeatures::hover_enabled);
-        let cargo_dependency_detail_hover_enabled = config.cargo_extension_features().map_or(
-            true,
-            tombi_config::CargoExtensionFeatures::dependency_detail_hover_enabled,
-        );
-        let pyproject_dependency_detail_hover_enabled =
-            config.pyproject_extension_features().map_or(
+        if extension_hover_enabled {
+            let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
+            let offline = schema_store.offline();
+            let cache_options = schema_store.cache_options();
+            let tombi_hover_enabled = config
+                .tombi_extension_features()
+                .map_or(true, tombi_config::TombiExtensionFeatures::hover_enabled);
+            let cargo_dependency_detail_hover_enabled = config.cargo_extension_features().map_or(
                 true,
-                tombi_config::PyprojectExtensionFeatures::dependency_detail_hover_enabled,
+                tombi_config::CargoExtensionFeatures::dependency_detail_hover_enabled,
             );
+            let pyproject_dependency_detail_hover_enabled =
+                config.pyproject_extension_features().map_or(
+                    true,
+                    tombi_config::PyprojectExtensionFeatures::dependency_detail_hover_enabled,
+                );
 
-        let extension_hover = if tombi_hover_enabled {
-            tombi_extension_tombi::hover(
-                &text_document_uri,
-                &document_tree,
-                &accessors,
-                position,
-                toml_version,
-                offline,
-            )
-            .await?
-        } else {
-            None
-        };
-        let extension_hover = match extension_hover {
-            some @ Some(_) => some,
-            None if cargo_dependency_detail_hover_enabled => {
-                tombi_extension_cargo::hover(
+            let extension_hover = if tombi_hover_enabled {
+                tombi_extension_tombi::hover(
                     &text_document_uri,
                     &document_tree,
                     &accessors,
                     position,
                     toml_version,
                     offline,
-                    cache_options,
                 )
                 .await?
-            }
-            None => None,
-        };
-        let extension_hover = match extension_hover {
-            some @ Some(_) => some,
-            None if pyproject_dependency_detail_hover_enabled => {
-                tombi_extension_pyproject::hover(
-                    &text_document_uri,
-                    &document_tree,
-                    &accessors,
-                    position,
-                    toml_version,
-                    offline,
-                    cache_options,
-                )
-                .await?
-            }
-            None => None,
-        };
+            } else {
+                None
+            };
+            let extension_hover = match extension_hover {
+                some @ Some(_) => some,
+                None if cargo_dependency_detail_hover_enabled => {
+                    tombi_extension_cargo::hover(
+                        &text_document_uri,
+                        &document_tree,
+                        &accessors,
+                        position,
+                        toml_version,
+                        offline,
+                        cache_options,
+                    )
+                    .await?
+                }
+                None => None,
+            };
+            let extension_hover = match extension_hover {
+                some @ Some(_) => some,
+                None if pyproject_dependency_detail_hover_enabled => {
+                    tombi_extension_pyproject::hover(
+                        &text_document_uri,
+                        &document_tree,
+                        &accessors,
+                        position,
+                        toml_version,
+                        offline,
+                        cache_options,
+                    )
+                    .await?
+                }
+                None => None,
+            };
 
-        if let Some(metadata) = extension_hover {
-            if metadata.title.is_some() {
-                hover_value_content.title = metadata.title;
-            }
-            if metadata.description.is_some() {
-                hover_value_content.description = metadata.description;
+            if let Some(metadata) = extension_hover {
+                if metadata.title.is_some() {
+                    hover_value_content.title = metadata.title;
+                }
+                if metadata.description.is_some() {
+                    hover_value_content.description = metadata.description;
+                }
             }
         }
     }
+
     Ok(hover_content)
 }
 
