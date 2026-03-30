@@ -297,6 +297,7 @@
         },
         "string-quote-style": {
           "title": "The preferred quote character for strings",
+          "description": "Choose which quote style the formatter prefers for basic strings.",
           "anyOf": [
             {
               "$ref": "#/definitions/StringQuoteStyle"
@@ -1169,9 +1170,12 @@
       "x-tombi-table-keys-order": "schema"
     },
     "Extensions": {
+      "title": "Extension options",
       "type": "object",
       "properties": {
         "tombi-toml/cargo": {
+          "title": "Cargo Extension",
+          "description": "Configure built-in support for `Cargo.toml`.",
           "anyOf": [
             {
               "$ref": "#/definitions/CargoExtensionFeatures"
@@ -1182,6 +1186,8 @@
           ]
         },
         "tombi-toml/pyproject": {
+          "title": "Pyproject Extension",
+          "description": "Configure built-in support for `pyproject.toml`.",
           "anyOf": [
             {
               "$ref": "#/definitions/PyprojectExtensionFeatures"
@@ -1192,6 +1198,8 @@
           ]
         },
         "tombi-toml/tombi": {
+          "title": "Tombi Extension",
+          "description": "Configure built-in support for `tombi.toml`.",
           "anyOf": [
             {
               "$ref": "#/definitions/TombiExtensionFeatures"
@@ -1219,6 +1227,8 @@
       "type": "object",
       "properties": {
         "enabled": {
+          "title": "Enable feature",
+          "description": "Whether this feature is enabled.",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
@@ -1235,6 +1245,7 @@
       "type": "object",
       "properties": {
         "lsp": {
+          "title": "Cargo LSP feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/CargoLspFeatures"
@@ -1262,6 +1273,7 @@
       "type": "object",
       "properties": {
         "completion": {
+          "title": "Completion feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/CargoCompletionFeatures"
@@ -1272,6 +1284,7 @@
           ]
         },
         "inlay-hint": {
+          "title": "Inlay hint feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/CargoInlayHintFeatures"
@@ -1282,6 +1295,7 @@
           ]
         },
         "goto-definition": {
+          "title": "Goto definition feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/CargoNavigationFeatures"
@@ -1292,6 +1306,7 @@
           ]
         },
         "goto-declaration": {
+          "title": "Goto declaration feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/CargoNavigationFeatures"
@@ -1302,6 +1317,7 @@
           ]
         },
         "document-link": {
+          "title": "Document link feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/CargoDocumentLinkFeatures"
@@ -1312,6 +1328,7 @@
           ]
         },
         "hover": {
+          "title": "Hover feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/CargoHoverFeatures"
@@ -1322,6 +1339,7 @@
           ]
         },
         "code-action": {
+          "title": "Code action feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/CargoCodeActionFeatures"
@@ -1349,6 +1367,8 @@
       "type": "object",
       "properties": {
         "dependency-version": {
+          "title": "Dependency version completion feature",
+          "description": "Whether completion suggests dependency versions.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1359,6 +1379,8 @@
           ]
         },
         "dependency-feature": {
+          "title": "Dependency feature completion feature",
+          "description": "Whether completion suggests dependency features.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1369,6 +1391,8 @@
           ]
         },
         "path": {
+          "title": "Path completion feature",
+          "description": "Whether completion suggests filesystem paths.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1386,6 +1410,8 @@
       "type": "object",
       "properties": {
         "enabled": {
+          "title": "Enable feature",
+          "description": "Whether this nested feature is enabled.",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
@@ -1413,6 +1439,8 @@
       "type": "object",
       "properties": {
         "dependency-version": {
+          "title": "Dependency version inlay hint feature",
+          "description": "Whether inlay hints show dependency versions.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1423,6 +1451,8 @@
           ]
         },
         "default-features": {
+          "title": "Default features inlay hint feature",
+          "description": "Whether inlay hints show `default-features` values.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1433,6 +1463,8 @@
           ]
         },
         "workspace-value": {
+          "title": "Workspace value inlay hint feature",
+          "description": "Whether inlay hints show values inherited from the Cargo workspace.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1460,6 +1492,8 @@
       "type": "object",
       "properties": {
         "dependency": {
+          "title": "Dependency navigation feature",
+          "description": "Whether navigation resolves dependency definitions and declarations.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1470,6 +1504,8 @@
           ]
         },
         "member": {
+          "title": "Member navigation feature",
+          "description": "Whether navigation resolves workspace member targets.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1480,6 +1516,8 @@
           ]
         },
         "path": {
+          "title": "Path navigation feature",
+          "description": "Whether navigation resolves filesystem paths.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1507,6 +1545,8 @@
       "type": "object",
       "properties": {
         "cargo-toml": {
+          "title": "Cargo.toml document link feature",
+          "description": "Whether document links are created for `Cargo.toml` references.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1517,6 +1557,8 @@
           ]
         },
         "git": {
+          "title": "Git document link feature",
+          "description": "Whether document links are created for Git references.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1527,6 +1569,8 @@
           ]
         },
         "path": {
+          "title": "Path document link feature",
+          "description": "Whether document links are created for filesystem paths.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1537,6 +1581,8 @@
           ]
         },
         "crates-io": {
+          "title": "crates.io document link feature",
+          "description": "Whether document links are created for crates.io package references.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1565,6 +1611,8 @@
       "type": "object",
       "properties": {
         "dependency-detail": {
+          "title": "Dependency detail hover feature",
+          "description": "Whether hover shows detailed dependency metadata.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1592,6 +1640,8 @@
       "type": "object",
       "properties": {
         "inherit-from-workspace": {
+          "title": "Inherit-from-workspace code action feature",
+          "description": "Whether code actions can replace a value with `workspace = true`.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1602,6 +1652,8 @@
           ]
         },
         "inherit-dependency-from-workspace": {
+          "title": "Inherit-dependency-from-workspace code action feature",
+          "description": "Whether code actions can inherit dependency settings from the workspace.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1612,6 +1664,8 @@
           ]
         },
         "convert-dependency-to-table-format": {
+          "title": "Convert-dependency-to-table-format code action feature",
+          "description": "Whether code actions can rewrite inline dependencies to table format.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1622,6 +1676,8 @@
           ]
         },
         "add-to-workspace-and-inherit-dependency": {
+          "title": "Add-to-workspace-and-inherit-dependency code action feature",
+          "description": "Whether code actions can add a dependency to the workspace and inherit it.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1649,6 +1705,7 @@
       "type": "object",
       "properties": {
         "lsp": {
+          "title": "Pyproject LSP feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/PyprojectLspFeatures"
@@ -1676,6 +1733,8 @@
       "type": "object",
       "properties": {
         "completion": {
+          "title": "Completion feature options",
+          "description": "Configure pyproject completion features.",
           "anyOf": [
             {
               "$ref": "#/definitions/PyprojectCompletionFeatures"
@@ -1686,6 +1745,8 @@
           ]
         },
         "inlay-hint": {
+          "title": "Inlay hint feature options",
+          "description": "Configure pyproject inlay hint features.",
           "anyOf": [
             {
               "$ref": "#/definitions/PyprojectInlayHintFeatures"
@@ -1696,6 +1757,8 @@
           ]
         },
         "goto-definition": {
+          "title": "Goto definition feature options",
+          "description": "Configure pyproject go-to-definition features.",
           "anyOf": [
             {
               "$ref": "#/definitions/PyprojectNavigationFeatures"
@@ -1706,6 +1769,8 @@
           ]
         },
         "goto-declaration": {
+          "title": "Goto declaration feature options",
+          "description": "Configure pyproject go-to-declaration features.",
           "anyOf": [
             {
               "$ref": "#/definitions/PyprojectNavigationFeatures"
@@ -1716,6 +1781,8 @@
           ]
         },
         "document-link": {
+          "title": "Document link feature options",
+          "description": "Configure pyproject document link features.",
           "anyOf": [
             {
               "$ref": "#/definitions/PyprojectDocumentLinkFeatures"
@@ -1726,6 +1793,8 @@
           ]
         },
         "hover": {
+          "title": "Hover feature options",
+          "description": "Configure pyproject hover features.",
           "anyOf": [
             {
               "$ref": "#/definitions/PyprojectHoverFeatures"
@@ -1736,6 +1805,8 @@
           ]
         },
         "code-action": {
+          "title": "Code action feature options",
+          "description": "Configure pyproject code action features.",
           "anyOf": [
             {
               "$ref": "#/definitions/PyprojectCodeActionFeatures"
@@ -1763,6 +1834,8 @@
       "type": "object",
       "properties": {
         "path": {
+          "title": "Path completion feature",
+          "description": "Whether completion suggests filesystem paths.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1791,6 +1864,8 @@
       "type": "object",
       "properties": {
         "dependency-version": {
+          "title": "Dependency version inlay hint feature",
+          "description": "Whether inlay hints show resolved dependency versions.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1818,6 +1893,8 @@
       "type": "object",
       "properties": {
         "dependency": {
+          "title": "Dependency navigation feature",
+          "description": "Whether navigation resolves dependency definitions and declarations.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1828,6 +1905,8 @@
           ]
         },
         "member": {
+          "title": "Member navigation feature",
+          "description": "Whether navigation resolves workspace member targets.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1838,6 +1917,8 @@
           ]
         },
         "path": {
+          "title": "Path navigation feature",
+          "description": "Whether navigation resolves filesystem paths.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1865,6 +1946,8 @@
       "type": "object",
       "properties": {
         "pyproject-toml": {
+          "title": "pyproject.toml document link feature",
+          "description": "Whether document links are created for `pyproject.toml` references.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1875,6 +1958,8 @@
           ]
         },
         "pypi-org": {
+          "title": "PyPI document link feature",
+          "description": "Whether document links are created for `pypi.org` package references.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1903,6 +1988,8 @@
       "type": "object",
       "properties": {
         "dependency-detail": {
+          "title": "Dependency detail hover feature",
+          "description": "Whether hover shows detailed dependency metadata.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1930,6 +2017,8 @@
       "type": "object",
       "properties": {
         "use-workspace-dependency": {
+          "title": "Use-workspace-dependency code action feature",
+          "description": "Whether code actions can reuse a dependency declared in the workspace.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1940,6 +2029,8 @@
           ]
         },
         "add-to-workspace-and-use-workspace-dependency": {
+          "title": "Add-to-workspace-and-use-workspace-dependency code action feature",
+          "description": "Whether code actions can add a dependency to the workspace and reuse it.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -1968,6 +2059,7 @@
       "type": "object",
       "properties": {
         "lsp": {
+          "title": "Tombi LSP feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/TombiLspFeatures"
@@ -1995,6 +2087,8 @@
       "type": "object",
       "properties": {
         "completion": {
+          "title": "Completion feature options",
+          "description": "Configure Tombi completion features.",
           "anyOf": [
             {
               "$ref": "#/definitions/TombiCompletionFeatures"
@@ -2005,6 +2099,8 @@
           ]
         },
         "goto-definition": {
+          "title": "Goto definition feature options",
+          "description": "Configure Tombi go-to-definition features.",
           "anyOf": [
             {
               "$ref": "#/definitions/TombiGotoDefinitionFeatures"
@@ -2015,6 +2111,8 @@
           ]
         },
         "document-link": {
+          "title": "Document link feature options",
+          "description": "Configure Tombi document link features.",
           "anyOf": [
             {
               "$ref": "#/definitions/TombiDocumentLinkFeatures"
@@ -2025,6 +2123,8 @@
           ]
         },
         "hover": {
+          "title": "Hover feature options",
+          "description": "Configure Tombi hover features.",
           "anyOf": [
             {
               "$ref": "#/definitions/EnabledOnly"
@@ -2053,6 +2153,8 @@
       "type": "object",
       "properties": {
         "path": {
+          "title": "Path completion feature",
+          "description": "Whether completion suggests filesystem paths.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -2081,6 +2183,8 @@
       "type": "object",
       "properties": {
         "path": {
+          "title": "Path goto-definition feature",
+          "description": "Whether go-to-definition resolves filesystem paths.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
@@ -2108,6 +2212,8 @@
       "type": "object",
       "properties": {
         "path": {
+          "title": "Path document link feature",
+          "description": "Whether document links are created for filesystem paths.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
