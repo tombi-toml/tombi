@@ -226,9 +226,11 @@ pub async fn get_hover_keys_with_range(
                                 value_group.value_or_key_values_with_comma()
                             {
                                 if hover_range.is_none() {
-                                    let mut range = value_or_key_value.range();
-                                    if let Some(comma) = comma {
-                                        range += comma.range()
+                                    let Some(range) = array_value_hover_range(
+                                        &value_or_key_value,
+                                        comma.as_ref(),
+                                    ) else {
+                                        continue;
                                     };
                                     if range.contains(position) {
                                         hover_range = Some(range);
@@ -273,9 +275,11 @@ pub async fn get_hover_keys_with_range(
                         DanglingCommentGroupOr::ItemGroup(key_value_group) => {
                             for (key_value, comma) in key_value_group.key_values_with_comma() {
                                 if hover_range.is_none() {
-                                    let mut range = key_value.range();
-                                    if let Some(comma) = comma {
-                                        range += comma.range()
+                                    let Some(range) = inline_table_key_value_hover_range(
+                                        &key_value,
+                                        comma.as_ref(),
+                                    ) else {
+                                        continue;
                                     };
                                     if range.contains(position) {
                                         hover_range = Some(range);
@@ -466,6 +470,63 @@ fn key_value_parent_or_self_range<N: AstNode>(
         .map_or(fallback_range, |key_value| key_value.range())
 }
 
+#[inline]
+fn array_value_hover_range(
+    value_or_key_value: &tombi_ast::ValueOrKeyValue,
+    comma: Option<&tombi_ast::Comma>,
+) -> Option<tombi_text::Range> {
+    let start = value_or_key_value
+        .leading_comments()
+        .next()
+        .map(|comment| comment.syntax().range().start)
+        .or_else(|| match value_or_key_value {
+            tombi_ast::ValueOrKeyValue::Value(value) => Some(value.token_range().start),
+            tombi_ast::ValueOrKeyValue::KeyValue(key_value) => {
+                key_value.keys().map(|keys| keys.range().start)
+            }
+        })?;
+    let end = match value_or_key_value {
+        tombi_ast::ValueOrKeyValue::Value(value) => value.range().end,
+        tombi_ast::ValueOrKeyValue::KeyValue(key_value) => key_value
+            .value()
+            .map(|value| value.range().end)
+            .unwrap_or(key_value.range().end),
+    };
+
+    Some(with_comma_item_hover_range(start, end, comma))
+}
+
+#[inline]
+fn inline_table_key_value_hover_range(
+    key_value: &tombi_ast::KeyValue,
+    comma: Option<&tombi_ast::Comma>,
+) -> Option<tombi_text::Range> {
+    let start = key_value
+        .leading_comments()
+        .next()
+        .map(|comment| comment.syntax().range().start)
+        .or_else(|| key_value.keys().map(|keys| keys.range().start))?;
+    let end = key_value
+        .value()
+        .map(|value| value.range().end)
+        .unwrap_or(key_value.range().end);
+
+    Some(with_comma_item_hover_range(start, end, comma))
+}
+
+#[inline]
+fn with_comma_item_hover_range(
+    start: tombi_text::Position,
+    end: tombi_text::Position,
+    comma: Option<&tombi_ast::Comma>,
+) -> tombi_text::Range {
+    let mut range = tombi_text::Range::new(start, end);
+    if let Some(comma) = comma {
+        range += comma.range();
+    }
+    range
+}
+
 fn append_comma_range_if_exists(
     node: &impl AstNode,
     position: tombi_text::Position,
@@ -477,9 +538,7 @@ fn append_comma_range_if_exists(
             if let Some(target_key_value) = node_key_value.as_ref() {
                 for (item, comma) in group.key_values_with_comma() {
                     if item.syntax() == target_key_value.syntax() {
-                        return Some(
-                            comma.map_or(item.range(), |comma| item.range() + comma.range()),
-                        );
+                        return inline_table_key_value_hover_range(&item, comma.as_ref());
                     }
                 }
             }
@@ -527,6 +586,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use textwrap::dedent;
     use tombi_config::TomlVersion;
     use tombi_parser::parse;
     use tombi_text::{Position, RelativePosition};
@@ -535,9 +595,8 @@ mod tests {
         source_with_marker: &str,
     ) -> (tombi_ast::Root, Position) {
         let marker = '█';
-        let marker_index = source_with_marker.find(marker).unwrap();
-
-        let mut source = source_with_marker.to_string();
+        let mut source = dedent(source_with_marker).trim().to_string();
+        let marker_index = source.find(marker).unwrap();
         source.remove(marker_index);
 
         let root = tombi_ast::Root::cast(parse(&source).into_syntax_node()).unwrap();
@@ -546,73 +605,79 @@ mod tests {
         (root, position)
     }
 
-    #[tokio::test]
-    async fn array_trailing_comment_hover_range_includes_key() {
-        let (root, position) = parse_root_and_position_with_marker(
-            r#"authors = ["ya7010 <ya7010@outlook.com>"]  # a█aa"#,
-        );
+    macro_rules! test_hover_range {
+        (#[tokio::test] async fn $name:ident(
+            $source:expr $(,)?
+        ) -> Ok((($start_line:expr, $start_col:expr), ($end_line:expr, $end_col:expr))) $(;)?) => {
+            #[tokio::test]
+            async fn $name() -> Result<(), Box<dyn std::error::Error>> {
+                let (root, position) = parse_root_and_position_with_marker($source);
 
-        let (_, hover_range) = get_hover_keys_with_range(&root, position, TomlVersion::V1_0_0)
-            .await
-            .unwrap();
+                let (_, hover_range) =
+                    get_hover_keys_with_range(&root, position, TomlVersion::V1_0_0)
+                        .await
+                        .ok_or("failed to get hover keys with range")?;
 
-        let key_value = root.key_values().next().unwrap();
-        pretty_assertions::assert_eq!(hover_range, Some(key_value.range()));
+                pretty_assertions::assert_eq!(
+                    hover_range,
+                    Some(tombi_text::Range::from((
+                        ($start_line, $start_col),
+                        ($end_line, $end_col)
+                    ))),
+                );
+
+                Ok(())
+            }
+        };
     }
 
-    #[tokio::test]
-    async fn inline_table_trailing_comment_hover_range_includes_key() {
-        let (root, position) =
-            parse_root_and_position_with_marker(r#"dependency = { version = "1.0" }  # a█aa"#);
-
-        let (_, hover_range) = get_hover_keys_with_range(&root, position, TomlVersion::V1_0_0)
-            .await
-            .unwrap();
-
-        let key_value = root.key_values().next().unwrap();
-        pretty_assertions::assert_eq!(hover_range, Some(key_value.range()));
+    test_hover_range! {
+        #[tokio::test]
+        async fn array_trailing_comment_hover_range_includes_key(
+            r#"authors = ["ya7010 <ya7010@outlook.com>"]  # a█aa"#
+        ) -> Ok(((0, 0), (0, 48)));
     }
 
-    #[tokio::test]
-    async fn inline_table_key_hover_range_includes_comma_and_trailing_comment() {
-        let (root, position) = parse_root_and_position_with_marker(
+    test_hover_range! {
+        #[tokio::test]
+        async fn inline_table_trailing_comment_hover_range_includes_key(
+            r#"dependency = { version = "1.0" }  # a█aa"#
+        ) -> Ok(((0, 0), (0, 39)));
+    }
+
+    test_hover_range! {
+        #[tokio::test]
+        async fn inline_table_key_hover_range_includes_comma_and_trailing_comment(
             r#"
             array5 = [
-              {
+                {
                 # key1 leading comment1
                 # key1 leading comment2
                 key█1 = 1
                 # key1 comma leading comment
                 ,  # key1 comma trailing comment
+                },
+            ]
+            "#,
+        ) -> Ok(((2, 4), (6, 36)));
+    }
+
+    test_hover_range! {
+        #[tokio::test]
+        async fn inline_table_key_hover_range_excludes_plain_indentation(
+            r#"
+            array5 = [
+              {
+                key█1 = 1,
               },
             ]
             "#,
-        );
-
-        let (_, hover_range) = get_hover_keys_with_range(&root, position, TomlVersion::V1_0_0)
-            .await
-            .unwrap();
-
-        let array = match root.key_values().next().unwrap().value().unwrap() {
-            tombi_ast::Value::Array(array) => array,
-            _ => panic!("expected array"),
-        };
-
-        let inline_table = match array.values().next().unwrap() {
-            tombi_ast::Value::InlineTable(inline_table) => inline_table,
-            _ => panic!("expected inline table"),
-        };
-        let (key_value, comma) = inline_table.key_values_with_comma().next().unwrap();
-        let expected_range =
-            comma.map_or(key_value.range(), |comma| key_value.range() + comma.range());
-
-        pretty_assertions::assert_eq!(hover_range, Some(expected_range));
+        ) -> Ok(((2, 4), (2, 13)));
     }
 
-    #[tokio::test]
-    async fn inline_table_key_in_array_hover_range_includes_array_item_comma_and_trailing_comment()
-    {
-        let (root, position) = parse_root_and_position_with_marker(
+    test_hover_range! {
+        #[tokio::test]
+        async fn inline_table_key_in_array_hover_range_includes_array_item_comma_and_trailing_comment(
             r#"
             array5 = [
               {
@@ -620,31 +685,41 @@ mod tests {
               }, # array item trailing comment
             ]
             "#,
-        );
-
-        let (_, hover_range) = get_hover_keys_with_range(&root, position, TomlVersion::V1_0_0)
-            .await
-            .unwrap();
-
-        let array = match root.key_values().next().unwrap().value().unwrap() {
-            tombi_ast::Value::Array(array) => array,
-            _ => panic!("expected array"),
-        };
-
-        let inline_table = match array.values().next().unwrap() {
-            tombi_ast::Value::InlineTable(inline_table) => inline_table,
-            _ => panic!("expected inline table"),
-        };
-        let (key_value, comma) = inline_table.key_values_with_comma().next().unwrap();
-        let expected_range =
-            comma.map_or(key_value.range(), |comma| key_value.range() + comma.range());
-
-        pretty_assertions::assert_eq!(hover_range, Some(expected_range));
+        ) -> Ok(((2, 4), (2, 13)));
     }
 
-    #[tokio::test]
-    async fn nested_array_hover_range_uses_innermost_value_with_comma_group() {
-        let (root, position) = parse_root_and_position_with_marker(
+    test_hover_range! {
+        #[tokio::test]
+        async fn non_first_inline_table_key_hover_range_excludes_plain_indentation(
+            r#"
+            array5 = [
+              {
+                first = 1,
+                sec█ond = 2,
+              },
+            ]
+            "#,
+        ) -> Ok(((3, 4), (3, 15)));
+    }
+
+    test_hover_range! {
+        #[tokio::test]
+        async fn non_first_inline_table_key_hover_range_keeps_indent_between_leading_comments_and_key(
+            r#"
+            array5 = [
+              {
+                first = 1,
+                # second leading comment
+                sec█ond = 2,
+              },
+            ]
+            "#,
+        ) -> Ok(((3, 4), (4, 15)));
+    }
+
+    test_hover_range! {
+        #[tokio::test]
+        async fn nested_array_hover_range_uses_innermost_value_with_comma_group(
             r#"
             array5 = [
               [
@@ -652,28 +727,54 @@ mod tests {
               ], # outer array item trailing comment
             ]
             "#,
-        );
+        ) -> Ok(((2, 6), (2, 14)));
+    }
 
-        let (_, hover_range) = get_hover_keys_with_range(&root, position, TomlVersion::V1_0_0)
-            .await
-            .unwrap();
+    test_hover_range! {
+        #[tokio::test]
+        async fn array_item_hover_range_excludes_plain_indentation(
+            r#"
+            array = [
+              "it█em",
+            ]
+            "#,
+        ) -> Ok(((1, 2), (1, 9)));
+    }
 
-        let outer_array = match root.key_values().next().unwrap().value().unwrap() {
-            tombi_ast::Value::Array(array) => array,
-            _ => panic!("expected outer array"),
-        };
-        let inner_array = match outer_array.values().next().unwrap() {
-            tombi_ast::Value::Array(array) => array,
-            _ => panic!("expected inner array"),
-        };
-        let inline_table = match inner_array.values().next().unwrap() {
-            tombi_ast::Value::InlineTable(inline_table) => inline_table,
-            _ => panic!("expected inline table"),
-        };
-        let (key_value, comma) = inline_table.key_values_with_comma().next().unwrap();
-        let expected_range =
-            comma.map_or(key_value.range(), |comma| key_value.range() + comma.range());
+    test_hover_range! {
+        #[tokio::test]
+        async fn array_item_hover_range_keeps_indent_between_leading_comments_and_value(
+            r#"
+            array = [
+              # leading comment
+              "it█em",
+            ]
+            "#,
+        ) -> Ok(((1, 2), (2, 9)));
+    }
 
-        pretty_assertions::assert_eq!(hover_range, Some(expected_range));
+    test_hover_range! {
+        #[tokio::test]
+        async fn non_first_array_item_hover_range_excludes_plain_indentation(
+            r#"
+            array = [
+              "first",
+              "se█cond",
+            ]
+            "#,
+        ) -> Ok(((2, 2), (2, 11)));
+    }
+
+    test_hover_range! {
+        #[tokio::test]
+        async fn non_first_array_item_hover_range_keeps_indent_between_leading_comments_and_value(
+            r#"
+            array = [
+              "first",
+              # leading comment
+              "se█cond",
+            ]
+            "#,
+        ) -> Ok(((2, 2), (3, 11)));
     }
 }
