@@ -408,7 +408,10 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "directive",
                 "enabled",
+                "extension",
+                "schema",
                 "{}"
             ]);
         }
@@ -422,7 +425,10 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "directive",
                 "enabled",
+                "extension",
+                "schema",
                 "{}"
             ]);
         }
