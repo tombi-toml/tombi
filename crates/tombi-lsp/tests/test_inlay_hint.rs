@@ -23,6 +23,7 @@ use tombi_lsp::{
 };
 
 const RESOLVED_VERSION_TOOLTIP: &str = "Resolved version in Cargo.lock";
+const LOCAL_PATH_VERSION_TOOLTIP: &str = "Version from local dependency Cargo.toml";
 const RESOLVED_UV_VERSION_TOOLTIP: &str = "Resolved version in uv.lock";
 const WORKSPACE_PACKAGE_INHERITED_VALUE_TOOLTIP: &str = "Inherited value from workspace";
 
@@ -1113,6 +1114,81 @@ test_inlay_hint!(
         tombi_text::Position::new(5, 31),
         r#" → "1.0.228""#,
         RESOLVED_VERSION_TOOLTIP,
+    )]));
+);
+
+test_inlay_hint!(
+    #[tokio::test]
+    async fn inlay_hint_for_path_dependency_falls_back_to_local_manifest_version_without_lockfile(
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
+
+            [dependencies]
+            dep = { path = "vendor/dep" }
+            "#,
+        },
+        SourceFile {
+            path = "vendor/dep/Cargo.toml",
+            content = r#"
+            [package]
+            name = "dep"
+            version = "0.2.0"
+            "#,
+        },
+    ) -> Ok(Some(vec![expected_hint(
+        tombi_text::Position::new(5, 27),
+        r#" → "0.2.0""#,
+        LOCAL_PATH_VERSION_TOOLTIP,
+    )]));
+);
+
+test_inlay_hint!(
+    #[tokio::test]
+    async fn inlay_hint_for_workspace_path_dependency_falls_back_to_local_manifest_version_when_unresolved_in_lockfile(
+        SourceFile {
+            path = "Cargo.toml",
+            content = r#"
+            [workspace]
+            members = ["crates/app"]
+
+            [workspace.dependencies]
+            dep = { path = "vendor/dep" }
+            "#,
+        },
+        SourceFile {
+            path = "crates/app/Cargo.toml",
+            content = r#"
+            [package]
+            name = "app"
+            version = "0.1.0"
+            "#,
+        },
+        SourceFile {
+            path = "vendor/dep/Cargo.toml",
+            content = r#"
+            [package]
+            name = "dep"
+            version = "0.2.0"
+            "#,
+        },
+        SourceFile {
+            path = "Cargo.lock",
+            content = r#"
+            version = 4
+
+            [[package]]
+            name = "app"
+            version = "0.1.0"
+            "#,
+        },
+    ) -> Ok(Some(vec![expected_hint(
+        tombi_text::Position::new(4, 27),
+        r#" → "0.2.0""#,
+        LOCAL_PATH_VERSION_TOOLTIP,
     )]));
 );
 
