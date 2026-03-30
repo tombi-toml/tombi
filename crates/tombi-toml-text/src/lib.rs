@@ -307,6 +307,22 @@ pub fn to_basic_string(value: &str) -> String {
     result
 }
 
+pub fn to_key_string(value: &str) -> String {
+    if is_variable_placeholder(value) || is_display_bare_key(value) {
+        value.to_string()
+    } else {
+        to_basic_string(value)
+    }
+}
+
+fn is_variable_placeholder(value: &str) -> bool {
+    value.starts_with("${") && value.ends_with('}')
+}
+
+fn is_display_bare_key(value: &str) -> bool {
+    !value.is_empty() && !value.contains('.') && try_from_bare_key(value).is_ok()
+}
+
 pub fn to_literal_string(value: &str) -> String {
     format!("'{value}'")
 }
@@ -317,4 +333,39 @@ pub fn to_multi_line_basic_string(value: &str) -> String {
 
 pub fn to_multi_line_literal_string(value: &str) -> String {
     format!("'''\n{value}'''")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn key_string_keeps_bare_key_when_valid() {
+        assert_eq!(to_key_string("tombi-toml"), "tombi-toml");
+    }
+
+    #[test]
+    fn key_string_quotes_non_bare_key() {
+        assert_eq!(to_key_string("tombi-toml/cargo"), r#""tombi-toml/cargo""#);
+    }
+
+    #[test]
+    fn key_string_escapes_basic_string_characters() {
+        assert_eq!(to_key_string(r#"quote"slash\"#), r#""quote\"slash\\""#);
+    }
+
+    #[test]
+    fn key_string_keeps_variable_placeholder_unquoted() {
+        assert_eq!(to_key_string("${mod_id}"), "${mod_id}");
+    }
+
+    #[test]
+    fn key_string_quotes_key_containing_dot() {
+        assert_eq!(to_key_string("a.b"), r#""a.b""#);
+    }
+
+    #[test]
+    fn key_string_quotes_empty_key() {
+        assert_eq!(to_key_string(""), r#""""#);
+    }
 }

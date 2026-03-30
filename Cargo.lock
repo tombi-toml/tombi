@@ -3530,11 +3530,11 @@ name = "tombi-accessor"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
- "log",
  "pretty_assertions",
  "rstest",
  "tombi-hashmap",
  "tombi-text",
+ "tombi-toml-text",
 ]
 
 [[package]]
@@ -3748,6 +3748,7 @@ dependencies = [
  "tombi-hashmap",
  "tombi-schema-store",
  "tombi-text",
+ "tombi-toml-text",
  "tombi-uri",
  "tower-lsp",
 ]
@@ -4014,6 +4015,7 @@ dependencies = [
  "tombi-syntax",
  "tombi-test-lib",
  "tombi-text",
+ "tombi-toml-text",
  "tombi-uri",
  "tombi-validator",
  "tombi-x-keyword",

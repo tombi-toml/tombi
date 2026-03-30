@@ -11,6 +11,19 @@ pub enum SchemaAccessor {
 }
 
 impl SchemaAccessor {
+    #[inline]
+    pub fn is_key(&self) -> bool {
+        matches!(self, SchemaAccessor::Key(_))
+    }
+
+    #[inline]
+    pub fn as_key(&self) -> Option<&str> {
+        match self {
+            SchemaAccessor::Key(key) => Some(key),
+            _ => None,
+        }
+    }
+
     /// Parse a schema access path into a sequence of accessors.
     ///
     /// # Examples
@@ -53,7 +66,6 @@ impl SchemaAccessor {
                     } else if index_str.parse::<usize>().is_ok() {
                         accessors.push(SchemaAccessor::Index);
                     } else {
-                        log::warn!("Invalid schema accessor: {path}");
                         return None;
                     }
                 }
@@ -118,7 +130,7 @@ impl From<&Accessor> for SchemaAccessor {
 impl std::fmt::Display for SchemaAccessor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SchemaAccessor::Key(key) => write!(f, "{key}"),
+            SchemaAccessor::Key(key) => write!(f, "{}", tombi_toml_text::to_key_string(key)),
             SchemaAccessor::Index => write!(f, "[*]"),
         }
     }
@@ -214,5 +226,23 @@ mod tests {
     fn test_schema_accessor(#[case] input: &str, #[case] expected: Vec<SchemaAccessor>) {
         let result = SchemaAccessor::parse(input).unwrap();
         pretty_assertions::assert_eq!(result, expected, "Failed for input: {}", input);
+    }
+
+    #[test]
+    fn test_schema_accessors_display_quotes_non_bare_keys() {
+        let accessors = SchemaAccessors::from(vec![
+            SchemaAccessor::Key("extensions".to_string()),
+            SchemaAccessor::Key("tombi-toml/cargo".to_string()),
+        ]);
+        assert_eq!(format!("{accessors}"), r#"extensions."tombi-toml/cargo""#);
+    }
+
+    #[test]
+    fn test_schema_accessor_as_key() {
+        let key = SchemaAccessor::Key("extensions".to_string());
+        let index = SchemaAccessor::Index;
+
+        assert_eq!(key.as_key(), Some("extensions"));
+        assert_eq!(index.as_key(), None);
     }
 }

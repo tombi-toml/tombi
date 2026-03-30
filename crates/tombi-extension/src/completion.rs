@@ -339,7 +339,7 @@ impl CompletionContent {
             _ => replace_range.unwrap_or_else(|| tombi_text::Range::at(position)),
         };
 
-        let escaped_key_name = escape_toml_key(key_name);
+        let escaped_key_name = tombi_toml_text::to_key_string(key_name);
         let label = if let Some(value_label) = &singleton_value_label {
             format!("{key_name} = {value_label}")
         } else {
@@ -501,20 +501,6 @@ impl CompletionContent {
     pub fn with_position(mut self, position: tombi_text::Position) -> Self {
         self.edit = self.edit.map(|edit| edit.with_position(position));
         self
-    }
-}
-
-fn escape_toml_key(key_name: &str) -> String {
-    if key_name
-        .bytes()
-        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
-    {
-        key_name.to_string()
-    } else {
-        format!(
-            "\"{}\"",
-            key_name.replace('\\', "\\\\").replace('"', "\\\"")
-        )
     }
 }
 

@@ -216,12 +216,14 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             .cloned()
                                             .collect_vec();
                                         for property_key in property_keys {
-                                            let key_name = property_key.to_string();
+                                            let Some(key_name) = property_key.as_key() else {
+                                                continue;
+                                            };
                                             if !key_name.starts_with(accessor_str) {
                                                 continue;
                                             }
 
-                                            if let Some(value) = self.get(&key_name)
+                                            if let Some(value) = self.get(key_name)
                                                 && check_used_table_value(
                                                     value,
                                                     accessors.is_empty(),
@@ -418,9 +420,11 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 .cloned()
                                 .collect_vec();
                             for schema_accessor in schema_accessors {
-                                let key_name = schema_accessor.to_string();
+                                let Some(key_name) = schema_accessor.as_key() else {
+                                    continue;
+                                };
 
-                                if let Some(value) = self.get(&key_name)
+                                if let Some(value) = self.get(key_name)
                                     && check_used_table_value(
                                         value,
                                         accessors.is_empty(),
@@ -693,7 +697,9 @@ impl FindCompletionContents for TableSchema {
 
             let property_keys = self.properties.read().await.keys().cloned().collect_vec();
             for key in property_keys {
-                let label = key.to_string();
+                let Some(label) = key.as_key() else {
+                    continue;
+                };
                 let current_schema = match self
                     .resolve_property_schema(
                         &key,
@@ -735,7 +741,7 @@ impl FindCompletionContents for TableSchema {
                     }
 
                     completion_items.push(CompletionContent::new_key(
-                        &label,
+                        label,
                         position,
                         current_editing_key_range(keys, position),
                         schema_candidate
@@ -939,7 +945,7 @@ fn check_used_table_value(
 
 fn collect_table_key_completion_contents<'a: 'b, 'b>(
     table: &'a tombi_document_tree::Table,
-    key_name: &'a String,
+    key_name: &'a str,
     position: tombi_text::Position,
     replace_range: Option<tombi_text::Range>,
     accessors: &'a [Accessor],
@@ -1001,8 +1007,8 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                         let properties = table_schema.properties.read().await;
                         if !table_schema.allows_any_additional_properties(schema_context.strict())
                             && properties.keys().all(|key| {
-                                let property_name = &key.to_string();
-                                table.get(property_name).is_some()
+                                key.as_key()
+                                    .is_some_and(|property_name| table.get(property_name).is_some())
                             })
                         {
                             return None;

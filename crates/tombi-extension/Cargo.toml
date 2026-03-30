@@ -16,6 +16,7 @@ tombi-document-tree.workspace = true
 tombi-hashmap.workspace = true
 tombi-schema-store.workspace = true
 tombi-text.workspace = true
+tombi-toml-text.workspace = true
 tombi-uri.workspace = true
 tokio = { workspace = true, features = ["sync"] }
 tower-lsp.workspace = true

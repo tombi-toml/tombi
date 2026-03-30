@@ -99,7 +99,9 @@ impl std::fmt::Display for DisplayValue {
             DisplayValue::Boolean(boolean) => write!(f, "{boolean}"),
             DisplayValue::Integer(integer) => write!(f, "{integer}"),
             DisplayValue::Float(float) => write!(f, "{float}"),
-            DisplayValue::String(string) => write!(f, "\"{}\"", string.replace("\"", "\\\"")),
+            DisplayValue::String(string) => {
+                write!(f, "{}", tombi_toml_text::to_basic_string(string))
+            }
             DisplayValue::OffsetDateTime(offset_date_time) => write!(f, "{offset_date_time}"),
             DisplayValue::LocalDateTime(local_date_time) => write!(f, "{local_date_time}"),
             DisplayValue::LocalDate(local_date) => write!(f, "{local_date}"),
@@ -120,7 +122,7 @@ impl std::fmt::Display for DisplayValue {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
-                    write!(f, "{key} = {value}")?;
+                    write!(f, "{} = {value}", tombi_toml_text::to_key_string(key))?;
                 }
                 write!(f, " }}")
             }

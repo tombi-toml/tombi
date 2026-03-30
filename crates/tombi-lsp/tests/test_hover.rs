@@ -157,6 +157,20 @@ mod hover_keys_value {
                 "Value": "String?"
             });
         );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn tombi_extensions_non_bare_key(
+                r#"
+                [extensions]
+                "tombi-toml/cargo" = { lsp = { hover█ = { enabled = true } } }
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok({
+                "Keys": r#"extensions."tombi-toml/cargo".lsp.hover"#,
+                "Value": "Table?"
+            });
+        );
     }
 
     mod cargo_schema {
