@@ -20,10 +20,6 @@ use crate::{
     },
 };
 
-fn schema_key_name(schema_accessor: &SchemaAccessor) -> Option<&str> {
-    schema_accessor.as_key()
-}
-
 impl FindCompletionContents for tombi_document_tree::Table {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
@@ -220,8 +216,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             .cloned()
                                             .collect_vec();
                                         for property_key in property_keys {
-                                            let Some(key_name) = schema_key_name(&property_key)
-                                            else {
+                                            let Some(key_name) = property_key.as_key() else {
                                                 continue;
                                             };
                                             if !key_name.starts_with(accessor_str) {
@@ -425,7 +420,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 .cloned()
                                 .collect_vec();
                             for schema_accessor in schema_accessors {
-                                let Some(key_name) = schema_key_name(&schema_accessor) else {
+                                let Some(key_name) = schema_accessor.as_key() else {
                                     continue;
                                 };
 
@@ -702,7 +697,7 @@ impl FindCompletionContents for TableSchema {
 
             let property_keys = self.properties.read().await.keys().cloned().collect_vec();
             for key in property_keys {
-                let Some(label) = schema_key_name(&key) else {
+                let Some(label) = key.as_key() else {
                     continue;
                 };
                 let current_schema = match self
@@ -1012,7 +1007,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                         let properties = table_schema.properties.read().await;
                         if !table_schema.allows_any_additional_properties(schema_context.strict())
                             && properties.keys().all(|key| {
-                                schema_key_name(key)
+                                key.as_key()
                                     .is_some_and(|property_name| table.get(property_name).is_some())
                             })
                         {
