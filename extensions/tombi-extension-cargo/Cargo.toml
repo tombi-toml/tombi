@@ -11,6 +11,7 @@ license.workspace = true
 futures.workspace = true
 glob.workspace = true
 itertools.workspace = true
+semver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tombi-ast.workspace = true

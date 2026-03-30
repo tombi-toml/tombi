@@ -10,7 +10,9 @@ use tombi_extension::{InlayHint, fetch_cached_remote_json, file_cache_version, g
 use tombi_hashmap::{HashMap, HashSet};
 
 use crate::{
-    cargo_lock::{CargoLock, CargoLockPackage, find_cargo_lock_path, load_cargo_lock_from_path},
+    cargo_lock::{
+        CargoLock, CargoLockPackage, find_cargo_lock_path, load_cargo_lock_from_path,
+    },
     dependency_package_name, find_workspace_cargo_toml, get_workspace_path, load_cargo_toml,
     workspace::{extract_exclude_patterns, find_package_cargo_toml_paths},
 };
@@ -822,6 +824,8 @@ async fn registry_default_features_inlay_hints(
     let Ok(cargo_toml_path) = text_document_uri.to_file_path() else {
         return Ok(Vec::new());
     };
+    let cargo_lock = find_cargo_lock_path(&cargo_toml_path)
+        .and_then(|cargo_lock_path| load_cargo_lock_from_path(&cargo_lock_path, toml_version));
 
     let mut hints = Vec::new();
 
@@ -830,6 +834,7 @@ async fn registry_default_features_inlay_hints(
             document_tree,
             &[dependency_key],
             &cargo_toml_path,
+            cargo_lock.as_ref(),
             toml_version,
             visible_range,
             offline,
@@ -843,6 +848,7 @@ async fn registry_default_features_inlay_hints(
         document_tree,
         &["workspace", "dependencies"],
         &cargo_toml_path,
+        cargo_lock.as_ref(),
         toml_version,
         visible_range,
         offline,
@@ -862,6 +868,7 @@ async fn registry_default_features_inlay_hints(
                     document_tree,
                     &["target", target_key.value.as_str(), dependency_key],
                     &cargo_toml_path,
+                    cargo_lock.as_ref(),
                     toml_version,
                     visible_range,
                     offline,
@@ -880,6 +887,7 @@ async fn collect_registry_default_features_inlay_hints(
     document_tree: &tombi_document_tree::DocumentTree,
     dependency_keys: &[&str],
     cargo_toml_path: &Path,
+    cargo_lock: Option<&CargoLock>,
     toml_version: TomlVersion,
     visible_range: tombi_text::Range,
     offline: bool,
@@ -896,6 +904,7 @@ async fn collect_registry_default_features_inlay_hints(
             dependency_key.value.as_str(),
             dependency_value,
             cargo_toml_path,
+            cargo_lock,
             toml_version,
             offline,
             cache_options,
@@ -927,6 +936,7 @@ async fn registry_dependency_default_features_hint(
     dependency_key: &str,
     dependency_value: &Value,
     cargo_toml_path: &Path,
+    cargo_lock: Option<&CargoLock>,
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
@@ -986,6 +996,12 @@ async fn registry_dependency_default_features_hint(
     };
 
     let Some((crate_name, version)) = registry_dependency else {
+        return Ok(None);
+    };
+    let Some(version) = cargo_lock
+        .and_then(|lock| lock.resolve_dependency_version(&crate_name, &version))
+        .or_else(|| crate::cargo_lock::exact_crates_io_version(&version))
+    else {
         return Ok(None);
     };
 
@@ -1471,7 +1487,7 @@ fn cargo_inlay_hint_enabled(
 
 impl CargoLock {
     fn into_inlay_cache_data(self) -> CargoLockInlayCacheData {
-        let unique_package_versions = self.unique_package_versions();
+        let unique_package_versions = self.unique_package_versions().clone();
         let mut crates = HashMap::new();
 
         for package in &self.packages {
@@ -1487,26 +1503,6 @@ impl CargoLock {
         CargoLockInlayCacheData { crates }
     }
 
-    fn unique_package_versions(&self) -> HashMap<String, Option<String>> {
-        let mut package_versions = HashMap::<String, HashSet<String>>::new();
-
-        for package in &self.packages {
-            package_versions
-                .entry(package.name.clone())
-                .or_default()
-                .insert(package.version.clone());
-        }
-
-        package_versions
-            .into_iter()
-            .map(|(crate_name, versions)| {
-                let version = (versions.len() == 1)
-                    .then(|| versions.into_iter().next())
-                    .flatten();
-                (crate_name, version)
-            })
-            .collect()
-    }
 }
 
 impl CargoLockPackage {
@@ -1523,8 +1519,10 @@ impl CargoLockPackage {
         let by_dependency = dependency_names
             .into_iter()
             .filter_map(|dependency_name| {
-                let resolved_version =
-                    self.resolved_dependency_version(&dependency_name, unique_package_versions)?;
+                let resolved_version = self.lockfile_resolved_dependency_version(
+                    &dependency_name,
+                    unique_package_versions,
+                )?;
                 Some((
                     DependencyCrateName::new(&dependency_name),
                     ResolvedDependencyVersion::new(resolved_version),
@@ -1533,32 +1531,6 @@ impl CargoLockPackage {
             .collect();
 
         CrateResolvedDependencies { by_dependency }
-    }
-
-    fn resolved_dependency_version(
-        &self,
-        dependency_name: &str,
-        unique_package_versions: &HashMap<String, Option<String>>,
-    ) -> Option<String> {
-        let explicit_versions = self
-            .dependencies
-            .iter()
-            .filter(|dependency| dependency.name == dependency_name)
-            .filter_map(|dependency| dependency.version.clone())
-            .collect::<HashSet<_>>();
-
-        if explicit_versions.len() == 1 {
-            return explicit_versions.into_iter().next();
-        }
-
-        if explicit_versions.len() > 1 {
-            return None;
-        }
-
-        unique_package_versions
-            .get(dependency_name)
-            .cloned()
-            .flatten()
     }
 }
 
@@ -1624,7 +1596,7 @@ mod tests {
     use std::fs;
 
     use super::*;
-    use crate::cargo_lock::CargoLockDependency;
+    use crate::cargo_lock::{CargoLockDependency, CargoLockPackage};
     use tombi_ast::AstNode;
     use tombi_document_tree::TryIntoDocumentTree;
 
@@ -1832,23 +1804,21 @@ mod tests {
 
     #[test]
     fn cargo_lock_cache_data_resolves_dependency_version() {
-        let cargo_lock = CargoLock {
-            packages: vec![
-                CargoLockPackage {
-                    name: "demo".to_string(),
-                    version: "0.1.0".to_string(),
-                    dependencies: vec![CargoLockDependency {
-                        name: "serde".to_string(),
-                        version: Some("1.0.228".to_string()),
-                    }],
-                },
-                CargoLockPackage {
+        let cargo_lock = CargoLock::new(vec![
+            CargoLockPackage {
+                name: "demo".to_string(),
+                version: "0.1.0".to_string(),
+                dependencies: vec![CargoLockDependency {
                     name: "serde".to_string(),
-                    version: "1.0.228".to_string(),
-                    dependencies: Vec::new(),
-                },
-            ],
-        };
+                    version: Some("1.0.228".to_string()),
+                }],
+            },
+            CargoLockPackage {
+                name: "serde".to_string(),
+                version: "1.0.228".to_string(),
+                dependencies: Vec::new(),
+            },
+        ]);
 
         let cache_data = cargo_lock.into_inlay_cache_data();
 
@@ -1860,23 +1830,21 @@ mod tests {
 
     #[test]
     fn cargo_lock_cache_data_survives_json_roundtrip() {
-        let cargo_lock = CargoLock {
-            packages: vec![
-                CargoLockPackage {
-                    name: "demo".to_string(),
-                    version: "0.1.0".to_string(),
-                    dependencies: vec![CargoLockDependency {
-                        name: "tokio".to_string(),
-                        version: Some("1.47.1".to_string()),
-                    }],
-                },
-                CargoLockPackage {
+        let cargo_lock = CargoLock::new(vec![
+            CargoLockPackage {
+                name: "demo".to_string(),
+                version: "0.1.0".to_string(),
+                dependencies: vec![CargoLockDependency {
                     name: "tokio".to_string(),
-                    version: "1.47.1".to_string(),
-                    dependencies: Vec::new(),
-                },
-            ],
-        };
+                    version: Some("1.47.1".to_string()),
+                }],
+            },
+            CargoLockPackage {
+                name: "tokio".to_string(),
+                version: "1.47.1".to_string(),
+                dependencies: Vec::new(),
+            },
+        ]);
 
         let cache_data = cargo_lock.into_inlay_cache_data();
         let roundtrip = serde_json::from_value::<CargoLockInlayCacheData>(
@@ -1887,6 +1855,34 @@ mod tests {
         assert_eq!(
             roundtrip.resolved_dependency_version("demo", "0.1.0", "tokio"),
             Some("1.47.1".to_string())
+        );
+    }
+
+    #[test]
+    fn resolve_dependency_version_prefers_exact_or_lockfile_version() {
+        let cargo_lock = CargoLock::new(vec![
+            CargoLockPackage {
+                name: "demo".to_string(),
+                version: "0.1.0".to_string(),
+                dependencies: vec![CargoLockDependency {
+                    name: "criterion".to_string(),
+                    version: Some("0.5.1".to_string()),
+                }],
+            },
+            CargoLockPackage {
+                name: "criterion".to_string(),
+                version: "0.5.1".to_string(),
+                dependencies: Vec::new(),
+            },
+        ]);
+
+        assert_eq!(
+            cargo_lock.resolve_dependency_version("criterion", "=0.5.1"),
+            Some("0.5.1".to_string())
+        );
+        assert_eq!(
+            cargo_lock.resolve_dependency_version("criterion", "0.5"),
+            Some("0.5.1".to_string())
         );
     }
 }

@@ -3,10 +3,12 @@ use std::path::Path;
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{TryIntoDocumentTree, Value, dig_keys};
+use tombi_hashmap::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub(crate) struct CargoLock {
     pub(crate) packages: Vec<CargoLockPackage>,
+    unique_package_versions: HashMap<String, Option<String>>,
 }
 
 #[derive(Debug, Clone)]
@@ -47,18 +49,90 @@ pub(crate) fn find_cargo_lock_path(cargo_toml_path: &Path) -> Option<std::path::
 }
 
 impl CargoLock {
+    pub(crate) fn new(packages: Vec<CargoLockPackage>) -> Self {
+        let unique_package_versions = compute_unique_package_versions(&packages);
+        Self {
+            packages,
+            unique_package_versions,
+        }
+    }
+
     fn from_document_tree(document_tree: &tombi_document_tree::DocumentTree) -> Option<Self> {
         let (_, Value::Array(packages)) = dig_keys(document_tree, &["package"])? else {
             return None;
         };
 
-        Some(Self {
-            packages: packages
-                .iter()
-                .filter_map(CargoLockPackage::from_value)
-                .collect(),
-        })
+        let packages = packages
+            .iter()
+            .filter_map(CargoLockPackage::from_value)
+            .collect();
+        Some(Self::new(packages))
     }
+
+    pub(crate) fn unique_package_versions(&self) -> &HashMap<String, Option<String>> {
+        &self.unique_package_versions
+    }
+
+    pub(crate) fn resolve_dependency_version(
+        &self,
+        crate_name: &str,
+        version_requirement: &str,
+    ) -> Option<String> {
+        exact_crates_io_version(version_requirement)
+            .or_else(|| self.unique_dependency_version(crate_name))
+    }
+
+    pub(crate) fn unique_dependency_version(&self, dependency_name: &str) -> Option<String> {
+        let resolved_versions = self
+            .packages
+            .iter()
+            .filter_map(|package| {
+                package.lockfile_resolved_dependency_version(
+                    dependency_name,
+                    &self.unique_package_versions,
+                )
+            })
+            .collect::<HashSet<_>>();
+
+        (resolved_versions.len() == 1)
+            .then(|| resolved_versions.into_iter().next())
+            .flatten()
+    }
+}
+
+pub(crate) fn exact_crates_io_version(version_requirement: &str) -> Option<String> {
+    let version_requirement = version_requirement.trim();
+    let version_requirement = version_requirement
+        .strip_prefix('=')
+        .map(str::trim)
+        .unwrap_or(version_requirement);
+
+    semver::Version::parse(version_requirement)
+        .ok()
+        .map(|version| version.to_string())
+}
+
+fn compute_unique_package_versions(
+    packages: &[CargoLockPackage],
+) -> HashMap<String, Option<String>> {
+    let mut package_versions = HashMap::<String, HashSet<String>>::new();
+
+    for package in packages {
+        package_versions
+            .entry(package.name.clone())
+            .or_default()
+            .insert(package.version.clone());
+    }
+
+    package_versions
+        .into_iter()
+        .map(|(crate_name, versions)| {
+            let version = (versions.len() == 1)
+                .then(|| versions.into_iter().next())
+                .flatten();
+            (crate_name, version)
+        })
+        .collect()
 }
 
 impl CargoLockPackage {
@@ -117,6 +191,40 @@ impl CargoLockDependency {
     }
 }
 
+impl CargoLockPackage {
+    pub(crate) fn lockfile_resolved_dependency_version(
+        &self,
+        dependency_name: &str,
+        unique_package_versions: &HashMap<String, Option<String>>,
+    ) -> Option<String> {
+        let explicit_versions = self
+            .dependencies
+            .iter()
+            .filter(|dependency| dependency.name == dependency_name)
+            .filter_map(|dependency| dependency.version.clone())
+            .collect::<HashSet<_>>();
+
+        if explicit_versions.len() == 1 {
+            return explicit_versions.into_iter().next();
+        }
+
+        if explicit_versions.len() > 1 {
+            return None;
+        }
+
+        self.dependencies
+            .iter()
+            .any(|dependency| dependency.name == dependency_name)
+            .then(|| {
+                unique_package_versions
+                    .get(dependency_name)
+                    .cloned()
+                    .flatten()
+            })
+            .flatten()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -135,5 +243,61 @@ mod tests {
 
         assert_eq!(dependency.name, "serde");
         assert_eq!(dependency.version, None);
+    }
+
+    #[test]
+    fn resolves_unique_dependency_version_from_lockfile() {
+        let cargo_lock = CargoLock::new(vec![
+            CargoLockPackage {
+                name: "demo".to_string(),
+                version: "0.1.0".to_string(),
+                dependencies: vec![CargoLockDependency {
+                    name: "criterion".to_string(),
+                    version: Some("0.5.1".to_string()),
+                }],
+            },
+            CargoLockPackage {
+                name: "helper".to_string(),
+                version: "0.1.0".to_string(),
+                dependencies: vec![CargoLockDependency {
+                    name: "criterion".to_string(),
+                    version: None,
+                }],
+            },
+            CargoLockPackage {
+                name: "criterion".to_string(),
+                version: "0.5.1".to_string(),
+                dependencies: Vec::new(),
+            },
+        ]);
+
+        assert_eq!(
+            cargo_lock.unique_dependency_version("criterion"),
+            Some("0.5.1".to_string())
+        );
+    }
+
+    #[test]
+    fn does_not_resolve_ambiguous_dependency_version_from_lockfile() {
+        let cargo_lock = CargoLock::new(vec![
+            CargoLockPackage {
+                name: "demo".to_string(),
+                version: "0.1.0".to_string(),
+                dependencies: vec![CargoLockDependency {
+                    name: "faststr".to_string(),
+                    version: Some("0.2.1".to_string()),
+                }],
+            },
+            CargoLockPackage {
+                name: "helper".to_string(),
+                version: "0.1.0".to_string(),
+                dependencies: vec![CargoLockDependency {
+                    name: "faststr".to_string(),
+                    version: Some("0.2.2".to_string()),
+                }],
+            },
+        ]);
+
+        assert_eq!(cargo_lock.unique_dependency_version("faststr"), None);
     }
 }

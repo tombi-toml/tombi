@@ -3760,6 +3760,7 @@ dependencies = [
  "futures",
  "glob",
  "itertools 0.14.0",
+ "semver 1.0.26",
  "serde",
  "serde_json",
  "tempfile",
