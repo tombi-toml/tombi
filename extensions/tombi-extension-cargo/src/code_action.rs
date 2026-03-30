@@ -48,7 +48,7 @@ pub enum CodeActionRefactorRewriteName {
     /// ```toml
     /// # In your member crate's Cargo.toml
     /// [dependencies]
-    /// serde = { workspace = true }
+    /// serde.workspace = true
     /// ```
     InheritDependencyFromWorkspace,
 
@@ -72,7 +72,7 @@ pub enum CodeActionRefactorRewriteName {
     /// Add to Workspace and Inherit Dependency
     ///
     /// Adds a dependency to [workspace.dependencies] and converts the member's
-    /// dependency to `workspace = true` format.
+    /// dependency to workspace inheritance format.
     ///
     /// Before
     ///
@@ -95,7 +95,7 @@ pub enum CodeActionRefactorRewriteName {
     ///
     /// # Member Cargo.toml
     /// [dependencies]
-    /// serde = { workspace = true }
+    /// serde.workspace = true
     /// ```
     AddToWorkspaceAndInheritDependency,
 }
@@ -446,9 +446,7 @@ fn use_workspace_dependency_code_action(
                                 end: version.range().end,
                             }
                             .into_lsp(line_index),
-                            // NOTE: Convert to a workspace dependency to make it easier
-                            //       to add other settings in the future.
-                            new_text: format!("{crate_name} = {{ workspace = true }}"),
+                            new_text: format!("{crate_name}.workspace = true"),
                         })],
                     }])),
                     change_annotations: None,
@@ -470,12 +468,9 @@ fn use_workspace_dependency_code_action(
                 return None; // No version to inherit
             };
 
-            let edits = if matches!(
-                table.kind(),
-                TableKind::KeyValue | TableKind::InlineTable { .. }
-            ) {
+            let edits = if matches!(table.kind(), TableKind::InlineTable { .. }) {
                 vec![OneOf::Left(TextEdit {
-                    range: (crate_key_context.range + table.range()).into_lsp(line_index),
+                    range: (crate_key_context.range + table.symbol_range()).into_lsp(line_index),
                     new_text: render_inherited_dependency_inline_table(crate_name, table),
                 })]
             } else {
@@ -701,12 +696,12 @@ fn calculate_inline_table_insertion(
 }
 
 /// Add a dependency to workspace.dependencies and convert member's dependency
-/// to workspace = true format.
+/// to workspace inheritance format.
 ///
 /// This code action is provided when:
 /// - The cursor is on a dependency in member Cargo.toml
 /// - The dependency is not yet registered in workspace.dependencies
-/// - The dependency is not already using workspace = true
+/// - The dependency is not already using workspace inheritance
 ///
 /// Before
 ///
@@ -722,7 +717,7 @@ fn calculate_inline_table_insertion(
 /// serde = "1.0"
 ///
 /// [dependencies]
-/// serde = { workspace = true }
+/// serde.workspace = true
 /// ```
 ///
 fn add_workspace_dependency_code_action(
@@ -798,7 +793,7 @@ fn add_workspace_dependency_code_action(
         crate_value,
     )?;
 
-    // Generate member edit to convert to workspace = true
+    // Generate member edit to convert to workspace inheritance.
     let member_edit = generate_member_workspace_true_edit(
         line_index,
         crate_name,
@@ -914,7 +909,7 @@ fn generate_workspace_dependencies_edit(
     })
 }
 
-/// Generate TextEdit for converting member dependency to workspace = true
+/// Generate TextEdit for converting member dependency to workspace inheritance.
 fn generate_member_workspace_true_edit(
     line_index: &tombi_text::LineIndex,
     crate_name: &str,
@@ -925,15 +920,38 @@ fn generate_member_workspace_true_edit(
         return None;
     };
 
-    Some(TextEdit {
-        range: (crate_key_context.range + crate_value.range()).into_lsp(line_index),
-        new_text: format!("{} = {{ workspace = true }}", crate_name),
-    })
+    match crate_value {
+        tombi_document_tree::Value::String(_) => Some(TextEdit {
+            range: (crate_key_context.range + crate_value.symbol_range()).into_lsp(line_index),
+            new_text: format!("{crate_name}.workspace = true"),
+        }),
+        tombi_document_tree::Value::Table(table)
+            if matches!(table.kind(), TableKind::InlineTable { .. }) =>
+        {
+            Some(TextEdit {
+                range: (crate_key_context.range + table.symbol_range()).into_lsp(line_index),
+                new_text: render_inherited_dependency_inline_table(crate_name, table),
+            })
+        }
+        tombi_document_tree::Value::Table(table) => {
+            let (key, version) = table.get_key_value("version")?;
+
+            Some(TextEdit {
+                range: (key.range() + version.range()).into_lsp(line_index),
+                new_text: "workspace = true".to_string(),
+            })
+        }
+        _ => None,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tombi_ast::AstNode;
+    use tombi_document_tree::{TryIntoDocumentTree, dig_keys};
+    use tombi_schema_store::{AccessorContext, AccessorKeyKind, KeyContext};
+    use tombi_text::{EncodingKind, LineIndex, Position, Range, RelativePosition};
 
     #[test]
     fn test_code_action_refactor_rewrite_name_display() {
@@ -990,5 +1008,128 @@ mod tests {
         let existing = vec!["tokio", "tracing"];
         let result = calculate_insertion_index(&existing, "tokio1");
         assert_eq!(result, 1);
+    }
+
+    fn parse_dependency_value(
+        source: &str,
+        crate_name: &str,
+    ) -> (
+        std::string::String,
+        tombi_document_tree::Value,
+        AccessorContext,
+    ) {
+        let source = source.trim().to_string();
+        let root = tombi_ast::Root::cast(tombi_parser::parse(&source).into_syntax_node())
+            .expect("expected root");
+        let document_tree = root
+            .try_into_document_tree(tombi_config::TomlVersion::default())
+            .expect("expected document tree");
+        let (_, value) =
+            dig_keys(&document_tree, &["dependencies", crate_name]).expect("expected dependency");
+        let start = source.find(crate_name).expect("expected crate name");
+        let end = start + crate_name.len();
+        let accessor_context = AccessorContext::Key(KeyContext {
+            kind: AccessorKeyKind::KeyValue,
+            range: Range::new(
+                Position::default() + RelativePosition::of(&source[..start]),
+                Position::default() + RelativePosition::of(&source[..end]),
+            ),
+        });
+
+        (source, value.clone(), accessor_context)
+    }
+
+    fn apply_text_edit(source: &str, edit: &TextEdit) -> String {
+        let mut line_offsets = Vec::new();
+        let mut acc = 0;
+        for line in source.lines() {
+            line_offsets.push(acc);
+            acc += line.len() + 1;
+        }
+
+        let start_line = edit.range.start.line as usize;
+        let start_char = edit.range.start.character as usize;
+        let end_line = edit.range.end.line as usize;
+        let end_char = edit.range.end.character as usize;
+        let start = line_offsets.get(start_line).copied().unwrap_or(0) + start_char;
+        let end = line_offsets.get(end_line).copied().unwrap_or(0) + end_char;
+
+        let mut text = source.to_string();
+        text.replace_range(start..end, &edit.new_text);
+        text
+    }
+
+    #[test]
+    fn generate_member_workspace_true_edit_preserves_inline_table_keys() {
+        let (source, value, accessor_context) = parse_dependency_value(
+            r#"[dependencies]
+serde = { version = "1.0", features = ["derive"] }"#,
+            "serde",
+        );
+        let line_index = LineIndex::new(&source, EncodingKind::Utf16);
+
+        let edit =
+            generate_member_workspace_true_edit(&line_index, "serde", &value, &accessor_context)
+                .expect("expected edit");
+
+        assert_eq!(
+            apply_text_edit(&source, &edit),
+            r#"[dependencies]
+serde = { workspace = true, features = ["derive"] }"#
+        );
+    }
+
+    #[test]
+    fn generate_member_workspace_true_edit_preserves_inline_table_comment() {
+        let (source, value, accessor_context) = parse_dependency_value(
+            r#"[dependencies]
+serde = { version = "1.0" } # comment"#,
+            "serde",
+        );
+        let line_index = LineIndex::new(&source, EncodingKind::Utf16);
+
+        let edit =
+            generate_member_workspace_true_edit(&line_index, "serde", &value, &accessor_context)
+                .expect("expected edit");
+
+        assert_eq!(
+            apply_text_edit(&source, &edit),
+            r#"[dependencies]
+serde = { workspace = true } # comment"#
+        );
+    }
+
+    #[test]
+    fn generate_member_workspace_true_edit_replaces_dotted_version_key() {
+        let (source, value, accessor_context) = parse_dependency_value(
+            r#"[dependencies]
+serde.version = "1.0"
+serde.features = ["derive"]"#,
+            "serde",
+        );
+        let line_index = LineIndex::new(&source, EncodingKind::Utf16);
+
+        let edit =
+            generate_member_workspace_true_edit(&line_index, "serde", &value, &accessor_context)
+                .expect("expected edit");
+
+        assert_eq!(
+            apply_text_edit(&source, &edit),
+            r#"[dependencies]
+serde.workspace = true
+serde.features = ["derive"]"#
+        );
+    }
+
+    #[test]
+    fn generate_member_workspace_true_edit_returns_none_for_non_inline_table_without_version() {
+        let (source, value, accessor_context) =
+            parse_dependency_value("[dependencies]\nserde.features = [\"derive\"]", "serde");
+        let line_index = LineIndex::new(&source, EncodingKind::Utf16);
+
+        let edit =
+            generate_member_workspace_true_edit(&line_index, "serde", &value, &accessor_context);
+
+        assert!(edit.is_none());
     }
 }
