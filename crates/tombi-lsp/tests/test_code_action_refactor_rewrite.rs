@@ -190,7 +190,24 @@ mod refactor_rewrite {
             ) -> Ok(Some(
                 r#"
                 [dependencies]
-                serde = { workspace = true }
+                serde.workspace = true
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_dependencies_serde_dotted_version_with_comment(
+                r#"
+                [dependencies]
+                serde.version█ = "1.0" # comment
+                "#,
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [dependencies]
+                serde.workspace = true # comment
                 "#
             ));
         }
@@ -214,6 +231,23 @@ mod refactor_rewrite {
 
         test_code_action_refactor_rewrite! {
             #[tokio::test]
+            async fn cargo_toml_dependencies_serde_inline_table_version_with_comment(
+                r#"
+                [dependencies]
+                serde = { version█ = "1.0" } # comment
+                "#,
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [dependencies]
+                serde = { workspace = true } # comment
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
             async fn cargo_toml_dependencies_serde_inline_table_version_with_other_keys(
                 r#"
                 [dependencies]
@@ -225,6 +259,23 @@ mod refactor_rewrite {
                 r#"
                 [dependencies]
                 serde = { workspace = true, features = ["derive"] }
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_dependencies_serde_inline_table_version_with_other_keys_and_comment(
+                r#"
+                [dependencies]
+                serde = { version█ = "1.0", features = ["derive"] } # comment
+                "#,
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [dependencies]
+                serde = { workspace = true, features = ["derive"] } # comment
                 "#
             ));
         }
@@ -353,7 +404,7 @@ mod refactor_rewrite {
             ) -> Ok(Some(
                 r#"
                 [target.'cfg(unix)'.dependencies]
-                serde = { workspace = true }
+                serde.workspace = true
                 "#
             ));
         }
