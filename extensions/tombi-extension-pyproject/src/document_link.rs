@@ -5,7 +5,10 @@ use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
 use tombi_document_tree::dig_keys;
 
-use crate::{find_member_project_toml, find_workspace_pyproject_toml, goto_member_pyprojects};
+use crate::{
+    dependency::UV_DEPENDENCY_KEYS, find_member_project_toml, find_workspace_pyproject_toml,
+    goto_member_pyprojects,
+};
 
 pub enum DocumentLinkToolTip {
     PyprojectToml,
@@ -140,6 +143,15 @@ pub async fn document_link(
             pypi_org_document_link_enabled(features),
         )?);
     }
+
+    document_links.extend(document_link_for_tool_uv_dependencies(
+        document_tree,
+        pyproject_sources,
+        &pyproject_toml_path,
+        toml_version,
+        pyproject_toml_document_link_enabled(features),
+        pypi_org_document_link_enabled(features),
+    )?);
 
     if document_links.is_empty() {
         return Ok(None);
@@ -405,6 +417,34 @@ fn document_link_for_optional_dependencies(
     for option in optional_dependencies.values() {
         if let tombi_document_tree::Value::Array(dependencies) = option {
             // Process each dependency in the group using the same logic as project.dependencies
+            document_links.extend(document_link_for_project_dependencies(
+                dependencies,
+                pyproject_sources,
+                pyproject_toml_path,
+                toml_version,
+                pyproject_toml_enabled,
+                pypi_org_enabled,
+            )?);
+        }
+    }
+
+    Ok(document_links)
+}
+
+fn document_link_for_tool_uv_dependencies(
+    document_tree: &tombi_document_tree::DocumentTree,
+    pyproject_sources: Option<&tombi_document_tree::Table>,
+    pyproject_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+    pyproject_toml_enabled: bool,
+    pypi_org_enabled: bool,
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+    let mut document_links = Vec::new();
+
+    for key in UV_DEPENDENCY_KEYS {
+        if let Some((_, tombi_document_tree::Value::Array(dependencies))) =
+            dig_keys(document_tree, &["tool", "uv", key])
+        {
             document_links.extend(document_link_for_project_dependencies(
                 dependencies,
                 pyproject_sources,
