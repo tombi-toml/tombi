@@ -156,6 +156,8 @@ pub struct FormatRules {
     pub key_value_equals_sign_alignment: Option<bool>,
 
     /// # The preferred quote character for strings
+    ///
+    /// Choose which quote style the formatter prefers for basic strings.
     #[cfg_attr(
         feature = "jsonschema",
         schemars(default = "StringQuoteStyle::default")

@@ -14,6 +14,7 @@ macro_rules! default_to_features {
     };
 }
 
+/// # Extension options
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
@@ -21,10 +22,21 @@ macro_rules! default_to_features {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct Extensions {
     #[cfg_attr(feature = "serde", serde(rename = "tombi-toml/cargo"))]
+    /// # Cargo Extension
+    ///
+    /// Configure built-in support for `Cargo.toml`.
     pub cargo: Option<CargoExtensionFeatures>,
+
     #[cfg_attr(feature = "serde", serde(rename = "tombi-toml/pyproject"))]
+    /// # Pyproject Extension
+    ///
+    /// Configure built-in support for `pyproject.toml`.
     pub pyproject: Option<PyprojectExtensionFeatures>,
+
     #[cfg_attr(feature = "serde", serde(rename = "tombi-toml/tombi"))]
+    /// # Tombi Extension
+    ///
+    /// Configure built-in support for `tombi.toml`.
     pub tombi: Option<TombiExtensionFeatures>,
 }
 
@@ -65,6 +77,9 @@ impl Extensions {
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct EnabledOnly {
+    /// # Enable feature
+    ///
+    /// Whether this feature is enabled.
     pub enabled: Option<BoolDefaultTrue>,
 }
 
@@ -312,6 +327,7 @@ impl CargoExtensionFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct CargoExtensionFeatureTree {
+    /// # Cargo LSP feature options
     pub lsp: Option<CargoLspFeatures>,
 }
 
@@ -588,12 +604,25 @@ impl CargoLspFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct CargoLspFeatureTree {
+    /// # Completion feature options
     pub completion: Option<CargoCompletionFeatures>,
+
+    /// # Inlay hint feature options
     pub inlay_hint: Option<CargoInlayHintFeatures>,
+
+    /// # Goto definition feature options
     pub goto_definition: Option<CargoNavigationFeatures>,
+
+    /// # Goto declaration feature options
     pub goto_declaration: Option<CargoNavigationFeatures>,
+
+    /// # Document link feature options
     pub document_link: Option<CargoDocumentLinkFeatures>,
+
+    /// # Hover feature options
     pub hover: Option<CargoHoverFeatures>,
+
+    /// # Code action feature options
     pub code_action: Option<CargoCodeActionFeatures>,
 }
 
@@ -690,6 +719,9 @@ impl CargoInlayHintFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct CargoHoverFeatureTree {
+    /// # Dependency detail hover feature
+    ///
+    /// Whether hover shows detailed dependency metadata.
     pub dependency_detail: Option<ToggleFeature>,
 }
 
@@ -700,8 +732,19 @@ pub struct CargoHoverFeatureTree {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct CargoInlayHintFeatureTree {
+    /// # Dependency version inlay hint feature
+    ///
+    /// Whether inlay hints show dependency versions.
     pub dependency_version: Option<ToggleFeature>,
+
+    /// # Default features inlay hint feature
+    ///
+    /// Whether inlay hints show `default-features` values.
     pub default_features: Option<ToggleFeature>,
+
+    /// # Workspace value inlay hint feature
+    ///
+    /// Whether inlay hints show values inherited from the Cargo workspace.
     pub workspace_value: Option<ToggleFeature>,
 }
 
@@ -764,8 +807,19 @@ impl CargoCompletionFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct CargoCompletionFeatureTree {
+    /// # Dependency version completion feature
+    ///
+    /// Whether completion suggests dependency versions.
     pub dependency_version: Option<ToggleFeature>,
+
+    /// # Dependency feature completion feature
+    ///
+    /// Whether completion suggests dependency features.
     pub dependency_feature: Option<ToggleFeature>,
+
+    /// # Path completion feature
+    ///
+    /// Whether completion suggests filesystem paths.
     pub path: Option<ToggleFeature>,
 }
 
@@ -828,8 +882,19 @@ impl CargoNavigationFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct CargoNavigationFeatureTree {
+    /// # Dependency navigation feature
+    ///
+    /// Whether navigation resolves dependency definitions and declarations.
     pub dependency: Option<ToggleFeature>,
+
+    /// # Member navigation feature
+    ///
+    /// Whether navigation resolves workspace member targets.
     pub member: Option<ToggleFeature>,
+
+    /// # Path navigation feature
+    ///
+    /// Whether navigation resolves filesystem paths.
     pub path: Option<ToggleFeature>,
 }
 
@@ -902,9 +967,24 @@ impl CargoDocumentLinkFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct CargoDocumentLinkFeatureTree {
+    /// # Cargo.toml document link feature
+    ///
+    /// Whether document links are created for `Cargo.toml` references.
     pub cargo_toml: Option<ToggleFeature>,
+
+    /// # Git document link feature
+    ///
+    /// Whether document links are created for Git references.
     pub git: Option<ToggleFeature>,
+
+    /// # Path document link feature
+    ///
+    /// Whether document links are created for filesystem paths.
     pub path: Option<ToggleFeature>,
+
+    /// # crates.io document link feature
+    ///
+    /// Whether document links are created for crates.io package references.
     pub crates_io: Option<ToggleFeature>,
 }
 
@@ -979,9 +1059,24 @@ impl CargoCodeActionFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct CargoCodeActionFeatureTree {
+    /// # Inherit-from-workspace code action feature
+    ///
+    /// Whether code actions can replace a value with `workspace = true`.
     pub inherit_from_workspace: Option<ToggleFeature>,
+
+    /// # Inherit-dependency-from-workspace code action feature
+    ///
+    /// Whether code actions can inherit dependency settings from the workspace.
     pub inherit_dependency_from_workspace: Option<ToggleFeature>,
+
+    /// # Convert-dependency-to-table-format code action feature
+    ///
+    /// Whether code actions can rewrite inline dependencies to table format.
     pub convert_dependency_to_table_format: Option<ToggleFeature>,
+
+    /// # Add-to-workspace-and-inherit-dependency code action feature
+    ///
+    /// Whether code actions can add a dependency to the workspace and inherit it.
     pub add_to_workspace_and_inherit_dependency: Option<ToggleFeature>,
 }
 
@@ -1162,6 +1257,7 @@ impl PyprojectExtensionFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct PyprojectExtensionFeatureTree {
+    /// # Pyproject LSP feature options
     pub lsp: Option<PyprojectLspFeatures>,
 }
 
@@ -1380,12 +1476,39 @@ impl PyprojectLspFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct PyprojectLspFeatureTree {
+    /// # Completion feature options
+    ///
+    /// Configure pyproject completion features.
     pub completion: Option<PyprojectCompletionFeatures>,
+
+    /// # Inlay hint feature options
+    ///
+    /// Configure pyproject inlay hint features.
     pub inlay_hint: Option<PyprojectInlayHintFeatures>,
+
+    /// # Goto definition feature options
+    ///
+    /// Configure pyproject go-to-definition features.
     pub goto_definition: Option<PyprojectNavigationFeatures>,
+
+    /// # Goto declaration feature options
+    ///
+    /// Configure pyproject go-to-declaration features.
     pub goto_declaration: Option<PyprojectNavigationFeatures>,
+
+    /// # Document link feature options
+    ///
+    /// Configure pyproject document link features.
     pub document_link: Option<PyprojectDocumentLinkFeatures>,
+
+    /// # Hover feature options
+    ///
+    /// Configure pyproject hover features.
     pub hover: Option<PyprojectHoverFeatures>,
+
+    /// # Code action feature options
+    ///
+    /// Configure pyproject code action features.
     pub code_action: Option<PyprojectCodeActionFeatures>,
 }
 
@@ -1428,6 +1551,9 @@ impl PyprojectInlayHintFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct PyprojectInlayHintFeatureTree {
+    /// # Dependency version inlay hint feature
+    ///
+    /// Whether inlay hints show resolved dependency versions.
     pub dependency_version: Option<ToggleFeature>,
 }
 
@@ -1470,6 +1596,9 @@ impl PyprojectHoverFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct PyprojectHoverFeatureTree {
+    /// # Dependency detail hover feature
+    ///
+    /// Whether hover shows detailed dependency metadata.
     pub dependency_detail: Option<ToggleFeature>,
 }
 
@@ -1510,6 +1639,9 @@ impl PyprojectCompletionFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct PyprojectCompletionFeatureTree {
+    /// # Path completion feature
+    ///
+    /// Whether completion suggests filesystem paths.
     pub path: Option<ToggleFeature>,
 }
 
@@ -1572,8 +1704,19 @@ impl PyprojectNavigationFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct PyprojectNavigationFeatureTree {
+    /// # Dependency navigation feature
+    ///
+    /// Whether navigation resolves dependency definitions and declarations.
     pub dependency: Option<ToggleFeature>,
+
+    /// # Member navigation feature
+    ///
+    /// Whether navigation resolves workspace member targets.
     pub member: Option<ToggleFeature>,
+
+    /// # Path navigation feature
+    ///
+    /// Whether navigation resolves filesystem paths.
     pub path: Option<ToggleFeature>,
 }
 
@@ -1629,7 +1772,14 @@ impl PyprojectDocumentLinkFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct PyprojectDocumentLinkFeatureTree {
+    /// # pyproject.toml document link feature
+    ///
+    /// Whether document links are created for `pyproject.toml` references.
     pub pyproject_toml: Option<ToggleFeature>,
+
+    /// # PyPI document link feature
+    ///
+    /// Whether document links are created for `pypi.org` package references.
     pub pypi_org: Option<ToggleFeature>,
 }
 
@@ -1682,7 +1832,14 @@ impl PyprojectCodeActionFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct PyprojectCodeActionFeatureTree {
+    /// # Use-workspace-dependency code action feature
+    ///
+    /// Whether code actions can reuse a dependency declared in the workspace.
     pub use_workspace_dependency: Option<ToggleFeature>,
+
+    /// # Add-to-workspace-and-use-workspace-dependency code action feature
+    ///
+    /// Whether code actions can add a dependency to the workspace and reuse it.
     pub add_to_workspace_and_use_workspace_dependency: Option<ToggleFeature>,
 }
 
@@ -1767,6 +1924,7 @@ impl TombiExtensionFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct TombiExtensionFeatureTree {
+    /// # Tombi LSP feature options
     pub lsp: Option<TombiLspFeatures>,
 }
 
@@ -1871,9 +2029,24 @@ impl TombiLspFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct TombiLspFeatureTree {
+    /// # Completion feature options
+    ///
+    /// Configure Tombi completion features.
     pub completion: Option<TombiCompletionFeatures>,
+
+    /// # Goto definition feature options
+    ///
+    /// Configure Tombi go-to-definition features.
     pub goto_definition: Option<TombiGotoDefinitionFeatures>,
+
+    /// # Document link feature options
+    ///
+    /// Configure Tombi document link features.
     pub document_link: Option<TombiDocumentLinkFeatures>,
+
+    /// # Hover feature options
+    ///
+    /// Configure Tombi hover features.
     pub hover: Option<EnabledOnly>,
 }
 
@@ -1915,6 +2088,9 @@ impl TombiCompletionFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct TombiCompletionFeatureTree {
+    /// # Path completion feature
+    ///
+    /// Whether completion suggests filesystem paths.
     pub path: Option<ToggleFeature>,
 }
 
@@ -1956,6 +2132,9 @@ impl TombiGotoDefinitionFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct TombiGotoDefinitionFeatureTree {
+    /// # Path goto-definition feature
+    ///
+    /// Whether go-to-definition resolves filesystem paths.
     pub path: Option<ToggleFeature>,
 }
 
@@ -1996,6 +2175,9 @@ impl TombiDocumentLinkFeatures {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct TombiDocumentLinkFeatureTree {
+    /// # Path document link feature
+    ///
+    /// Whether document links are created for filesystem paths.
     pub path: Option<ToggleFeature>,
 }
 
@@ -2005,6 +2187,9 @@ pub struct TombiDocumentLinkFeatureTree {
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct ToggleFeature {
+    /// # Enable feature
+    ///
+    /// Whether this nested feature is enabled.
     pub enabled: Option<BoolDefaultTrue>,
 }
 
