@@ -48,7 +48,7 @@ pub enum CodeActionRefactorRewriteName {
     /// ```toml
     /// # In your member crate's Cargo.toml
     /// [dependencies]
-    /// serde = { workspace = true }
+    /// serde.workspace = true
     /// ```
     InheritDependencyFromWorkspace,
 
@@ -72,7 +72,7 @@ pub enum CodeActionRefactorRewriteName {
     /// Add to Workspace and Inherit Dependency
     ///
     /// Adds a dependency to [workspace.dependencies] and converts the member's
-    /// dependency to `workspace = true` format.
+    /// dependency to workspace inheritance format.
     ///
     /// Before
     ///
@@ -95,7 +95,7 @@ pub enum CodeActionRefactorRewriteName {
     ///
     /// # Member Cargo.toml
     /// [dependencies]
-    /// serde = { workspace = true }
+    /// serde.workspace = true
     /// ```
     AddToWorkspaceAndInheritDependency,
 }
@@ -446,9 +446,7 @@ fn use_workspace_dependency_code_action(
                                 end: version.range().end,
                             }
                             .into_lsp(line_index),
-                            // NOTE: Convert to a workspace dependency to make it easier
-                            //       to add other settings in the future.
-                            new_text: format!("{crate_name} = {{ workspace = true }}"),
+                            new_text: format!("{crate_name}.workspace = true"),
                         })],
                     }])),
                     change_annotations: None,
@@ -470,12 +468,9 @@ fn use_workspace_dependency_code_action(
                 return None; // No version to inherit
             };
 
-            let edits = if matches!(
-                table.kind(),
-                TableKind::KeyValue | TableKind::InlineTable { .. }
-            ) {
+            let edits = if matches!(table.kind(), TableKind::InlineTable { .. }) {
                 vec![OneOf::Left(TextEdit {
-                    range: (crate_key_context.range + table.range()).into_lsp(line_index),
+                    range: (crate_key_context.range + table.symbol_range()).into_lsp(line_index),
                     new_text: render_inherited_dependency_inline_table(crate_name, table),
                 })]
             } else {
@@ -701,12 +696,12 @@ fn calculate_inline_table_insertion(
 }
 
 /// Add a dependency to workspace.dependencies and convert member's dependency
-/// to workspace = true format.
+/// to workspace inheritance format.
 ///
 /// This code action is provided when:
 /// - The cursor is on a dependency in member Cargo.toml
 /// - The dependency is not yet registered in workspace.dependencies
-/// - The dependency is not already using workspace = true
+/// - The dependency is not already using workspace inheritance
 ///
 /// Before
 ///
@@ -722,7 +717,7 @@ fn calculate_inline_table_insertion(
 /// serde = "1.0"
 ///
 /// [dependencies]
-/// serde = { workspace = true }
+/// serde.workspace = true
 /// ```
 ///
 fn add_workspace_dependency_code_action(
@@ -798,7 +793,7 @@ fn add_workspace_dependency_code_action(
         crate_value,
     )?;
 
-    // Generate member edit to convert to workspace = true
+    // Generate member edit to convert to workspace inheritance.
     let member_edit = generate_member_workspace_true_edit(
         line_index,
         crate_name,
@@ -914,7 +909,7 @@ fn generate_workspace_dependencies_edit(
     })
 }
 
-/// Generate TextEdit for converting member dependency to workspace = true
+/// Generate TextEdit for converting member dependency to workspace inheritance.
 fn generate_member_workspace_true_edit(
     line_index: &tombi_text::LineIndex,
     crate_name: &str,
@@ -926,8 +921,11 @@ fn generate_member_workspace_true_edit(
     };
 
     Some(TextEdit {
-        range: (crate_key_context.range + crate_value.range()).into_lsp(line_index),
-        new_text: format!("{} = {{ workspace = true }}", crate_name),
+        range: (crate_key_context.range + crate_value.symbol_range()).into_lsp(line_index),
+        new_text: match crate_value {
+            tombi_document_tree::Value::String(_) => format!("{crate_name}.workspace = true"),
+            _ => format!("{crate_name} = {{ workspace = true }}"),
+        },
     })
 }
 
