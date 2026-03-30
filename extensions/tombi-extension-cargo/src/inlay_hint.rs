@@ -301,6 +301,10 @@ fn collect_workspace_value_inlay_hints(
     visible_range: tombi_text::Range,
     hints: &mut Vec<InlayHint>,
 ) {
+    if !has_visible_workspace_value_targets(document_tree, visible_range) {
+        return;
+    }
+
     let Some(workspace_document_tree) =
         workspace_document_tree(document_tree, cargo_toml_path, toml_version)
     else {
@@ -369,6 +373,25 @@ fn collect_workspace_lints_inlay_hints(
     };
 
     push_workspace_value_hint(workspace, workspace_value, visible_range, hints);
+}
+
+fn has_visible_workspace_value_targets(
+    document_tree: &tombi_document_tree::DocumentTree,
+    visible_range: tombi_text::Range,
+) -> bool {
+    WORKSPACE_PACKAGE_ITEMS.iter().any(|package_item| {
+        matches!(
+            dig_keys(document_tree, &["package", package_item, "workspace"]),
+            Some((_, Value::Boolean(workspace)))
+                if workspace.value()
+                    && tombi_text::Range::at(workspace.range().end).intersects(visible_range)
+        )
+    }) || matches!(
+        dig_keys(document_tree, &["lints", "workspace"]),
+        Some((_, Value::Boolean(workspace)))
+            if workspace.value()
+                && tombi_text::Range::at(workspace.range().end).intersects(visible_range)
+    )
 }
 
 fn push_workspace_value_hint(
