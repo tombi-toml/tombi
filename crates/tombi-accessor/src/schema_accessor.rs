@@ -50,6 +50,16 @@ impl SchemaAccessor {
 
         while i < chars.len() {
             match chars[i] {
+                '"' => {
+                    if !current_key.is_empty() {
+                        log::warn!("Invalid schema accessor: {path}");
+                        return None;
+                    }
+
+                    let (key, next_index) = parse_basic_quoted_key(&chars, i)?;
+                    accessors.push(SchemaAccessor::Key(key));
+                    i = next_index;
+                }
                 '[' => {
                     if !current_key.is_empty() {
                         accessors.push(SchemaAccessor::Key(current_key));
@@ -89,6 +99,34 @@ impl SchemaAccessor {
 
         Some(accessors)
     }
+}
+
+fn parse_basic_quoted_key(chars: &[char], start: usize) -> Option<(String, usize)> {
+    let mut quoted_key = String::from("\"");
+    let mut i = start + 1;
+    let mut escaped = false;
+
+    while i < chars.len() {
+        let c = chars[i];
+        quoted_key.push(c);
+
+        if escaped {
+            escaped = false;
+        } else if c == '\\' {
+            escaped = true;
+        } else if c == '"' {
+            let key = tombi_toml_text::try_from_basic_string(
+                &quoted_key,
+                tombi_toml_version::TomlVersion::latest(),
+            )
+            .ok()?;
+            return Some((key, i));
+        }
+
+        i += 1;
+    }
+
+    None
 }
 
 impl PartialEq<Accessor> for SchemaAccessor {
@@ -224,6 +262,14 @@ mod tests {
         SchemaAccessor::Key("array".to_string()),
         SchemaAccessor::Index,
     ])]
+    #[case(r#"extensions."tombi-toml/cargo""#, vec![
+        SchemaAccessor::Key("extensions".to_string()),
+        SchemaAccessor::Key("tombi-toml/cargo".to_string()),
+    ])]
+    #[case(r#""a.b".key"#, vec![
+        SchemaAccessor::Key("a.b".to_string()),
+        SchemaAccessor::Key("key".to_string()),
+    ])]
     fn test_schema_accessor(#[case] input: &str, #[case] expected: Vec<SchemaAccessor>) {
         let result = SchemaAccessor::parse(input).unwrap();
         pretty_assertions::assert_eq!(result, expected, "Failed for input: {}", input);
@@ -245,5 +291,17 @@ mod tests {
 
         assert_eq!(key.as_key(), Some("extensions"));
         assert_eq!(index.as_key(), None);
+    }
+
+    #[test]
+    fn test_schema_accessors_display_parse_roundtrip_with_quoted_key() {
+        let accessors = SchemaAccessors::from(vec![
+            SchemaAccessor::Key("extensions".to_string()),
+            SchemaAccessor::Key(r#"quote"slash\"#.to_string()),
+            SchemaAccessor::Key("a.b".to_string()),
+        ]);
+
+        let parsed = SchemaAccessor::parse(&format!("{accessors}")).unwrap();
+        assert_eq!(parsed, accessors.0);
     }
 }

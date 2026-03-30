@@ -308,7 +308,7 @@ pub fn to_basic_string(value: &str) -> String {
 }
 
 pub fn to_key_string(value: &str) -> String {
-    if is_variable_placeholder(value) || try_from_bare_key(value).is_ok() {
+    if is_variable_placeholder(value) || is_display_bare_key(value) {
         value.to_string()
     } else {
         to_basic_string(value)
@@ -317,6 +317,10 @@ pub fn to_key_string(value: &str) -> String {
 
 fn is_variable_placeholder(value: &str) -> bool {
     value.starts_with("${") && value.ends_with('}')
+}
+
+fn is_display_bare_key(value: &str) -> bool {
+    !value.contains('.') && try_from_bare_key(value).is_ok()
 }
 
 pub fn to_literal_string(value: &str) -> String {
@@ -353,5 +357,10 @@ mod tests {
     #[test]
     fn key_string_keeps_variable_placeholder_unquoted() {
         assert_eq!(to_key_string("${mod_id}"), "${mod_id}");
+    }
+
+    #[test]
+    fn key_string_quotes_key_containing_dot() {
+        assert_eq!(to_key_string("a.b"), r#""a.b""#);
     }
 }
