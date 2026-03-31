@@ -132,6 +132,7 @@ impl CargoLock {
         (resolved_versions.len() == 1)
             .then(|| resolved_versions.into_iter().next())
             .flatten()
+            .map(str::to_string)
     }
 }
 
@@ -257,16 +258,16 @@ impl CargoLockDependency {
 }
 
 impl CargoLockPackage {
-    pub(crate) fn lockfile_resolved_dependency_version(
-        &self,
+    pub(crate) fn lockfile_resolved_dependency_version<'a>(
+        &'a self,
         dependency_name: &str,
-        unique_package_versions: &HashMap<String, Option<String>>,
-    ) -> Option<String> {
+        unique_package_versions: &'a HashMap<String, Option<String>>,
+    ) -> Option<&'a str> {
         let explicit_versions = self
             .dependencies
             .iter()
             .filter(|dependency| dependency.name == dependency_name)
-            .filter_map(|dependency| dependency.version.clone())
+            .filter_map(|dependency| dependency.version.as_deref())
             .collect::<HashSet<_>>();
 
         if explicit_versions.len() == 1 {
@@ -283,8 +284,7 @@ impl CargoLockPackage {
             .then(|| {
                 unique_package_versions
                     .get(dependency_name)
-                    .cloned()
-                    .flatten()
+                    .and_then(|v| v.as_deref())
             })
             .flatten()
     }

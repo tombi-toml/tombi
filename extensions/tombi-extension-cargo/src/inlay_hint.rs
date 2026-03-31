@@ -1546,18 +1546,18 @@ async fn registry_dependency_default_features_hint(
         return Ok(None);
     };
 
-    let Some(crate_features) =
+    let Some(mut crate_features) =
         fetch_registry_crate_features(&crate_name, &version, offline, cache_options).await
     else {
         return Ok(None);
     };
-    let Some(default_features) = crate_features.get("default") else {
+    let Some(default_features) = crate_features.remove("default") else {
         return Ok(None);
     };
 
     Ok(build_default_features_hint(
         features.range().end,
-        default_features.clone(),
+        default_features,
         &collect_feature_names(features),
     ))
 }
@@ -1678,11 +1678,13 @@ fn cargo_lock_dependency_version(
     }
 
     let current_package = current_package?;
-    cargo_lock_cache.resolved_dependency_version(
-        current_package.name,
-        &current_package.version,
-        dependency_name,
-    )
+    cargo_lock_cache
+        .resolved_dependency_version(
+            current_package.name,
+            &current_package.version,
+            dependency_name,
+        )
+        .map(str::to_string)
 }
 
 fn workspace_dependency_lock_version(
@@ -1706,6 +1708,7 @@ fn workspace_dependency_lock_version(
     (resolved_versions.len() == 1)
         .then(|| resolved_versions.into_iter().next())
         .flatten()
+        .map(str::to_string)
 }
 
 fn workspace_dependency_lock_versions<'a>(
@@ -1722,10 +1725,10 @@ fn workspace_dependency_lock_versions<'a>(
         return HashMap::new();
     }
 
-    let mut resolved_versions = dependency_names
+    let mut resolved_versions: HashMap<String, HashSet<&str>> = dependency_names
         .into_iter()
         .map(|dependency_name| (dependency_name, HashSet::new()))
-        .collect::<HashMap<_, _>>();
+        .collect();
 
     for package in workspace_member_packages {
         for (dependency_name, versions) in &mut resolved_versions {
@@ -1748,7 +1751,7 @@ fn workspace_dependency_lock_versions<'a>(
                     versions
                         .into_iter()
                         .next()
-                        .map(|version| (dependency_name, version))
+                        .map(|version| (dependency_name, version.to_string()))
                 })
                 .flatten()
         })
@@ -2072,18 +2075,18 @@ impl CargoLockPackage {
         let dependency_names = self
             .dependencies
             .iter()
-            .map(|dependency| dependency.name.clone())
+            .map(|dependency| dependency.name.as_str())
             .collect::<HashSet<_>>();
 
         let by_dependency = dependency_names
             .into_iter()
             .filter_map(|dependency_name| {
                 let resolved_version = self.lockfile_resolved_dependency_version(
-                    &dependency_name,
+                    dependency_name,
                     unique_package_versions,
                 )?;
                 Some((
-                    DependencyCrateName::new(&dependency_name),
+                    DependencyCrateName::new(dependency_name),
                     ResolvedDependencyVersion::new(resolved_version),
                 ))
             })
@@ -2130,8 +2133,10 @@ impl Borrow<str> for DependencyCrateName {
 }
 
 impl ResolvedDependencyVersion {
-    fn new(version: String) -> Self {
-        Self { version }
+    fn new(version: &str) -> Self {
+        Self {
+            version: version.to_string(),
+        }
     }
 }
 
@@ -2141,12 +2146,12 @@ impl CargoLockInlayCacheData {
         crate_name: &str,
         crate_version: &str,
         dependency_name: &str,
-    ) -> Option<String> {
+    ) -> Option<&str> {
         self.crates
             .get(crate_name)
             .and_then(|versions| versions.get(crate_version))
             .and_then(|dependencies| dependencies.by_dependency.get(dependency_name))
-            .map(|resolved| resolved.version.clone())
+            .map(|resolved| resolved.version.as_str())
     }
 }
 
@@ -2457,7 +2462,7 @@ mod tests {
 
         assert_eq!(
             cache_data.resolved_dependency_version("demo", "0.1.0", "serde"),
-            Some("1.0.228".to_string())
+            Some("1.0.228")
         );
     }
 
@@ -2487,7 +2492,7 @@ mod tests {
 
         assert_eq!(
             roundtrip.resolved_dependency_version("demo", "0.1.0", "tokio"),
-            Some("1.47.1".to_string())
+            Some("1.47.1")
         );
     }
 
