@@ -13,7 +13,7 @@ use tombi_hashmap::{HashMap, HashSet};
 
 use crate::{
     cargo_lock::{
-        CargoLock, CargoLockPackage, CARGO_EXTENSION_ID, find_cargo_lock_path,
+        CARGO_EXTENSION_ID, CargoLock, CargoLockPackage, find_cargo_lock_path,
         load_cached_cargo_lock, load_cargo_lock_from_path,
     },
     dependency_package_name, find_workspace_cargo_toml, get_workspace_path, load_cargo_toml,
