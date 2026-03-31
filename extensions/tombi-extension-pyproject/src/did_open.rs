@@ -27,6 +27,10 @@ pub async fn did_open(
         return Ok(None);
     }
 
+    if !pyproject_hover_warming_enabled(features) {
+        return Ok(None);
+    }
+
     if warming_disabled(offline, cache_options) {
         return Ok(None);
     }
@@ -41,7 +45,7 @@ pub async fn did_open(
     }
 
     let cache_options = cache_options.cloned();
-    let handle = tokio::spawn(async move {
+    tokio::spawn(async move {
         stream::iter(urls)
             .for_each_concurrent(Some(PREFETCH_CONCURRENCY), |url| {
                 let cache_options = cache_options.clone();
@@ -52,11 +56,18 @@ pub async fn did_open(
             .await;
     });
 
-    Ok(Some(handle))
+    Ok(None)
 }
 
 fn pyproject_did_open_enabled(features: Option<&PyprojectExtensionFeatures>) -> bool {
     features.map_or(true, PyprojectExtensionFeatures::enabled)
+}
+
+fn pyproject_hover_warming_enabled(features: Option<&PyprojectExtensionFeatures>) -> bool {
+    features.map_or(
+        true,
+        PyprojectExtensionFeatures::dependency_detail_hover_enabled,
+    )
 }
 
 fn warming_disabled(offline: bool, cache_options: Option<&tombi_cache::Options>) -> bool {
