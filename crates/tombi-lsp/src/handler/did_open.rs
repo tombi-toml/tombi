@@ -33,7 +33,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
     let offline = config_schema_store.schema_store.offline();
     let cache_options = config_schema_store.schema_store.cache_options();
 
-    let mut cache_warming_handles: Vec<tokio::task::JoinHandle<()>> = Vec::new();
+    let mut cache_warming_handle: Option<tokio::task::JoinHandle<()>> = None;
 
     if config_schema_store.config.cargo_extension_enabled() {
         match tombi_extension_cargo::did_open(
@@ -46,8 +46,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         )
         .await
         {
-            Ok(Some(handle)) => cache_warming_handles.push(handle),
-            Ok(None) => {}
+            Ok(handle) => cache_warming_handle = handle,
             Err(err) => log::error!("Cargo did_open extension failed: {err}"),
         }
     }
@@ -63,8 +62,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         )
         .await
         {
-            Ok(Some(handle)) => cache_warming_handles.push(handle),
-            Ok(None) => {}
+            Ok(handle) => cache_warming_handle = cache_warming_handle.or(handle),
             Err(err) => log::error!("Pyproject did_open extension failed: {err}"),
         }
     }
@@ -72,12 +70,10 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
     // Publish diagnostics for the opened document
     backend.push_diagnostics(text_document_uri).await;
 
-    if !cache_warming_handles.is_empty() {
+    if let Some(handle) = cache_warming_handle {
         let client = backend.client.clone();
         tokio::spawn(async move {
-            for handle in cache_warming_handles {
-                let _ = handle.await;
-            }
+            let _ = handle.await;
             if let Err(err) = client.inlay_hint_refresh().await {
                 log::debug!("Failed to request inlay hint refresh: {err}");
             }
