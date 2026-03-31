@@ -33,8 +33,10 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
     let offline = config_schema_store.schema_store.offline();
     let cache_options = config_schema_store.schema_store.cache_options();
 
+    let mut cache_warming_handle: Option<tokio::task::JoinHandle<bool>> = None;
+
     if config_schema_store.config.cargo_extension_enabled()
-        && let Err(err) = tombi_extension_cargo::did_open(
+        && let Ok(Some(handle)) = tombi_extension_cargo::did_open(
             &text_document_uri,
             document_tree.as_ref(),
             toml_version,
@@ -44,11 +46,9 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         )
         .await
     {
-        log::error!("Cargo did_open extension failed: {err}");
-    }
-
-    if config_schema_store.config.pyproject_extension_enabled()
-        && let Err(err) = tombi_extension_pyproject::did_open(
+        cache_warming_handle = Some(handle)
+    } else if config_schema_store.config.pyproject_extension_enabled()
+        && let Ok(Some(handle)) = tombi_extension_pyproject::did_open(
             &text_document_uri,
             document_tree.as_ref(),
             toml_version,
@@ -58,9 +58,22 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         )
         .await
     {
-        log::error!("Pyproject did_open extension failed: {err}");
+        cache_warming_handle = Some(handle)
     }
 
     // Publish diagnostics for the opened document
     backend.push_diagnostics(text_document_uri).await;
+
+    if let Some(handle) = cache_warming_handle {
+        let client = backend.client.clone();
+        tokio::spawn(async move {
+            let Ok(should_refresh_inlay_hint) = handle.await else {
+                return;
+            };
+
+            if should_refresh_inlay_hint && let Err(err) = client.inlay_hint_refresh().await {
+                log::debug!("Failed to request warmed inlay hint refresh: {err}");
+            }
+        });
+    }
 }

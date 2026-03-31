@@ -18,45 +18,56 @@ pub async fn did_open(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&PyprojectExtensionFeatures>,
-) -> Result<(), tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tokio::task::JoinHandle<bool>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("pyproject.toml") {
-        return Ok(());
+        return Ok(None);
     }
 
     if !pyproject_did_open_enabled(features) {
-        return Ok(());
+        return Ok(None);
+    }
+
+    if !pyproject_hover_warming_enabled(features) {
+        return Ok(None);
     }
 
     if warming_disabled(offline, cache_options) {
-        return Ok(());
+        return Ok(None);
     }
 
     let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
-        return Ok(());
+        return Ok(None);
     };
 
-    let urls = collect_prefetch_urls(document_tree, &pyproject_toml_path, toml_version);
-    if urls.is_empty() {
-        return Ok(());
-    }
-
+    let document_tree = document_tree.clone();
     let cache_options = cache_options.cloned();
-    tokio::spawn(async move {
+    let handle = tokio::spawn(async move {
+        let urls = collect_prefetch_urls(&document_tree, &pyproject_toml_path, toml_version);
+        if urls.is_empty() {
+            return false;
+        }
+
+        let cache_options = cache_options.as_ref();
         stream::iter(urls)
-            .for_each_concurrent(Some(PREFETCH_CONCURRENCY), |url| {
-                let cache_options = cache_options.clone();
-                async move {
-                    let _ = warm_remote_json_cache(&url, offline, cache_options.as_ref()).await;
-                }
+            .for_each_concurrent(Some(PREFETCH_CONCURRENCY), |url| async move {
+                let _ = warm_remote_json_cache(&url, offline, cache_options).await;
             })
             .await;
+        true
     });
 
-    Ok(())
+    Ok(Some(handle))
 }
 
 fn pyproject_did_open_enabled(features: Option<&PyprojectExtensionFeatures>) -> bool {
     features.map_or(true, PyprojectExtensionFeatures::enabled)
+}
+
+fn pyproject_hover_warming_enabled(features: Option<&PyprojectExtensionFeatures>) -> bool {
+    features.map_or(
+        true,
+        PyprojectExtensionFeatures::dependency_detail_hover_enabled,
+    )
 }
 
 fn warming_disabled(offline: bool, cache_options: Option<&tombi_cache::Options>) -> bool {

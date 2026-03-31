@@ -101,7 +101,6 @@ impl CargoLock {
     pub(crate) fn unique_package_versions(&self) -> &HashMap<String, Option<String>> {
         &self.unique_package_versions
     }
-
     pub(crate) fn into_parts(self) -> (Vec<CargoLockPackage>, HashMap<String, Option<String>>) {
         (self.packages, self.unique_package_versions)
     }

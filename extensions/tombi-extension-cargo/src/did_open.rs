@@ -5,9 +5,31 @@ use tombi_config::{CargoExtensionFeatures, TomlVersion};
 use tombi_document_tree::{DocumentTree, Table, Value, dig_keys};
 use tombi_extension::remote_cache::warm_remote_json_cache;
 
-use crate::{find_workspace_cargo_toml, get_workspace_path, sanitize_dependency_key};
+use crate::{
+    cargo_lock::{exact_crates_io_version, load_cached_cargo_lock},
+    find_workspace_cargo_toml, get_workspace_path, sanitize_dependency_key,
+};
 
 const PREFETCH_CONCURRENCY: usize = 10;
+
+#[derive(Default)]
+struct PrefetchUrls {
+    awaited: BTreeSet<String>,
+    background: BTreeSet<String>,
+}
+
+impl PrefetchUrls {
+    fn is_empty(&self) -> bool {
+        self.awaited.is_empty() && self.background.is_empty()
+    }
+}
+
+#[derive(Debug, Clone)]
+struct RegistryDependency {
+    crate_name: String,
+    version_requirement: Option<String>,
+    default_features_hint: bool,
+}
 
 pub async fn did_open(
     text_document_uri: &tombi_uri::Uri,
@@ -16,41 +38,68 @@ pub async fn did_open(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&CargoExtensionFeatures>,
-) -> Result<(), tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tokio::task::JoinHandle<bool>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
-        return Ok(());
+        return Ok(None);
     }
 
     if !cargo_did_open_enabled(features) {
-        return Ok(());
+        return Ok(None);
     }
 
     if warming_disabled(offline, cache_options) {
-        return Ok(());
+        return Ok(None);
     }
 
     let Ok(cargo_toml_path) = text_document_uri.to_file_path() else {
-        return Ok(());
+        return Ok(None);
     };
 
-    let urls = collect_prefetch_urls(document_tree, &cargo_toml_path, toml_version);
-    if urls.is_empty() {
-        return Ok(());
-    }
-
+    let document_tree = document_tree.clone();
     let cache_options = cache_options.cloned();
-    tokio::spawn(async move {
-        stream::iter(urls)
-            .for_each_concurrent(Some(PREFETCH_CONCURRENCY), |url| {
-                let cache_options = cache_options.clone();
-                async move {
-                    let _ = warm_remote_json_cache(&url, offline, cache_options.as_ref()).await;
-                }
-            })
-            .await;
+    let features = features.cloned();
+    let handle = tokio::spawn(async move {
+        let urls = collect_prefetch_urls(
+            &document_tree,
+            &cargo_toml_path,
+            toml_version,
+            features.as_ref(),
+        )
+        .await;
+        if urls.is_empty() {
+            return false;
+        }
+
+        if !urls.background.is_empty() {
+            let background_urls = urls.background;
+            let background_cache_options = cache_options.clone();
+            tokio::spawn(async move {
+                warm_urls(background_urls, offline, background_cache_options).await;
+            });
+        }
+
+        if urls.awaited.is_empty() {
+            return false;
+        }
+
+        warm_urls(urls.awaited, offline, cache_options).await;
+        true
     });
 
-    Ok(())
+    Ok(Some(handle))
+}
+
+async fn warm_urls(
+    urls: BTreeSet<String>,
+    offline: bool,
+    cache_options: Option<tombi_cache::Options>,
+) {
+    let cache_options = cache_options.as_ref();
+    stream::iter(urls)
+        .for_each_concurrent(Some(PREFETCH_CONCURRENCY), |url| async move {
+            let _ = warm_remote_json_cache(&url, offline, cache_options).await;
+        })
+        .await;
 }
 
 fn cargo_did_open_enabled(features: Option<&CargoExtensionFeatures>) -> bool {
@@ -64,12 +113,32 @@ fn warming_disabled(offline: bool, cache_options: Option<&tombi_cache::Options>)
             .unwrap_or_default()
 }
 
-fn collect_prefetch_urls(
+async fn collect_prefetch_urls(
     document_tree: &DocumentTree,
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
-) -> Vec<String> {
-    let mut crate_names = BTreeSet::new();
+    features: Option<&CargoExtensionFeatures>,
+) -> PrefetchUrls {
+    let warm_hover = features.map_or(
+        true,
+        CargoExtensionFeatures::dependency_detail_hover_enabled,
+    );
+    let warm_versions = features.map_or(
+        true,
+        CargoExtensionFeatures::dependency_version_completion_enabled,
+    );
+    let warm_feature_details = features.map_or(true, |features| {
+        features.dependency_feature_completion_enabled()
+            || features.default_features_inlay_hint_enabled()
+    });
+    let prioritize_inlay_hint = features.map_or(
+        true,
+        CargoExtensionFeatures::default_features_inlay_hint_enabled,
+    );
+
+    if !warm_hover && !warm_versions && !warm_feature_details && !prioritize_inlay_hint {
+        return PrefetchUrls::default();
+    }
 
     // Resolve workspace document tree once to avoid re-reading/parsing per dependency.
     let workspace = find_workspace_cargo_toml(
@@ -77,47 +146,104 @@ fn collect_prefetch_urls(
         get_workspace_path(document_tree),
         toml_version,
     );
+    let workspace_document_tree = workspace.as_ref().map(|(_, _, dt)| dt);
+    let registry_dependencies =
+        collect_registry_dependencies(document_tree, workspace_document_tree);
+    let cargo_lock = if warm_feature_details || prioritize_inlay_hint {
+        load_cached_cargo_lock(cargo_toml_path, toml_version).await
+    } else {
+        None
+    };
+    let mut urls = PrefetchUrls::default();
+
+    for dependency in registry_dependencies {
+        if warm_hover {
+            urls.background.insert(format!(
+                "https://crates.io/api/v1/crates/{}",
+                dependency.crate_name
+            ));
+        }
+
+        if warm_versions {
+            urls.background.insert(format!(
+                "https://crates.io/api/v1/crates/{}/versions",
+                dependency.crate_name
+            ));
+        }
+
+        let resolved_version =
+            dependency
+                .version_requirement
+                .as_deref()
+                .and_then(|version_requirement| {
+                    cargo_lock
+                        .as_ref()
+                        .and_then(|lock| {
+                            lock.resolve_dependency_version(
+                                &dependency.crate_name,
+                                version_requirement,
+                            )
+                        })
+                        .or_else(|| exact_crates_io_version(version_requirement))
+                });
+
+        if prioritize_inlay_hint && dependency.default_features_hint {
+            if let Some(resolved_version) = resolved_version.as_deref() {
+                urls.awaited.insert(format!(
+                    "https://crates.io/api/v1/crates/{}/{}",
+                    dependency.crate_name, resolved_version
+                ));
+            }
+        }
+
+        if warm_feature_details {
+            if let Some(resolved_version) = resolved_version {
+                urls.background.insert(format!(
+                    "https://crates.io/api/v1/crates/{}/{}",
+                    dependency.crate_name, resolved_version
+                ));
+            } else {
+                urls.background.insert(format!(
+                    "https://crates.io/api/v1/crates/{}",
+                    dependency.crate_name
+                ));
+            }
+        }
+    }
+
+    for awaited_url in &urls.awaited {
+        urls.background.remove(awaited_url);
+    }
+
+    urls
+}
+
+fn collect_registry_dependencies(
+    document_tree: &DocumentTree,
+    workspace_document_tree: Option<&DocumentTree>,
+) -> Vec<RegistryDependency> {
+    let mut dependencies = Vec::new();
 
     if let Some((_, Value::Table(workspace_dependencies))) =
         dig_keys(document_tree, &["workspace", "dependencies"])
     {
-        collect_registry_dependency_names(
+        collect_registry_dependencies_from_table(
             workspace_dependencies,
             "dependencies",
-            workspace.as_ref().map(|(_, _, dt)| dt),
-            &mut crate_names,
+            workspace_document_tree,
+            &mut dependencies,
         );
     }
 
-    collect_member_registry_dependency_names(
-        document_tree,
-        workspace.as_ref().map(|(_, _, dt)| dt),
-        &mut crate_names,
-    );
-
-    crate_names
-        .into_iter()
-        .flat_map(|crate_name| {
-            [
-                format!("https://crates.io/api/v1/crates/{crate_name}"),
-                format!("https://crates.io/api/v1/crates/{crate_name}/versions"),
-            ]
-        })
-        .collect()
-}
-
-fn collect_member_registry_dependency_names(
-    document_tree: &DocumentTree,
-    workspace_document_tree: Option<&DocumentTree>,
-    crate_names: &mut BTreeSet<String>,
-) {
     for dependency_kind in ["dependencies", "dev-dependencies", "build-dependencies"] {
-        if let Some((_, Value::Table(dependencies))) = dig_keys(document_tree, &[dependency_kind]) {
-            collect_registry_dependency_names(
-                dependencies,
+        if let Some((_, Value::Table(dependency_table))) =
+            dig_keys(document_tree, &[dependency_kind])
+        {
+            collect_registry_dependencies_from_table(
+                dependency_table,
                 dependency_kind,
                 workspace_document_tree,
-                crate_names,
+                &mut dependencies,
             );
         }
     }
@@ -129,46 +255,53 @@ fn collect_member_registry_dependency_names(
             };
 
             for dependency_kind in ["dependencies", "dev-dependencies", "build-dependencies"] {
-                if let Some((_, Value::Table(dependencies))) = dig_keys(target, &[dependency_kind])
+                if let Some((_, Value::Table(dependency_table))) =
+                    dig_keys(target, &[dependency_kind])
                 {
-                    collect_registry_dependency_names(
-                        dependencies,
+                    collect_registry_dependencies_from_table(
+                        dependency_table,
                         dependency_kind,
                         workspace_document_tree,
-                        crate_names,
+                        &mut dependencies,
                     );
                 }
             }
         }
     }
+
+    dependencies
 }
 
-fn collect_registry_dependency_names(
+fn collect_registry_dependencies_from_table(
     dependencies: &Table,
     dependency_kind: &str,
     workspace_document_tree: Option<&DocumentTree>,
-    crate_names: &mut BTreeSet<String>,
+    registry_dependencies: &mut Vec<RegistryDependency>,
 ) {
     for (dependency_key, dependency_value) in dependencies.key_values() {
-        if let Some(crate_name) = registry_dependency_name(
+        if let Some(dependency) = registry_dependency(
             dependency_key.value.as_str(),
             dependency_value,
             dependency_kind,
             workspace_document_tree,
         ) {
-            crate_names.insert(crate_name);
+            registry_dependencies.push(dependency);
         }
     }
 }
 
-fn registry_dependency_name(
+fn registry_dependency(
     dependency_key: &str,
     dependency_value: &Value,
     dependency_kind: &str,
     workspace_document_tree: Option<&DocumentTree>,
-) -> Option<String> {
+) -> Option<RegistryDependency> {
     match dependency_value {
-        Value::String(_) => Some(dependency_key.to_string()),
+        Value::String(version_requirement) => Some(RegistryDependency {
+            crate_name: dependency_key.to_string(),
+            version_requirement: Some(version_requirement.value().to_string()),
+            default_features_hint: false,
+        }),
         Value::Table(table) => {
             if table.contains_key("path")
                 || table.contains_key("git")
@@ -180,27 +313,36 @@ fn registry_dependency_name(
             if let Some(Value::Boolean(workspace)) = table.get("workspace")
                 && workspace.value()
             {
-                return workspace_registry_dependency_name(
+                return workspace_registry_dependency(
                     dependency_key,
                     dependency_kind,
                     workspace_document_tree,
                 );
             }
 
-            Some(match table.get("package") {
-                Some(Value::String(package)) => package.value().to_string(),
-                _ => dependency_key.to_string(),
+            Some(RegistryDependency {
+                crate_name: match table.get("package") {
+                    Some(Value::String(package)) => package.value().to_string(),
+                    _ => dependency_key.to_string(),
+                },
+                version_requirement: match table.get("version") {
+                    Some(Value::String(version)) => Some(version.value().to_string()),
+                    _ => None,
+                },
+                default_features_hint: table.get("version").is_some()
+                    && table.get("features").is_some()
+                    && !dependency_table_default_features_disabled(table),
             })
         }
         _ => None,
     }
 }
 
-fn workspace_registry_dependency_name(
+fn workspace_registry_dependency(
     dependency_key: &str,
     dependency_kind: &str,
     workspace_document_tree: Option<&DocumentTree>,
-) -> Option<String> {
+) -> Option<RegistryDependency> {
     let workspace_document_tree = workspace_document_tree?;
 
     let (_, workspace_dependency_value) = dig_keys(
@@ -213,7 +355,11 @@ fn workspace_registry_dependency_name(
     )?;
 
     match workspace_dependency_value {
-        Value::String(_) => Some(dependency_key.to_string()),
+        Value::String(version_requirement) => Some(RegistryDependency {
+            crate_name: dependency_key.to_string(),
+            version_requirement: Some(version_requirement.value().to_string()),
+            default_features_hint: false,
+        }),
         Value::Table(table) => {
             if table.contains_key("path")
                 || table.contains_key("git")
@@ -223,13 +369,28 @@ fn workspace_registry_dependency_name(
                 return None;
             }
 
-            Some(match table.get("package") {
-                Some(Value::String(package)) => package.value().to_string(),
-                _ => dependency_key.to_string(),
+            Some(RegistryDependency {
+                crate_name: match table.get("package") {
+                    Some(Value::String(package)) => package.value().to_string(),
+                    _ => dependency_key.to_string(),
+                },
+                version_requirement: match table.get("version") {
+                    Some(Value::String(version)) => Some(version.value().to_string()),
+                    _ => None,
+                },
+                default_features_hint: table.get("version").is_some()
+                    && table.get("features").is_some()
+                    && !dependency_table_default_features_disabled(table),
             })
         }
         _ => None,
     }
+}
+
+fn dependency_table_default_features_disabled(table: &Table) -> bool {
+    table
+        .get("default-features")
+        .is_some_and(|value| matches!(value, Value::Boolean(boolean) if !boolean.value()))
 }
 
 #[cfg(test)]
@@ -237,6 +398,12 @@ mod tests {
     use std::str::FromStr;
 
     use tombi_ast::AstNode;
+    use tombi_config::{
+        BoolDefaultTrue, CargoCompletionFeatureTree, CargoCompletionFeatures,
+        CargoExtensionFeatureTree, CargoExtensionFeatures, CargoHoverFeatureTree,
+        CargoHoverFeatures, CargoInlayHintFeatureTree, CargoInlayHintFeatures, CargoLspFeatureTree,
+        CargoLspFeatures, ToggleFeature,
+    };
     use tombi_document_tree::TryIntoDocumentTree;
 
     use super::*;
@@ -250,8 +417,43 @@ mod tests {
         tombi_uri::Uri::from_file_path(path).unwrap()
     }
 
-    #[test]
-    fn collects_registry_dependencies_from_member_and_workspace_sections() {
+    fn sorted_urls(urls: &BTreeSet<String>) -> Vec<String> {
+        urls.iter().cloned().collect()
+    }
+
+    fn disabled_toggle() -> ToggleFeature {
+        ToggleFeature {
+            enabled: Some(BoolDefaultTrue(false)),
+        }
+    }
+
+    fn default_features_only() -> CargoExtensionFeatures {
+        CargoExtensionFeatures::Features(CargoExtensionFeatureTree {
+            lsp: Some(CargoLspFeatures::Features(CargoLspFeatureTree {
+                completion: Some(CargoCompletionFeatures::Features(
+                    CargoCompletionFeatureTree {
+                        dependency_version: Some(disabled_toggle()),
+                        dependency_feature: Some(disabled_toggle()),
+                        path: Some(disabled_toggle()),
+                    },
+                )),
+                inlay_hint: Some(CargoInlayHintFeatures::Features(
+                    CargoInlayHintFeatureTree {
+                        dependency_version: Some(disabled_toggle()),
+                        default_features: None,
+                        workspace_value: Some(disabled_toggle()),
+                    },
+                )),
+                hover: Some(CargoHoverFeatures::Features(CargoHoverFeatureTree {
+                    dependency_detail: Some(disabled_toggle()),
+                })),
+                ..Default::default()
+            })),
+        })
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn collects_registry_dependencies_from_member_and_workspace_sections() {
         let document_tree = parse_document_tree(
             r#"
             [workspace.dependencies]
@@ -269,15 +471,27 @@ mod tests {
             &document_tree,
             Path::new("/tmp/Cargo.toml"),
             TomlVersion::default(),
-        );
+            None,
+        )
+        .await;
 
-        assert!(urls.contains(&"https://crates.io/api/v1/crates/serde".to_string()));
-        assert!(urls.contains(&"https://crates.io/api/v1/crates/toml".to_string()));
-        assert!(urls.contains(&"https://crates.io/api/v1/crates/tokio/versions".to_string()));
+        assert!(
+            urls.background
+                .contains("https://crates.io/api/v1/crates/serde")
+        );
+        assert!(
+            urls.background
+                .contains("https://crates.io/api/v1/crates/toml")
+        );
+        assert!(
+            urls.background
+                .contains("https://crates.io/api/v1/crates/tokio/versions")
+        );
+        assert!(urls.awaited.is_empty());
     }
 
-    #[test]
-    fn excludes_path_git_and_registry_dependencies() {
+    #[tokio::test(flavor = "current_thread")]
+    async fn excludes_path_git_and_registry_dependencies() {
         let document_tree = parse_document_tree(
             r#"
             [dependencies]
@@ -292,19 +506,22 @@ mod tests {
             &document_tree,
             Path::new("/tmp/Cargo.toml"),
             TomlVersion::default(),
-        );
+            None,
+        )
+        .await;
 
         assert_eq!(
-            urls,
+            sorted_urls(&urls.background),
             vec![
                 "https://crates.io/api/v1/crates/serde".to_string(),
                 "https://crates.io/api/v1/crates/serde/versions".to_string(),
             ]
         );
+        assert!(urls.awaited.is_empty());
     }
 
-    #[test]
-    fn excludes_workspace_local_dependencies() {
+    #[tokio::test(flavor = "current_thread")]
+    async fn excludes_workspace_local_dependencies() {
         let temp_dir = tempfile::tempdir().unwrap();
         let workspace_path = temp_dir.path().join("Cargo.toml");
         let member_dir = temp_dir.path().join("member");
@@ -338,15 +555,68 @@ mod tests {
         .unwrap();
 
         let document_tree = parse_document_tree(&std::fs::read_to_string(&member_path).unwrap());
-        let urls = collect_prefetch_urls(&document_tree, &member_path, TomlVersion::default());
+        let urls =
+            collect_prefetch_urls(&document_tree, &member_path, TomlVersion::default(), None).await;
 
         assert_eq!(
-            urls,
+            sorted_urls(&urls.background),
             vec![
                 "https://crates.io/api/v1/crates/serde".to_string(),
                 "https://crates.io/api/v1/crates/serde/versions".to_string(),
             ]
         );
+        assert!(urls.awaited.is_empty());
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn prioritizes_default_feature_hint_warming_over_background_warming() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let cargo_toml_path = temp_dir.path().join("Cargo.toml");
+        let cargo_lock_path = temp_dir.path().join("Cargo.lock");
+        std::fs::write(
+            &cargo_toml_path,
+            r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
+
+            [dependencies]
+            serde = { version = "1", features = ["derive"] }
+            "#,
+        )
+        .unwrap();
+        std::fs::write(
+            &cargo_lock_path,
+            r#"
+            version = 3
+
+            [[package]]
+            name = "demo"
+            version = "0.1.0"
+            dependencies = ["serde 1.0.228"]
+
+            [[package]]
+            name = "serde"
+            version = "1.0.228"
+            "#,
+        )
+        .unwrap();
+
+        let document_tree =
+            parse_document_tree(&std::fs::read_to_string(&cargo_toml_path).unwrap());
+        let urls = collect_prefetch_urls(
+            &document_tree,
+            &cargo_toml_path,
+            TomlVersion::default(),
+            Some(&default_features_only()),
+        )
+        .await;
+
+        assert_eq!(
+            sorted_urls(&urls.awaited),
+            vec!["https://crates.io/api/v1/crates/serde/1.0.228".to_string()]
+        );
+        assert!(urls.background.is_empty());
     }
 
     #[tokio::test(flavor = "current_thread")]
