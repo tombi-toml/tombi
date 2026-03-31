@@ -8,15 +8,12 @@ use super::token_type::TokenType;
 pub struct SemanticTokensBuilder<'a> {
     tokens: Vec<SemanticToken>,
     last_range: tombi_text::Range,
-    line_index: &'a tombi_text::LineIndex<'a>,
+    line_index: &'a tombi_text::LineIndex,
     pub text_document_uri: tombi_uri::Uri,
 }
 
 impl<'a> SemanticTokensBuilder<'a> {
-    pub fn new(
-        text_document_uri: tombi_uri::Uri,
-        line_index: &'a tombi_text::LineIndex<'a>,
-    ) -> Self {
+    pub fn new(text_document_uri: tombi_uri::Uri, line_index: &'a tombi_text::LineIndex) -> Self {
         Self {
             tokens: Vec::new(),
             last_range: tombi_text::Range::default(),

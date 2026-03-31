@@ -10,7 +10,7 @@ pub struct DocumentSource {
     /// The text of the document.
     text: Arc<str>,
 
-    line_index: Arc<LineIndex<'static>>,
+    line_index: Arc<LineIndex>,
 
     /// The version of the document.
     ///
@@ -60,11 +60,9 @@ impl DocumentSource {
             error.set_diagnostics(&mut document_tree_errors);
         }
 
-        let text_ref = unsafe { std::mem::transmute::<&str, &'static str>(text.as_ref()) };
-
         Self {
+            line_index: Arc::new(LineIndex::from_arc(Arc::clone(&text), encoding_kind)),
             text,
-            line_index: Arc::new(LineIndex::new(text_ref, encoding_kind)),
             version,
             toml_version,
             ast: Arc::new(ast),
@@ -84,9 +82,11 @@ impl DocumentSource {
 
     pub fn set_text(&mut self, text: impl Into<String>, toml_version: tombi_config::TomlVersion) {
         self.text = Arc::<str>::from(text.into());
-        let text_ref = unsafe { std::mem::transmute::<&str, &'static str>(self.text.as_ref()) };
         self.toml_version = toml_version;
-        self.line_index = Arc::new(LineIndex::new(text_ref, self.line_index.encoding_kind));
+        self.line_index = Arc::new(LineIndex::from_arc(
+            Arc::clone(&self.text),
+            self.line_index.encoding_kind,
+        ));
 
         // Re-parse the text and collect errors
         let (ast, errors) = tombi_parser::parse(self.text.as_ref()).into_root_and_errors();
@@ -111,11 +111,11 @@ impl DocumentSource {
         }
     }
 
-    pub fn line_index(&self) -> &LineIndex<'static> {
+    pub fn line_index(&self) -> &LineIndex {
         self.line_index.as_ref()
     }
 
-    pub fn line_index_arc(&self) -> Arc<LineIndex<'static>> {
+    pub fn line_index_arc(&self) -> Arc<LineIndex> {
         Arc::clone(&self.line_index)
     }
 
@@ -137,5 +137,28 @@ impl DocumentSource {
     /// Get DocumentTree generation errors
     pub fn document_tree_errors(&self) -> &[tombi_diagnostic::Diagnostic] {
         &self.document_tree_errors
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tombi_config::TomlVersion;
+    use tombi_text::EncodingKind;
+
+    use super::DocumentSource;
+
+    #[test]
+    fn line_index_arc_keeps_original_text_alive() {
+        let mut document_source = DocumentSource::new(
+            "name = \"before\"\nversion = \"1.0.0\"",
+            Some(1),
+            TomlVersion::default(),
+            EncodingKind::Utf16,
+        );
+        let line_index = document_source.line_index_arc();
+
+        document_source.set_text("name = \"after\"", TomlVersion::default());
+
+        assert_eq!(line_index.line_text(1), Some("version = \"1.0.0\""));
     }
 }
