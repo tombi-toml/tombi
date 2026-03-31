@@ -1,4 +1,5 @@
 mod cargo_lock;
+mod cargo_toml;
 mod code_action;
 mod completion;
 mod did_open;
@@ -7,7 +8,6 @@ mod goto_declaration;
 mod goto_definition;
 mod hover;
 mod inlay_hint;
-mod manifest;
 mod workspace;
 
 pub use code_action::{CodeActionRefactorRewriteName, code_action};
@@ -19,7 +19,7 @@ pub use goto_definition::goto_definition;
 pub use hover::hover;
 pub use inlay_hint::inlay_hint;
 
-pub(crate) use manifest::{
+pub(crate) use cargo_toml::{
     CrateLocation, dependency_package_name, find_path_crate_cargo_toml, find_workspace_cargo_toml,
     get_uri_relative_to_cargo_toml, get_workspace_path, load_cargo_toml,
 };

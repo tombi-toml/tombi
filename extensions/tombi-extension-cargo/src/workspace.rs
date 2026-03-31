@@ -370,7 +370,7 @@ pub(crate) fn find_package_cargo_toml_paths<'a>(
     member_patterns
         .iter()
         .filter_map(move |&member_pattern| {
-            let mut manifest_paths = vec![];
+            let mut cargo_toml_paths = vec![];
 
             let mut member_pattern_path =
                 std::path::Path::new(member_pattern.value()).to_path_buf();
@@ -388,21 +388,21 @@ pub(crate) fn find_package_cargo_toml_paths<'a>(
                     continue;
                 }
 
-                let manifest_path = candidate_path.join("Cargo.toml");
-                if !manifest_path.is_file() {
+                let cargo_toml_path = candidate_path.join("Cargo.toml");
+                if !cargo_toml_path.is_file() {
                     continue;
                 }
 
                 let is_excluded = exclude_patterns.iter().any(|exclude_pattern| {
-                    exclude_pattern.matches(&manifest_path.to_string_lossy())
+                    exclude_pattern.matches(&cargo_toml_path.to_string_lossy())
                 });
 
                 if !is_excluded {
-                    manifest_paths.push((member_pattern, manifest_path));
+                    cargo_toml_paths.push((member_pattern, cargo_toml_path));
                 }
             }
 
-            (!manifest_paths.is_empty()).then_some(manifest_paths)
+            (!cargo_toml_paths.is_empty()).then_some(cargo_toml_paths)
         })
         .flatten()
 }
