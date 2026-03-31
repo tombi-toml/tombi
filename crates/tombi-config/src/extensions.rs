@@ -14,8 +14,6 @@ macro_rules! default_to_features {
     };
 }
 
-pub(crate) use default_to_features;
-
 mod cargo;
 mod pyproject;
 mod tombi;
