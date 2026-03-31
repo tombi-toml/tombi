@@ -2047,10 +2047,10 @@ fn cargo_inlay_hint_enabled(
 
 impl CargoLock {
     fn into_inlay_cache_data(self) -> CargoLockInlayCacheData {
-        let unique_package_versions = self.unique_package_versions().clone();
+        let (packages, unique_package_versions) = self.into_parts();
         let mut crates = HashMap::new();
 
-        for package in &self.packages {
+        for package in &packages {
             crates
                 .entry(CrateName::new(&package.name))
                 .or_insert_with(HashMap::new)

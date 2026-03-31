@@ -102,6 +102,12 @@ impl CargoLock {
         &self.unique_package_versions
     }
 
+    pub(crate) fn into_parts(
+        self,
+    ) -> (Vec<CargoLockPackage>, HashMap<String, Option<String>>) {
+        (self.packages, self.unique_package_versions)
+    }
+
     pub(crate) fn resolve_dependency_version(
         &self,
         crate_name: &str,
