@@ -2,7 +2,7 @@ use std::path::Path;
 
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{TryIntoDocumentTree, dig_keys};
+use tombi_document_tree::TryIntoDocumentTree;
 
 #[derive(Debug, Clone)]
 pub(crate) struct CrateLocation {
@@ -36,43 +36,7 @@ pub(crate) fn load_cargo_toml(
     ))
 }
 
-pub(crate) fn find_workspace_cargo_toml(
-    cargo_toml_path: &Path,
-    workspace_path: Option<&str>,
-    toml_version: TomlVersion,
-) -> Option<(
-    std::path::PathBuf,
-    tombi_ast::Root,
-    tombi_document_tree::DocumentTree,
-)> {
-    if let Some(workspace_path) = workspace_path {
-        let workspace_cargo_toml_path = tombi_extension_manifest::resolve_manifest_path(
-            cargo_toml_path,
-            Path::new(workspace_path),
-            "Cargo.toml",
-        )?;
-        let canonicalized_path = workspace_cargo_toml_path.canonicalize().ok()?;
-        let (root, document_tree) = load_cargo_toml(&canonicalized_path, toml_version)?;
-
-        return document_tree.contains_key("workspace").then_some((
-            canonicalized_path,
-            root,
-            document_tree,
-        ));
-    }
-
-    let (workspace_cargo_toml_path, (root, document_tree)) =
-        tombi_extension_manifest::find_ancestor_manifest(
-            cargo_toml_path,
-            "Cargo.toml",
-            |path| load_cargo_toml(path, toml_version),
-            |(_, tree)| tree.contains_key("workspace"),
-        )?;
-
-    Some((workspace_cargo_toml_path, root, document_tree))
-}
-
-pub(crate) fn find_path_crate_cargo_toml(
+pub(crate) fn find_cargo_toml(
     cargo_toml_path: &Path,
     crate_path: &Path,
     toml_version: TomlVersion,
@@ -87,22 +51,6 @@ pub(crate) fn find_path_crate_cargo_toml(
     let (root, document_tree) = load_cargo_toml(&canonicalized_path, toml_version)?;
 
     Some((canonicalized_path, root, document_tree))
-}
-
-/// Get the workspace path from Cargo.toml
-///
-/// See: https://doc.rust-lang.org/cargo/reference/manifest.html#the-workspace-field
-#[inline]
-pub(crate) fn get_workspace_path(
-    document_tree: &tombi_document_tree::DocumentTree,
-) -> Option<&str> {
-    dig_keys(document_tree, &["package", "workspace"]).and_then(|(_, workspace)| {
-        if let tombi_document_tree::Value::String(workspace_path) = workspace {
-            Some(workspace_path.value())
-        } else {
-            None
-        }
-    })
 }
 
 pub(crate) fn dependency_package_name<'a>(

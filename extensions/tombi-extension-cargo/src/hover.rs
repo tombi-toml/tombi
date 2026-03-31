@@ -7,8 +7,8 @@ use tombi_extension::{HoverMetadata, fetch_cached_remote_json};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
-    dependency_package_name, find_path_crate_cargo_toml, find_workspace_cargo_toml,
-    get_workspace_path, load_cargo_toml, sanitize_dependency_key,
+    dependency_package_name, find_cargo_toml, find_workspace_cargo_toml,
+    get_workspace_cargo_toml_path, load_cargo_toml, sanitize_dependency_key,
 };
 
 #[derive(Debug, Deserialize)]
@@ -123,7 +123,7 @@ fn resolve_local_dependency_metadata(
     if let Value::Table(table) = dependency_value {
         if let Some(Value::String(path)) = table.get("path")
             && let Some((resolved_cargo_toml_path, _, _)) =
-                find_path_crate_cargo_toml(cargo_toml_path, Path::new(path.value()), toml_version)
+                find_cargo_toml(cargo_toml_path, Path::new(path.value()), toml_version)
         {
             return load_package_metadata(&resolved_cargo_toml_path, toml_version);
         }
@@ -153,7 +153,7 @@ fn resolve_workspace_dependency_metadata(
 ) -> Option<HoverMetadata> {
     let (workspace_cargo_toml_path, _, workspace_document_tree) = find_workspace_cargo_toml(
         cargo_toml_path,
-        get_workspace_path(document_tree),
+        get_workspace_cargo_toml_path(document_tree),
         toml_version,
     )?;
 
@@ -188,7 +188,7 @@ fn resolve_workspace_dependency_metadata(
         return None;
     };
 
-    let (resolved_cargo_toml_path, _, _) = find_path_crate_cargo_toml(
+    let (resolved_cargo_toml_path, _, _) = find_cargo_toml(
         &workspace_cargo_toml_path,
         Path::new(path.value()),
         toml_version,

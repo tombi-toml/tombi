@@ -7,7 +7,7 @@ use tower_lsp::lsp_types::{
     TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
 
-use crate::{find_workspace_cargo_toml, get_workspace_path};
+use crate::{find_workspace_cargo_toml, get_workspace_cargo_toml_path};
 
 pub enum CodeActionRefactorRewriteName {
     /// Inherit from Workspace
@@ -211,7 +211,7 @@ fn code_actions_for_crate_cargo_toml(
     if let Some((workspace_cargo_toml_path, workspace_root, workspace_document_tree)) =
         find_workspace_cargo_toml(
             cargo_toml_path,
-            get_workspace_path(document_tree),
+            get_workspace_cargo_toml_path(document_tree),
             toml_version,
         )
     {
