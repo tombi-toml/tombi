@@ -1,18 +1,25 @@
 //! See [`LineIndex`].
 
+use std::sync::Arc;
+
 use crate::{Offset, Span, features::lsp::EncodingKind};
 
 /// Indexes the start and end offsets of each line in a piece of text.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LineIndex<'a> {
-    text: &'a str,
+pub struct LineIndex {
+    text: Arc<str>,
     lines: Vec<Span>,
     pub encoding_kind: EncodingKind,
 }
 
-impl<'a> LineIndex<'a> {
+impl LineIndex {
     /// Computes the line index for `text`.
-    pub fn new(text: &'a str, encoding_kind: EncodingKind) -> Self {
+    pub fn new(text: impl AsRef<str>, encoding_kind: EncodingKind) -> Self {
+        Self::from_arc(Arc::<str>::from(text.as_ref()), encoding_kind)
+    }
+
+    /// Computes the line index for an owned shared string without cloning it.
+    pub fn from_arc(text: Arc<str>, encoding_kind: EncodingKind) -> Self {
         let mut lines = Vec::new();
         let mut start: usize = 0;
         let bytes = text.as_bytes();
@@ -58,7 +65,7 @@ impl<'a> LineIndex<'a> {
     }
 
     /// Returns the span for the line at `line_idx`, if it exists.
-    pub fn line_text(&self, line_idx: crate::Line) -> Option<&'a str> {
+    pub fn line_text(&self, line_idx: crate::Line) -> Option<&str> {
         self.lines
             .get(line_idx as usize)
             .map(|span| &self.text[usize::from(span.start)..usize::from(span.end)])
