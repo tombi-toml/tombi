@@ -38,7 +38,7 @@ pub async fn did_open(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&CargoExtensionFeatures>,
-) -> Result<Option<tokio::task::JoinHandle<()>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tokio::task::JoinHandle<bool>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
@@ -55,27 +55,35 @@ pub async fn did_open(
         return Ok(None);
     };
 
-    let urls = collect_prefetch_urls(document_tree, &cargo_toml_path, toml_version, features).await;
-    if urls.is_empty() {
-        return Ok(None);
-    }
-
+    let document_tree = document_tree.clone();
     let cache_options = cache_options.cloned();
-    if !urls.background.is_empty() {
-        let background_urls = urls.background;
-        let background_cache_options = cache_options.clone();
-        tokio::spawn(async move {
-            warm_urls(background_urls, offline, background_cache_options).await;
-        });
-    }
-
-    if urls.awaited.is_empty() {
-        return Ok(None);
-    }
-
-    let awaited_urls = urls.awaited;
+    let features = features.cloned();
     let handle = tokio::spawn(async move {
-        warm_urls(awaited_urls, offline, cache_options).await;
+        let urls = collect_prefetch_urls(
+            &document_tree,
+            &cargo_toml_path,
+            toml_version,
+            features.as_ref(),
+        )
+        .await;
+        if urls.is_empty() {
+            return false;
+        }
+
+        if !urls.background.is_empty() {
+            let background_urls = urls.background;
+            let background_cache_options = cache_options.clone();
+            tokio::spawn(async move {
+                warm_urls(background_urls, offline, background_cache_options).await;
+            });
+        }
+
+        if urls.awaited.is_empty() {
+            return false;
+        }
+
+        warm_urls(urls.awaited, offline, cache_options).await;
+        true
     });
 
     Ok(Some(handle))
@@ -86,12 +94,10 @@ async fn warm_urls(
     offline: bool,
     cache_options: Option<tombi_cache::Options>,
 ) {
+    let cache_options = cache_options.as_ref();
     stream::iter(urls)
-        .for_each_concurrent(Some(PREFETCH_CONCURRENCY), |url| {
-            let cache_options = cache_options.clone();
-            async move {
-                let _ = warm_remote_json_cache(&url, offline, cache_options.as_ref()).await;
-            }
+        .for_each_concurrent(Some(PREFETCH_CONCURRENCY), |url| async move {
+            let _ = warm_remote_json_cache(&url, offline, cache_options).await;
         })
         .await;
 }
