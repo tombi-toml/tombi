@@ -18,30 +18,30 @@ pub async fn did_open(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&PyprojectExtensionFeatures>,
-) -> Result<(), tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tokio::task::JoinHandle<()>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("pyproject.toml") {
-        return Ok(());
+        return Ok(None);
     }
 
     if !pyproject_did_open_enabled(features) {
-        return Ok(());
+        return Ok(None);
     }
 
     if warming_disabled(offline, cache_options) {
-        return Ok(());
+        return Ok(None);
     }
 
     let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
-        return Ok(());
+        return Ok(None);
     };
 
     let urls = collect_prefetch_urls(document_tree, &pyproject_toml_path, toml_version);
     if urls.is_empty() {
-        return Ok(());
+        return Ok(None);
     }
 
     let cache_options = cache_options.cloned();
-    tokio::spawn(async move {
+    let handle = tokio::spawn(async move {
         stream::iter(urls)
             .for_each_concurrent(Some(PREFETCH_CONCURRENCY), |url| {
                 let cache_options = cache_options.clone();
@@ -52,7 +52,7 @@ pub async fn did_open(
             .await;
     });
 
-    Ok(())
+    Ok(Some(handle))
 }
 
 fn pyproject_did_open_enabled(features: Option<&PyprojectExtensionFeatures>) -> bool {

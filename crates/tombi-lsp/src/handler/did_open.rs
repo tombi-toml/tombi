@@ -30,15 +30,13 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         .config_manager
         .config_schema_store_for_uri(&text_document_uri)
         .await;
-    let should_refresh_inlay_hint = (config_schema_store.config.cargo_inlay_hint_enabled()
-        && text_document_uri.path().ends_with("Cargo.toml"))
-        || (config_schema_store.config.pyproject_inlay_hint_enabled()
-            && text_document_uri.path().ends_with("pyproject.toml"));
     let offline = config_schema_store.schema_store.offline();
     let cache_options = config_schema_store.schema_store.cache_options();
 
-    if config_schema_store.config.cargo_extension_enabled()
-        && let Err(err) = tombi_extension_cargo::did_open(
+    let mut cache_warming_handles: Vec<tokio::task::JoinHandle<()>> = Vec::new();
+
+    if config_schema_store.config.cargo_extension_enabled() {
+        match tombi_extension_cargo::did_open(
             &text_document_uri,
             document_tree.as_ref(),
             toml_version,
@@ -47,12 +45,15 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
             config_schema_store.config.cargo_extension_features(),
         )
         .await
-    {
-        log::error!("Cargo did_open extension failed: {err}");
+        {
+            Ok(Some(handle)) => cache_warming_handles.push(handle),
+            Ok(None) => {}
+            Err(err) => log::error!("Cargo did_open extension failed: {err}"),
+        }
     }
 
-    if config_schema_store.config.pyproject_extension_enabled()
-        && let Err(err) = tombi_extension_pyproject::did_open(
+    if config_schema_store.config.pyproject_extension_enabled() {
+        match tombi_extension_pyproject::did_open(
             &text_document_uri,
             document_tree.as_ref(),
             toml_version,
@@ -61,16 +62,22 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
             config_schema_store.config.pyproject_extension_features(),
         )
         .await
-    {
-        log::error!("Pyproject did_open extension failed: {err}");
+        {
+            Ok(Some(handle)) => cache_warming_handles.push(handle),
+            Ok(None) => {}
+            Err(err) => log::error!("Pyproject did_open extension failed: {err}"),
+        }
     }
 
     // Publish diagnostics for the opened document
     backend.push_diagnostics(text_document_uri).await;
 
-    if should_refresh_inlay_hint {
+    if !cache_warming_handles.is_empty() {
         let client = backend.client.clone();
         tokio::spawn(async move {
+            for handle in cache_warming_handles {
+                let _ = handle.await;
+            }
             if let Err(err) = client.inlay_hint_refresh().await {
                 log::debug!("Failed to request inlay hint refresh: {err}");
             }
