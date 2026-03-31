@@ -10,7 +10,10 @@ use tombi_extension::{InlayHint, fetch_cached_remote_json, file_cache_version, g
 use tombi_hashmap::{HashMap, HashSet};
 
 use crate::{
-    cargo_lock::{CargoLock, CargoLockPackage, find_cargo_lock_path, load_cargo_lock_from_path},
+    cargo_lock::{
+        CargoLock, CargoLockPackage, find_cargo_lock_path, load_cached_cargo_lock,
+        load_cargo_lock_from_path,
+    },
     dependency_package_name, find_workspace_cargo_toml, get_workspace_path, load_cargo_toml,
     workspace::{extract_exclude_patterns, find_package_cargo_toml_paths},
 };
@@ -822,8 +825,7 @@ async fn registry_default_features_inlay_hints(
     let Ok(cargo_toml_path) = text_document_uri.to_file_path() else {
         return Ok(Vec::new());
     };
-    let cargo_lock = find_cargo_lock_path(&cargo_toml_path)
-        .and_then(|cargo_lock_path| load_cargo_lock_from_path(&cargo_lock_path, toml_version));
+    let cargo_lock = load_cached_cargo_lock(&cargo_toml_path, toml_version).await;
 
     let mut hints = Vec::new();
 

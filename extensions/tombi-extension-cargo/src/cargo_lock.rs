@@ -1,9 +1,14 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
+use serde::{Deserialize, Serialize};
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{TryIntoDocumentTree, Value, dig_keys};
+use tombi_extension::{file_cache_version, get_or_load_json};
 use tombi_hashmap::{HashMap, HashSet};
+
+const CARGO_EXTENSION_ID: &str = "tombi-toml/cargo";
+const LOCKFILE_CACHE_KEY: &str = "cargo_lock";
 
 #[derive(Debug, Clone)]
 pub(crate) struct CargoLock {
@@ -11,17 +16,41 @@ pub(crate) struct CargoLock {
     unique_package_versions: HashMap<String, Option<String>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct CargoLockPackage {
     pub(crate) name: String,
     pub(crate) version: String,
     pub(crate) dependencies: Vec<CargoLockDependency>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct CargoLockDependency {
     pub(crate) name: String,
     pub(crate) version: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct CachedCargoLock {
+    packages: Vec<CargoLockPackage>,
+}
+
+pub(crate) async fn load_cached_cargo_lock(
+    cargo_toml_path: &Path,
+    toml_version: TomlVersion,
+) -> Option<CargoLock> {
+    let cargo_lock_path = find_cargo_lock_path(cargo_toml_path)?;
+    let cache_key = cargo_lock_cache_key(&cargo_lock_path);
+    let cache_version = file_cache_version(&cargo_lock_path);
+
+    let cache_value = get_or_load_json(&cache_key, cache_version, {
+        let cargo_lock_path = cargo_lock_path.clone();
+        move || async move { load_cached_cargo_lock_json(cargo_lock_path, toml_version).await }
+    })
+    .await?;
+
+    serde_json::from_value::<CachedCargoLock>(cache_value.as_ref().clone())
+        .ok()
+        .map(|cache| CargoLock::new(cache.packages))
 }
 
 pub(crate) fn load_cargo_lock_from_path(
@@ -110,6 +139,36 @@ pub(crate) fn exact_crates_io_version(version_requirement: &str) -> Option<Strin
     semver::Version::parse(version_requirement)
         .ok()
         .map(|version| version.to_string())
+}
+
+async fn load_cached_cargo_lock_json(
+    cargo_lock_path: PathBuf,
+    toml_version: TomlVersion,
+) -> Option<serde_json::Value> {
+    tokio::task::spawn_blocking(move || {
+        parse_cached_cargo_lock_json(&cargo_lock_path, toml_version)
+    })
+    .await
+    .ok()
+    .flatten()
+}
+
+fn parse_cached_cargo_lock_json(
+    cargo_lock_path: &Path,
+    toml_version: TomlVersion,
+) -> Option<serde_json::Value> {
+    let cargo_lock = load_cargo_lock_from_path(cargo_lock_path, toml_version)?;
+    serde_json::to_value(CachedCargoLock {
+        packages: cargo_lock.packages,
+    })
+    .ok()
+}
+
+fn cargo_lock_cache_key(cargo_lock_path: &Path) -> String {
+    format!(
+        "{CARGO_EXTENSION_ID}:{LOCKFILE_CACHE_KEY}:{}",
+        cargo_lock_path.display()
+    )
 }
 
 fn compute_unique_package_versions(

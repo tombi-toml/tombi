@@ -18,7 +18,7 @@ use tombi_schema_store::matches_accessors;
 use tombi_version_sort::version_sort;
 use tower_lsp::lsp_types::InsertTextFormat;
 
-use crate::cargo_lock::{exact_crates_io_version, find_cargo_lock_path, load_cargo_lock_from_path};
+use crate::cargo_lock::{exact_crates_io_version, load_cached_cargo_lock};
 use crate::{find_path_crate_cargo_toml, find_workspace_cargo_toml, get_workspace_path};
 
 enum CargoCompletionFeature {
@@ -682,7 +682,8 @@ fn complete_crate_feature<'a: 'b, 'b>(
                 crate_name,
                 value_string.value(),
                 toml_version,
-            );
+            )
+            .await;
             fetch_crate_features(
                 crate_name,
                 resolved_version.as_deref(),
@@ -837,17 +838,19 @@ async fn fetch_crate_features(
     }
 }
 
-fn resolve_registry_dependency_version(
+async fn resolve_registry_dependency_version(
     cargo_toml_path: &std::path::Path,
     crate_name: &str,
     version_requirement: &str,
     toml_version: TomlVersion,
 ) -> Option<String> {
-    exact_crates_io_version(version_requirement).or_else(|| {
-        let cargo_lock_path = find_cargo_lock_path(cargo_toml_path)?;
-        let cargo_lock = load_cargo_lock_from_path(&cargo_lock_path, toml_version)?;
-        cargo_lock.unique_dependency_version(crate_name)
-    })
+    if let Some(version) = exact_crates_io_version(version_requirement) {
+        return Some(version);
+    }
+
+    load_cached_cargo_lock(cargo_toml_path, toml_version)
+        .await?
+        .unique_dependency_version(crate_name)
 }
 
 /// Fetch crate features from local path Cargo.toml
@@ -1056,8 +1059,9 @@ mod tests {
         assert_eq!(exact_crates_io_version("^1.2"), None);
     }
 
-    #[test]
-    fn resolve_registry_dependency_version_uses_lockfile_for_version_requirements() {
+    #[tokio::test(flavor = "current_thread")]
+    async fn resolve_registry_dependency_version_uses_lockfile_for_version_requirements() {
+        let _cache_home = TestCacheHome::new();
         let temp_dir = tempfile::tempdir().unwrap();
         let cargo_toml_path = temp_dir.path().join("Cargo.toml");
         let cargo_lock_path = temp_dir.path().join("Cargo.lock");
@@ -1087,7 +1091,8 @@ version = "0.5.1"
                 "criterion",
                 "0.5",
                 TomlVersion::default(),
-            ),
+            )
+            .await,
             Some("0.5.1".to_string())
         );
     }
