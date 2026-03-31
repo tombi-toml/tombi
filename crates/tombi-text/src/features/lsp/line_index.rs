@@ -14,6 +14,9 @@ pub struct LineIndex {
 
 impl LineIndex {
     /// Computes the line index for `text`.
+    ///
+    /// This constructor clones the text into an `Arc<str>`. Use [`LineIndex::from_arc`]
+    /// when the caller already owns shared text and wants to avoid an extra allocation.
     pub fn new(text: impl AsRef<str>, encoding_kind: EncodingKind) -> Self {
         Self::from_arc(Arc::<str>::from(text.as_ref()), encoding_kind)
     }
