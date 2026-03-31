@@ -4,8 +4,8 @@ use tombi_document_tree::{ValueImpl, dig_accessors};
 use tombi_schema_store::matches_accessors;
 
 use crate::{
-    CrateLocation, find_path_crate_cargo_toml, find_workspace_cargo_toml,
-    get_uri_relative_to_cargo_toml, get_workspace_path, load_cargo_toml,
+    CrateLocation, find_cargo_toml, find_workspace_cargo_toml, get_uri_relative_to_cargo_toml,
+    get_workspace_cargo_toml_path, load_cargo_toml,
 };
 
 /// Get the location of the workspace Cargo.toml.
@@ -67,12 +67,11 @@ pub(crate) fn goto_workspace(
         )
         && let tombi_document_tree::Value::Table(table) = value
         && let Some(tombi_document_tree::Value::String(subcrate_path)) = table.get("path")
-        && let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) =
-            find_path_crate_cargo_toml(
-                &workspace_cargo_toml_path,
-                std::path::Path::new(subcrate_path.value()),
-                toml_version,
-            )
+        && let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) = find_cargo_toml(
+            &workspace_cargo_toml_path,
+            std::path::Path::new(subcrate_path.value()),
+            toml_version,
+        )
         && let Some((_, tombi_document_tree::Value::String(package_name))) =
             tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
     {
@@ -127,14 +126,12 @@ pub(crate) fn goto_dependency_crates(
     let mut locations = Vec::new();
     if let tombi_document_tree::Value::Table(table) = crate_value {
         if let Some(tombi_document_tree::Value::String(subcrate_path)) = table.get("path") {
-            if let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) =
-                find_path_crate_cargo_toml(
-                    workspace_cargo_toml_path,
-                    std::path::Path::new(subcrate_path.value()),
-                    toml_version,
-                )
-                && let Some((_, tombi_document_tree::Value::String(package_name))) =
-                    tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
+            if let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) = find_cargo_toml(
+                workspace_cargo_toml_path,
+                std::path::Path::new(subcrate_path.value()),
+                toml_version,
+            ) && let Some((_, tombi_document_tree::Value::String(package_name))) =
+                tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
             {
                 if let Ok(subcrate_cargo_toml_uri) =
                     tombi_uri::Uri::from_file_path(&subcrate_cargo_toml_path)
@@ -257,14 +254,12 @@ pub(crate) fn goto_crate_package(
             _ => unreachable!(),
         };
 
-        if let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) =
-            find_path_crate_cargo_toml(
-                workspace_cargo_toml_path,
-                std::path::Path::new(subcrate_path.value()),
-                toml_version,
-            )
-            && let Some((_, tombi_document_tree::Value::String(package_name))) =
-                tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
+        if let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) = find_cargo_toml(
+            workspace_cargo_toml_path,
+            std::path::Path::new(subcrate_path.value()),
+            toml_version,
+        ) && let Some((_, tombi_document_tree::Value::String(package_name))) =
+            tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
         {
             let Ok(subcrate_cargo_toml_uri) =
                 tombi_uri::Uri::from_file_path(&subcrate_cargo_toml_path)
@@ -483,7 +478,7 @@ pub(crate) fn goto_definition_for_crate_cargo_toml(
         goto_workspace(
             accessors,
             cargo_toml_path,
-            get_workspace_path(document_tree),
+            get_workspace_cargo_toml_path(document_tree),
             toml_version,
             jump_to_subcrate,
         )

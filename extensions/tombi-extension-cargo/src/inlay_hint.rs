@@ -16,7 +16,8 @@ use crate::{
         CARGO_EXTENSION_ID, CargoLock, CargoLockPackage, find_cargo_lock_path,
         load_cached_cargo_lock, load_cargo_lock_from_path,
     },
-    dependency_package_name, find_workspace_cargo_toml, get_workspace_path, load_cargo_toml,
+    dependency_package_name, find_workspace_cargo_toml, get_workspace_cargo_toml_path,
+    load_cargo_toml,
     workspace::{extract_exclude_patterns, find_package_cargo_toml_paths},
 };
 
@@ -778,7 +779,7 @@ fn workspace_path_dependency_version(
         find_workspace_cargo_toml_with_local_cache(
             local_cargo_toml_cache,
             cargo_toml_path,
-            get_workspace_path(document_tree),
+            get_workspace_cargo_toml_path(document_tree),
             toml_version,
         )?;
     let (_, workspace_dependency_value) = dig_keys(
@@ -876,7 +877,7 @@ fn dependency_default_features(
         find_workspace_cargo_toml_with_local_cache(
             local_cargo_toml_cache,
             cargo_toml_path,
-            get_workspace_path(document_tree),
+            get_workspace_cargo_toml_path(document_tree),
             toml_version,
         )?;
     let (_, workspace_dependency_value) = dig_keys(
@@ -1172,7 +1173,7 @@ async fn load_workspace_document_tree_async(
         return Some((cargo_toml_path.to_path_buf(), document_tree.clone()));
     }
 
-    if let Some(workspace_path) = get_workspace_path(document_tree) {
+    if let Some(workspace_path) = get_workspace_cargo_toml_path(document_tree) {
         let workspace_cargo_toml_path = tombi_extension_manifest::resolve_manifest_path(
             cargo_toml_path,
             Path::new(workspace_path),
@@ -1509,7 +1510,7 @@ async fn registry_dependency_default_features_hint(
     {
         let Some((_, _, workspace_document_tree)) = find_workspace_cargo_toml(
             cargo_toml_path,
-            get_workspace_path(document_tree),
+            get_workspace_cargo_toml_path(document_tree),
             toml_version,
         ) else {
             return Ok(None);
@@ -1783,7 +1784,7 @@ fn workspace_member_packages(
         find_workspace_cargo_toml_with_local_cache(
             local_cargo_toml_cache,
             cargo_toml_path,
-            get_workspace_path(document_tree),
+            get_workspace_cargo_toml_path(document_tree),
             toml_version,
         )?;
 
@@ -1808,7 +1809,7 @@ fn workspace_document_tree<'a>(
     let (_, workspace_document_tree) = find_workspace_cargo_toml_with_local_cache(
         local_cargo_toml_cache,
         cargo_toml_path,
-        get_workspace_path(document_tree),
+        get_workspace_cargo_toml_path(document_tree),
         toml_version,
     )?;
 
@@ -1973,7 +1974,7 @@ fn package_version(
             let (_, workspace_document_tree) = find_workspace_cargo_toml_with_local_cache(
                 local_cargo_toml_cache,
                 cargo_toml_path,
-                get_workspace_path(document_tree),
+                get_workspace_cargo_toml_path(document_tree),
                 toml_version,
             )?;
             let (_, Value::String(version)) = dig_keys(

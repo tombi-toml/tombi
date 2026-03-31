@@ -5,10 +5,9 @@ use tombi_config::{CargoExtensionFeatures, TomlVersion};
 use tombi_document_tree::{DocumentTree, Table, Value, dig_keys};
 use tombi_extension::remote_cache::warm_remote_json_cache;
 
-use crate::cargo_toml::load_workspace_cargo_toml_cached;
 use crate::{
     cargo_lock::{exact_crates_io_version, load_cached_cargo_lock},
-    get_workspace_path, sanitize_dependency_key,
+    get_workspace_cargo_toml_path, load_workspace_cargo_toml, sanitize_dependency_key,
 };
 
 const PREFETCH_CONCURRENCY: usize = 10;
@@ -141,7 +140,7 @@ async fn collect_prefetch_urls(
         return PrefetchUrls::default();
     }
 
-    let workspace_path = get_workspace_path(document_tree);
+    let workspace_path = get_workspace_cargo_toml_path(document_tree);
     let cargo_lock_fut = async {
         if warm_feature_details || prioritize_inlay_hint {
             load_cached_cargo_lock(cargo_toml_path, toml_version).await
@@ -149,8 +148,7 @@ async fn collect_prefetch_urls(
             None
         }
     };
-    let workspace_fut =
-        load_workspace_cargo_toml_cached(cargo_toml_path, workspace_path, toml_version);
+    let workspace_fut = load_workspace_cargo_toml(cargo_toml_path, workspace_path, toml_version);
     let (workspace, cargo_lock) = tokio::join!(workspace_fut, cargo_lock_fut);
     let workspace_document_tree = workspace.as_ref().map(|(_, dt)| dt);
     let registry_dependencies =

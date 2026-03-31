@@ -19,7 +19,7 @@ use tombi_version_sort::version_sort;
 use tower_lsp::lsp_types::InsertTextFormat;
 
 use crate::cargo_lock::{exact_crates_io_version, load_cached_cargo_lock};
-use crate::{find_path_crate_cargo_toml, find_workspace_cargo_toml, get_workspace_path};
+use crate::{find_cargo_toml, find_workspace_cargo_toml, get_workspace_cargo_toml_path};
 
 enum CargoCompletionFeature {
     DependencyVersion,
@@ -476,7 +476,7 @@ fn complete_workspace_dependency_inheritance(
 
     let Some((_, _, workspace_document_tree)) = find_workspace_cargo_toml(
         cargo_toml_path,
-        get_workspace_path(document_tree),
+        get_workspace_cargo_toml_path(document_tree),
         toml_version,
     ) else {
         return None;
@@ -703,7 +703,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
                 let Some((workspace_cargo_toml_path, _, workspace_document_tree)) =
                     find_workspace_cargo_toml(
                         cargo_toml_path,
-                        get_workspace_path(document_tree),
+                        get_workspace_cargo_toml_path(document_tree),
                         toml_version,
                     )
                 else {
@@ -860,7 +860,7 @@ async fn fetch_local_crate_features(
     toml_version: TomlVersion,
 ) -> Option<tombi_hashmap::HashMap<String, Vec<String>>> {
     // Get the directory of the current Cargo.toml file
-    let (_, _, subcrate_document_tree) = find_path_crate_cargo_toml(
+    let (_, _, subcrate_document_tree) = find_cargo_toml(
         cargo_toml_path,
         std::path::Path::new(sub_crate_path),
         toml_version,
