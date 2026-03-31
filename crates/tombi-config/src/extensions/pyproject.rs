@@ -1,4 +1,4 @@
-use super::{EnabledOnly, ToggleFeature, default_to_features};
+use super::{EnabledOnly, ToggleFeature};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

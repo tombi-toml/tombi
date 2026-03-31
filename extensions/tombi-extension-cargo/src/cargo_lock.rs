@@ -7,7 +7,7 @@ use tombi_document_tree::{TryIntoDocumentTree, Value, dig_keys};
 use tombi_extension::{file_cache_version, get_or_load_json};
 use tombi_hashmap::{HashMap, HashSet};
 
-const CARGO_EXTENSION_ID: &str = "tombi-toml/cargo";
+pub(crate) const CARGO_EXTENSION_ID: &str = "tombi-toml/cargo";
 const LOCKFILE_CACHE_KEY: &str = "cargo_lock";
 
 #[derive(Debug, Clone)]

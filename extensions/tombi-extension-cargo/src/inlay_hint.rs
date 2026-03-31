@@ -13,8 +13,8 @@ use tombi_hashmap::{HashMap, HashSet};
 
 use crate::{
     cargo_lock::{
-        CargoLock, CargoLockPackage, find_cargo_lock_path, load_cached_cargo_lock,
-        load_cargo_lock_from_path,
+        CargoLock, CargoLockPackage, CARGO_EXTENSION_ID, find_cargo_lock_path,
+        load_cached_cargo_lock, load_cargo_lock_from_path,
     },
     dependency_package_name, find_workspace_cargo_toml, get_workspace_path, load_cargo_toml,
     workspace::{extract_exclude_patterns, find_package_cargo_toml_paths},
@@ -24,7 +24,6 @@ const RESOLVED_VERSION_TOOLTIP: &str = "Resolved version in Cargo.lock";
 const LOCAL_PATH_VERSION_TOOLTIP: &str = "Version from local dependency Cargo.toml";
 const WORKSPACE_INHERITED_VALUE_TOOLTIP: &str = "Inherited value from workspace";
 const MAX_WORKSPACE_VALUE_HINT_CHARS: usize = 80;
-const CARGO_EXTENSION_ID: &str = "tombi-toml/cargo";
 const INLAY_HINT_LOCKFILE_KEY: &str = "inlay_hint.lockfile";
 const LOCAL_MANIFEST_PREFETCH_CONCURRENCY: usize = 8;
 const WORKSPACE_PACKAGE_ITEMS: [&str; 16] = [
