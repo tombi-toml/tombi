@@ -186,7 +186,16 @@ pub async fn inlay_hint(
         },
         async {
             if dependency_version_enabled || default_features_enabled {
-                preload_local_manifest_cache(document_tree, &cargo_toml_path, toml_version).await
+                preload_local_manifest_cache(
+                    document_tree,
+                    &cargo_toml_path,
+                    visible_range,
+                    toml_version,
+                    dependency_version_enabled,
+                    default_features_enabled,
+                    has_visible_workspace_value_targets(document_tree, visible_range),
+                )
+                .await
             } else {
                 LocalManifestCache::default()
             }
@@ -894,12 +903,25 @@ fn dependency_default_features(
 async fn preload_local_manifest_cache(
     document_tree: &tombi_document_tree::DocumentTree,
     cargo_toml_path: &Path,
+    visible_range: tombi_text::Range,
     toml_version: TomlVersion,
+    dependency_version_enabled: bool,
+    default_features_enabled: bool,
+    preload_workspace_manifest: bool,
 ) -> LocalManifestCache {
-    let requests = collect_local_manifest_requests(document_tree);
+    let requests = collect_local_manifest_requests(
+        document_tree,
+        visible_range,
+        dependency_version_enabled,
+        default_features_enabled,
+    );
     let current_manifest_path = canonicalize_or_original(cargo_toml_path.to_path_buf()).await;
     let workspace_manifest =
-        load_workspace_document_tree_async(document_tree, cargo_toml_path, toml_version).await;
+        if preload_workspace_manifest || !requests.workspace_dependencies.is_empty() {
+            load_workspace_document_tree_async(document_tree, cargo_toml_path, toml_version).await
+        } else {
+            None
+        };
 
     let (path_dependencies, workspace_dependencies) = tokio::join!(
         load_local_manifest_entries(cargo_toml_path, requests.path_dependencies, toml_version),
@@ -928,10 +950,6 @@ async fn preload_local_manifest_cache(
         local_manifest_cache
             .manifests
             .insert(workspace_cargo_toml_path, workspace_document_tree);
-    } else {
-        local_manifest_cache
-            .workspace_manifests
-            .insert(current_manifest_path, None);
     }
 
     for manifest in path_dependencies.into_iter().chain(workspace_dependencies) {
@@ -945,16 +963,29 @@ async fn preload_local_manifest_cache(
 
 fn collect_local_manifest_requests(
     document_tree: &tombi_document_tree::DocumentTree,
+    visible_range: tombi_text::Range,
+    dependency_version_enabled: bool,
+    default_features_enabled: bool,
 ) -> LocalManifestRequests {
     let mut requests = LocalManifestRequests::default();
 
     for dependency_key in ["dependencies", "dev-dependencies", "build-dependencies"] {
-        collect_local_manifest_requests_from_keys(document_tree, &[dependency_key], &mut requests);
+        collect_local_manifest_requests_from_keys(
+            document_tree,
+            &[dependency_key],
+            visible_range,
+            dependency_version_enabled,
+            default_features_enabled,
+            &mut requests,
+        );
     }
 
     collect_local_manifest_requests_from_keys(
         document_tree,
         &["workspace", "dependencies"],
+        visible_range,
+        dependency_version_enabled,
+        default_features_enabled,
         &mut requests,
     );
 
@@ -968,6 +999,9 @@ fn collect_local_manifest_requests(
                 collect_local_manifest_requests_from_keys(
                     document_tree,
                     &["target", target_key.value.as_str(), dependency_key],
+                    visible_range,
+                    dependency_version_enabled,
+                    default_features_enabled,
                     &mut requests,
                 );
             }
@@ -980,6 +1014,9 @@ fn collect_local_manifest_requests(
 fn collect_local_manifest_requests_from_keys(
     document_tree: &tombi_document_tree::DocumentTree,
     dependency_keys: &[&str],
+    visible_range: tombi_text::Range,
+    dependency_version_enabled: bool,
+    default_features_enabled: bool,
     requests: &mut LocalManifestRequests,
 ) {
     let Some((_, Value::Table(dependencies))) = dig_keys(document_tree, dependency_keys) else {
@@ -990,6 +1027,15 @@ fn collect_local_manifest_requests_from_keys(
         let Value::Table(table) = dependency_value else {
             continue;
         };
+        if !needs_visible_local_manifest_prefetch(
+            dependency_key.value.as_str(),
+            dependency_value,
+            visible_range,
+            dependency_version_enabled,
+            default_features_enabled,
+        ) {
+            continue;
+        }
 
         if let Some(Value::String(path)) = table.get("path") {
             requests.path_dependencies.insert(path.value().to_string());
@@ -1003,6 +1049,46 @@ fn collect_local_manifest_requests_from_keys(
                 .insert(dependency_key.value.to_string());
         }
     }
+}
+
+fn needs_visible_local_manifest_prefetch(
+    dependency_key: &str,
+    dependency_value: &Value,
+    visible_range: tombi_text::Range,
+    dependency_version_enabled: bool,
+    default_features_enabled: bool,
+) -> bool {
+    if dependency_version_enabled
+        && dependency_version_hint(dependency_key, dependency_value).is_some_and(|hint| {
+            hint.local_version_source.is_some()
+                && tombi_text::Range::at(hint.position).intersects(visible_range)
+        })
+    {
+        return true;
+    }
+
+    default_features_enabled
+        && local_default_features_request_position(dependency_value)
+            .is_some_and(|position| tombi_text::Range::at(position).intersects(visible_range))
+}
+
+fn local_default_features_request_position(
+    dependency_value: &Value,
+) -> Option<tombi_text::Position> {
+    let Value::Table(table) = dependency_value else {
+        return None;
+    };
+    if dependency_table_default_features_disabled(table) {
+        return None;
+    }
+
+    let Some(Value::Array(features)) = table.get("features") else {
+        return None;
+    };
+    let is_local_dependency = table.get("path").is_some()
+        || matches!(table.get("workspace"), Some(Value::Boolean(workspace)) if workspace.value());
+
+    is_local_dependency.then_some(features.range().end)
 }
 
 async fn load_local_manifest_entries(
@@ -1024,7 +1110,7 @@ async fn load_local_manifest_entries(
         }
     }))
     .buffer_unordered(LOCAL_MANIFEST_PREFETCH_CONCURRENCY)
-    .filter_map(async |entry| entry)
+    .filter_map(|entry| async move { entry })
     .collect()
     .await
 }
@@ -1068,7 +1154,7 @@ async fn load_workspace_manifest_entries(
         }
     }))
     .buffer_unordered(LOCAL_MANIFEST_PREFETCH_CONCURRENCY)
-    .filter_map(async |entry| entry)
+    .filter_map(|entry| async move { entry })
     .collect()
     .await
 }
@@ -1097,27 +1183,17 @@ async fn load_workspace_document_tree_async(
             .then_some((workspace_cargo_toml_path, workspace_document_tree));
     }
 
-    let mut current_dir = cargo_toml_path.parent()?;
+    let (workspace_cargo_toml_path, workspace_document_tree) =
+        tombi_extension_manifest::find_ancestor_manifest_async(
+            cargo_toml_path,
+            "Cargo.toml",
+            |path| async move { load_cargo_toml_async(&path, toml_version).await },
+            |tree| tree.contains_key("workspace"),
+        )
+        .await?;
+    let workspace_cargo_toml_path = canonicalize_or_original(workspace_cargo_toml_path).await;
 
-    while let Some(target_dir) = current_dir.parent() {
-        current_dir = target_dir;
-        let workspace_cargo_toml_path = current_dir.join("Cargo.toml");
-
-        if !tokio::fs::try_exists(&workspace_cargo_toml_path)
-            .await
-            .ok()?
-        {
-            continue;
-        }
-
-        let workspace_document_tree =
-            load_cargo_toml_async(&workspace_cargo_toml_path, toml_version).await?;
-        if workspace_document_tree.contains_key("workspace") {
-            return Some((workspace_cargo_toml_path, workspace_document_tree));
-        }
-    }
-
-    None
+    Some((workspace_cargo_toml_path, workspace_document_tree))
 }
 
 async fn load_manifest_data_for_dependency_path(
@@ -2113,14 +2189,86 @@ mod tests {
     use tombi_ast::AstNode;
     use tombi_document_tree::TryIntoDocumentTree;
 
-    fn parse_value(source: &str) -> Value {
+    fn parse_document_tree(source: &str) -> tombi_document_tree::DocumentTree {
         let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node())
             .expect("expected root");
-        let document_tree = root
-            .try_into_document_tree(TomlVersion::default())
-            .expect("expected document tree");
+        root.try_into_document_tree(TomlVersion::default())
+            .expect("expected document tree")
+    }
+
+    fn parse_value(source: &str) -> Value {
+        let document_tree = parse_document_tree(source);
         let (_, value) = dig_keys(&document_tree, &["value"]).expect("expected value");
         value.clone()
+    }
+
+    #[test]
+    fn collects_local_manifest_requests_only_for_visible_path_dependency_hints() {
+        let document_tree = parse_document_tree(
+            r#"
+            [dependencies]
+            serde = { path = "../serde" }
+            tokio = { path = "../tokio" }
+            "#,
+        );
+        let (_, serde_value) =
+            dig_keys(&document_tree, &["dependencies", "serde"]).expect("expected serde");
+        let visible_range = tombi_text::Range::at(
+            dependency_version_hint("serde", serde_value)
+                .unwrap()
+                .position,
+        );
+
+        let requests = collect_local_manifest_requests(&document_tree, visible_range, true, false);
+
+        assert_eq!(requests.path_dependencies.len(), 1);
+        assert!(requests.path_dependencies.contains("../serde"));
+        assert!(!requests.path_dependencies.contains("../tokio"));
+        assert!(requests.workspace_dependencies.is_empty());
+    }
+
+    #[test]
+    fn collects_local_manifest_requests_for_visible_workspace_default_feature_hints() {
+        let document_tree = parse_document_tree(
+            r#"
+            [dependencies]
+            serde = { workspace = true, features = ["derive"] }
+            tokio = { workspace = true, features = ["rt"] }
+            "#,
+        );
+        let (_, serde_value) =
+            dig_keys(&document_tree, &["dependencies", "serde"]).expect("expected serde");
+        let visible_range = tombi_text::Range::at(
+            local_default_features_request_position(serde_value)
+                .expect("expected feature position"),
+        );
+
+        let requests = collect_local_manifest_requests(&document_tree, visible_range, false, true);
+
+        assert!(requests.path_dependencies.is_empty());
+        assert_eq!(requests.workspace_dependencies.len(), 1);
+        assert!(requests.workspace_dependencies.contains("serde"));
+        assert!(!requests.workspace_dependencies.contains("tokio"));
+    }
+
+    #[test]
+    fn skips_local_manifest_requests_when_local_hints_are_offscreen() {
+        let document_tree = parse_document_tree(
+            r#"
+            [dependencies]
+            serde = { path = "../serde" }
+            "#,
+        );
+
+        let requests = collect_local_manifest_requests(
+            &document_tree,
+            tombi_text::Range::at(tombi_text::Position::new(0, 0)),
+            true,
+            true,
+        );
+
+        assert!(requests.path_dependencies.is_empty());
+        assert!(requests.workspace_dependencies.is_empty());
     }
 
     #[test]
