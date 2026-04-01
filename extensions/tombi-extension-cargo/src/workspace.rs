@@ -33,7 +33,7 @@ static DID_OPEN_WORKSPACE_CARGO_TOML_CACHE: LazyLock<
     RwLock<HashMap<PathBuf, CachedWorkspaceCargoToml>>,
 > = LazyLock::new(|| RwLock::new(HashMap::new()));
 
-fn canonicalize_or_original(path: PathBuf) -> PathBuf {
+pub(crate) fn canonicalize_or_original(path: PathBuf) -> PathBuf {
     path.canonicalize().unwrap_or(path)
 }
 

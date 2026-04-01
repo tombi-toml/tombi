@@ -1,0 +1,10 @@
+[package]
+name = "consumer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+provider = { workspace = true, features = ["jsonschema"] }
+
+[features]
+local = ["provider/jsonschema"]

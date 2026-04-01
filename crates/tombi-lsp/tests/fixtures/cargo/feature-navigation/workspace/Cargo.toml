@@ -1,0 +1,5 @@
+[workspace]
+members = ["provider", "consumer", "renamed-consumer", "weak-consumer", "registry-consumer"]
+
+[workspace.dependencies]
+provider = { path = "provider", features = ["jsonschema"] }

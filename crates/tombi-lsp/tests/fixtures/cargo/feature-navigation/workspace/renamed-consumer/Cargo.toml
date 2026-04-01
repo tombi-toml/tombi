@@ -1,0 +1,10 @@
+[package]
+name = "renamed-consumer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sev = { package = "provider", path = "../provider", features = ["jsonschema"] }
+
+[features]
+rename = ["sev/jsonschema", "provider/jsonschema"]

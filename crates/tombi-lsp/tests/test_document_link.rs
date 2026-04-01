@@ -6,6 +6,10 @@ mod document_link_tests {
     mod cargo_schema {
         use super::*;
 
+        fn cargo_feature_navigation_fixture_path() -> std::path::PathBuf {
+            project_root_path().join("crates/tombi-lsp/tests/fixtures/cargo/feature-navigation")
+        }
+
         test_document_link!(
             #[tokio::test]
             async fn cargo_package_readme(
@@ -414,6 +418,142 @@ mod document_link_tests {
                 {
                     path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
                     range: 4:22..4:34,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_feature_local_reference(
+                r#"
+                [package]
+                name = "explicit-feature"
+                version = "0.1.0"
+
+                [dependencies]
+                schemars = { version = "1.0", optional = true }
+
+                [features]
+                local = []
+                bundle = ["local", "schemars", "dep:schemars"]
+                "#,
+                SourcePath(cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")),
+            ) -> Ok(Some(vec![
+                {
+                    url: "https://crates.io/crates/schemars",
+                    range: 5:0..5:8,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
+                },
+                {
+                    path: cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml"),
+                    range: 9:11..9:16,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_feature_implicit_optional_reference(
+                r#"
+                [package]
+                name = "implicit-feature"
+                version = "0.1.0"
+
+                [dependencies]
+                schemars = { version = "1.0", optional = true }
+
+                [features]
+                bundle = ["schemars"]
+                "#,
+                SourcePath(cargo_feature_navigation_fixture_path().join("implicit/Cargo.toml")),
+            ) -> Ok(Some(vec![
+                {
+                    url: "https://crates.io/crates/schemars",
+                    range: 5:0..5:8,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
+                },
+                {
+                    path: cargo_feature_navigation_fixture_path().join("implicit/Cargo.toml"),
+                    range: 8:11..8:19,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_feature_dependency_reference(
+                r#"
+                [package]
+                name = "consumer"
+                version = "0.1.0"
+
+                [dependencies]
+                provider = { workspace = true, features = ["jsonschema"] }
+
+                [features]
+                local = ["provider/jsonschema"]
+                "#,
+                SourcePath(
+                    cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml")
+                ),
+            ) -> Ok(Some(vec![
+                {
+                    path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
+                    range: 5:0..5:8,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                },
+                {
+                    path: cargo_feature_navigation_fixture_path().join("workspace/Cargo.toml"),
+                    range: 5:13..5:29,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::WorkspaceCargoToml,
+                },
+                {
+                    path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
+                    range: 8:10..8:29,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                },
+                {
+                    path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
+                    range: 5:44..5:54,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_feature_weak_and_renamed_references(
+                r#"
+                [package]
+                name = "weak-consumer"
+                version = "0.1.0"
+
+                [dependencies]
+                provider = { path = "../provider" }
+
+                [features]
+                weak = ["provider?/jsonschema"]
+                "#,
+                SourcePath(
+                    cargo_feature_navigation_fixture_path().join("workspace/weak-consumer/Cargo.toml")
+                ),
+            ) -> Ok(Some(vec![
+                {
+                    path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
+                    range: 5:0..5:8,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                },
+                {
+                    path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
+                    range: 5:21..5:32,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                },
+                {
+                    path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
+                    range: 8:9..8:29,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
                 }
             ]));
