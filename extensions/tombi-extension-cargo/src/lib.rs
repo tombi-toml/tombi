@@ -4,6 +4,7 @@ mod code_action;
 mod completion;
 mod did_open;
 mod document_link;
+mod feature_navigation;
 mod goto_declaration;
 mod goto_definition;
 mod hover;
@@ -23,10 +24,17 @@ pub(crate) use cargo_toml::{
     CrateLocation, dependency_package_name, find_cargo_toml, get_uri_relative_to_cargo_toml,
     load_cargo_toml,
 };
+pub(crate) use feature_navigation::{
+    CargoTargetLocation, collect_feature_usage_locations, dependency_feature_string_context,
+    feature_key_at_accessors, feature_table_string_at_accessors,
+    feature_usage_target_for_feature_key, feature_usage_target_for_optional_dependency,
+    optional_dependency_value_at_accessors, resolve_dependency_feature_string,
+    resolve_feature_table_string,
+};
 pub(crate) use workspace::{
-    find_package_cargo_toml_paths, find_workspace_cargo_toml, get_workspace_cargo_toml_path,
-    goto_definition_for_crate_cargo_toml, goto_definition_for_workspace_cargo_toml,
-    load_workspace_cargo_toml, sanitize_dependency_key,
+    canonicalize_or_original, find_package_cargo_toml_paths, find_workspace_cargo_toml,
+    get_workspace_cargo_toml_path, goto_definition_for_crate_cargo_toml,
+    goto_definition_for_workspace_cargo_toml, load_workspace_cargo_toml, sanitize_dependency_key,
 };
 
 pub(crate) enum CargoNavigationFeature {

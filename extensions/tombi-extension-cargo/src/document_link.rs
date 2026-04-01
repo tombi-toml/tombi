@@ -3,10 +3,12 @@ use std::{borrow::Cow, str::FromStr};
 use crate::{
     find_cargo_toml, find_package_cargo_toml_paths, find_workspace_cargo_toml,
     get_uri_relative_to_cargo_toml, get_workspace_cargo_toml_path, load_cargo_toml,
+    resolve_dependency_feature_string, resolve_feature_table_string,
 };
 use itertools::Itertools;
 use tombi_config::TomlVersion;
 use tombi_document_tree::dig_keys;
+use tombi_schema_store::Accessor;
 
 type RegistryMap = tombi_hashmap::HashMap<String, Registry>;
 const DEFAULT_REGISTRY_INDEX: &str = "https://crates.io/crates";
@@ -161,6 +163,12 @@ fn document_link_for_workspace_cargo_toml(
             "default-members",
             workspace_cargo_toml_path,
             toml_version,
+        ));
+        total_document_links.extend(document_link_for_workspace_dependency_features(
+            workspace_document_tree,
+            workspace_cargo_toml_path,
+            toml_version,
+            features,
         ));
     }
 
@@ -443,8 +451,226 @@ fn document_link_for_crate_cargo_toml(
             crate_cargo_toml_path,
         ));
     }
+    if cargo_toml_document_link_enabled(features) {
+        total_document_links.extend(document_link_for_feature_table_strings(
+            crate_document_tree,
+            crate_cargo_toml_path,
+            toml_version,
+            features,
+        ));
+        total_document_links.extend(document_link_for_crate_dependency_features(
+            crate_document_tree,
+            crate_cargo_toml_path,
+            toml_version,
+            features,
+        ));
+    }
 
     Ok(total_document_links)
+}
+
+fn document_link_for_feature_table_strings(
+    document_tree: &tombi_document_tree::DocumentTree,
+    cargo_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+    features: Option<&tombi_config::CargoExtensionFeatures>,
+) -> Vec<tombi_extension::DocumentLink> {
+    let Some((_, tombi_document_tree::Value::Table(features_table))) =
+        dig_keys(document_tree, &["features"])
+    else {
+        return Vec::new();
+    };
+
+    features_table
+        .values()
+        .filter_map(|value| match value {
+            tombi_document_tree::Value::Array(features) => Some(features),
+            _ => None,
+        })
+        .flat_map(|features| features.values())
+        .filter_map(|value| match value {
+            tombi_document_tree::Value::String(feature_string) => Some(feature_string),
+            _ => None,
+        })
+        .filter_map(|feature_string| {
+            let target = resolve_feature_table_string(
+                document_tree,
+                cargo_toml_path,
+                feature_string,
+                toml_version,
+            )?;
+            if !feature_document_link_allowed(cargo_toml_path, &target, features) {
+                return None;
+            }
+            cargo_toml_document_link(feature_string.unquoted_range(), &target)
+        })
+        .collect()
+}
+
+fn document_link_for_workspace_dependency_features(
+    document_tree: &tombi_document_tree::DocumentTree,
+    cargo_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+    features: Option<&tombi_config::CargoExtensionFeatures>,
+) -> Vec<tombi_extension::DocumentLink> {
+    let Some((_, tombi_document_tree::Value::Table(dependencies))) =
+        dig_keys(document_tree, &["workspace", "dependencies"])
+    else {
+        return Vec::new();
+    };
+
+    document_link_for_dependency_table_features(
+        document_tree,
+        cargo_toml_path,
+        toml_version,
+        features,
+        dependencies,
+        |dependency_key| {
+            vec![
+                Accessor::Key("workspace".to_string()),
+                Accessor::Key("dependencies".to_string()),
+                Accessor::Key(dependency_key.to_string()),
+            ]
+        },
+    )
+}
+
+fn document_link_for_crate_dependency_features(
+    document_tree: &tombi_document_tree::DocumentTree,
+    cargo_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+    features: Option<&tombi_config::CargoExtensionFeatures>,
+) -> Vec<tombi_extension::DocumentLink> {
+    let mut document_links = Vec::new();
+
+    for dependency_kind in ["dependencies", "dev-dependencies", "build-dependencies"] {
+        if let Some((_, tombi_document_tree::Value::Table(dependencies))) =
+            dig_keys(document_tree, &[dependency_kind])
+        {
+            document_links.extend(document_link_for_dependency_table_features(
+                document_tree,
+                cargo_toml_path,
+                toml_version,
+                features,
+                dependencies,
+                |dependency_key| {
+                    vec![
+                        Accessor::Key(dependency_kind.to_string()),
+                        Accessor::Key(dependency_key.to_string()),
+                    ]
+                },
+            ));
+        }
+    }
+
+    if let Some((_, tombi_document_tree::Value::Table(targets))) =
+        dig_keys(document_tree, &["target"])
+    {
+        for (target_key, target_value) in targets.key_values() {
+            let tombi_document_tree::Value::Table(target_table) = target_value else {
+                continue;
+            };
+            for dependency_kind in ["dependencies", "dev-dependencies", "build-dependencies"] {
+                let Some(tombi_document_tree::Value::Table(dependencies)) =
+                    target_table.get(dependency_kind)
+                else {
+                    continue;
+                };
+                document_links.extend(document_link_for_dependency_table_features(
+                    document_tree,
+                    cargo_toml_path,
+                    toml_version,
+                    features,
+                    dependencies,
+                    |dependency_key| {
+                        vec![
+                            Accessor::Key("target".to_string()),
+                            Accessor::Key(target_key.value.to_string()),
+                            Accessor::Key(dependency_kind.to_string()),
+                            Accessor::Key(dependency_key.to_string()),
+                        ]
+                    },
+                ));
+            }
+        }
+    }
+
+    document_links
+}
+
+fn document_link_for_dependency_table_features<F>(
+    document_tree: &tombi_document_tree::DocumentTree,
+    cargo_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+    extension_features: Option<&tombi_config::CargoExtensionFeatures>,
+    dependencies: &tombi_document_tree::Table,
+    dependency_accessors: F,
+) -> Vec<tombi_extension::DocumentLink>
+where
+    F: Fn(&str) -> Vec<Accessor>,
+{
+    dependencies
+        .key_values()
+        .iter()
+        .flat_map(|(dependency_key, dependency_value)| {
+            let tombi_document_tree::Value::Table(table) = dependency_value else {
+                return Vec::new();
+            };
+            let Some(tombi_document_tree::Value::Array(features)) = table.get("features") else {
+                return Vec::new();
+            };
+
+            features
+                .values()
+                .iter()
+                .filter_map(|feature_value| match feature_value {
+                    tombi_document_tree::Value::String(feature_string) => {
+                        let target = resolve_dependency_feature_string(
+                            document_tree,
+                            cargo_toml_path,
+                            dependency_accessors(dependency_key.value.as_str()).as_slice(),
+                            feature_string,
+                            toml_version,
+                        )?;
+                        if !feature_document_link_allowed(
+                            cargo_toml_path,
+                            &target,
+                            extension_features,
+                        ) {
+                            return None;
+                        }
+                        cargo_toml_document_link(feature_string.unquoted_range(), &target)
+                    }
+                    _ => None,
+                })
+                .collect_vec()
+        })
+        .collect()
+}
+
+fn cargo_toml_document_link(
+    range: tombi_text::Range,
+    target: &crate::CargoTargetLocation,
+) -> Option<tombi_extension::DocumentLink> {
+    let mut target_uri = tombi_uri::Uri::from_file_path(&target.cargo_toml_path).ok()?;
+    target_uri.set_fragment(Some(&format!("L{}", target.range.start.line + 1)));
+    Some(tombi_extension::DocumentLink {
+        target: target_uri,
+        range,
+        tooltip: DocumentLinkToolTip::CargoToml.into(),
+    })
+}
+
+fn feature_document_link_allowed(
+    cargo_toml_path: &std::path::Path,
+    target: &crate::CargoTargetLocation,
+    features: Option<&tombi_config::CargoExtensionFeatures>,
+) -> bool {
+    target.cargo_toml_path
+        == cargo_toml_path
+            .canonicalize()
+            .unwrap_or_else(|_| cargo_toml_path.to_path_buf())
+        || path_document_link_enabled(features)
 }
 
 fn document_link_for_workspace_dependency(
@@ -767,4 +993,68 @@ fn get_crate_io_crate_link(
             tooltip: DocumentLinkToolTip::CrateIo.into(),
         })
         .ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use super::feature_document_link_allowed;
+
+    fn disabled_path_link_features() -> tombi_config::CargoExtensionFeatures {
+        tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
+            lsp: Some(tombi_config::CargoLspFeatures::Features(
+                tombi_config::CargoLspFeatureTree {
+                    completion: None,
+                    inlay_hint: None,
+                    goto_definition: None,
+                    goto_declaration: None,
+                    document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
+                        tombi_config::CargoDocumentLinkFeatureTree {
+                            cargo_toml: None,
+                            git: None,
+                            path: Some(tombi_config::ToggleFeature {
+                                enabled: Some(false.into()),
+                            }),
+                            crates_io: None,
+                        },
+                    )),
+                    hover: None,
+                    code_action: None,
+                },
+            )),
+        })
+    }
+
+    #[test]
+    fn feature_document_link_allows_same_file_when_path_links_disabled() {
+        let cargo_toml_path = PathBuf::from("/tmp/source/Cargo.toml");
+        let target = crate::CargoTargetLocation {
+            cargo_toml_path: cargo_toml_path.clone(),
+            range: tombi_text::Range::default(),
+        };
+        let features = disabled_path_link_features();
+
+        assert!(feature_document_link_allowed(
+            &cargo_toml_path,
+            &target,
+            Some(&features),
+        ));
+    }
+
+    #[test]
+    fn feature_document_link_blocks_cross_file_when_path_links_disabled() {
+        let cargo_toml_path = PathBuf::from("/tmp/source/Cargo.toml");
+        let target = crate::CargoTargetLocation {
+            cargo_toml_path: PathBuf::from("/tmp/other/Cargo.toml"),
+            range: tombi_text::Range::default(),
+        };
+        let features = disabled_path_link_features();
+
+        assert!(!feature_document_link_allowed(
+            &cargo_toml_path,
+            &target,
+            Some(&features),
+        ));
+    }
 }

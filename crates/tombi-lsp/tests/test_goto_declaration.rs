@@ -6,6 +6,10 @@ mod goto_declaration_tests {
     mod cargo_schema {
         use super::*;
 
+        fn cargo_feature_navigation_fixture_path() -> std::path::PathBuf {
+            project_root_path().join("crates/tombi-lsp/tests/fixtures/cargo/feature-navigation")
+        }
+
         test_goto_declaration!(
             #[tokio::test]
             async fn dependencies_serde_workspace(
@@ -50,6 +54,100 @@ mod goto_declaration_tests {
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([]);
+        );
+
+        test_goto_declaration!(
+            #[tokio::test]
+            async fn feature_key_collects_same_file_and_workspace_usages(
+                r#"
+                [package]
+                name = "provider"
+                version = "0.1.0"
+                edition = "2024"
+
+                [features]
+                jsonschema█ = []
+                "#,
+                SourcePath(
+                    cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml")
+                ),
+            ) -> Ok([
+                cargo_feature_navigation_fixture_path().join("workspace/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/weak-consumer/Cargo.toml"),
+            ]);
+        );
+
+        test_goto_declaration!(
+            #[tokio::test]
+            async fn feature_key_collects_workspace_usages_when_source_is_unsaved(
+                r#"
+                [package]
+                name = "provider"
+                version = "0.1.0"
+                edition = "2024"
+
+                # unsaved local edit shifts the feature range
+                [features]
+                jsonschema█ = []
+                "#,
+                SourcePath(
+                    cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml")
+                ),
+            ) -> Ok([
+                cargo_feature_navigation_fixture_path().join("workspace/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/weak-consumer/Cargo.toml"),
+            ]);
+        );
+
+        test_goto_declaration!(
+            #[tokio::test]
+            async fn optional_dependency_collects_explicit_dep_usages_only_when_dep_syntax_present(
+                r#"
+                [package]
+                name = "explicit-feature"
+                version = "0.1.0"
+                edition = "2024"
+
+                [dependencies]
+                schemars = { version = "1.0", optional█ = true }
+
+                [features]
+                local = []
+                bundle = ["local", "schemars", "dep:schemars"]
+                "#,
+                SourcePath(cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")),
+            ) -> Ok([
+                cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml"),
+            ]);
+        );
+
+        test_goto_declaration!(
+            #[tokio::test]
+            async fn optional_dependency_collects_implicit_usages_when_dep_syntax_absent(
+                r#"
+                [package]
+                name = "implicit-feature"
+                version = "0.1.0"
+                edition = "2024"
+
+                [dependencies]
+                schemars = { version = "1.0", optional█ = true }
+
+                [features]
+                bundle = ["schemars"]
+                "#,
+                SourcePath(cargo_feature_navigation_fixture_path().join("implicit/Cargo.toml")),
+            ) -> Ok([
+                cargo_feature_navigation_fixture_path().join("implicit/Cargo.toml"),
+            ]);
         );
     }
 

@@ -1,0 +1,10 @@
+[package]
+name = "implicit-feature"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+schemars = { version = "1.0", optional = true }
+
+[features]
+bundle = ["schemars"]
