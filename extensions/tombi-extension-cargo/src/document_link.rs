@@ -1,9 +1,9 @@
 use std::{borrow::Cow, str::FromStr};
 
 use crate::{
-    find_cargo_toml, find_package_cargo_toml_paths, find_workspace_cargo_toml,
-    get_uri_relative_to_cargo_toml, get_workspace_cargo_toml_path, load_cargo_toml,
-    resolve_dependency_feature_string, resolve_feature_table_string,
+    canonicalize_or_original, find_cargo_toml, find_package_cargo_toml_paths,
+    find_workspace_cargo_toml, get_uri_relative_to_cargo_toml, get_workspace_cargo_toml_path,
+    load_cargo_toml, resolve_dependency_feature_string, resolve_feature_table_string,
 };
 use itertools::Itertools;
 use tombi_config::TomlVersion;
@@ -481,6 +481,8 @@ fn document_link_for_feature_table_strings(
         return Vec::new();
     };
 
+    let canonical_cargo_toml_path = canonicalize_or_original(cargo_toml_path.to_path_buf());
+
     features_table
         .values()
         .filter_map(|value| match value {
@@ -499,7 +501,7 @@ fn document_link_for_feature_table_strings(
                 feature_string,
                 toml_version,
             )?;
-            if !feature_document_link_allowed(cargo_toml_path, &target, features) {
+            if !feature_document_link_allowed(&canonical_cargo_toml_path, &target, features) {
                 return None;
             }
             cargo_toml_document_link(feature_string.unquoted_range(), &target)
@@ -609,6 +611,8 @@ fn document_link_for_dependency_table_features<F>(
 where
     F: Fn(&str) -> Vec<Accessor>,
 {
+    let canonical_cargo_toml_path = canonicalize_or_original(cargo_toml_path.to_path_buf());
+
     dependencies
         .key_values()
         .iter()
@@ -633,7 +637,7 @@ where
                             toml_version,
                         )?;
                         if !feature_document_link_allowed(
-                            cargo_toml_path,
+                            &canonical_cargo_toml_path,
                             &target,
                             extension_features,
                         ) {
@@ -662,15 +666,11 @@ fn cargo_toml_document_link(
 }
 
 fn feature_document_link_allowed(
-    cargo_toml_path: &std::path::Path,
+    canonical_cargo_toml_path: &std::path::Path,
     target: &crate::CargoTargetLocation,
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> bool {
-    target.cargo_toml_path
-        == cargo_toml_path
-            .canonicalize()
-            .unwrap_or_else(|_| cargo_toml_path.to_path_buf())
-        || path_document_link_enabled(features)
+    target.cargo_toml_path == canonical_cargo_toml_path || path_document_link_enabled(features)
 }
 
 fn document_link_for_workspace_dependency(
