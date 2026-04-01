@@ -3,8 +3,8 @@ use tombi_document_tree::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::matches_accessors;
 
 use crate::{
-    PyprojectNavigationFeature, classify_pyproject_navigation_feature,
-    find_member_project_toml, find_workspace_pyproject_toml,
+    PyprojectNavigationFeature, classify_pyproject_navigation_feature, find_member_project_toml,
+    find_workspace_pyproject_toml,
     goto_definition::{
         collect_workspace_project_dependency_definitions, get_path_dependency_definition,
     },

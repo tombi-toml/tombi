@@ -25,7 +25,8 @@ pub(crate) use cargo_toml::{
     load_cargo_toml,
 };
 pub(crate) use feature_navigation::{
-    CargoTargetLocation, collect_feature_usage_locations, dependency_feature_string_context,
+    CargoTargetLocation, collect_feature_usage_locations,
+    collect_feature_usage_locations_in_manifest, dependency_feature_string_context,
     feature_key_at_accessors, feature_table_string_at_accessors,
     feature_usage_target_for_feature_key, feature_usage_target_for_optional_dependency,
     optional_dependency_value_at_accessors, resolve_dependency_feature_string,

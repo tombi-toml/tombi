@@ -6,10 +6,9 @@ use tombi_schema_store::{Accessor, matches_accessors};
 use crate::{
     DependencyRequirement, PyprojectNavigationFeature, classify_pyproject_navigation_feature,
     collect_dependency_requirements_from_document_tree, find_dependency_group_key,
-    find_member_project_toml, find_workspace_pyproject_toml,
-    get_project_name, goto_definition_for_member_pyproject_toml,
-    goto_definition_for_workspace_pyproject_toml, load_pyproject_toml_document_tree,
-    parse_requirement, resolve_member_pyproject_toml_path,
+    find_member_project_toml, find_workspace_pyproject_toml, get_project_name,
+    goto_definition_for_member_pyproject_toml, goto_definition_for_workspace_pyproject_toml,
+    load_pyproject_toml_document_tree, parse_requirement, resolve_member_pyproject_toml_path,
 };
 
 pub async fn goto_definition(

@@ -1,9 +1,11 @@
 use std::{borrow::Cow, str::FromStr};
 
 use crate::{
-    canonicalize_or_original, find_cargo_toml, find_package_cargo_toml_paths,
-    find_workspace_cargo_toml, get_uri_relative_to_cargo_toml, get_workspace_cargo_toml_path,
-    load_cargo_toml, resolve_dependency_feature_string, resolve_feature_table_string,
+    canonicalize_or_original,
+    feature_navigation::{CargoFeatureRef, parse_cargo_feature_ref},
+    find_cargo_toml, find_package_cargo_toml_paths, find_workspace_cargo_toml,
+    get_uri_relative_to_cargo_toml, get_workspace_cargo_toml_path, load_cargo_toml,
+    resolve_dependency_feature_string, resolve_feature_table_string,
 };
 use itertools::Itertools;
 use tombi_config::TomlVersion;
@@ -495,6 +497,12 @@ fn document_link_for_feature_table_strings(
             _ => None,
         })
         .filter_map(|feature_string| {
+            if matches!(
+                parse_cargo_feature_ref(feature_string.value()),
+                CargoFeatureRef::OptionalDependency(_)
+            ) {
+                return None;
+            }
             let target = resolve_feature_table_string(
                 document_tree,
                 cargo_toml_path,

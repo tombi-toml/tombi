@@ -23,8 +23,7 @@ pub(crate) use dependency::{
     DependencyRequirement, UV_DEPENDENCY_KEYS,
     collect_all_dependency_requirements_from_document_tree,
     collect_dependency_requirements_from_document_tree, find_dependency_group_key,
-    get_dependency_accessors, include_group_locations,
-    parse_dependency_requirement,
+    get_dependency_accessors, include_group_locations, parse_dependency_requirement,
     parse_requirement,
 };
 pub(crate) use manifest::{

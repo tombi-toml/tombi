@@ -449,11 +449,6 @@ mod document_link_tests {
                     path: cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml"),
                     range: 9:11..9:16,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
-                },
-                {
-                    path: cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml"),
-                    range: 9:32..9:44,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
                 }
             ]));
         );

@@ -192,40 +192,54 @@ pub(crate) fn collect_feature_usage_locations(
     target: &CargoFeatureUsageTarget,
     toml_version: TomlVersion,
 ) -> Vec<CargoTargetLocation> {
+    let current_canonical = canonicalize_or_original(current_cargo_toml_path.to_path_buf());
+    let mut locations = collect_feature_usage_locations_in_manifest(
+        current_document_tree,
+        &current_canonical,
+        target,
+        toml_version,
+    );
     let manifest_paths =
         workspace_manifest_paths(current_document_tree, current_cargo_toml_path, toml_version);
-    let current_canonical = canonicalize_or_original(current_cargo_toml_path.to_path_buf());
 
-    manifest_paths
+    for manifest_path in manifest_paths.into_iter().map(canonicalize_or_original) {
+        if manifest_path == current_canonical {
+            continue;
+        }
+
+        let Some((_, document_tree)) = load_cargo_toml(&manifest_path, toml_version) else {
+            continue;
+        };
+
+        locations.extend(collect_feature_usage_locations_in_manifest(
+            &document_tree,
+            &manifest_path,
+            target,
+            toml_version,
+        ));
+    }
+
+    locations
         .into_iter()
-        .flat_map(|manifest_path| {
-            let manifest_path = canonicalize_or_original(manifest_path);
-            let document_tree = if manifest_path == current_canonical {
-                Some(current_document_tree.clone())
-            } else {
-                load_cargo_toml(&manifest_path, toml_version).map(|(_, tree)| tree)
-            };
-
-            document_tree
-                .map(|document_tree| {
-                    let mut locations = collect_feature_table_usage_locations(
-                        &document_tree,
-                        &manifest_path,
-                        target,
-                        toml_version,
-                    );
-                    locations.extend(collect_dependency_feature_usage_locations(
-                        &document_tree,
-                        &manifest_path,
-                        target,
-                        toml_version,
-                    ));
-                    locations
-                })
-                .unwrap_or_default()
-        })
         .unique_by(|location| (location.cargo_toml_path.clone(), location.range))
         .collect()
+}
+
+pub(crate) fn collect_feature_usage_locations_in_manifest(
+    document_tree: &tombi_document_tree::DocumentTree,
+    cargo_toml_path: &Path,
+    target: &CargoFeatureUsageTarget,
+    toml_version: TomlVersion,
+) -> Vec<CargoTargetLocation> {
+    let mut locations =
+        collect_feature_table_usage_locations(document_tree, cargo_toml_path, target, toml_version);
+    locations.extend(collect_dependency_feature_usage_locations(
+        document_tree,
+        cargo_toml_path,
+        target,
+        toml_version,
+    ));
+    locations
 }
 
 pub(crate) fn feature_table_string_at_accessors<'a>(
