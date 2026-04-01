@@ -37,26 +37,7 @@ fn canonicalize_or_original(path: PathBuf) -> PathBuf {
     path.canonicalize().unwrap_or(path)
 }
 
-fn insert_cargo_toml(
-    cache: &mut HashMap<PathBuf, CachedCargoToml>,
-    path: PathBuf,
-    value: CachedCargoToml,
-) {
-    if !cache.contains_key(&path)
-        && cache.len() >= MAX_DID_OPEN_CARGO_TOML_CACHE_ENTRIES
-        && let Some(evicted_path) = cache.keys().next().cloned()
-    {
-        cache.remove(&evicted_path);
-    }
-
-    cache.insert(path, value);
-}
-
-fn insert_workspace_cargo_toml(
-    cache: &mut HashMap<PathBuf, CachedWorkspaceCargoToml>,
-    path: PathBuf,
-    value: CachedWorkspaceCargoToml,
-) {
+fn insert_bounded<V>(cache: &mut HashMap<PathBuf, V>, path: PathBuf, value: V) {
     if !cache.contains_key(&path)
         && cache.len() >= MAX_DID_OPEN_CARGO_TOML_CACHE_ENTRIES
         && let Some(evicted_path) = cache.keys().next().cloned()
@@ -96,7 +77,7 @@ async fn load_cargo_toml_document_tree(
 
     {
         let mut cache = DID_OPEN_CARGO_TOML_CACHE.write().await;
-        insert_cargo_toml(
+        insert_bounded(
             &mut cache,
             canonicalized_path.clone(),
             CachedCargoToml {
@@ -185,7 +166,7 @@ pub(crate) async fn load_workspace_cargo_toml(
 
     {
         let mut cache = DID_OPEN_WORKSPACE_CARGO_TOML_CACHE.write().await;
-        insert_workspace_cargo_toml(
+        insert_bounded(
             &mut cache,
             cache_key,
             CachedWorkspaceCargoToml {
@@ -199,7 +180,7 @@ pub(crate) async fn load_workspace_cargo_toml(
 
     if let Some((workspace_cargo_toml_path, workspace_document_tree)) = workspace_cargo_toml {
         let mut cache = DID_OPEN_CARGO_TOML_CACHE.write().await;
-        insert_cargo_toml(
+        insert_bounded(
             &mut cache,
             workspace_cargo_toml_path.clone(),
             CachedCargoToml {
@@ -871,7 +852,7 @@ mod tests {
         {
             let mut cargo_toml_cache = DID_OPEN_CARGO_TOML_CACHE.write().await;
             for index in 0..=MAX_DID_OPEN_CARGO_TOML_CACHE_ENTRIES {
-                insert_cargo_toml(
+                insert_bounded(
                     &mut cargo_toml_cache,
                     PathBuf::from(format!("/tmp/cargo-{index}/Cargo.toml")),
                     CachedCargoToml {
@@ -889,7 +870,7 @@ mod tests {
         {
             let mut workspace_cargo_toml_cache = DID_OPEN_WORKSPACE_CARGO_TOML_CACHE.write().await;
             for index in 0..=MAX_DID_OPEN_CARGO_TOML_CACHE_ENTRIES {
-                insert_workspace_cargo_toml(
+                insert_bounded(
                     &mut workspace_cargo_toml_cache,
                     PathBuf::from(format!("/tmp/member-{index}/Cargo.toml")),
                     CachedWorkspaceCargoToml {

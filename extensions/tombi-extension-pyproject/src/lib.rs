@@ -22,8 +22,10 @@ pub use inlay_hint::inlay_hint;
 pub(crate) use dependency::{
     DependencyRequirement, UV_DEPENDENCY_KEYS,
     collect_all_dependency_requirements_from_document_tree,
-    collect_dependency_requirements_from_document_tree, get_dependency_accessors,
-    parse_dependency_requirement, parse_requirement,
+    collect_dependency_requirements_from_document_tree, find_dependency_group_key,
+    get_dependency_accessors, include_group_locations,
+    parse_dependency_requirement,
+    parse_requirement,
 };
 pub(crate) use manifest::{
     PackageLocation, find_workspace_pyproject_toml, get_project_name,
