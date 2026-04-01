@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use pep508_rs::{Requirement, VerbatimUrl, VersionOrUrl};
-use tombi_document_tree::dig_keys;
+use tombi_document_tree::{Value, dig_keys};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 pub(crate) const UV_DEPENDENCY_KEYS: &[&str] = &[
@@ -166,6 +166,55 @@ fn collect_dependency_requirements_from_values<'a>(
         .collect()
 }
 
+pub(crate) fn find_dependency_group_key<'a>(
+    document_tree: &'a tombi_document_tree::DocumentTree,
+    group_name: &str,
+) -> Option<&'a tombi_document_tree::Key> {
+    let (_, Value::Table(dependency_groups)) = dig_keys(document_tree, &["dependency-groups"])?
+    else {
+        return None;
+    };
+
+    let (group_key, _) = dependency_groups.get_key_value(group_name)?;
+    Some(group_key)
+}
+
+pub(crate) fn collect_include_group_values<'a>(
+    document_tree: &'a tombi_document_tree::DocumentTree,
+    group_name: &str,
+) -> Vec<&'a tombi_document_tree::String> {
+    let Some((_, Value::Table(dependency_groups))) =
+        dig_keys(document_tree, &["dependency-groups"])
+    else {
+        return Vec::with_capacity(0);
+    };
+
+    let mut include_group_values = Vec::new();
+    for dependency_group in dependency_groups.values() {
+        let Value::Array(dependencies) = dependency_group else {
+            continue;
+        };
+
+        for dependency in dependencies.values() {
+            let Value::Table(include_group_table) = dependency else {
+                continue;
+            };
+
+            let Some((_, Value::String(include_group))) =
+                include_group_table.get_key_value("include-group")
+            else {
+                continue;
+            };
+
+            if include_group.value() == group_name {
+                include_group_values.push(include_group);
+            }
+        }
+    }
+
+    include_group_values
+}
+
 #[cfg(test)]
 mod tests {
     use tombi_ast::AstNode;
@@ -218,6 +267,31 @@ mod tests {
         assert_eq!(
             get_dependency_accessors(&accessors),
             Some(accessors.as_slice())
+        );
+    }
+
+    #[test]
+    fn finds_dependency_group_key_and_include_group_values() {
+        let document_tree = parse_document_tree(
+            r#"
+            [dependency-groups]
+            dev = [{ include-group = "ci" }]
+            qa = [{ include-group = "ci" }]
+            ci = ["ruff"]
+            "#,
+        );
+
+        let group_key = find_dependency_group_key(&document_tree, "ci")
+            .expect("expected dependency group key to exist");
+        let include_group_values = collect_include_group_values(&document_tree, "ci");
+
+        assert_eq!(group_key.value, "ci");
+        assert_eq!(
+            include_group_values
+                .into_iter()
+                .map(|include_group| include_group.value())
+                .collect::<Vec<_>>(),
+            vec!["ci", "ci"]
         );
     }
 }

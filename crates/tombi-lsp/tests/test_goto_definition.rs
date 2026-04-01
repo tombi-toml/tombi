@@ -403,6 +403,34 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
+            async fn dependency_groups_group_name_lists_include_group_usages(
+                r#"
+                [dependency-groups]
+                dev = [{ include-group = "ci" }]
+                qa = [{ include-group = "ci" }]
+                ci█ = ["ruff"]
+                "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok([
+                project_root_path().join("pyproject.toml"),
+                project_root_path().join("pyproject.toml"),
+            ]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn dependency_groups_include_group_value_jumps_to_group_name(
+                r#"
+                [dependency-groups]
+                dev = [{ include-group = "ci█" }]
+                ci = ["ruff"]
+                "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok([project_root_path().join("pyproject.toml")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
             async fn tool_pyproject_sources_package_with_workspace(
                 r#"
                 [tool.uv.sources]

@@ -3,8 +3,8 @@ use tombi_document_tree::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::matches_accessors;
 
 use crate::{
-    PyprojectNavigationFeature, classify_pyproject_navigation_feature, find_member_project_toml,
-    find_workspace_pyproject_toml,
+    PyprojectNavigationFeature, classify_pyproject_navigation_feature,
+    collect_include_group_values, find_member_project_toml, find_workspace_pyproject_toml,
     goto_definition::{
         collect_workspace_project_dependency_definitions, get_path_dependency_definition,
     },
@@ -56,6 +56,8 @@ pub async fn goto_declaration(
             &pyproject_toml_path,
             toml_version,
         )?
+    } else if matches_accessors!(accessors, ["dependency-groups", _]) {
+        goto_declaration_for_dependency_group(document_tree, accessors, &pyproject_toml_path)?
     } else if matches_accessors!(accessors, ["project", "dependencies", _])
         || matches_accessors!(accessors, ["project", "optional-dependencies", _, _])
         || matches_accessors!(accessors, ["dependency-groups", _, _])
@@ -75,6 +77,28 @@ pub async fn goto_declaration(
     }
 
     Ok(Some(locations))
+}
+
+fn goto_declaration_for_dependency_group(
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[tombi_schema_store::Accessor],
+    pyproject_toml_path: &std::path::Path,
+) -> Result<Vec<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+    let Some(tombi_schema_store::Accessor::Key(group_name)) = accessors.get(1) else {
+        return Ok(Vec::with_capacity(0));
+    };
+
+    let Ok(uri) = tombi_uri::Uri::from_file_path(pyproject_toml_path) else {
+        return Ok(Vec::with_capacity(0));
+    };
+
+    Ok(collect_include_group_values(document_tree, group_name)
+        .into_iter()
+        .map(|include_group| tombi_extension::DefinitionLocation {
+            uri: uri.clone(),
+            range: include_group.unquoted_range(),
+        })
+        .collect())
 }
 
 fn pyproject_navigation_enabled(
