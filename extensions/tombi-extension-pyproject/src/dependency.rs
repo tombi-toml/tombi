@@ -179,6 +179,28 @@ pub(crate) fn find_dependency_group_key<'a>(
     Some(group_key)
 }
 
+pub(crate) fn include_group_locations(
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[tombi_schema_store::Accessor],
+    pyproject_toml_path: &std::path::Path,
+) -> Result<Vec<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+    let Some(tombi_schema_store::Accessor::Key(group_name)) = accessors.get(1) else {
+        return Ok(Vec::with_capacity(0));
+    };
+
+    let Ok(uri) = tombi_uri::Uri::from_file_path(pyproject_toml_path) else {
+        return Ok(Vec::with_capacity(0));
+    };
+
+    Ok(collect_include_group_values(document_tree, group_name)
+        .into_iter()
+        .map(|include_group| tombi_extension::DefinitionLocation {
+            uri: uri.clone(),
+            range: include_group.unquoted_range(),
+        })
+        .collect())
+}
+
 pub(crate) fn collect_include_group_values<'a>(
     document_tree: &'a tombi_document_tree::DocumentTree,
     group_name: &str,
