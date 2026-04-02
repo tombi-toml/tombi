@@ -1,6 +1,30 @@
+use std::path::{Path, PathBuf};
+
 use tombi_test_lib::{
-    cargo_schema_path, pyproject_schema_path, string_format_test_schema_path, tombi_schema_path,
+    cargo_feature_navigation_fixture_path, cargo_schema_path, pyproject_schema_path,
+    string_format_test_schema_path, tombi_schema_path,
 };
+
+fn cargo_feature_usage_hover_description(
+    project_root: &Path,
+    locations: &[(PathBuf, u32)],
+) -> String {
+    let mut lines = vec!["Feature references in this project:".to_string()];
+
+    for (path, line) in locations {
+        let relative_path = path
+            .strip_prefix(project_root)
+            .unwrap_or(path)
+            .to_string_lossy()
+            .replace('\\', "/");
+        let mut uri = tombi_uri::Uri::from_file_path(path).unwrap();
+        uri.set_fragment(Some(&format!("L{line}")));
+        lines.push(format!("- [{relative_path}:{line}]({uri})"));
+    }
+
+    lines.join("\n")
+}
+
 mod hover_keys_value {
     use super::*;
 
@@ -450,6 +474,59 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "workspace.dependencies.serde",
                 "Value": "(String | Table)?"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_feature_key_hover_lists_project_references(
+                r#"
+                [package]
+                name = "provider"
+                version = "0.1.0"
+                edition = "2024"
+
+                [features]
+                jsonschema█ = []
+                "#,
+                SourcePath(
+                    cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml")
+                ),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok({
+                "Keys": "features.jsonschema",
+                "Value": "Array?",
+                "Description": Some(cargo_feature_usage_hover_description(
+                    &cargo_feature_navigation_fixture_path().join("workspace"),
+                    &[
+                        (cargo_feature_navigation_fixture_path().join("workspace/Cargo.toml"), 5),
+                        (
+                            cargo_feature_navigation_fixture_path()
+                                .join("workspace/consumer/Cargo.toml"),
+                            7,
+                        ),
+                        (
+                            cargo_feature_navigation_fixture_path()
+                                .join("workspace/consumer/Cargo.toml"),
+                            10,
+                        ),
+                        (
+                            cargo_feature_navigation_fixture_path()
+                                .join("workspace/renamed-consumer/Cargo.toml"),
+                            7,
+                        ),
+                        (
+                            cargo_feature_navigation_fixture_path()
+                                .join("workspace/renamed-consumer/Cargo.toml"),
+                            10,
+                        ),
+                        (
+                            cargo_feature_navigation_fixture_path()
+                                .join("workspace/weak-consumer/Cargo.toml"),
+                            10,
+                        ),
+                    ],
+                )),
             });
         );
     }
@@ -917,8 +994,22 @@ mod hover_keys_value {
 
                 pretty_assertions::assert_eq!(hover_content.accessors.to_string(), $keys, "Keys are not equal");
                 pretty_assertions::assert_eq!(hover_content.value_type.to_string(), $value_type, "Value type are not equal");
-                $(pretty_assertions::assert_eq!(hover_content.title.as_deref(), $title, "Title is not equal");)?
-                $(pretty_assertions::assert_eq!(hover_content.description.as_deref(), $description, "Description is not equal");)?
+                $(
+                    let expected_title = $title;
+                    pretty_assertions::assert_eq!(
+                        hover_content.title.as_deref(),
+                        expected_title.as_deref(),
+                        "Title is not equal"
+                    );
+                )?
+                $(
+                    let expected_description = $description;
+                    pretty_assertions::assert_eq!(
+                        hover_content.description.as_deref(),
+                        expected_description.as_deref(),
+                        "Description is not equal"
+                    );
+                )?
 
                 Ok(())
             }

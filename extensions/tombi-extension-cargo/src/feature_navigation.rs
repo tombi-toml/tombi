@@ -7,7 +7,8 @@ use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
     canonicalize_or_original, find_cargo_toml, find_package_cargo_toml_paths,
-    find_workspace_cargo_toml, get_workspace_cargo_toml_path, load_cargo_toml,
+    find_workspace_cargo_toml, get_workspace_cargo_toml_path, load_cargo_toml_document_tree,
+    load_workspace_cargo_toml,
     workspace::{extract_exclude_patterns, extract_member_patterns},
 };
 
@@ -186,7 +187,7 @@ pub(crate) fn find_optional_dependency(
     })
 }
 
-pub(crate) fn collect_feature_usage_locations(
+pub(crate) async fn collect_feature_usage_locations(
     current_document_tree: &tombi_document_tree::DocumentTree,
     current_cargo_toml_path: &Path,
     target: &CargoFeatureUsageTarget,
@@ -200,14 +201,17 @@ pub(crate) fn collect_feature_usage_locations(
         toml_version,
     );
     let manifest_paths =
-        workspace_manifest_paths(current_document_tree, current_cargo_toml_path, toml_version);
+        workspace_manifest_paths(current_document_tree, current_cargo_toml_path, toml_version)
+            .await;
 
     for manifest_path in manifest_paths.into_iter().map(canonicalize_or_original) {
         if manifest_path == current_canonical {
             continue;
         }
 
-        let Some((_, document_tree)) = load_cargo_toml(&manifest_path, toml_version) else {
+        let Some((manifest_path, document_tree)) =
+            load_cargo_toml_document_tree(manifest_path, toml_version).await
+        else {
             continue;
         };
 
@@ -218,6 +222,18 @@ pub(crate) fn collect_feature_usage_locations(
             toml_version,
         ));
     }
+
+    sort_and_dedup_feature_usage_locations(locations)
+}
+
+fn sort_and_dedup_feature_usage_locations(
+    mut locations: Vec<CargoTargetLocation>,
+) -> Vec<CargoTargetLocation> {
+    locations.sort_by(|left, right| {
+        left.cargo_toml_path
+            .cmp(&right.cargo_toml_path)
+            .then_with(|| left.range.cmp(&right.range))
+    });
 
     locations
         .into_iter()
@@ -716,7 +732,7 @@ fn dependency_entries<'a>(
     entries
 }
 
-fn workspace_manifest_paths(
+async fn workspace_manifest_paths(
     current_document_tree: &tombi_document_tree::DocumentTree,
     current_cargo_toml_path: &Path,
     toml_version: TomlVersion,
@@ -726,12 +742,13 @@ fn workspace_manifest_paths(
 
     if current_document_tree.contains_key("workspace") {
         collect_workspace_paths(current_document_tree, &current_cargo_toml_path, &mut paths);
-    } else if let Some((workspace_cargo_toml_path, _, workspace_document_tree)) =
-        find_workspace_cargo_toml(
+    } else if let Some((workspace_cargo_toml_path, workspace_document_tree)) =
+        load_workspace_cargo_toml(
             &current_cargo_toml_path,
             get_workspace_cargo_toml_path(current_document_tree),
             toml_version,
         )
+        .await
     {
         collect_workspace_paths(
             &workspace_document_tree,

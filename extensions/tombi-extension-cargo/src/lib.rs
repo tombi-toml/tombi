@@ -35,7 +35,8 @@ pub(crate) use feature_navigation::{
 pub(crate) use workspace::{
     canonicalize_or_original, find_package_cargo_toml_paths, find_workspace_cargo_toml,
     get_workspace_cargo_toml_path, goto_definition_for_crate_cargo_toml,
-    goto_definition_for_workspace_cargo_toml, load_workspace_cargo_toml, sanitize_dependency_key,
+    goto_definition_for_workspace_cargo_toml, load_cargo_toml_document_tree,
+    load_workspace_cargo_toml, sanitize_dependency_key,
 };
 
 pub(crate) enum CargoNavigationFeature {

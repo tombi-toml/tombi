@@ -1,7 +1,8 @@
 use crate::{
-    CargoNavigationFeature, classify_cargo_navigation_feature,
+    CargoNavigationFeature, classify_cargo_navigation_feature, collect_feature_usage_locations,
     collect_feature_usage_locations_in_manifest, dependency_feature_string_context,
-    feature_table_string_at_accessors, feature_usage_target_for_optional_dependency,
+    feature_key_at_accessors, feature_table_string_at_accessors,
+    feature_usage_target_for_feature_key, feature_usage_target_for_optional_dependency,
     goto_definition_for_crate_cargo_toml, goto_definition_for_workspace_cargo_toml,
     optional_dependency_value_at_accessors, resolve_dependency_feature_string,
     resolve_feature_table_string,
@@ -25,6 +26,23 @@ pub async fn goto_definition(
 
     if !cargo_navigation_enabled(features, accessors) {
         return Ok(None);
+    }
+
+    if let Some(target) = feature_key_at_accessors(document_tree, accessors)
+        .and_then(|_| feature_usage_target_for_feature_key(&cargo_toml_path, accessors))
+    {
+        let locations =
+            collect_feature_usage_locations(document_tree, &cargo_toml_path, &target, toml_version)
+                .await
+                .into_iter()
+                .filter_map(|location| location.definition_location())
+                .collect::<Vec<_>>();
+
+        if locations.is_empty() {
+            return Ok(None);
+        }
+
+        return Ok(Some(locations));
     }
 
     if let Some(feature_string) = feature_table_string_at_accessors(document_tree, accessors)

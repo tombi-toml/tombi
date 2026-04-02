@@ -48,7 +48,7 @@ fn insert_bounded<V>(cache: &mut HashMap<PathBuf, V>, path: PathBuf, value: V) {
     cache.insert(path, value);
 }
 
-async fn load_cargo_toml_document_tree(
+pub(crate) async fn load_cargo_toml_document_tree(
     cargo_toml_path: PathBuf,
     toml_version: TomlVersion,
 ) -> Option<(PathBuf, tombi_document_tree::DocumentTree)> {

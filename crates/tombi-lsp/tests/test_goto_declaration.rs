@@ -1,14 +1,10 @@
-use tombi_test_lib::project_root_path;
+use tombi_test_lib::{cargo_feature_navigation_fixture_path, project_root_path};
 
 mod goto_declaration_tests {
     use super::*;
 
     mod cargo_schema {
         use super::*;
-
-        fn cargo_feature_navigation_fixture_path() -> std::path::PathBuf {
-            project_root_path().join("crates/tombi-lsp/tests/fixtures/cargo/feature-navigation")
-        }
 
         test_goto_declaration!(
             #[tokio::test]
