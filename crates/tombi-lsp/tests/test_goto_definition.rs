@@ -1,4 +1,4 @@
-use tombi_test_lib::project_root_path;
+use tombi_test_lib::{cargo_feature_navigation_fixture_path, project_root_path};
 
 mod goto_definition_tests {
     use super::*;
@@ -101,10 +101,6 @@ mod goto_definition_tests {
 
     mod cargo_schema {
         use super::*;
-
-        fn cargo_feature_navigation_fixture_path() -> std::path::PathBuf {
-            project_root_path().join("crates/tombi-lsp/tests/fixtures/cargo/feature-navigation")
-        }
 
         test_goto_definition!(
             #[tokio::test]
@@ -419,6 +415,31 @@ mod goto_definition_tests {
                 SourcePath(cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")),
             ) -> Ok([
                 cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")
+            ]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn feature_key_collects_same_file_and_workspace_usages(
+                r#"
+                [package]
+                name = "provider"
+                version = "0.1.0"
+                edition = "2024"
+
+                [features]
+                jsonschema█ = []
+                "#,
+                SourcePath(
+                    cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml")
+                ),
+            ) -> Ok([
+                cargo_feature_navigation_fixture_path().join("workspace/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/weak-consumer/Cargo.toml"),
             ]);
         );
 

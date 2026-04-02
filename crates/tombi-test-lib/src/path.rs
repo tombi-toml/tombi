@@ -18,6 +18,10 @@ pub fn tombi_schema_path() -> PathBuf {
         .join("tombi.json")
 }
 
+pub fn cargo_feature_navigation_fixture_path() -> PathBuf {
+    project_root_path().join("crates/tombi-lsp/tests/fixtures/cargo/feature-navigation")
+}
+
 pub fn cargo_schema_path() -> PathBuf {
     project_root_path()
         .join(tombi_uri::schemastore_hostname!())

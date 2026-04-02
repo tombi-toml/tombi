@@ -7,7 +7,8 @@ use tombi_extension::{HoverMetadata, fetch_cached_remote_json};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
-    dependency_package_name, find_cargo_toml, find_workspace_cargo_toml,
+    collect_feature_usage_locations, dependency_package_name, feature_key_at_accessors,
+    feature_usage_target_for_feature_key, find_cargo_toml, find_workspace_cargo_toml,
     get_workspace_cargo_toml_path, load_cargo_toml, sanitize_dependency_key,
 };
 
@@ -36,6 +37,20 @@ pub async fn hover(
         return Ok(None);
     }
 
+    let Ok(cargo_toml_path) = text_document_uri.to_file_path() else {
+        return Ok(None);
+    };
+
+    if let Some(metadata) = feature_key_hover_metadata(
+        document_tree,
+        accessors,
+        position,
+        &cargo_toml_path,
+        toml_version,
+    ) {
+        return Ok(Some(metadata));
+    }
+
     let Some(dependency_accessors) = get_dependency_accessors(accessors) else {
         return Ok(None);
     };
@@ -43,10 +58,6 @@ pub async fn hover(
     if !is_hovering_dependency_key(document_tree, dependency_accessors, position) {
         return Ok(None);
     }
-
-    let Ok(cargo_toml_path) = text_document_uri.to_file_path() else {
-        return Ok(None);
-    };
 
     let Some(Accessor::Key(dependency_key)) = dependency_accessors.last() else {
         return Ok(None);
@@ -73,6 +84,99 @@ pub async fn hover(
 
     let package_name = dependency_package_name(dependency_key, dependency_value);
     fetch_crates_io_metadata(package_name, offline, cache_options).await
+}
+
+fn feature_key_hover_metadata(
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[Accessor],
+    position: tombi_text::Position,
+    cargo_toml_path: &Path,
+    toml_version: TomlVersion,
+) -> Option<HoverMetadata> {
+    let feature_key = feature_key_at_accessors(document_tree, accessors)?;
+    if !feature_key.range().contains(position) {
+        return None;
+    }
+
+    let target = feature_usage_target_for_feature_key(cargo_toml_path, accessors)?;
+    let usage_locations =
+        collect_feature_usage_locations(document_tree, cargo_toml_path, &target, toml_version);
+    if usage_locations.is_empty() {
+        return None;
+    }
+
+    Some(HoverMetadata {
+        title: None,
+        description: Some(render_feature_usage_links(
+            document_tree,
+            cargo_toml_path,
+            usage_locations.as_slice(),
+            toml_version,
+        )),
+    })
+}
+
+fn render_feature_usage_links(
+    document_tree: &tombi_document_tree::DocumentTree,
+    cargo_toml_path: &Path,
+    usage_locations: &[crate::CargoTargetLocation],
+    toml_version: TomlVersion,
+) -> String {
+    let project_root = feature_usage_project_root(document_tree, cargo_toml_path, toml_version);
+    let mut lines = vec!["Feature references in this project:".to_string()];
+
+    for location in usage_locations {
+        let line = location.range.start.line + 1;
+        let label = format_feature_usage_label(&project_root, &location.cargo_toml_path, line);
+
+        match tombi_uri::Uri::from_file_path(&location.cargo_toml_path) {
+            Ok(mut uri) => {
+                uri.set_fragment(Some(&format!("L{line}")));
+                lines.push(format!("- [{label}]({uri})"));
+            }
+            Err(_) => lines.push(format!("- `{label}`")),
+        }
+    }
+
+    lines.join("\n")
+}
+
+fn feature_usage_project_root(
+    document_tree: &tombi_document_tree::DocumentTree,
+    cargo_toml_path: &Path,
+    toml_version: TomlVersion,
+) -> std::path::PathBuf {
+    if document_tree.contains_key("workspace") {
+        return cargo_toml_path
+            .parent()
+            .unwrap_or(cargo_toml_path)
+            .to_path_buf();
+    }
+
+    find_workspace_cargo_toml(
+        cargo_toml_path,
+        get_workspace_cargo_toml_path(document_tree),
+        toml_version,
+    )
+    .and_then(|(workspace_cargo_toml_path, _, _)| {
+        workspace_cargo_toml_path.parent().map(Path::to_path_buf)
+    })
+    .unwrap_or_else(|| {
+        cargo_toml_path
+            .parent()
+            .unwrap_or(cargo_toml_path)
+            .to_path_buf()
+    })
+}
+
+fn format_feature_usage_label(project_root: &Path, cargo_toml_path: &Path, line: u32) -> String {
+    let relative_path = cargo_toml_path
+        .strip_prefix(project_root)
+        .unwrap_or(cargo_toml_path)
+        .to_string_lossy()
+        .replace('\\', "/");
+
+    format!("{relative_path}:{line}")
 }
 
 fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
