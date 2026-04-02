@@ -47,7 +47,9 @@ pub async fn hover(
         position,
         &cargo_toml_path,
         toml_version,
-    ) {
+    )
+    .await
+    {
         return Ok(Some(metadata));
     }
 
@@ -86,7 +88,7 @@ pub async fn hover(
     fetch_crates_io_metadata(package_name, offline, cache_options).await
 }
 
-fn feature_key_hover_metadata(
+async fn feature_key_hover_metadata(
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     position: tombi_text::Position,
@@ -100,7 +102,8 @@ fn feature_key_hover_metadata(
 
     let target = feature_usage_target_for_feature_key(cargo_toml_path, accessors)?;
     let usage_locations =
-        collect_feature_usage_locations(document_tree, cargo_toml_path, &target, toml_version);
+        collect_feature_usage_locations(document_tree, cargo_toml_path, &target, toml_version)
+            .await;
     if usage_locations.is_empty() {
         return None;
     }
@@ -147,10 +150,12 @@ fn feature_usage_project_root(
     toml_version: TomlVersion,
 ) -> std::path::PathBuf {
     if document_tree.contains_key("workspace") {
-        return cargo_toml_path
-            .parent()
-            .unwrap_or(cargo_toml_path)
-            .to_path_buf();
+        return crate::canonicalize_or_original(
+            cargo_toml_path
+                .parent()
+                .unwrap_or(cargo_toml_path)
+                .to_path_buf(),
+        );
     }
 
     find_workspace_cargo_toml(
@@ -161,11 +166,14 @@ fn feature_usage_project_root(
     .and_then(|(workspace_cargo_toml_path, _, _)| {
         workspace_cargo_toml_path.parent().map(Path::to_path_buf)
     })
+    .map(crate::canonicalize_or_original)
     .unwrap_or_else(|| {
-        cargo_toml_path
-            .parent()
-            .unwrap_or(cargo_toml_path)
-            .to_path_buf()
+        crate::canonicalize_or_original(
+            cargo_toml_path
+                .parent()
+                .unwrap_or(cargo_toml_path)
+                .to_path_buf(),
+        )
     })
 }
 

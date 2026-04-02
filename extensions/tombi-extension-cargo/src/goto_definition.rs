@@ -33,6 +33,7 @@ pub async fn goto_definition(
     {
         let locations =
             collect_feature_usage_locations(document_tree, &cargo_toml_path, &target, toml_version)
+                .await
                 .into_iter()
                 .filter_map(|location| location.definition_location())
                 .collect::<Vec<_>>();

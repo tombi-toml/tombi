@@ -5,14 +5,10 @@ use tombi_test_lib::{
     string_format_test_schema_path, tombi_schema_path,
 };
 
-fn leak_string(value: String) -> &'static str {
-    Box::leak(value.into_boxed_str())
-}
-
 fn cargo_feature_usage_hover_description(
     project_root: &Path,
     locations: &[(PathBuf, u32)],
-) -> &'static str {
+) -> String {
     let mut lines = vec!["Feature references in this project:".to_string()];
 
     for (path, line) in locations {
@@ -26,7 +22,7 @@ fn cargo_feature_usage_hover_description(
         lines.push(format!("- [{relative_path}:{line}]({uri})"));
     }
 
-    leak_string(lines.join("\n"))
+    lines.join("\n")
 }
 
 mod hover_keys_value {
@@ -507,22 +503,22 @@ mod hover_keys_value {
                         (
                             cargo_feature_navigation_fixture_path()
                                 .join("workspace/consumer/Cargo.toml"),
-                            10,
+                            7,
                         ),
                         (
                             cargo_feature_navigation_fixture_path()
                                 .join("workspace/consumer/Cargo.toml"),
-                            7,
-                        ),
-                        (
-                            cargo_feature_navigation_fixture_path()
-                                .join("workspace/renamed-consumer/Cargo.toml"),
                             10,
                         ),
                         (
                             cargo_feature_navigation_fixture_path()
                                 .join("workspace/renamed-consumer/Cargo.toml"),
                             7,
+                        ),
+                        (
+                            cargo_feature_navigation_fixture_path()
+                                .join("workspace/renamed-consumer/Cargo.toml"),
+                            10,
                         ),
                         (
                             cargo_feature_navigation_fixture_path()
@@ -998,8 +994,22 @@ mod hover_keys_value {
 
                 pretty_assertions::assert_eq!(hover_content.accessors.to_string(), $keys, "Keys are not equal");
                 pretty_assertions::assert_eq!(hover_content.value_type.to_string(), $value_type, "Value type are not equal");
-                $(pretty_assertions::assert_eq!(hover_content.title.as_deref(), $title, "Title is not equal");)?
-                $(pretty_assertions::assert_eq!(hover_content.description.as_deref(), $description, "Description is not equal");)?
+                $(
+                    let expected_title = $title;
+                    pretty_assertions::assert_eq!(
+                        hover_content.title.as_deref(),
+                        expected_title.as_deref(),
+                        "Title is not equal"
+                    );
+                )?
+                $(
+                    let expected_description = $description;
+                    pretty_assertions::assert_eq!(
+                        hover_content.description.as_deref(),
+                        expected_description.as_deref(),
+                        "Description is not equal"
+                    );
+                )?
 
                 Ok(())
             }
