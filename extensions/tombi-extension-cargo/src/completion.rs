@@ -844,10 +844,11 @@ async fn resolve_registry_dependency_version(
     version_requirement: &str,
     toml_version: TomlVersion,
 ) -> Option<String> {
-    load_cached_cargo_lock(cargo_toml_path, toml_version)
-        .await
-        .and_then(|lock| lock.resolve_dependency_version(crate_name, version_requirement))
-        .or_else(|| exact_crates_io_version(version_requirement))
+    if let Some(lock) = load_cached_cargo_lock(cargo_toml_path, toml_version).await {
+        return lock.resolve_dependency_version(crate_name, version_requirement);
+    }
+
+    exact_crates_io_version(version_requirement)
 }
 
 /// Fetch crate features from local path Cargo.toml
