@@ -1171,6 +1171,7 @@
     },
     "Extensions": {
       "title": "Extension options",
+      "description": "🚧 Currently, third-party extensions are not supported,\nand only built-in extensions are provided. 🚧",
       "type": "object",
       "properties": {
         "tombi-toml/cargo": {

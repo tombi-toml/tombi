@@ -23,6 +23,9 @@ pub use pyproject::*;
 pub use tombi::*;
 
 /// # Extension options
+///
+/// 🚧 Currently, third-party extensions are not supported,
+/// and only built-in extensions are provided. 🚧
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
