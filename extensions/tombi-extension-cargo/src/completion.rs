@@ -844,13 +844,11 @@ async fn resolve_registry_dependency_version(
     version_requirement: &str,
     toml_version: TomlVersion,
 ) -> Option<String> {
-    if let Some(version) = exact_crates_io_version(version_requirement) {
-        return Some(version);
+    if let Some(lock) = load_cached_cargo_lock(cargo_toml_path, toml_version).await {
+        return lock.resolve_dependency_version(crate_name, version_requirement);
     }
 
-    load_cached_cargo_lock(cargo_toml_path, toml_version)
-        .await?
-        .unique_dependency_version(crate_name)
+    exact_crates_io_version(version_requirement)
 }
 
 /// Fetch crate features from local path Cargo.toml
@@ -1056,6 +1054,10 @@ mod tests {
     fn exact_crates_io_version_accepts_plain_and_pinned_versions() {
         assert_eq!(exact_crates_io_version("1.2.3"), Some("1.2.3".to_string()));
         assert_eq!(exact_crates_io_version("=1.2.3"), Some("1.2.3".to_string()));
+        assert_eq!(
+            exact_crates_io_version("=0.9.12+spec-1.1.0"),
+            Some("0.9.12+spec-1.1.0".to_string())
+        );
         assert_eq!(exact_crates_io_version("^1.2"), None);
     }
 
@@ -1094,6 +1096,49 @@ version = "0.5.1"
             )
             .await,
             Some("0.5.1".to_string())
+        );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn resolve_registry_dependency_version_prefers_lockfile_version_with_source_suffix() {
+        let _cache_home = TestCacheHome::new();
+        let temp_dir = tempfile::tempdir().unwrap();
+        let cargo_toml_path = temp_dir.path().join("Cargo.toml");
+        let cargo_lock_path = temp_dir.path().join("Cargo.lock");
+        fs::write(
+            &cargo_toml_path,
+            "[package]\nname = \"demo\"\nversion = \"0.1.0\"\n",
+        )
+        .unwrap();
+        fs::write(
+            &cargo_lock_path,
+            r#"
+version = 4
+
+[[package]]
+name = "demo"
+version = "0.1.0"
+dependencies = [
+    "toml 0.9.12+spec-1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "toml"
+version = "0.9.12+spec-1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            resolve_registry_dependency_version(
+                &cargo_toml_path,
+                "toml",
+                "=0.9.10",
+                TomlVersion::default(),
+            )
+            .await,
+            Some("0.9.12+spec-1.1.0".to_string())
         );
     }
 }
