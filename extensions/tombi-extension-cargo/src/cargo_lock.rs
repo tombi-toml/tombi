@@ -107,8 +107,8 @@ impl CargoLock {
         crate_name: &str,
         version_requirement: &str,
     ) -> Option<String> {
-        exact_crates_io_version(version_requirement)
-            .or_else(|| self.unique_dependency_version(crate_name))
+        self.unique_dependency_version(crate_name)
+            .or_else(|| exact_crates_io_version(version_requirement))
     }
 
     pub(crate) fn unique_dependency_version(&self, dependency_name: &str) -> Option<String> {
@@ -235,6 +235,8 @@ impl CargoLockDependency {
     }
 
     fn parse(value: &str) -> Self {
+        let value = strip_lockfile_dependency_source(value.trim());
+
         if let Some((name, version)) = value.rsplit_once(' ')
             && version.as_bytes().first().is_some_and(u8::is_ascii_digit)
         {
@@ -249,6 +251,14 @@ impl CargoLockDependency {
             version: None,
         }
     }
+}
+
+fn strip_lockfile_dependency_source(value: &str) -> &str {
+    value
+        .rsplit_once(" (")
+        .filter(|(_, source)| source.ends_with(')'))
+        .map(|(dependency, _)| dependency)
+        .unwrap_or(value)
 }
 
 impl CargoLockPackage {
@@ -305,6 +315,19 @@ mod tests {
     }
 
     #[test]
+    fn parses_lockfile_dependency_with_explicit_version_and_source() {
+        let dependency = CargoLockDependency::parse(
+            "toml 0.9.12+spec-1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+        );
+
+        assert_eq!(dependency.name, "toml");
+        assert_eq!(
+            dependency.version.as_deref(),
+            Some("0.9.12+spec-1.1.0")
+        );
+    }
+
+    #[test]
     fn resolves_unique_dependency_version_from_lockfile() {
         let cargo_lock = CargoLock::new(vec![
             CargoLockPackage {
@@ -358,5 +381,29 @@ mod tests {
         ]);
 
         assert_eq!(cargo_lock.unique_dependency_version("faststr"), None);
+    }
+
+    #[test]
+    fn prefers_lockfile_version_over_exact_requirement() {
+        let cargo_lock = CargoLock::new(vec![
+            CargoLockPackage {
+                name: "demo".to_string(),
+                version: "0.1.0".to_string(),
+                dependencies: vec![CargoLockDependency {
+                    name: "toml".to_string(),
+                    version: Some("0.9.12+spec-1.1.0".to_string()),
+                }],
+            },
+            CargoLockPackage {
+                name: "toml".to_string(),
+                version: "0.9.12+spec-1.1.0".to_string(),
+                dependencies: Vec::new(),
+            },
+        ]);
+
+        assert_eq!(
+            cargo_lock.resolve_dependency_version("toml", "=0.9.10"),
+            Some("0.9.12+spec-1.1.0".to_string())
+        );
     }
 }
