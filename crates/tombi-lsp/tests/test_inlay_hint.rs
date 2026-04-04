@@ -342,7 +342,7 @@ async fn inlay_hint_for_registry_default_features_is_rendered()
     tombi_test_lib::init_log();
 
     write_cached_response(
-        "https://crates.io/api/v1/crates/serde_json/1.0.140",
+        "https://crates.io/api/v1/crates/serde_json/1.0.142",
         r#"{"version":{"features":{"default":["std","alloc"],"preserve_order":["indexmap","std"],"std":["memchr/std","serde/std"]}}}"#,
     )
     .await;
