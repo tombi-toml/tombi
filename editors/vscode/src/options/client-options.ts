@@ -1,6 +1,9 @@
 import * as vscode from "vscode";
 import type * as languageclient from "vscode-languageclient";
-import { SUPPORT_TOML_LANGUAGES } from "@/extension";
+import {
+  SUPPORT_TOMBI_CONFIG_FILENAMES,
+  SUPPORT_TOML_LANGUAGES,
+} from "@/extension";
 
 export function clientOptions(
   workspaceFolder?: vscode.WorkspaceFolder,
@@ -12,11 +15,10 @@ export function clientOptions(
     ]),
     workspaceFolder,
     synchronize: {
-      // Notify the server about file changes to tombi.toml and JSON files contained in the workspace
-      fileEvents: [
-        vscode.workspace.createFileSystemWatcher("**/tombi.toml"),
-        vscode.workspace.createFileSystemWatcher("**/pyproject.toml"),
-      ],
+      // Notify the server about config file changes contained in the workspace.
+      fileEvents: SUPPORT_TOMBI_CONFIG_FILENAMES.map((filename) =>
+        vscode.workspace.createFileSystemWatcher(`**/${filename}`),
+      ),
     },
   } as languageclient.LanguageClientOptions;
 

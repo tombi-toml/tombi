@@ -23,6 +23,7 @@ export const EXTENSION_ID = "tombi";
 export const EXTENSION_NAME = "Tombi";
 export const SUPPORT_TOML_LANGUAGES = ["toml", "cargoLock"];
 export const SUPPORT_TOMBI_CONFIG_FILENAMES = [
+  ".tombi.toml",
   "tombi.toml",
   "pyproject.toml",
   "tombi/config.toml",
