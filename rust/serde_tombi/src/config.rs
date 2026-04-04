@@ -120,7 +120,10 @@ pub fn load_with_path_and_level(
                     log::debug!("Project config found at {:?}", &config_path);
 
                     let Some(config) = try_from_path(&config_path)? else {
-                        unreachable!("project config should always be parsed successfully.");
+                        unreachable!(
+                            "project config should always be parsed successfully: {:?}",
+                            config_path
+                        );
                     };
 
                     return Ok((config, Some(config_path), ConfigLevel::Project));
@@ -248,33 +251,32 @@ fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBu
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn temp_test_dir(test_name: &str) -> std::path::PathBuf {
-        let unique = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-
-        std::env::temp_dir().join(format!("serde-tombi-{test_name}-{unique}"))
-    }
+    use tempfile::TempDir;
 
     fn write_file(path: &std::path::Path, contents: &str) {
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, contents).unwrap();
     }
 
+    fn temp_test_dir(test_name: &str) -> TempDir {
+        tempfile::Builder::new()
+            .prefix(test_name)
+            .tempdir()
+            .unwrap()
+    }
+
     #[test]
     fn loads_project_config_from_dot_config_tombi_toml_before_pyproject() {
         let temp_dir = temp_test_dir("dot-config-tombi");
-        let nested_dir = temp_dir.join("workspace/nested");
+        let nested_dir = temp_dir.path().join("workspace/nested");
 
         std::fs::create_dir_all(&nested_dir).unwrap();
         write_file(
-            &temp_dir.join(".config/tombi.toml"),
+            &temp_dir.path().join(".config/tombi.toml"),
             "toml-version = \"v1.1.0\"\n",
         );
         write_file(
-            &temp_dir.join("pyproject.toml"),
+            &temp_dir.path().join("pyproject.toml"),
             "[tool.tombi]\ntoml-version = \"v1.0.0\"\n",
         );
 
@@ -282,24 +284,25 @@ mod tests {
             load_with_path_and_level(Some(nested_dir)).unwrap();
 
         assert_eq!(config.toml_version, Some(TomlVersion::V1_1_0));
-        assert_eq!(config_path, Some(temp_dir.join(".config/tombi.toml")));
+        assert_eq!(
+            config_path,
+            Some(temp_dir.path().join(".config/tombi.toml"))
+        );
         assert_eq!(config_level, ConfigLevel::Project);
-
-        std::fs::remove_dir_all(temp_dir).unwrap();
     }
 
     #[test]
     fn ignores_dot_tombi_toml_inside_dot_config() {
         let temp_dir = temp_test_dir("ignore-dot-config-dot-tombi");
-        let nested_dir = temp_dir.join("workspace/nested");
+        let nested_dir = temp_dir.path().join("workspace/nested");
 
         std::fs::create_dir_all(&nested_dir).unwrap();
         write_file(
-            &temp_dir.join(".config/.tombi.toml"),
+            &temp_dir.path().join(".config/.tombi.toml"),
             "toml-version = \"v1.1.0\"\n",
         );
         write_file(
-            &temp_dir.join(".config/tombi.toml"),
+            &temp_dir.path().join(".config/tombi.toml"),
             "toml-version = \"v1.0.0\"\n",
         );
 
@@ -307,9 +310,10 @@ mod tests {
             load_with_path_and_level(Some(nested_dir)).unwrap();
 
         assert_eq!(config.toml_version, Some(TomlVersion::V1_0_0));
-        assert_eq!(config_path, Some(temp_dir.join(".config/tombi.toml")));
+        assert_eq!(
+            config_path,
+            Some(temp_dir.path().join(".config/tombi.toml"))
+        );
         assert_eq!(config_level, ConfigLevel::Project);
-
-        std::fs::remove_dir_all(temp_dir).unwrap();
     }
 }

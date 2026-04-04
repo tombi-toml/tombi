@@ -3027,6 +3027,7 @@ dependencies = [
  "log",
  "pretty_assertions",
  "serde",
+ "tempfile",
  "textwrap",
  "thiserror 2.0.12",
  "tokio",
