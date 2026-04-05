@@ -72,11 +72,6 @@
         "title": "Offline Mode",
         "description": "Use Tombi without internet connection.",
         "path": "/docs/cli/offline-mode"
-      },
-      {
-        "title": "Environment Variables",
-        "description": "Configure Tombi using environment variables.",
-        "path": "/docs/cli/environment-variables"
       }
     ]
   },
@@ -143,6 +138,11 @@
     "title": "Configuration",
     "description": "Configure Tombi using tombi.toml or pyproject.toml.",
     "path": "/docs/configuration"
+  },
+  {
+    "title": "Environment Variables",
+    "description": "Configure Tombi using environment variables.",
+    "path": "/docs/environment-variables"
   },
   {
     "title": "JSON Schema",
