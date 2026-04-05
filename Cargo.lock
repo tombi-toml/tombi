@@ -3582,6 +3582,7 @@ version = "0.0.0-dev"
 dependencies = [
  "dirs",
  "log",
+ "tempfile",
  "thiserror 2.0.12",
  "tokio",
  "tombi-uri",

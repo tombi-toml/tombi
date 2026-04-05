@@ -5,11 +5,11 @@ pub use options::{DEFAULT_CACHE_TTL, Options};
 pub const CACHE_INDEX_FILE_NAME: &str = "__index__.json";
 
 pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
-    if let Ok(tombi_cache_home) = std::env::var("TOMBI_CACHE_HOME") {
+    if let Some(tombi_cache_home) = std::env::var_os("TOMBI_CACHE_HOME") {
         return ensure_cache_dir(std::path::PathBuf::from(tombi_cache_home)).await;
     }
 
-    if let Ok(xdg_cache_home) = std::env::var("XDG_CACHE_HOME") {
+    if let Some(xdg_cache_home) = std::env::var_os("XDG_CACHE_HOME") {
         let mut cache_dir_path = std::path::PathBuf::from(xdg_cache_home);
         cache_dir_path.push("tombi");
 
@@ -259,18 +259,12 @@ mod tests {
 
     #[tokio::test(flavor = "current_thread")]
     async fn prefers_tombi_cache_home_over_xdg_cache_home() {
-        let tombi_cache_home = std::env::temp_dir().join(format!(
-            "tombi-cache-home-{}",
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        ));
-        let _cache_home = TestCacheHome::with_env(Some(&tombi_cache_home));
+        let tombi_cache_home = tempfile::tempdir().unwrap();
+        let _cache_home = TestCacheHome::with_env(Some(tombi_cache_home.path()));
 
         let cache_path = get_tombi_cache_dir_path().await.unwrap();
 
-        assert_eq!(cache_path, tombi_cache_home);
+        assert_eq!(cache_path, tombi_cache_home.path());
     }
 
     #[tokio::test(flavor = "current_thread")]
