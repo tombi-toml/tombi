@@ -2,6 +2,15 @@
 
 Tombi CLI supports several environment variables to configure its behavior.
 
+## TOMBI_CACHE_HOME
+
+Set the cache directory path for JSON Catalog/Schemas explicitly.
+
+When set, Tombi stores and reads cached schemas from this directory before considering any XDG or home-directory based fallback. This is useful in hermetic environments, such as Nix pipelines, where the cache location must be provided explicitly.
+
+- Type: `Path`
+- Default: unset
+
 ## TOMBI_OFFLINE
 
 Disable network access and use only local schema cache.

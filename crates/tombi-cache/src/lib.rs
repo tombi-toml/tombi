@@ -5,30 +5,22 @@ pub use options::{DEFAULT_CACHE_TTL, Options};
 pub const CACHE_INDEX_FILE_NAME: &str = "__index__.json";
 
 pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
+    if let Ok(tombi_cache_home) = std::env::var("TOMBI_CACHE_HOME") {
+        return ensure_cache_dir(std::path::PathBuf::from(tombi_cache_home)).await;
+    }
+
     if let Ok(xdg_cache_home) = std::env::var("XDG_CACHE_HOME") {
         let mut cache_dir_path = std::path::PathBuf::from(xdg_cache_home);
         cache_dir_path.push("tombi");
 
-        if !cache_dir_path.is_dir()
-            && let Err(error) = tokio::fs::create_dir_all(&cache_dir_path).await
-        {
-            log::warn!("Failed to create cache directory: {error}");
-            return None;
-        }
-        return Some(cache_dir_path);
+        return ensure_cache_dir(cache_dir_path).await;
     }
 
     if let Some(home_dir) = dirs::home_dir() {
-        let mut cache_dir_path = home_dir.clone();
+        let mut cache_dir_path = home_dir;
         cache_dir_path.push(".cache");
         cache_dir_path.push("tombi");
-        if !cache_dir_path.is_dir()
-            && let Err(error) = std::fs::create_dir_all(&cache_dir_path)
-        {
-            log::warn!("Failed to create cache directory: {error}");
-            return None;
-        }
-        return Some(cache_dir_path);
+        return ensure_cache_dir(cache_dir_path).await;
     }
 
     None
@@ -150,6 +142,15 @@ pub async fn refresh_cache() -> Result<bool, crate::Error> {
     Ok(false)
 }
 
+async fn ensure_cache_dir(cache_dir_path: std::path::PathBuf) -> Option<std::path::PathBuf> {
+    if let Err(error) = tokio::fs::create_dir_all(&cache_dir_path).await {
+        log::warn!("Failed to create cache directory: {error}");
+        return None;
+    }
+
+    Some(cache_dir_path)
+}
+
 #[cfg(test)]
 mod tests {
     use std::{
@@ -164,12 +165,17 @@ mod tests {
 
     struct TestCacheHome {
         _guard: MutexGuard<'static, ()>,
-        previous: Option<OsString>,
+        previous_tombi: Option<OsString>,
+        previous_xdg: Option<OsString>,
         temp_dir: std::path::PathBuf,
     }
 
     impl TestCacheHome {
         fn new() -> Self {
+            Self::with_env(None)
+        }
+
+        fn with_env(tombi_cache_home: Option<&std::path::Path>) -> Self {
             let guard = CACHE_ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
             let unique = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -177,15 +183,22 @@ mod tests {
                 .as_nanos();
             let temp_dir = std::env::temp_dir().join(format!("tombi-cache-test-{unique}"));
             std::fs::create_dir_all(&temp_dir).unwrap();
-            let previous = std::env::var_os("XDG_CACHE_HOME");
+            let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
+            let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
             // SAFETY: Tests serialize access with a process-wide mutex so env mutation
             // remains scoped to one test at a time.
             unsafe {
+                if let Some(tombi_cache_home) = tombi_cache_home {
+                    std::env::set_var("TOMBI_CACHE_HOME", tombi_cache_home);
+                } else {
+                    std::env::remove_var("TOMBI_CACHE_HOME");
+                }
                 std::env::set_var("XDG_CACHE_HOME", &temp_dir);
             }
             Self {
                 _guard: guard,
-                previous,
+                previous_tombi,
+                previous_xdg,
                 temp_dir,
             }
         }
@@ -196,7 +209,13 @@ mod tests {
             // SAFETY: Tests serialize access with a process-wide mutex so env mutation
             // remains scoped to one test at a time.
             unsafe {
-                if let Some(previous) = &self.previous {
+                if let Some(previous) = &self.previous_tombi {
+                    std::env::set_var("TOMBI_CACHE_HOME", previous);
+                } else {
+                    std::env::remove_var("TOMBI_CACHE_HOME");
+                }
+
+                if let Some(previous) = &self.previous_xdg {
                     std::env::set_var("XDG_CACHE_HOME", previous);
                 } else {
                     std::env::remove_var("XDG_CACHE_HOME");
@@ -236,5 +255,30 @@ mod tests {
         let cache_path = get_cache_file_path(&uri).await.unwrap();
 
         assert_eq!(cache_path.file_name().unwrap(), "example.toml");
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn prefers_tombi_cache_home_over_xdg_cache_home() {
+        let tombi_cache_home = std::env::temp_dir().join(format!(
+            "tombi-cache-home-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let _cache_home = TestCacheHome::with_env(Some(&tombi_cache_home));
+
+        let cache_path = get_tombi_cache_dir_path().await.unwrap();
+
+        assert_eq!(cache_path, tombi_cache_home);
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn falls_back_to_xdg_cache_home_when_tombi_cache_home_is_unset() {
+        let cache_home = TestCacheHome::new();
+
+        let cache_path = get_tombi_cache_dir_path().await.unwrap();
+
+        assert_eq!(cache_path, cache_home.temp_dir.join("tombi"));
     }
 }
