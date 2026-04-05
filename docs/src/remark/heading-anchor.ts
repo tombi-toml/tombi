@@ -4,12 +4,11 @@ import { visit } from "unist-util-visit";
 // Function to convert text to URL-safe slugs
 function slugify(text: string): string {
   return text
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
     .toLowerCase()
-    .replace(/\./g, "-") // Replace dots with hyphens
-    .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/[^a-z0-9-]/g, "") // Remove non-alphanumeric characters except hyphens
-    .replace(/-+/g, "-") // Replace consecutive hyphens with a single hyphen
-    .replace(/^-+|-+$/g, ""); // Remove hyphens at the beginning and end
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 // Recursively extract textual content from a heading node

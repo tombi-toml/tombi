@@ -89,6 +89,12 @@ Behavior:
 - registry dependencies can show crate metadata fetched from crates.io
 - in offline mode, remote crates.io lookups are skipped and only local workspace/path metadata is used
 
+### Inlay Hints
+
+The extension can show inline hints for workspace-aware dependency values in `Cargo.toml`.
+
+Current hints cover resolved dependency versions, `default-features`, and workspace-inherited values so you can inspect the effective dependency state without leaving the manifest.
+
 ### Go to Definition
 For example, suppose you have a `Cargo.toml` like the one below:
 

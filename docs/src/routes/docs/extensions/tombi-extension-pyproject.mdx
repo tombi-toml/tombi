@@ -61,6 +61,12 @@ Behavior:
 - registry dependencies can show package metadata fetched from PyPI
 - in offline mode, remote PyPI lookups are skipped and only local workspace/path metadata is used
 
+### Inlay Hints
+
+The extension can show inline hints for workspace-managed dependency versions in `pyproject.toml`.
+
+These hints make it easier to confirm which shared dependency version is being applied from the workspace without manually tracing the workspace configuration.
+
 ### Go to Definition
 
 For example, suppose you have a `pyproject.toml` like the one below:
