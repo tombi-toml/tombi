@@ -244,7 +244,8 @@ mod tests {
 
     struct TestCacheHome {
         _guard: MutexGuard<'static, ()>,
-        previous: Option<OsString>,
+        previous_tombi: Option<OsString>,
+        previous_xdg: Option<OsString>,
         _temp_dir: tempfile::TempDir,
     }
 
@@ -252,15 +253,18 @@ mod tests {
         fn new() -> Self {
             let guard = CACHE_ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
             let temp_dir = tempfile::tempdir().unwrap();
-            let previous = std::env::var_os("XDG_CACHE_HOME");
+            let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
+            let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
             // SAFETY: Tests serialize access with a process-wide mutex so env mutation
             // remains scoped to one test at a time.
             unsafe {
+                std::env::remove_var("TOMBI_CACHE_HOME");
                 std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
             }
             Self {
                 _guard: guard,
-                previous,
+                previous_tombi,
+                previous_xdg,
                 _temp_dir: temp_dir,
             }
         }
@@ -271,7 +275,13 @@ mod tests {
             // SAFETY: Tests serialize access with a process-wide mutex so env mutation
             // remains scoped to one test at a time.
             unsafe {
-                if let Some(previous) = &self.previous {
+                if let Some(previous) = &self.previous_tombi {
+                    std::env::set_var("TOMBI_CACHE_HOME", previous);
+                } else {
+                    std::env::remove_var("TOMBI_CACHE_HOME");
+                }
+
+                if let Some(previous) = &self.previous_xdg {
                     std::env::set_var("XDG_CACHE_HOME", previous);
                 } else {
                     std::env::remove_var("XDG_CACHE_HOME");

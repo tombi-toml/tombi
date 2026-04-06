@@ -34,7 +34,8 @@ fn test_lock() -> &'static Mutex<()> {
 
 struct TestCacheHome {
     _guard: MutexGuard<'static, ()>,
-    previous: Option<OsString>,
+    previous_tombi: Option<OsString>,
+    previous_xdg: Option<OsString>,
     _temp_dir: TempDir,
 }
 
@@ -44,13 +45,16 @@ impl TestCacheHome {
             .lock()
             .unwrap_or_else(|error| error.into_inner());
         let temp_dir = tempfile::tempdir().unwrap();
-        let previous = std::env::var_os("XDG_CACHE_HOME");
+        let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
+        let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
         unsafe {
+            std::env::remove_var("TOMBI_CACHE_HOME");
             std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
         }
         Self {
             _guard: guard,
-            previous,
+            previous_tombi,
+            previous_xdg,
             _temp_dir: temp_dir,
         }
     }
@@ -59,7 +63,13 @@ impl TestCacheHome {
 impl Drop for TestCacheHome {
     fn drop(&mut self) {
         unsafe {
-            if let Some(previous) = &self.previous {
+            if let Some(previous) = &self.previous_tombi {
+                std::env::set_var("TOMBI_CACHE_HOME", previous);
+            } else {
+                std::env::remove_var("TOMBI_CACHE_HOME");
+            }
+
+            if let Some(previous) = &self.previous_xdg {
                 std::env::set_var("XDG_CACHE_HOME", previous);
             } else {
                 std::env::remove_var("XDG_CACHE_HOME");

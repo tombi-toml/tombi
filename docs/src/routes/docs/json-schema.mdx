@@ -317,8 +317,9 @@ It removes **all file caches** and fetches the latest schema over the network fo
 
 ### Cache Location Search Priority
 
-1. `$XDG_CACHE_HOME/tombi`
-2. `~/.cache/tombi`
+1. `$TOMBI_CACHE_HOME`
+2. `$XDG_CACHE_HOME/tombi`
+3. `~/.cache/tombi`
 
 ## Associate Schema
 VSCode supports associating a TOML schema with a file match pattern.
