@@ -357,7 +357,15 @@
           "x-tombi-table-keys-order": "version-sort"
         }
       },
-      "additionalProperties": true,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/definitions/Lint"
+        },
+        "x-tombi-additional-key-label": "lint_name",
+        "x-tombi-table-keys-order": "version-sort"
+      },
+      "x-tombi-additional-key-label": "tool_name",
       "x-tombi-table-keys-order": "version-sort"
     },
     "Lto": {
