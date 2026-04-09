@@ -17,7 +17,7 @@ pub enum ReferenceKind {
     RecursiveRef,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Referable<T> {
     Resolved {
         schema_uri: Option<SchemaUri>,
@@ -29,6 +29,7 @@ pub enum Referable<T> {
         title: Option<String>,
         description: Option<String>,
         default: Option<tombi_json::Value>,
+        examples: Option<Vec<tombi_json::Value>>,
         deprecated: Option<bool>,
     },
 }
@@ -115,6 +116,10 @@ impl Referable<ValueSchema> {
                     .get("description")
                     .and_then(|description| description.as_str().map(|s| s.to_string())),
                 default: object.get("default").cloned().map(Into::into),
+                examples: object
+                    .get("examples")
+                    .and_then(|examples| examples.as_array())
+                    .map(|array| array.items.iter().map(Into::into).collect()),
                 deprecated: object
                     .get("deprecated")
                     .and_then(|deprecated| deprecated.as_bool()),
@@ -208,6 +213,7 @@ impl Referable<ValueSchema> {
                     title,
                     description,
                     default,
+                    examples,
                     deprecated,
                 } => {
                     let dynamic_target = match kind {
@@ -228,13 +234,14 @@ impl Referable<ValueSchema> {
                             )
                             .await?
                         {
-                        apply_ref_annotations(
-                            &mut referable_schema,
-                            title.as_ref(),
-                            description.as_ref(),
-                            default.as_ref(),
-                            *deprecated,
-                        );
+                            apply_ref_annotations(
+                                &mut referable_schema,
+                                title.as_ref(),
+                                description.as_ref(),
+                                default.as_ref(),
+                                examples.as_ref(),
+                                *deprecated,
+                            );
                             *self = referable_schema;
                             return self
                                 .resolve_with_dynamic_scope(
@@ -260,6 +267,7 @@ impl Referable<ValueSchema> {
                             title.as_ref(),
                             description.as_ref(),
                             default.as_ref(),
+                            examples.as_ref(),
                             *deprecated,
                         );
 
@@ -289,6 +297,9 @@ impl Referable<ValueSchema> {
                                 }
                                 if let Some(default) = default {
                                     resolved_schema.set_default(Some(default.clone()));
+                                }
+                                if let Some(examples) = examples {
+                                    resolved_schema.set_examples(Some(examples.clone()));
                                 }
                                 if let Some(deprecated) = deprecated {
                                     resolved_schema.set_deprecated(*deprecated);
@@ -322,6 +333,10 @@ impl Referable<ValueSchema> {
                         if let Some(default) = default {
                             let value_schema = Arc::make_mut(&mut resolved_value);
                             value_schema.set_default(Some(default.clone()));
+                        }
+                        if let Some(examples) = examples {
+                            let value_schema = Arc::make_mut(&mut resolved_value);
+                            value_schema.set_examples(Some(examples.clone()));
                         }
                         if let Some(deprecated) = deprecated {
                             let value_schema = Arc::make_mut(&mut resolved_value);
@@ -439,6 +454,7 @@ fn apply_ref_annotations(
     title: Option<&String>,
     description: Option<&String>,
     default: Option<&tombi_json::Value>,
+    examples: Option<&Vec<tombi_json::Value>>,
     deprecated: Option<bool>,
 ) {
     if let Referable::Resolved {
@@ -455,6 +471,9 @@ fn apply_ref_annotations(
         }
         if let Some(default) = default {
             value_schema.set_default(Some(default.clone()));
+        }
+        if let Some(examples) = examples {
+            value_schema.set_examples(Some(examples.clone()));
         }
         if let Some(deprecated) = deprecated {
             value_schema.set_deprecated(deprecated);
@@ -1068,6 +1087,7 @@ mod test {
             title: None,
             description: None,
             default: None,
+            examples: None,
             deprecated: None,
         };
 

@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use tombi_test_lib::{
     cargo_feature_navigation_fixture_path, cargo_schema_path, pyproject_schema_path,
-    string_format_test_schema_path, tombi_schema_path,
+    ref_sibling_annotations_test_schema_path, string_format_test_schema_path, tombi_schema_path,
 };
 
 fn cargo_feature_usage_hover_description(
@@ -241,6 +241,22 @@ mod hover_keys_value {
                 "Value": "(String | Table)?",
                 "Title": Some("Absolute Paths"),
                 "Default": "\"allow\""
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn ref_sibling_examples_are_displayed(
+                r#"
+                name = "█allow"
+                "#,
+                SchemaPath(ref_sibling_annotations_test_schema_path()),
+            ) -> Ok({
+                "Keys": "name",
+                "Value": "String?",
+                "Title": Some("Ref Sibling Annotations"),
+                "Default": "\"allow\"",
+                "Examples": ["\"warn\"", "\"deny\""]
             });
         );
 
@@ -791,6 +807,7 @@ mod hover_keys_value {
             $(, "Title": $title:expr)?
             $(, "Description": $description:expr)?
             $(, "Default": $default:expr)?
+            $(, "Examples": [$($examples:expr),* $(,)?])?
             $(,)?
         });) => {
             #[tokio::test]
@@ -1038,6 +1055,18 @@ mod hover_keys_value {
                             .as_deref(),
                         Some(expected_default),
                         "Default is not equal"
+                    );
+                )?
+                $(
+                    let expected_examples = vec![$($examples),*];
+                    pretty_assertions::assert_eq!(
+                        hover_content
+                            .constraints
+                            .as_ref()
+                            .and_then(|constraints| constraints.examples.as_ref())
+                            .map(|examples| examples.iter().map(ToString::to_string).collect::<Vec<_>>()),
+                        Some(expected_examples.into_iter().map(ToString::to_string).collect()),
+                        "Examples are not equal"
                     );
                 )?
 

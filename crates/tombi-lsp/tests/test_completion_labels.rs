@@ -650,6 +650,7 @@ mod completion_labels {
                 "recursive-anchor-ref-test.schema.json",
                 "recursive-defs-any-of-test.schema.json",
                 "recursive-schema.schema.json",
+                "ref-sibling-annotations-test.schema.json",
                 "string-format-test.schema.json",
                 "subschema-singleton-label-test.schema.json",
                 "table-const-enum-test.schema.json",

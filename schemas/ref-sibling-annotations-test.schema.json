@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "$ref": "#/$defs/name",
+      "default": "allow",
+      "examples": ["warn", "deny"]
+    }
+  },
+  "$defs": {
+    "name": {
+      "type": "string",
+      "title": "Ref Sibling Annotations",
+      "description": "String schema used to verify $ref sibling annotations."
+    }
+  }
+}

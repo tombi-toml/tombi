@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use itertools::Itertools;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUri};
 
@@ -34,10 +35,6 @@ where
         let mut constraints = None;
         let mut enum_values = Vec::new();
         let mut result_accessors = tombi_schema_store::Accessors::from(accessors.to_vec());
-        let default = all_of_schema
-            .default
-            .as_ref()
-            .and_then(|default| DisplayValue::try_from(default).ok());
 
         let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
             &all_of_schema.schemas,
@@ -130,7 +127,11 @@ where
             tombi_schema_store::ValueType::AllOf(value_type_set.into_iter().collect())
         };
 
-        if let Some(default) = default {
+        if let Some(default) = all_of_schema
+            .default
+            .as_ref()
+            .and_then(|default| DisplayValue::try_from(default).ok())
+        {
             if let Some(constraints) = constraints.as_mut() {
                 if constraints.default.is_none() {
                     constraints.default = Some(default);
@@ -138,6 +139,26 @@ where
             } else {
                 constraints = Some(ValueConstraints {
                     default: Some(default),
+                    ..Default::default()
+                });
+            }
+        }
+
+        if let Some(all_of_examples) = all_of_schema.examples.as_ref() {
+            let all_of_examples = all_of_examples
+                .iter()
+                .filter_map(|example| DisplayValue::try_from(example).ok())
+                .collect_vec();
+
+            if let Some(constraints) = constraints.as_mut() {
+                if let Some(examples) = constraints.examples.as_mut() {
+                    examples.extend(all_of_examples);
+                } else {
+                    constraints.examples = Some(all_of_examples);
+                }
+            } else {
+                constraints = Some(ValueConstraints {
+                    examples: Some(all_of_examples),
                     ..Default::default()
                 });
             }
@@ -184,10 +205,6 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
             let mut title_description_set = tombi_hashmap::HashSet::new();
             let mut value_type_set = tombi_hashmap::IndexSet::new();
             let mut enum_values = Vec::new();
-            let default = self
-                .default
-                .as_ref()
-                .and_then(|default| DisplayValue::try_from(default).ok());
 
             let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
                 &self.schemas,
@@ -264,7 +281,11 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 range: None,
             };
 
-            if let Some(default) = default {
+            if let Some(default) = self
+                .default
+                .as_ref()
+                .and_then(|default| DisplayValue::try_from(default).ok())
+            {
                 if let Some(constraints) = hover_value_content.constraints.as_mut() {
                     if constraints.default.is_none() {
                         constraints.default = Some(default);
@@ -272,6 +293,26 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 } else {
                     hover_value_content.constraints = Some(ValueConstraints {
                         default: Some(default),
+                        ..Default::default()
+                    });
+                }
+            }
+
+            if let Some(all_of_examples) = self.examples.as_ref() {
+                let all_of_examples = all_of_examples
+                    .iter()
+                    .filter_map(|example| DisplayValue::try_from(example).ok())
+                    .collect_vec();
+
+                if let Some(constraints) = hover_value_content.constraints.as_mut() {
+                    if let Some(examples) = constraints.examples.as_mut() {
+                        examples.extend(all_of_examples);
+                    } else {
+                        constraints.examples = Some(all_of_examples);
+                    }
+                } else {
+                    hover_value_content.constraints = Some(ValueConstraints {
+                        examples: Some(all_of_examples),
                         ..Default::default()
                     });
                 }

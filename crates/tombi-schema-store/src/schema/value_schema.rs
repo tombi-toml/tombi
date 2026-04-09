@@ -574,27 +574,6 @@ impl ValueSchema {
         }
     }
 
-    pub(crate) fn set_deprecated(&mut self, deprecated: bool) {
-        match self {
-            Self::Boolean(boolean) => boolean.deprecated = Some(deprecated),
-            Self::Integer(integer) => integer.deprecated = Some(deprecated),
-            Self::Float(float) => float.deprecated = Some(deprecated),
-            Self::String(string) => string.deprecated = Some(deprecated),
-            Self::LocalDate(local_date) => local_date.deprecated = Some(deprecated),
-            Self::LocalDateTime(local_date_time) => local_date_time.deprecated = Some(deprecated),
-            Self::LocalTime(local_time) => local_time.deprecated = Some(deprecated),
-            Self::OffsetDateTime(offset_date_time) => {
-                offset_date_time.deprecated = Some(deprecated)
-            }
-            Self::Array(array) => array.deprecated = Some(deprecated),
-            Self::Table(table) => table.deprecated = Some(deprecated),
-            Self::OneOf(one_of) => one_of.deprecated = Some(deprecated),
-            Self::AnyOf(any_of) => any_of.deprecated = Some(deprecated),
-            Self::AllOf(all_of) => all_of.deprecated = Some(deprecated),
-            Self::Null | Self::Anything(_) | Self::Nothing(_) => {}
-        }
-    }
-
     pub fn title(&self) -> Option<&str> {
         match self {
             ValueSchema::Boolean(schema) => schema.title.as_deref(),
@@ -703,6 +682,118 @@ impl ValueSchema {
             ValueSchema::AnyOf(schema) => schema.default = Some(default),
             ValueSchema::AllOf(schema) => schema.default = Some(default),
             ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => {}
+        }
+    }
+
+    pub fn set_examples(&mut self, examples: Option<Vec<tombi_json::Value>>) {
+        let Some(examples) = examples else {
+            return;
+        };
+
+        match self {
+            ValueSchema::Boolean(schema) => {
+                schema.examples = Some(
+                    examples
+                        .iter()
+                        .filter_map(tombi_json::Value::as_bool)
+                        .collect(),
+                );
+            }
+            ValueSchema::Integer(schema) => {
+                schema.examples = Some(
+                    examples
+                        .iter()
+                        .filter_map(tombi_json::Value::as_i64)
+                        .collect(),
+                );
+            }
+            ValueSchema::Float(schema) => {
+                schema.examples = Some(
+                    examples
+                        .iter()
+                        .filter_map(tombi_json::Value::as_f64)
+                        .collect(),
+                );
+            }
+            ValueSchema::String(schema) => {
+                schema.examples = Some(
+                    examples
+                        .iter()
+                        .filter_map(tombi_json::Value::as_str)
+                        .map(ToString::to_string)
+                        .collect(),
+                );
+            }
+            ValueSchema::LocalDate(schema) => {
+                schema.examples = Some(
+                    examples
+                        .iter()
+                        .filter_map(tombi_json::Value::as_str)
+                        .map(ToString::to_string)
+                        .collect(),
+                );
+            }
+            ValueSchema::LocalDateTime(schema) => {
+                schema.examples = Some(
+                    examples
+                        .iter()
+                        .filter_map(tombi_json::Value::as_str)
+                        .map(ToString::to_string)
+                        .collect(),
+                );
+            }
+            ValueSchema::LocalTime(schema) => {
+                schema.examples = Some(
+                    examples
+                        .iter()
+                        .filter_map(tombi_json::Value::as_str)
+                        .map(ToString::to_string)
+                        .collect(),
+                );
+            }
+            ValueSchema::OffsetDateTime(schema) => {
+                schema.examples = Some(
+                    examples
+                        .iter()
+                        .filter_map(tombi_json::Value::as_str)
+                        .map(ToString::to_string)
+                        .collect(),
+                );
+            }
+            ValueSchema::Array(schema) => schema.examples = Some(examples),
+            ValueSchema::Table(schema) => {
+                schema.examples = Some(
+                    examples
+                        .into_iter()
+                        .filter_map(|example| example.as_object().cloned())
+                        .collect(),
+                );
+            }
+            ValueSchema::OneOf(schema) => schema.examples = Some(examples),
+            ValueSchema::AnyOf(schema) => schema.examples = Some(examples),
+            ValueSchema::AllOf(schema) => schema.examples = Some(examples),
+            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => {}
+        }
+    }
+
+    pub(crate) fn set_deprecated(&mut self, deprecated: bool) {
+        match self {
+            Self::Boolean(boolean) => boolean.deprecated = Some(deprecated),
+            Self::Integer(integer) => integer.deprecated = Some(deprecated),
+            Self::Float(float) => float.deprecated = Some(deprecated),
+            Self::String(string) => string.deprecated = Some(deprecated),
+            Self::LocalDate(local_date) => local_date.deprecated = Some(deprecated),
+            Self::LocalDateTime(local_date_time) => local_date_time.deprecated = Some(deprecated),
+            Self::LocalTime(local_time) => local_time.deprecated = Some(deprecated),
+            Self::OffsetDateTime(offset_date_time) => {
+                offset_date_time.deprecated = Some(deprecated)
+            }
+            Self::Array(array) => array.deprecated = Some(deprecated),
+            Self::Table(table) => table.deprecated = Some(deprecated),
+            Self::OneOf(one_of) => one_of.deprecated = Some(deprecated),
+            Self::AnyOf(any_of) => any_of.deprecated = Some(deprecated),
+            Self::AllOf(all_of) => all_of.deprecated = Some(deprecated),
+            Self::Null | Self::Anything(_) | Self::Nothing(_) => {}
         }
     }
 
@@ -922,21 +1013,18 @@ impl ValueSchema {
                 Self::OneOf(OneOfSchema {
                     title,
                     description,
-                    default,
                     schemas,
                     ..
                 })
                 | Self::AnyOf(AnyOfSchema {
                     title,
                     description,
-                    default,
                     schemas,
                     ..
                 })
                 | Self::AllOf(AllOfSchema {
                     title,
                     description,
-                    default,
                     schemas,
                     ..
                 }) => {
@@ -969,10 +1057,9 @@ impl ValueSchema {
                             .await;
 
                         for schema_candidate in &mut schema_candidates {
-                            if title.is_some() || description.is_some() || default.is_some() {
+                            if title.is_some() || description.is_some() {
                                 schema_candidate.set_title(title.clone());
                                 schema_candidate.set_description(description.clone());
-                                schema_candidate.set_default(default.clone());
                             }
                         }
 
