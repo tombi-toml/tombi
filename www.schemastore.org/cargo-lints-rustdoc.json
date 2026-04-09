@@ -92,12 +92,7 @@
         },
         "priority": {
           "description": "The priority that controls which lints or [lint groups](https://doc.rust-lang.org/rustc/lints/groups.html) override other lint groups. Lower (particularly negative) numbers have lower priority, being overridden by higher numbers, and show up first on the command-line to tools like rustc.",
-          "type": "integer",
-          "x-taplo": {
-            "links": {
-              "key": "https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-lints-section"
-            }
-          }
+          "type": "integer"
         }
       },
       "x-tombi-table-keys-order": "schema"
@@ -122,20 +117,7 @@
         "deny",
         "warn",
         "allow"
-      ],
-      "x-taplo": {
-        "docs": {
-          "enumValues": [
-            "`forbid` is the same as `deny` in that a lint at this level will produce an error, but unlike the `deny` level, the `forbid` level can not be overridden to be anything lower than an error. However, lint levels may still be capped with [`--cap-lints`](https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints) so `rustc --cap-lints warn` will make lints set to `forbid` just warn.",
-            "The `deny` lint level produces an error if you violate the lint.",
-            "The `warn` lint level produces a warning if you violate the lint.",
-            "The `allow` lint level ignores violations of the lint."
-          ]
-        },
-        "links": {
-          "key": "https://doc.rust-lang.org/rustc/lints/levels.html"
-        }
-      }
+      ]
     }
   }
 }
