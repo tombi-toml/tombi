@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use tombi_test_lib::{
     cargo_feature_navigation_fixture_path, cargo_schema_path, pyproject_schema_path,
-    string_format_test_schema_path, tombi_schema_path,
+    ref_sibling_annotations_test_schema_path, string_format_test_schema_path, tombi_schema_path,
 };
 
 fn cargo_feature_usage_hover_description(
@@ -225,6 +225,38 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "package.name",
                 "Value": "String"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_lints_clippy_absolute_paths_default(
+                r#"
+                [lints.clippy]
+                absolute_paths█ = "allow"
+                "#,
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok({
+                "Keys": "lints.clippy.absolute_paths",
+                "Value": "(String | Table)?",
+                "Title": Some("Absolute Paths"),
+                "Default": "\"allow\""
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn ref_sibling_examples_are_displayed(
+                r#"
+                name = "█allow"
+                "#,
+                SchemaPath(ref_sibling_annotations_test_schema_path()),
+            ) -> Ok({
+                "Keys": "name",
+                "Value": "String?",
+                "Title": Some("Ref Sibling Annotations"),
+                "Default": "\"allow\"",
+                "Examples": ["\"warn\"", "\"deny\""]
             });
         );
 
@@ -774,6 +806,8 @@ mod hover_keys_value {
             "Value": $value_type:expr
             $(, "Title": $title:expr)?
             $(, "Description": $description:expr)?
+            $(, "Default": $default:expr)?
+            $(, "Examples": [$($examples:expr),* $(,)?])?
             $(,)?
         });) => {
             #[tokio::test]
@@ -1008,6 +1042,31 @@ mod hover_keys_value {
                         hover_content.description.as_deref(),
                         expected_description.as_deref(),
                         "Description is not equal"
+                    );
+                )?
+                $(
+                    let expected_default = $default;
+                    pretty_assertions::assert_eq!(
+                        hover_content
+                            .constraints
+                            .as_ref()
+                            .and_then(|constraints| constraints.default.as_ref())
+                            .map(ToString::to_string)
+                            .as_deref(),
+                        Some(expected_default),
+                        "Default is not equal"
+                    );
+                )?
+                $(
+                    let expected_examples = vec![$($examples),*];
+                    pretty_assertions::assert_eq!(
+                        hover_content
+                            .constraints
+                            .as_ref()
+                            .and_then(|constraints| constraints.examples.as_ref())
+                            .map(|examples| examples.iter().map(ToString::to_string).collect::<Vec<_>>()),
+                        Some(expected_examples.into_iter().map(ToString::to_string).collect()),
+                        "Examples are not equal"
                     );
                 )?
 
