@@ -2,11 +2,11 @@
   "$id": "tombi://www.schemastore.org/cargo-lints-rustdoc.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Rustdoc Lints",
-  "description": "Lint settings for rustdoc individual lints and lint groups.",
+  "description": "Lint settings for rustdoc individual lints and the `all` lint.",
   "type": "object",
   "properties": {
     "bare_urls": {
-      "title": "Bare Urls",
+      "title": "Bare URLs",
       "description": "detects URLs that are not hyperlinks.",
       "default": "warn",
       "$ref": "#/definitions/Lint"
@@ -24,7 +24,7 @@
       "$ref": "#/definitions/Lint"
     },
     "invalid_html_tags": {
-      "title": "Invalid Html Tags",
+      "title": "Invalid HTML Tags",
       "description": "detects invalid HTML tags in doc comments.",
       "default": "warn",
       "$ref": "#/definitions/Lint"

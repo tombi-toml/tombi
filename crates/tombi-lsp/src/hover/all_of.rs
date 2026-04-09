@@ -150,17 +150,19 @@ where
                 .filter_map(|example| DisplayValue::try_from(example).ok())
                 .collect_vec();
 
-            if let Some(constraints) = constraints.as_mut() {
-                if let Some(examples) = constraints.examples.as_mut() {
-                    examples.extend(all_of_examples);
+            if !all_of_examples.is_empty() {
+                if let Some(constraints) = constraints.as_mut() {
+                    if let Some(examples) = constraints.examples.as_mut() {
+                        examples.extend(all_of_examples);
+                    } else {
+                        constraints.examples = Some(all_of_examples);
+                    }
                 } else {
-                    constraints.examples = Some(all_of_examples);
+                    constraints = Some(ValueConstraints {
+                        examples: Some(all_of_examples),
+                        ..Default::default()
+                    });
                 }
-            } else {
-                constraints = Some(ValueConstraints {
-                    examples: Some(all_of_examples),
-                    ..Default::default()
-                });
             }
         }
 
@@ -304,17 +306,19 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                     .filter_map(|example| DisplayValue::try_from(example).ok())
                     .collect_vec();
 
-                if let Some(constraints) = hover_value_content.constraints.as_mut() {
-                    if let Some(examples) = constraints.examples.as_mut() {
-                        examples.extend(all_of_examples);
+                if !all_of_examples.is_empty() {
+                    if let Some(constraints) = hover_value_content.constraints.as_mut() {
+                        if let Some(examples) = constraints.examples.as_mut() {
+                            examples.extend(all_of_examples);
+                        } else {
+                            constraints.examples = Some(all_of_examples);
+                        }
                     } else {
-                        constraints.examples = Some(all_of_examples);
+                        hover_value_content.constraints = Some(ValueConstraints {
+                            examples: Some(all_of_examples),
+                            ..Default::default()
+                        });
                     }
-                } else {
-                    hover_value_content.constraints = Some(ValueConstraints {
-                        examples: Some(all_of_examples),
-                        ..Default::default()
-                    });
                 }
             }
 
