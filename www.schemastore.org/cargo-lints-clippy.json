@@ -121,6 +121,7 @@
     "assign_ops": {
       "title": "Assign Ops",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "assigning_clones": {
@@ -1037,6 +1038,7 @@
     "extend_from_slice": {
       "title": "Extend From Slice",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "extend_with_drain": {
@@ -2296,6 +2298,7 @@
     "match_on_vec_items": {
       "title": "Match On Vec Items",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "match_overlapping_arm": {
@@ -2397,6 +2400,7 @@
     "misaligned_transmute": {
       "title": "Misaligned Transmute",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "mismatching_type_param_order": {
@@ -3050,6 +3054,7 @@
     "option_map_or_err_ok": {
       "title": "Option Map Or Err Ok",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "option_map_or_none": {
@@ -3295,6 +3300,7 @@
     "pub_enum_variant_names": {
       "title": "Pub Enum Variant Names",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "pub_underscore_fields": {
@@ -3348,6 +3354,7 @@
     "range_step_by_zero": {
       "title": "Range Step By Zero",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "range_zip_with_len": {
@@ -3569,6 +3576,7 @@
     "regex_macro": {
       "title": "Regex Macro",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "renamed_function_params": {
@@ -3598,6 +3606,7 @@
     "replace_consts": {
       "title": "Replace Consts",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "repr_packed_without_abi": {
@@ -3801,6 +3810,7 @@
     "should_assert_eq": {
       "title": "Should Assert Eq",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "should_implement_trait": {
@@ -3998,6 +4008,7 @@
     "string_to_string": {
       "title": "String To String",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "strlen_on_c_strings": {
@@ -4639,6 +4650,7 @@
     "unsafe_vector_initialization": {
       "title": "Unsafe Vector Initialization",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "unseparated_literal_suffix": {
@@ -4656,11 +4668,13 @@
     "unstable_as_mut_slice": {
       "title": "Unstable As Mut Slice",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "unstable_as_slice": {
       "title": "Unstable As Slice",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "unused_async": {
@@ -4672,6 +4686,7 @@
     "unused_collect": {
       "title": "Unused Collect",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "unused_enumerate_index": {
@@ -4947,6 +4962,7 @@
     "wrong_pub_self_convention": {
       "title": "Wrong Pub Self Convention",
       "description": "Nothing. This lint has been deprecated",
+      "deprecated": true,
       "$ref": "#/definitions/Lint"
     },
     "wrong_self_convention": {
