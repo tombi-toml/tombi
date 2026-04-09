@@ -230,6 +230,22 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn cargo_lints_clippy_absolute_paths_default(
+                r#"
+                [lints.clippy]
+                absolute_paths█ = "allow"
+                "#,
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok({
+                "Keys": "lints.clippy.absolute_paths",
+                "Value": "(String | Table)?",
+                "Title": Some("Absolute Paths"),
+                "Default": "\"allow\""
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn cargo_package_readme(
                 r#"
                 [package]
@@ -774,6 +790,7 @@ mod hover_keys_value {
             "Value": $value_type:expr
             $(, "Title": $title:expr)?
             $(, "Description": $description:expr)?
+            $(, "Default": $default:expr)?
             $(,)?
         });) => {
             #[tokio::test]
@@ -1008,6 +1025,19 @@ mod hover_keys_value {
                         hover_content.description.as_deref(),
                         expected_description.as_deref(),
                         "Description is not equal"
+                    );
+                )?
+                $(
+                    let expected_default = $default;
+                    pretty_assertions::assert_eq!(
+                        hover_content
+                            .constraints
+                            .as_ref()
+                            .and_then(|constraints| constraints.default.as_ref())
+                            .map(ToString::to_string)
+                            .as_deref(),
+                        Some(expected_default),
+                        "Default is not equal"
                     );
                 )?
 

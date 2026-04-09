@@ -671,6 +671,41 @@ impl ValueSchema {
         }
     }
 
+    pub fn set_default(&mut self, default: Option<tombi_json::Value>) {
+        let Some(default) = default else {
+            return;
+        };
+
+        match self {
+            ValueSchema::Boolean(schema) => schema.default = default.as_bool(),
+            ValueSchema::Integer(schema) => schema.default = default.as_i64(),
+            ValueSchema::Float(schema) => schema.default = default.as_f64(),
+            ValueSchema::String(schema) => {
+                schema.default = default.as_str().map(ToString::to_string);
+            }
+            ValueSchema::LocalDate(schema) => {
+                schema.default = default.as_str().map(ToString::to_string);
+            }
+            ValueSchema::LocalDateTime(schema) => {
+                schema.default = default.as_str().map(ToString::to_string);
+            }
+            ValueSchema::LocalTime(schema) => {
+                schema.default = default.as_str().map(ToString::to_string);
+            }
+            ValueSchema::OffsetDateTime(schema) => {
+                schema.default = default.as_str().map(ToString::to_string);
+            }
+            ValueSchema::Array(schema) => schema.default = Some(default),
+            ValueSchema::Table(schema) => {
+                schema.default = default.as_object().cloned();
+            }
+            ValueSchema::OneOf(schema) => schema.default = Some(default),
+            ValueSchema::AnyOf(schema) => schema.default = Some(default),
+            ValueSchema::AllOf(schema) => schema.default = Some(default),
+            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => {}
+        }
+    }
+
     pub fn range(&self) -> tombi_text::Range {
         match self {
             ValueSchema::Null => tombi_text::Range::default(),
@@ -887,18 +922,21 @@ impl ValueSchema {
                 Self::OneOf(OneOfSchema {
                     title,
                     description,
+                    default,
                     schemas,
                     ..
                 })
                 | Self::AnyOf(AnyOfSchema {
                     title,
                     description,
+                    default,
                     schemas,
                     ..
                 })
                 | Self::AllOf(AllOfSchema {
                     title,
                     description,
+                    default,
                     schemas,
                     ..
                 }) => {
@@ -931,9 +969,10 @@ impl ValueSchema {
                             .await;
 
                         for schema_candidate in &mut schema_candidates {
-                            if title.is_some() || description.is_some() {
+                            if title.is_some() || description.is_some() || default.is_some() {
                                 schema_candidate.set_title(title.clone());
                                 schema_candidate.set_description(description.clone());
+                                schema_candidate.set_default(default.clone());
                             }
                         }
 
