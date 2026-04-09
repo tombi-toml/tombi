@@ -325,13 +325,8 @@
           "description": "Lint settings for the Rust compiler. See the Rust compiler's [individual lints](https://doc.rust-lang.org/rustc/lints/listing/index.html) or [lint groups](https://doc.rust-lang.org/rustc/lints/groups.html)."
         },
         "rustdoc": {
-          "description": "Lint settings for [Rustdoc](https://doc.rust-lang.org/rustdoc/). See Rustdoc's [individual lints](https://doc.rust-lang.org/rustdoc/lints.html) (rustdoc does not have lint groups)",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/Lint"
-          },
-          "x-tombi-additional-key-label": "lint_name",
-          "x-tombi-table-keys-order": "version-sort"
+          "$ref": "tombi://www.schemastore.org/cargo-lints-rustdoc.json",
+          "description": "Lint settings for [Rustdoc](https://doc.rust-lang.org/rustdoc/). See Rustdoc's [individual lints](https://doc.rust-lang.org/rustdoc/lints.html)."
         },
         "clippy": {
           "$ref": "tombi://www.schemastore.org/cargo-lints-clippy.json",
