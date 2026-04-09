@@ -687,6 +687,7 @@ mod completion_labels {
             ) -> Ok([
                 "api/",
                 "cargo-lints-clippy.json",
+                "cargo-lints-rust.json",
                 "cargo.json",
                 "pyproject.json",
                 "tombi.json",
@@ -704,6 +705,7 @@ mod completion_labels {
             ) -> Ok([
                 "./www.schemastore.org/api/",
                 "./www.schemastore.org/cargo-lints-clippy.json",
+                "./www.schemastore.org/cargo-lints-rust.json",
                 "./www.schemastore.org/cargo.json",
                 "./www.schemastore.org/pyproject.json",
                 "./www.schemastore.org/tombi.json",

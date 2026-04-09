@@ -53,6 +53,11 @@ pub fn get_tombi_schemastore_content(schema_uri: &tombi_uri::Uri) -> Option<&'st
                     tombi_uri::schemastore_hostname!(),
                     "/cargo-lints-clippy.json"
                 ))),
+                "/cargo-lints-rust.json" => Some(include_str!(concat!(
+                    "../../../",
+                    tombi_uri::schemastore_hostname!(),
+                    "/cargo-lints-rust.json"
+                ))),
                 "/pyproject.json" => Some(include_str!(concat!(
                     "../../../",
                     tombi_uri::schemastore_hostname!(),
