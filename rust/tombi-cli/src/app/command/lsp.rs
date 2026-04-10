@@ -1,5 +1,4 @@
 use crate::app::CommonArgs;
-use std::time::Duration;
 
 /// Run TOML Language Server.
 #[derive(Debug, clap::Args)]
@@ -19,7 +18,8 @@ pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
         args.common.offline,
         args.common.no_cache,
     ));
-    runtime.shutdown_timeout(Duration::from_secs(1));
+
+    runtime.shutdown_timeout(std::time::Duration::from_secs(1));
 
     Ok(())
 }
