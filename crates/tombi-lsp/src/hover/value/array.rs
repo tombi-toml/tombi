@@ -17,6 +17,7 @@ use crate::{
         display_value::DisplayValue,
         one_of::get_one_of_hover_content,
     },
+    schema_resolver::resolve_array_item_schema,
 };
 
 impl GetHoverContent for tombi_document_tree::Array {
@@ -75,15 +76,13 @@ impl GetHoverContent for tombi_document_tree::Array {
                             if value.contains(position) {
                                 let accessor = Accessor::Index(index);
 
-                                if let Some(items) = &array_schema.items
-                                    && let Ok(Some(current_schema)) =
-                                        tombi_schema_store::resolve_schema_item(
-                                            items,
-                                            current_schema.schema_uri.clone(),
-                                            current_schema.definitions.clone(),
-                                            schema_context.store,
-                                        )
-                                        .await
+                                if let Some(current_schema) = resolve_array_item_schema(
+                                    index,
+                                    array_schema,
+                                    current_schema,
+                                    schema_context,
+                                )
+                                .await
                                 {
                                     return match value
                                         .get_hover_content(
@@ -133,6 +132,57 @@ impl GetHoverContent for tombi_document_tree::Array {
                                             Some(HoverContent::DirectiveContent(hover_content))
                                         }
                                     };
+                                }
+
+                                if let Some(one_of_schema) = array_schema.one_of.as_deref() {
+                                    if let Some(hover_content) = get_one_of_hover_content(
+                                        self,
+                                        position,
+                                        keys,
+                                        accessors,
+                                        one_of_schema,
+                                        &current_schema.schema_uri,
+                                        &current_schema.definitions,
+                                        schema_context,
+                                    )
+                                    .await
+                                    {
+                                        return Some(hover_content);
+                                    }
+                                }
+
+                                if let Some(any_of_schema) = array_schema.any_of.as_deref() {
+                                    if let Some(hover_content) = get_any_of_hover_content(
+                                        self,
+                                        position,
+                                        keys,
+                                        accessors,
+                                        any_of_schema,
+                                        &current_schema.schema_uri,
+                                        &current_schema.definitions,
+                                        schema_context,
+                                    )
+                                    .await
+                                    {
+                                        return Some(hover_content);
+                                    }
+                                }
+
+                                if let Some(all_of_schema) = array_schema.all_of.as_deref() {
+                                    if let Some(hover_content) = get_all_of_hover_content(
+                                        self,
+                                        position,
+                                        keys,
+                                        accessors,
+                                        all_of_schema,
+                                        &current_schema.schema_uri,
+                                        &current_schema.definitions,
+                                        schema_context,
+                                    )
+                                    .await
+                                    {
+                                        return Some(hover_content);
+                                    }
                                 }
 
                                 return value

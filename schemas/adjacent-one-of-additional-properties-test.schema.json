@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "fail_fast": {
+      "type": "boolean"
+    },
+    "repos": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Repo"
+      }
+    }
+  },
+  "required": ["repos"],
+  "additionalProperties": true,
+  "definitions": {
+    "Repo": {
+      "type": "object",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/RemoteRepo"
+        },
+        {
+          "$ref": "#/definitions/BuiltinRepo"
+        }
+      ],
+      "additionalProperties": true
+    },
+    "RemoteRepo": {
+      "type": "object",
+      "properties": {
+        "repo": {
+          "type": "string",
+          "const": "remote"
+        },
+        "hooks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RemoteHook"
+          }
+        }
+      },
+      "required": ["repo", "hooks"],
+      "additionalProperties": true
+    },
+    "BuiltinRepo": {
+      "type": "object",
+      "properties": {
+        "repo": {
+          "type": "string",
+          "const": "builtin"
+        },
+        "hooks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BuiltinHook"
+          }
+        }
+      },
+      "required": ["repo", "hooks"],
+      "additionalProperties": true
+    },
+    "RemoteHook": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": ["id"],
+      "additionalProperties": true
+    },
+    "BuiltinHook": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": ["id"],
+      "additionalProperties": true
+    }
+  }
+}

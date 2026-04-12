@@ -14,6 +14,7 @@ use crate::{
         comment::get_value_comment_directive_hover_content,
         constraints::{ValueConstraints, build_enum_values},
         display_value::DisplayValue,
+        merge_adjacent_hover_content,
         one_of::get_one_of_hover_content,
     },
 };
@@ -43,8 +44,8 @@ impl GetHoverContent for tombi_document_tree::LocalDateTime {
 
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
-                    ValueSchema::LocalDateTime(local_date_schema) => {
-                        let mut hover_content = local_date_schema
+                    ValueSchema::LocalDateTime(local_date_time_schema) => {
+                        let mut hover_content = local_date_time_schema
                             .get_hover_content(
                                 position,
                                 keys,
@@ -60,7 +61,19 @@ impl GetHoverContent for tombi_document_tree::LocalDateTime {
                             hover_value_content.range = Some(self.range());
                         }
 
-                        hover_content
+                        merge_adjacent_hover_content(
+                            self,
+                            position,
+                            keys,
+                            accessors,
+                            Some(current_schema),
+                            schema_context,
+                            hover_content,
+                            local_date_time_schema.one_of.as_deref(),
+                            local_date_time_schema.any_of.as_deref(),
+                            local_date_time_schema.all_of.as_deref(),
+                        )
+                        .await
                     }
                     ValueSchema::OneOf(one_of_schema) => {
                         get_one_of_hover_content(

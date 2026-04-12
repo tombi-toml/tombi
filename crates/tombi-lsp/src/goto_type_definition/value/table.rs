@@ -13,6 +13,7 @@ use crate::{
         comment::get_tombi_value_comment_directive_type_definition,
         one_of::get_one_of_type_definition,
     },
+    schema_resolver::resolve_table_unevaluated_property_schema,
 };
 
 impl GetTypeDefinition for tombi_document_tree::Table {
@@ -204,20 +205,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                         });
                                 }
 
-                                let type_definition = value
-                                    .get_type_definition(
-                                        position,
-                                        &keys[1..],
-                                        &accessors,
-                                        None,
-                                        schema_context,
-                                    )
-                                    .await;
-
-                                if type_definition.is_some() {
-                                    return type_definition;
-                                }
-
                                 if let Some(one_of_schema) = table_schema.one_of.as_deref() {
                                     if let Some(type_definition) = get_one_of_type_definition(
                                         self,
@@ -267,7 +254,34 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     }
                                 }
 
-                                None
+                                if let Some(current_schema) =
+                                    resolve_table_unevaluated_property_schema(
+                                        table_schema,
+                                        current_schema,
+                                        schema_context,
+                                    )
+                                    .await
+                                {
+                                    return value
+                                        .get_type_definition(
+                                            position,
+                                            &keys[1..],
+                                            &accessors,
+                                            Some(&current_schema),
+                                            schema_context,
+                                        )
+                                        .await;
+                                }
+
+                                value
+                                    .get_type_definition(
+                                        position,
+                                        &keys[1..],
+                                        &accessors,
+                                        None,
+                                        schema_context,
+                                    )
+                                    .await
                             } else {
                                 let mut schema_uri = current_schema.schema_uri.as_ref().clone();
                                 schema_uri.set_fragment(Some(&format!(

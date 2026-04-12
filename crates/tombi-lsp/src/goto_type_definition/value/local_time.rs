@@ -7,8 +7,8 @@ use tombi_schema_store::ValueSchema;
 use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
     goto_type_definition::{
-        GetTypeDefinition, TypeDefinition, all_of::get_all_of_type_definition,
-        any_of::get_any_of_type_definition,
+        GetTypeDefinition, TypeDefinition, adjacent_type_definition,
+        all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
         comment::get_tombi_value_comment_directive_type_definition,
         one_of::get_one_of_type_definition,
     },
@@ -46,7 +46,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalTime {
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::LocalTime(local_time_schema) => {
-                        local_time_schema
+                        let base_type_definition = local_time_schema
                             .get_type_definition(
                                 position,
                                 keys,
@@ -54,7 +54,21 @@ impl GetTypeDefinition for tombi_document_tree::LocalTime {
                                 Some(current_schema),
                                 schema_context,
                             )
-                            .await
+                            .await;
+
+                        adjacent_type_definition(
+                            self,
+                            position,
+                            keys,
+                            accessors,
+                            Some(current_schema),
+                            schema_context,
+                            local_time_schema.one_of.as_deref(),
+                            local_time_schema.any_of.as_deref(),
+                            local_time_schema.all_of.as_deref(),
+                        )
+                        .await
+                        .or(base_type_definition)
                     }
                     ValueSchema::OneOf(one_of_schema) => {
                         get_one_of_type_definition(
