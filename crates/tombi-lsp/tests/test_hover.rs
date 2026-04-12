@@ -533,7 +533,10 @@ mod hover_keys_value {
                 "Description": Some(cargo_feature_usage_hover_description(
                     &cargo_feature_navigation_fixture_path().join("workspace"),
                     &[
-                        (cargo_feature_navigation_fixture_path().join("workspace/Cargo.toml"), 5),
+                        (
+                            cargo_feature_navigation_fixture_path().join("workspace/Cargo.toml"),
+                            11,
+                        ),
                         (
                             cargo_feature_navigation_fixture_path()
                                 .join("workspace/consumer/Cargo.toml"),

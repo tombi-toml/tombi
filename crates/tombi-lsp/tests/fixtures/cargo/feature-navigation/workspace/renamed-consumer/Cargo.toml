@@ -7,4 +7,4 @@ edition = "2024"
 sev = { package = "provider", path = "../provider", features = ["jsonschema"] }
 
 [features]
-rename = ["sev/jsonschema", "provider/jsonschema"]
+rename = ["provider/jsonschema", "sev/jsonschema"]

@@ -10,6 +10,7 @@ license.workspace = true
 log.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+tokio = { workspace = true, features = ["sync"] }
 tombi-ast.workspace = true
 tombi-cache.workspace = true
 tombi-document-tree.workspace = true
@@ -18,7 +19,6 @@ tombi-schema-store.workspace = true
 tombi-text.workspace = true
 tombi-toml-text.workspace = true
 tombi-uri.workspace = true
-tokio = { workspace = true, features = ["sync"] }
 tower-lsp.workspace = true
 
 [dev-dependencies]
