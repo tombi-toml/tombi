@@ -44,8 +44,8 @@ impl GetHoverContent for tombi_document_tree::LocalDateTime {
 
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
-                    ValueSchema::LocalDateTime(local_date_schema) => {
-                        let mut hover_content = local_date_schema
+                    ValueSchema::LocalDateTime(local_date_time_schema) => {
+                        let mut hover_content = local_date_time_schema
                             .get_hover_content(
                                 position,
                                 keys,
@@ -69,9 +69,9 @@ impl GetHoverContent for tombi_document_tree::LocalDateTime {
                             Some(current_schema),
                             schema_context,
                             hover_content,
-                            local_date_schema.one_of.as_deref(),
-                            local_date_schema.any_of.as_deref(),
-                            local_date_schema.all_of.as_deref(),
+                            local_date_time_schema.one_of.as_deref(),
+                            local_date_time_schema.any_of.as_deref(),
+                            local_date_time_schema.all_of.as_deref(),
                         )
                         .await
                     }

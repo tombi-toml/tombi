@@ -282,12 +282,23 @@ pub trait FindCompletionContents {
 }
 
 fn dedup_completion_contents(completion_items: Vec<CompletionContent>) -> Vec<CompletionContent> {
-    let mut seen_labels = tombi_hashmap::HashSet::new();
+    let mut deduped_items: tombi_hashmap::IndexMap<String, CompletionContent> =
+        tombi_hashmap::IndexMap::new();
 
-    completion_items
-        .into_iter()
-        .filter(|item| seen_labels.insert(item.label.clone()))
-        .collect()
+    for item in completion_items {
+        match deduped_items.entry(item.label.clone()) {
+            tombi_hashmap::map::Entry::Occupied(mut entry) => {
+                if item.priority < entry.get().priority {
+                    entry.insert(item);
+                }
+            }
+            tombi_hashmap::map::Entry::Vacant(entry) => {
+                entry.insert(item);
+            }
+        }
+    }
+
+    deduped_items.into_values().collect()
 }
 
 fn is_generic_literal_type_hint(completion_item: &CompletionContent) -> bool {
