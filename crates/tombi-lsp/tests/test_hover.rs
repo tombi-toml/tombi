@@ -584,6 +584,21 @@ mod hover_keys_value {
                 "Default": "\"builtin-hook\""
             });
         );
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn one_of_hover_does_not_leak_branch_default_when_no_branch_is_valid(
+                r#"
+                [[repos]]
+                hooks = [
+                  { id = "█hook" }
+                ]
+                "#,
+                SchemaPath(one_of_hover_discriminator_test_schema_path()),
+            ) -> Ok({
+                "Keys": "repos[0]",
+                "Value": "Table"
+            });
+        );
     }
 
     mod pyproject_schema {

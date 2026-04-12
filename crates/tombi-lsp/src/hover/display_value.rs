@@ -19,6 +19,44 @@ pub enum DisplayValue {
     Table(Vec<(String, DisplayValue)>),
 }
 
+impl PartialEq for DisplayValue {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Boolean(a), Self::Boolean(b)) => a == b,
+            (Self::Integer(a), Self::Integer(b)) => a == b,
+            (Self::Float(a), Self::Float(b)) => a.to_bits() == b.to_bits(),
+            (Self::String(a), Self::String(b)) => a == b,
+            (Self::OffsetDateTime(a), Self::OffsetDateTime(b)) => a == b,
+            (Self::LocalDateTime(a), Self::LocalDateTime(b)) => a == b,
+            (Self::LocalDate(a), Self::LocalDate(b)) => a == b,
+            (Self::LocalTime(a), Self::LocalTime(b)) => a == b,
+            (Self::Array(a), Self::Array(b)) => a == b,
+            (Self::Table(a), Self::Table(b)) => a == b,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for DisplayValue {}
+
+impl std::hash::Hash for DisplayValue {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        std::mem::discriminant(self).hash(state);
+        match self {
+            Self::Boolean(value) => value.hash(state),
+            Self::Integer(value) => value.hash(state),
+            Self::Float(value) => value.to_bits().hash(state),
+            Self::String(value)
+            | Self::OffsetDateTime(value)
+            | Self::LocalDateTime(value)
+            | Self::LocalDate(value)
+            | Self::LocalTime(value) => value.hash(state),
+            Self::Array(values) => values.hash(state),
+            Self::Table(values) => values.hash(state),
+        }
+    }
+}
+
 impl DisplayValue {
     pub fn try_new_offset_date_time(
         local_date_time: &str,

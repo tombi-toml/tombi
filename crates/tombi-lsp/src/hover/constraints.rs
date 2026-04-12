@@ -36,7 +36,7 @@ where
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct ValueConstraints {
     // Common
     pub r#enum: Option<Vec<DisplayValue>>,

@@ -7,7 +7,7 @@ pub const X_TOMBI_TABLE_KEYS_ORDER: &str = "x-tombi-table-keys-order";
 pub const X_TOMBI_STRING_FORMATS: &str = "x-tombi-string-formats";
 pub const X_TOMBI_ADDITIONAL_KEY_LABEL: &str = "x-tombi-additional-key-label";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 pub enum ArrayValuesOrder {
@@ -39,7 +39,7 @@ impl<'a> TryFrom<&'a str> for ArrayValuesOrder {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub enum ArrayValuesOrderGroup {
@@ -47,7 +47,7 @@ pub enum ArrayValuesOrderGroup {
     AnyOf(Vec<ArrayValuesOrder>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ArrayValuesOrderBy(String);
 
@@ -71,7 +71,7 @@ impl PartialEq<ArrayValuesOrderBy> for String {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 pub enum TableKeysOrder {
@@ -106,7 +106,7 @@ impl<'a> TryFrom<&'a str> for TableKeysOrder {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 pub enum TableKeysOrderGroupKind {
@@ -138,7 +138,7 @@ impl<'a> TryFrom<&'a str> for TableKeysOrderGroupKind {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]

@@ -271,7 +271,7 @@ impl FindSchemaCandidates for ArraySchema {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum XTombiArrayValuesOrder {
     All(ArrayValuesOrder),
     Groups(ArrayValuesOrderGroup),
