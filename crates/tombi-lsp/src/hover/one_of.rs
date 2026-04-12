@@ -141,8 +141,8 @@ where
             }
         }
 
-        let mut hover_value_content = if one_hover_value_contents.len() == 1 {
-            one_hover_value_contents
+        let mut hover_value_content = if valid_hover_value_contents.len() == 1 {
+            valid_hover_value_contents
                 .into_iter()
                 .next()
                 .map(|mut hover_content| {
@@ -157,8 +157,8 @@ where
 
                     hover_content
                 })
-        } else if valid_hover_value_contents.len() == 1 {
-            valid_hover_value_contents
+        } else if one_hover_value_contents.len() == 1 {
+            one_hover_value_contents
                 .into_iter()
                 .next()
                 .map(|mut hover_content| {

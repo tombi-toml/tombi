@@ -321,10 +321,7 @@ mod tests {
         );
 
         assert_eq!(dependency.name, "toml");
-        assert_eq!(
-            dependency.version.as_deref(),
-            Some("0.9.12+spec-1.1.0")
-        );
+        assert_eq!(dependency.version.as_deref(), Some("0.9.12+spec-1.1.0"));
     }
 
     #[test]
