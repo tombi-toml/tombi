@@ -7,5 +7,5 @@ edition = "2024"
 schemars = { version = "1.0", optional = true }
 
 [features]
+bundle = ["dep:schemars", "local", "schemars"]
 local = []
-bundle = ["local", "schemars", "dep:schemars"]
