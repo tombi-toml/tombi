@@ -1,6 +1,9 @@
 mod goto_type_definition_tests {
     use super::*;
-    use tombi_test_lib::adjacent_one_of_hover_test_schema_path;
+    use tombi_test_lib::{
+        adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
+        lsp_consistency_test_schema_path,
+    };
 
     mod tombi_schema {
         use super::*;
@@ -180,6 +183,70 @@ mod goto_type_definition_tests {
                 SourcePath(adjacent_one_of_hover_test_schema_path()),
                 SchemaPath(adjacent_one_of_hover_test_schema_path()),
             ) -> Ok(adjacent_one_of_hover_test_schema_path());
+        );
+    }
+
+    mod adjacent_applicators_schema {
+        use super::*;
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn adjacent_all_of_offset_date_time_value(
+                r#"
+                offset_date_time_all = 2024-01-15T█10:30:00Z
+                "#,
+                SourcePath(adjacent_applicators_test_schema_path()),
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok(adjacent_applicators_test_schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn adjacent_all_of_boolean_value(
+                r#"
+                boolean_all = tr█ue
+                "#,
+                SourcePath(adjacent_applicators_test_schema_path()),
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok(adjacent_applicators_test_schema_path());
+        );
+    }
+
+    mod consistency_schema {
+        use super::*;
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn typed_extra_table_unevaluated_properties_id_value(
+                r#"
+                [typed_extra_table]
+                extra = { id = "█value" }
+                "#,
+                SourcePath(lsp_consistency_test_schema_path()),
+                SchemaPath(lsp_consistency_test_schema_path()),
+            ) -> Ok(lsp_consistency_test_schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn typed_unevaluated_tuple_id_value(
+                r#"
+                typed_unevaluated_tuple = [1, { id = "█value" }]
+                "#,
+                SourcePath(lsp_consistency_test_schema_path()),
+                SchemaPath(lsp_consistency_test_schema_path()),
+            ) -> Ok(lsp_consistency_test_schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn typed_overflow_tuple_id_value(
+                r#"
+                typed_overflow_tuple = [1, { id = "█value" }]
+                "#,
+                SourcePath(lsp_consistency_test_schema_path()),
+                SchemaPath(lsp_consistency_test_schema_path()),
+            ) -> Ok(lsp_consistency_test_schema_path());
         );
     }
 

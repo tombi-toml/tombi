@@ -8,7 +8,7 @@ use crate::{
     completion::{
         CompletionContent, CompletionEdit, CompletionHint, FindCompletionContents,
         comment::get_tombi_comment_directive_content_completion_contents,
-        schema_completion::SchemaCompletion,
+        merge_adjacent_schema_completion_items, schema_completion::SchemaCompletion,
     },
 };
 
@@ -135,7 +135,19 @@ impl FindCompletionContents for StringSchema {
                     schema_uri,
                     self.deprecated,
                 ));
-                return completion_items;
+                return merge_adjacent_schema_completion_items(
+                    position,
+                    _keys,
+                    _accessors,
+                    current_schema,
+                    _schema_context,
+                    completion_hint,
+                    completion_items,
+                    self.one_of.as_deref(),
+                    self.any_of.as_deref(),
+                    self.all_of.as_deref(),
+                )
+                .await;
             }
 
             if let Some(r#enum) = &self.r#enum {
@@ -151,7 +163,19 @@ impl FindCompletionContents for StringSchema {
                         self.deprecated,
                     ));
                 }
-                return completion_items;
+                return merge_adjacent_schema_completion_items(
+                    position,
+                    _keys,
+                    _accessors,
+                    current_schema,
+                    _schema_context,
+                    completion_hint,
+                    completion_items,
+                    self.one_of.as_deref(),
+                    self.any_of.as_deref(),
+                    self.all_of.as_deref(),
+                )
+                .await;
             }
 
             if let Some(examples) = &self.examples {
@@ -183,7 +207,19 @@ impl FindCompletionContents for StringSchema {
                     }),
             );
 
-            completion_items
+            merge_adjacent_schema_completion_items(
+                position,
+                _keys,
+                _accessors,
+                current_schema,
+                _schema_context,
+                completion_hint,
+                completion_items,
+                self.one_of.as_deref(),
+                self.any_of.as_deref(),
+                self.all_of.as_deref(),
+            )
+            .await
         }
         .boxed()
     }

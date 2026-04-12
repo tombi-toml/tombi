@@ -1,7 +1,9 @@
 use tombi_config::{JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHEMASTORE_CATALOG_URL};
 use tombi_test_lib::{
-    adjacent_one_of_hover_test_schema_path, project_root_path, string_format_test_schema_path,
-    today_local_date, today_local_date_time, today_local_time, today_offset_date_time,
+    adjacent_applicators_test_schema_path, adjacent_one_of_additional_properties_test_schema_path,
+    adjacent_one_of_hover_test_schema_path, lsp_consistency_test_schema_path, project_root_path,
+    string_format_test_schema_path, today_local_date, today_local_date_time, today_local_time,
+    today_offset_date_time,
 };
 
 mod completion_labels {
@@ -632,6 +634,7 @@ mod completion_labels {
             ) -> Ok([
                 "additional-properties-branch-keys-test.schema.json",
                 "adjacent-applicators-test.schema.json",
+                "adjacent-one-of-additional-properties-test.schema.json",
                 "adjacent-one-of-hover-test.schema.json",
                 "anchor-dynamic-ref-test.schema.json",
                 "anchor-table-test.schema.json",
@@ -645,6 +648,7 @@ mod completion_labels {
                 "format-annotation-test.schema.json",
                 "format-assertion-vocab-test.schema.json",
                 "if-then-else-test.schema.json",
+                "lsp-consistency-test.schema.json",
                 "min-max-contains-test.schema.json",
                 "one-of-hover-discriminator-test.schema.json",
                 "partial-taskipy.schema.json",
@@ -730,6 +734,76 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn adjacent_one_of_builtin_hook_empty_inline_table_keys_completion(
+                r#"
+                [[repos]]
+                repo = "builtin"
+                hooks = [ {█} ]
+                "#,
+                SchemaPath(adjacent_one_of_hover_test_schema_path()),
+            ) -> Ok(["id"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_one_of_builtin_hook_empty_inline_table_keys_completion_with_space(
+                r#"
+                [[repos]]
+                repo = "builtin"
+                hooks = [ { █} ]
+                "#,
+                SchemaPath(adjacent_one_of_hover_test_schema_path()),
+            ) -> Ok(["id"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_one_of_builtin_hook_incomplete_inline_table_keys_completion(
+                r#"
+                [[repos]]
+                repo = "builtin"
+                hooks = [
+                  { █
+                ]
+                "#,
+                SchemaPath(adjacent_one_of_hover_test_schema_path()),
+            ) -> Ok(["id"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_one_of_builtin_hook_incomplete_inline_table_keys_completion_with_prek_context(
+                r#"
+                fail_fast = false
+
+                [[repos]]
+                repo = "builtin"
+                hooks = [
+                  { █
+                ]
+                "#,
+                SchemaPath(adjacent_one_of_hover_test_schema_path()),
+            ) -> Ok(["id"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_one_of_additional_properties_builtin_hook_incomplete_inline_table_keys_completion(
+                r#"
+                fail_fast = false
+
+                [[repos]]
+                repo = "builtin"
+                hooks = [
+                  { █
+                ]
+                "#,
+                SchemaPath(adjacent_one_of_additional_properties_test_schema_path()),
+            ) -> Ok(["id"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn adjacent_one_of_builtin_hook_id_value_completion(
                 r#"
                 [[repos]]
@@ -740,6 +814,65 @@ mod completion_labels {
                 "#,
                 SchemaPath(adjacent_one_of_hover_test_schema_path()),
             ) -> Ok(["\"builtin-hook\"", "\"\"", "''"]);
+        }
+    }
+
+    mod adjacent_applicators_schema {
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_all_of_offset_date_time_value_completion(
+                r#"
+                offset_date_time_all = █
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok(["2024-01-15T10:30:00Z"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_all_of_boolean_value_completion(
+                r#"
+                boolean_all = █
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok(["true"]);
+        }
+    }
+
+    mod consistency_schema {
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn typed_extra_table_unevaluated_properties_inline_table_keys_completion(
+                r#"
+                [typed_extra_table]
+                extra = { █ }
+                "#,
+                SchemaPath(lsp_consistency_test_schema_path()),
+            ) -> Ok(["id"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn typed_unevaluated_tuple_inline_table_keys_completion(
+                r#"
+                typed_unevaluated_tuple = [1, { █ }]
+                "#,
+                SchemaPath(lsp_consistency_test_schema_path()),
+            ) -> Ok(["id"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn typed_overflow_tuple_inline_table_keys_completion(
+                r#"
+                typed_overflow_tuple = [1, { █ }]
+                "#,
+                SchemaPath(lsp_consistency_test_schema_path()),
+            ) -> Ok(["id"]);
         }
     }
 

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LspConsistencyTest",
+  "type": "object",
+  "properties": {
+    "typed_extra_table": {
+      "type": "object",
+      "properties": {
+        "known": { "type": "string" }
+      },
+      "unevaluatedProperties": {
+        "type": "object",
+        "title": "ExtraTableEntry",
+        "properties": {
+          "id": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "typed_unevaluated_tuple": {
+      "type": "array",
+      "prefixItems": [{ "type": "integer" }],
+      "unevaluatedItems": {
+        "type": "object",
+        "title": "UnevaluatedTupleItem",
+        "properties": {
+          "id": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "typed_overflow_tuple": {
+      "type": "array",
+      "prefixItems": [{ "type": "integer" }],
+      "items": {
+        "type": "object",
+        "title": "OverflowTupleItem",
+        "properties": {
+          "id": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

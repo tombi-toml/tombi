@@ -8,11 +8,12 @@ use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, ValueSchema};
 use crate::{
     comment_directive::get_array_comment_directive_content_with_schema_uri,
     goto_type_definition::{
-        GetTypeDefinition, TypeDefinition, all_of::get_all_of_type_definition,
-        any_of::get_any_of_type_definition,
+        GetTypeDefinition, TypeDefinition, adjacent_type_definition,
+        all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
         comment::get_tombi_value_comment_directive_type_definition,
         one_of::get_one_of_type_definition,
     },
+    schema_resolver::resolve_array_item_schema,
 };
 
 impl GetTypeDefinition for tombi_document_tree::Array {
@@ -73,15 +74,13 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                             if value.contains(position) {
                                 let accessor = Accessor::Index(index);
 
-                                if let Some(items) = &array_schema.items
-                                    && let Ok(Some(current_schema)) =
-                                        tombi_schema_store::resolve_schema_item(
-                                            items,
-                                            current_schema.schema_uri.clone(),
-                                            current_schema.definitions.clone(),
-                                            schema_context.store,
-                                        )
-                                        .await
+                                if let Some(current_schema) = resolve_array_item_schema(
+                                    index,
+                                    array_schema,
+                                    current_schema,
+                                    schema_context,
+                                )
+                                .await
                                 {
                                     return value
                                         .get_type_definition(
@@ -96,6 +95,22 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                                             schema_context,
                                         )
                                         .await;
+                                }
+
+                                if let Some(type_definition) = adjacent_type_definition(
+                                    self,
+                                    position,
+                                    keys,
+                                    accessors,
+                                    Some(current_schema),
+                                    schema_context,
+                                    array_schema.one_of.as_deref(),
+                                    array_schema.any_of.as_deref(),
+                                    array_schema.all_of.as_deref(),
+                                )
+                                .await
+                                {
+                                    return Some(type_definition);
                                 }
 
                                 return value

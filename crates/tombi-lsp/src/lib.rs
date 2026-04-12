@@ -8,6 +8,7 @@ mod document;
 mod goto_definition;
 mod goto_type_definition;
 mod hover;
+mod schema_resolver;
 mod semantic_tokens;
 
 pub mod handler {

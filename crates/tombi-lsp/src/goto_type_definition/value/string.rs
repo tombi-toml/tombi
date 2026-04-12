@@ -3,12 +3,13 @@ use itertools::Itertools;
 use tombi_comment_directive::value::{StringCommonFormatRules, StringCommonLintRules};
 use tombi_future::Boxable;
 use tombi_schema_store::ValueSchema;
+use tombi_x_keyword::StringFormat;
 
 use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
     goto_type_definition::{
-        GetTypeDefinition, TypeDefinition, all_of::get_all_of_type_definition,
-        any_of::get_any_of_type_definition,
+        GetTypeDefinition, TypeDefinition, adjacent_type_definition,
+        all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
         comment::get_tombi_value_comment_directive_type_definition,
         one_of::get_one_of_type_definition,
     },
@@ -46,7 +47,7 @@ impl GetTypeDefinition for tombi_document_tree::String {
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::String(string_schema) => {
-                        string_schema
+                        let base_type_definition = string_schema
                             .get_type_definition(
                                 position,
                                 keys,
@@ -54,7 +55,129 @@ impl GetTypeDefinition for tombi_document_tree::String {
                                 Some(current_schema),
                                 schema_context,
                             )
-                            .await
+                            .await;
+
+                        adjacent_type_definition(
+                            self,
+                            position,
+                            keys,
+                            accessors,
+                            Some(current_schema),
+                            schema_context,
+                            string_schema.one_of.as_deref(),
+                            string_schema.any_of.as_deref(),
+                            string_schema.all_of.as_deref(),
+                        )
+                        .await
+                        .or(base_type_definition)
+                    }
+                    ValueSchema::OffsetDateTime(offset_date_time_schema)
+                        if schema_context.has_string_format(StringFormat::DateTime) =>
+                    {
+                        let base_type_definition = offset_date_time_schema
+                            .get_type_definition(
+                                position,
+                                keys,
+                                accessors,
+                                Some(current_schema),
+                                schema_context,
+                            )
+                            .await;
+
+                        adjacent_type_definition(
+                            self,
+                            position,
+                            keys,
+                            accessors,
+                            Some(current_schema),
+                            schema_context,
+                            offset_date_time_schema.one_of.as_deref(),
+                            offset_date_time_schema.any_of.as_deref(),
+                            offset_date_time_schema.all_of.as_deref(),
+                        )
+                        .await
+                        .or(base_type_definition)
+                    }
+                    ValueSchema::LocalDateTime(local_date_time_schema)
+                        if schema_context.has_string_format(StringFormat::DateTimeLocal) =>
+                    {
+                        let base_type_definition = local_date_time_schema
+                            .get_type_definition(
+                                position,
+                                keys,
+                                accessors,
+                                Some(current_schema),
+                                schema_context,
+                            )
+                            .await;
+
+                        adjacent_type_definition(
+                            self,
+                            position,
+                            keys,
+                            accessors,
+                            Some(current_schema),
+                            schema_context,
+                            local_date_time_schema.one_of.as_deref(),
+                            local_date_time_schema.any_of.as_deref(),
+                            local_date_time_schema.all_of.as_deref(),
+                        )
+                        .await
+                        .or(base_type_definition)
+                    }
+                    ValueSchema::LocalDate(local_date_schema)
+                        if schema_context.has_string_format(StringFormat::Date) =>
+                    {
+                        let base_type_definition = local_date_schema
+                            .get_type_definition(
+                                position,
+                                keys,
+                                accessors,
+                                Some(current_schema),
+                                schema_context,
+                            )
+                            .await;
+
+                        adjacent_type_definition(
+                            self,
+                            position,
+                            keys,
+                            accessors,
+                            Some(current_schema),
+                            schema_context,
+                            local_date_schema.one_of.as_deref(),
+                            local_date_schema.any_of.as_deref(),
+                            local_date_schema.all_of.as_deref(),
+                        )
+                        .await
+                        .or(base_type_definition)
+                    }
+                    ValueSchema::LocalTime(local_time_schema)
+                        if schema_context.has_string_format(StringFormat::TimeLocal) =>
+                    {
+                        let base_type_definition = local_time_schema
+                            .get_type_definition(
+                                position,
+                                keys,
+                                accessors,
+                                Some(current_schema),
+                                schema_context,
+                            )
+                            .await;
+
+                        adjacent_type_definition(
+                            self,
+                            position,
+                            keys,
+                            accessors,
+                            Some(current_schema),
+                            schema_context,
+                            local_time_schema.one_of.as_deref(),
+                            local_time_schema.any_of.as_deref(),
+                            local_time_schema.all_of.as_deref(),
+                        )
+                        .await
+                        .or(base_type_definition)
                     }
                     ValueSchema::OneOf(one_of_schema) => {
                         get_one_of_type_definition(
