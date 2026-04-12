@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "repos": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "repo": {
+                "const": "remote"
+              },
+              "hooks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "default": "remote-hook"
+                    }
+                  },
+                  "required": ["id"]
+                }
+              }
+            },
+            "required": ["repo", "hooks"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "repo": {
+                "const": "builtin"
+              },
+              "hooks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "default": "builtin-hook"
+                    }
+                  },
+                  "required": ["id"]
+                }
+              }
+            },
+            "required": ["repo", "hooks"]
+          }
+        ]
+      }
+    }
+  },
+  "required": ["repos"]
+}
