@@ -632,6 +632,7 @@ mod completion_labels {
             ) -> Ok([
                 "additional-properties-branch-keys-test.schema.json",
                 "adjacent-applicators-test.schema.json",
+                "adjacent-one-of-hover-test.schema.json",
                 "anchor-dynamic-ref-test.schema.json",
                 "anchor-table-test.schema.json",
                 "array-const-enum-test.schema.json",

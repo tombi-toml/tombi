@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use tombi_extension::CompletionContentPriority;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, ValueSchema};
@@ -71,7 +72,9 @@ where
             {
                 Ok(_) => true,
                 Err(tombi_validator::Error { diagnostics, .. })
-                    if diagnostics.iter().all(tombi_diagnostic::Diagnostic::is_warning) =>
+                    if diagnostics
+                        .iter()
+                        .all(tombi_diagnostic::Diagnostic::is_warning) =>
                 {
                     true
                 }
@@ -94,6 +97,10 @@ where
 
         let valid_branches = branch_results.iter().any(|(_, is_valid, _)| *is_valid);
         let narrow_branches = branch_results.iter().any(|(has_key, _, _)| *has_key);
+        let fallback_completion_items = branch_results
+            .iter()
+            .flat_map(|(_, _, items)| items.iter().cloned())
+            .collect_vec();
         for (branch_has_key, branch_is_valid, items) in branch_results {
             if valid_branches {
                 if branch_is_valid {
@@ -102,6 +109,10 @@ where
             } else if !narrow_branches || branch_has_key {
                 completion_items.extend(items);
             }
+        }
+
+        if completion_items.is_empty() {
+            completion_items = fallback_completion_items;
         }
 
         let detail = one_of_schema

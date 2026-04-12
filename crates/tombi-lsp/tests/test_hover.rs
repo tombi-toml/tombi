@@ -1,9 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use tombi_test_lib::{
-    adjacent_one_of_hover_test_schema_path,
-    cargo_feature_navigation_fixture_path, cargo_schema_path,
-    one_of_hover_discriminator_test_schema_path, pyproject_schema_path,
+    adjacent_one_of_hover_test_schema_path, cargo_feature_navigation_fixture_path,
+    cargo_schema_path, one_of_hover_discriminator_test_schema_path, pyproject_schema_path,
     ref_sibling_annotations_test_schema_path, string_format_test_schema_path, tombi_schema_path,
 };
 

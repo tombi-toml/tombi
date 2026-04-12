@@ -103,46 +103,6 @@ impl FindCompletionContents for tombi_document_tree::Table {
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Table(table_schema) => {
-                        if let Some(one_of_schema) = table_schema.one_of.as_deref() {
-                            return super::one_of::find_one_of_completion_items(
-                                self,
-                                position,
-                                keys,
-                                accessors,
-                                one_of_schema,
-                                current_schema,
-                                schema_context,
-                                completion_hint,
-                            )
-                            .await;
-                        }
-                        if let Some(any_of_schema) = table_schema.any_of.as_deref() {
-                            return super::any_of::find_any_of_completion_items(
-                                self,
-                                position,
-                                keys,
-                                accessors,
-                                any_of_schema,
-                                current_schema,
-                                schema_context,
-                                completion_hint,
-                            )
-                            .await;
-                        }
-                        if let Some(all_of_schema) = table_schema.all_of.as_deref() {
-                            return super::all_of::find_all_of_completion_items(
-                                self,
-                                position,
-                                keys,
-                                accessors,
-                                all_of_schema,
-                                current_schema,
-                                schema_context,
-                                completion_hint,
-                            )
-                            .await;
-                        }
-
                         let mut completion_contents = Vec::new();
 
                         if let Some(key) = keys.first() {
@@ -450,6 +410,110 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     )
                                     .await;
                                 }
+
+                                if let Some(one_of_schema) = table_schema.one_of.as_deref() {
+                                    let completion_items =
+                                        super::one_of::find_one_of_completion_items(
+                                            self,
+                                            position,
+                                            keys,
+                                            accessors,
+                                            one_of_schema,
+                                            current_schema,
+                                            schema_context,
+                                            completion_hint,
+                                        )
+                                        .await;
+                                    if !completion_items.is_empty() {
+                                        return completion_items;
+                                    }
+                                }
+                                if let Some(any_of_schema) = table_schema.any_of.as_deref() {
+                                    let completion_items =
+                                        super::any_of::find_any_of_completion_items(
+                                            self,
+                                            position,
+                                            keys,
+                                            accessors,
+                                            any_of_schema,
+                                            current_schema,
+                                            schema_context,
+                                            completion_hint,
+                                        )
+                                        .await;
+                                    if !completion_items.is_empty() {
+                                        return completion_items;
+                                    }
+                                }
+                                if let Some(all_of_schema) = table_schema.all_of.as_deref() {
+                                    let completion_items =
+                                        super::all_of::find_all_of_completion_items(
+                                            self,
+                                            position,
+                                            keys,
+                                            accessors,
+                                            all_of_schema,
+                                            current_schema,
+                                            schema_context,
+                                            completion_hint,
+                                        )
+                                        .await;
+                                    if !completion_items.is_empty() {
+                                        return completion_items;
+                                    }
+                                }
+                            } else {
+                                if let Some(one_of_schema) = table_schema.one_of.as_deref() {
+                                    let completion_items =
+                                        super::one_of::find_one_of_completion_items(
+                                            self,
+                                            position,
+                                            keys,
+                                            accessors,
+                                            one_of_schema,
+                                            current_schema,
+                                            schema_context,
+                                            completion_hint,
+                                        )
+                                        .await;
+                                    if !completion_items.is_empty() {
+                                        return completion_items;
+                                    }
+                                }
+                                if let Some(any_of_schema) = table_schema.any_of.as_deref() {
+                                    let completion_items =
+                                        super::any_of::find_any_of_completion_items(
+                                            self,
+                                            position,
+                                            keys,
+                                            accessors,
+                                            any_of_schema,
+                                            current_schema,
+                                            schema_context,
+                                            completion_hint,
+                                        )
+                                        .await;
+                                    if !completion_items.is_empty() {
+                                        return completion_items;
+                                    }
+                                }
+                                if let Some(all_of_schema) = table_schema.all_of.as_deref() {
+                                    let completion_items =
+                                        super::all_of::find_all_of_completion_items(
+                                            self,
+                                            position,
+                                            keys,
+                                            accessors,
+                                            all_of_schema,
+                                            current_schema,
+                                            schema_context,
+                                            completion_hint,
+                                        )
+                                        .await;
+                                    if !completion_items.is_empty() {
+                                        return completion_items;
+                                    }
+                                }
                             }
                         } else {
                             let schema_accessors = table_schema
@@ -638,6 +702,60 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     value_schema.deprecated().await,
                                     completion_hint,
                                 ));
+                            }
+
+                            if completion_contents.is_empty() {
+                                if let Some(one_of_schema) = table_schema.one_of.as_deref() {
+                                    let completion_items =
+                                        super::one_of::find_one_of_completion_items(
+                                            self,
+                                            position,
+                                            keys,
+                                            accessors,
+                                            one_of_schema,
+                                            current_schema,
+                                            schema_context,
+                                            completion_hint,
+                                        )
+                                        .await;
+                                    if !completion_items.is_empty() {
+                                        return completion_items;
+                                    }
+                                }
+                                if let Some(any_of_schema) = table_schema.any_of.as_deref() {
+                                    let completion_items =
+                                        super::any_of::find_any_of_completion_items(
+                                            self,
+                                            position,
+                                            keys,
+                                            accessors,
+                                            any_of_schema,
+                                            current_schema,
+                                            schema_context,
+                                            completion_hint,
+                                        )
+                                        .await;
+                                    if !completion_items.is_empty() {
+                                        return completion_items;
+                                    }
+                                }
+                                if let Some(all_of_schema) = table_schema.all_of.as_deref() {
+                                    let completion_items =
+                                        super::all_of::find_all_of_completion_items(
+                                            self,
+                                            position,
+                                            keys,
+                                            accessors,
+                                            all_of_schema,
+                                            current_schema,
+                                            schema_context,
+                                            completion_hint,
+                                        )
+                                        .await;
+                                    if !completion_items.is_empty() {
+                                        return completion_items;
+                                    }
+                                }
                             }
                         }
                         completion_contents
