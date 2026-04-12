@@ -687,10 +687,6 @@ mod completion_labels {
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
                 "api/",
-                "cargo-lints-cargo.json",
-                "cargo-lints-clippy.json",
-                "cargo-lints-rust.json",
-                "cargo-lints-rustdoc.json",
                 "cargo.json",
                 "pyproject.json",
                 "tombi.json",
@@ -707,10 +703,6 @@ mod completion_labels {
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
                 "./www.schemastore.org/api/",
-                "./www.schemastore.org/cargo-lints-cargo.json",
-                "./www.schemastore.org/cargo-lints-clippy.json",
-                "./www.schemastore.org/cargo-lints-rust.json",
-                "./www.schemastore.org/cargo-lints-rustdoc.json",
                 "./www.schemastore.org/cargo.json",
                 "./www.schemastore.org/pyproject.json",
                 "./www.schemastore.org/tombi.json",

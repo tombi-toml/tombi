@@ -321,19 +321,19 @@
       "type": "object",
       "properties": {
         "rust": {
-          "$ref": "tombi://www.schemastore.org/cargo-lints-rust.json",
+          "$ref": "https://www.schemastore.org/cargo-lints-rust.json",
           "description": "Lint settings for the Rust compiler. See the Rust compiler's [individual lints](https://doc.rust-lang.org/rustc/lints/listing/index.html) or [lint groups](https://doc.rust-lang.org/rustc/lints/groups.html)."
         },
         "rustdoc": {
-          "$ref": "tombi://www.schemastore.org/cargo-lints-rustdoc.json",
+          "$ref": "https://www.schemastore.org/cargo-lints-rustdoc.json",
           "description": "Lint settings for [Rustdoc](https://doc.rust-lang.org/rustdoc/). See Rustdoc's [individual lints](https://doc.rust-lang.org/rustdoc/lints.html)."
         },
         "clippy": {
-          "$ref": "tombi://www.schemastore.org/cargo-lints-clippy.json",
+          "$ref": "https://www.schemastore.org/cargo-lints-clippy.json",
           "description": "Lint settings for [Clippy](https://doc.rust-lang.org/clippy/). See Clippy's [individual lints](https://rust-lang.github.io/rust-clippy/master/index.html) or [lint groups](https://doc.rust-lang.org/clippy/lints.html) documentation."
         },
         "cargo": {
-          "$ref": "tombi://www.schemastore.org/cargo-lints-cargo.json",
+          "$ref": "https://www.schemastore.org/cargo-lints-cargo.json",
           "description": "Lint settings for [Cargo](https://doc.rust-lang.org/cargo/). See Cargo's [individual lints](https://doc.rust-lang.org/cargo/reference/lints.html) documentation."
         }
       },
