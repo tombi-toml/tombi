@@ -1,7 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use tombi_test_lib::{
-    cargo_feature_navigation_fixture_path, cargo_schema_path, pyproject_schema_path,
+    cargo_feature_navigation_fixture_path, cargo_schema_path,
+    one_of_hover_discriminator_test_schema_path, pyproject_schema_path,
     ref_sibling_annotations_test_schema_path, string_format_test_schema_path, tombi_schema_path,
 };
 
@@ -559,6 +560,28 @@ mod hover_keys_value {
                         ),
                     ],
                 )),
+            });
+        );
+    }
+
+    mod one_of_schema {
+        use super::*;
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn one_of_hover_prefers_single_valid_branch(
+                r#"
+                [[repos]]
+                repo = "builtin"
+                hooks = [
+                  { id = "█hook" }
+                ]
+                "#,
+                SchemaPath(one_of_hover_discriminator_test_schema_path()),
+            ) -> Ok({
+                "Keys": "repos[0].hooks[0].id",
+                "Value": "String",
+                "Default": "\"builtin-hook\""
             });
         );
     }
