@@ -14,8 +14,9 @@ use crate::{
     completion::{
         CompletionContent, CompletionEdit,
         comment::get_tombi_comment_directive_content_completion_contents,
-        schema_completion::SchemaCompletion,
+        merge_adjacent_schema_completion_items, schema_completion::SchemaCompletion,
     },
+    schema_resolver::resolve_array_item_schema,
 };
 
 impl FindCompletionContents for tombi_document_tree::Array {
@@ -86,16 +87,13 @@ impl FindCompletionContents for tombi_document_tree::Array {
                             }
                             if value.contains(position) {
                                 let accessor = Accessor::Index(index);
-                                if let Some(items) = &array_schema.items
-                                    && let Ok(Some(current_schema)) = items
-                                        .write()
-                                        .await
-                                        .resolve(
-                                            current_schema.schema_uri.clone(),
-                                            current_schema.definitions.clone(),
-                                            schema_context.store,
-                                        )
-                                        .await
+                                if let Some(current_schema) = resolve_array_item_schema(
+                                    index,
+                                    array_schema,
+                                    current_schema,
+                                    schema_context,
+                                )
+                                .await
                                 {
                                     return value
                                         .find_completion_contents(
@@ -112,19 +110,67 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                         )
                                         .await;
                                 }
+
+                                if let Some(one_of_schema) = array_schema.one_of.as_deref() {
+                                    let completion_items = find_one_of_completion_items(
+                                        self,
+                                        position,
+                                        keys,
+                                        accessors,
+                                        one_of_schema,
+                                        current_schema,
+                                        schema_context,
+                                        completion_hint,
+                                    )
+                                    .await;
+                                    if !completion_items.is_empty() {
+                                        return completion_items;
+                                    }
+                                }
+
+                                if let Some(any_of_schema) = array_schema.any_of.as_deref() {
+                                    let completion_items = find_any_of_completion_items(
+                                        self,
+                                        position,
+                                        keys,
+                                        accessors,
+                                        any_of_schema,
+                                        current_schema,
+                                        schema_context,
+                                        completion_hint,
+                                    )
+                                    .await;
+                                    if !completion_items.is_empty() {
+                                        return completion_items;
+                                    }
+                                }
+
+                                if let Some(all_of_schema) = array_schema.all_of.as_deref() {
+                                    let completion_items = find_all_of_completion_items(
+                                        self,
+                                        position,
+                                        keys,
+                                        accessors,
+                                        all_of_schema,
+                                        current_schema,
+                                        schema_context,
+                                        completion_hint,
+                                    )
+                                    .await;
+                                    if !completion_items.is_empty() {
+                                        return completion_items;
+                                    }
+                                }
                             }
                         }
 
-                        if let Some(items) = &array_schema.items
-                            && let Ok(Some(current_schema)) = items
-                                .write()
-                                .await
-                                .resolve(
-                                    current_schema.schema_uri.clone(),
-                                    current_schema.definitions.clone(),
-                                    schema_context.store,
-                                )
-                                .await
+                        if let Some(current_schema) = resolve_array_item_schema(
+                            new_item_index,
+                            array_schema,
+                            current_schema,
+                            schema_context,
+                        )
+                        .await
                         {
                             let mut completions = SchemaCompletion
                                 .find_completion_contents(
@@ -214,6 +260,55 @@ impl FindCompletionContents for tombi_document_tree::Array {
                             }
 
                             return completions;
+                        }
+
+                        if let Some(one_of_schema) = array_schema.one_of.as_deref() {
+                            let completion_items = find_one_of_completion_items(
+                                self,
+                                position,
+                                keys,
+                                accessors,
+                                one_of_schema,
+                                current_schema,
+                                schema_context,
+                                completion_hint,
+                            )
+                            .await;
+                            if !completion_items.is_empty() {
+                                return completion_items;
+                            }
+                        }
+                        if let Some(any_of_schema) = array_schema.any_of.as_deref() {
+                            let completion_items = find_any_of_completion_items(
+                                self,
+                                position,
+                                keys,
+                                accessors,
+                                any_of_schema,
+                                current_schema,
+                                schema_context,
+                                completion_hint,
+                            )
+                            .await;
+                            if !completion_items.is_empty() {
+                                return completion_items;
+                            }
+                        }
+                        if let Some(all_of_schema) = array_schema.all_of.as_deref() {
+                            let completion_items = find_all_of_completion_items(
+                                self,
+                                position,
+                                keys,
+                                accessors,
+                                all_of_schema,
+                                current_schema,
+                                schema_context,
+                                completion_hint,
+                            )
+                            .await;
+                            if !completion_items.is_empty() {
+                                return completion_items;
+                            }
                         }
 
                         Vec::with_capacity(0)
@@ -368,7 +463,19 @@ impl FindCompletionContents for ArraySchema {
                         }
                     }
 
-                    completion_items
+                    merge_adjacent_schema_completion_items(
+                        position,
+                        keys,
+                        accessors,
+                        current_schema,
+                        _schema_context,
+                        completion_hint,
+                        completion_items,
+                        self.one_of.as_deref(),
+                        self.any_of.as_deref(),
+                        self.all_of.as_deref(),
+                    )
+                    .await
                 }
             }
         }

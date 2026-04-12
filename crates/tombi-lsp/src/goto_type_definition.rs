@@ -8,7 +8,9 @@ use std::{borrow::Cow, ops::Deref};
 
 pub use comment::get_tombi_document_comment_directive_type_definition;
 use itertools::Itertools;
-use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri};
+use tombi_schema_store::{
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaUri,
+};
 use tower_lsp::lsp_types::GotoDefinitionResponse;
 
 use crate::{Backend, goto_definition::open_remote_file};
@@ -105,7 +107,7 @@ impl TypeDefinition {
     }
 }
 
-trait GetTypeDefinition {
+pub(super) trait GetTypeDefinition {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
@@ -114,6 +116,77 @@ trait GetTypeDefinition {
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>>;
+}
+
+pub(super) async fn adjacent_type_definition<
+    T: GetTypeDefinition
+        + Sync
+        + Send
+        + tombi_document_tree::ValueImpl
+        + tombi_validator::Validate
+        + std::fmt::Debug,
+>(
+    value: &T,
+    position: tombi_text::Position,
+    keys: &[tombi_document_tree::Key],
+    accessors: &[Accessor],
+    current_schema: Option<&CurrentSchema<'_>>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+    one_of_schema: Option<&OneOfSchema>,
+    any_of_schema: Option<&AnyOfSchema>,
+    all_of_schema: Option<&AllOfSchema>,
+) -> Option<TypeDefinition> {
+    let Some(current_schema) = current_schema else {
+        return None;
+    };
+
+    if let Some(one_of_schema) = one_of_schema
+        && let Some(type_definition) = one_of::get_one_of_type_definition(
+            value,
+            position,
+            keys,
+            accessors,
+            one_of_schema,
+            &current_schema.schema_uri,
+            &current_schema.definitions,
+            schema_context,
+        )
+        .await
+    {
+        return Some(type_definition);
+    }
+    if let Some(any_of_schema) = any_of_schema
+        && let Some(type_definition) = any_of::get_any_of_type_definition(
+            value,
+            position,
+            keys,
+            accessors,
+            any_of_schema,
+            &current_schema.schema_uri,
+            &current_schema.definitions,
+            schema_context,
+        )
+        .await
+    {
+        return Some(type_definition);
+    }
+    if let Some(all_of_schema) = all_of_schema
+        && let Some(type_definition) = all_of::get_all_of_type_definition(
+            value,
+            position,
+            keys,
+            accessors,
+            all_of_schema,
+            &current_schema.schema_uri,
+            &current_schema.definitions,
+            schema_context,
+        )
+        .await
+    {
+        return Some(type_definition);
+    }
+
+    None
 }
 
 pub(super) fn schema_type_definition(

@@ -178,6 +178,18 @@ pub fn adjacent_one_of_hover_test_schema_path() -> PathBuf {
         .join("adjacent-one-of-hover-test.schema.json")
 }
 
+pub fn adjacent_one_of_additional_properties_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("adjacent-one-of-additional-properties-test.schema.json")
+}
+
+pub fn adjacent_applicators_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("adjacent-applicators-test.schema.json")
+}
+
 pub fn unevaluated_items_test_schema_path() -> PathBuf {
     project_root_path()
         .join("schemas")
@@ -194,4 +206,10 @@ pub fn unevaluated_properties_branch_additional_test_schema_path() -> PathBuf {
     project_root_path()
         .join("schemas")
         .join("unevaluated-properties-branch-additional-test.schema.json")
+}
+
+pub fn lsp_consistency_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("lsp-consistency-test.schema.json")
 }

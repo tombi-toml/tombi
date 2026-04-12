@@ -11,6 +11,7 @@ use crate::{
     completion::{
         CompletionContent, CompletionEdit, CompletionHint, FindCompletionContents,
         comment::get_tombi_comment_directive_content_completion_contents,
+        merge_adjacent_schema_completion_items,
     },
 };
 
@@ -85,7 +86,19 @@ impl FindCompletionContents for OffsetDateTimeSchema {
                     self.deprecated,
                 ));
 
-                return completion_items;
+                return merge_adjacent_schema_completion_items(
+                    position,
+                    keys,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                    completion_hint,
+                    completion_items,
+                    self.one_of.as_deref(),
+                    self.any_of.as_deref(),
+                    self.all_of.as_deref(),
+                )
+                .await;
             }
 
             if let Some(r#enum) = &self.r#enum {
@@ -102,7 +115,19 @@ impl FindCompletionContents for OffsetDateTimeSchema {
                     ));
                 }
 
-                return completion_items;
+                return merge_adjacent_schema_completion_items(
+                    position,
+                    keys,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                    completion_hint,
+                    completion_items,
+                    self.one_of.as_deref(),
+                    self.any_of.as_deref(),
+                    self.all_of.as_deref(),
+                )
+                .await;
             }
 
             if let Some(default) = &self.default {
@@ -152,7 +177,19 @@ impl FindCompletionContents for OffsetDateTimeSchema {
                 }
             }
 
-            completion_items
+            merge_adjacent_schema_completion_items(
+                position,
+                keys,
+                accessors,
+                current_schema,
+                schema_context,
+                completion_hint,
+                completion_items,
+                self.one_of.as_deref(),
+                self.any_of.as_deref(),
+                self.all_of.as_deref(),
+            )
+            .await
         }
         .boxed()
     }

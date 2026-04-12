@@ -93,22 +93,21 @@ where
 
         let valid_branches = branch_results.iter().any(|(_, is_valid, _)| *is_valid);
         let narrow_branches = branch_results.iter().any(|(has_key, _, _)| *has_key);
-        let fallback_completion_items = branch_results
-            .iter()
-            .flat_map(|(_, _, items)| items.iter().cloned())
-            .collect_vec();
-        for (branch_has_key, branch_is_valid, items) in branch_results {
+        for (branch_has_key, branch_is_valid, items) in &branch_results {
             if valid_branches {
-                if branch_is_valid {
-                    completion_items.extend(items);
+                if *branch_is_valid {
+                    completion_items.extend(items.iter().cloned());
                 }
-            } else if !narrow_branches || branch_has_key {
-                completion_items.extend(items);
+            } else if !narrow_branches || *branch_has_key {
+                completion_items.extend(items.iter().cloned());
             }
         }
 
         if completion_items.is_empty() {
-            completion_items = fallback_completion_items;
+            completion_items = branch_results
+                .into_iter()
+                .flat_map(|(_, _, items)| items)
+                .collect_vec();
         }
 
         let detail = any_of_schema

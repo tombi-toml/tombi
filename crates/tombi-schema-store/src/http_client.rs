@@ -23,7 +23,7 @@ mod gloo_net_client;
 #[cfg(all(feature = "gloo-net06", not(feature = "wasm")))]
 pub use gloo_net_client::HttpClient;
 
-#[cfg(feature = "surf2")]
+#[cfg(all(feature = "surf2", not(feature = "reqwest01")))]
 mod surf_client;
 #[cfg(all(feature = "surf2", not(feature = "reqwest01")))]
 pub use surf_client::HttpClient;

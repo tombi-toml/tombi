@@ -2,21 +2,22 @@ mod comment;
 mod schema_completion;
 mod value;
 
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 pub use comment::get_document_comment_directive_completion_contents;
 use itertools::Itertools;
 use tombi_ast::{AstNode, AstToken, algo::ancestors_at_position};
 use tombi_config::TomlVersion;
 use tombi_document_tree::{IntoDocumentTreeAndErrors, TryIntoDocumentTree};
+use tombi_extension::CompletionContentPriority;
 use tombi_extension::{
     CommaHint, CommentContext, CompletionContent, CompletionEdit, CompletionHint,
 };
 use tombi_future::Boxable;
 use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
-    Accessor, AccessorKeyKind, CompositeSchema, CurrentSchema, KeyContext, SchemaDefinitions,
-    SchemaStore, SchemaUri, ValueSchema,
+    Accessor, AccessorKeyKind, AllOfSchema, AnyOfSchema, CompositeSchema, CurrentSchema,
+    KeyContext, OneOfSchema, SchemaDefinitions, SchemaStore, SchemaUri, ValueSchema,
 };
 use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
 
@@ -278,6 +279,117 @@ pub trait FindCompletionContents {
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>>;
+}
+
+fn dedup_completion_contents(completion_items: Vec<CompletionContent>) -> Vec<CompletionContent> {
+    let mut seen_labels = tombi_hashmap::HashSet::new();
+
+    completion_items
+        .into_iter()
+        .filter(|item| seen_labels.insert(item.label.clone()))
+        .collect()
+}
+
+fn is_generic_literal_type_hint(completion_item: &CompletionContent) -> bool {
+    matches!(
+        completion_item.priority,
+        CompletionContentPriority::TypeHint
+            | CompletionContentPriority::TypeHintTrue
+            | CompletionContentPriority::TypeHintFalse
+    ) && completion_item.label != "\"\""
+        && completion_item.label != "''"
+}
+
+pub(super) async fn merge_adjacent_schema_completion_items(
+    position: tombi_text::Position,
+    keys: &[tombi_document_tree::Key],
+    accessors: &[Accessor],
+    current_schema: Option<&CurrentSchema<'_>>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+    completion_hint: Option<CompletionHint>,
+    base_completion_items: Vec<CompletionContent>,
+    one_of_schema: Option<&OneOfSchema>,
+    any_of_schema: Option<&AnyOfSchema>,
+    all_of_schema: Option<&AllOfSchema>,
+) -> Vec<CompletionContent> {
+    let Some(current_schema) = current_schema else {
+        return base_completion_items;
+    };
+
+    let mut adjacent_completion_items = Vec::new();
+
+    if let Some(one_of_schema) = one_of_schema {
+        adjacent_completion_items.extend(
+            value::find_one_of_completion_items(
+                &schema_completion::SchemaCompletion,
+                position,
+                keys,
+                accessors,
+                one_of_schema,
+                &CurrentSchema {
+                    value_schema: Arc::new(ValueSchema::OneOf(one_of_schema.clone())),
+                    schema_uri: current_schema.schema_uri.clone(),
+                    definitions: current_schema.definitions.clone(),
+                },
+                schema_context,
+                completion_hint,
+            )
+            .await,
+        );
+    }
+    if let Some(any_of_schema) = any_of_schema {
+        adjacent_completion_items.extend(
+            value::find_any_of_completion_items(
+                &schema_completion::SchemaCompletion,
+                position,
+                keys,
+                accessors,
+                any_of_schema,
+                &CurrentSchema {
+                    value_schema: Arc::new(ValueSchema::AnyOf(any_of_schema.clone())),
+                    schema_uri: current_schema.schema_uri.clone(),
+                    definitions: current_schema.definitions.clone(),
+                },
+                schema_context,
+                completion_hint,
+            )
+            .await,
+        );
+    }
+    if let Some(all_of_schema) = all_of_schema {
+        adjacent_completion_items.extend(
+            value::find_all_of_completion_items(
+                &schema_completion::SchemaCompletion,
+                position,
+                keys,
+                accessors,
+                all_of_schema,
+                &CurrentSchema {
+                    value_schema: Arc::new(ValueSchema::AllOf(all_of_schema.clone())),
+                    schema_uri: current_schema.schema_uri.clone(),
+                    definitions: current_schema.definitions.clone(),
+                },
+                schema_context,
+                completion_hint,
+            )
+            .await,
+        );
+    }
+
+    let has_concrete_adjacent_values = adjacent_completion_items.iter().any(|completion_item| {
+        !matches!(
+            completion_item.priority,
+            CompletionContentPriority::TypeHint
+                | CompletionContentPriority::TypeHintTrue
+                | CompletionContentPriority::TypeHintFalse
+        )
+    });
+
+    let mut completion_items = adjacent_completion_items;
+    completion_items.extend(base_completion_items.into_iter().filter(|completion_item| {
+        !has_concrete_adjacent_values || !is_generic_literal_type_hint(completion_item)
+    }));
+    dedup_completion_contents(completion_items)
 }
 
 pub trait CompletionCandidate {
