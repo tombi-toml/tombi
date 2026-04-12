@@ -1,7 +1,7 @@
 use tombi_config::{JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHEMASTORE_CATALOG_URL};
 use tombi_test_lib::{
-    project_root_path, string_format_test_schema_path, today_local_date, today_local_date_time,
-    today_local_time, today_offset_date_time,
+    adjacent_one_of_hover_test_schema_path, project_root_path, string_format_test_schema_path,
+    today_local_date, today_local_date_time, today_local_time, today_offset_date_time,
 };
 
 mod completion_labels {
@@ -721,6 +721,24 @@ mod completion_labels {
             ) -> Ok([
                 "schemas/type-test.schema.json",
             ]);
+        }
+    }
+
+    mod adjacent_one_of_schema {
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_one_of_builtin_hook_id_value_completion(
+                r#"
+                [[repos]]
+                repo = "builtin"
+                hooks = [
+                  { id = █ }
+                ]
+                "#,
+                SchemaPath(adjacent_one_of_hover_test_schema_path()),
+            ) -> Ok(["\"builtin-hook\"", "\"\"", "''"]);
         }
     }
 

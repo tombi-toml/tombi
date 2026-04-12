@@ -103,6 +103,46 @@ impl FindCompletionContents for tombi_document_tree::Table {
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Table(table_schema) => {
+                        if let Some(one_of_schema) = table_schema.one_of.as_deref() {
+                            return super::one_of::find_one_of_completion_items(
+                                self,
+                                position,
+                                keys,
+                                accessors,
+                                one_of_schema,
+                                current_schema,
+                                schema_context,
+                                completion_hint,
+                            )
+                            .await;
+                        }
+                        if let Some(any_of_schema) = table_schema.any_of.as_deref() {
+                            return super::any_of::find_any_of_completion_items(
+                                self,
+                                position,
+                                keys,
+                                accessors,
+                                any_of_schema,
+                                current_schema,
+                                schema_context,
+                                completion_hint,
+                            )
+                            .await;
+                        }
+                        if let Some(all_of_schema) = table_schema.all_of.as_deref() {
+                            return super::all_of::find_all_of_completion_items(
+                                self,
+                                position,
+                                keys,
+                                accessors,
+                                all_of_schema,
+                                current_schema,
+                                schema_context,
+                                completion_hint,
+                            )
+                            .await;
+                        }
+
                         let mut completion_contents = Vec::new();
 
                         if let Some(key) = keys.first() {

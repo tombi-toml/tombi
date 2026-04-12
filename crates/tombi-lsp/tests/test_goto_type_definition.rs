@@ -1,5 +1,6 @@
 mod goto_type_definition_tests {
     use super::*;
+    use tombi_test_lib::adjacent_one_of_hover_test_schema_path;
 
     mod tombi_schema {
         use super::*;
@@ -147,6 +148,38 @@ mod goto_type_definition_tests {
                 SourcePath(pyproject_schema_path()),
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-document-directive.json");
+        );
+    }
+
+    mod adjacent_one_of_schema {
+        use super::*;
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn adjacent_one_of_builtin_hooks_key(
+                r#"
+                [[repos]]
+                repo = "builtin"
+                ho█oks = []
+                "#,
+                SourcePath(adjacent_one_of_hover_test_schema_path()),
+                SchemaPath(adjacent_one_of_hover_test_schema_path()),
+            ) -> Ok(adjacent_one_of_hover_test_schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn adjacent_one_of_builtin_hook_id_value(
+                r#"
+                [[repos]]
+                repo = "builtin"
+                hooks = [
+                  { id = "█hook" }
+                ]
+                "#,
+                SourcePath(adjacent_one_of_hover_test_schema_path()),
+                SchemaPath(adjacent_one_of_hover_test_schema_path()),
+            ) -> Ok(adjacent_one_of_hover_test_schema_path());
         );
     }
 
