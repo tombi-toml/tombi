@@ -166,6 +166,12 @@ pub fn format_assertion_vocab_test_schema_path() -> PathBuf {
         .join("format-assertion-vocab-test.schema.json")
 }
 
+pub fn one_of_hover_discriminator_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("one-of-hover-discriminator-test.schema.json")
+}
+
 pub fn unevaluated_items_test_schema_path() -> PathBuf {
     project_root_path()
         .join("schemas")

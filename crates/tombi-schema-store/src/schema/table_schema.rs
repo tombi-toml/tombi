@@ -573,13 +573,13 @@ impl FindSchemaCandidates for TableSchema {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum XTombiTableKeysOrder {
     All(TableKeysOrder),
     Groups(Vec<TableKeysOrderGroup>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableKeysOrderGroup {
     pub target: TableKeysOrderGroupKind,
     pub order: TableKeysOrder,

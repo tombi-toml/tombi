@@ -113,6 +113,7 @@ impl PartialEq for HoverValueContent {
             && self.description == other.description
             && self.accessors == other.accessors
             && self.value_type == other.value_type
+            && self.constraints == other.constraints
             && self.range == other.range
     }
 }
@@ -125,6 +126,7 @@ impl std::hash::Hash for HoverValueContent {
         self.description.hash(state);
         self.accessors.hash(state);
         self.value_type.hash(state);
+        self.constraints.hash(state);
         self.range.hash(state);
     }
 }
