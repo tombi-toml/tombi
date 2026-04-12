@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "repos": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Repo"
+      }
+    }
+  },
+  "required": ["repos"],
+  "definitions": {
+    "Repo": {
+      "type": "object",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/RemoteRepo"
+        },
+        {
+          "$ref": "#/definitions/BuiltinRepo"
+        }
+      ]
+    },
+    "RemoteRepo": {
+      "type": "object",
+      "properties": {
+        "repo": {
+          "const": "remote"
+        },
+        "hooks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RemoteHook"
+          }
+        }
+      },
+      "required": ["repo", "hooks"]
+    },
+    "BuiltinRepo": {
+      "type": "object",
+      "properties": {
+        "repo": {
+          "const": "builtin"
+        },
+        "hooks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BuiltinHook"
+          }
+        }
+      },
+      "required": ["repo", "hooks"]
+    },
+    "RemoteHook": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "default": "remote-hook"
+        }
+      },
+      "required": ["id"]
+    },
+    "BuiltinHook": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "default": "builtin-hook"
+        }
+      },
+      "required": ["id"]
+    }
+  }
+}

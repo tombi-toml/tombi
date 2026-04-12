@@ -72,6 +72,46 @@ impl GetHoverContent for tombi_document_tree::Table {
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Table(table_schema) => {
+                        if let Some(one_of_schema) = table_schema.one_of.as_deref() {
+                            return get_one_of_hover_content(
+                                self,
+                                position,
+                                keys,
+                                accessors,
+                                one_of_schema,
+                                &current_schema.schema_uri,
+                                &current_schema.definitions,
+                                schema_context,
+                            )
+                            .await;
+                        }
+                        if let Some(any_of_schema) = table_schema.any_of.as_deref() {
+                            return get_any_of_hover_content(
+                                self,
+                                position,
+                                keys,
+                                accessors,
+                                any_of_schema,
+                                &current_schema.schema_uri,
+                                &current_schema.definitions,
+                                schema_context,
+                            )
+                            .await;
+                        }
+                        if let Some(all_of_schema) = table_schema.all_of.as_deref() {
+                            return get_all_of_hover_content(
+                                self,
+                                position,
+                                keys,
+                                accessors,
+                                all_of_schema,
+                                &current_schema.schema_uri,
+                                &current_schema.definitions,
+                                schema_context,
+                            )
+                            .await;
+                        }
+
                         if let Some(key) = keys.first() {
                             if let Some(value) = self.get(key) {
                                 let accessor = Accessor::Key(key.value.clone());

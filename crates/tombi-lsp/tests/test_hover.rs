@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use tombi_test_lib::{
+    adjacent_one_of_hover_test_schema_path,
     cargo_feature_navigation_fixture_path, cargo_schema_path,
     one_of_hover_discriminator_test_schema_path, pyproject_schema_path,
     ref_sibling_annotations_test_schema_path, string_format_test_schema_path, tombi_schema_path,
@@ -597,6 +598,39 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "repos[0]",
                 "Value": "Table"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn adjacent_one_of_hover_prefers_valid_branch_property_schema(
+                r#"
+                [[repos]]
+                repo = "builtin"
+                ho█oks = []
+                "#,
+                SchemaPath(adjacent_one_of_hover_test_schema_path()),
+            ) -> Ok({
+                "Keys": "repos[0].hooks",
+                "Value": "Array"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn adjacent_one_of_hover_prefers_valid_branch_nested_item_schema(
+                r#"
+                [[repos]]
+                repo = "builtin"
+                hooks = [
+                  { id = "█hook" }
+                ]
+                "#,
+                SchemaPath(adjacent_one_of_hover_test_schema_path()),
+            ) -> Ok({
+                "Keys": "repos[0].hooks[0].id",
+                "Value": "String",
+                "Default": "\"builtin-hook\""
             });
         );
     }

@@ -172,6 +172,12 @@ pub fn one_of_hover_discriminator_test_schema_path() -> PathBuf {
         .join("one-of-hover-discriminator-test.schema.json")
 }
 
+pub fn adjacent_one_of_hover_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("adjacent-one-of-hover-test.schema.json")
+}
+
 pub fn unevaluated_items_test_schema_path() -> PathBuf {
     project_root_path()
         .join("schemas")
