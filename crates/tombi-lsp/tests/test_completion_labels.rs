@@ -645,6 +645,7 @@ mod completion_labels {
                 "format-assertion-vocab-test.schema.json",
                 "if-then-else-test.schema.json",
                 "min-max-contains-test.schema.json",
+                "one-of-hover-discriminator-test.schema.json",
                 "partial-taskipy.schema.json",
                 "prefix-items-test.schema.json",
                 "recursive-anchor-ref-test.schema.json",
