@@ -46,7 +46,7 @@ pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};
 pub use source_schema::{SourceSchema, SubSchemaUriMap};
 pub use string_schema::StringSchema;
 pub use table_schema::{Dependency, TableKeysOrderGroup, TableSchema, XTombiTableKeysOrder};
-pub use tombi_accessor::{SchemaAccessor, SchemaAccessors};
+pub use tombi_accessor::{RootAccessor, RootAccessors, SchemaAccessor, SchemaAccessors};
 pub use tombi_uri::{CatalogUri, SchemaUri};
 pub use value_schema::*;
 
@@ -288,7 +288,7 @@ pub struct Schema {
     pub schema_uri: tombi_uri::SchemaUri,
     pub catalog_uri: Option<Arc<tombi_uri::CatalogUri>>,
     pub include: Vec<String>,
-    pub sub_root_keys: Option<Vec<SchemaAccessor>>,
+    pub sub_root_accessors: Option<Vec<RootAccessor>>,
 }
 
 pub trait FindSchemaCandidates {

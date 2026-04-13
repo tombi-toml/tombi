@@ -1,10 +1,7 @@
-use itertools::Itertools;
 use tombi_severity_level::SeverityLevelDefaultWarn;
 use tombi_x_keyword::StringFormat;
 
 use crate::schema::schema_cycle_guard::SchemaVisits;
-
-use super::SchemaAccessor;
 
 pub struct SchemaContext<'a> {
     pub toml_version: tombi_config::TomlVersion,
@@ -40,8 +37,9 @@ impl SchemaContext<'_> {
         current_schema: Option<&crate::CurrentSchema<'_>>,
     ) -> Option<Result<std::sync::Arc<crate::DocumentSchema>, crate::Error>> {
         if let Some(sub_schema_uri_map) = self.sub_schema_uri_map
-            && let Some(sub_schema_uri) =
-                sub_schema_uri_map.get(&accessors.iter().map(SchemaAccessor::from).collect_vec())
+            && let Some((_, sub_schema_uri)) = sub_schema_uri_map
+                .iter()
+                .find(|(pattern, _)| pattern.as_slice() == accessors)
             && current_schema
                 .is_none_or(|current_schema| &*current_schema.schema_uri != sub_schema_uri)
         {

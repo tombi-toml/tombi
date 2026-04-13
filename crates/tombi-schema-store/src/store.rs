@@ -2,8 +2,8 @@ use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 
 use crate::resolve_json_pointer;
 use crate::{
-    AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, SchemaAccessor,
-    SchemaAccessors, SourceSchema, SubSchemaUriMap, ValueSchema, get_tombi_schemastore_content,
+    AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, RootAccessor, RootAccessors,
+    SourceSchema, SubSchemaUriMap, ValueSchema, get_tombi_schemastore_content,
     http_client::HttpClient, json::JsonCatalog,
 };
 use itertools::{Either, Itertools};
@@ -198,7 +198,7 @@ impl SchemaStore {
                 catalog_uri: None,
                 include: schema.include().to_vec(),
                 toml_version: schema.toml_version(),
-                sub_root_keys: schema.root().and_then(SchemaAccessor::parse),
+                sub_root_accessors: schema.root().and_then(RootAccessor::parse),
             });
         }))
         .await;
@@ -340,7 +340,7 @@ impl SchemaStore {
                     catalog_uri: Some(catalog_uri.clone()),
                     include: schema.file_match,
                     toml_version: None,
-                    sub_root_keys: None,
+                    sub_root_accessors: None,
                 });
             }
         }
@@ -752,10 +752,12 @@ impl SchemaStore {
 
         let mut source_schema: Option<SourceSchema> = None;
         for matching_schema in matching_schemas {
-            // Skip if the same schema (by URL and sub_root_keys) is already loaded in source_schema
-            let already_loaded = match &matching_schema.sub_root_keys {
-                Some(sub_root_keys) => source_schema.as_ref().is_some_and(|source_schema| {
-                    source_schema.sub_schema_uri_map.contains_key(sub_root_keys)
+            // Skip if the same schema (by URL and sub_root_accessors) is already loaded in source_schema
+            let already_loaded = match &matching_schema.sub_root_accessors {
+                Some(sub_root_accessors) => source_schema.as_ref().is_some_and(|source_schema| {
+                    source_schema
+                        .sub_schema_uri_map
+                        .contains_key(sub_root_accessors)
                 }),
                 None => source_schema
                     .as_ref()
@@ -768,20 +770,25 @@ impl SchemaStore {
                 .try_get_document_schema(&matching_schema.schema_uri)
                 .await
             {
-                Ok(Some(document_schema)) => match &matching_schema.sub_root_keys {
-                    Some(sub_root_keys) => match source_schema {
+                Ok(Some(document_schema)) => match &matching_schema.sub_root_accessors {
+                    Some(sub_root_accessors) => match source_schema {
                         Some(ref mut source_schema) => {
-                            if !source_schema.sub_schema_uri_map.contains_key(sub_root_keys) {
+                            if !source_schema
+                                .sub_schema_uri_map
+                                .contains_key(sub_root_accessors)
+                            {
                                 source_schema.sub_schema_uri_map.insert(
-                                    sub_root_keys.clone(),
+                                    sub_root_accessors.clone(),
                                     document_schema.schema_uri.clone(),
                                 );
                             }
                         }
                         None => {
                             let mut sub_schema_uri_map = SubSchemaUriMap::default();
-                            sub_schema_uri_map
-                                .insert(sub_root_keys.clone(), document_schema.schema_uri.clone());
+                            sub_schema_uri_map.insert(
+                                sub_root_accessors.clone(),
+                                document_schema.schema_uri.clone(),
+                            );
                             let new_source = SourceSchema::new(
                                 None,
                                 sub_schema_uri_map,
@@ -871,7 +878,7 @@ impl SchemaStore {
                 for (accessors, schema_uri) in &source_schema.sub_schema_uri_map {
                     log::trace!(
                         "find sub schema {:?} from {}",
-                        SchemaAccessors::from(accessors.clone()),
+                        RootAccessors::from(accessors.clone()),
                         schema_uri
                     );
                 }
@@ -893,7 +900,7 @@ impl SchemaStore {
             catalog_uri: None,
             include,
             toml_version: options.toml_version,
-            sub_root_keys: None,
+            sub_root_accessors: None,
         };
 
         let mut schemas = self.schemas.write().await;

@@ -5,9 +5,9 @@ use tombi_config::TomlVersion;
 use tombi_severity_level::SeverityLevelDefaultWarn;
 
 use super::{DocumentSchema, SchemaUri};
-use crate::{SchemaAccessor, SchemaAccessors};
+use crate::{RootAccessor, RootAccessors};
 
-pub type SubSchemaUriMap = tombi_hashmap::HashMap<Vec<SchemaAccessor>, SchemaUri>;
+pub type SubSchemaUriMap = tombi_hashmap::IndexMap<Vec<RootAccessor>, SchemaUri>;
 
 #[derive(Clone, Default)]
 pub struct SourceSchema {
@@ -57,7 +57,7 @@ impl std::fmt::Debug for SourceSchema {
             .sub_schema_uri_map
             .iter()
             .map(|(accessors, url)| {
-                format!("[{:?}]: {}", SchemaAccessors::from(accessors.clone()), url)
+                format!("[{:?}]: {}", RootAccessors::from(accessors.clone()), url)
             })
             .collect_vec()
             .join(", ");

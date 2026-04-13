@@ -62,7 +62,7 @@ pub async fn get_tombi_value_comment_directive_type_definition(
         Some(Arc::new(
             comment_directive_document_schema(schema_store, schema_uri).await,
         )),
-        tombi_hashmap::HashMap::with_capacity(0),
+        tombi_hashmap::IndexMap::with_capacity(0),
         Some(toml_version),
         None,
     );
