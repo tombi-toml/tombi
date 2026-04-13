@@ -5,7 +5,7 @@ use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, CurrentSchema, FindSchemaCandidates, Referable, RootAccessor, SchemaAccessor,
-    SchemaStore, TableSchema, ValueSchema, is_online_url, schema_pattern_matches_accessors,
+    SchemaStore, TableSchema, ValueSchema, is_online_url,
 };
 
 use crate::{
@@ -1330,7 +1330,7 @@ fn matching_subschema_completion_key<'a>(
         return None;
     };
 
-    schema_pattern_matches_accessors(head_accessors, accessors).then_some(last_key.as_str())
+    (head_accessors == accessors).then_some(last_key.as_str())
 }
 
 fn current_editing_key_range(
