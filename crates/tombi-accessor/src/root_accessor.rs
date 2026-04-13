@@ -35,6 +35,9 @@ impl RootAccessor {
                         index_str.push(chars[i]);
                         i += 1;
                     }
+                    if i >= chars.len() || chars[i] != ']' {
+                        return None;
+                    }
                     if index_str == "*" || index_str.parse::<usize>().is_ok() {
                         accessors.push(RootAccessor::Index);
                     } else {
@@ -218,6 +221,14 @@ mod tests {
             RootAccessor::Key("*".to_string()),
         ]);
         assert_eq!(format!("{accessors}"), r#"tool."*""#);
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("items[*")]
+    #[case("items[foo]")]
+    fn test_root_accessor_parse_invalid(#[case] input: &str) {
+        assert_eq!(RootAccessor::parse(input), None);
     }
 
     #[test]
