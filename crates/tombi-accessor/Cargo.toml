@@ -11,6 +11,7 @@ itertools.workspace = true
 tombi-hashmap.workspace = true
 tombi-text.workspace = true
 tombi-toml-text.workspace = true
+tombi-toml-version.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

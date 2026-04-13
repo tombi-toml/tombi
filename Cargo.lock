@@ -3536,6 +3536,7 @@ dependencies = [
  "tombi-hashmap",
  "tombi-text",
  "tombi-toml-text",
+ "tombi-toml-version",
 ]
 
 [[package]]

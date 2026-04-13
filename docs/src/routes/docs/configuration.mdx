@@ -840,7 +840,7 @@ include = ["pyproject.toml"]
 deprecated = "warn"
 ```
 
-- `root`: The accessor path to apply the sub-schema (e.g., `"tools.tombi"`, `"items[0].name"`)
+- `root`: The accessor path to apply the sub-schema (e.g., `"tools.tombi"`, `"tool.*"`, `"tool.'*'"`, `"items[0].name"`). Use bare `*` for any key segment and `[*]` for any array element. If you need the literal key `*`, quote it as `'*'` or `"*"`.
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
 - `lint.rules.deprecated`(optional): Override the deprecated diagnostic level for this schema with `"off"`, `"warn"`, or `"error"`

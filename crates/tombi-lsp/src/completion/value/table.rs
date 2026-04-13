@@ -4,8 +4,8 @@ use futures::future::join_all;
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, CurrentSchema, FindSchemaCandidates, Referable, SchemaAccessor, SchemaStore,
-    TableSchema, ValueSchema, is_online_url,
+    Accessor, CurrentSchema, FindSchemaCandidates, Referable, RootAccessor, SchemaAccessor,
+    SchemaStore, TableSchema, ValueSchema, is_online_url, schema_pattern_matches_accessors,
 };
 
 use crate::{
@@ -645,59 +645,60 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
                             if let Some(sub_schema_uri_map) = schema_context.sub_schema_uri_map {
                                 for (root_accessors, sub_schema_uri) in sub_schema_uri_map {
-                                    if let Some(SchemaAccessor::Key(last_key)) =
-                                        root_accessors.last()
+                                    if let Some(last_key) =
+                                        matching_subschema_completion_key(root_accessors, accessors)
                                     {
-                                        let head_accessors =
-                                            &root_accessors[..root_accessors.len() - 1];
-                                        if head_accessors == accessors
-                                            && let Ok(Some(document_schema)) = schema_context
-                                                .store
-                                                .try_get_document_schema(sub_schema_uri)
-                                                .await
-                                            && let Some(value_schema) =
-                                                &document_schema.value_schema
-                                        {
-                                            let (schema_candidates, errors) = value_schema
-                                                .find_schema_candidates(
-                                                    accessors,
-                                                    &document_schema.schema_uri,
-                                                    &document_schema.definitions,
-                                                    schema_context.store,
-                                                )
-                                                .await;
+                                        let Ok(Some(document_schema)) = schema_context
+                                            .store
+                                            .try_get_document_schema(sub_schema_uri)
+                                            .await
+                                        else {
+                                            continue;
+                                        };
+                                        let Some(value_schema) = &document_schema.value_schema
+                                        else {
+                                            continue;
+                                        };
 
-                                            for error in errors {
-                                                log::warn!("{}", error);
-                                            }
+                                        let (schema_candidates, errors) = value_schema
+                                            .find_schema_candidates(
+                                                accessors,
+                                                &document_schema.schema_uri,
+                                                &document_schema.definitions,
+                                                schema_context.store,
+                                            )
+                                            .await;
 
-                                            completion_contents.push(CompletionContent::new_key(
-                                                last_key,
-                                                position,
-                                                current_editing_key_range(keys, position),
-                                                value_schema
-                                                    .detail(
-                                                        &current_schema.schema_uri,
-                                                        &current_schema.definitions,
-                                                        schema_context.store,
-                                                        completion_hint,
-                                                    )
-                                                    .await,
-                                                value_schema
-                                                    .documentation(
-                                                        &current_schema.schema_uri,
-                                                        &current_schema.definitions,
-                                                        schema_context.store,
-                                                        completion_hint,
-                                                    )
-                                                    .await,
-                                                None,
-                                                Some(current_schema.schema_uri.as_ref()),
-                                                value_schema.deprecated().await,
-                                                completion_hint,
-                                                key_singleton_literal_label(&schema_candidates),
-                                            ));
+                                        for error in errors {
+                                            log::warn!("{}", error);
                                         }
+
+                                        completion_contents.push(CompletionContent::new_key(
+                                            last_key,
+                                            position,
+                                            current_editing_key_range(keys, position),
+                                            value_schema
+                                                .detail(
+                                                    &current_schema.schema_uri,
+                                                    &current_schema.definitions,
+                                                    schema_context.store,
+                                                    completion_hint,
+                                                )
+                                                .await,
+                                            value_schema
+                                                .documentation(
+                                                    &current_schema.schema_uri,
+                                                    &current_schema.definitions,
+                                                    schema_context.store,
+                                                    completion_hint,
+                                                )
+                                                .await,
+                                            None,
+                                            Some(current_schema.schema_uri.as_ref()),
+                                            value_schema.deprecated().await,
+                                            completion_hint,
+                                            key_singleton_literal_label(&schema_candidates),
+                                        ));
                                     }
                                 }
                             }
@@ -1321,6 +1322,17 @@ fn key_singleton_literal_label(schema_candidates: &[ValueSchema]) -> Option<Stri
     }
 }
 
+fn matching_subschema_completion_key<'a>(
+    root_accessors: &'a [RootAccessor],
+    accessors: &[Accessor],
+) -> Option<&'a str> {
+    let (RootAccessor::Key(last_key), head_accessors) = root_accessors.split_last()? else {
+        return None;
+    };
+
+    schema_pattern_matches_accessors(head_accessors, accessors).then_some(last_key.as_str())
+}
+
 fn current_editing_key_range(
     keys: &[tombi_document_tree::Key],
     position: tombi_text::Position,
@@ -1329,4 +1341,47 @@ fn current_editing_key_range(
         let range = key.range();
         (range.start <= position && position <= range.end).then_some(range)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use tombi_schema_store::{Accessor, RootAccessor};
+
+    use super::matching_subschema_completion_key;
+
+    #[test]
+    fn wildcard_subschema_root_matches_completion_parent_path() {
+        let root_accessors = vec![
+            RootAccessor::Key("tool".to_string()),
+            RootAccessor::AnyKey,
+            RootAccessor::Key("enabled".to_string()),
+        ];
+        let accessors = vec![
+            Accessor::Key("tool".to_string()),
+            Accessor::Key("taskipy".to_string()),
+        ];
+
+        assert_eq!(
+            matching_subschema_completion_key(&root_accessors, &accessors),
+            Some("enabled")
+        );
+    }
+
+    #[test]
+    fn wildcard_leaf_is_not_exposed_as_completion_key() {
+        let root_accessors = vec![
+            RootAccessor::Key("tool".to_string()),
+            RootAccessor::Key("taskipy".to_string()),
+            RootAccessor::AnyKey,
+        ];
+        let accessors = vec![
+            Accessor::Key("tool".to_string()),
+            Accessor::Key("taskipy".to_string()),
+        ];
+
+        assert_eq!(
+            matching_subschema_completion_key(&root_accessors, &accessors),
+            None
+        );
+    }
 }
