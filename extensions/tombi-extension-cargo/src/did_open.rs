@@ -70,20 +70,21 @@ pub async fn did_open(
             return false;
         }
 
+        let should_refresh_inlay_hint = !urls.awaited.is_empty();
+
         if !urls.background.is_empty() {
-            let background_urls = urls.background;
             let background_cache_options = cache_options.clone();
+            let background_urls = urls.background;
             tokio::spawn(async move {
                 warm_urls(background_urls, offline, background_cache_options).await;
             });
         }
 
-        if urls.awaited.is_empty() {
-            return false;
+        if !urls.awaited.is_empty() {
+            warm_urls(urls.awaited, offline, cache_options).await;
         }
 
-        warm_urls(urls.awaited, offline, cache_options).await;
-        true
+        should_refresh_inlay_hint
     });
 
     Ok(Some(handle))
