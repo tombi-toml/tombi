@@ -103,6 +103,7 @@ impl Backend {
             .background_tasks
             .lock()
             .unwrap_or_else(|error| error.into_inner());
+        background_tasks.retain(|task| !task.is_finished());
         background_tasks.push(task.abort_handle());
     }
 

@@ -71,18 +71,22 @@ pub async fn did_open(
         }
 
         let should_refresh_inlay_hint = !urls.awaited.is_empty();
+        let awaited_urls = urls.awaited;
+        let background_urls = urls.background;
+        let background_cache_options = cache_options.clone();
 
-        if !urls.background.is_empty() {
-            let background_cache_options = cache_options.clone();
-            let background_urls = urls.background;
-            tokio::spawn(async move {
-                warm_urls(background_urls, offline, background_cache_options).await;
-            });
-        }
-
-        if !urls.awaited.is_empty() {
-            warm_urls(urls.awaited, offline, cache_options).await;
-        }
+        tokio::join!(
+            async move {
+                if !background_urls.is_empty() {
+                    warm_urls(background_urls, offline, background_cache_options).await;
+                }
+            },
+            async move {
+                if !awaited_urls.is_empty() {
+                    warm_urls(awaited_urls, offline, cache_options).await;
+                }
+            }
+        );
 
         should_refresh_inlay_hint
     });
