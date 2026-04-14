@@ -1353,6 +1353,8 @@ mod completion_edit {
                     }
                 }
 
+                backend.abort_background_tasks();
+
                 pretty_assertions::assert_eq!(new_text, textwrap::dedent($expected).trim());
 
                 Ok(())
