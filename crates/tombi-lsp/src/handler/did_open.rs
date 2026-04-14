@@ -65,8 +65,9 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
     backend.push_diagnostics(text_document_uri).await;
 
     if let Some(handle) = cache_warming_handle {
+        backend.register_background_task(&handle);
         let client = backend.client.clone();
-        tokio::spawn(async move {
+        let refresh_task = tokio::spawn(async move {
             let Ok(should_refresh_inlay_hint) = handle.await else {
                 return;
             };
@@ -75,5 +76,6 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
                 log::debug!("Failed to request warmed inlay hint refresh: {err}");
             }
         });
+        backend.register_background_task(&refresh_task);
     }
 }

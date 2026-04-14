@@ -45,6 +45,7 @@ pub struct Backend {
     #[allow(dead_code)]
     pub client: tower_lsp::Client,
     pub capabilities: Arc<tokio::sync::RwLock<BackendCapabilities>>,
+    pub background_tasks: Arc<std::sync::Mutex<Vec<tokio::task::AbortHandle>>>,
     pub document_sources:
         Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<tombi_uri::Uri, DocumentSource>>>,
     pub config_manager: Arc<ConfigManager>,
@@ -88,8 +89,32 @@ impl Backend {
                 encoding_kind: EncodingKind::default(),
                 diagnostic_mode: DiagnosticMode::Push,
             })),
+            background_tasks: Default::default(),
             document_sources: Default::default(),
             config_manager: Arc::new(ConfigManager::new(options)),
+        }
+    }
+
+    pub fn register_background_task(
+        &self,
+        task: &tokio::task::JoinHandle<impl Send + 'static>,
+    ) {
+        let mut background_tasks = self
+            .background_tasks
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        background_tasks.retain(|task| !task.is_finished());
+        background_tasks.push(task.abort_handle());
+    }
+
+    pub fn abort_background_tasks(&self) {
+        let mut background_tasks = self
+            .background_tasks
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+
+        for task in background_tasks.drain(..) {
+            task.abort();
         }
     }
 
@@ -245,6 +270,12 @@ impl Backend {
     }
 }
 
+impl Drop for Backend {
+    fn drop(&mut self) {
+        self.abort_background_tasks();
+    }
+}
+
 #[tower_lsp::async_trait]
 impl tower_lsp::LanguageServer for Backend {
     async fn initialize(
@@ -259,7 +290,7 @@ impl tower_lsp::LanguageServer for Backend {
     }
 
     async fn shutdown(&self) -> Result<(), tower_lsp::jsonrpc::Error> {
-        handle_shutdown().await
+        handle_shutdown(self).await
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
