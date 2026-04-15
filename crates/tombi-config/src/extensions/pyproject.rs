@@ -128,10 +128,10 @@ impl PyprojectExtensionFeatures {
     }
 
     pub fn pypi_org_document_link_enabled(&self) -> bool {
-        self.document_link_enabled()
+        self.enabled()
             && self
                 .lsp()
-                .is_some_and(PyprojectLspFeatures::pypi_org_document_link_enabled)
+                .map_or(true, PyprojectLspFeatures::pypi_org_document_link_enabled)
     }
 
     pub fn hover_enabled(&self) -> bool {
@@ -768,7 +768,7 @@ mod tests {
 
         assert!(features.document_link_enabled());
         assert!(!features.pyproject_toml_document_link_enabled());
-        assert!(!features.pypi_org_document_link_enabled());
+        assert!(features.pypi_org_document_link_enabled());
     }
 }
 

@@ -192,10 +192,10 @@ impl CargoExtensionFeatures {
     }
 
     pub fn crates_io_document_link_enabled(&self) -> bool {
-        self.document_link_enabled()
+        self.enabled()
             && self
                 .lsp()
-                .is_some_and(CargoLspFeatures::crates_io_document_link_enabled)
+                .map_or(true, CargoLspFeatures::crates_io_document_link_enabled)
     }
 
     pub fn code_action_enabled(&self) -> bool {
@@ -1179,6 +1179,6 @@ mod tests {
         assert!(!features.workspace_document_link_enabled());
         assert!(!features.git_document_link_enabled());
         assert!(!features.path_document_link_enabled());
-        assert!(!features.crates_io_document_link_enabled());
+        assert!(features.crates_io_document_link_enabled());
     }
 }
