@@ -95,10 +95,7 @@ impl Backend {
         }
     }
 
-    pub fn register_background_task(
-        &self,
-        task: &tokio::task::JoinHandle<impl Send + 'static>,
-    ) {
+    pub fn register_background_task(&self, task: &tokio::task::JoinHandle<impl Send + 'static>) {
         let mut background_tasks = self
             .background_tasks
             .lock()

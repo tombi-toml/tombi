@@ -159,6 +159,13 @@ impl CargoExtensionFeatures {
                 .map_or(true, CargoLspFeatures::cargo_toml_document_link_enabled)
     }
 
+    pub fn workspace_document_link_enabled(&self) -> bool {
+        self.enabled()
+            && self
+                .lsp()
+                .map_or(true, CargoLspFeatures::workspace_document_link_enabled)
+    }
+
     pub fn git_document_link_enabled(&self) -> bool {
         self.enabled()
             && self
@@ -439,6 +446,13 @@ impl CargoLspFeatures {
             && self
                 .document_link()
                 .map_or(true, CargoDocumentLinkFeatures::cargo_toml_enabled)
+    }
+
+    pub fn workspace_document_link_enabled(&self) -> bool {
+        self.enabled()
+            && self
+                .document_link()
+                .map_or(true, CargoDocumentLinkFeatures::workspace_enabled)
     }
 
     pub fn git_document_link_enabled(&self) -> bool {
@@ -879,6 +893,17 @@ impl CargoDocumentLinkFeatures {
             }
     }
 
+    pub fn workspace_enabled(&self) -> bool {
+        self.enabled()
+            && match self {
+                Self::Enabled(_) => true,
+                Self::Features(features) => features
+                    .workspace
+                    .as_ref()
+                    .map_or(true, ToggleFeature::enabled),
+            }
+    }
+
     pub fn git_enabled(&self) -> bool {
         self.enabled()
             && match self {
@@ -928,6 +953,11 @@ pub struct CargoDocumentLinkFeatureTree {
     /// Whether document links are created for `Cargo.toml` references.
     pub cargo_toml: Option<ToggleFeature>,
 
+    /// # crates.io document link feature
+    ///
+    /// Whether document links are created for crates.io package references.
+    pub crates_io: Option<ToggleFeature>,
+
     /// # Git document link feature
     ///
     /// Whether document links are created for Git references.
@@ -938,10 +968,10 @@ pub struct CargoDocumentLinkFeatureTree {
     /// Whether document links are created for filesystem paths.
     pub path: Option<ToggleFeature>,
 
-    /// # crates.io document link feature
+    /// # Workspace document link feature
     ///
-    /// Whether document links are created for crates.io package references.
-    pub crates_io: Option<ToggleFeature>,
+    /// Whether document links are created for `workspace = true` references.
+    pub workspace: Option<ToggleFeature>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1045,7 +1075,7 @@ pub struct CargoCodeActionFeatureTree {
 mod tests {
     use crate::BoolDefaultTrue;
 
-    use super::{CargoInlayHintFeatureTree, ToggleFeature};
+    use super::{CargoDocumentLinkFeatureTree, CargoInlayHintFeatureTree, ToggleFeature};
 
     #[test]
     fn cargo_inlay_hint_feature_tree_deserializes_workspace_value_key() {
@@ -1082,5 +1112,43 @@ mod tests {
             }))
         );
         assert!(value.get("workspace").is_none());
+    }
+
+    #[test]
+    fn cargo_document_link_feature_tree_deserializes_workspace_key() {
+        let features: CargoDocumentLinkFeatureTree = serde_json::from_value(serde_json::json!({
+            "workspace": {
+                "enabled": false
+            }
+        }))
+        .expect("workspace should deserialize");
+
+        assert_eq!(
+            features.workspace,
+            Some(ToggleFeature {
+                enabled: Some(BoolDefaultTrue::from(false)),
+            })
+        );
+    }
+
+    #[test]
+    fn cargo_document_link_feature_tree_serializes_workspace_key() {
+        let value = serde_json::to_value(CargoDocumentLinkFeatureTree {
+            cargo_toml: None,
+            workspace: Some(ToggleFeature {
+                enabled: Some(BoolDefaultTrue::from(false)),
+            }),
+            git: None,
+            path: None,
+            crates_io: None,
+        })
+        .expect("workspace should serialize");
+
+        assert_eq!(
+            value.get("workspace"),
+            Some(&serde_json::json!({
+                "enabled": false
+            }))
+        );
     }
 }

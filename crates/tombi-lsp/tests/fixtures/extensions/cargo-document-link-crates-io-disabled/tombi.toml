@@ -1,0 +1,2 @@
+[extensions]
+"tombi-toml/cargo" = { lsp.document-link.crates-io.enabled = false }

@@ -1,7 +1,6 @@
 use std::{borrow::Cow, str::FromStr};
 
 use crate::{
-    canonicalize_or_original,
     feature_navigation::{CargoFeatureRef, parse_cargo_feature_ref},
     find_cargo_toml, find_package_cargo_toml_paths, find_workspace_cargo_toml,
     get_uri_relative_to_cargo_toml, get_workspace_cargo_toml_path, load_cargo_toml,
@@ -19,6 +18,7 @@ struct Registry {
     index: String,
 }
 
+#[derive(Clone, Copy)]
 pub enum DocumentLinkToolTip {
     GitRepository,
     Registry,
@@ -26,7 +26,7 @@ pub enum DocumentLinkToolTip {
     CargoToml,
     CargoTomlFirstMember,
     WorkspaceCargoToml,
-    RustSource,
+    PathFile,
 }
 
 impl From<&DocumentLinkToolTip> for &'static str {
@@ -39,7 +39,7 @@ impl From<&DocumentLinkToolTip> for &'static str {
             DocumentLinkToolTip::CargoToml => "Open Cargo.toml",
             DocumentLinkToolTip::CargoTomlFirstMember => "Open first Cargo.toml in members",
             DocumentLinkToolTip::WorkspaceCargoToml => "Open Workspace Cargo.toml",
-            DocumentLinkToolTip::RustSource => "Open Rust Source",
+            DocumentLinkToolTip::PathFile => "Open Path File",
         }
     }
 }
@@ -338,7 +338,7 @@ fn document_link_for_crate_cargo_toml(
 
         // Support Package Table
         // See: https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table
-        if cargo_toml_document_link_enabled(features) {
+        if workspace_document_link_enabled(features) {
             for package_item in [
                 "authors",
                 "categories",
@@ -386,7 +386,7 @@ fn document_link_for_crate_cargo_toml(
 
         // Support Lints Workspace
         // See: https://doc.rust-lang.org/cargo/reference/workspaces.html#the-lints-table
-        if cargo_toml_document_link_enabled(features)
+        if workspace_document_link_enabled(features)
             && let (
                 Some((workspace_key, tombi_document_tree::Value::Boolean(value))),
                 Some((workspace_lints_key, _)),
@@ -483,8 +483,6 @@ fn document_link_for_feature_table_strings(
         return Vec::new();
     };
 
-    let canonical_cargo_toml_path = canonicalize_or_original(cargo_toml_path.to_path_buf());
-
     features_table
         .values()
         .filter_map(|value| match value {
@@ -509,10 +507,14 @@ fn document_link_for_feature_table_strings(
                 feature_string,
                 toml_version,
             )?;
-            if !feature_document_link_allowed(&canonical_cargo_toml_path, &target, features) {
+            if !cargo_toml_document_link_enabled(features) {
                 return None;
             }
-            cargo_toml_document_link(feature_string.unquoted_range(), &target)
+            cargo_toml_document_link(
+                feature_string.unquoted_range(),
+                &target,
+                DocumentLinkToolTip::CargoToml,
+            )
         })
         .collect()
 }
@@ -619,8 +621,6 @@ fn document_link_for_dependency_table_features<F>(
 where
     F: Fn(&str) -> Vec<Accessor>,
 {
-    let canonical_cargo_toml_path = canonicalize_or_original(cargo_toml_path.to_path_buf());
-
     dependencies
         .key_values()
         .iter()
@@ -631,7 +631,6 @@ where
             let Some(tombi_document_tree::Value::Array(features)) = table.get("features") else {
                 return Vec::new();
             };
-
             features
                 .values()
                 .iter()
@@ -644,14 +643,14 @@ where
                             feature_string,
                             toml_version,
                         )?;
-                        if !feature_document_link_allowed(
-                            &canonical_cargo_toml_path,
-                            &target,
-                            extension_features,
-                        ) {
+                        if !cargo_toml_document_link_enabled(extension_features) {
                             return None;
                         }
-                        cargo_toml_document_link(feature_string.unquoted_range(), &target)
+                        cargo_toml_document_link(
+                            feature_string.unquoted_range(),
+                            &target,
+                            DocumentLinkToolTip::CargoToml,
+                        )
                     }
                     _ => None,
                 })
@@ -663,22 +662,84 @@ where
 fn cargo_toml_document_link(
     range: tombi_text::Range,
     target: &crate::CargoTargetLocation,
+    tooltip: DocumentLinkToolTip,
 ) -> Option<tombi_extension::DocumentLink> {
     let mut target_uri = tombi_uri::Uri::from_file_path(&target.cargo_toml_path).ok()?;
     target_uri.set_fragment(Some(&format!("L{}", target.range.start.line + 1)));
     Some(tombi_extension::DocumentLink {
         target: target_uri,
         range,
-        tooltip: DocumentLinkToolTip::CargoToml.into(),
+        tooltip: tooltip.into(),
     })
 }
 
-fn feature_document_link_allowed(
-    canonical_cargo_toml_path: &std::path::Path,
-    target: &crate::CargoTargetLocation,
+fn dependency_table_tooltip(table: &tombi_document_tree::Table) -> DocumentLinkToolTip {
+    if table.contains_key("path") {
+        DocumentLinkToolTip::PathFile
+    } else {
+        DocumentLinkToolTip::CargoToml
+    }
+}
+
+fn dependency_uses_local_path(crate_value: &tombi_document_tree::Value) -> bool {
+    matches!(
+        crate_value,
+        tombi_document_tree::Value::Table(table) if table.contains_key("path")
+    )
+}
+
+fn workspace_dependency_target(
+    crate_key: &tombi_document_tree::Key,
+    crate_value: &tombi_document_tree::Value,
+    workspace_cargo_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+) -> Option<crate::CargoTargetLocation> {
+    let tombi_document_tree::Value::Table(table) = crate_value else {
+        return None;
+    };
+    let tombi_document_tree::Value::String(crate_path) = table.get("path")? else {
+        return None;
+    };
+    let (cargo_toml_path, _, document_tree) = find_cargo_toml(
+        workspace_cargo_toml_path,
+        std::path::Path::new(crate_path.value()),
+        toml_version,
+    )?;
+    let Some((package_name_key, tombi_document_tree::Value::String(package_name))) =
+        dig_keys(&document_tree, &["package", "name"])
+    else {
+        return None;
+    };
+    let package_name_matches =
+        if let Some(tombi_document_tree::Value::String(real_package_name)) = table.get("package") {
+            package_name.value() == real_package_name.value()
+        } else {
+            package_name.value() == crate_key.value
+        };
+
+    package_name_matches.then(|| crate::CargoTargetLocation {
+        cargo_toml_path,
+        range: package_name_key.range(),
+    })
+}
+
+fn dependency_key_tooltip(
+    tooltip: &std::borrow::Cow<'static, str>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
+) -> Option<std::borrow::Cow<'static, str>> {
+    if tooltip_matches(tooltip, DocumentLinkToolTip::PathFile) {
+        cargo_toml_document_link_enabled(features)
+            .then(|| std::borrow::Cow::Borrowed(DocumentLinkToolTip::CargoToml.into()))
+    } else {
+        Some(tooltip.clone())
+    }
+}
+
+fn tooltip_matches(
+    tooltip: &std::borrow::Cow<'static, str>,
+    expected: DocumentLinkToolTip,
 ) -> bool {
-    target.cargo_toml_path == canonical_cargo_toml_path || path_document_link_enabled(features)
+    tooltip.as_ref() == Into::<&'static str>::into(expected)
 }
 
 fn document_link_for_workspace_dependency(
@@ -699,6 +760,9 @@ fn document_link_for_workspace_dependency(
     )?;
 
     if document_links.is_empty() {
+        if dependency_uses_local_path(crate_value) {
+            return Ok(Vec::new());
+        }
         Ok((crates_io_document_link_enabled(features))
             .then(|| get_crate_io_crate_link(crate_key, crate_value))
             .flatten()
@@ -708,14 +772,16 @@ fn document_link_for_workspace_dependency(
         Ok(document_links
             .into_iter()
             .flat_map(|document_link| {
-                [
-                    tombi_extension::DocumentLink {
+                let mut links = Vec::with_capacity(2);
+                if let Some(tooltip) = dependency_key_tooltip(&document_link.tooltip, features) {
+                    links.push(tombi_extension::DocumentLink {
                         target: document_link.target.clone(),
                         range: crate_key.unquoted_range(),
-                        tooltip: document_link.tooltip.clone(),
-                    },
-                    document_link,
-                ]
+                        tooltip,
+                    });
+                }
+                links.push(document_link);
+                links
             })
             .collect())
     }
@@ -744,14 +810,16 @@ fn document_link_for_crate_dependency_has_workspace(
         return Ok(document_links
             .into_iter()
             .flat_map(|document_link| {
-                [
-                    tombi_extension::DocumentLink {
+                let mut links = Vec::with_capacity(2);
+                if let Some(tooltip) = dependency_key_tooltip(&document_link.tooltip, features) {
+                    links.push(tombi_extension::DocumentLink {
                         target: document_link.target.clone(),
                         range: crate_key.unquoted_range(),
-                        tooltip: document_link.tooltip.clone(),
-                    },
-                    document_link,
-                ]
+                        tooltip,
+                    });
+                }
+                links.push(document_link);
+                links
             })
             .collect());
     }
@@ -762,22 +830,53 @@ fn document_link_for_crate_dependency_has_workspace(
             table.get_key_value("workspace")
         && is_workspace.value()
         && let Some(workspace_crate_value) = workspace_dependencies.get(&crate_key)
-        && let Ok(mut target) = tombi_uri::Uri::from_file_path(workspace_cargo_toml_path)
     {
-        let mut document_links = document_link_for_workspace_dependency(
-            crate_key,
-            workspace_crate_value,
-            workspace_cargo_toml_path,
-            registries,
-            toml_version,
-            features,
-        )?
-        .into_iter()
-        .next()
-        .into_iter()
-        .collect_vec();
+        let mut document_links = if dependency_uses_local_path(workspace_crate_value) {
+            cargo_toml_document_link_enabled(features)
+                .then(|| {
+                    workspace_dependency_target(
+                        crate_key,
+                        workspace_crate_value,
+                        workspace_cargo_toml_path,
+                        toml_version,
+                    )
+                })
+                .flatten()
+                .and_then(|target_location| {
+                    cargo_toml_document_link(
+                        crate_key.unquoted_range(),
+                        &target_location,
+                        DocumentLinkToolTip::CargoToml,
+                    )
+                })
+                .into_iter()
+                .collect_vec()
+        } else {
+            document_link_for_workspace_dependency(
+                crate_key,
+                workspace_crate_value,
+                workspace_cargo_toml_path,
+                registries,
+                toml_version,
+                features,
+            )?
+            .into_iter()
+            .next()
+            .into_iter()
+            .collect_vec()
+        };
+        let tooltip = dependency_table_tooltip(table);
+        for document_link in &mut document_links {
+            if tooltip_matches(&document_link.tooltip, DocumentLinkToolTip::CargoToml)
+                || tooltip_matches(&document_link.tooltip, DocumentLinkToolTip::PathFile)
+            {
+                document_link.tooltip = std::borrow::Cow::Borrowed((&tooltip).into());
+            }
+        }
 
-        if cargo_toml_document_link_enabled(features) {
+        if workspace_document_link_enabled(features)
+            && let Ok(mut target) = tombi_uri::Uri::from_file_path(workspace_cargo_toml_path)
+        {
             target.set_fragment(Some(&format!(
                 "L{}",
                 workspace_crate_value.range().start.line + 1
@@ -830,7 +929,7 @@ fn document_link_for_bin_targets(
             Some(tombi_extension::DocumentLink {
                 target,
                 range: path_string.unquoted_range(),
-                tooltip: DocumentLinkToolTip::RustSource.into(),
+                tooltip: DocumentLinkToolTip::PathFile.into(),
             })
         })
         .collect()
@@ -883,7 +982,7 @@ fn document_link_for_dependency(
                 document_links.push(tombi_extension::DocumentLink {
                     target,
                     range: crate_path.unquoted_range(),
-                    tooltip: DocumentLinkToolTip::CargoToml.into(),
+                    tooltip: DocumentLinkToolTip::PathFile.into(),
                 });
             }
         }
@@ -960,6 +1059,15 @@ fn cargo_toml_document_link_enabled(
     )
 }
 
+fn workspace_document_link_enabled(
+    features: Option<&tombi_config::CargoExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::CargoExtensionFeatures::workspace_document_link_enabled,
+    )
+}
+
 fn git_document_link_enabled(features: Option<&tombi_config::CargoExtensionFeatures>) -> bool {
     features.map_or(
         true,
@@ -1005,9 +1113,16 @@ fn get_crate_io_crate_link(
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::fs;
 
-    use super::feature_document_link_allowed;
+    use tombi_config::TomlVersion;
+    use tombi_document_tree::dig_keys;
+
+    use crate::document_link::{
+        cargo_toml_document_link_enabled, dependency_key_tooltip, workspace_document_link_enabled,
+    };
+
+    use super::{RegistryMap, document_link_for_dependency};
 
     fn disabled_path_link_features() -> tombi_config::CargoExtensionFeatures {
         tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
@@ -1020,6 +1135,7 @@ mod tests {
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
                         tombi_config::CargoDocumentLinkFeatureTree {
                             cargo_toml: None,
+                            workspace: None,
                             git: None,
                             path: Some(tombi_config::ToggleFeature {
                                 enabled: Some(false.into()),
@@ -1034,35 +1150,210 @@ mod tests {
         })
     }
 
-    #[test]
-    fn feature_document_link_allows_same_file_when_path_links_disabled() {
-        let cargo_toml_path = PathBuf::from("/tmp/source/Cargo.toml");
-        let target = crate::CargoTargetLocation {
-            cargo_toml_path: cargo_toml_path.clone(),
-            range: tombi_text::Range::default(),
-        };
-        let features = disabled_path_link_features();
+    fn disabled_cargo_toml_link_features() -> tombi_config::CargoExtensionFeatures {
+        tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
+            lsp: Some(tombi_config::CargoLspFeatures::Features(
+                tombi_config::CargoLspFeatureTree {
+                    completion: None,
+                    inlay_hint: None,
+                    goto_definition: None,
+                    goto_declaration: None,
+                    document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
+                        tombi_config::CargoDocumentLinkFeatureTree {
+                            cargo_toml: Some(tombi_config::ToggleFeature {
+                                enabled: Some(false.into()),
+                            }),
+                            workspace: None,
+                            git: None,
+                            path: None,
+                            crates_io: None,
+                        },
+                    )),
+                    hover: None,
+                    code_action: None,
+                },
+            )),
+        })
+    }
 
-        assert!(feature_document_link_allowed(
-            &cargo_toml_path,
-            &target,
-            Some(&features),
-        ));
+    fn disabled_workspace_link_features() -> tombi_config::CargoExtensionFeatures {
+        tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
+            lsp: Some(tombi_config::CargoLspFeatures::Features(
+                tombi_config::CargoLspFeatureTree {
+                    completion: None,
+                    inlay_hint: None,
+                    goto_definition: None,
+                    goto_declaration: None,
+                    document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
+                        tombi_config::CargoDocumentLinkFeatureTree {
+                            cargo_toml: None,
+                            workspace: Some(tombi_config::ToggleFeature {
+                                enabled: Some(false.into()),
+                            }),
+                            git: None,
+                            path: None,
+                            crates_io: None,
+                        },
+                    )),
+                    hover: None,
+                    code_action: None,
+                },
+            )),
+        })
     }
 
     #[test]
-    fn feature_document_link_blocks_cross_file_when_path_links_disabled() {
-        let cargo_toml_path = PathBuf::from("/tmp/source/Cargo.toml");
-        let target = crate::CargoTargetLocation {
-            cargo_toml_path: PathBuf::from("/tmp/other/Cargo.toml"),
-            range: tombi_text::Range::default(),
-        };
+    fn feature_document_link_allows_same_file_when_path_links_disabled() {
         let features = disabled_path_link_features();
 
-        assert!(!feature_document_link_allowed(
-            &cargo_toml_path,
-            &target,
+        assert!(cargo_toml_document_link_enabled(Some(&features)));
+    }
+
+    #[test]
+    fn feature_document_link_allows_cross_file_when_path_links_disabled() {
+        let features = disabled_path_link_features();
+
+        assert!(cargo_toml_document_link_enabled(Some(&features),));
+    }
+
+    #[test]
+    fn workspace_document_link_uses_independent_setting() {
+        let features = disabled_cargo_toml_link_features();
+
+        assert!(workspace_document_link_enabled(Some(&features)));
+
+        let features = disabled_workspace_link_features();
+
+        assert!(!workspace_document_link_enabled(Some(&features)));
+    }
+
+    #[test]
+    fn path_dependency_uses_path_setting_instead_of_cargo_toml_setting() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let source_cargo_toml_path = temp_dir.path().join("Cargo.toml");
+        let member_dir = temp_dir.path().join("member");
+        let member_cargo_toml_path = member_dir.join("Cargo.toml");
+
+        fs::create_dir_all(&member_dir).unwrap();
+        fs::write(
+            &source_cargo_toml_path,
+            r#"
+[package]
+name = "app"
+version = "0.1.0"
+
+[dependencies]
+member = { path = "member" }
+"#,
+        )
+        .unwrap();
+        fs::write(
+            &member_cargo_toml_path,
+            r#"
+[package]
+name = "member"
+version = "0.1.0"
+"#,
+        )
+        .unwrap();
+
+        let (_, document_tree) =
+            crate::load_cargo_toml(&source_cargo_toml_path, TomlVersion::default()).unwrap();
+        let Some((_, tombi_document_tree::Value::Table(dependencies))) =
+            dig_keys(&document_tree, &["dependencies"])
+        else {
+            panic!("dependencies table not found");
+        };
+        let (crate_key, crate_value) = dependencies
+            .key_values()
+            .into_iter()
+            .next()
+            .expect("dependency entry not found");
+        let features = disabled_cargo_toml_link_features();
+
+        let document_links = document_link_for_dependency(
+            crate_key,
+            crate_value,
+            &source_cargo_toml_path,
+            &RegistryMap::default(),
+            TomlVersion::default(),
             Some(&features),
-        ));
+        )
+        .unwrap();
+
+        assert_eq!(document_links.len(), 1);
+        assert_eq!(
+            document_links[0].tooltip,
+            std::borrow::Cow::Borrowed("Open Path File")
+        );
+    }
+
+    #[test]
+    fn path_dependency_skips_cargo_toml_links_when_path_disabled() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let source_cargo_toml_path = temp_dir.path().join("Cargo.toml");
+        let member_dir = temp_dir.path().join("member");
+        let member_cargo_toml_path = member_dir.join("Cargo.toml");
+
+        fs::create_dir_all(&member_dir).unwrap();
+        fs::write(
+            &source_cargo_toml_path,
+            r#"
+[package]
+name = "app"
+version = "0.1.0"
+
+[dependencies]
+member = { path = "member" }
+"#,
+        )
+        .unwrap();
+        fs::write(
+            &member_cargo_toml_path,
+            r#"
+[package]
+name = "member"
+version = "0.1.0"
+"#,
+        )
+        .unwrap();
+
+        let (_, document_tree) =
+            crate::load_cargo_toml(&source_cargo_toml_path, TomlVersion::default()).unwrap();
+        let Some((_, tombi_document_tree::Value::Table(dependencies))) =
+            dig_keys(&document_tree, &["dependencies"])
+        else {
+            panic!("dependencies table not found");
+        };
+        let (crate_key, crate_value) = dependencies
+            .key_values()
+            .into_iter()
+            .next()
+            .expect("dependency entry not found");
+        let features = disabled_path_link_features();
+
+        let document_links = document_link_for_dependency(
+            crate_key,
+            crate_value,
+            &source_cargo_toml_path,
+            &RegistryMap::default(),
+            TomlVersion::default(),
+            Some(&features),
+        )
+        .unwrap();
+
+        assert!(document_links.is_empty());
+    }
+
+    #[test]
+    fn path_dependency_key_link_is_hidden_when_cargo_toml_disabled() {
+        let features = disabled_cargo_toml_link_features();
+
+        let tooltip = dependency_key_tooltip(
+            &std::borrow::Cow::Borrowed("Open Path File"),
+            Some(&features),
+        );
+
+        assert!(tooltip.is_none());
     }
 }

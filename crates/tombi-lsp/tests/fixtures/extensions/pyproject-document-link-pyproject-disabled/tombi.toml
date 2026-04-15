@@ -1,0 +1,2 @@
+[extensions]
+"tombi-toml/pyproject" = { lsp.document-link.pyproject-toml.enabled = false }

@@ -1,0 +1,13 @@
+[project]
+name = "pyproject-document-link-pyproject-disabled"
+version = "0.1.0"
+dependencies = [
+  "anyio>=4.0",
+  "member",
+]
+
+[tool.uv.workspace]
+members = ["member"]
+
+[tool.uv.sources]
+member = { workspace = true }
