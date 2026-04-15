@@ -153,28 +153,28 @@ impl CargoExtensionFeatures {
     }
 
     pub fn cargo_toml_document_link_enabled(&self) -> bool {
-        self.document_link_enabled()
+        self.enabled()
             && self
                 .lsp()
                 .is_some_and(CargoLspFeatures::cargo_toml_document_link_enabled)
     }
 
     pub fn workspace_document_link_enabled(&self) -> bool {
-        self.document_link_enabled()
+        self.enabled()
             && self
                 .lsp()
                 .is_some_and(CargoLspFeatures::workspace_document_link_enabled)
     }
 
     pub fn git_document_link_enabled(&self) -> bool {
-        self.document_link_enabled()
+        self.enabled()
             && self
                 .lsp()
                 .is_some_and(CargoLspFeatures::git_document_link_enabled)
     }
 
     pub fn path_document_link_enabled(&self) -> bool {
-        self.document_link_enabled()
+        self.enabled()
             && self
                 .lsp()
                 .is_some_and(CargoLspFeatures::path_document_link_enabled)
