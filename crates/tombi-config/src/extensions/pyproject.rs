@@ -121,18 +121,17 @@ impl PyprojectExtensionFeatures {
     }
 
     pub fn pyproject_toml_document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self.lsp().map_or(
-                true,
-                PyprojectLspFeatures::pyproject_toml_document_link_enabled,
-            )
+        self.document_link_enabled()
+            && self
+                .lsp()
+                .is_some_and(PyprojectLspFeatures::pyproject_toml_document_link_enabled)
     }
 
     pub fn pypi_org_document_link_enabled(&self) -> bool {
-        self.enabled()
+        self.document_link_enabled()
             && self
                 .lsp()
-                .map_or(true, PyprojectLspFeatures::pypi_org_document_link_enabled)
+                .is_some_and(PyprojectLspFeatures::pypi_org_document_link_enabled)
     }
 
     pub fn hover_enabled(&self) -> bool {
@@ -752,13 +751,22 @@ pub struct PyprojectDocumentLinkFeatureTree {
 
 #[cfg(test)]
 mod tests {
-    use super::PyprojectLspFeatures;
+    use super::{PyprojectExtensionFeatures, PyprojectLspFeatures};
 
     #[test]
     fn omitted_document_link_tree_disables_pyproject_document_link_children() {
         let features = PyprojectLspFeatures::default();
 
         assert!(!features.document_link_enabled());
+        assert!(!features.pyproject_toml_document_link_enabled());
+        assert!(!features.pypi_org_document_link_enabled());
+    }
+
+    #[test]
+    fn omitted_extension_document_link_tree_disables_pyproject_document_link_children() {
+        let features = PyprojectExtensionFeatures::default();
+
+        assert!(features.document_link_enabled());
         assert!(!features.pyproject_toml_document_link_enabled());
         assert!(!features.pypi_org_document_link_enabled());
     }

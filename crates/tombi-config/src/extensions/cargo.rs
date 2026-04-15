@@ -153,31 +153,31 @@ impl CargoExtensionFeatures {
     }
 
     pub fn cargo_toml_document_link_enabled(&self) -> bool {
-        self.enabled()
+        self.document_link_enabled()
             && self
                 .lsp()
-                .map_or(true, CargoLspFeatures::cargo_toml_document_link_enabled)
+                .is_some_and(CargoLspFeatures::cargo_toml_document_link_enabled)
     }
 
     pub fn workspace_document_link_enabled(&self) -> bool {
-        self.enabled()
+        self.document_link_enabled()
             && self
                 .lsp()
-                .map_or(true, CargoLspFeatures::workspace_document_link_enabled)
+                .is_some_and(CargoLspFeatures::workspace_document_link_enabled)
     }
 
     pub fn git_document_link_enabled(&self) -> bool {
-        self.enabled()
+        self.document_link_enabled()
             && self
                 .lsp()
-                .map_or(true, CargoLspFeatures::git_document_link_enabled)
+                .is_some_and(CargoLspFeatures::git_document_link_enabled)
     }
 
     pub fn path_document_link_enabled(&self) -> bool {
-        self.enabled()
+        self.document_link_enabled()
             && self
                 .lsp()
-                .map_or(true, CargoLspFeatures::path_document_link_enabled)
+                .is_some_and(CargoLspFeatures::path_document_link_enabled)
     }
 
     pub fn hover_enabled(&self) -> bool {
@@ -192,10 +192,10 @@ impl CargoExtensionFeatures {
     }
 
     pub fn crates_io_document_link_enabled(&self) -> bool {
-        self.enabled()
+        self.document_link_enabled()
             && self
                 .lsp()
-                .map_or(true, CargoLspFeatures::crates_io_document_link_enabled)
+                .is_some_and(CargoLspFeatures::crates_io_document_link_enabled)
     }
 
     pub fn code_action_enabled(&self) -> bool {
@@ -1080,8 +1080,8 @@ mod tests {
     use crate::{BoolDefaultFalse, BoolDefaultTrue};
 
     use super::{
-        CargoDocumentLinkFeatureTree, CargoDocumentLinkFeatures, CargoInlayHintFeatureTree,
-        ToggleFeatureDefaultFalse, ToggleFeatureDefaultTrue,
+        CargoDocumentLinkFeatureTree, CargoDocumentLinkFeatures, CargoExtensionFeatures,
+        CargoInlayHintFeatureTree, ToggleFeatureDefaultFalse, ToggleFeatureDefaultTrue,
     };
 
     #[test]
@@ -1168,5 +1168,17 @@ mod tests {
         assert!(!features.git_enabled());
         assert!(!features.path_enabled());
         assert!(!features.workspace_enabled());
+    }
+
+    #[test]
+    fn omitted_document_link_tree_disables_default_off_cargo_document_link_children() {
+        let features = CargoExtensionFeatures::default();
+
+        assert!(features.document_link_enabled());
+        assert!(!features.cargo_toml_document_link_enabled());
+        assert!(!features.workspace_document_link_enabled());
+        assert!(!features.git_document_link_enabled());
+        assert!(!features.path_document_link_enabled());
+        assert!(!features.crates_io_document_link_enabled());
     }
 }

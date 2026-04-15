@@ -82,18 +82,7 @@ mod document_link_tests {
                 tombi-lsp.path = "crates/tombi-lsp"
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
-            ) -> Ok(Some(vec![
-                {
-                    path: project_root_path().join("crates/tombi-lsp/Cargo.toml"),
-                    range: 4:0..4:9,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
-                },
-                {
-                    path: project_root_path().join("crates/tombi-lsp/Cargo.toml"),
-                    range: 4:18..4:34,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::PathFile,
-                }
-            ]));
+            ) -> Ok(None);
         );
 
         test_document_link!(
@@ -149,14 +138,9 @@ mod document_link_tests {
                 SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok(Some(vec![
                 {
-                    url: "https://github.com/serde-rs/serde",
+                    url: "https://crates.io/crates/serde",
                     range: 4:0..4:5,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::GitRepository,
-                },
-                {
-                    url: "https://github.com/serde-rs/serde",
-                    range: 4:17..4:50,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::GitRepository,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
                 }
             ]));
         );
@@ -174,14 +158,9 @@ mod document_link_tests {
                 SourcePath(project_root_path().join("rust/tombi-cli/Cargo.toml")),
             ) -> Ok(Some(vec![
                 {
-                    path: project_root_path().join("crates/tombi-lsp/Cargo.toml"),
+                    url: "https://crates.io/crates/tombi-lsp",
                     range: 4:0..4:9,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
-                },
-                {
-                    path: project_root_path().join("crates/tombi-lsp/Cargo.toml"),
-                    range: 4:18..4:40,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::PathFile,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
                 }
             ]));
         );
@@ -239,14 +218,9 @@ mod document_link_tests {
                 SourcePath(project_root_path().join("subcrate/Cargo.toml")),
             ) -> Ok(Some(vec![
                 {
-                    url: "https://github.com/serde-rs/serde",
+                    url: "https://crates.io/crates/serde",
                     range: 4:0..4:5,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::GitRepository,
-                },
-                {
-                    url: "https://github.com/serde-rs/serde",
-                    range: 4:17..4:50,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::GitRepository,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
                 }
             ]));
         );
@@ -262,18 +236,7 @@ mod document_link_tests {
                 tombi-lsp = { workspace = true, default-features = [] }
                 "#,
                 SourcePath(project_root_path().join("subcrate/Cargo.toml")),
-            ) -> Ok(Some(vec![
-                {
-                    path: project_root_path().join("crates/tombi-lsp/Cargo.toml"),
-                    range: 4:0..4:9,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
-                },
-                {
-                    path: project_root_path().join("Cargo.toml"),
-                    range: 4:14..4:30,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::WorkspaceCargoToml,
-                }
-            ]));
+            ) -> Ok(None);
         );
 
         test_document_link!(
@@ -367,13 +330,7 @@ mod document_link_tests {
                 workspace = "../../"
                 "#,
                 SourcePath(project_root_path().join("crates/tombi-lsp/Cargo.toml")),
-            ) -> Ok(Some(vec![
-                {
-                    path: project_root_path().join("Cargo.toml"),
-                    range: 1:13..1:19,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::WorkspaceCargoToml,
-                }
-            ]));
+            ) -> Ok(None);
         );
 
         test_document_link!(
@@ -401,21 +358,6 @@ mod document_link_tests {
                     range: 11:0..11:5,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
                 },
-                {
-                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
-                    range: 12:0..12:9,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
-                },
-                {
-                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
-                    range: 12:22..12:38,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::PathFile,
-                },
-                {
-                    path: project_root_path().join("crates/tombi-accessor/Cargo.toml"),
-                    range: 8:12..8:20,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoTomlFirstMember,
-                },
             ]));
         );
 
@@ -428,13 +370,7 @@ mod document_link_tests {
                 path = "src/bin/profile.rs"
                 "#,
                 SourcePath(project_root_path().join("crates/tombi-glob/Cargo.toml")),
-            ) -> Ok(Some(vec![
-                {
-                    path: project_root_path().join("crates/tombi-glob/src/bin/profile.rs"),
-                    range: 2:8..2:26,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::PathFile,
-                }
-            ]));
+            ) -> Ok(None);
         );
 
         // Tests for platform specific dependencies (Issue #1192)
@@ -468,11 +404,6 @@ mod document_link_tests {
                     url: "https://crates.io/crates/serde",
                     range: 1:0..1:5,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
-                },
-                {
-                    path: project_root_path().join("Cargo.toml"),
-                    range: 1:10..1:26,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::WorkspaceCargoToml,
                 }
             ]));
         );
@@ -490,14 +421,9 @@ mod document_link_tests {
                 SourcePath(project_root_path().join("crates/tombi-lsp/Cargo.toml")),
             ) -> Ok(Some(vec![
                 {
-                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
+                    url: "https://crates.io/crates/tombi-ast",
                     range: 4:0..4:9,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
-                },
-                {
-                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
-                    range: 4:22..4:34,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::PathFile,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
                 }
             ]));
         );
@@ -523,11 +449,6 @@ mod document_link_tests {
                     url: "https://crates.io/crates/schemars",
                     range: 5:0..5:8,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
-                },
-                {
-                    path: cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml"),
-                    range: 9:11..9:16,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
                 }
             ]));
         );
@@ -552,11 +473,6 @@ mod document_link_tests {
                     url: "https://crates.io/crates/schemars",
                     range: 5:0..5:8,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
-                },
-                {
-                    path: cargo_feature_navigation_fixture_path().join("implicit/Cargo.toml"),
-                    range: 8:11..8:19,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
                 }
             ]));
         );
@@ -578,28 +494,7 @@ mod document_link_tests {
                 SourcePath(
                     cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml")
                 ),
-            ) -> Ok(Some(vec![
-                {
-                    path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
-                    range: 5:0..5:8,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
-                },
-                {
-                    path: cargo_feature_navigation_fixture_path().join("workspace/Cargo.toml"),
-                    range: 5:13..5:29,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::WorkspaceCargoToml,
-                },
-                {
-                    path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
-                    range: 8:10..8:29,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
-                },
-                {
-                    path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
-                    range: 5:44..5:54,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
-                }
-            ]));
+            ) -> Ok(None);
         );
 
         test_document_link!(
@@ -621,19 +516,9 @@ mod document_link_tests {
                 ),
             ) -> Ok(Some(vec![
                 {
-                    path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
+                    url: "https://crates.io/crates/provider",
                     range: 5:0..5:8,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
-                },
-                {
-                    path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
-                    range: 5:21..5:32,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::PathFile,
-                },
-                {
-                    path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
-                    range: 8:9..8:29,
-                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
                 }
             ]));
         );
@@ -738,13 +623,7 @@ mod document_link_tests {
                 catalog = { path = "https://www.schemastore.org/api/json/catalog.json" }
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
-            ) -> Ok(Some(vec![
-                {
-                    url: "https://www.schemastore.org/api/json/catalog.json",
-                    range: 1:20..1:69,
-                    tooltip: tombi_extension_tombi::DocumentLinkToolTip::Catalog,
-                }
-            ]));
+            ) -> Ok(None);
         );
 
         test_document_link!(
@@ -755,13 +634,7 @@ mod document_link_tests {
                 catalog = { paths = ["https://www.schemastore.org/api/json/catalog.json"] }
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
-            ) -> Ok(Some(vec![
-                {
-                    url: "https://www.schemastore.org/api/json/catalog.json",
-                    range: 1:22..1:71,
-                    tooltip: tombi_extension_tombi::DocumentLinkToolTip::Catalog,
-                }
-            ]));
+            ) -> Ok(None);
         );
 
         test_document_link!(
@@ -785,13 +658,7 @@ mod document_link_tests {
                 path = "www.schemastore.org/tombi.json"
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
-            ) -> Ok(Some(vec![
-                {
-                    path: project_root_path().join("www.schemastore.org/tombi.json"),
-                    range: 1:8..1:38,
-                    tooltip: tombi_extension_tombi::DocumentLinkToolTip::Schema,
-                }
-            ]));
+            ) -> Ok(None);
         );
 
         test_document_link!(
@@ -802,13 +669,7 @@ mod document_link_tests {
                 path = "https://www.schemastore.org/cargo-make.json"
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
-            ) -> Ok(Some(vec![
-                {
-                    url: "https://www.schemastore.org/cargo-make.json",
-                    range: 1:8..1:51,
-                    tooltip: tombi_extension_tombi::DocumentLinkToolTip::Schema,
-                }
-            ]));
+            ) -> Ok(None);
         );
     }
 

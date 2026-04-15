@@ -68,10 +68,10 @@ impl TombiExtensionFeatures {
     }
 
     pub fn path_document_link_enabled(&self) -> bool {
-        self.enabled()
+        self.document_link_enabled()
             && self
                 .lsp()
-                .map_or(true, TombiLspFeatures::path_document_link_enabled)
+                .is_some_and(TombiLspFeatures::path_document_link_enabled)
     }
 
     pub fn hover_enabled(&self) -> bool {
@@ -383,12 +383,20 @@ pub struct TombiDocumentLinkFeatureTree {
 
 #[cfg(all(test, feature = "serde"))]
 mod tests {
-    use super::TombiDocumentLinkFeatures;
+    use super::{TombiDocumentLinkFeatures, TombiExtensionFeatures};
 
     #[test]
     fn tombi_document_link_feature_tree_defaults_path_to_disabled() {
         let features = TombiDocumentLinkFeatures::default();
 
         assert!(!features.path_enabled());
+    }
+
+    #[test]
+    fn omitted_document_link_tree_disables_tombi_path_document_links() {
+        let features = TombiExtensionFeatures::default();
+
+        assert!(features.document_link_enabled());
+        assert!(!features.path_document_link_enabled());
     }
 }

@@ -1134,8 +1134,12 @@ mod tests {
                     goto_declaration: None,
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
                         tombi_config::CargoDocumentLinkFeatureTree {
-                            cargo_toml: None,
-                            workspace: None,
+                            cargo_toml: Some(tombi_config::ToggleFeatureDefaultFalse {
+                                enabled: Some(true.into()),
+                            }),
+                            workspace: Some(tombi_config::ToggleFeatureDefaultFalse {
+                                enabled: Some(true.into()),
+                            }),
                             git: None,
                             path: Some(tombi_config::ToggleFeatureDefaultFalse {
                                 enabled: Some(false.into()),
@@ -1163,9 +1167,13 @@ mod tests {
                             cargo_toml: Some(tombi_config::ToggleFeatureDefaultFalse {
                                 enabled: Some(false.into()),
                             }),
-                            workspace: None,
+                            workspace: Some(tombi_config::ToggleFeatureDefaultFalse {
+                                enabled: Some(true.into()),
+                            }),
                             git: None,
-                            path: None,
+                            path: Some(tombi_config::ToggleFeatureDefaultFalse {
+                                enabled: Some(true.into()),
+                            }),
                             crates_io: None,
                         },
                     )),
