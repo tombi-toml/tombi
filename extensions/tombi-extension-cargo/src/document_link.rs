@@ -727,12 +727,19 @@ fn dependency_key_tooltip(
     tooltip: &std::borrow::Cow<'static, str>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Option<std::borrow::Cow<'static, str>> {
-    if tooltip.as_ref() == Into::<&'static str>::into(&DocumentLinkToolTip::PathFile) {
+    if tooltip_matches(tooltip, DocumentLinkToolTip::PathFile) {
         cargo_toml_document_link_enabled(features)
             .then(|| std::borrow::Cow::Borrowed(DocumentLinkToolTip::CargoToml.into()))
     } else {
         Some(tooltip.clone())
     }
+}
+
+fn tooltip_matches(
+    tooltip: &std::borrow::Cow<'static, str>,
+    expected: DocumentLinkToolTip,
+) -> bool {
+    tooltip.as_ref() == Into::<&'static str>::into(expected)
 }
 
 fn document_link_for_workspace_dependency(
@@ -823,27 +830,27 @@ fn document_link_for_crate_dependency_has_workspace(
             table.get_key_value("workspace")
         && is_workspace.value()
         && let Some(workspace_crate_value) = workspace_dependencies.get(&crate_key)
-        && let Ok(mut target) = tombi_uri::Uri::from_file_path(workspace_cargo_toml_path)
     {
         let mut document_links = if dependency_uses_local_path(workspace_crate_value) {
-            workspace_dependency_target(
-                crate_key,
-                workspace_crate_value,
-                workspace_cargo_toml_path,
-                toml_version,
-            )
-            .and_then(|target_location| {
-                cargo_toml_document_link_enabled(features).then(|| {
+            cargo_toml_document_link_enabled(features)
+                .then(|| {
+                    workspace_dependency_target(
+                        crate_key,
+                        workspace_crate_value,
+                        workspace_cargo_toml_path,
+                        toml_version,
+                    )
+                })
+                .flatten()
+                .and_then(|target_location| {
                     cargo_toml_document_link(
                         crate_key.unquoted_range(),
                         &target_location,
                         DocumentLinkToolTip::CargoToml,
                     )
                 })
-            })
-            .into_iter()
-            .flatten()
-            .collect_vec()
+                .into_iter()
+                .collect_vec()
         } else {
             document_link_for_workspace_dependency(
                 crate_key,
@@ -860,15 +867,16 @@ fn document_link_for_crate_dependency_has_workspace(
         };
         let tooltip = dependency_table_tooltip(table);
         for document_link in &mut document_links {
-            if matches!(
-                document_link.tooltip.as_ref(),
-                "Open Cargo.toml" | "Open Path File"
-            ) {
+            if tooltip_matches(&document_link.tooltip, DocumentLinkToolTip::CargoToml)
+                || tooltip_matches(&document_link.tooltip, DocumentLinkToolTip::PathFile)
+            {
                 document_link.tooltip = std::borrow::Cow::Borrowed((&tooltip).into());
             }
         }
 
-        if workspace_document_link_enabled(features) {
+        if workspace_document_link_enabled(features)
+            && let Ok(mut target) = tombi_uri::Uri::from_file_path(workspace_cargo_toml_path)
+        {
             target.set_fragment(Some(&format!(
                 "L{}",
                 workspace_crate_value.range().start.line + 1
@@ -881,22 +889,6 @@ fn document_link_for_crate_dependency_has_workspace(
         }
 
         return Ok(document_links);
-    }
-
-    if let (tombi_document_tree::Value::Table(table), Some(workspace_dependencies)) =
-        (crate_value, workspace_dependencies)
-        && table
-            .get("workspace")
-            .and_then(|value| match value {
-                tombi_document_tree::Value::Boolean(value) if value.value() => Some(()),
-                _ => None,
-            })
-            .is_some()
-        && workspace_dependencies
-            .get(&crate_key)
-            .is_some_and(dependency_uses_local_path)
-    {
-        return Ok(Vec::new());
     }
 
     Ok((crates_io_document_link_enabled(features))
