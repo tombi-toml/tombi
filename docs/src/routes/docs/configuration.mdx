@@ -940,7 +940,8 @@ Available rules are the same as [lint.rules](#lint-rules).
 
 Configure experimental built-in extensions and their feature flags.
 
-If an extension or feature is omitted, it is enabled by default unless noted otherwise.
+If an extension or feature is omitted, it uses that setting's documented default value.
+Most extension and LSP feature groups default to `true`, while some nested document-link options default to `false`.
 
 ```toml
 [extensions]
@@ -1637,7 +1638,7 @@ See [Pyproject Extension > Document Links](/docs/extensions/tombi-extension-pypr
 Enable or disable all `pyproject.toml` document links.
 
 - Type: `Boolean`
-- Default: `false`
+- Default: `true`
 
 ### extensions."tombi-toml/pyproject".lsp.document-link.pyproject-toml
 
