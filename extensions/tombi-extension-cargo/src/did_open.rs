@@ -406,7 +406,7 @@ mod tests {
         BoolDefaultTrue, CargoCompletionFeatureTree, CargoCompletionFeatures,
         CargoExtensionFeatureTree, CargoExtensionFeatures, CargoHoverFeatureTree,
         CargoHoverFeatures, CargoInlayHintFeatureTree, CargoInlayHintFeatures, CargoLspFeatureTree,
-        CargoLspFeatures, ToggleFeature,
+        CargoLspFeatures, ToggleFeatureDefaultTrue,
     };
     use tombi_document_tree::TryIntoDocumentTree;
 
@@ -425,8 +425,8 @@ mod tests {
         urls.iter().cloned().collect()
     }
 
-    fn disabled_toggle() -> ToggleFeature {
-        ToggleFeature {
+    fn disabled_toggle() -> ToggleFeatureDefaultTrue {
+        ToggleFeatureDefaultTrue {
             enabled: Some(BoolDefaultTrue(false)),
         }
     }

@@ -1,2 +1,6 @@
 [extensions]
-"tombi-toml/cargo" = { lsp.document-link.crates-io.enabled = false }
+"tombi-toml/cargo" = {
+  lsp.document-link.cargo-toml.enabled = true,
+  lsp.document-link.crates-io.enabled = false,
+  lsp.document-link.path.enabled = true
+}

@@ -4,6 +4,7 @@
     document-link = {
       cargo-toml.enabled = false,
       path.enabled = false,
+      workspace.enabled = true,
     },
   },
 }
