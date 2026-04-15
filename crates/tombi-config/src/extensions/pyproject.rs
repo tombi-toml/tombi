@@ -346,17 +346,17 @@ impl PyprojectLspFeatures {
     }
 
     pub fn pyproject_toml_document_link_enabled(&self) -> bool {
-        self.enabled()
+        self.document_link_enabled()
             && self
                 .document_link()
-                .map_or(true, PyprojectDocumentLinkFeatures::pyproject_toml_enabled)
+                .is_some_and(PyprojectDocumentLinkFeatures::pyproject_toml_enabled)
     }
 
     pub fn pypi_org_document_link_enabled(&self) -> bool {
-        self.enabled()
+        self.document_link_enabled()
             && self
                 .document_link()
-                .map_or(true, PyprojectDocumentLinkFeatures::pypi_org_enabled)
+                .is_some_and(PyprojectDocumentLinkFeatures::pypi_org_enabled)
     }
 
     pub fn hover_enabled(&self) -> bool {
@@ -748,6 +748,20 @@ pub struct PyprojectDocumentLinkFeatureTree {
     ///
     /// Whether document links are created for `pypi.org` package references.
     pub pypi_org: Option<ToggleFeatureDefaultTrue>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::PyprojectLspFeatures;
+
+    #[test]
+    fn omitted_document_link_tree_disables_pyproject_document_link_children() {
+        let features = PyprojectLspFeatures::default();
+
+        assert!(!features.document_link_enabled());
+        assert!(!features.pyproject_toml_document_link_enabled());
+        assert!(!features.pypi_org_document_link_enabled());
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

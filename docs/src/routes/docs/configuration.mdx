@@ -1252,6 +1252,22 @@ Enable or disable document links to local paths referenced from Cargo manifests.
 - Type: `Boolean`
 - Default: `false`
 
+### extensions."tombi-toml/cargo".lsp.document-link.workspace
+
+Configure document links to workspace-managed Cargo dependencies and package metadata.
+These links open workspace manifests referenced by `workspace = true` entries.
+
+See [Cargo Extension > Document Links](/docs/extensions/tombi-extension-cargo#document-links).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.document-link.workspace.enabled
+
+Enable or disable document links to workspace-managed Cargo references.
+
+- Type: `Boolean`
+- Default: `false`
+
 ### extensions."tombi-toml/cargo".lsp.code-action
 
 Configure Cargo-specific code actions.
