@@ -355,10 +355,14 @@ impl TombiDocumentLinkFeatures {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .path
-                    .as_ref()
-                    .map_or(false, ToggleFeatureDefaultFalse::enabled),
+                Self::Features(features) =>
+                {
+                    #[allow(deprecated)]
+                    features
+                        .path
+                        .as_ref()
+                        .map_or(false, ToggleFeatureDefaultFalse::enabled)
+                }
             }
     }
 }
@@ -378,6 +382,7 @@ pub struct TombiDocumentLinkFeatureTree {
     /// # Path document link feature
     ///
     /// Whether document links are created for filesystem paths.
+    #[deprecated]
     pub path: Option<ToggleFeatureDefaultFalse>,
 }
 

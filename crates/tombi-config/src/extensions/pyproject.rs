@@ -708,10 +708,14 @@ impl PyprojectDocumentLinkFeatures {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .pyproject_toml
-                    .as_ref()
-                    .map_or(false, ToggleFeatureDefaultFalse::enabled),
+                Self::Features(features) =>
+                {
+                    #[allow(deprecated)]
+                    features
+                        .pyproject_toml
+                        .as_ref()
+                        .map_or(false, ToggleFeatureDefaultFalse::enabled)
+                }
             }
     }
 
@@ -742,6 +746,7 @@ pub struct PyprojectDocumentLinkFeatureTree {
     /// # pyproject.toml document link feature
     ///
     /// Whether document links are created for `pyproject.toml` references.
+    #[deprecated]
     pub pyproject_toml: Option<ToggleFeatureDefaultFalse>,
 
     /// # PyPI document link feature

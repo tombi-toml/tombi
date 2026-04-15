@@ -888,10 +888,14 @@ impl CargoDocumentLinkFeatures {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .cargo_toml
-                    .as_ref()
-                    .map_or(false, ToggleFeatureDefaultFalse::enabled),
+                Self::Features(features) =>
+                {
+                    #[allow(deprecated)]
+                    features
+                        .cargo_toml
+                        .as_ref()
+                        .map_or(false, ToggleFeatureDefaultFalse::enabled)
+                }
             }
     }
 
@@ -899,10 +903,14 @@ impl CargoDocumentLinkFeatures {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .workspace
-                    .as_ref()
-                    .map_or(false, ToggleFeatureDefaultFalse::enabled),
+                Self::Features(features) =>
+                {
+                    #[allow(deprecated)]
+                    features
+                        .workspace
+                        .as_ref()
+                        .map_or(false, ToggleFeatureDefaultFalse::enabled)
+                }
             }
     }
 
@@ -910,10 +918,14 @@ impl CargoDocumentLinkFeatures {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .git
-                    .as_ref()
-                    .map_or(false, ToggleFeatureDefaultFalse::enabled),
+                Self::Features(features) =>
+                {
+                    #[allow(deprecated)]
+                    features
+                        .git
+                        .as_ref()
+                        .map_or(false, ToggleFeatureDefaultFalse::enabled)
+                }
             }
     }
 
@@ -921,10 +933,14 @@ impl CargoDocumentLinkFeatures {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .path
-                    .as_ref()
-                    .map_or(false, ToggleFeatureDefaultFalse::enabled),
+                Self::Features(features) =>
+                {
+                    #[allow(deprecated)]
+                    features
+                        .path
+                        .as_ref()
+                        .map_or(false, ToggleFeatureDefaultFalse::enabled)
+                }
             }
     }
 
@@ -955,6 +971,7 @@ pub struct CargoDocumentLinkFeatureTree {
     /// # Cargo.toml document link feature
     ///
     /// Whether document links are created for `Cargo.toml` references.
+    #[deprecated]
     pub cargo_toml: Option<ToggleFeatureDefaultFalse>,
 
     /// # crates.io document link feature
@@ -965,16 +982,19 @@ pub struct CargoDocumentLinkFeatureTree {
     /// # Git document link feature
     ///
     /// Whether document links are created for Git references.
+    #[deprecated]
     pub git: Option<ToggleFeatureDefaultFalse>,
 
     /// # Path document link feature
     ///
     /// Whether document links are created for filesystem paths.
+    #[deprecated]
     pub path: Option<ToggleFeatureDefaultFalse>,
 
     /// # Workspace document link feature
     ///
     /// Whether document links are created for `workspace = true` references.
+    #[deprecated]
     pub workspace: Option<ToggleFeatureDefaultFalse>,
 }
 
