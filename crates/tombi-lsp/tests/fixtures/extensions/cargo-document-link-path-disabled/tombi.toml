@@ -1,0 +1,2 @@
+[extensions]
+"tombi-toml/cargo" = { lsp.document-link.path.enabled = false }

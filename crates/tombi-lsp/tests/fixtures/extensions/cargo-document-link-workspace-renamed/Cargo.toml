@@ -1,0 +1,6 @@
+[workspace]
+resolver = "2"
+members = ["consumer", "provider"]
+
+[workspace.dependencies]
+sev = { package = "provider", path = "provider" }

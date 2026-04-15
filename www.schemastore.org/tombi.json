@@ -1557,6 +1557,18 @@
             }
           ]
         },
+        "crates-io": {
+          "title": "crates.io document link feature",
+          "description": "Whether document links are created for crates.io package references.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "git": {
           "title": "Git document link feature",
           "description": "Whether document links are created for Git references.",
@@ -1581,9 +1593,9 @@
             }
           ]
         },
-        "crates-io": {
-          "title": "crates.io document link feature",
-          "description": "Whether document links are created for crates.io package references.",
+        "workspace": {
+          "title": "Workspace document link feature",
+          "description": "Whether document links are created for `workspace = true` references.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeature"
