@@ -1,4 +1,4 @@
-use super::{EnabledOnly, ToggleFeature};
+use super::{EnabledOnly, ToggleFeatureDefaultTrue};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -474,7 +474,7 @@ impl PyprojectInlayHintFeatures {
                 Self::Features(features) => features
                     .dependency_version
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -494,7 +494,7 @@ pub struct PyprojectInlayHintFeatureTree {
     /// # Dependency version inlay hint feature
     ///
     /// Whether inlay hints show resolved dependency versions.
-    pub dependency_version: Option<ToggleFeature>,
+    pub dependency_version: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -529,7 +529,7 @@ impl PyprojectHoverFeatures {
                 Self::Features(features) => features
                     .dependency_detail
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -549,7 +549,7 @@ pub struct PyprojectHoverFeatureTree {
     /// # Dependency detail hover feature
     ///
     /// Whether hover shows detailed dependency metadata.
-    pub dependency_detail: Option<ToggleFeature>,
+    pub dependency_detail: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -575,9 +575,10 @@ impl PyprojectCompletionFeatures {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
-                Self::Features(features) => {
-                    features.path.as_ref().map_or(true, ToggleFeature::enabled)
-                }
+                Self::Features(features) => features
+                    .path
+                    .as_ref()
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -597,7 +598,7 @@ pub struct PyprojectCompletionFeatureTree {
     /// # Path completion feature
     ///
     /// Whether completion suggests filesystem paths.
-    pub path: Option<ToggleFeature>,
+    pub path: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -626,7 +627,7 @@ impl PyprojectNavigationFeatures {
                 Self::Features(features) => features
                     .dependency
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -637,7 +638,7 @@ impl PyprojectNavigationFeatures {
                 Self::Features(features) => features
                     .member
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -645,9 +646,10 @@ impl PyprojectNavigationFeatures {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
-                Self::Features(features) => {
-                    features.path.as_ref().map_or(true, ToggleFeature::enabled)
-                }
+                Self::Features(features) => features
+                    .path
+                    .as_ref()
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -667,17 +669,17 @@ pub struct PyprojectNavigationFeatureTree {
     /// # Dependency navigation feature
     ///
     /// Whether navigation resolves dependency definitions and declarations.
-    pub dependency: Option<ToggleFeature>,
+    pub dependency: Option<ToggleFeatureDefaultTrue>,
 
     /// # Member navigation feature
     ///
     /// Whether navigation resolves workspace member targets.
-    pub member: Option<ToggleFeature>,
+    pub member: Option<ToggleFeatureDefaultTrue>,
 
     /// # Path navigation feature
     ///
     /// Whether navigation resolves filesystem paths.
-    pub path: Option<ToggleFeature>,
+    pub path: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -709,7 +711,7 @@ impl PyprojectDocumentLinkFeatures {
                 Self::Features(features) => features
                     .pyproject_toml
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -720,7 +722,7 @@ impl PyprojectDocumentLinkFeatures {
                 Self::Features(features) => features
                     .pypi_org
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -740,12 +742,12 @@ pub struct PyprojectDocumentLinkFeatureTree {
     /// # pyproject.toml document link feature
     ///
     /// Whether document links are created for `pyproject.toml` references.
-    pub pyproject_toml: Option<ToggleFeature>,
+    pub pyproject_toml: Option<ToggleFeatureDefaultTrue>,
 
     /// # PyPI document link feature
     ///
     /// Whether document links are created for `pypi.org` package references.
-    pub pypi_org: Option<ToggleFeature>,
+    pub pypi_org: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -774,7 +776,7 @@ impl PyprojectCodeActionFeatures {
                 Self::Features(features) => features
                     .use_workspace_dependency
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -785,7 +787,7 @@ impl PyprojectCodeActionFeatures {
                 Self::Features(features) => features
                     .add_to_workspace_and_use_workspace_dependency
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -805,10 +807,10 @@ pub struct PyprojectCodeActionFeatureTree {
     /// # Use-workspace-dependency code action feature
     ///
     /// Whether code actions can reuse a dependency declared in the workspace.
-    pub use_workspace_dependency: Option<ToggleFeature>,
+    pub use_workspace_dependency: Option<ToggleFeatureDefaultTrue>,
 
     /// # Add-to-workspace-and-use-workspace-dependency code action feature
     ///
     /// Whether code actions can add a dependency to the workspace and reuse it.
-    pub add_to_workspace_and_use_workspace_dependency: Option<ToggleFeature>,
+    pub add_to_workspace_and_use_workspace_dependency: Option<ToggleFeatureDefaultTrue>,
 }

@@ -1372,7 +1372,7 @@
           "description": "Whether completion suggests dependency versions.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1384,7 +1384,7 @@
           "description": "Whether completion suggests dependency features.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1396,7 +1396,7 @@
           "description": "Whether completion suggests filesystem paths.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1407,7 +1407,7 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "ToggleFeature": {
+    "ToggleFeatureDefaultTrue": {
       "type": "object",
       "properties": {
         "enabled": {
@@ -1444,7 +1444,7 @@
           "description": "Whether inlay hints show dependency versions.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1456,7 +1456,7 @@
           "description": "Whether inlay hints show `default-features` values.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1468,7 +1468,7 @@
           "description": "Whether inlay hints show values inherited from the Cargo workspace.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1497,7 +1497,7 @@
           "description": "Whether navigation resolves dependency definitions and declarations.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1509,7 +1509,7 @@
           "description": "Whether navigation resolves workspace member targets.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1521,7 +1521,7 @@
           "description": "Whether navigation resolves filesystem paths.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1550,7 +1550,7 @@
           "description": "Whether document links are created for `Cargo.toml` references.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1562,7 +1562,7 @@
           "description": "Whether document links are created for crates.io package references.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1574,7 +1574,7 @@
           "description": "Whether document links are created for Git references.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1586,7 +1586,7 @@
           "description": "Whether document links are created for filesystem paths.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1598,7 +1598,7 @@
           "description": "Whether document links are created for `workspace = true` references.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1628,7 +1628,7 @@
           "description": "Whether hover shows detailed dependency metadata.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1657,7 +1657,7 @@
           "description": "Whether code actions can replace a value with `workspace = true`.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1669,7 +1669,7 @@
           "description": "Whether code actions can inherit dependency settings from the workspace.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1681,7 +1681,7 @@
           "description": "Whether code actions can rewrite inline dependencies to table format.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1693,7 +1693,7 @@
           "description": "Whether code actions can add a dependency to the workspace and inherit it.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1851,7 +1851,7 @@
           "description": "Whether completion suggests filesystem paths.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1881,7 +1881,7 @@
           "description": "Whether inlay hints show resolved dependency versions.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1910,7 +1910,7 @@
           "description": "Whether navigation resolves dependency definitions and declarations.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1922,7 +1922,7 @@
           "description": "Whether navigation resolves workspace member targets.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1934,7 +1934,7 @@
           "description": "Whether navigation resolves filesystem paths.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1963,7 +1963,7 @@
           "description": "Whether document links are created for `pyproject.toml` references.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -1975,7 +1975,7 @@
           "description": "Whether document links are created for `pypi.org` package references.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -2005,7 +2005,7 @@
           "description": "Whether hover shows detailed dependency metadata.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -2034,7 +2034,7 @@
           "description": "Whether code actions can reuse a dependency declared in the workspace.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -2046,7 +2046,7 @@
           "description": "Whether code actions can add a dependency to the workspace and reuse it.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -2170,7 +2170,7 @@
           "description": "Whether completion suggests filesystem paths.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -2200,7 +2200,7 @@
           "description": "Whether go-to-definition resolves filesystem paths.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
@@ -2229,7 +2229,7 @@
           "description": "Whether document links are created for filesystem paths.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeature"
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
             },
             {
               "type": "null"
