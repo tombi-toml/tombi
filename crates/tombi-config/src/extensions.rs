@@ -39,10 +39,14 @@ macro_rules! extension_features {
             }
 
             $(
-                pub fn $field_name(&self) -> Option<&$field_type> {
+                pub fn $field_name(&self) -> Option<$field_type> {
                     match self {
-                        Self::Enabled(_) => None,
-                        Self::Features(features) => features.$field_name.as_ref(),
+                        Self::Enabled(enabled) => Some(if enabled.enabled.value() {
+                            <$field_type>::default()
+                        } else {
+                            <$field_type>::Enabled(enabled.clone())
+                        }),
+                        Self::Features(features) => features.$field_name.clone(),
                     }
                 }
             )*

@@ -97,7 +97,8 @@ pub async fn inlay_hint(
     if !features
         .and_then(|features| features.lsp())
         .and_then(|lsp| lsp.inlay_hint())
-        .map(|inlay_hint| inlay_hint.enabled())
+        .and_then(|inlay_hint| inlay_hint.dependency_version())
+        .map(|dependency_version| dependency_version.enabled())
         .unwrap_or_default()
         .value()
     {
