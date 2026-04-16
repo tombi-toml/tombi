@@ -137,7 +137,7 @@ where
             }
         }
 
-        if !valid_branches && !narrow_branches {
+        if !narrow_branches {
             if let Some(default) = &any_of_schema.default {
                 let default_label = default.to_string();
                 if let Some(completion_item) = completion_items
