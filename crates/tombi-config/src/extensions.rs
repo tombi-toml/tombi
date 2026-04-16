@@ -1,4 +1,4 @@
-use crate::BoolDefaultTrue;
+use crate::{BoolDefaultFalse, BoolDefaultTrue};
 
 pub const CARGO_EXTENSION_NAME: &str = "tombi-toml/cargo";
 pub const PYPROJECT_EXTENSION_NAME: &str = "tombi-toml/pyproject";
@@ -118,6 +118,24 @@ pub struct ToggleFeatureDefaultTrue {
 }
 
 impl ToggleFeatureDefaultTrue {
+    pub fn enabled(&self) -> bool {
+        self.enabled.unwrap_or_default().value()
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct ToggleFeatureDefaultFalse {
+    /// # Enable feature
+    ///
+    /// Whether this nested feature is enabled.
+    pub enabled: Option<BoolDefaultFalse>,
+}
+
+impl ToggleFeatureDefaultFalse {
     pub fn enabled(&self) -> bool {
         self.enabled.unwrap_or_default().value()
     }
