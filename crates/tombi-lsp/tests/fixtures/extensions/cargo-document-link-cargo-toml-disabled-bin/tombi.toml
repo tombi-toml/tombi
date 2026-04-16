@@ -1,2 +1,9 @@
 [extensions]
-"tombi-toml/cargo" = { lsp.document-link.cargo-toml.enabled = false }
+"tombi-toml/cargo" = {
+  lsp = {
+    document-link = {
+      cargo-toml.enabled = false,
+      path.enabled = true,
+    },
+  },
+}

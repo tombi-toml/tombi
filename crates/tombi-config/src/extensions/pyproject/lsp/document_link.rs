@@ -1,4 +1,7 @@
-use crate::extensions::{EnabledOnly, ToggleFeatureDefaultTrue};
+use crate::{
+    ToggleFeatureDefaultFalse,
+    extensions::{EnabledOnly, ToggleFeatureDefaultTrue},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -27,7 +30,7 @@ toggle_features! {
         /// # pyproject.toml document link feature
         ///
         /// Whether document links are created for `pyproject.toml` references.
-        pub pyproject_toml: Option<ToggleFeatureDefaultTrue>,
+        pub pyproject_toml: Option<ToggleFeatureDefaultFalse>,
 
         /// # PyPI document link feature
         ///

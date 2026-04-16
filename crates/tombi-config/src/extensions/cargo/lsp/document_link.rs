@@ -1,4 +1,7 @@
-use crate::extensions::{EnabledOnly, ToggleFeatureDefaultTrue};
+use crate::{
+    ToggleFeatureDefaultFalse,
+    extensions::{EnabledOnly, ToggleFeatureDefaultTrue},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -27,7 +30,7 @@ toggle_features! {
         /// # Cargo.toml document link feature
         ///
         /// Whether document links are created for `Cargo.toml` references.
-        pub cargo_toml: Option<ToggleFeatureDefaultTrue>,
+        pub cargo_toml: Option<ToggleFeatureDefaultFalse>,
 
         /// # crates.io document link feature
         ///
@@ -37,16 +40,16 @@ toggle_features! {
         /// # Git document link feature
         ///
         /// Whether document links are created for Git references.
-        pub git: Option<ToggleFeatureDefaultTrue>,
+        pub git: Option<ToggleFeatureDefaultFalse>,
 
         /// # Path document link feature
         ///
         /// Whether document links are created for filesystem paths.
-        pub path: Option<ToggleFeatureDefaultTrue>,
+        pub path: Option<ToggleFeatureDefaultFalse>,
 
         /// # Workspace document link feature
         ///
         /// Whether document links are created for `workspace = true` references.
-        pub workspace: Option<ToggleFeatureDefaultTrue>,
+        pub workspace: Option<ToggleFeatureDefaultFalse>,
     }
 }

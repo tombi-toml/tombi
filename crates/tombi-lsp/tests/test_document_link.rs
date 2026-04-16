@@ -725,6 +725,42 @@ mod document_link_tests {
                 }
             ]));
         );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_git_dependency_links_disabled_by_git_setting(
+                r#"
+                [package]
+                name = "test"
+                version = "0.1.0"
+
+                [dependencies]
+                serde = { git = "https://github.com/serde-rs/serde" }
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/cargo-document-link-git-disabled/Cargo.toml"
+                )),
+            ) -> Ok(Some(vec![
+                {
+                    url: "https://crates.io/crates/serde",
+                    range: 5:0..5:5,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_default_features_produce_no_document_links(
+                r#"
+                [workspace.dependencies]
+                member = { path = "member" }
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/cargo-document-link-default/Cargo.toml"
+                )),
+            ) -> Ok(None);
+        );
     }
 
     mod tombi_schema {
@@ -913,6 +949,48 @@ mod document_link_tests {
                     tooltip: "Open PyPI Package",
                 }
             ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn pyproject_default_features_disable_pyproject_toml_links(
+                r#"
+                [project]
+                dependencies = ["member", "anyio>=4.0"]
+
+                [tool.uv.workspace]
+                members = ["member"]
+
+                [tool.uv.sources]
+                member = { workspace = true }
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/pyproject-document-link-default/pyproject.toml"
+                )),
+            ) -> Ok(Some(vec![
+                {
+                    url: "https://pypi.org/project/anyio/",
+                    range: 1:27..1:37,
+                    tooltip: "Open PyPI Package",
+                }
+            ]));
+        );
+    }
+
+    mod tombi_schema_default {
+        use super::*;
+
+        test_document_link!(
+            #[tokio::test]
+            async fn tombi_default_features_produce_no_path_document_links(
+                r#"
+                [schema]
+                catalog = { path = "https://www.schemastore.org/api/json/catalog.json" }
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/tombi-document-link-default/tombi.toml"
+                )),
+            ) -> Ok(None);
         );
     }
 }

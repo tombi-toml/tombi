@@ -35,7 +35,7 @@ extension_features! {
 
 #[cfg(all(test, feature = "serde"))]
 mod tests {
-    use crate::BoolDefaultTrue;
+    use crate::ToggleFeatureDefaultFalse;
     use crate::extensions::ToggleFeatureDefaultTrue;
 
     use super::{CargoDocumentLinkFeatureTree, CargoInlayHintFeatureTree};
@@ -52,7 +52,7 @@ mod tests {
         assert_eq!(
             features.workspace_value,
             Some(ToggleFeatureDefaultTrue {
-                enabled: Some(BoolDefaultTrue::from(false)),
+                enabled: Some(false.into()),
             })
         );
     }
@@ -63,7 +63,7 @@ mod tests {
             dependency_version: None,
             default_features: None,
             workspace_value: Some(ToggleFeatureDefaultTrue {
-                enabled: Some(BoolDefaultTrue::from(false)),
+                enabled: Some(false.into()),
             }),
         })
         .expect("workspace-value should serialize");
@@ -88,8 +88,8 @@ mod tests {
 
         assert_eq!(
             features.workspace,
-            Some(ToggleFeatureDefaultTrue {
-                enabled: Some(BoolDefaultTrue::from(false)),
+            Some(ToggleFeatureDefaultFalse {
+                enabled: Some(false.into()),
             })
         );
     }
@@ -98,8 +98,8 @@ mod tests {
     fn cargo_document_link_feature_tree_serializes_workspace_key() {
         let value = serde_json::to_value(CargoDocumentLinkFeatureTree {
             cargo_toml: None,
-            workspace: Some(ToggleFeatureDefaultTrue {
-                enabled: Some(BoolDefaultTrue::from(false)),
+            workspace: Some(ToggleFeatureDefaultFalse {
+                enabled: Some(false.into()),
             }),
             git: None,
             path: None,

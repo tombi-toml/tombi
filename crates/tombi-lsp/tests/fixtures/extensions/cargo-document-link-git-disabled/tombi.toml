@@ -3,8 +3,7 @@
   lsp = {
     document-link = {
       cargo-toml.enabled = true,
-      crates-io.enabled = false,
-      path.enabled = true,
+      git.enabled = false,
     },
   },
 }
