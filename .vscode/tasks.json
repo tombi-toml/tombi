@@ -16,11 +16,21 @@
       "isBackground": true
     },
     {
+      "label": "pnpm install (Extension)",
+      "type": "shell",
+      "command": "pnpm install",
+      "options": {
+        "cwd": "${workspaceFolder}/editors/vscode/"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Build Extension",
       "group": "build",
       "type": "npm",
       "script": "build",
       "path": "editors/vscode/",
+      "dependsOn": ["pnpm install (Extension)"],
       "problemMatcher": {
         "base": "$tsc",
         "fileLocation": ["relative", "${workspaceFolder}/editors/vscode/"]
