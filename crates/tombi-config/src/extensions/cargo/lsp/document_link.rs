@@ -1,4 +1,7 @@
-use crate::extensions::{EnabledOnly, ToggleFeatureDefaultTrue};
+use crate::{
+    BoolDefaultTrue,
+    extensions::{EnabledOnly, ToggleFeatureDefaultTrue},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -12,64 +15,46 @@ pub enum CargoDocumentLinkFeatures {
 default_to_features!(CargoDocumentLinkFeatures, CargoDocumentLinkFeatureTree);
 
 impl CargoDocumentLinkFeatures {
-    pub fn enabled(&self) -> bool {
+    pub fn enabled(&self) -> BoolDefaultTrue {
         match self {
-            Self::Enabled(enabled) => enabled.enabled(),
-            Self::Features(_) => true,
+            Self::Enabled(enabled) => enabled.enabled,
+            Self::Features(_) => Default::default(),
         }
     }
 
-    pub fn cargo_toml_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .cargo_toml
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
+    pub fn cargo_toml(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.cargo_toml,
+        }
     }
 
-    pub fn workspace_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .workspace
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
+    pub fn workspace(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.workspace,
+        }
     }
 
-    pub fn git_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => {
-                    features.git.as_ref().map_or(true, ToggleFeatureDefaultTrue::enabled)
-                }
-            }
+    pub fn git(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.git,
+        }
     }
 
-    pub fn path_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => {
-                    features.path.as_ref().map_or(true, ToggleFeatureDefaultTrue::enabled)
-                }
-            }
+    pub fn path(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.path,
+        }
     }
 
-    pub fn crates_io_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .crates_io
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
+    pub fn crates_io(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.crates_io,
+        }
     }
 }
 

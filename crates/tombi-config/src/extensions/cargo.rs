@@ -1,3 +1,5 @@
+use crate::BoolDefaultTrue;
+
 use super::EnabledOnly;
 
 mod lsp;
@@ -16,10 +18,10 @@ pub enum CargoExtensionFeatures {
 default_to_features!(CargoExtensionFeatures, CargoExtensionFeatureTree);
 
 impl CargoExtensionFeatures {
-    pub fn enabled(&self) -> bool {
+    pub fn enabled(&self) -> BoolDefaultTrue {
         match self {
-            Self::Enabled(enabled) => enabled.enabled(),
-            Self::Features(_) => true,
+            Self::Enabled(enabled) => enabled.enabled,
+            Self::Features(_) => Default::default(),
         }
     }
 
@@ -28,217 +30,6 @@ impl CargoExtensionFeatures {
             Self::Enabled(_) => None,
             Self::Features(features) => features.lsp.as_ref(),
         }
-    }
-
-    pub fn lsp_enabled(&self) -> bool {
-        self.enabled() && self.lsp().map_or(true, CargoLspFeatures::enabled)
-    }
-
-    pub fn completion_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::completion_enabled)
-    }
-
-    pub fn dependency_version_completion_enabled(&self) -> bool {
-        self.enabled()
-            && self.lsp().map_or(
-                true,
-                CargoLspFeatures::dependency_version_completion_enabled,
-            )
-    }
-
-    pub fn dependency_feature_completion_enabled(&self) -> bool {
-        self.enabled()
-            && self.lsp().map_or(
-                true,
-                CargoLspFeatures::dependency_feature_completion_enabled,
-            )
-    }
-
-    pub fn path_completion_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::path_completion_enabled)
-    }
-
-    pub fn inlay_hint_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::inlay_hint_enabled)
-    }
-
-    pub fn dependency_version_inlay_hint_enabled(&self) -> bool {
-        self.enabled()
-            && self.lsp().map_or(
-                true,
-                CargoLspFeatures::dependency_version_inlay_hint_enabled,
-            )
-    }
-
-    pub fn default_features_inlay_hint_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::default_features_inlay_hint_enabled)
-    }
-
-    pub fn workspace_value_inlay_hint_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::workspace_value_inlay_hint_enabled)
-    }
-
-    pub fn goto_definition_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::goto_definition_enabled)
-    }
-
-    pub fn goto_definition_dependency_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::goto_definition_dependency_enabled)
-    }
-
-    pub fn goto_definition_member_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::goto_definition_member_enabled)
-    }
-
-    pub fn goto_definition_path_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::goto_definition_path_enabled)
-    }
-
-    pub fn goto_declaration_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::goto_declaration_enabled)
-    }
-
-    pub fn goto_declaration_dependency_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::goto_declaration_dependency_enabled)
-    }
-
-    pub fn goto_declaration_member_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::goto_declaration_member_enabled)
-    }
-
-    pub fn goto_declaration_path_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::goto_declaration_path_enabled)
-    }
-
-    pub fn document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::document_link_enabled)
-    }
-
-    pub fn cargo_toml_document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::cargo_toml_document_link_enabled)
-    }
-
-    pub fn workspace_document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::workspace_document_link_enabled)
-    }
-
-    pub fn git_document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::git_document_link_enabled)
-    }
-
-    pub fn path_document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::path_document_link_enabled)
-    }
-
-    pub fn hover_enabled(&self) -> bool {
-        self.enabled() && self.lsp().map_or(true, CargoLspFeatures::hover_enabled)
-    }
-
-    pub fn dependency_detail_hover_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::dependency_detail_hover_enabled)
-    }
-
-    pub fn crates_io_document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::crates_io_document_link_enabled)
-    }
-
-    pub fn code_action_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::code_action_enabled)
-    }
-
-    pub fn inherit_from_workspace_code_action_enabled(&self) -> bool {
-        self.enabled()
-            && self.lsp().map_or(
-                true,
-                CargoLspFeatures::inherit_from_workspace_code_action_enabled,
-            )
-    }
-
-    pub fn inherit_dependency_from_workspace_code_action_enabled(&self) -> bool {
-        self.enabled()
-            && self.lsp().map_or(
-                true,
-                CargoLspFeatures::inherit_dependency_from_workspace_code_action_enabled,
-            )
-    }
-
-    pub fn convert_dependency_to_table_format_code_action_enabled(&self) -> bool {
-        self.enabled()
-            && self.lsp().map_or(
-                true,
-                CargoLspFeatures::convert_dependency_to_table_format_code_action_enabled,
-            )
-    }
-
-    pub fn add_to_workspace_and_inherit_dependency_code_action_enabled(&self) -> bool {
-        self.enabled()
-            && self.lsp().map_or(
-                true,
-                CargoLspFeatures::add_to_workspace_and_inherit_dependency_code_action_enabled,
-            )
     }
 }
 

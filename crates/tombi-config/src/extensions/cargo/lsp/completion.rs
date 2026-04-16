@@ -1,4 +1,7 @@
-use crate::extensions::{EnabledOnly, ToggleFeatureDefaultTrue};
+use crate::{
+    BoolDefaultTrue,
+    extensions::{EnabledOnly, ToggleFeatureDefaultTrue},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -12,43 +15,32 @@ pub enum CargoCompletionFeatures {
 default_to_features!(CargoCompletionFeatures, CargoCompletionFeatureTree);
 
 impl CargoCompletionFeatures {
-    pub fn enabled(&self) -> bool {
+    pub fn enabled(&self) -> BoolDefaultTrue {
         match self {
-            Self::Enabled(enabled) => enabled.enabled(),
-            Self::Features(_) => true,
+            Self::Enabled(enabled) => enabled.enabled,
+            Self::Features(_) => Default::default(),
         }
     }
 
-    pub fn dependency_version_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .dependency_version
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
+    pub fn dependency_version(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.dependency_version,
+        }
     }
 
-    pub fn dependency_feature_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .dependency_feature
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
+    pub fn dependency_feature(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.dependency_feature,
+        }
     }
 
-    pub fn path_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => {
-                    features.path.as_ref().map_or(true, ToggleFeatureDefaultTrue::enabled)
-                }
-            }
+    pub fn path(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.path,
+        }
     }
 }
 

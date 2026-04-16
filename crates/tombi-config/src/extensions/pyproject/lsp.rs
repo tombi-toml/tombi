@@ -1,4 +1,4 @@
-use crate::extensions::EnabledOnly;
+use crate::{BoolDefaultTrue, extensions::EnabledOnly};
 
 mod code_action;
 mod completion;
@@ -26,199 +26,88 @@ pub enum PyprojectLspFeatures {
 default_to_features!(PyprojectLspFeatures, PyprojectLspFeatureTree);
 
 impl PyprojectLspFeatures {
-    pub fn enabled(&self) -> bool {
+    pub fn enabled(&self) -> BoolDefaultTrue {
         match self {
-            Self::Enabled(enabled) => enabled.enabled(),
-            Self::Features(_) => true,
+            Self::Enabled(enabled) => enabled.enabled,
+            Self::Features(_) => Default::default(),
         }
     }
 
-    pub fn completion(&self) -> Option<&PyprojectCompletionFeatures> {
+    pub fn completion(&self) -> Option<PyprojectCompletionFeatures> {
         match self {
-            Self::Enabled(_) => None,
-            Self::Features(features) => features.completion.as_ref(),
+            Self::Enabled(enabled) => Some(if enabled.enabled.value() {
+                PyprojectCompletionFeatures::default()
+            } else {
+                PyprojectCompletionFeatures::Enabled(enabled.clone())
+            }),
+            Self::Features(features) => features.completion.clone(),
         }
     }
 
-    pub fn inlay_hint(&self) -> Option<&PyprojectInlayHintFeatures> {
+    pub fn inlay_hint(&self) -> Option<PyprojectInlayHintFeatures> {
         match self {
-            Self::Enabled(_) => None,
-            Self::Features(features) => features.inlay_hint.as_ref(),
+            Self::Enabled(enabled) => Some(if enabled.enabled.value() {
+                PyprojectInlayHintFeatures::default()
+            } else {
+                PyprojectInlayHintFeatures::Enabled(enabled.clone())
+            }),
+            Self::Features(features) => features.inlay_hint.clone(),
         }
     }
 
-    pub fn goto_definition(&self) -> Option<&PyprojectNavigationFeatures> {
+    pub fn goto_definition(&self) -> Option<PyprojectNavigationFeatures> {
         match self {
-            Self::Enabled(_) => None,
-            Self::Features(features) => features.goto_definition.as_ref(),
+            Self::Enabled(enabled) => Some(if enabled.enabled.value() {
+                PyprojectNavigationFeatures::default()
+            } else {
+                PyprojectNavigationFeatures::Enabled(enabled.clone())
+            }),
+            Self::Features(features) => features.goto_definition.clone(),
         }
     }
 
-    pub fn goto_declaration(&self) -> Option<&PyprojectNavigationFeatures> {
+    pub fn goto_declaration(&self) -> Option<PyprojectNavigationFeatures> {
         match self {
-            Self::Enabled(_) => None,
-            Self::Features(features) => features.goto_declaration.as_ref(),
+            Self::Enabled(enabled) => Some(if enabled.enabled.value() {
+                PyprojectNavigationFeatures::default()
+            } else {
+                PyprojectNavigationFeatures::Enabled(enabled.clone())
+            }),
+            Self::Features(features) => features.goto_declaration.clone(),
         }
     }
 
-    pub fn document_link(&self) -> Option<&PyprojectDocumentLinkFeatures> {
+    pub fn document_link(&self) -> Option<PyprojectDocumentLinkFeatures> {
         match self {
-            Self::Enabled(_) => None,
-            Self::Features(features) => features.document_link.as_ref(),
+            Self::Enabled(enabled) => Some(if enabled.enabled.value() {
+                PyprojectDocumentLinkFeatures::default()
+            } else {
+                PyprojectDocumentLinkFeatures::Enabled(enabled.clone())
+            }),
+            Self::Features(features) => features.document_link.clone(),
         }
     }
 
-    pub fn code_action(&self) -> Option<&PyprojectCodeActionFeatures> {
+    pub fn code_action(&self) -> Option<PyprojectCodeActionFeatures> {
         match self {
-            Self::Enabled(_) => None,
-            Self::Features(features) => features.code_action.as_ref(),
+            Self::Enabled(enabled) => Some(if enabled.enabled.value() {
+                PyprojectCodeActionFeatures::default()
+            } else {
+                PyprojectCodeActionFeatures::Enabled(enabled.clone())
+            }),
+            Self::Features(features) => features.code_action.clone(),
         }
     }
 
-    pub fn hover(&self) -> Option<&PyprojectHoverFeatures> {
+    pub fn hover(&self) -> Option<PyprojectHoverFeatures> {
         match self {
-            Self::Enabled(_) => None,
-            Self::Features(features) => features.hover.as_ref(),
+            Self::Enabled(enabled) => Some(if enabled.enabled.value() {
+                PyprojectHoverFeatures::default()
+            } else {
+                PyprojectHoverFeatures::Enabled(enabled.clone())
+            }),
+            Self::Features(features) => features.hover.clone(),
         }
-    }
-
-    pub fn completion_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .completion()
-                .map_or(true, PyprojectCompletionFeatures::enabled)
-    }
-
-    pub fn path_completion_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .completion()
-                .map_or(true, PyprojectCompletionFeatures::path_enabled)
-    }
-
-    pub fn inlay_hint_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .inlay_hint()
-                .map_or(true, PyprojectInlayHintFeatures::enabled)
-    }
-
-    pub fn dependency_version_inlay_hint_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .inlay_hint()
-                .map_or(true, PyprojectInlayHintFeatures::dependency_version_enabled)
-    }
-
-    pub fn goto_definition_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .goto_definition()
-                .map_or(true, PyprojectNavigationFeatures::enabled)
-    }
-
-    pub fn goto_definition_dependency_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .goto_definition()
-                .map_or(true, PyprojectNavigationFeatures::dependency_enabled)
-    }
-
-    pub fn goto_definition_member_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .goto_definition()
-                .map_or(true, PyprojectNavigationFeatures::member_enabled)
-    }
-
-    pub fn goto_definition_path_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .goto_definition()
-                .map_or(true, PyprojectNavigationFeatures::path_enabled)
-    }
-
-    pub fn goto_declaration_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .goto_declaration()
-                .map_or(true, PyprojectNavigationFeatures::enabled)
-    }
-
-    pub fn goto_declaration_dependency_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .goto_declaration()
-                .map_or(true, PyprojectNavigationFeatures::dependency_enabled)
-    }
-
-    pub fn goto_declaration_member_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .goto_declaration()
-                .map_or(true, PyprojectNavigationFeatures::member_enabled)
-    }
-
-    pub fn goto_declaration_path_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .goto_declaration()
-                .map_or(true, PyprojectNavigationFeatures::path_enabled)
-    }
-
-    pub fn document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .document_link()
-                .map_or(true, PyprojectDocumentLinkFeatures::enabled)
-    }
-
-    pub fn pyproject_toml_document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .document_link()
-                .map_or(true, PyprojectDocumentLinkFeatures::pyproject_toml_enabled)
-    }
-
-    pub fn pypi_org_document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .document_link()
-                .map_or(true, PyprojectDocumentLinkFeatures::pypi_org_enabled)
-    }
-
-    pub fn hover_enabled(&self) -> bool {
-        self.enabled() && self.hover().map_or(true, PyprojectHoverFeatures::enabled)
-    }
-
-    pub fn dependency_detail_hover_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .hover()
-                .map_or(true, PyprojectHoverFeatures::dependency_detail_enabled)
-    }
-
-    pub fn code_action_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .code_action()
-                .map_or(true, PyprojectCodeActionFeatures::enabled)
-    }
-
-    pub fn use_workspace_dependency_code_action_enabled(&self) -> bool {
-        self.enabled()
-            && self.code_action().map_or(
-                true,
-                PyprojectCodeActionFeatures::use_workspace_dependency_enabled,
-            )
-    }
-
-    pub fn add_to_workspace_and_use_workspace_dependency_code_action_enabled(&self) -> bool {
-        self.enabled()
-            && self.code_action().map_or(
-                true,
-                PyprojectCodeActionFeatures::add_to_workspace_and_use_workspace_dependency_enabled,
-            )
     }
 }
 

@@ -5,10 +5,6 @@ use tombi_extension::{
 };
 use tombi_schema_store::{Accessor, matches_accessors};
 
-enum PyprojectCompletionFeature {
-    Path,
-}
-
 pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
@@ -27,44 +23,30 @@ pub async fn completion(
         return Ok(None);
     }
 
-    if !pyproject_completion_root_enabled(features) {
+    if !features
+        .map(|features| features.enabled())
+        .unwrap_or_default()
+        .value()
+    {
         return Ok(None);
     }
 
-    if let Some(completions) =
-        pyproject_completion_enabled(features, PyprojectCompletionFeature::Path)
-            .then(|| {
-                completion_pyproject_file_path(
-                    text_document_uri,
-                    document_tree,
-                    position,
-                    accessors,
-                )
-            })
-            .flatten()
+    if let Some(completions) = features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.completion())
+        .and_then(|completion| completion.path())
+        .map(|path| path.enabled())
+        .unwrap_or_default()
+        .value()
+        .then(|| {
+            completion_pyproject_file_path(text_document_uri, document_tree, position, accessors)
+        })
+        .flatten()
     {
         return Ok(Some(completions));
     }
 
     Ok(None)
-}
-
-fn pyproject_completion_root_enabled(
-    features: Option<&tombi_config::PyprojectExtensionFeatures>,
-) -> bool {
-    features.map_or(
-        true,
-        tombi_config::PyprojectExtensionFeatures::completion_enabled,
-    )
-}
-
-fn pyproject_completion_enabled(
-    features: Option<&tombi_config::PyprojectExtensionFeatures>,
-    feature: PyprojectCompletionFeature,
-) -> bool {
-    features.map_or(true, |features| match feature {
-        PyprojectCompletionFeature::Path => features.path_completion_enabled(),
-    })
 }
 
 fn completion_pyproject_file_path(

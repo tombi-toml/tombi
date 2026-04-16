@@ -93,7 +93,13 @@ pub fn code_action(
         return Ok(None);
     }
 
-    if !pyproject_code_action_root_enabled(features) {
+    if !features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.code_action())
+        .map(|code_action| code_action.enabled())
+        .unwrap_or_default()
+        .value()
+    {
         return Ok(None);
     }
 
@@ -168,33 +174,45 @@ fn code_action_for_dependency_package(
     let mut actions = Vec::new();
 
     // Try "Use Workspace Dependency" (when dependency exists in workspace)
-    if features.map_or(
-        true,
-        tombi_config::PyprojectExtensionFeatures::use_workspace_dependency_code_action_enabled,
-    ) && let Some(action) = use_workspace_dependency_code_action(
-        text_document_uri,
-        line_index,
-        document_tree,
-        accessors,
-        &workspace_document_tree,
-    ) {
+    if features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.code_action())
+        .and_then(|code_action| code_action.use_workspace_dependency())
+        .map(|use_workspace_dependency| use_workspace_dependency.enabled())
+        .unwrap_or_default()
+        .value()
+        && let Some(action) = use_workspace_dependency_code_action(
+            text_document_uri,
+            line_index,
+            document_tree,
+            accessors,
+            &workspace_document_tree,
+        )
+    {
         actions.push(CodeActionOrCommand::CodeAction(action));
     }
 
     // Try "Add to Workspace and Use Workspace Dependency" (when dependency doesn't exist in workspace)
-    if features.map_or(
-        true,
-        tombi_config::PyprojectExtensionFeatures::add_to_workspace_and_use_workspace_dependency_code_action_enabled,
-    ) && let Some(action) = add_workspace_dependency_code_action(
-        text_document_uri,
-        line_index,
-        document_tree,
-        accessors,
-        &workspace_path,
-        &workspace_line_index,
-        &workspace_root,
-        &workspace_document_tree,
-    ) {
+    if features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.code_action())
+        .and_then(|code_action| code_action.add_to_workspace_and_use_workspace_dependency())
+        .map(|add_to_workspace_and_use_workspace_dependency| {
+            add_to_workspace_and_use_workspace_dependency.enabled()
+        })
+        .unwrap_or_default()
+        .value()
+        && let Some(action) = add_workspace_dependency_code_action(
+            text_document_uri,
+            line_index,
+            document_tree,
+            accessors,
+            &workspace_path,
+            &workspace_line_index,
+            &workspace_root,
+            &workspace_document_tree,
+        )
+    {
         log::debug!(
             "Providing 'Add to Workspace and Use Workspace Dependency' code action: action={:?}, uri={:?}",
             action.title,
@@ -204,15 +222,6 @@ fn code_action_for_dependency_package(
     }
 
     (!actions.is_empty()).then_some(actions)
-}
-
-fn pyproject_code_action_root_enabled(
-    features: Option<&tombi_config::PyprojectExtensionFeatures>,
-) -> bool {
-    features.map_or(
-        true,
-        tombi_config::PyprojectExtensionFeatures::code_action_enabled,
-    )
 }
 
 fn format_dependency_without_version(requirement: &Requirement<VerbatimUrl>) -> String {

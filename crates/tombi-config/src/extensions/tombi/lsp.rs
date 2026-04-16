@@ -1,4 +1,4 @@
-use crate::extensions::EnabledOnly;
+use crate::{BoolDefaultTrue, extensions::EnabledOnly};
 
 mod completion;
 mod document_link;
@@ -20,85 +20,51 @@ pub enum TombiLspFeatures {
 default_to_features!(TombiLspFeatures, TombiLspFeatureTree);
 
 impl TombiLspFeatures {
-    pub fn enabled(&self) -> bool {
+    pub fn enabled(&self) -> BoolDefaultTrue {
         match self {
-            Self::Enabled(enabled) => enabled.enabled(),
-            Self::Features(_) => true,
+            Self::Enabled(enabled) => enabled.enabled,
+            Self::Features(_) => Default::default(),
         }
     }
 
-    pub fn completion(&self) -> Option<&TombiCompletionFeatures> {
+    pub fn completion(&self) -> Option<TombiCompletionFeatures> {
         match self {
-            Self::Enabled(_) => None,
-            Self::Features(features) => features.completion.as_ref(),
+            Self::Enabled(enabled) => Some(if enabled.enabled.value() {
+                TombiCompletionFeatures::default()
+            } else {
+                TombiCompletionFeatures::Enabled(enabled.clone())
+            }),
+            Self::Features(features) => features.completion.clone(),
         }
     }
 
-    pub fn goto_definition(&self) -> Option<&TombiGotoDefinitionFeatures> {
+    pub fn goto_definition(&self) -> Option<TombiGotoDefinitionFeatures> {
         match self {
-            Self::Enabled(_) => None,
-            Self::Features(features) => features.goto_definition.as_ref(),
+            Self::Enabled(enabled) => Some(if enabled.enabled.value() {
+                TombiGotoDefinitionFeatures::default()
+            } else {
+                TombiGotoDefinitionFeatures::Enabled(enabled.clone())
+            }),
+            Self::Features(features) => features.goto_definition.clone(),
         }
     }
 
-    pub fn document_link(&self) -> Option<&TombiDocumentLinkFeatures> {
+    pub fn document_link(&self) -> Option<TombiDocumentLinkFeatures> {
         match self {
-            Self::Enabled(_) => None,
-            Self::Features(features) => features.document_link.as_ref(),
+            Self::Enabled(enabled) => Some(if enabled.enabled.value() {
+                TombiDocumentLinkFeatures::default()
+            } else {
+                TombiDocumentLinkFeatures::Enabled(enabled.clone())
+            }),
+            Self::Features(features) => features.document_link.clone(),
         }
     }
 
-    pub fn hover(&self) -> Option<&EnabledOnly> {
+    pub fn hover(&self) -> Option<EnabledOnly> {
         match self {
-            Self::Enabled(_) => None,
-            Self::Features(features) => features.hover.as_ref(),
+            Self::Enabled(enabled) => Some(enabled.clone()),
+            Self::Features(features) => features.hover.clone(),
         }
-    }
-
-    pub fn completion_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .completion()
-                .map_or(true, TombiCompletionFeatures::enabled)
-    }
-
-    pub fn path_completion_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .completion()
-                .map_or(true, TombiCompletionFeatures::path_enabled)
-    }
-
-    pub fn goto_definition_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .goto_definition()
-                .map_or(true, TombiGotoDefinitionFeatures::enabled)
-    }
-
-    pub fn path_goto_definition_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .goto_definition()
-                .map_or(true, TombiGotoDefinitionFeatures::path_enabled)
-    }
-
-    pub fn document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .document_link()
-                .map_or(true, TombiDocumentLinkFeatures::enabled)
-    }
-
-    pub fn path_document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .document_link()
-                .map_or(true, TombiDocumentLinkFeatures::path_enabled)
-    }
-
-    pub fn hover_enabled(&self) -> bool {
-        self.enabled() && self.hover().map_or(true, EnabledOnly::enabled)
     }
 }
 

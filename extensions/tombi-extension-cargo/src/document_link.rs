@@ -79,7 +79,13 @@ pub async fn document_link(
         return Ok(None);
     };
 
-    if !cargo_document_link_root_enabled(features) {
+    if !features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.document_link())
+        .map(|document_link| document_link.enabled())
+        .unwrap_or_default()
+        .value()
+    {
         return Ok(None);
     }
 
@@ -117,15 +123,6 @@ pub async fn document_link(
     }
 
     Ok(Some(document_links))
-}
-
-fn cargo_document_link_root_enabled(
-    features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> bool {
-    features.map_or(
-        true,
-        tombi_config::CargoExtensionFeatures::document_link_enabled,
-    )
 }
 
 fn document_link_for_workspace_cargo_toml(
@@ -1053,42 +1050,57 @@ fn get_registries(
 fn cargo_toml_document_link_enabled(
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> bool {
-    features.map_or(
-        true,
-        tombi_config::CargoExtensionFeatures::cargo_toml_document_link_enabled,
-    )
+    features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.document_link())
+        .and_then(|document_link| document_link.cargo_toml())
+        .map(|cargo_toml| cargo_toml.enabled())
+        .unwrap_or_default()
+        .value()
 }
 
 fn workspace_document_link_enabled(
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> bool {
-    features.map_or(
-        true,
-        tombi_config::CargoExtensionFeatures::workspace_document_link_enabled,
-    )
+    features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.document_link())
+        .and_then(|document_link| document_link.workspace())
+        .map(|workspace| workspace.enabled())
+        .unwrap_or_default()
+        .value()
 }
 
 fn git_document_link_enabled(features: Option<&tombi_config::CargoExtensionFeatures>) -> bool {
-    features.map_or(
-        true,
-        tombi_config::CargoExtensionFeatures::git_document_link_enabled,
-    )
+    features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.document_link())
+        .and_then(|document_link| document_link.git())
+        .map(|git| git.enabled())
+        .unwrap_or_default()
+        .value()
 }
 
 fn path_document_link_enabled(features: Option<&tombi_config::CargoExtensionFeatures>) -> bool {
-    features.map_or(
-        true,
-        tombi_config::CargoExtensionFeatures::path_document_link_enabled,
-    )
+    features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.document_link())
+        .and_then(|document_link| document_link.path())
+        .map(|path| path.enabled())
+        .unwrap_or_default()
+        .value()
 }
 
 fn crates_io_document_link_enabled(
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> bool {
-    features.map_or(
-        true,
-        tombi_config::CargoExtensionFeatures::crates_io_document_link_enabled,
-    )
+    features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.document_link())
+        .and_then(|document_link| document_link.crates_io())
+        .map(|crates_io| crates_io.enabled())
+        .unwrap_or_default()
+        .value()
 }
 
 fn get_crate_io_crate_link(

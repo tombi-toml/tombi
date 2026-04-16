@@ -1,4 +1,7 @@
-use crate::extensions::{EnabledOnly, ToggleFeatureDefaultTrue};
+use crate::{
+    BoolDefaultTrue,
+    extensions::{EnabledOnly, ToggleFeatureDefaultTrue},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -12,33 +15,27 @@ pub enum PyprojectCodeActionFeatures {
 default_to_features!(PyprojectCodeActionFeatures, PyprojectCodeActionFeatureTree);
 
 impl PyprojectCodeActionFeatures {
-    pub fn enabled(&self) -> bool {
+    pub fn enabled(&self) -> BoolDefaultTrue {
         match self {
-            Self::Enabled(enabled) => enabled.enabled(),
-            Self::Features(_) => true,
+            Self::Enabled(enabled) => enabled.enabled,
+            Self::Features(_) => Default::default(),
         }
     }
 
-    pub fn use_workspace_dependency_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .use_workspace_dependency
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
+    pub fn use_workspace_dependency(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.use_workspace_dependency,
+        }
     }
 
-    pub fn add_to_workspace_and_use_workspace_dependency_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .add_to_workspace_and_use_workspace_dependency
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
+    pub fn add_to_workspace_and_use_workspace_dependency(
+        &self,
+    ) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.add_to_workspace_and_use_workspace_dependency,
+        }
     }
 }
 

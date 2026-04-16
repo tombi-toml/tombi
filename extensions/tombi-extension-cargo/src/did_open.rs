@@ -43,7 +43,11 @@ pub async fn did_open(
         return Ok(None);
     }
 
-    if !cargo_did_open_enabled(features) {
+    if !features
+        .map(|features| features.enabled())
+        .unwrap_or_default()
+        .value()
+    {
         return Ok(None);
     }
 
@@ -107,10 +111,6 @@ async fn warm_urls(
         .await;
 }
 
-fn cargo_did_open_enabled(features: Option<&CargoExtensionFeatures>) -> bool {
-    features.map_or(true, CargoExtensionFeatures::enabled)
-}
-
 fn warming_disabled(offline: bool, cache_options: Option<&tombi_cache::Options>) -> bool {
     offline
         || cache_options
@@ -124,22 +124,54 @@ async fn collect_prefetch_urls(
     toml_version: TomlVersion,
     features: Option<&CargoExtensionFeatures>,
 ) -> PrefetchUrls {
-    let warm_hover = features.map_or(
-        true,
-        CargoExtensionFeatures::dependency_detail_hover_enabled,
-    );
-    let warm_versions = features.map_or(
-        true,
-        CargoExtensionFeatures::dependency_version_completion_enabled,
-    );
-    let warm_feature_details = features.map_or(true, |features| {
-        features.dependency_feature_completion_enabled()
-            || features.default_features_inlay_hint_enabled()
-    });
-    let prioritize_inlay_hint = features.map_or(
-        true,
-        CargoExtensionFeatures::default_features_inlay_hint_enabled,
-    );
+    let (
+        dependency_detail_hover_enabled,
+        dependency_version_completion_enabled,
+        dependency_feature_completion_enabled,
+        dependency_version_inlay_hint_enabled,
+        default_features_inlay_hint_prioritized,
+    ) = features
+        .and_then(|features| features.lsp())
+        .map(|lsp| {
+            (
+                lsp.hover().and_then(|hover| {
+                    hover
+                        .dependency_detail()
+                        .map(|dependency_detail| dependency_detail.enabled())
+                }),
+                lsp.completion().and_then(|completion| {
+                    completion.dependency_version().map(|path| path.enabled())
+                }),
+                lsp.completion().and_then(|completion| {
+                    completion.dependency_feature().map(|path| path.enabled())
+                }),
+                lsp.inlay_hint().and_then(|inlay_hint| {
+                    inlay_hint
+                        .dependency_version()
+                        .map(|dependency_version| dependency_version.enabled())
+                }),
+                lsp.inlay_hint().and_then(|inlay_hint| {
+                    inlay_hint
+                        .default_features()
+                        .map(|default_features| default_features.enabled())
+                }),
+            )
+        })
+        .unwrap_or_default();
+
+    let warm_hover = dependency_detail_hover_enabled.unwrap_or_default().value();
+    let warm_versions = dependency_version_completion_enabled
+        .unwrap_or_default()
+        .value();
+    let warm_feature_details = dependency_feature_completion_enabled
+        .unwrap_or_default()
+        .value()
+        || dependency_version_inlay_hint_enabled
+            .unwrap_or_default()
+            .value();
+    let prioritize_inlay_hint = default_features_inlay_hint_prioritized
+        .unwrap_or_default()
+        .value();
 
     if !warm_hover && !warm_versions && !warm_feature_details && !prioritize_inlay_hint {
         return PrefetchUrls::default();

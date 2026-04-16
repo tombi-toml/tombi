@@ -1,4 +1,7 @@
-use crate::extensions::{EnabledOnly, ToggleFeatureDefaultTrue};
+use crate::{
+    BoolDefaultTrue,
+    extensions::{EnabledOnly, ToggleFeatureDefaultTrue},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -12,55 +15,39 @@ pub enum CargoCodeActionFeatures {
 default_to_features!(CargoCodeActionFeatures, CargoCodeActionFeatureTree);
 
 impl CargoCodeActionFeatures {
-    pub fn enabled(&self) -> bool {
+    pub fn enabled(&self) -> BoolDefaultTrue {
         match self {
-            Self::Enabled(enabled) => enabled.enabled(),
-            Self::Features(_) => true,
+            Self::Enabled(enabled) => enabled.enabled,
+            Self::Features(_) => Default::default(),
         }
     }
 
-    pub fn inherit_from_workspace_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .inherit_from_workspace
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
+    pub fn inherit_from_workspace(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.inherit_from_workspace,
+        }
     }
 
-    pub fn inherit_dependency_from_workspace_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .inherit_dependency_from_workspace
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
+    pub fn inherit_dependency_from_workspace(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.inherit_dependency_from_workspace,
+        }
     }
 
-    pub fn convert_dependency_to_table_format_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .convert_dependency_to_table_format
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
+    pub fn convert_dependency_to_table_format(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.convert_dependency_to_table_format,
+        }
     }
 
-    pub fn add_to_workspace_and_inherit_dependency_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .add_to_workspace_and_inherit_dependency
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
+    pub fn add_to_workspace_and_inherit_dependency(&self) -> Option<ToggleFeatureDefaultTrue> {
+        match self {
+            Self::Enabled(enabled) => enabled.into(),
+            Self::Features(features) => features.add_to_workspace_and_inherit_dependency,
+        }
     }
 }
 
