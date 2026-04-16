@@ -2354,7 +2354,7 @@ mod tests {
                     tombi_config::CargoLspFeatureTree {
                         inlay_hint: Some(tombi_config::CargoInlayHintFeatures::Features(
                             tombi_config::CargoInlayHintFeatureTree {
-                                dependency_version: Some(tombi_config::ToggleFeature {
+                                dependency_version: Some(tombi_config::ToggleFeatureDefaultTrue {
                                     enabled: Some(false.into()),
                                 }),
                                 default_features: None,
@@ -2425,7 +2425,7 @@ mod tests {
                             tombi_config::CargoInlayHintFeatureTree {
                                 dependency_version: None,
                                 default_features: None,
-                                workspace_value: Some(tombi_config::ToggleFeature {
+                                workspace_value: Some(tombi_config::ToggleFeatureDefaultTrue {
                                     enabled: Some(false.into()),
                                 }),
                             },

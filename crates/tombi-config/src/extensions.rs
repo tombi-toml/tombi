@@ -110,14 +110,14 @@ impl EnabledOnly {
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub struct ToggleFeature {
+pub struct ToggleFeatureDefaultTrue {
     /// # Enable feature
     ///
     /// Whether this nested feature is enabled.
     pub enabled: Option<BoolDefaultTrue>,
 }
 
-impl ToggleFeature {
+impl ToggleFeatureDefaultTrue {
     pub fn enabled(&self) -> bool {
         self.enabled.unwrap_or_default().value()
     }
