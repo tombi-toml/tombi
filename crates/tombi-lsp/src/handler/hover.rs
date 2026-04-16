@@ -113,27 +113,16 @@ pub async fn handle_hover(
         let cache_options = schema_store.cache_options();
         let tombi_hover_enabled = config
             .tombi_extension_features()
-            .and_then(|features| features.lsp())
-            .and_then(|lsp| lsp.hover())
-            .map(|hover| hover.enabled())
-            .unwrap_or_default()
-            .value();
-        let cargo_dependency_detail_hover_enabled = config
-            .cargo_extension_features()
-            .and_then(|features| features.lsp())
-            .and_then(|lsp| lsp.hover())
-            .and_then(|hover| hover.dependency_detail())
-            .map(|dependency_detail| dependency_detail.enabled())
-            .unwrap_or_default()
-            .value();
-        let pyproject_dependency_detail_hover_enabled = config
-            .pyproject_extension_features()
-            .and_then(|features| features.lsp())
-            .and_then(|lsp| lsp.hover())
-            .and_then(|hover| hover.dependency_detail())
-            .map(|dependency_detail| dependency_detail.enabled())
-            .unwrap_or_default()
-            .value();
+            .map_or(true, tombi_config::TombiExtensionFeatures::hover_enabled);
+        let cargo_dependency_detail_hover_enabled = config.cargo_extension_features().map_or(
+            true,
+            tombi_config::CargoExtensionFeatures::dependency_detail_hover_enabled,
+        );
+        let pyproject_dependency_detail_hover_enabled =
+            config.pyproject_extension_features().map_or(
+                true,
+                tombi_config::PyprojectExtensionFeatures::dependency_detail_hover_enabled,
+            );
 
         let extension_hover = if tombi_hover_enabled {
             tombi_extension_tombi::hover(

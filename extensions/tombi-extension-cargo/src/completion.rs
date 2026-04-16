@@ -69,13 +69,7 @@ pub async fn completion(
         return Ok(None);
     }
 
-    if !features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.completion())
-        .map(|completion| completion.enabled())
-        .unwrap_or_default()
-        .value()
-    {
+    if !cargo_completion_root_enabled(features) {
         return Ok(None);
     }
 
@@ -416,21 +410,26 @@ async fn completion_member(
     Ok(None)
 }
 
+fn cargo_completion_root_enabled(features: Option<&tombi_config::CargoExtensionFeatures>) -> bool {
+    features.map_or(
+        true,
+        tombi_config::CargoExtensionFeatures::completion_enabled,
+    )
+}
+
 fn cargo_completion_enabled(
     features: Option<&tombi_config::CargoExtensionFeatures>,
     feature: CargoCompletionFeature,
 ) -> bool {
-    features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.completion())
-        .and_then(|completion| match feature {
-            CargoCompletionFeature::DependencyVersion => completion.dependency_version(),
-            CargoCompletionFeature::DependencyFeature => completion.dependency_feature(),
-            CargoCompletionFeature::Path => completion.path(),
-        })
-        .and_then(|feature| feature.enabled)
-        .unwrap_or_default()
-        .value()
+    features.map_or(true, |features| match feature {
+        CargoCompletionFeature::DependencyVersion => {
+            features.dependency_version_completion_enabled()
+        }
+        CargoCompletionFeature::DependencyFeature => {
+            features.dependency_feature_completion_enabled()
+        }
+        CargoCompletionFeature::Path => features.path_completion_enabled(),
+    })
 }
 
 fn complete_workspace_dependency_inheritance(

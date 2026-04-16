@@ -133,13 +133,7 @@ pub fn code_action(
         return Ok(None);
     }
 
-    if !features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.code_action())
-        .map(|code_action| code_action.enabled())
-        .unwrap_or_default()
-        .value()
-    {
+    if !cargo_code_action_root_enabled(features) {
         return Ok(None);
     }
     let Some(cargo_toml_path) = text_document_uri.to_file_path().ok() else {
@@ -173,6 +167,13 @@ pub fn code_action(
     Ok((!code_actions.is_empty()).then_some(code_actions))
 }
 
+fn cargo_code_action_root_enabled(features: Option<&tombi_config::CargoExtensionFeatures>) -> bool {
+    features.map_or(
+        true,
+        tombi_config::CargoExtensionFeatures::code_action_enabled,
+    )
+}
+
 fn code_actions_for_workspace_cargo_toml(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
@@ -182,21 +183,11 @@ fn code_actions_for_workspace_cargo_toml(
 ) -> Vec<CodeActionOrCommand> {
     let mut code_actions = Vec::new();
 
-    let code_action_features = features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.code_action());
-
-    if code_action_features
-        .and_then(|code_action| code_action.convert_dependency_to_table_format())
-        .map(|feature| feature.enabled())
-        .unwrap_or_default()
-        .value()
-        && let Some(action) = convert_dependency_to_table_format_code_action(
-            text_document_uri,
-            line_index,
-            document_tree,
-            accessors,
-        )
+    if features.map_or(
+        true,
+        tombi_config::CargoExtensionFeatures::convert_dependency_to_table_format_code_action_enabled,
+    ) && let Some(action) =
+        crate_version_code_action(text_document_uri, line_index, document_tree, accessors)
     {
         code_actions.push(CodeActionOrCommand::CodeAction(action));
     }
@@ -217,10 +208,6 @@ fn code_actions_for_crate_cargo_toml(
 ) -> Vec<CodeActionOrCommand> {
     let mut code_actions = Vec::new();
 
-    let code_action_features = features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.code_action());
-
     if let Some((workspace_cargo_toml_path, workspace_root, workspace_document_tree)) =
         find_workspace_cargo_toml(
             cargo_toml_path,
@@ -236,80 +223,61 @@ fn code_actions_for_crate_cargo_toml(
             tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
 
         // Add workspace-specific code actions here
-        if code_action_features
-            .as_ref()
-            .and_then(|code_action| code_action.inherit_from_workspace())
-            .map(|feature| feature.enabled())
-            .unwrap_or_default()
-            .value()
-            && let Some(action) = inherit_from_workspace_code_action(
-                text_document_uri,
-                line_index,
-                document_tree,
-                accessors,
-                contexts,
-                &workspace_document_tree,
-            )
-        {
+        if features.map_or(
+            true,
+            tombi_config::CargoExtensionFeatures::inherit_from_workspace_code_action_enabled,
+        ) && let Some(action) = workspace_code_action(
+            text_document_uri,
+            line_index,
+            document_tree,
+            accessors,
+            contexts,
+            &workspace_document_tree,
+        ) {
             code_actions.push(CodeActionOrCommand::CodeAction(action));
         }
 
-        if code_action_features
-            .as_ref()
-            .and_then(|code_action| code_action.add_to_workspace_and_inherit_dependency())
-            .map(|feature| feature.enabled())
-            .unwrap_or_default()
-            .value()
-            && let Some(action) = add_to_workspace_and_inherit_dependency_code_action(
-                text_document_uri,
-                line_index,
-                document_tree,
-                accessors,
-                contexts,
-                &workspace_cargo_toml_path,
-                &workspace_line_index,
-                &workspace_root,
-                &workspace_document_tree,
-            )
-        {
+        if features.map_or(
+            true,
+            tombi_config::CargoExtensionFeatures::add_to_workspace_and_inherit_dependency_code_action_enabled,
+        ) && let Some(action) = add_workspace_dependency_code_action(
+            text_document_uri,
+            line_index,
+            document_tree,
+            accessors,
+            contexts,
+            &workspace_cargo_toml_path,
+            &workspace_line_index,
+            &workspace_root,
+            &workspace_document_tree,
+        ) {
             code_actions.push(CodeActionOrCommand::CodeAction(action));
         }
 
-        if code_action_features
-            .as_ref()
-            .and_then(|code_action| code_action.inherit_dependency_from_workspace())
-            .map(|feature| feature.enabled())
-            .unwrap_or_default()
-            .value()
-            && let Some(action) = inherit_dependency_from_workspace_code_action(
-                text_document_uri,
-                line_index,
-                document_tree,
-                cargo_toml_path,
-                accessors,
-                contexts,
-                &workspace_cargo_toml_path,
-                &workspace_document_tree,
-                toml_version,
-            )
-        {
+        if features.map_or(
+        true,
+        tombi_config::CargoExtensionFeatures::inherit_dependency_from_workspace_code_action_enabled,
+    ) && let Some(action) = use_workspace_dependency_code_action(
+        text_document_uri,
+        line_index,
+        document_tree,
+        cargo_toml_path,
+        accessors,
+            contexts,
+            &workspace_cargo_toml_path,
+            &workspace_document_tree,
+            toml_version,
+        ) {
             code_actions.push(CodeActionOrCommand::CodeAction(action));
         }
     }
 
     // Add crate-specific code actions here
-    if code_action_features
-        .as_ref()
-        .and_then(|code_action| code_action.convert_dependency_to_table_format())
-        .map(|feature| feature.enabled())
-        .unwrap_or_default()
-        .value()
-        && let Some(action) = convert_dependency_to_table_format_code_action(
-            text_document_uri,
-            line_index,
-            document_tree,
-            accessors,
-        )
+    if features.map_or(
+        true,
+        tombi_config::CargoExtensionFeatures::convert_dependency_to_table_format_code_action_enabled,
+    ) && let Some(action) =
+        crate_version_code_action(text_document_uri, line_index, document_tree, accessors)
     {
         code_actions.push(CodeActionOrCommand::CodeAction(action));
     }
@@ -333,7 +301,7 @@ fn code_actions_for_crate_cargo_toml(
 /// version.workspace = true
 /// ```
 ///
-fn inherit_from_workspace_code_action(
+fn workspace_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
     document_tree: &tombi_document_tree::DocumentTree,
@@ -412,7 +380,7 @@ fn inherit_from_workspace_code_action(
     })
 }
 
-fn inherit_dependency_from_workspace_code_action(
+fn use_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
     crate_document_tree: &tombi_document_tree::DocumentTree,
@@ -567,7 +535,7 @@ fn render_inherited_dependency_inline_table(
 /// serde = { version = "1.0" }
 /// ```
 ///
-fn convert_dependency_to_table_format_code_action(
+fn crate_version_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
     document_tree: &tombi_document_tree::DocumentTree,
@@ -752,7 +720,7 @@ fn calculate_inline_table_insertion(
 /// serde.workspace = true
 /// ```
 ///
-fn add_to_workspace_and_inherit_dependency_code_action(
+fn add_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
     document_tree: &tombi_document_tree::DocumentTree,

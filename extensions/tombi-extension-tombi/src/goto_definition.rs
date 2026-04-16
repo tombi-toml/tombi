@@ -17,13 +17,7 @@ pub async fn goto_definition(
         return Ok(Default::default());
     }
 
-    if !features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.goto_definition())
-        .map(|goto_definition| goto_definition.enabled())
-        .unwrap_or_default()
-        .value()
-    {
+    if !tombi_goto_definition_root_enabled(features) {
         return Ok(None);
     }
 
@@ -33,47 +27,40 @@ pub async fn goto_definition(
 
     let mut locations = vec![];
 
-    if features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.goto_definition())
-        .and_then(|goto_definition| goto_definition.path())
-        .map(|path| path.enabled())
-        .unwrap_or_default()
-        .value()
+    if accessors.last() == Some(&tombi_schema_store::Accessor::Key("path".to_string()))
+        && tombi_path_goto_definition_enabled(features)
+        && let Some((_, tombi_document_tree::Value::String(path))) =
+            dig_accessors(document_tree, accessors)
+        && let Some(uri) = get_definition_link(path.value(), &tombi_toml_path)
     {
-        if accessors.last() == Some(&tombi_schema_store::Accessor::Key("path".to_string()))
-            && let Some((_, tombi_document_tree::Value::String(path))) =
-                dig_accessors(document_tree, accessors)
-            && let Some(uri) = get_definition_link(path.value(), &tombi_toml_path)
-        {
-            locations.push(tombi_extension::DefinitionLocation {
-                uri,
-                range: tombi_text::Range::default(),
-            });
-        }
+        locations.push(tombi_extension::DefinitionLocation {
+            uri,
+            range: tombi_text::Range::default(),
+        });
+    }
 
-        if matches!(accessors.len(), 3 | 4)
-            && matches_accessors!(accessors[..3], ["schema", "catalog", "paths"])
-            && let Some((_, tombi_document_tree::Value::Array(paths))) =
-                dig_accessors(document_tree, &accessors[..3])
-        {
-            let index = (accessors.len() == 4)
-                .then(|| accessors.last().and_then(|accessor| accessor.as_index()))
-                .flatten();
+    if matches!(accessors.len(), 3 | 4)
+        && matches_accessors!(accessors[..3], ["schema", "catalog", "paths"])
+        && tombi_path_goto_definition_enabled(features)
+        && let Some((_, tombi_document_tree::Value::Array(paths))) =
+            dig_accessors(document_tree, &accessors[..3])
+    {
+        let index = (accessors.len() == 4)
+            .then(|| accessors.last().and_then(|accessor| accessor.as_index()))
+            .flatten();
 
-            for (i, path) in paths.iter().enumerate() {
-                let tombi_document_tree::Value::String(path) = path else {
-                    continue;
-                };
-                if index.is_some() && index != Some(i) {
-                    continue;
-                }
-                if let Some(uri) = get_definition_link(path.value(), &tombi_toml_path) {
-                    locations.push(tombi_extension::DefinitionLocation {
-                        uri,
-                        range: tombi_text::Range::default(),
-                    });
-                }
+        for (i, path) in paths.iter().enumerate() {
+            let tombi_document_tree::Value::String(path) = path else {
+                continue;
+            };
+            if index.is_some() && index != Some(i) {
+                continue;
+            }
+            if let Some(uri) = get_definition_link(path.value(), &tombi_toml_path) {
+                locations.push(tombi_extension::DefinitionLocation {
+                    uri,
+                    range: tombi_text::Range::default(),
+                });
             }
         }
     }
@@ -83,6 +70,24 @@ pub async fn goto_definition(
     }
 
     Ok(Some(locations))
+}
+
+fn tombi_goto_definition_root_enabled(
+    features: Option<&tombi_config::TombiExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::TombiExtensionFeatures::goto_definition_enabled,
+    )
+}
+
+fn tombi_path_goto_definition_enabled(
+    features: Option<&tombi_config::TombiExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::TombiExtensionFeatures::path_goto_definition_enabled,
+    )
 }
 
 fn get_definition_link(url_str: &str, tombi_toml_path: &std::path::Path) -> Option<tombi_uri::Uri> {

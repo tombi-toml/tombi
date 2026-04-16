@@ -48,13 +48,7 @@ pub async fn document_link(
         return Ok(None);
     }
 
-    if !features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.document_link())
-        .map(|document_link| document_link.enabled())
-        .unwrap_or_default()
-        .value()
-    {
+    if !tombi_document_link_root_enabled(features) {
         return Ok(None);
     }
 
@@ -64,79 +58,74 @@ pub async fn document_link(
 
     let mut document_links = vec![];
 
-    if features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.document_link())
-        .and_then(|document_link| document_link.path())
-        .map(|path| path.enabled())
-        .unwrap_or_default()
-        .value()
+    if path_document_link_enabled(features)
+        && let Some((_, path)) = dig_keys(document_tree, &["schema", "catalog", "path"])
     {
-        if let Some((_, path)) = dig_keys(document_tree, &["schema", "catalog", "path"]) {
-            let paths = match path {
-                tombi_document_tree::Value::String(path) => vec![path],
-                tombi_document_tree::Value::Array(paths) => paths
-                    .iter()
-                    .filter_map(|v| {
-                        if let tombi_document_tree::Value::String(s) = v {
-                            Some(s)
-                        } else {
-                            None
-                        }
-                    })
-                    .collect(),
-                _ => Vec::with_capacity(0),
-            };
-            for path in paths {
-                // Convert the path to a URL
-                if let Some(target) = get_document_link(path.value(), &tombi_toml_path) {
-                    document_links.push(tombi_extension::DocumentLink {
-                        target,
-                        range: path.unquoted_range(),
-                        tooltip: DocumentLinkToolTip::Catalog.into(),
-                    });
-                }
-            }
-        }
-
-        if let Some((_, tombi_document_tree::Value::Array(paths))) =
-            dig_keys(document_tree, &["schema", "catalog", "paths"])
-        {
-            for path in paths.iter() {
-                let tombi_document_tree::Value::String(path) = path else {
-                    continue;
-                };
-                // Convert the path to a URL
-                if let Some(target) = get_document_link(path.value(), &tombi_toml_path) {
-                    document_links.push(tombi_extension::DocumentLink {
-                        target,
-                        range: path.unquoted_range(),
-                        tooltip: DocumentLinkToolTip::Catalog.into(),
-                    });
-                }
-            }
-        }
-
-        if let Some((_, tombi_document_tree::Value::Array(schemas))) =
-            dig_keys(document_tree, &["schemas"])
-        {
-            for schema in schemas.iter() {
-                let tombi_document_tree::Value::Table(table) = schema else {
-                    continue;
-                };
-                let Some(tombi_document_tree::Value::String(path)) = table.get("path") else {
-                    continue;
-                };
-                let Some(target) = get_document_link(path.value(), &tombi_toml_path) else {
-                    continue;
-                };
-
+        let paths = match path {
+            tombi_document_tree::Value::String(path) => vec![path],
+            tombi_document_tree::Value::Array(paths) => paths
+                .iter()
+                .filter_map(|v| {
+                    if let tombi_document_tree::Value::String(s) = v {
+                        Some(s)
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+            _ => Vec::with_capacity(0),
+        };
+        for path in paths {
+            // Convert the path to a URL
+            if let Some(target) = get_document_link(path.value(), &tombi_toml_path) {
                 document_links.push(tombi_extension::DocumentLink {
                     target,
                     range: path.unquoted_range(),
-                    tooltip: DocumentLinkToolTip::Schema.into(),
+                    tooltip: DocumentLinkToolTip::Catalog.into(),
                 });
             }
+        }
+    }
+
+    if path_document_link_enabled(features)
+        && let Some((_, tombi_document_tree::Value::Array(paths))) =
+            dig_keys(document_tree, &["schema", "catalog", "paths"])
+    {
+        for path in paths.iter() {
+            let tombi_document_tree::Value::String(path) = path else {
+                continue;
+            };
+            // Convert the path to a URL
+            if let Some(target) = get_document_link(path.value(), &tombi_toml_path) {
+                document_links.push(tombi_extension::DocumentLink {
+                    target,
+                    range: path.unquoted_range(),
+                    tooltip: DocumentLinkToolTip::Catalog.into(),
+                });
+            }
+        }
+    }
+
+    if path_document_link_enabled(features)
+        && let Some((_, tombi_document_tree::Value::Array(schemas))) =
+            dig_keys(document_tree, &["schemas"])
+    {
+        for schema in schemas.iter() {
+            let tombi_document_tree::Value::Table(table) = schema else {
+                continue;
+            };
+            let Some(tombi_document_tree::Value::String(path)) = table.get("path") else {
+                continue;
+            };
+            let Some(target) = get_document_link(path.value(), &tombi_toml_path) else {
+                continue;
+            };
+
+            document_links.push(tombi_extension::DocumentLink {
+                target,
+                range: path.unquoted_range(),
+                tooltip: DocumentLinkToolTip::Schema.into(),
+            });
         }
     }
 
@@ -145,6 +134,22 @@ pub async fn document_link(
     }
 
     Ok(Some(document_links))
+}
+
+fn tombi_document_link_root_enabled(
+    features: Option<&tombi_config::TombiExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::TombiExtensionFeatures::document_link_enabled,
+    )
+}
+
+fn path_document_link_enabled(features: Option<&tombi_config::TombiExtensionFeatures>) -> bool {
+    features.map_or(
+        true,
+        tombi_config::TombiExtensionFeatures::path_document_link_enabled,
+    )
 }
 
 fn get_document_link(uri: &str, tombi_toml_path: &std::path::Path) -> Option<tombi_uri::Uri> {

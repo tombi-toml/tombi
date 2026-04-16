@@ -61,13 +61,7 @@ pub async fn document_link(
         return Ok(None);
     }
 
-    if !features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.document_link())
-        .map(|document_link| document_link.enabled())
-        .unwrap_or_default()
-        .value()
-    {
+    if !pyproject_document_link_root_enabled(features) {
         return Ok(None);
     }
 
@@ -77,24 +71,7 @@ pub async fn document_link(
 
     let mut document_links = vec![];
 
-    let (pyproject_toml_document_link_enabled, pypi_org_document_link_enabled) = features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.document_link())
-        .map(|document_link| {
-            (
-                document_link
-                    .pyproject_toml()
-                    .map(|pyproject| pyproject.enabled())
-                    .unwrap_or_default(),
-                document_link
-                    .pypi_org()
-                    .map(|pypi_org| pypi_org.enabled())
-                    .unwrap_or_default(),
-            )
-        })
-        .unwrap_or_default();
-
-    if pyproject_toml_document_link_enabled.value()
+    if pyproject_toml_document_link_enabled(features)
         && let Some((_, tombi_document_tree::Value::Table(workspace))) =
             dig_keys(document_tree, &["tool", "uv", "workspace"])
     {
@@ -116,7 +93,7 @@ pub async fn document_link(
                 source,
                 &pyproject_toml_path,
                 toml_version,
-                pyproject_toml_document_link_enabled.value(),
+                pyproject_toml_document_link_enabled(features),
             )?);
         }
 
@@ -134,8 +111,8 @@ pub async fn document_link(
             pyproject_sources,
             &pyproject_toml_path,
             toml_version,
-            pyproject_toml_document_link_enabled.value(),
-            pypi_org_document_link_enabled.value(),
+            pyproject_toml_document_link_enabled(features),
+            pypi_org_document_link_enabled(features),
         )?);
     }
 
@@ -148,8 +125,8 @@ pub async fn document_link(
             pyproject_sources,
             &pyproject_toml_path,
             toml_version,
-            pyproject_toml_document_link_enabled.value(),
-            pypi_org_document_link_enabled.value(),
+            pyproject_toml_document_link_enabled(features),
+            pypi_org_document_link_enabled(features),
         )?);
     }
 
@@ -162,8 +139,8 @@ pub async fn document_link(
             pyproject_sources,
             &pyproject_toml_path,
             toml_version,
-            pyproject_toml_document_link_enabled.value(),
-            pypi_org_document_link_enabled.value(),
+            pyproject_toml_document_link_enabled(features),
+            pypi_org_document_link_enabled(features),
         )?);
     }
 
@@ -172,8 +149,8 @@ pub async fn document_link(
         pyproject_sources,
         &pyproject_toml_path,
         toml_version,
-        pyproject_toml_document_link_enabled.value(),
-        pypi_org_document_link_enabled.value(),
+        pyproject_toml_document_link_enabled(features),
+        pypi_org_document_link_enabled(features),
     )?);
 
     if document_links.is_empty() {
@@ -181,6 +158,33 @@ pub async fn document_link(
     }
 
     Ok(Some(document_links))
+}
+
+fn pyproject_document_link_root_enabled(
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::PyprojectExtensionFeatures::document_link_enabled,
+    )
+}
+
+fn pyproject_toml_document_link_enabled(
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::PyprojectExtensionFeatures::pyproject_toml_document_link_enabled,
+    )
+}
+
+fn pypi_org_document_link_enabled(
+    features: Option<&tombi_config::PyprojectExtensionFeatures>,
+) -> bool {
+    features.map_or(
+        true,
+        tombi_config::PyprojectExtensionFeatures::pypi_org_document_link_enabled,
+    )
 }
 
 fn document_link_for_workspace_pyproject_toml(

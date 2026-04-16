@@ -91,19 +91,12 @@ fn pyproject_navigation_enabled(
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
     accessors: &[tombi_schema_store::Accessor],
 ) -> bool {
-    features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.goto_declaration())
-        .and_then(
-            |goto_declaration| match classify_pyproject_navigation_feature(accessors) {
-                PyprojectNavigationFeature::Dependency => goto_declaration.dependency(),
-                PyprojectNavigationFeature::Member => goto_declaration.member(),
-                PyprojectNavigationFeature::Path => goto_declaration.path(),
-            },
-        )
-        .map(|feature| feature.enabled())
-        .unwrap_or_default()
-        .value()
+    let feature = classify_pyproject_navigation_feature(accessors);
+    features.map_or(true, |features| match feature {
+        PyprojectNavigationFeature::Dependency => features.goto_declaration_dependency_enabled(),
+        PyprojectNavigationFeature::Member => features.goto_declaration_member_enabled(),
+        PyprojectNavigationFeature::Path => features.goto_declaration_path_enabled(),
+    })
 }
 
 fn goto_declaration_for_dependency_package(

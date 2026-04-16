@@ -88,9 +88,7 @@ impl Config {
     pub fn cargo_extension_enabled(&self) -> bool {
         self.extensions
             .as_ref()
-            .map(|extensions| extensions.cargo_enabled())
-            .unwrap_or_default()
-            .value()
+            .map_or(true, Extensions::cargo_enabled)
     }
 
     pub fn cargo_extension_features(&self) -> Option<&CargoExtensionFeatures> {
@@ -101,19 +99,13 @@ impl Config {
 
     pub fn cargo_inlay_hint_enabled(&self) -> bool {
         self.cargo_extension_features()
-            .and_then(|features| features.lsp())
-            .and_then(|lsp| lsp.inlay_hint())
-            .map(|inlay_hint| inlay_hint.enabled())
-            .unwrap_or_default()
-            .value()
+            .map_or(true, CargoExtensionFeatures::inlay_hint_enabled)
     }
 
     pub fn pyproject_extension_enabled(&self) -> bool {
         self.extensions
             .as_ref()
-            .map(|extensions| extensions.pyproject_enabled())
-            .unwrap_or_default()
-            .value()
+            .map_or(true, Extensions::pyproject_enabled)
     }
 
     pub fn pyproject_extension_features(&self) -> Option<&PyprojectExtensionFeatures> {
@@ -124,19 +116,13 @@ impl Config {
 
     pub fn pyproject_inlay_hint_enabled(&self) -> bool {
         self.pyproject_extension_features()
-            .and_then(|features| features.lsp())
-            .and_then(|lsp| lsp.inlay_hint())
-            .map(|inlay_hint| inlay_hint.enabled())
-            .unwrap_or_default()
-            .value()
+            .map_or(true, PyprojectExtensionFeatures::inlay_hint_enabled)
     }
 
     pub fn tombi_extension_enabled(&self) -> bool {
         self.extensions
             .as_ref()
-            .map(|extensions| extensions.tombi_enabled())
-            .unwrap_or_default()
-            .value()
+            .map_or(true, Extensions::tombi_enabled)
     }
 
     pub fn tombi_extension_features(&self) -> Option<&TombiExtensionFeatures> {
