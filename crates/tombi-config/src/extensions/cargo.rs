@@ -1,5 +1,3 @@
-use crate::BoolDefaultTrue;
-
 use super::EnabledOnly;
 
 mod lsp;
@@ -15,38 +13,24 @@ pub enum CargoExtensionFeatures {
     Features(CargoExtensionFeatureTree),
 }
 
-default_to_features!(CargoExtensionFeatures, CargoExtensionFeatureTree);
+extension_features! {
+    CargoExtensionFeatures,
 
-impl CargoExtensionFeatures {
-    pub fn enabled(&self) -> BoolDefaultTrue {
-        match self {
-            Self::Enabled(enabled) => enabled.enabled,
-            Self::Features(_) => Default::default(),
-        }
+    #[derive(Debug, Default, Clone, PartialEq)]
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+    #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+    #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(extend(
+            "x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending
+        ))
+    )]
+    pub struct CargoExtensionFeatureTree {
+        /// # Cargo LSP feature options
+        pub lsp: Option<CargoLspFeatures>,
     }
-
-    pub fn lsp(&self) -> Option<&CargoLspFeatures> {
-        match self {
-            Self::Enabled(_) => None,
-            Self::Features(features) => features.lsp.as_ref(),
-        }
-    }
-}
-
-#[derive(Debug, Default, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
-#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(
-    feature = "jsonschema",
-    schemars(extend(
-        "x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending
-    ))
-)]
-pub struct CargoExtensionFeatureTree {
-    /// # Cargo LSP feature options
-    pub lsp: Option<CargoLspFeatures>,
 }
 
 #[cfg(all(test, feature = "serde"))]

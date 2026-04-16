@@ -1,7 +1,4 @@
-use crate::{
-    BoolDefaultTrue,
-    extensions::{EnabledOnly, ToggleFeatureDefaultTrue},
-};
+use crate::extensions::{EnabledOnly, ToggleFeatureDefaultTrue};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -18,38 +15,24 @@ pub enum CargoHoverFeatures {
     Features(CargoHoverFeatureTree),
 }
 
-default_to_features!(CargoHoverFeatures, CargoHoverFeatureTree);
+toggle_features! {
+    CargoHoverFeatures,
 
-impl CargoHoverFeatures {
-    pub fn enabled(&self) -> BoolDefaultTrue {
-        match self {
-            Self::Enabled(enabled) => enabled.enabled,
-            Self::Features(_) => Default::default(),
-        }
+    #[derive(Debug, Default, Clone, PartialEq)]
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+    #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+    #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(extend(
+            "x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending
+        ))
+    )]
+    pub struct CargoHoverFeatureTree {
+        /// # Dependency detail hover feature
+        ///
+        /// Whether hover shows detailed dependency metadata.
+        pub dependency_detail: Option<ToggleFeatureDefaultTrue>,
     }
-
-    pub fn dependency_detail(&self) -> Option<ToggleFeatureDefaultTrue> {
-        match self {
-            Self::Enabled(enabled) => enabled.into(),
-            Self::Features(features) => features.dependency_detail,
-        }
-    }
-}
-
-#[derive(Debug, Default, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
-#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(
-    feature = "jsonschema",
-    schemars(extend(
-        "x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending
-    ))
-)]
-pub struct CargoHoverFeatureTree {
-    /// # Dependency detail hover feature
-    ///
-    /// Whether hover shows detailed dependency metadata.
-    pub dependency_detail: Option<ToggleFeatureDefaultTrue>,
 }

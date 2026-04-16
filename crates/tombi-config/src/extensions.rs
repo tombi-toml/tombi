@@ -4,12 +4,144 @@ pub const CARGO_EXTENSION_NAME: &str = "tombi-toml/cargo";
 pub const PYPROJECT_EXTENSION_NAME: &str = "tombi-toml/pyproject";
 pub const TOMBI_EXTENSION_NAME: &str = "tombi-toml/tombi";
 
-macro_rules! default_to_features {
-    ($enum:ident, $features:ident) => {
-        impl Default for $enum {
+macro_rules! extension_features {
+    (
+        $feature_enum:ident,
+
+        $(#[$($meta:tt)*])*
+        $vis:vis struct $struct_name:ident {
+            $(
+                $(#[$($field_meta:tt)*])*
+                $field_vis:vis $field_name:ident : Option<$field_type:ty>,
+            )*
+        }
+    ) => {
+        $(#[$($meta)*])*
+        $vis struct $struct_name {
+            $(
+                $(#[$($field_meta)*])*
+                $field_vis $field_name: Option<$field_type>,
+            )*
+        }
+
+        impl Default for $feature_enum {
             fn default() -> Self {
-                Self::Features($features::default())
+                Self::Features($struct_name::default())
             }
+        }
+
+        impl $feature_enum {
+            pub fn enabled(&self) -> $crate::BoolDefaultTrue {
+                match self {
+                    Self::Enabled(enabled) => enabled.enabled,
+                    Self::Features(_) => Default::default(),
+                }
+            }
+
+            $(
+                pub fn $field_name(&self) -> Option<&$field_type> {
+                    match self {
+                        Self::Enabled(_) => None,
+                        Self::Features(features) => features.$field_name.as_ref(),
+                    }
+                }
+            )*
+        }
+    };
+}
+
+macro_rules! lsp_features {
+    (
+        $feature_enum:ident,
+
+        $(#[$($meta:tt)*])*
+        $vis:vis struct $struct_name:ident {
+            $(
+                $(#[$($field_meta:tt)*])*
+                $field_vis:vis $field_name:ident : Option<$field_type:ty>,
+            )*
+        }
+    ) => {
+        $(#[$($meta)*])*
+        $vis struct $struct_name {
+            $(
+                $(#[$($field_meta)*])*
+                $field_vis $field_name: Option<$field_type>,
+            )*
+        }
+
+        impl Default for $feature_enum {
+            fn default() -> Self {
+                Self::Features($struct_name::default())
+            }
+        }
+
+        impl $feature_enum {
+            pub fn enabled(&self) -> $crate::BoolDefaultTrue {
+                match self {
+                    Self::Enabled(enabled) => enabled.enabled,
+                    Self::Features(_) => Default::default(),
+                }
+            }
+
+            $(
+                pub fn $field_name(&self) -> Option<$field_type> {
+                    match self {
+                        Self::Enabled(enabled) => Some(if enabled.enabled.value() {
+                            <$field_type>::default()
+                        } else {
+                            <$field_type>::Enabled(enabled.clone())
+                        }),
+                        Self::Features(features) => features.$field_name.clone(),
+                    }
+                }
+            )*
+        }
+    };
+}
+
+macro_rules! toggle_features {
+    (
+        $feature_enum:ident,
+
+        $(#[$($meta:tt)*])*
+        $vis:vis struct $struct_name:ident {
+            $(
+                $(#[$($field_meta:tt)*])*
+                $field_vis:vis $field_name:ident : Option<$field_type:ty>,
+            )*
+        }
+    ) => {
+        $(#[$($meta)*])*
+        $vis struct $struct_name {
+            $(
+                $(#[$($field_meta)*])*
+                $field_vis $field_name: Option<$field_type>,
+            )*
+        }
+
+        impl Default for $feature_enum {
+            fn default() -> Self {
+                Self::Features($struct_name::default())
+            }
+        }
+
+        impl $feature_enum {
+            pub fn enabled(&self) -> $crate::BoolDefaultTrue {
+                match self {
+                    Self::Enabled(enabled) => enabled.enabled,
+                    Self::Features(_) => Default::default(),
+                }
+            }
+
+            $(
+                pub fn $field_name(&self) -> Option<$field_type> {
+                    match self {
+                        Self::Enabled(enabled) => enabled.into(),
+                        Self::Features(features) => features.$field_name,
+                    }
+                }
+            )*
         }
     };
 }

@@ -115,7 +115,7 @@ pub async fn handle_hover(
             .tombi_extension_features()
             .and_then(|features| features.lsp())
             .and_then(|lsp| lsp.hover())
-            .map(|hover| hover.enabled)
+            .map(|hover| hover.enabled())
             .unwrap_or_default()
             .value();
         let cargo_dependency_detail_hover_enabled = config
