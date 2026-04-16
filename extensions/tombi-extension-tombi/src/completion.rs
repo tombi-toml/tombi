@@ -16,54 +16,53 @@ pub async fn completion(
         return Ok(None);
     }
 
+    if !features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.completion())
+        .map(|completion| completion.enabled())
+        .unwrap_or_default()
+        .value()
+    {
+        return Ok(None);
+    }
+
     let path = text_document_uri.path();
     if !(path.ends_with(DOT_TOMBI_TOML_FILENAME) || path.ends_with(TOMBI_TOML_FILENAME)) {
         return Ok(None);
     }
 
-    if !tombi_completion_root_enabled(features) {
-        return Ok(None);
-    }
-
-    if matches_accessors!(accessors, ["schema", "catalog", "path"])
-        && tombi_path_completion_enabled(features)
-        && let Some(completions) = completion_file_path(
-            text_document_uri,
-            document_tree,
-            position,
-            accessors,
-            Some(&["json"]),
-        )
+    if features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.completion())
+        .and_then(|completion| completion.path())
+        .map(|path| path.enabled())
+        .unwrap_or_default()
+        .value()
     {
-        return Ok(Some(completions));
-    }
+        if matches_accessors!(accessors, ["schema", "catalog", "path"])
+            && let Some(completions) = completion_file_path(
+                text_document_uri,
+                document_tree,
+                position,
+                accessors,
+                Some(&["json"]),
+            )
+        {
+            return Ok(Some(completions));
+        }
 
-    if matches_accessors!(accessors, ["schemas", _, "path"])
-        && tombi_path_completion_enabled(features)
-        && let Some(completions) = completion_file_path(
-            text_document_uri,
-            document_tree,
-            position,
-            accessors,
-            Some(&["json"]),
-        )
-    {
-        return Ok(Some(completions));
+        if matches_accessors!(accessors, ["schemas", _, "path"])
+            && let Some(completions) = completion_file_path(
+                text_document_uri,
+                document_tree,
+                position,
+                accessors,
+                Some(&["json"]),
+            )
+        {
+            return Ok(Some(completions));
+        }
     }
 
     Ok(None)
-}
-
-fn tombi_completion_root_enabled(features: Option<&tombi_config::TombiExtensionFeatures>) -> bool {
-    features.map_or(
-        true,
-        tombi_config::TombiExtensionFeatures::completion_enabled,
-    )
-}
-
-fn tombi_path_completion_enabled(features: Option<&tombi_config::TombiExtensionFeatures>) -> bool {
-    features.map_or(
-        true,
-        tombi_config::TombiExtensionFeatures::path_completion_enabled,
-    )
 }

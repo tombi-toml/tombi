@@ -23,11 +23,22 @@ pub async fn did_open(
         return Ok(None);
     }
 
-    if !pyproject_did_open_enabled(features) {
+    if !features
+        .map(|features| features.enabled())
+        .unwrap_or_default()
+        .value()
+    {
         return Ok(None);
     }
 
-    if !pyproject_hover_warming_enabled(features) {
+    if !features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.hover())
+        .and_then(|hover| hover.dependency_detail())
+        .map(|dependency_detail| dependency_detail.enabled())
+        .unwrap_or_default()
+        .value()
+    {
         return Ok(None);
     }
 
@@ -57,17 +68,6 @@ pub async fn did_open(
     });
 
     Ok(Some(handle))
-}
-
-fn pyproject_did_open_enabled(features: Option<&PyprojectExtensionFeatures>) -> bool {
-    features.map_or(true, PyprojectExtensionFeatures::enabled)
-}
-
-fn pyproject_hover_warming_enabled(features: Option<&PyprojectExtensionFeatures>) -> bool {
-    features.map_or(
-        true,
-        PyprojectExtensionFeatures::dependency_detail_hover_enabled,
-    )
 }
 
 fn warming_disabled(offline: bool, cache_options: Option<&tombi_cache::Options>) -> bool {
