@@ -218,7 +218,7 @@ impl From<&EnabledOnly> for Option<ToggleFeatureDefaultTrue> {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]

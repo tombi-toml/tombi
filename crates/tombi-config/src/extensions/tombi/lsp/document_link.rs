@@ -1,4 +1,4 @@
-use crate::extensions::{EnabledOnly, ToggleFeatureDefaultTrue};
+use crate::{ToggleFeatureDefaultFalse, extensions::EnabledOnly};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -27,6 +27,6 @@ toggle_features! {
         /// # Path document link feature
         ///
         /// Whether document links are created for filesystem paths.
-        pub path: Option<ToggleFeatureDefaultTrue>,
+        pub path: Option<ToggleFeatureDefaultFalse>,
     }
 }

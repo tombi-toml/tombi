@@ -1136,7 +1136,8 @@ mod tests {
     use tombi_document_tree::dig_keys;
 
     use crate::document_link::{
-        cargo_toml_document_link_enabled, dependency_key_tooltip, workspace_document_link_enabled,
+        cargo_toml_document_link_enabled, crates_io_document_link_enabled, dependency_key_tooltip,
+        git_document_link_enabled, path_document_link_enabled, workspace_document_link_enabled,
     };
 
     use super::{RegistryMap, document_link_for_dependency};
@@ -1151,10 +1152,12 @@ mod tests {
                     goto_declaration: None,
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
                         tombi_config::CargoDocumentLinkFeatureTree {
-                            cargo_toml: None,
+                            cargo_toml: Some(tombi_config::ToggleFeatureDefaultFalse {
+                                enabled: Some(true.into()),
+                            }),
                             workspace: None,
                             git: None,
-                            path: Some(tombi_config::ToggleFeatureDefaultTrue {
+                            path: Some(tombi_config::ToggleFeatureDefaultFalse {
                                 enabled: Some(false.into()),
                             }),
                             crates_io: None,
@@ -1177,12 +1180,16 @@ mod tests {
                     goto_declaration: None,
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
                         tombi_config::CargoDocumentLinkFeatureTree {
-                            cargo_toml: Some(tombi_config::ToggleFeatureDefaultTrue {
+                            cargo_toml: Some(tombi_config::ToggleFeatureDefaultFalse {
                                 enabled: Some(false.into()),
                             }),
-                            workspace: None,
+                            workspace: Some(tombi_config::ToggleFeatureDefaultFalse {
+                                enabled: Some(true.into()),
+                            }),
                             git: None,
-                            path: None,
+                            path: Some(tombi_config::ToggleFeatureDefaultFalse {
+                                enabled: Some(true.into()),
+                            }),
                             crates_io: None,
                         },
                     )),
@@ -1204,7 +1211,7 @@ mod tests {
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
                         tombi_config::CargoDocumentLinkFeatureTree {
                             cargo_toml: None,
-                            workspace: Some(tombi_config::ToggleFeatureDefaultTrue {
+                            workspace: Some(tombi_config::ToggleFeatureDefaultFalse {
                                 enabled: Some(false.into()),
                             }),
                             git: None,
@@ -1372,5 +1379,91 @@ version = "0.1.0"
         );
 
         assert!(tooltip.is_none());
+    }
+
+    fn default_link_features() -> tombi_config::CargoExtensionFeatures {
+        tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
+            lsp: Some(tombi_config::CargoLspFeatures::Features(
+                tombi_config::CargoLspFeatureTree {
+                    completion: None,
+                    inlay_hint: None,
+                    goto_definition: None,
+                    goto_declaration: None,
+                    document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
+                        tombi_config::CargoDocumentLinkFeatureTree {
+                            cargo_toml: None,
+                            workspace: None,
+                            git: None,
+                            path: None,
+                            crates_io: None,
+                        },
+                    )),
+                    hover: None,
+                    code_action: None,
+                },
+            )),
+        })
+    }
+
+    #[test]
+    fn default_features_disable_cargo_toml_document_link() {
+        let features = default_link_features();
+        assert!(!cargo_toml_document_link_enabled(Some(&features)));
+    }
+
+    #[test]
+    fn default_features_disable_git_document_link() {
+        let features = default_link_features();
+        assert!(!git_document_link_enabled(Some(&features)));
+    }
+
+    #[test]
+    fn default_features_disable_path_document_link() {
+        let features = default_link_features();
+        assert!(!path_document_link_enabled(Some(&features)));
+    }
+
+    #[test]
+    fn default_features_disable_workspace_document_link() {
+        let features = default_link_features();
+        assert!(!workspace_document_link_enabled(Some(&features)));
+    }
+
+    #[test]
+    fn default_features_keep_crates_io_document_link_enabled() {
+        let features = default_link_features();
+        assert!(crates_io_document_link_enabled(Some(&features)));
+    }
+
+    fn disabled_git_link_features() -> tombi_config::CargoExtensionFeatures {
+        tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
+            lsp: Some(tombi_config::CargoLspFeatures::Features(
+                tombi_config::CargoLspFeatureTree {
+                    completion: None,
+                    inlay_hint: None,
+                    goto_definition: None,
+                    goto_declaration: None,
+                    document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
+                        tombi_config::CargoDocumentLinkFeatureTree {
+                            cargo_toml: None,
+                            workspace: None,
+                            git: Some(tombi_config::ToggleFeatureDefaultFalse {
+                                enabled: Some(false.into()),
+                            }),
+                            path: None,
+                            crates_io: None,
+                        },
+                    )),
+                    hover: None,
+                    code_action: None,
+                },
+            )),
+        })
+    }
+
+    #[test]
+    fn git_document_link_disabled_by_setting() {
+        let features = disabled_git_link_features();
+        assert!(!git_document_link_enabled(Some(&features)));
     }
 }

@@ -3,6 +3,7 @@
   lsp = {
     document-link = {
       cargo-toml.enabled = false,
+      workspace.enabled = true,
       path.enabled = false,
     },
   },
