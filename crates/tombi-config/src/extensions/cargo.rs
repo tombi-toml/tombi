@@ -159,6 +159,13 @@ impl CargoExtensionFeatures {
                 .is_some_and(CargoLspFeatures::cargo_toml_document_link_enabled)
     }
 
+    pub fn crates_io_document_link_enabled(&self) -> bool {
+        self.enabled()
+            && self
+                .lsp()
+                .map_or(true, CargoLspFeatures::crates_io_document_link_enabled)
+    }
+
     pub fn workspace_document_link_enabled(&self) -> bool {
         self.enabled()
             && self
@@ -189,13 +196,6 @@ impl CargoExtensionFeatures {
             && self
                 .lsp()
                 .map_or(true, CargoLspFeatures::dependency_detail_hover_enabled)
-    }
-
-    pub fn crates_io_document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .lsp()
-                .map_or(true, CargoLspFeatures::crates_io_document_link_enabled)
     }
 
     pub fn code_action_enabled(&self) -> bool {
@@ -448,6 +448,13 @@ impl CargoLspFeatures {
                 .map_or(true, CargoDocumentLinkFeatures::cargo_toml_enabled)
     }
 
+    pub fn crates_io_document_link_enabled(&self) -> bool {
+        self.enabled()
+            && self
+                .document_link()
+                .map_or(true, CargoDocumentLinkFeatures::crates_io_enabled)
+    }
+
     pub fn workspace_document_link_enabled(&self) -> bool {
         self.enabled()
             && self
@@ -478,13 +485,6 @@ impl CargoLspFeatures {
             && self
                 .hover()
                 .map_or(true, CargoHoverFeatures::dependency_detail_enabled)
-    }
-
-    pub fn crates_io_document_link_enabled(&self) -> bool {
-        self.enabled()
-            && self
-                .document_link()
-                .map_or(true, CargoDocumentLinkFeatures::crates_io_enabled)
     }
 
     pub fn code_action_enabled(&self) -> bool {
