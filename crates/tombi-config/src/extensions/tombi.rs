@@ -1,4 +1,12 @@
-use super::{EnabledOnly, ToggleFeatureDefaultTrue};
+mod completion;
+mod document_link;
+mod goto_definition;
+
+pub use completion::*;
+pub use document_link::*;
+pub use goto_definition::*;
+
+use super::EnabledOnly;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -220,163 +228,4 @@ pub struct TombiLspFeatureTree {
     ///
     /// Configure Tombi hover features.
     pub hover: Option<EnabledOnly>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(untagged))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(
-    feature = "jsonschema",
-    schemars(extend(
-        "x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending
-    ))
-)]
-pub enum TombiCompletionFeatures {
-    Enabled(EnabledOnly),
-    Features(TombiCompletionFeatureTree),
-}
-
-default_to_features!(TombiCompletionFeatures, TombiCompletionFeatureTree);
-
-impl TombiCompletionFeatures {
-    pub fn enabled(&self) -> bool {
-        match self {
-            Self::Enabled(enabled) => enabled.enabled(),
-            Self::Features(_) => true,
-        }
-    }
-
-    pub fn path_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .path
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
-    }
-}
-
-#[derive(Debug, Default, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
-#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(
-    feature = "jsonschema",
-    schemars(extend(
-        "x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending
-    ))
-)]
-pub struct TombiCompletionFeatureTree {
-    /// # Path completion feature
-    ///
-    /// Whether completion suggests filesystem paths.
-    pub path: Option<ToggleFeatureDefaultTrue>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(untagged))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(
-    feature = "jsonschema",
-    schemars(extend(
-        "x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending
-    ))
-)]
-pub enum TombiGotoDefinitionFeatures {
-    Enabled(EnabledOnly),
-    Features(TombiGotoDefinitionFeatureTree),
-}
-
-default_to_features!(TombiGotoDefinitionFeatures, TombiGotoDefinitionFeatureTree);
-
-impl TombiGotoDefinitionFeatures {
-    pub fn enabled(&self) -> bool {
-        match self {
-            Self::Enabled(enabled) => enabled.enabled(),
-            Self::Features(_) => true,
-        }
-    }
-
-    pub fn path_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .path
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
-    }
-}
-
-#[derive(Debug, Default, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
-#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(
-    feature = "jsonschema",
-    schemars(extend(
-        "x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending
-    ))
-)]
-pub struct TombiGotoDefinitionFeatureTree {
-    /// # Path goto-definition feature
-    ///
-    /// Whether go-to-definition resolves filesystem paths.
-    pub path: Option<ToggleFeatureDefaultTrue>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(untagged))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum TombiDocumentLinkFeatures {
-    Enabled(EnabledOnly),
-    Features(TombiDocumentLinkFeatureTree),
-}
-
-default_to_features!(TombiDocumentLinkFeatures, TombiDocumentLinkFeatureTree);
-
-impl TombiDocumentLinkFeatures {
-    pub fn enabled(&self) -> bool {
-        match self {
-            Self::Enabled(enabled) => enabled.enabled(),
-            Self::Features(_) => true,
-        }
-    }
-
-    pub fn path_enabled(&self) -> bool {
-        self.enabled()
-            && match self {
-                Self::Enabled(_) => true,
-                Self::Features(features) => features
-                    .path
-                    .as_ref()
-                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
-            }
-    }
-}
-
-#[derive(Debug, Default, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
-#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(
-    feature = "jsonschema",
-    schemars(extend(
-        "x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending
-    ))
-)]
-pub struct TombiDocumentLinkFeatureTree {
-    /// # Path document link feature
-    ///
-    /// Whether document links are created for filesystem paths.
-    pub path: Option<ToggleFeatureDefaultTrue>,
 }
