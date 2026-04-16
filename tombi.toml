@@ -52,10 +52,10 @@ include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
       path.enabled = true,
     },
     document-link = {
-      cargo-toml.enabled = true,
+      cargo-toml.enabled = false,
       crates-io.enabled = true,
-      git.enabled = true,
-      path.enabled = true,
+      git.enabled = false,
+      path.enabled = false,
     },
     goto-declaration = {
       dependency.enabled = true,
@@ -88,7 +88,7 @@ include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
     },
     document-link = {
       pypi-org.enabled = true,
-      pyproject-toml.enabled = true,
+      pyproject-toml.enabled = false,
     },
     goto-declaration = {
       dependency.enabled = true,
@@ -114,7 +114,7 @@ include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
       path.enabled = true,
     },
     document-link = {
-      path.enabled = true,
+      path.enabled = false,
     },
     goto-definition = {
       path.enabled = true,

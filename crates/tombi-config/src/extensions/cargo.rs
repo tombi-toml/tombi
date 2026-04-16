@@ -1,4 +1,4 @@
-use super::{EnabledOnly, ToggleFeature};
+use super::{EnabledOnly, ToggleFeatureDefaultTrue};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -593,7 +593,7 @@ impl CargoHoverFeatures {
                 Self::Features(features) => features
                     .dependency_detail
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -630,7 +630,7 @@ impl CargoInlayHintFeatures {
                 Self::Features(features) => features
                     .dependency_version
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -641,7 +641,7 @@ impl CargoInlayHintFeatures {
                 Self::Features(features) => features
                     .default_features
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -652,7 +652,7 @@ impl CargoInlayHintFeatures {
                 Self::Features(features) => features
                     .workspace_value
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -672,7 +672,7 @@ pub struct CargoHoverFeatureTree {
     /// # Dependency detail hover feature
     ///
     /// Whether hover shows detailed dependency metadata.
-    pub dependency_detail: Option<ToggleFeature>,
+    pub dependency_detail: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -690,17 +690,17 @@ pub struct CargoInlayHintFeatureTree {
     /// # Dependency version inlay hint feature
     ///
     /// Whether inlay hints show dependency versions.
-    pub dependency_version: Option<ToggleFeature>,
+    pub dependency_version: Option<ToggleFeatureDefaultTrue>,
 
     /// # Default features inlay hint feature
     ///
     /// Whether inlay hints show `default-features` values.
-    pub default_features: Option<ToggleFeature>,
+    pub default_features: Option<ToggleFeatureDefaultTrue>,
 
     /// # Workspace value inlay hint feature
     ///
     /// Whether inlay hints show values inherited from the Cargo workspace.
-    pub workspace_value: Option<ToggleFeature>,
+    pub workspace_value: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -729,7 +729,7 @@ impl CargoCompletionFeatures {
                 Self::Features(features) => features
                     .dependency_version
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -740,7 +740,7 @@ impl CargoCompletionFeatures {
                 Self::Features(features) => features
                     .dependency_feature
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -749,7 +749,7 @@ impl CargoCompletionFeatures {
             && match self {
                 Self::Enabled(_) => true,
                 Self::Features(features) => {
-                    features.path.as_ref().map_or(true, ToggleFeature::enabled)
+                    features.path.as_ref().map_or(true, ToggleFeatureDefaultTrue::enabled)
                 }
             }
     }
@@ -770,17 +770,17 @@ pub struct CargoCompletionFeatureTree {
     /// # Dependency version completion feature
     ///
     /// Whether completion suggests dependency versions.
-    pub dependency_version: Option<ToggleFeature>,
+    pub dependency_version: Option<ToggleFeatureDefaultTrue>,
 
     /// # Dependency feature completion feature
     ///
     /// Whether completion suggests dependency features.
-    pub dependency_feature: Option<ToggleFeature>,
+    pub dependency_feature: Option<ToggleFeatureDefaultTrue>,
 
     /// # Path completion feature
     ///
     /// Whether completion suggests filesystem paths.
-    pub path: Option<ToggleFeature>,
+    pub path: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -809,7 +809,7 @@ impl CargoNavigationFeatures {
                 Self::Features(features) => features
                     .dependency
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -820,7 +820,7 @@ impl CargoNavigationFeatures {
                 Self::Features(features) => features
                     .member
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -829,7 +829,7 @@ impl CargoNavigationFeatures {
             && match self {
                 Self::Enabled(_) => true,
                 Self::Features(features) => {
-                    features.path.as_ref().map_or(true, ToggleFeature::enabled)
+                    features.path.as_ref().map_or(true, ToggleFeatureDefaultTrue::enabled)
                 }
             }
     }
@@ -850,17 +850,17 @@ pub struct CargoNavigationFeatureTree {
     /// # Dependency navigation feature
     ///
     /// Whether navigation resolves dependency definitions and declarations.
-    pub dependency: Option<ToggleFeature>,
+    pub dependency: Option<ToggleFeatureDefaultTrue>,
 
     /// # Member navigation feature
     ///
     /// Whether navigation resolves workspace member targets.
-    pub member: Option<ToggleFeature>,
+    pub member: Option<ToggleFeatureDefaultTrue>,
 
     /// # Path navigation feature
     ///
     /// Whether navigation resolves filesystem paths.
-    pub path: Option<ToggleFeature>,
+    pub path: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -889,7 +889,7 @@ impl CargoDocumentLinkFeatures {
                 Self::Features(features) => features
                     .cargo_toml
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -900,7 +900,7 @@ impl CargoDocumentLinkFeatures {
                 Self::Features(features) => features
                     .workspace
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -909,7 +909,7 @@ impl CargoDocumentLinkFeatures {
             && match self {
                 Self::Enabled(_) => true,
                 Self::Features(features) => {
-                    features.git.as_ref().map_or(true, ToggleFeature::enabled)
+                    features.git.as_ref().map_or(true, ToggleFeatureDefaultTrue::enabled)
                 }
             }
     }
@@ -919,7 +919,7 @@ impl CargoDocumentLinkFeatures {
             && match self {
                 Self::Enabled(_) => true,
                 Self::Features(features) => {
-                    features.path.as_ref().map_or(true, ToggleFeature::enabled)
+                    features.path.as_ref().map_or(true, ToggleFeatureDefaultTrue::enabled)
                 }
             }
     }
@@ -931,7 +931,7 @@ impl CargoDocumentLinkFeatures {
                 Self::Features(features) => features
                     .crates_io
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -951,27 +951,27 @@ pub struct CargoDocumentLinkFeatureTree {
     /// # Cargo.toml document link feature
     ///
     /// Whether document links are created for `Cargo.toml` references.
-    pub cargo_toml: Option<ToggleFeature>,
+    pub cargo_toml: Option<ToggleFeatureDefaultTrue>,
 
     /// # crates.io document link feature
     ///
     /// Whether document links are created for crates.io package references.
-    pub crates_io: Option<ToggleFeature>,
+    pub crates_io: Option<ToggleFeatureDefaultTrue>,
 
     /// # Git document link feature
     ///
     /// Whether document links are created for Git references.
-    pub git: Option<ToggleFeature>,
+    pub git: Option<ToggleFeatureDefaultTrue>,
 
     /// # Path document link feature
     ///
     /// Whether document links are created for filesystem paths.
-    pub path: Option<ToggleFeature>,
+    pub path: Option<ToggleFeatureDefaultTrue>,
 
     /// # Workspace document link feature
     ///
     /// Whether document links are created for `workspace = true` references.
-    pub workspace: Option<ToggleFeature>,
+    pub workspace: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1000,7 +1000,7 @@ impl CargoCodeActionFeatures {
                 Self::Features(features) => features
                     .inherit_from_workspace
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -1011,7 +1011,7 @@ impl CargoCodeActionFeatures {
                 Self::Features(features) => features
                     .inherit_dependency_from_workspace
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -1022,7 +1022,7 @@ impl CargoCodeActionFeatures {
                 Self::Features(features) => features
                     .convert_dependency_to_table_format
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 
@@ -1033,7 +1033,7 @@ impl CargoCodeActionFeatures {
                 Self::Features(features) => features
                     .add_to_workspace_and_inherit_dependency
                     .as_ref()
-                    .map_or(true, ToggleFeature::enabled),
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -1053,29 +1053,29 @@ pub struct CargoCodeActionFeatureTree {
     /// # Inherit-from-workspace code action feature
     ///
     /// Whether code actions can replace a value with `workspace = true`.
-    pub inherit_from_workspace: Option<ToggleFeature>,
+    pub inherit_from_workspace: Option<ToggleFeatureDefaultTrue>,
 
     /// # Inherit-dependency-from-workspace code action feature
     ///
     /// Whether code actions can inherit dependency settings from the workspace.
-    pub inherit_dependency_from_workspace: Option<ToggleFeature>,
+    pub inherit_dependency_from_workspace: Option<ToggleFeatureDefaultTrue>,
 
     /// # Convert-dependency-to-table-format code action feature
     ///
     /// Whether code actions can rewrite inline dependencies to table format.
-    pub convert_dependency_to_table_format: Option<ToggleFeature>,
+    pub convert_dependency_to_table_format: Option<ToggleFeatureDefaultTrue>,
 
     /// # Add-to-workspace-and-inherit-dependency code action feature
     ///
     /// Whether code actions can add a dependency to the workspace and inherit it.
-    pub add_to_workspace_and_inherit_dependency: Option<ToggleFeature>,
+    pub add_to_workspace_and_inherit_dependency: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[cfg(all(test, feature = "serde"))]
 mod tests {
     use crate::BoolDefaultTrue;
 
-    use super::{CargoDocumentLinkFeatureTree, CargoInlayHintFeatureTree, ToggleFeature};
+    use super::{CargoDocumentLinkFeatureTree, CargoInlayHintFeatureTree, ToggleFeatureDefaultTrue};
 
     #[test]
     fn cargo_inlay_hint_feature_tree_deserializes_workspace_value_key() {
@@ -1088,7 +1088,7 @@ mod tests {
 
         assert_eq!(
             features.workspace_value,
-            Some(ToggleFeature {
+            Some(ToggleFeatureDefaultTrue {
                 enabled: Some(BoolDefaultTrue::from(false)),
             })
         );
@@ -1099,7 +1099,7 @@ mod tests {
         let value = serde_json::to_value(CargoInlayHintFeatureTree {
             dependency_version: None,
             default_features: None,
-            workspace_value: Some(ToggleFeature {
+            workspace_value: Some(ToggleFeatureDefaultTrue {
                 enabled: Some(BoolDefaultTrue::from(false)),
             }),
         })
@@ -1125,7 +1125,7 @@ mod tests {
 
         assert_eq!(
             features.workspace,
-            Some(ToggleFeature {
+            Some(ToggleFeatureDefaultTrue {
                 enabled: Some(BoolDefaultTrue::from(false)),
             })
         );
@@ -1135,7 +1135,7 @@ mod tests {
     fn cargo_document_link_feature_tree_serializes_workspace_key() {
         let value = serde_json::to_value(CargoDocumentLinkFeatureTree {
             cargo_toml: None,
-            workspace: Some(ToggleFeature {
+            workspace: Some(ToggleFeatureDefaultTrue {
                 enabled: Some(BoolDefaultTrue::from(false)),
             }),
             git: None,

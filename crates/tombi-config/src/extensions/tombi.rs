@@ -1,4 +1,4 @@
-use super::{EnabledOnly, ToggleFeature};
+use super::{EnabledOnly, ToggleFeatureDefaultTrue};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -251,9 +251,10 @@ impl TombiCompletionFeatures {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
-                Self::Features(features) => {
-                    features.path.as_ref().map_or(true, ToggleFeature::enabled)
-                }
+                Self::Features(features) => features
+                    .path
+                    .as_ref()
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -273,7 +274,7 @@ pub struct TombiCompletionFeatureTree {
     /// # Path completion feature
     ///
     /// Whether completion suggests filesystem paths.
-    pub path: Option<ToggleFeature>,
+    pub path: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -305,9 +306,10 @@ impl TombiGotoDefinitionFeatures {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
-                Self::Features(features) => {
-                    features.path.as_ref().map_or(true, ToggleFeature::enabled)
-                }
+                Self::Features(features) => features
+                    .path
+                    .as_ref()
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -327,7 +329,7 @@ pub struct TombiGotoDefinitionFeatureTree {
     /// # Path goto-definition feature
     ///
     /// Whether go-to-definition resolves filesystem paths.
-    pub path: Option<ToggleFeature>,
+    pub path: Option<ToggleFeatureDefaultTrue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -353,9 +355,10 @@ impl TombiDocumentLinkFeatures {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
-                Self::Features(features) => {
-                    features.path.as_ref().map_or(true, ToggleFeature::enabled)
-                }
+                Self::Features(features) => features
+                    .path
+                    .as_ref()
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
@@ -375,5 +378,5 @@ pub struct TombiDocumentLinkFeatureTree {
     /// # Path document link feature
     ///
     /// Whether document links are created for filesystem paths.
-    pub path: Option<ToggleFeature>,
+    pub path: Option<ToggleFeatureDefaultTrue>,
 }

@@ -2,8 +2,8 @@
 "tombi-toml/cargo" = {
   lsp = {
     document-link = {
-      workspace.enabled = false,
       path.enabled = false,
+      workspace.enabled = false,
     },
   },
 }
