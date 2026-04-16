@@ -121,7 +121,7 @@ impl PyprojectExtensionFeatures {
     }
 
     pub fn pyproject_toml_document_link_enabled(&self) -> bool {
-        self.document_link_enabled()
+        self.enabled()
             && self
                 .lsp()
                 .is_some_and(PyprojectLspFeatures::pyproject_toml_document_link_enabled)
@@ -345,14 +345,14 @@ impl PyprojectLspFeatures {
     }
 
     pub fn pyproject_toml_document_link_enabled(&self) -> bool {
-        self.document_link_enabled()
+        self.enabled()
             && self
                 .document_link()
                 .is_some_and(PyprojectDocumentLinkFeatures::pyproject_toml_enabled)
     }
 
     pub fn pypi_org_document_link_enabled(&self) -> bool {
-        self.document_link_enabled()
+        self.enabled()
             && self
                 .document_link()
                 .is_some_and(PyprojectDocumentLinkFeatures::pypi_org_enabled)
