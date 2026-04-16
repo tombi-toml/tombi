@@ -94,8 +94,13 @@ pub async fn inlay_hint(
         return Ok(None);
     }
 
-    if !pyproject_inlay_hint_root_enabled(features)
-        || !pyproject_inlay_hint_dependency_version_enabled(features)
+    if !features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.inlay_hint())
+        .and_then(|inlay_hint| inlay_hint.dependency_version())
+        .map(|dependency_version| dependency_version.enabled())
+        .unwrap_or_default()
+        .value()
     {
         return Ok(None);
     }
@@ -170,24 +175,6 @@ fn inlay_hint_impl(
     } else {
         Ok(Some(hints))
     }
-}
-
-fn pyproject_inlay_hint_root_enabled(
-    features: Option<&tombi_config::PyprojectExtensionFeatures>,
-) -> bool {
-    features.map_or(
-        true,
-        tombi_config::PyprojectExtensionFeatures::inlay_hint_enabled,
-    )
-}
-
-fn pyproject_inlay_hint_dependency_version_enabled(
-    features: Option<&tombi_config::PyprojectExtensionFeatures>,
-) -> bool {
-    features.map_or(
-        true,
-        tombi_config::PyprojectExtensionFeatures::dependency_version_inlay_hint_enabled,
-    )
 }
 
 struct CurrentPackage {

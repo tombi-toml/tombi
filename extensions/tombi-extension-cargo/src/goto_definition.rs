@@ -137,10 +137,17 @@ fn cargo_navigation_enabled(
     features: Option<&tombi_config::CargoExtensionFeatures>,
     accessors: &[tombi_schema_store::Accessor],
 ) -> bool {
-    let feature = classify_cargo_navigation_feature(accessors);
-    features.map_or(true, |features| match feature {
-        CargoNavigationFeature::Dependency => features.goto_definition_dependency_enabled(),
-        CargoNavigationFeature::Member => features.goto_definition_member_enabled(),
-        CargoNavigationFeature::Path => features.goto_definition_path_enabled(),
-    })
+    features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.goto_definition())
+        .and_then(
+            |goto_definition| match classify_cargo_navigation_feature(accessors) {
+                CargoNavigationFeature::Dependency => goto_definition.dependency(),
+                CargoNavigationFeature::Member => goto_definition.member(),
+                CargoNavigationFeature::Path => goto_definition.path(),
+            },
+        )
+        .map(|feature| feature.enabled())
+        .unwrap_or_default()
+        .value()
 }

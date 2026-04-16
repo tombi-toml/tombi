@@ -167,7 +167,13 @@ pub async fn inlay_hint(
         return Ok(None);
     }
 
-    if !cargo_inlay_hint_root_enabled(features) {
+    if !features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.inlay_hint())
+        .map(|inlay_hint| inlay_hint.enabled())
+        .unwrap_or_default()
+        .value()
+    {
         return Ok(None);
     }
 
@@ -224,8 +230,13 @@ pub async fn inlay_hint(
 
     let mut hints = sync_hints.unwrap_or_default();
 
-    if cargo_inlay_hint_root_enabled(features)
-        && cargo_inlay_hint_enabled(features, CargoInlayHintFeature::DefaultFeatures)
+    if features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.inlay_hint())
+        .and_then(|inlay_hint| inlay_hint.default_features())
+        .map(|default_features| default_features.enabled())
+        .unwrap_or_default()
+        .value()
     {
         hints.extend(
             registry_default_features_inlay_hints(
@@ -258,10 +269,6 @@ fn inlay_hint_impl(
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
-        return Ok(None);
-    }
-
-    if !cargo_inlay_hint_root_enabled(features) {
         return Ok(None);
     }
 
@@ -2032,31 +2039,21 @@ fn sanitize_value_for_hint(value: &Value) -> String {
     truncated
 }
 
-fn cargo_inlay_hint_root_enabled(features: Option<&tombi_config::CargoExtensionFeatures>) -> bool {
-    features.map_or(
-        true,
-        tombi_config::CargoExtensionFeatures::inlay_hint_enabled,
-    )
-}
-
 fn cargo_inlay_hint_enabled(
     features: Option<&tombi_config::CargoExtensionFeatures>,
     feature: CargoInlayHintFeature,
 ) -> bool {
-    match feature {
-        CargoInlayHintFeature::DependencyVersion => features.map_or(
-            true,
-            tombi_config::CargoExtensionFeatures::dependency_version_inlay_hint_enabled,
-        ),
-        CargoInlayHintFeature::DefaultFeatures => features.map_or(
-            true,
-            tombi_config::CargoExtensionFeatures::default_features_inlay_hint_enabled,
-        ),
-        CargoInlayHintFeature::WorkspaceValue => features.map_or(
-            true,
-            tombi_config::CargoExtensionFeatures::workspace_value_inlay_hint_enabled,
-        ),
-    }
+    features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.inlay_hint())
+        .and_then(|inlay_hint| match feature {
+            CargoInlayHintFeature::DependencyVersion => inlay_hint.dependency_version(),
+            CargoInlayHintFeature::DefaultFeatures => inlay_hint.default_features(),
+            CargoInlayHintFeature::WorkspaceValue => inlay_hint.workspace_value(),
+        })
+        .map(|feature| feature.enabled())
+        .unwrap_or_default()
+        .value()
 }
 
 impl CargoLock {
