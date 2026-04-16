@@ -1047,6 +1047,7 @@ fn get_registries(
     Ok(registries)
 }
 
+#[inline]
 fn cargo_toml_document_link_enabled(
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> bool {
@@ -1059,6 +1060,7 @@ fn cargo_toml_document_link_enabled(
         .value()
 }
 
+#[inline]
 fn workspace_document_link_enabled(
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> bool {
@@ -1071,6 +1073,7 @@ fn workspace_document_link_enabled(
         .value()
 }
 
+#[inline]
 fn git_document_link_enabled(features: Option<&tombi_config::CargoExtensionFeatures>) -> bool {
     features
         .and_then(|features| features.lsp())
@@ -1081,6 +1084,7 @@ fn git_document_link_enabled(features: Option<&tombi_config::CargoExtensionFeatu
         .value()
 }
 
+#[inline]
 fn path_document_link_enabled(features: Option<&tombi_config::CargoExtensionFeatures>) -> bool {
     features
         .and_then(|features| features.lsp())
@@ -1091,6 +1095,7 @@ fn path_document_link_enabled(features: Option<&tombi_config::CargoExtensionFeat
         .value()
 }
 
+#[inline]
 fn crates_io_document_link_enabled(
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> bool {

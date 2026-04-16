@@ -182,9 +182,11 @@ fn code_actions_for_workspace_cargo_toml(
 ) -> Vec<CodeActionOrCommand> {
     let mut code_actions = Vec::new();
 
-    if features
+    let code_action_features = features
         .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.code_action())
+        .and_then(|lsp| lsp.code_action());
+
+    if code_action_features
         .and_then(|code_action| code_action.convert_dependency_to_table_format())
         .map(|feature| feature.enabled())
         .unwrap_or_default()
@@ -215,6 +217,10 @@ fn code_actions_for_crate_cargo_toml(
 ) -> Vec<CodeActionOrCommand> {
     let mut code_actions = Vec::new();
 
+    let code_action_features = features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.code_action());
+
     if let Some((workspace_cargo_toml_path, workspace_root, workspace_document_tree)) =
         find_workspace_cargo_toml(
             cargo_toml_path,
@@ -230,9 +236,8 @@ fn code_actions_for_crate_cargo_toml(
             tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
 
         // Add workspace-specific code actions here
-        if features
-            .and_then(|features| features.lsp())
-            .and_then(|lsp| lsp.code_action())
+        if code_action_features
+            .as_ref()
             .and_then(|code_action| code_action.inherit_from_workspace())
             .map(|feature| feature.enabled())
             .unwrap_or_default()
@@ -249,9 +254,8 @@ fn code_actions_for_crate_cargo_toml(
             code_actions.push(CodeActionOrCommand::CodeAction(action));
         }
 
-        if features
-            .and_then(|features| features.lsp())
-            .and_then(|lsp| lsp.code_action())
+        if code_action_features
+            .as_ref()
             .and_then(|code_action| code_action.add_to_workspace_and_inherit_dependency())
             .map(|feature| feature.enabled())
             .unwrap_or_default()
@@ -271,9 +275,8 @@ fn code_actions_for_crate_cargo_toml(
             code_actions.push(CodeActionOrCommand::CodeAction(action));
         }
 
-        if features
-            .and_then(|features| features.lsp())
-            .and_then(|lsp| lsp.code_action())
+        if code_action_features
+            .as_ref()
             .and_then(|code_action| code_action.inherit_dependency_from_workspace())
             .map(|feature| feature.enabled())
             .unwrap_or_default()
@@ -295,9 +298,8 @@ fn code_actions_for_crate_cargo_toml(
     }
 
     // Add crate-specific code actions here
-    if features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.code_action())
+    if code_action_features
+        .as_ref()
         .and_then(|code_action| code_action.convert_dependency_to_table_format())
         .map(|feature| feature.enabled())
         .unwrap_or_default()

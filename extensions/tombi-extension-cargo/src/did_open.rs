@@ -124,33 +124,36 @@ async fn collect_prefetch_urls(
     toml_version: TomlVersion,
     features: Option<&CargoExtensionFeatures>,
 ) -> PrefetchUrls {
+    let lsp = features.and_then(|features| features.lsp());
     let (
         dependency_detail_hover_enabled,
         dependency_version_completion_enabled,
         dependency_feature_completion_enabled,
         dependency_version_inlay_hint_enabled,
         default_features_inlay_hint_prioritized,
-    ) = features
-        .and_then(|features| features.lsp())
+    ) = lsp
         .map(|lsp| {
+            let hover = lsp.hover();
+            let completion = lsp.completion();
+            let inlay_hint = lsp.inlay_hint();
             (
-                lsp.hover().and_then(|hover| {
+                hover.as_ref().and_then(|hover| {
                     hover
                         .dependency_detail()
                         .map(|dependency_detail| dependency_detail.enabled())
                 }),
-                lsp.completion().and_then(|completion| {
-                    completion.dependency_version().map(|path| path.enabled())
-                }),
-                lsp.completion().and_then(|completion| {
-                    completion.dependency_feature().map(|path| path.enabled())
-                }),
-                lsp.inlay_hint().and_then(|inlay_hint| {
+                completion
+                    .as_ref()
+                    .and_then(|completion| completion.dependency_version().map(|dv| dv.enabled())),
+                completion
+                    .as_ref()
+                    .and_then(|completion| completion.dependency_feature().map(|df| df.enabled())),
+                inlay_hint.as_ref().and_then(|inlay_hint| {
                     inlay_hint
                         .dependency_version()
                         .map(|dependency_version| dependency_version.enabled())
                 }),
-                lsp.inlay_hint().and_then(|inlay_hint| {
+                inlay_hint.as_ref().and_then(|inlay_hint| {
                     inlay_hint
                         .default_features()
                         .map(|default_features| default_features.enabled())

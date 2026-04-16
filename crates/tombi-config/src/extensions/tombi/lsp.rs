@@ -19,7 +19,7 @@ pub enum TombiLspFeatures {
     Features(TombiLspFeatureTree),
 }
 
-lsp_features! {
+extension_features! {
     TombiLspFeatures,
 
     #[derive(Debug, Default, Clone, PartialEq)]

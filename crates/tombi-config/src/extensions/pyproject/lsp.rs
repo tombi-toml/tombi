@@ -23,7 +23,7 @@ pub enum PyprojectLspFeatures {
     Features(PyprojectLspFeatureTree),
 }
 
-lsp_features! {
+extension_features! {
     PyprojectLspFeatures,
 
     #[derive(Debug, Default, Clone, PartialEq)]

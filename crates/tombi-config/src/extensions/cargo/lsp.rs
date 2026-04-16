@@ -23,7 +23,7 @@ pub enum CargoLspFeatures {
     Features(CargoLspFeatureTree),
 }
 
-lsp_features! {
+extension_features! {
     CargoLspFeatures,
 
     #[derive(Debug, Default, Clone, PartialEq)]
