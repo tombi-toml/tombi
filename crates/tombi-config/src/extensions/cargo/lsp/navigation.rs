@@ -45,9 +45,10 @@ impl CargoNavigationFeatures {
         self.enabled()
             && match self {
                 Self::Enabled(_) => true,
-                Self::Features(features) => {
-                    features.path.as_ref().map_or(true, ToggleFeatureDefaultTrue::enabled)
-                }
+                Self::Features(features) => features
+                    .path
+                    .as_ref()
+                    .map_or(true, ToggleFeatureDefaultTrue::enabled),
             }
     }
 }
