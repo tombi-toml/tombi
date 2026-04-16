@@ -341,7 +341,7 @@ impl PyprojectLspFeatures {
         self.enabled()
             && self
                 .document_link()
-                .map_or(false, PyprojectDocumentLinkFeatures::enabled)
+                .map_or(true, PyprojectDocumentLinkFeatures::enabled)
     }
 
     pub fn pyproject_toml_document_link_enabled(&self) -> bool {
