@@ -553,6 +553,24 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_extension_tombi_completion_variant_after_path_enabled(
+                r#"
+                [extensions]
+                "tombi-toml/tombi" = {
+                  lsp = {
+                    completion = {
+                      █
+                      path.enabled = true,
+                    },
+                  },
+                }
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_format_rules_array_bracket_space_width(
                 r#"
                 [format.rules]
@@ -2094,6 +2112,25 @@ mod completion_labels {
                 "favorite_color",
                 "number_of_pets",
             ]);
+        }
+    }
+
+    mod one_of_regression {
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn one_of_variant_after_path_enabled(
+                r#"
+                completion = {
+                  █
+                  path.enabled = true,
+                }
+                "#,
+                SchemaPath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/feature-toggle-one-of-test.schema.json"
+                )),
+            ) -> Ok([]);
         }
     }
 
