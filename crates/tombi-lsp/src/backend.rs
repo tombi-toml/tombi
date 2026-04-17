@@ -318,15 +318,16 @@ impl tower_lsp::LanguageServer for Backend {
         &self,
         params: CompletionParams,
     ) -> Result<Option<CompletionResponse>, tower_lsp::jsonrpc::Error> {
-        let document_source = self.document_sources.read().await;
-        let Some(document_source) = document_source.get(
-            &params
-                .text_document_position
-                .text_document
-                .uri
-                .clone()
-                .into(),
-        ) else {
+        let text_document_uri = params
+            .text_document_position
+            .text_document
+            .uri
+            .clone()
+            .into();
+        let Ok(document_sources) = self.document_sources.try_read() else {
+            return Ok(None);
+        };
+        let Some(document_source) = document_sources.get(&text_document_uri) else {
             return Ok(None);
         };
 
@@ -364,33 +365,37 @@ impl tower_lsp::LanguageServer for Backend {
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>, tower_lsp::jsonrpc::Error> {
-        let document_source = self.document_sources.read().await;
-        let Some(document_source) = document_source.get(
-            &params
-                .text_document_position_params
-                .text_document
-                .uri
-                .clone()
-                .into(),
-        ) else {
-            return Ok(None);
+        let text_document_uri = params
+            .text_document_position_params
+            .text_document
+            .uri
+            .clone()
+            .into();
+        let line_index = {
+            let Ok(document_sources) = self.document_sources.try_read() else {
+                return Ok(None);
+            };
+            let Some(document_source) = document_sources.get(&text_document_uri) else {
+                return Ok(None);
+            };
+            document_source.line_index_arc()
         };
-        let line_index = document_source.line_index();
 
         handle_hover(self, params)
             .await
-            .map(|response| response.map(|content| content.into_lsp(line_index)))
+            .map(|response| response.map(|content| content.into_lsp(line_index.as_ref())))
     }
 
     async fn inlay_hint(
         &self,
         params: InlayHintParams,
     ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
+        let text_document_uri = params.text_document.uri.clone().into();
         let line_index = {
-            let document_sources = self.document_sources.read().await;
-            let Some(document_source) =
-                document_sources.get(&params.text_document.uri.clone().into())
-            else {
+            let Ok(document_sources) = self.document_sources.try_read() else {
+                return Ok(None);
+            };
+            let Some(document_source) = document_sources.get(&text_document_uri) else {
                 return Ok(None);
             };
             document_source.line_index_arc()

@@ -26,7 +26,7 @@ pub async fn into_definition_locations(
         }
     }
 
-    let document_sources = backend.document_sources.read().await;
+    let document_sources = backend.document_sources.try_read().ok();
 
     let locations = definitions
         .into_iter()
@@ -34,10 +34,12 @@ pub async fn into_definition_locations(
             if let Some(remote_uri) = uri_set.get(&definition.uri) {
                 definition.uri = remote_uri.clone();
             }
-            let range = if let Some(document_source) = document_sources.get(&definition.uri) {
-                definition.range.into_lsp(document_source.line_index())
-            } else {
-                tombi_text::convert_range_to_lsp(definition.range)
+            let range = match document_sources
+                .as_ref()
+                .and_then(|ds| ds.get(&definition.uri))
+            {
+                Some(document_source) => definition.range.into_lsp(document_source.line_index()),
+                None => tombi_text::convert_range_to_lsp(definition.range),
             };
             tower_lsp::lsp_types::Location {
                 uri: definition.uri.into(),

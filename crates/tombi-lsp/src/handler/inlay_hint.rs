@@ -27,11 +27,12 @@ pub async fn handle_inlay_hint(
         .await;
 
     let (document_tree, toml_version, visible_range) = {
-        let document_sources = backend.document_sources.read().await;
+        let Ok(document_sources) = backend.document_sources.try_read() else {
+            return Ok(None);
+        };
         let Some(document_source) = document_sources.get(&text_document_uri) else {
             return Ok(None);
         };
-
         (
             document_source.document_tree(),
             document_source.toml_version,
