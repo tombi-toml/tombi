@@ -14,7 +14,12 @@ pub async fn handle_get_toml_version(
     let text_document_uri = uri.into();
 
     let (toml_version, source) = {
-        let document_sources = backend.document_sources.read().await;
+        let Ok(document_sources) = backend.document_sources.try_read() else {
+            return Ok(GetTomlVersionResponse {
+                toml_version: TomlVersion::default(),
+                source: TomlVersionSource::Default,
+            });
+        };
         if let Some(document_source) = document_sources.get(&text_document_uri) {
             backend
                 .text_document_toml_version_and_source(&text_document_uri, document_source.text())

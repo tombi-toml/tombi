@@ -32,7 +32,9 @@ pub async fn handle_document_link(
         return Ok(None);
     }
 
-    let document_sources = backend.document_sources.read().await;
+    let Ok(document_sources) = backend.document_sources.try_read() else {
+        return Ok(None);
+    };
     let Some(document_source) = document_sources.get(&text_document_uri) else {
         return Ok(None);
     };
