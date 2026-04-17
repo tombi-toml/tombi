@@ -17,5 +17,16 @@
     "@biomejs/biome": "^2.3.8",
     "@types/node": "^24.10.1",
     "typescript": "^5.9.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "@vinxi/plugin-mdx>esbuild": "^0.28.0",
+      "binary-install>axios": "0.31.0",
+      "binary-install>tar": "7.5.13",
+      "brace-expansion": "^2.1.0",
+      "h3": "1.15.11",
+      "minimatch": "^5.1.9",
+      "vite": "^7.3.2"
+    }
   }
 }
