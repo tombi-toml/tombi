@@ -47,10 +47,10 @@
     "@types/semver": "^7.7.1",
     "@types/vscode": "^1.95.0",
     "@vscode/python-extension": "^1.0.6",
-    "@vscode/vsce": "^3.6.1",
-    "esbuild": "^0.27.1",
-    "ovsx": "^0.10.5",
-    "vitest": "^4.0.15"
+    "@vscode/vsce": "^3.9.0",
+    "esbuild": "^0.28.0",
+    "ovsx": "^0.10.11",
+    "vitest": "^4.1.4"
   },
   "activationEvents": [
     "onLanguage:cargoLock",
