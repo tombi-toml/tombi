@@ -71,7 +71,9 @@ pub async fn get_diagnostics_result(
     }
 
     let (text, version, toml_version, encoding_kind) = {
-        let document_sources = backend.document_sources.read().await;
+        let Ok(document_sources) = backend.document_sources.try_read() else {
+            return None;
+        };
         let document_source = document_sources.get(text_document_uri)?;
         (
             document_source.text_arc(),
