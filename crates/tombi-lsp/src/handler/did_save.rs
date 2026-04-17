@@ -29,7 +29,6 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
 
             document.set_text(text, toml_version);
         };
-        drop(document_sources);
     };
 
     // Publish diagnostics for the saved document

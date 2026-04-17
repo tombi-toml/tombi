@@ -71,12 +71,21 @@ pub async fn handle_formatting(
         }
     }
 
-    let mut document_sources = backend.document_sources.write().await;
-    let Some(document_source) = document_sources.get_mut(&text_document_uri) else {
-        return Ok(None);
-    };
+    let (toml_version, document_text, line_index, version) = {
+        let Ok(document_sources) = backend.document_sources.try_read() else {
+            return Ok(None);
+        };
+        let Some(document_source) = document_sources.get(&text_document_uri) else {
+            return Ok(None);
+        };
 
-    let toml_version = document_source.toml_version;
+        (
+            document_source.toml_version,
+            document_source.text_arc(),
+            document_source.line_index_arc(),
+            document_source.version,
+        )
+    };
 
     // Get format options with override support
     let text_document_path = text_document_uri.to_file_path().ok();
@@ -98,18 +107,20 @@ pub async fn handle_formatting(
         Some(Either::Left(&text_document_uri)),
         &schema_store,
     )
-    .format(document_source.text())
+    .format(document_text.as_ref())
     .await
     {
         Ok(formatted) => {
-            if document_source.text() != formatted {
-                let edits = compute_text_edits(
-                    document_source.text(),
-                    &formatted,
-                    document_source.line_index(),
-                );
+            if document_text.as_ref() != formatted {
+                let edits =
+                    compute_text_edits(document_text.as_ref(), &formatted, line_index.as_ref());
                 log::debug!("{:?}", edits);
-                document_source.set_text(formatted, toml_version);
+                if let Ok(mut document_sources) = backend.document_sources.try_write()
+                    && let Some(document_source) = document_sources.get_mut(&text_document_uri)
+                    && document_source.text() == document_text.as_ref()
+                {
+                    document_source.set_text(formatted, toml_version);
+                }
 
                 return Ok(Some(edits));
             } else {
@@ -119,23 +130,22 @@ pub async fn handle_formatting(
                     .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {
                         uri: text_document_uri.into(),
                         diagnostics: Vec::with_capacity(0),
-                        version: document_source.version,
+                        version,
                     })
                     .await;
             }
         }
         Err(diagnostics) => {
             log::error!("Failed to format");
-            let line_index = document_source.line_index();
             backend
                 .client
                 .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {
                     uri: text_document_uri.into(),
                     diagnostics: diagnostics
                         .into_iter()
-                        .map(|diagnostic| diagnostic.into_lsp(line_index))
+                        .map(|diagnostic| diagnostic.into_lsp(line_index.as_ref()))
                         .collect_vec(),
-                    version: document_source.version,
+                    version,
                 })
                 .await;
         }

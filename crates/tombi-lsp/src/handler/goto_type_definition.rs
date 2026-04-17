@@ -51,7 +51,9 @@ pub async fn handle_goto_type_definition(
         return Ok(Default::default());
     }
 
-    let document_sources = backend.document_sources.read().await;
+    let Ok(document_sources) = backend.document_sources.try_read() else {
+        return Ok(Default::default());
+    };
     let Some(document_source) = document_sources.get(&text_document_uri) else {
         return Ok(Default::default());
     };
