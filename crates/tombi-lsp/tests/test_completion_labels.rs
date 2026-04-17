@@ -553,6 +553,20 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_format_rules_array_bracket_space_width(
+                r#"
+                [format.rules]
+                array-bracket-space-width = █
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "0",
+                "42",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_lsp_comp(
                 r#"
                 [lsp]
