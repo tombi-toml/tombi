@@ -10,7 +10,7 @@
         "clean": "rm -rf dist"
     },
     "devDependencies": {
-        "serve": "^14.2.0",
-        "wasm-pack": "^0.13.1"
+        "serve": "^14.2.6",
+        "wasm-pack": "^0.14.0"
     }
 }
