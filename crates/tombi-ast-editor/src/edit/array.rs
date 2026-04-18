@@ -5,7 +5,9 @@ use tombi_ast::{AstNode, DanglingCommentGroupOr};
 use tombi_comment_directive::value::{ArrayCommonFormatRules, ArrayCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, ValueSchema};
+use tombi_schema_store::{
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, ValueSchema,
+};
 use tombi_validator::Validate;
 
 use crate::rule::{array_comma_trailing_comment, array_values_order};

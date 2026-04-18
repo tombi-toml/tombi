@@ -73,7 +73,7 @@ impl SchemaStore {
 
     /// Offline mode
     pub fn offline(&self) -> bool {
-        self.options.offline.unwrap_or(false)
+        self.options.offline.unwrap_or_default()
     }
 
     /// Cache options
@@ -220,11 +220,11 @@ impl SchemaStore {
                         .into_iter()
                         .flatten()
                         .flat_map(|override_item| {
-                            let Some(order) = override_item
+                            let Some(rule) = override_item
                                 .format
                                 .as_ref()
                                 .and_then(|format| format.rules.as_ref())
-                                .and_then(|rules| rules.array_values_order)
+                                .and_then(|rules| rules.array_values_order.clone())
                             else {
                                 return Vec::new();
                             };
@@ -236,8 +236,10 @@ impl SchemaStore {
                                     RootAccessor::parse(target).map(|root_accessors| {
                                         ArrayOrderOverride {
                                             target: root_accessors,
-                                            disabled: false,
-                                            order: Some(order),
+                                            disabled: rule
+                                                .enabled()
+                                                .is_some_and(|enabled| !enabled.value()),
+                                            order: rule.order(),
                                         }
                                     })
                                 })
@@ -249,11 +251,11 @@ impl SchemaStore {
                         .into_iter()
                         .flatten()
                         .flat_map(|override_item| {
-                            let Some(order) = override_item
+                            let Some(rule) = override_item
                                 .format
                                 .as_ref()
                                 .and_then(|format| format.rules.as_ref())
-                                .and_then(|rules| rules.table_keys_order)
+                                .and_then(|rules| rules.table_keys_order.clone())
                             else {
                                 return Vec::new();
                             };
@@ -265,8 +267,10 @@ impl SchemaStore {
                                     RootAccessor::parse(target).map(|root_accessors| {
                                         TableOrderOverride {
                                             target: root_accessors,
-                                            disabled: false,
-                                            order: Some(order),
+                                            disabled: rule
+                                                .enabled()
+                                                .is_some_and(|enabled| !enabled.value()),
+                                            order: rule.order(),
                                         }
                                     })
                                 })
@@ -986,7 +990,8 @@ impl SchemaStore {
 
             if let Some(existing) = source_schema.as_mut() {
                 if matching_schema.sub_root_accessors.is_none() {
-                    existing.array_values_order_enabled = matching_schema.array_values_order_enabled;
+                    existing.array_values_order_enabled =
+                        matching_schema.array_values_order_enabled;
                     existing.table_keys_order_enabled = matching_schema.table_keys_order_enabled;
                 }
                 for override_item in matching_schema.overrides.array_values_order.iter() {
@@ -1158,7 +1163,7 @@ fn matches_schema_include(
                     || (path_for_matching != absolute_source_path
                         && glob_pat.matches_path(absolute_source_path))
             })
-            .unwrap_or(false)
+            .unwrap_or_default()
     })
 }
 
@@ -1274,8 +1279,9 @@ mod tests {
     use crate::{CatalogUri, RootAccessor, ValueSchema};
     use tombi_config::{
         Config, RootSchema, SchemaFormatOptions, SchemaFormatRules, SchemaItem,
-        SchemaOverrideFormatOptions, SchemaOverrideFormatRules, SchemaOverrideItem,
-        SchemaOverviewOptions, SchemaTableKeysOrderRule, SubSchema, Target,
+        SchemaOverrideArrayValuesOrderRule, SchemaOverrideFormatOptions, SchemaOverrideFormatRules,
+        SchemaOverrideItem, SchemaOverrideTableKeysOrderRule, SchemaOverviewOptions,
+        SchemaTableKeysOrderRule, SubSchema, Target,
     };
     use tombi_uri::SchemaUri;
     use tombi_x_keyword::TableKeysOrder;
@@ -1444,7 +1450,9 @@ mod tests {
                     format: Some(SchemaOverrideFormatOptions {
                         rules: Some(SchemaOverrideFormatRules {
                             array_values_order: None,
-                            table_keys_order: Some(TableKeysOrder::Ascending),
+                            table_keys_order: Some(SchemaOverrideTableKeysOrderRule::Order(
+                                TableKeysOrder::Ascending,
+                            )),
                         }),
                     }),
                 },
@@ -1453,7 +1461,9 @@ mod tests {
                     format: Some(SchemaOverrideFormatOptions {
                         rules: Some(SchemaOverrideFormatRules {
                             array_values_order: None,
-                            table_keys_order: Some(TableKeysOrder::Descending),
+                            table_keys_order: Some(SchemaOverrideTableKeysOrderRule::Order(
+                                TableKeysOrder::Descending,
+                            )),
                         }),
                     }),
                 },
@@ -1538,7 +1548,9 @@ mod tests {
                     format: Some(SchemaOverrideFormatOptions {
                         rules: Some(SchemaOverrideFormatRules {
                             array_values_order: None,
-                            table_keys_order: Some(TableKeysOrder::Ascending),
+                            table_keys_order: Some(SchemaOverrideTableKeysOrderRule::Order(
+                                TableKeysOrder::Ascending,
+                            )),
                         }),
                     }),
                 }]),
@@ -1629,7 +1641,9 @@ mod tests {
                     format: Some(SchemaOverrideFormatOptions {
                         rules: Some(SchemaOverrideFormatRules {
                             array_values_order: None,
-                            table_keys_order: Some(TableKeysOrder::Descending),
+                            table_keys_order: Some(SchemaOverrideTableKeysOrderRule::Order(
+                                TableKeysOrder::Descending,
+                            )),
                         }),
                     }),
                 }]),

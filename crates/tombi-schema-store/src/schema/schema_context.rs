@@ -38,7 +38,8 @@ impl SchemaContext<'_> {
             sub_schema_map: source_schema.map(|schema| &schema.sub_schema_map),
             deprecated_lint_level: source_schema.and_then(|schema| schema.deprecated_lint_level),
             overrides: SchemaContextOverrides {
-                array_values_order: source_schema.map(|schema| &schema.overrides.array_values_order),
+                array_values_order: source_schema
+                    .map(|schema| &schema.overrides.array_values_order),
                 table_keys_order: source_schema.map(|schema| &schema.overrides.table_keys_order),
             },
             schema_visits: Default::default(),
@@ -85,6 +86,10 @@ impl SchemaContext<'_> {
         accessors: &[Accessor],
         schema_uri: &SchemaUri,
     ) -> bool {
+        if let Some(override_item) = self.table_order_override(accessors) {
+            return !override_item.disabled;
+        }
+
         let mut normalized = schema_uri.clone();
         normalized.set_fragment(None);
 
@@ -133,6 +138,10 @@ impl SchemaContext<'_> {
         accessors: &[Accessor],
         schema_uri: &SchemaUri,
     ) -> bool {
+        if let Some(override_item) = self.array_order_override(accessors) {
+            return !override_item.disabled;
+        }
+
         let mut normalized = schema_uri.clone();
         normalized.set_fragment(None);
 
@@ -218,7 +227,7 @@ impl SchemaContext<'_> {
     ) -> Option<XTombiTableKeysOrder> {
         let (disabled, order) = comment_directive_override
             .map(|override_item| (override_item.disabled, override_item.order))
-            .unwrap_or((false, None));
+            .unwrap_or_default();
         if disabled {
             return None;
         }
@@ -229,7 +238,7 @@ impl SchemaContext<'_> {
         let (disabled, order) = self
             .table_order_override(accessors)
             .map(|override_item| (override_item.disabled, override_item.order))
-            .unwrap_or((false, None));
+            .unwrap_or_default();
         if disabled {
             return None;
         }

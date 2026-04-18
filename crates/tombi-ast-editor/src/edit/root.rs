@@ -130,7 +130,9 @@ impl crate::Edit for tombi_ast::Root {
 
                     if let Some(comment_directive) = comment_directive {
                         let (disabled, order) = (
-                            comment_directive.table_keys_order_disabled().unwrap_or(false),
+                            comment_directive
+                                .table_keys_order_disabled()
+                                .unwrap_or_default(),
                             comment_directive.table_keys_order().map(Into::into),
                         );
                         if disabled || order.is_some() {

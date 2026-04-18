@@ -48,11 +48,13 @@ pub async fn array_values_order<'a>(
         .as_ref()
         .map(|comment_directive| {
             (
-                comment_directive.array_values_order_disabled().unwrap_or(false),
+                comment_directive
+                    .array_values_order_disabled()
+                    .unwrap_or_default(),
                 comment_directive.array_values_order().map(Into::into),
             )
         })
-        .unwrap_or((false, None));
+        .unwrap_or_default();
 
     if disabled {
         return Vec::with_capacity(0);
@@ -65,7 +67,11 @@ pub async fn array_values_order<'a>(
     });
 
     let values_order = schema_context
-        .array_values_order(accessors, current_schema, comment_directive_override.as_ref())
+        .array_values_order(
+            accessors,
+            current_schema,
+            comment_directive_override.as_ref(),
+        )
         .await;
 
     let Some(values_order) = values_order else {
@@ -77,7 +83,7 @@ pub async fn array_values_order<'a>(
     let is_last_comma = values_with_comma
         .last()
         .map(|(_, comma)| comma.is_some())
-        .unwrap_or(false);
+        .unwrap_or_default();
 
     let old = std::ops::RangeInclusive::new(
         SyntaxElement::Node(values_with_comma.first().unwrap().0.syntax().clone()),

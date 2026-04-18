@@ -100,7 +100,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         .required
                                         .as_ref()
                                         .map(|r| r.contains(&key.value))
-                                        .unwrap_or(false);
+                                        .unwrap_or_default();
 
                                     if let Ok(Some(current_schema)) = table_schema
                                         .resolve_property_schema(
@@ -709,7 +709,7 @@ fn comment_directive_table_keys_order(
     let (disabled, order) = (
         comment_directive
             .table_keys_order_disabled()
-            .unwrap_or(false),
+            .unwrap_or_default(),
         comment_directive.table_keys_order().map(Into::into),
     );
 

@@ -18,7 +18,7 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
         if comment_directive
             .as_ref()
             .and_then(|comment_directive| comment_directive.table_keys_order_disabled())
-            .unwrap_or(false)
+            .unwrap_or_default()
         {
             return;
         }

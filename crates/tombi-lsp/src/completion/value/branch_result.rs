@@ -12,10 +12,10 @@ pub(super) struct BranchCompletionResult {
 
 impl BranchCompletionResult {
     fn should_include_in_fallback(&self, valid_branches: bool, narrow_branches: bool) -> bool {
-        if valid_branches {
-            self.is_valid || self.is_recoverable
-        } else if narrow_branches {
+        if narrow_branches {
             self.has_key || self.is_recoverable
+        } else if valid_branches {
+            self.is_valid || self.is_recoverable
         } else {
             true
         }
@@ -105,11 +105,15 @@ where
 
     let mut completion_items = Vec::new();
     for branch in &branch_results {
-        if valid_branches {
+        if narrow_branches {
+            if branch.has_key {
+                completion_items.extend(branch.items.iter().cloned());
+            }
+        } else if valid_branches {
             if branch.is_valid {
                 completion_items.extend(branch.items.iter().cloned());
             }
-        } else if !narrow_branches || branch.has_key {
+        } else {
             completion_items.extend(branch.items.iter().cloned());
         }
     }

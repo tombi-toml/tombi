@@ -240,7 +240,7 @@ fn handle_unused_noqa<'a>(
     if common_rules
         .and_then(|rules| rules.unused_noqa.as_ref())
         .and_then(|rules| rules.disabled)
-        .unwrap_or(false)
+        .unwrap_or_default()
     {
         return;
     }

@@ -32,11 +32,13 @@ pub async fn table_keys_order<'a>(
         .as_ref()
         .map(|comment_directive| {
             (
-                comment_directive.table_keys_order_disabled().unwrap_or(false),
+                comment_directive
+                    .table_keys_order_disabled()
+                    .unwrap_or_default(),
                 comment_directive.table_keys_order().map(Into::into),
             )
         })
-        .unwrap_or((false, None));
+        .unwrap_or_default();
 
     if disabled {
         return Vec::with_capacity(0);
@@ -186,16 +188,15 @@ where
                     .or_else(|| schema_context.table_order_override(accessors));
                 let comment_directive_override =
                     order.map(|order| tombi_schema_store::TableOrderOverride {
-                    target: Vec::new(),
-                    disabled: false,
-                    order: Some(order),
-                });
+                        target: Vec::new(),
+                        disabled: false,
+                        order: Some(order),
+                    });
                 let table_order = schema_context
                     .table_keys_order(
                         accessors,
                         current_schema,
-                        table_override
-                            .or(comment_directive_override.as_ref()),
+                        table_override.or(comment_directive_override.as_ref()),
                     )
                     .await;
                 let table_schema = current_schema.and_then(|current_schema| {
@@ -209,7 +210,7 @@ where
                 let sorted_targets = if table_override
                     .as_ref()
                     .map(|override_order| override_order.disabled)
-                    .unwrap_or(false)
+                    .unwrap_or_default()
                 {
                     sort_targets_map.into_iter().collect_vec()
                 } else {

@@ -63,7 +63,7 @@ impl Regex {
     pub fn is_match(&self, text: &str) -> bool {
         #[cfg(all(not(feature = "regex"), feature = "fancy-regex"))]
         {
-            self.0.is_match(text).unwrap_or(false)
+            self.0.is_match(text).unwrap_or_default()
         }
 
         #[cfg(feature = "regex")]

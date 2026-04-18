@@ -368,10 +368,62 @@ pub struct SchemaOverrideFormatOptions {
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct SchemaOverrideFormatRules {
     /// # Override array values ordering for matched roots
-    pub array_values_order: Option<ArrayValuesOrder>,
+    pub array_values_order: Option<SchemaOverrideArrayValuesOrderRule>,
 
     /// # Override table key ordering for matched roots
-    pub table_keys_order: Option<TableKeysOrder>,
+    pub table_keys_order: Option<SchemaOverrideTableKeysOrderRule>,
+}
+
+/// # Override array values ordering for matched roots
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[derive(Debug, Clone, PartialEq)]
+pub enum SchemaOverrideArrayValuesOrderRule {
+    Order(ArrayValuesOrder),
+    Rule(SchemaArrayValuesOrderRule),
+}
+
+impl SchemaOverrideArrayValuesOrderRule {
+    pub fn enabled(&self) -> Option<BoolDefaultTrue> {
+        match self {
+            Self::Order(_) => None,
+            Self::Rule(rule) => rule.enabled,
+        }
+    }
+
+    pub fn order(&self) -> Option<ArrayValuesOrder> {
+        match self {
+            Self::Order(order) => Some(order.clone()),
+            Self::Rule(_) => None,
+        }
+    }
+}
+
+/// # Override table key ordering for matched roots
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[derive(Debug, Clone, PartialEq)]
+pub enum SchemaOverrideTableKeysOrderRule {
+    Order(TableKeysOrder),
+    Rule(SchemaTableKeysOrderRule),
+}
+
+impl SchemaOverrideTableKeysOrderRule {
+    pub fn enabled(&self) -> Option<BoolDefaultTrue> {
+        match self {
+            Self::Order(_) => None,
+            Self::Rule(rule) => rule.enabled,
+        }
+    }
+
+    pub fn order(&self) -> Option<TableKeysOrder> {
+        match self {
+            Self::Order(order) => Some(order.clone()),
+            Self::Rule(_) => None,
+        }
+    }
 }
 
 #[cfg(test)]
