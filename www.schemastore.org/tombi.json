@@ -1164,6 +1164,9 @@
               "$ref": "#/definitions/ArrayValuesOrder"
             },
             {
+              "$ref": "#/definitions/SchemaArrayValuesOrderRule"
+            },
+            {
               "type": "null"
             }
           ]
@@ -1173,6 +1176,9 @@
           "anyOf": [
             {
               "$ref": "#/definitions/TableKeysOrder"
+            },
+            {
+              "$ref": "#/definitions/SchemaTableKeysOrderRule"
             },
             {
               "type": "null"
