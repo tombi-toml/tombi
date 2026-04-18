@@ -1,12 +1,13 @@
-use itertools::Itertools;
 use tombi_extension::CompletionContentPriority;
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, ValueSchema};
+use tombi_schema_store::{Accessor, CurrentSchema};
 
 use crate::completion::{
     CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
     tombi_json_value_to_completion_default_item, tombi_json_value_to_completion_example_item,
 };
+
+use super::branch_result::collect_branch_completions;
 
 pub fn find_any_of_completion_items<'a: 'b, 'b, T>(
     value: &'a T,
@@ -29,12 +30,6 @@ where
     log::trace!("completion_hint = {:?}", completion_hint);
 
     async move {
-        let mut completion_items = Vec::new();
-
-        // Same branching narrow logic as oneOf: when completing the value of a single key, only
-        // consider branches that are a table containing that key; skip default/examples when narrow.
-        let first_key = (keys.len() == 1 && !keys[0].value.is_empty()).then(|| &keys[0].value);
-
         let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
             &any_of_schema.schemas,
             current_schema.schema_uri.clone(),
@@ -45,70 +40,19 @@ where
         )
         .await
         else {
-            return completion_items;
+            return Vec::new();
         };
 
-        let mut branch_results: Vec<(bool, bool, Vec<CompletionContent>)> = Vec::new();
-        for resolved_schema in &resolved_schemas {
-            let branch_has_key = if let Some(ref first_key) = first_key {
-                match resolved_schema.value_schema.as_ref() {
-                    ValueSchema::Table(table_schema) => table_schema
-                        .properties
-                        .read()
-                        .await
-                        .contains_key(&SchemaAccessor::Key(first_key.to_string())),
-                    _ => false,
-                }
-            } else {
-                false
-            };
-            let branch_is_valid = match value
-                .validate(accessors, Some(resolved_schema), schema_context)
-                .await
-            {
-                Ok(_) => true,
-                Err(tombi_validator::Error { diagnostics, .. })
-                    if diagnostics
-                        .iter()
-                        .all(tombi_diagnostic::Diagnostic::is_warning) =>
-                {
-                    true
-                }
-                _ => false,
-            };
-
-            let schema_completions = value
-                .find_completion_contents(
-                    position,
-                    keys,
-                    accessors,
-                    Some(resolved_schema),
-                    schema_context,
-                    completion_hint,
-                )
-                .await;
-
-            branch_results.push((branch_has_key, branch_is_valid, schema_completions));
-        }
-
-        let valid_branches = branch_results.iter().any(|(_, is_valid, _)| *is_valid);
-        let narrow_branches = branch_results.iter().any(|(has_key, _, _)| *has_key);
-        for (branch_has_key, branch_is_valid, items) in &branch_results {
-            if valid_branches {
-                if *branch_is_valid {
-                    completion_items.extend(items.iter().cloned());
-                }
-            } else if !narrow_branches || *branch_has_key {
-                completion_items.extend(items.iter().cloned());
-            }
-        }
-
-        if completion_items.is_empty() {
-            completion_items = branch_results
-                .into_iter()
-                .flat_map(|(_, _, items)| items)
-                .collect_vec();
-        }
+        let (mut completion_items, narrow_branches) = collect_branch_completions(
+            value,
+            position,
+            keys,
+            accessors,
+            &resolved_schemas,
+            schema_context,
+            completion_hint,
+        )
+        .await;
 
         let detail = any_of_schema
             .detail(

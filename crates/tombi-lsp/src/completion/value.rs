@@ -2,6 +2,7 @@ mod all_of;
 mod any_of;
 mod array;
 mod boolean;
+mod branch_result;
 mod float;
 mod integer;
 mod local_date;
