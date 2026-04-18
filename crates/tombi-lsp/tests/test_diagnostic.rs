@@ -283,7 +283,7 @@ macro_rules! test_diagnostic {
                 .update_config_with_path(tombi_config, config_file_path)
                 .await
                 .map_err(|e| format!("Failed to load config file {}: {}", config_file_path.display(), e))?;
-        } else if let Some(schema_file_path) = config.schema_file_path.as_ref() {
+        } else if let Some(schema_file_path) = args.schema_file_path.as_ref() {
             // Fallback to schema path if no config file
             let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
                 .expect(
@@ -312,7 +312,7 @@ macro_rules! test_diagnostic {
         }
 
         // Determine source based on config
-        let (toml_text, toml_file_url) = if let Some(source_text) = config.source_text {
+        let (toml_text, toml_file_url) = if let Some(source_text) = args.source_text {
             // Use inline text via SourceText
             use std::io::Write;
 
@@ -320,7 +320,7 @@ macro_rules! test_diagnostic {
 
             let current_dir = std::env::current_dir().expect("failed to get current directory");
             // If ConfigPath is specified, use its parent directory for temp file
-            let temp_dir = if let Some(config_path) = config.config_file_path.as_ref() {
+            let temp_dir = if let Some(config_path) = args.config_file_path.as_ref() {
                 config_path.parent().ok_or("failed to get parent directory")?
             } else {
                 current_dir.as_path()
@@ -343,7 +343,7 @@ macro_rules! test_diagnostic {
             (toml_text, toml_file_url)
         } else {
             // Use file path via SourcePath
-            let source_path = config.source_file_path.as_ref()
+            let source_path = args.source_file_path.as_ref()
                 .expect("SourcePath or SourceText must be provided");
             let toml_text = std::fs::read_to_string(source_path)
                 .map_err(|e| format!("Failed to read source file {}: {}", source_path.display(), e))?;
