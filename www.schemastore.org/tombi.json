@@ -1036,6 +1036,17 @@
       "title": "Schema-specific format rules",
       "type": "object",
       "properties": {
+        "array-values-order": {
+          "title": "Whether schema-defined array values ordering is enabled",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaArrayValuesOrderRule"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "table-keys-order": {
           "title": "Whether schema-defined table key ordering is enabled",
           "anyOf": [
@@ -1050,6 +1061,25 @@
       },
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
+    },
+    "SchemaArrayValuesOrderRule": {
+      "title": "Schema-defined array values ordering",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "title": "Whether schema-defined array values ordering is enabled",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
     },
     "SchemaTableKeysOrderRule": {
       "title": "Schema-defined table key ordering",
@@ -1127,6 +1157,17 @@
       "title": "Schema-specific override format rules",
       "type": "object",
       "properties": {
+        "array-values-order": {
+          "title": "Override array values ordering for matched roots",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ArrayValuesOrder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "table-keys-order": {
           "title": "Override table key ordering for matched roots",
           "anyOf": [
@@ -1141,6 +1182,14 @@
       },
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
+    },
+    "ArrayValuesOrder": {
+      "type": "string",
+      "enum": [
+        "ascending",
+        "descending",
+        "version-sort"
+      ]
     },
     "TableKeysOrder": {
       "type": "string",

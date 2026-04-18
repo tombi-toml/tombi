@@ -11,6 +11,7 @@ pub struct SourceSchema {
     pub root_schema: Option<Arc<DocumentSchema>>,
     pub sub_schema_map: SourceSubSchemaMap,
     pub deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
+    pub array_values_order_enabled: bool,
     pub table_keys_order_enabled: bool,
     pub overrides: SchemaOverrides,
     /// TOML version override from `[[schemas]]` config entry.
@@ -32,11 +33,13 @@ impl SourceSchema {
         sub_schema_map: SourceSubSchemaMap,
         toml_version: Option<TomlVersion>,
         deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
+        array_values_order_enabled: bool,
         table_keys_order_enabled: bool,
     ) -> Self {
         Self {
             root_schema,
             sub_schema_map,
+            array_values_order_enabled,
             deprecated_lint_level,
             table_keys_order_enabled,
             overrides: Default::default(),

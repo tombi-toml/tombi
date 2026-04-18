@@ -10,6 +10,7 @@ pub const X_TOMBI_ADDITIONAL_KEY_LABEL: &str = "x-tombi-additional-key-label";
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub enum ArrayValuesOrder {
     Ascending,
     Descending,

@@ -512,6 +512,208 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_dependency_groups_array_values_order_disabled_keeps_user_order(
+                r#"
+                [project]
+                name = "tombi"
+                version = "1.0.0"
+                requires-python = ">=3.10"
+                dependencies = []
+
+                [dependency-groups]
+                dev = [
+                  { include-group = "stub" },
+                  "pytest>=8.3.3",
+                  { include-group = "ci" },
+                  "ruff>=0.7.4",
+                ]
+                ci = [
+                  "ruff>=0.7.4",
+                  "pytest-ci>=0.0.0",
+                ]
+                stub = [
+                  "pytest-stub>=1.1.0",
+                ]
+                "#,
+                SourcePath(std::path::PathBuf::from("pyproject.toml")),
+                Config(
+                    r#"
+                    [[schemas]]
+                    path = "tombi://www.schemastore.org/pyproject.json"
+                    include = ["pyproject.toml"]
+                    format.rules.array-values-order.enabled = false
+                    "#
+                ),
+            ) -> Ok(source)
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_dependency_groups_array_values_order_override_ascending(
+                r#"
+                [project]
+                name = "tombi"
+                version = "1.0.0"
+                requires-python = ">=3.10"
+                dependencies = []
+
+                [dependency-groups]
+                dev = [
+                  { include-group = "stub" },
+                  "pytest>=8.3.3",
+                  { include-group = "ci" },
+                  "ruff>=0.7.4",
+                ]
+                ci = [
+                  "ruff>=0.7.4",
+                  "pytest-ci>=0.0.0",
+                ]
+                stub = [
+                  "pytest-stub>=1.1.0",
+                ]
+                "#,
+                SourcePath(std::path::PathBuf::from("pyproject.toml")),
+                Config(
+                    r#"
+                    [[schemas]]
+                    path = "tombi://www.schemastore.org/pyproject.json"
+                    include = ["pyproject.toml"]
+                    format.rules.array-values-order.enabled = false
+                    overrides = [
+                      { targets = ["dependency-groups.dev"], format.rules.array-values-order = "ascending" }
+                    ]
+                    "#
+                ),
+            ) -> Ok(
+                r#"
+                [project]
+                name = "tombi"
+                version = "1.0.0"
+                requires-python = ">=3.10"
+                dependencies = []
+
+                [dependency-groups]
+                dev = [
+                  { include-group = "ci" },
+                  "pytest>=8.3.3",
+                  "ruff>=0.7.4",
+                  { include-group = "stub" },
+                ]
+                ci = [
+                  "ruff>=0.7.4",
+                  "pytest-ci>=0.0.0",
+                ]
+                stub = [
+                  "pytest-stub>=1.1.0",
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_tool_tombi_files_exclude_root_schema_array_override_only(
+                r#"
+                [tool.tombi.files]
+                exclude = ["**/cache", "**/uv.lock", "**/dist"]
+                "#,
+                SourcePath(std::path::PathBuf::from("pyproject.toml")),
+                Config(
+                    r#"
+                    [[schemas]]
+                    path = "tombi://www.schemastore.org/pyproject.json"
+                    include = ["pyproject.toml"]
+                    format.rules.array-values-order.enabled = false
+                    overrides = [
+                      { targets = ["tool.tombi.files.exclude"], format.rules.array-values-order = "ascending" }
+                    ]
+
+                    [[schemas]]
+                    path = "tombi://www.schemastore.org/tombi.json"
+                    include = ["pyproject.toml"]
+                    root = "tool.tombi"
+                    format.rules.array-values-order.enabled = false
+                    "#
+                ),
+            ) -> Ok(
+                r#"
+                [tool.tombi.files]
+                exclude = ["**/cache", "**/dist", "**/uv.lock"]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_tool_tombi_files_exclude_subschema_array_override_only(
+                r#"
+                [tool.tombi.files]
+                exclude = ["**/cache", "**/uv.lock", "**/dist"]
+                "#,
+                SourcePath(std::path::PathBuf::from("pyproject.toml")),
+                Config(
+                    r#"
+                    [[schemas]]
+                    path = "tombi://www.schemastore.org/tombi.json"
+                    include = ["pyproject.toml"]
+                    format.rules.array-values-order.enabled = false
+
+                    [[schemas]]
+                    path = "tombi://www.schemastore.org/pyproject.json"
+                    include = ["pyproject.toml"]
+                    root = "tool.tombi"
+                    format.rules.array-values-order.enabled = false
+                    overrides = [
+                      { targets = ["tool.tombi.files.exclude"], format.rules.array-values-order = "descending" }
+                    ]
+                    "#
+                ),
+            ) -> Ok(
+                r#"
+                [tool.tombi.files]
+                exclude = ["**/uv.lock", "**/dist", "**/cache"]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_tool_tombi_files_exclude_root_array_override_precedes_subschema_override(
+                r#"
+                [tool.tombi.files]
+                exclude = ["**/cache", "**/uv.lock", "**/dist"]
+                "#,
+                SourcePath(std::path::PathBuf::from("pyproject.toml")),
+                Config(
+                    r#"
+                    [[schemas]]
+                    path = "tombi://www.schemastore.org/pyproject.json"
+                    include = ["pyproject.toml"]
+                    format.rules.array-values-order.enabled = false
+                    overrides = [
+                      { targets = ["tool.tombi.files.exclude"], format.rules.array-values-order = "ascending" }
+                    ]
+
+                    [[schemas]]
+                    path = "tombi://www.schemastore.org/tombi.json"
+                    include = ["pyproject.toml"]
+                    root = "tool.tombi"
+                    format.rules.array-values-order.enabled = false
+                    overrides = [
+                      { targets = ["tool.tombi.files.exclude"], format.rules.array-values-order = "descending" }
+                    ]
+                    "#
+                ),
+            ) -> Ok(
+                r#"
+                [tool.tombi.files]
+                exclude = ["**/cache", "**/dist", "**/uv.lock"]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_tool_tombi_format_rules_root_schema_override_only(
                 r#"
                 [tool.tombi.format.rules]

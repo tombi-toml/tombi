@@ -564,7 +564,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         .table_keys_order(
                                             accessors,
                                             Some(current_schema),
-                                            comment_directive_table_keys_order(self),
+                                            comment_directive_table_keys_order(self).as_ref(),
                                         )
                                         .await;
                                 }
@@ -700,18 +700,24 @@ impl GetHoverContent for tombi_document_tree::Table {
 
 fn comment_directive_table_keys_order(
     table: &tombi_document_tree::Table,
-) -> Option<(bool, Option<tombi_x_keyword::TableKeysOrder>)> {
+) -> Option<tombi_schema_store::TableOrderOverride> {
     let comment_directive = get_comment_directive_content::<
         TableCommonFormatRules,
         TableCommonLintRules,
     >(table.comment_directives()?.cloned())?;
 
-    let disabled = comment_directive
-        .table_keys_order_disabled()
-        .unwrap_or(false);
-    let order = comment_directive.table_keys_order().map(Into::into);
+    let (disabled, order) = (
+        comment_directive
+            .table_keys_order_disabled()
+            .unwrap_or(false),
+        comment_directive.table_keys_order().map(Into::into),
+    );
 
-    (disabled || order.is_some()).then_some((disabled, order))
+    (disabled || order.is_some()).then_some(tombi_schema_store::TableOrderOverride {
+        target: Vec::new(),
+        disabled,
+        order,
+    })
 }
 
 impl GetHoverContent for TableSchema {

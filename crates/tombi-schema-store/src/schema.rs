@@ -51,11 +51,64 @@ pub use tombi_uri::{CatalogUri, SchemaUri};
 pub use value_schema::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TableOrderOverride {
+pub struct OrderOverride<T> {
     pub target: Vec<RootAccessor>,
     pub disabled: bool,
-    pub order: Option<tombi_x_keyword::TableKeysOrder>,
+    pub order: Option<T>,
 }
+
+pub type ArrayOrderOverride = OrderOverride<tombi_x_keyword::ArrayValuesOrder>;
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ArrayOrderOverrides(Vec<ArrayOrderOverride>);
+
+impl ArrayOrderOverrides {
+    pub fn push_schema_override(
+        &mut self,
+        target: Vec<RootAccessor>,
+        disabled: bool,
+        order: Option<tombi_x_keyword::ArrayValuesOrder>,
+    ) {
+        self.0.push(ArrayOrderOverride {
+            target,
+            disabled,
+            order,
+        });
+    }
+
+    pub fn get(&self, accessors: &[Accessor]) -> Option<&ArrayOrderOverride> {
+        self.0.iter().find(|override_item| {
+            override_item.target.len() == accessors.len()
+                && override_item
+                    .target
+                    .iter()
+                    .zip(accessors)
+                    .all(|(expected, actual)| expected == actual)
+        })
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<'_, ArrayOrderOverride> {
+        self.0.iter()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+impl From<Vec<ArrayOrderOverride>> for ArrayOrderOverrides {
+    fn from(value: Vec<ArrayOrderOverride>) -> Self {
+        Self(value)
+    }
+}
+
+impl FromIterator<ArrayOrderOverride> for ArrayOrderOverrides {
+    fn from_iter<T: IntoIterator<Item = ArrayOrderOverride>>(iter: T) -> Self {
+        Self(iter.into_iter().collect())
+    }
+}
+
+pub type TableOrderOverride = OrderOverride<tombi_x_keyword::TableKeysOrder>;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TableOrderOverrides(Vec<TableOrderOverride>);
@@ -134,6 +187,7 @@ impl FromIterator<TableOrderOverride> for TableOrderOverrides {
 
 #[derive(Debug, Clone, Default)]
 pub struct SchemaOverrides {
+    pub array_values_order: ArrayOrderOverrides,
     pub table_keys_order: TableOrderOverrides,
 }
 
@@ -376,6 +430,7 @@ pub struct Schema {
     pub catalog_uri: Option<Arc<tombi_uri::CatalogUri>>,
     pub include: Vec<String>,
     pub sub_root_accessors: Option<Vec<RootAccessor>>,
+    pub array_values_order_enabled: bool,
     pub table_keys_order_enabled: bool,
     pub overrides: SchemaOverrides,
 }

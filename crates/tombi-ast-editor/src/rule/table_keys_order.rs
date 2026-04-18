@@ -28,17 +28,19 @@ pub async fn table_keys_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    if comment_directive
+    let (disabled, order) = comment_directive
         .as_ref()
-        .and_then(|c| c.table_keys_order_disabled())
-        .unwrap_or(false)
-    {
+        .map(|comment_directive| {
+            (
+                comment_directive.table_keys_order_disabled().unwrap_or(false),
+                comment_directive.table_keys_order().map(Into::into),
+            )
+        })
+        .unwrap_or((false, None));
+
+    if disabled {
         return Vec::with_capacity(0);
     }
-
-    let order = comment_directive
-        .as_ref()
-        .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
 
     let old = std::ops::RangeInclusive::new(
         SyntaxElement::Node(key_values.first().unwrap().syntax().clone()),
@@ -182,14 +184,18 @@ where
                 let table_override = table_order_overrides
                     .and_then(|overrides| overrides.get(accessors))
                     .or_else(|| schema_context.table_order_override(accessors));
+                let comment_directive_override =
+                    order.map(|order| tombi_schema_store::TableOrderOverride {
+                    target: Vec::new(),
+                    disabled: false,
+                    order: Some(order),
+                });
                 let table_order = schema_context
                     .table_keys_order(
                         accessors,
                         current_schema,
                         table_override
-                            .as_ref()
-                            .map(|override_item| (override_item.disabled, override_item.order))
-                            .or_else(|| order.map(|order| (false, Some(order)))),
+                            .or(comment_directive_override.as_ref()),
                     )
                     .await;
                 let table_schema = current_schema.and_then(|current_schema| {

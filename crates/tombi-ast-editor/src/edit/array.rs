@@ -5,9 +5,7 @@ use tombi_ast::{AstNode, DanglingCommentGroupOr};
 use tombi_comment_directive::value::{ArrayCommonFormatRules, ArrayCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, ValueSchema,
-};
+use tombi_schema_store::{Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, ValueSchema};
 use tombi_validator::Validate;
 
 use crate::rule::{array_comma_trailing_comment, array_values_order};
@@ -91,13 +89,6 @@ impl crate::Edit for tombi_ast::Array {
                     },
                 );
 
-            let array_schema_values_order = current_schema.and_then(|current_schema| {
-                if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
-                    array_schema.values_order.clone()
-                } else {
-                    None
-                }
-            });
             let mut nodes_iter = array_node.values().iter().enumerate();
             for group in self.value_with_comma_groups() {
                 let DanglingCommentGroupOr::ItemGroup(value_group) = group else {
@@ -117,7 +108,6 @@ impl crate::Edit for tombi_ast::Array {
                         accessors,
                         current_item_schema.as_ref(),
                         schema_context,
-                        array_schema_values_order.clone(),
                         comment_directive.clone(),
                     )
                     .await,

@@ -22,17 +22,19 @@ pub async fn inline_table_keys_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    if comment_directive
+    let (disabled, order) = comment_directive
         .as_ref()
-        .and_then(|c| c.table_keys_order_disabled())
-        .unwrap_or(false)
-    {
+        .map(|comment_directive| {
+            (
+                comment_directive.table_keys_order_disabled().unwrap_or(false),
+                comment_directive.table_keys_order().map(Into::into),
+            )
+        })
+        .unwrap_or((false, None));
+
+    if disabled {
         return Vec::with_capacity(0);
     }
-
-    let order = comment_directive
-        .as_ref()
-        .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
 
     let mut changes = vec![];
 

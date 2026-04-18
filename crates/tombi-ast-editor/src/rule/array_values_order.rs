@@ -13,8 +13,8 @@ use tombi_comment_directive::value::{
 };
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaContext, TableSchema,
-    ValueSchema, XTombiArrayValuesOrder,
+    Accessor, AllOfSchema, AnyOfSchema, ArrayOrderOverride, CurrentSchema, OneOfSchema,
+    SchemaContext, TableSchema, ValueSchema, XTombiArrayValuesOrder,
 };
 use tombi_syntax::SyntaxElement;
 use tombi_validator::Validate;
@@ -36,7 +36,6 @@ pub async fn array_values_order<'a>(
     accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
-    array_schema_values_order: Option<XTombiArrayValuesOrder>,
     comment_directive: Option<
         TombiValueDirectiveContent<ArrayCommonFormatRules, ArrayCommonLintRules>,
     >,
@@ -45,22 +44,29 @@ pub async fn array_values_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    if comment_directive
+    let (disabled, order) = comment_directive
         .as_ref()
-        .and_then(|content| content.array_values_order_disabled())
-        .unwrap_or(false)
-    {
+        .map(|comment_directive| {
+            (
+                comment_directive.array_values_order_disabled().unwrap_or(false),
+                comment_directive.array_values_order().map(Into::into),
+            )
+        })
+        .unwrap_or((false, None));
+
+    if disabled {
         return Vec::with_capacity(0);
     }
 
-    let order: Option<ArrayValuesOrder> = comment_directive
-        .as_ref()
-        .and_then(|comment_directive| comment_directive.array_values_order().map(Into::into));
+    let comment_directive_override = order.map(|order| ArrayOrderOverride {
+        target: Vec::new(),
+        disabled: false,
+        order: Some(order),
+    });
 
-    let values_order = match order {
-        Some(values_order) => Some(XTombiArrayValuesOrder::All(values_order)),
-        None => array_schema_values_order,
-    };
+    let values_order = schema_context
+        .array_values_order(accessors, current_schema, comment_directive_override.as_ref())
+        .await;
 
     let Some(values_order) = values_order else {
         return Vec::with_capacity(0);

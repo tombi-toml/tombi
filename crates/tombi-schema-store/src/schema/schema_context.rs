@@ -1,14 +1,16 @@
 use tombi_severity_level::SeverityLevelDefaultWarn;
-use tombi_x_keyword::{StringFormat, TableKeysOrder};
+use tombi_x_keyword::StringFormat;
 
 use crate::schema::schema_cycle_guard::SchemaVisits;
 use crate::{
-    Accessor, CurrentSchema, SchemaUri, TableOrderOverride, TableOrderOverrides, ValueSchema,
+    Accessor, ArrayOrderOverride, ArrayOrderOverrides, CurrentSchema, SchemaUri,
+    TableOrderOverride, TableOrderOverrides, ValueSchema, XTombiArrayValuesOrder,
     XTombiTableKeysOrder,
 };
 
 #[derive(Default)]
 pub struct SchemaContextOverrides<'a> {
+    pub array_values_order: Option<&'a ArrayOrderOverrides>,
     pub table_keys_order: Option<&'a TableOrderOverrides>,
 }
 
@@ -36,6 +38,7 @@ impl SchemaContext<'_> {
             sub_schema_map: source_schema.map(|schema| &schema.sub_schema_map),
             deprecated_lint_level: source_schema.and_then(|schema| schema.deprecated_lint_level),
             overrides: SchemaContextOverrides {
+                array_values_order: source_schema.map(|schema| &schema.overrides.array_values_order),
                 table_keys_order: source_schema.map(|schema| &schema.overrides.table_keys_order),
             },
             schema_visits: Default::default(),
@@ -56,6 +59,7 @@ impl SchemaContext<'_> {
             sub_schema_map: self.sub_schema_map,
             deprecated_lint_level: self.deprecated_lint_level,
             overrides: SchemaContextOverrides {
+                array_values_order: self.overrides.array_values_order,
                 table_keys_order: self.overrides.table_keys_order,
             },
             schema_visits: self.schema_visits.clone(),
@@ -124,28 +128,113 @@ impl SchemaContext<'_> {
             .and_then(|overrides| overrides.get(accessors))
     }
 
-    pub async fn table_keys_order(
+    pub async fn array_values_order_enabled(
+        &self,
+        accessors: &[Accessor],
+        schema_uri: &SchemaUri,
+    ) -> bool {
+        let mut normalized = schema_uri.clone();
+        normalized.set_fragment(None);
+
+        if self.root_schema.is_some_and(|root_schema| {
+            let mut root_schema_uri = root_schema.schema_uri.clone();
+            root_schema_uri.set_fragment(None);
+            root_schema_uri == normalized
+        }) {
+            return self
+                .store
+                .array_values_order_enabled_for_schema(&normalized, None)
+                .await
+                .unwrap_or(true);
+        }
+
+        let sub_root_accessors = self.sub_schema_map.and_then(|sub_schema_map| {
+            sub_schema_map
+                .iter()
+                .find_map(|(sub_root_accessors, sub_schema)| {
+                    let mut sub_schema_uri = sub_schema.schema_uri.clone();
+                    sub_schema_uri.set_fragment(None);
+                    (sub_schema_uri == normalized
+                        && sub_root_accessors.len() <= accessors.len()
+                        && sub_root_accessors
+                            .iter()
+                            .zip(accessors.iter())
+                            .all(|(expected, actual)| expected == actual))
+                    .then_some(sub_root_accessors.as_slice())
+                })
+        });
+
+        self.store
+            .array_values_order_enabled_for_schema(&normalized, sub_root_accessors)
+            .await
+            .unwrap_or(true)
+    }
+
+    pub fn array_order_override(&self, accessors: &[Accessor]) -> Option<&ArrayOrderOverride> {
+        self.overrides
+            .array_values_order
+            .and_then(|overrides| overrides.get(accessors))
+    }
+
+    pub async fn array_values_order(
         &self,
         accessors: &[Accessor],
         current_schema: Option<&CurrentSchema<'_>>,
-        local_override: Option<(bool, Option<TableKeysOrder>)>,
-    ) -> Option<XTombiTableKeysOrder> {
-        if let Some((disabled, order)) = local_override {
-            if disabled {
+        comment_directive_override: Option<&ArrayOrderOverride>,
+    ) -> Option<XTombiArrayValuesOrder> {
+        if let Some(comment_directive_override) = comment_directive_override {
+            if comment_directive_override.disabled {
                 return None;
             }
-            if let Some(order) = order {
-                return Some(XTombiTableKeysOrder::All(order));
+            if let Some(order) = comment_directive_override.order {
+                return Some(XTombiArrayValuesOrder::All(order));
             }
         }
 
-        if let Some(schema_override) = self.table_order_override(accessors) {
+        if let Some(schema_override) = self.array_order_override(accessors) {
             if schema_override.disabled {
                 return None;
             }
             if let Some(order) = schema_override.order {
-                return Some(XTombiTableKeysOrder::All(order));
+                return Some(XTombiArrayValuesOrder::All(order));
             }
+        }
+
+        let current_schema = current_schema?;
+        self.array_values_order_enabled(accessors, current_schema.schema_uri.as_ref())
+            .await
+            .then_some(())
+            .and_then(|_| match current_schema.value_schema.as_ref() {
+                ValueSchema::Array(array_schema) => array_schema.values_order.clone(),
+                _ => None,
+            })
+    }
+
+    pub async fn table_keys_order(
+        &self,
+        accessors: &[Accessor],
+        current_schema: Option<&CurrentSchema<'_>>,
+        comment_directive_override: Option<&TableOrderOverride>,
+    ) -> Option<XTombiTableKeysOrder> {
+        let (disabled, order) = comment_directive_override
+            .map(|override_item| (override_item.disabled, override_item.order))
+            .unwrap_or((false, None));
+        if disabled {
+            return None;
+        }
+        if let Some(order) = order {
+            return Some(XTombiTableKeysOrder::All(order));
+        }
+
+        let (disabled, order) = self
+            .table_order_override(accessors)
+            .map(|override_item| (override_item.disabled, override_item.order))
+            .unwrap_or((false, None));
+        if disabled {
+            return None;
+        }
+        if let Some(order) = order {
+            return Some(XTombiTableKeysOrder::All(order));
         }
 
         let current_schema = current_schema?;

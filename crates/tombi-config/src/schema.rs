@@ -1,6 +1,6 @@
 use tombi_severity_level::SeverityLevelDefaultWarn;
 use tombi_toml_version::TomlVersion;
-use tombi_x_keyword::TableKeysOrder;
+use tombi_x_keyword::{ArrayValuesOrder, TableKeysOrder};
 
 use crate::{
     BoolDefaultTrue, JSON_SCHEMASTORE_CATALOG_URL, SchemaCatalogPath, TOMBI_SCHEMASTORE_CATALOG_URL,
@@ -279,8 +279,23 @@ pub struct SchemaFormatOptions {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct SchemaFormatRules {
+    /// # Whether schema-defined array values ordering is enabled
+    pub array_values_order: Option<SchemaArrayValuesOrderRule>,
+
     /// # Whether schema-defined table key ordering is enabled
     pub table_keys_order: Option<SchemaTableKeysOrderRule>,
+}
+
+/// # Schema-defined array values ordering
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaArrayValuesOrderRule {
+    /// # Whether schema-defined array values ordering is enabled
+    pub enabled: Option<BoolDefaultTrue>,
 }
 
 /// # Schema-defined table key ordering
@@ -352,6 +367,9 @@ pub struct SchemaOverrideFormatOptions {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct SchemaOverrideFormatRules {
+    /// # Override array values ordering for matched roots
+    pub array_values_order: Option<ArrayValuesOrder>,
+
     /// # Override table key ordering for matched roots
     pub table_keys_order: Option<TableKeysOrder>,
 }

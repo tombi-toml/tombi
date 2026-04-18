@@ -138,6 +138,7 @@ async fn get_comment_directive_toml_content_hover_content(
             Some(toml_version),
             None,
             true,
+            true,
         );
 
         let schema_context = tombi_schema_store::SchemaContext::from_source_schema(

@@ -155,6 +155,7 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
         Some(toml_version),
         None,
         true,
+        true,
     );
     let schema_context = tombi_schema_store::SchemaContext::from_source_schema(
         toml_version,

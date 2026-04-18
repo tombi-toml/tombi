@@ -2,9 +2,10 @@ use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 
 use crate::resolve_json_pointer;
 use crate::{
-    AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, RootAccessor, RootAccessors,
-    SourceSchema, SourceSubSchema, SourceSubSchemaMap, TableOrderOverride, ValueSchema,
-    get_tombi_schemastore_content, http_client::HttpClient, json::JsonCatalog,
+    AllOfSchema, AnyOfSchema, ArrayOrderOverride, CatalogUri, DocumentSchema, OneOfSchema,
+    RootAccessor, RootAccessors, SourceSchema, SourceSubSchema, SourceSubSchemaMap,
+    TableOrderOverride, ValueSchema, get_tombi_schemastore_content, http_client::HttpClient,
+    json::JsonCatalog,
 };
 use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
@@ -199,6 +200,13 @@ impl SchemaStore {
                 include: schema.include().to_vec(),
                 toml_version: schema.toml_version(),
                 sub_root_accessors: schema.root().and_then(RootAccessor::parse),
+                array_values_order_enabled: schema
+                    .format()
+                    .and_then(|format| format.rules.as_ref())
+                    .and_then(|rules| rules.array_values_order.as_ref())
+                    .and_then(|rule| rule.enabled)
+                    .unwrap_or_default()
+                    .value(),
                 table_keys_order_enabled: schema
                     .format()
                     .and_then(|format| format.rules.as_ref())
@@ -207,6 +215,35 @@ impl SchemaStore {
                     .unwrap_or_default()
                     .value(),
                 overrides: crate::SchemaOverrides {
+                    array_values_order: schema
+                        .overrides()
+                        .into_iter()
+                        .flatten()
+                        .flat_map(|override_item| {
+                            let Some(order) = override_item
+                                .format
+                                .as_ref()
+                                .and_then(|format| format.rules.as_ref())
+                                .and_then(|rules| rules.array_values_order)
+                            else {
+                                return Vec::new();
+                            };
+
+                            override_item
+                                .targets
+                                .iter()
+                                .filter_map(|target| {
+                                    RootAccessor::parse(target).map(|root_accessors| {
+                                        ArrayOrderOverride {
+                                            target: root_accessors,
+                                            disabled: false,
+                                            order: Some(order),
+                                        }
+                                    })
+                                })
+                                .collect()
+                        })
+                        .collect(),
                     table_keys_order: schema
                         .overrides()
                         .into_iter()
@@ -379,6 +416,7 @@ impl SchemaStore {
                     include: schema.file_match,
                     toml_version: None,
                     sub_root_accessors: None,
+                    array_values_order_enabled: true,
                     table_keys_order_enabled: true,
                     overrides: Default::default(),
                 });
@@ -693,6 +731,7 @@ impl SchemaStore {
             sub_schema_map,
             toml_version,
             deprecated_lint_level,
+            array_values_order_enabled,
             table_keys_order_enabled,
         ) = if let Some(source_schema) = source_schema {
             let toml_version = source_schema.toml_version();
@@ -701,10 +740,11 @@ impl SchemaStore {
                 source_schema.sub_schema_map,
                 toml_version,
                 source_schema.deprecated_lint_level,
+                source_schema.array_values_order_enabled,
                 source_schema.table_keys_order_enabled,
             )
         } else {
-            (None, Default::default(), None, None, true)
+            (None, Default::default(), None, None, true, true)
         };
 
         Ok(Some(SourceSchema::new(
@@ -714,6 +754,7 @@ impl SchemaStore {
             sub_schema_map,
             toml_version,
             deprecated_lint_level,
+            array_values_order_enabled,
             table_keys_order_enabled,
         )))
     }
@@ -837,8 +878,17 @@ impl SchemaStore {
                     }
                     if let Some(existing) = source_schema.as_mut() {
                         if matching_schema.sub_root_accessors.is_none() {
+                            existing.array_values_order_enabled =
+                                matching_schema.array_values_order_enabled;
                             existing.table_keys_order_enabled =
                                 matching_schema.table_keys_order_enabled;
+                        }
+                        for override_item in matching_schema.overrides.array_values_order.iter() {
+                            existing.overrides.array_values_order.push_schema_override(
+                                override_item.target.clone(),
+                                override_item.disabled,
+                                override_item.order,
+                            );
                         }
                         for override_item in matching_schema.overrides.table_keys_order.iter() {
                             existing.push_table_order_override(
@@ -884,6 +934,7 @@ impl SchemaStore {
                                 matching_schema.toml_version,
                                 matching_schema.deprecated_lint_level,
                                 true,
+                                true,
                             );
                             source_schema = Some(new_source);
                         }
@@ -900,6 +951,7 @@ impl SchemaStore {
                                     sub_schema_map,
                                     toml_version,
                                     matching_schema.deprecated_lint_level,
+                                    matching_schema.array_values_order_enabled,
                                     matching_schema.table_keys_order_enabled,
                                 );
                                 existing.overrides = overrides;
@@ -911,6 +963,7 @@ impl SchemaStore {
                                 Default::default(),
                                 matching_schema.toml_version,
                                 matching_schema.deprecated_lint_level,
+                                matching_schema.array_values_order_enabled,
                                 matching_schema.table_keys_order_enabled,
                             );
                             source_schema = Some(new_source);
@@ -933,7 +986,15 @@ impl SchemaStore {
 
             if let Some(existing) = source_schema.as_mut() {
                 if matching_schema.sub_root_accessors.is_none() {
+                    existing.array_values_order_enabled = matching_schema.array_values_order_enabled;
                     existing.table_keys_order_enabled = matching_schema.table_keys_order_enabled;
+                }
+                for override_item in matching_schema.overrides.array_values_order.iter() {
+                    existing.overrides.array_values_order.push_schema_override(
+                        override_item.target.clone(),
+                        override_item.disabled,
+                        override_item.order,
+                    );
                 }
                 for override_item in matching_schema.overrides.table_keys_order.iter() {
                     existing.push_table_order_override(
@@ -1006,6 +1067,7 @@ impl SchemaStore {
             include,
             toml_version: options.toml_version,
             sub_root_accessors: None,
+            array_values_order_enabled: true,
             table_keys_order_enabled: true,
             overrides: Default::default(),
         };
@@ -1048,6 +1110,32 @@ impl SchemaStore {
                     }
             })
             .map(|schema| schema.table_keys_order_enabled)
+    }
+
+    pub(crate) async fn array_values_order_enabled_for_schema(
+        &self,
+        schema_uri: &SchemaUri,
+        sub_root_accessors: Option<&[RootAccessor]>,
+    ) -> Option<bool> {
+        let mut normalized = schema_uri.clone();
+        normalized.set_fragment(None);
+
+        self.schemas
+            .read()
+            .await
+            .iter()
+            .rev()
+            .find(|schema| {
+                let mut candidate_uri = schema.schema_uri.clone();
+                candidate_uri.set_fragment(None);
+                candidate_uri == normalized
+                    && match (&schema.sub_root_accessors, sub_root_accessors) {
+                        (None, None) => true,
+                        (Some(candidate), Some(target)) => candidate.as_slice() == target,
+                        _ => false,
+                    }
+            })
+            .map(|schema| schema.array_values_order_enabled)
     }
 }
 
@@ -1344,6 +1432,7 @@ mod tests {
             lint: None,
             format: Some(SchemaFormatOptions {
                 rules: Some(SchemaFormatRules {
+                    array_values_order: None,
                     table_keys_order: Some(SchemaTableKeysOrderRule {
                         enabled: Some(false.into()),
                     }),
@@ -1354,6 +1443,7 @@ mod tests {
                     targets: vec![Target::from("")],
                     format: Some(SchemaOverrideFormatOptions {
                         rules: Some(SchemaOverrideFormatRules {
+                            array_values_order: None,
                             table_keys_order: Some(TableKeysOrder::Ascending),
                         }),
                     }),
@@ -1362,6 +1452,7 @@ mod tests {
                     targets: vec![Target::from("tool.uv"), Target::from("tool")],
                     format: Some(SchemaOverrideFormatOptions {
                         rules: Some(SchemaOverrideFormatRules {
+                            array_values_order: None,
                             table_keys_order: Some(TableKeysOrder::Descending),
                         }),
                     }),
@@ -1446,6 +1537,7 @@ mod tests {
                     targets: vec![Target::from("tool")],
                     format: Some(SchemaOverrideFormatOptions {
                         rules: Some(SchemaOverrideFormatRules {
+                            array_values_order: None,
                             table_keys_order: Some(TableKeysOrder::Ascending),
                         }),
                     }),
@@ -1518,6 +1610,7 @@ mod tests {
                 lint: None,
                 format: Some(SchemaFormatOptions {
                     rules: Some(SchemaFormatRules {
+                        array_values_order: None,
                         table_keys_order: Some(SchemaTableKeysOrderRule {
                             enabled: Some(false.into()),
                         }),
@@ -1535,6 +1628,7 @@ mod tests {
                     targets: vec![Target::from("")],
                     format: Some(SchemaOverrideFormatOptions {
                         rules: Some(SchemaOverrideFormatRules {
+                            array_values_order: None,
                             table_keys_order: Some(TableKeysOrder::Descending),
                         }),
                     }),
@@ -1625,6 +1719,7 @@ mod tests {
                 lint: None,
                 format: Some(SchemaFormatOptions {
                     rules: Some(SchemaFormatRules {
+                        array_values_order: None,
                         table_keys_order: Some(SchemaTableKeysOrderRule {
                             enabled: Some(false.into()),
                         }),
