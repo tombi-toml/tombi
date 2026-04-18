@@ -69,6 +69,7 @@ impl crate::Edit for tombi_ast::InlineTable {
                 changes.extend(
                     inline_table_keys_order(
                         node,
+                        accessors,
                         key_value_group.key_values_with_comma().collect_vec(),
                         current_schema,
                         schema_context,

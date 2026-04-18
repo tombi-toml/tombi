@@ -955,6 +955,8 @@ mod hover_keys_value {
         ) -> Ok({
             "Keys": $keys:expr,
             "Value": $value_type:expr
+            $(, "Schema": $has_schema:expr)?
+            $(, "Keys Order": $keys_order:expr)?
             $(, "Title": $title:expr)?
             $(, "Description": $description:expr)?
             $(, "Enum": [$($enum_values:expr),* $(,)?])?
@@ -983,6 +985,9 @@ mod hover_keys_value {
                 struct TestArgs {
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
+                    inline_schema: Option<String>,
+                    config_file_path: Option<std::path::PathBuf>,
+                    config_text: Option<String>,
                     subschemas: Vec<SubSchemaPath>,
                     backend_options: tombi_lsp::backend::Options,
                 }
@@ -1002,11 +1007,38 @@ mod hover_keys_value {
                 }
 
                 #[allow(unused)]
+                struct Schema(String);
+
+                impl ApplyTestArg for Schema {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.inline_schema = Some(self.0);
+                    }
+                }
+
+                #[allow(unused)]
                 struct SchemaPath(std::path::PathBuf);
 
                 impl ApplyTestArg for SchemaPath {
                     fn apply(self, args: &mut TestArgs) {
                         args.schema_file_path = Some(self.0);
+                    }
+                }
+
+                #[allow(unused)]
+                struct Config(String);
+
+                impl ApplyTestArg for Config {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.config_text = Some(self.0);
+                    }
+                }
+
+                #[allow(unused)]
+                struct ConfigPath(std::path::PathBuf);
+
+                impl ApplyTestArg for ConfigPath {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.config_file_path = Some(self.0);
                     }
                 }
 
@@ -1053,7 +1085,9 @@ mod hover_keys_value {
                         toml_version: None,
                         path: schema_uri.to_string(),
                         include: vec!["*.toml".to_string()],
-                    lint: None,
+                        lint: None,
+                        format: None,
+                        overrides: None,
                     }));
                 }
 
@@ -1072,18 +1106,23 @@ mod hover_keys_value {
                         include: vec!["*.toml".to_string()],
                         root: subschema.root.clone(),
                         lint: None,
+                        format: None,
+                        overrides: None,
                     }));
                 }
 
-                let current_dir = std::env::current_dir().expect("failed to get current directory");
-                let temp_dir = if let Some(source_path) = args.source_file_path.as_ref() {
-                    source_path.parent().ok_or("failed to get parent directory")?
-                } else {
-                    current_dir.as_path()
+                let temp_dir = tempfile::tempdir()?;
+                let temp_dir_path = temp_dir.path();
+                let resolve_path = |path: &std::path::Path| {
+                    if path.is_absolute() {
+                        path.to_path_buf()
+                    } else {
+                        temp_dir_path.join(path)
+                    }
                 };
                 let Ok(temp_file) = tempfile::NamedTempFile::with_suffix_in(
                     ".toml",
-                    temp_dir,
+                    temp_dir_path,
                 ) else {
                     return Err("failed to create a temporary file for the test data".into());
                 };
@@ -1105,11 +1144,70 @@ mod hover_keys_value {
                 let line_index =
                 tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
 
-                let source_path = args.source_file_path.as_deref().unwrap_or(temp_file.path());
+                let source_path_buf = args
+                    .source_file_path
+                    .as_ref()
+                    .map(|path| resolve_path(path))
+                    .unwrap_or_else(|| temp_file.path().to_path_buf());
+                let should_write_source_file = args
+                    .source_file_path
+                    .as_ref()
+                    .is_some_and(|path| !path.is_absolute());
+                if should_write_source_file {
+                    if let Some(parent) = source_path_buf.parent() {
+                        std::fs::create_dir_all(parent)?;
+                    }
+                    if source_path_buf != temp_file.path() {
+                        std::fs::write(&source_path_buf, &toml_text)?;
+                    }
+                }
+                let source_path = source_path_buf.as_path();
+
+                if let Some(schema_text) = args.inline_schema.as_ref() {
+                    let schema_file_path = temp_dir_path.join("schema.json");
+                    std::fs::write(&schema_file_path, textwrap::dedent(schema_text).trim())?;
+                    args.schema_file_path = Some(schema_file_path);
+                }
+
+                if let Some(config_text) = args.config_text.as_ref() {
+                    let config_path = args
+                        .config_file_path
+                        .as_ref()
+                        .map(|path| resolve_path(path))
+                        .unwrap_or_else(|| temp_dir_path.join("tombi.toml"));
+                    let should_write_config_file = args
+                        .config_file_path
+                        .as_ref()
+                        .is_none_or(|path| !path.is_absolute());
+                    if should_write_config_file {
+                        if let Some(parent) = config_path.parent() {
+                            std::fs::create_dir_all(parent)?;
+                        }
+                        std::fs::write(&config_path, textwrap::dedent(config_text).trim())?;
+                    }
+                    args.config_file_path = Some(config_path);
+                }
 
                 let Ok(toml_file_url) = Url::from_file_path(source_path) else {
                     return Err("failed to convert file path to URL".into());
                 };
+
+                if let Some(config_file_path) = args.config_file_path.as_ref() {
+                    let config_content = std::fs::read_to_string(config_file_path)?;
+                    let tombi_config =
+                        serde_tombi::config::from_str(&config_content, config_file_path)?;
+                    backend
+                        .config_manager
+                        .update_config_with_path(tombi_config, config_file_path)
+                        .await
+                        .map_err(|e| {
+                            format!(
+                                "failed to update config {}: {}",
+                                config_file_path.display(),
+                                e
+                            )
+                        })?;
+                }
 
                 if !schema_items.is_empty() {
                     let config_schema_store = backend
@@ -1172,7 +1270,13 @@ mod hover_keys_value {
 
                 log::debug!("hover_content: {:#?}", hover_content);
 
-                if args.schema_file_path.is_some() {
+                if let Some(expected_has_schema) = None::<bool> $(.or(Some($has_schema)))? {
+                    pretty_assertions::assert_eq!(
+                        hover_content.schema_uri.is_some(),
+                        expected_has_schema,
+                        "Schema presence is not equal"
+                    );
+                } else if args.schema_file_path.is_some() {
                     assert!(hover_content.schema_uri.is_some(), "The hover target is not defined in the schema.");
                 } else {
                     assert!(hover_content.schema_uri.is_none(), "The hover target is defined in the schema.");
@@ -1180,6 +1284,22 @@ mod hover_keys_value {
 
                 pretty_assertions::assert_eq!(hover_content.accessors.to_string(), $keys, "Keys are not equal");
                 pretty_assertions::assert_eq!(hover_content.value_type.to_string(), $value_type, "Value type are not equal");
+                $(
+                    let expected_keys_order = $keys_order.map(ToString::to_string);
+                    let actual_keys_order = hover_content
+                        .constraints
+                        .as_ref()
+                        .and_then(|constraints| constraints.keys_order.as_ref())
+                        .map(|keys_order| match keys_order {
+                            tombi_schema_store::XTombiTableKeysOrder::All(order) => order.to_string(),
+                            tombi_schema_store::XTombiTableKeysOrder::Groups(groups) => groups
+                                .iter()
+                                .map(|group| format!("{}={}", group.target, group.order))
+                                .collect::<Vec<_>>()
+                                .join(","),
+                        });
+                    pretty_assertions::assert_eq!(actual_keys_order, expected_keys_order, "Keys order is not equal");
+                )?
                 $(
                     let expected_title = $title;
                     pretty_assertions::assert_eq!(
@@ -1238,5 +1358,145 @@ mod hover_keys_value {
                 Ok(())
             }
         }
+    }
+
+    mod hover_table_keys_order {
+        use super::*;
+
+        const NESTED_TABLE_SCHEMA: &str = r#"
+        {
+          "type": "object",
+          "properties": {
+            "nested": {
+              "type": "object",
+              "x-tombi-table-keys-order": "ascending",
+              "properties": {
+                "a": { "type": "integer" },
+                "b": { "type": "integer" }
+              }
+            }
+          }
+        }
+        "#;
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn hides_json_schema_keys_order_when_schema_format_is_disabled(
+                r#"
+                [nested█]
+                b = 1
+                a = 2
+                "#,
+                Schema(NESTED_TABLE_SCHEMA.to_string()),
+                Config(r#"
+                [[schemas]]
+                path = "schema.json"
+                include = ["*.toml"]
+                format.rules.table-keys-order.enabled = false
+                "#.to_string()),
+            ) -> Ok({
+                "Keys": "nested",
+                "Value": "Table?",
+                "Keys Order": None::<&str>
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn prefers_schema_override_over_json_schema_keys_order(
+                r#"
+                [nested█]
+                b = 1
+                a = 2
+                "#,
+                Schema(NESTED_TABLE_SCHEMA.to_string()),
+                Config(r#"
+                [[schemas]]
+                path = "schema.json"
+                include = ["*.toml"]
+                overrides = [
+                  { targets = ["nested"], format.rules.table-keys-order = "descending" }
+                ]
+                "#.to_string()),
+            ) -> Ok({
+                "Keys": "nested",
+                "Value": "Table?",
+                "Keys Order": Some("descending")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn prefers_schema_override_when_schema_format_is_disabled(
+                r#"
+                [nested█]
+                b = 1
+                a = 2
+                "#,
+                Schema(NESTED_TABLE_SCHEMA.to_string()),
+                Config(r#"
+                [[schemas]]
+                path = "schema.json"
+                include = ["*.toml"]
+                format.rules.table-keys-order.enabled = false
+                overrides = [
+                  { targets = ["nested"], format.rules.table-keys-order = "descending" }
+                ]
+                "#.to_string()),
+            ) -> Ok({
+                "Keys": "nested",
+                "Value": "Table?",
+                "Keys Order": Some("descending")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn prefers_comment_directive_over_schema_override_and_json_schema_keys_order(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+                [nested█]
+                b = 1
+                a = 2
+                "#,
+                Schema(NESTED_TABLE_SCHEMA.to_string()),
+                Config(r#"
+                [[schemas]]
+                path = "schema.json"
+                include = ["*.toml"]
+                overrides = [
+                  { targets = ["nested"], format.rules.table-keys-order = "ascending" }
+                ]
+                "#.to_string()),
+            ) -> Ok({
+                "Keys": "nested",
+                "Value": "Table?",
+                "Keys Order": Some("descending")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn current_tombi_config_disables_json_schema_keys_order_in_hover(
+                r#"
+                schema.catalog.paths = ["https://www.schemastore.org/api/json/catalog.json"]
+
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+
+                [[schemas█]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                format.rules.table-keys-order.enabled = false
+                "#,
+                SourcePath(std::path::PathBuf::from("tombi.toml")),
+            ) -> Ok({
+                "Keys": "schemas[1]",
+                "Value": "Table",
+                "Schema": true,
+                "Keys Order": None::<&str>
+            });
+        );
     }
 }

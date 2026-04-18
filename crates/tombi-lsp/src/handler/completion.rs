@@ -83,10 +83,6 @@ pub async fn handle_completion(
         .ok()
         .flatten();
 
-    let root_schema = source_schema
-        .as_ref()
-        .and_then(|schema| schema.root_schema.as_deref());
-
     // Skip completion if the trigger character is a whitespace or if there is no schema.
     if let Some(CompletionContext {
         trigger_kind: CompletionTriggerKind::TRIGGER_CHARACTER,
@@ -98,7 +94,11 @@ pub async fn handle_completion(
         let pos_line = position.line as usize;
         if pos_line > 0
             && let Some(prev_line) = &document_source.text().lines().nth(pos_line - 1)
-            && (prev_line.trim().is_empty() || root_schema.is_none())
+            && (prev_line.trim().is_empty()
+                || source_schema
+                    .as_ref()
+                    .and_then(|schema| schema.root_schema.as_deref())
+                    .is_none())
         {
             log::trace!("completion skipped due to consecutive line breaks");
             return Ok(None);
@@ -145,19 +145,12 @@ pub async fn handle_completion(
                 return Ok(Some(Vec::with_capacity(0)));
             };
 
-            let schema_context = tombi_schema_store::SchemaContext {
+            let schema_context = tombi_schema_store::SchemaContext::from_source_schema(
                 toml_version,
-                root_schema,
-                sub_schema_uri_map: source_schema
-                    .as_ref()
-                    .map(|schema| &schema.sub_schema_uri_map),
-                deprecated_lint_level: source_schema
-                    .as_ref()
-                    .and_then(|schema| schema.deprecated_lint_level),
-                schema_visits: Default::default(),
-                store: &schema_store,
-                strict: None,
-            };
+                source_schema.as_ref(),
+                &schema_store,
+                None,
+            );
 
             completion_items.extend(
                 find_completion_contents_with_tree(

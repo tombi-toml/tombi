@@ -41,6 +41,9 @@ macro_rules! test_format {
                 pub toml_version: TomlVersion,
                 pub options: FormatOptions,
                 pub schema_path: Option<std::path::PathBuf>,
+                pub source_path: Option<std::path::PathBuf>,
+                pub config_toml: Option<String>,
+                pub test_files: Vec<(std::path::PathBuf, String)>,
             }
 
             #[allow(unused)]
@@ -70,6 +73,40 @@ macro_rules! test_format {
                 }
             }
 
+            #[allow(unused)]
+            pub struct SourcePath(pub std::path::PathBuf);
+
+            impl ApplyTestArg for SourcePath {
+                fn apply(self, args: &mut TestArgs) {
+                    args.source_path = Some(self.0);
+                }
+            }
+
+            #[allow(unused)]
+            pub struct Config<T>(pub T);
+
+            impl<T> ApplyTestArg for Config<T>
+            where
+                T: Into<String>,
+            {
+                fn apply(self, args: &mut TestArgs) {
+                    args.config_toml = Some(self.0.into());
+                }
+            }
+
+            #[allow(unused)]
+            pub struct TestFile<P, C>(pub P, pub C);
+
+            impl<P, C> ApplyTestArg for TestFile<P, C>
+            where
+                P: Into<std::path::PathBuf>,
+                C: Into<String>,
+            {
+                fn apply(self, args: &mut TestArgs) {
+                    args.test_files.push((self.0.into(), self.1.into()));
+                }
+            }
+
             #[allow(unused_mut)]
             let mut args = TestArgs::default();
             $(
@@ -78,8 +115,45 @@ macro_rules! test_format {
 
             // Initialize schema store
             let schema_store = SchemaStore::new();
+            let temp_dir = if args.config_toml.is_some() || !args.test_files.is_empty() || args.source_path.is_some() {
+                let temp_dir = std::env::temp_dir().join(format!(
+                    "tombi_formatter_test_{}_{}",
+                    std::process::id(),
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .expect("time should be after unix epoch")
+                        .as_nanos()
+                ));
+                std::fs::create_dir_all(&temp_dir).expect("failed to create test temp dir");
 
-            if let Some(schema_path) = &args.schema_path {
+                for (path, content) in &args.test_files {
+                    let file_path = temp_dir.join(path);
+                    if let Some(parent) = file_path.parent() {
+                        std::fs::create_dir_all(parent).expect("failed to create test file parent");
+                    }
+                    std::fs::write(&file_path, dedent(content)).expect("failed to write test file");
+                }
+
+                Some(temp_dir)
+            } else {
+                None
+            };
+
+            if let Some(config_toml) = args.config_toml.as_ref() {
+                let config_path = temp_dir
+                    .as_ref()
+                    .expect("temp dir should exist for config")
+                    .join(tombi_config::TOMBI_TOML_FILENAME);
+                std::fs::write(&config_path, dedent(config_toml))
+                    .expect("failed to write test config");
+                let config = serde_tombi::config::try_from_path(&config_path)
+                    .expect("failed to parse test config")
+                    .expect("test config should exist");
+                schema_store
+                    .load_config(&config, Some(&config_path))
+                    .await
+                    .expect("failed to load test config");
+            } else if let Some(schema_path) = &args.schema_path {
                 let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path.as_path())
                     .expect("failed to convert test schema path to schema uri");
                 schema_store
@@ -92,7 +166,17 @@ macro_rules! test_format {
             }
 
             // Initialize formatter
-            let source_path = tombi_test_lib::project_root_path().join("test.toml");
+            let default_source_path = tombi_test_lib::project_root_path().join("test.toml");
+            let source_path = args
+                .source_path
+                .as_ref()
+                .map(|path| {
+                    temp_dir
+                        .as_ref()
+                        .map(|temp_dir| temp_dir.join(path))
+                        .unwrap_or_else(|| path.clone())
+                })
+                .unwrap_or(default_source_path);
             let formatter = Formatter::new(
                 args.toml_version,
                 &args.options,
@@ -124,6 +208,10 @@ macro_rules! test_format {
                 expected,
                 "Formatting should be equal to expected"
             );
+
+            if let Some(temp_dir) = temp_dir {
+                let _ = std::fs::remove_dir_all(temp_dir);
+            }
         }
     };
 
@@ -147,6 +235,9 @@ macro_rules! test_format {
                 pub toml_version: TomlVersion,
                 pub options: FormatOptions,
                 pub schema_path: Option<std::path::PathBuf>,
+                pub source_path: Option<std::path::PathBuf>,
+                pub config_toml: Option<String>,
+                pub test_files: Vec<(std::path::PathBuf, String)>,
             }
 
             #[allow(unused)]
@@ -176,6 +267,40 @@ macro_rules! test_format {
                 }
             }
 
+            #[allow(unused)]
+            pub struct SourcePath(pub std::path::PathBuf);
+
+            impl ApplyTestArg for SourcePath {
+                fn apply(self, config: &mut TestArgs) {
+                    config.source_path = Some(self.0);
+                }
+            }
+
+            #[allow(unused)]
+            pub struct Config<T>(pub T);
+
+            impl<T> ApplyTestArg for Config<T>
+            where
+                T: Into<String>,
+            {
+                fn apply(self, config: &mut TestArgs) {
+                    config.config_toml = Some(self.0.into());
+                }
+            }
+
+            #[allow(unused)]
+            pub struct TestFile<P, C>(pub P, pub C);
+
+            impl<P, C> ApplyTestArg for TestFile<P, C>
+            where
+                P: Into<std::path::PathBuf>,
+                C: Into<String>,
+            {
+                fn apply(self, args: &mut TestArgs) {
+                    args.test_files.push((self.0.into(), self.1.into()));
+                }
+            }
+
             #[allow(unused_mut)]
             let mut config = TestArgs::default();
             $(
@@ -184,8 +309,46 @@ macro_rules! test_format {
 
             // Initialize schema store
             let schema_store = SchemaStore::new();
+            let temp_dir = if config.config_toml.is_some() || !config.test_files.is_empty() || config.source_path.is_some() {
+                let temp_dir = std::env::temp_dir().join(format!(
+                    "tombi_formatter_test_{}_{}",
+                    std::process::id(),
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .expect("time should be after unix epoch")
+                        .as_nanos()
+                ));
+                std::fs::create_dir_all(&temp_dir).expect("failed to create test temp dir");
 
-            if let Some(schema_path) = config.schema_path {
+                for (path, content) in &config.test_files {
+                    let file_path = temp_dir.join(path);
+                    if let Some(parent) = file_path.parent() {
+                        std::fs::create_dir_all(parent).expect("failed to create test file parent");
+                    }
+                    std::fs::write(&file_path, textwrap::dedent(content))
+                        .expect("failed to write test file");
+                }
+
+                Some(temp_dir)
+            } else {
+                None
+            };
+
+            if let Some(config_toml) = config.config_toml.as_ref() {
+                let config_path = temp_dir
+                    .as_ref()
+                    .expect("temp dir should exist for config")
+                    .join(tombi_config::TOMBI_TOML_FILENAME);
+                std::fs::write(&config_path, textwrap::dedent(config_toml))
+                    .expect("failed to write test config");
+                let test_config = serde_tombi::config::try_from_path(&config_path)
+                    .expect("failed to parse test config")
+                    .expect("test config should exist");
+                schema_store
+                    .load_config(&test_config, Some(&config_path))
+                    .await
+                    .expect("failed to load test config");
+            } else if let Some(schema_path) = config.schema_path {
                 let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path)
                     .expect("failed to convert test schema path to schema uri");
                 schema_store
@@ -198,7 +361,17 @@ macro_rules! test_format {
             }
 
             // Initialize formatter
-            let source_path = tombi_test_lib::project_root_path().join("test.toml");
+            let default_source_path = tombi_test_lib::project_root_path().join("test.toml");
+            let source_path = config
+                .source_path
+                .as_ref()
+                .map(|path| {
+                    temp_dir
+                        .as_ref()
+                        .map(|temp_dir| temp_dir.join(path))
+                        .unwrap_or_else(|| path.clone())
+                })
+                .unwrap_or(default_source_path);
             let formatter = Formatter::new(
                 config.toml_version,
                 &config.options,
@@ -213,6 +386,10 @@ macro_rules! test_format {
                 Err(errors) => {
                     pretty_assertions::assert_ne!(errors, vec![]);
                 }
+            }
+
+            if let Some(temp_dir) = temp_dir {
+                let _ = std::fs::remove_dir_all(temp_dir);
             }
         }
     };

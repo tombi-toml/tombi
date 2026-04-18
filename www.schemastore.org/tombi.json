@@ -944,6 +944,27 @@
               "type": "null"
             }
           ]
+        },
+        "format": {
+          "title": "Schema-specific format options",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaFormatOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "overrides": {
+          "title": "Schema-specific overrides",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/SchemaOverrideItem"
+          }
         }
       },
       "additionalProperties": false,
@@ -992,6 +1013,144 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "schema"
     },
+    "SchemaFormatOptions": {
+      "title": "Schema-specific format options",
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Schema-specific format rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaFormatRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
+    },
+    "SchemaFormatRules": {
+      "title": "Schema-specific format rules",
+      "type": "object",
+      "properties": {
+        "table-keys-order": {
+          "title": "Whether schema-defined table key ordering is enabled",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaTableKeysOrderRule"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "SchemaTableKeysOrderRule": {
+      "title": "Schema-defined table key ordering",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "title": "Whether schema-defined table key ordering is enabled",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
+    },
+    "SchemaOverrideItem": {
+      "title": "Schema-specific override item",
+      "type": "object",
+      "properties": {
+        "targets": {
+          "title": "Accessor pattern(s) to override",
+          "description": "Use `\"\"` to target the root table.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Target"
+          },
+          "minItems": 1
+        },
+        "format": {
+          "title": "Format options to override",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaOverrideFormatOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "targets"
+      ],
+      "x-tombi-table-keys-order": "schema"
+    },
+    "Target": {
+      "type": "string"
+    },
+    "SchemaOverrideFormatOptions": {
+      "title": "Schema-specific override format options",
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Schema-specific override format rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaOverrideFormatRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
+    },
+    "SchemaOverrideFormatRules": {
+      "title": "Schema-specific override format rules",
+      "type": "object",
+      "properties": {
+        "table-keys-order": {
+          "title": "Override table key ordering for matched roots",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TableKeysOrder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "TableKeysOrder": {
+      "type": "string",
+      "enum": [
+        "ascending",
+        "descending",
+        "schema",
+        "version-sort"
+      ]
+    },
     "SubSchema": {
       "title": "The schema for the sub value",
       "type": "object",
@@ -1028,6 +1187,27 @@
               "type": "null"
             }
           ]
+        },
+        "format": {
+          "title": "Schema-specific format options",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaFormatOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "overrides": {
+          "title": "Schema-specific overrides",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/SchemaOverrideItem"
+          }
         }
       },
       "additionalProperties": false,
@@ -1230,17 +1410,17 @@
         "enabled": {
           "title": "Enable feature",
           "description": "Whether this feature is enabled.",
-          "anyOf": [
+          "allOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
-            },
-            {
-              "type": "null"
             }
           ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "enabled"
+      ]
     },
     "CargoExtensionFeatureTree": {
       "type": "object",
@@ -1550,7 +1730,7 @@
           "description": "Whether document links are created for `Cargo.toml` references.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+              "$ref": "#/definitions/ToggleFeatureDefaultFalse"
             },
             {
               "type": "null"
@@ -1574,7 +1754,7 @@
           "description": "Whether document links are created for Git references.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+              "$ref": "#/definitions/ToggleFeatureDefaultFalse"
             },
             {
               "type": "null"
@@ -1586,7 +1766,7 @@
           "description": "Whether document links are created for filesystem paths.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+              "$ref": "#/definitions/ToggleFeatureDefaultFalse"
             },
             {
               "type": "null"
@@ -1598,7 +1778,7 @@
           "description": "Whether document links are created for `workspace = true` references.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+              "$ref": "#/definitions/ToggleFeatureDefaultFalse"
             },
             {
               "type": "null"
@@ -1608,6 +1788,28 @@
       },
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
+    },
+    "ToggleFeatureDefaultFalse": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "title": "Enable feature",
+          "description": "Whether this nested feature is enabled.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultFalse"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "BoolDefaultFalse": {
+      "type": "boolean",
+      "default": false
     },
     "CargoHoverFeatures": {
       "anyOf": [
@@ -1963,7 +2165,7 @@
           "description": "Whether document links are created for `pyproject.toml` references.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+              "$ref": "#/definitions/ToggleFeatureDefaultFalse"
             },
             {
               "type": "null"
@@ -2140,7 +2342,7 @@
           "description": "Configure Tombi hover features.",
           "anyOf": [
             {
-              "$ref": "#/definitions/EnabledOnly"
+              "$ref": "#/definitions/TombiHoverFeatures"
             },
             {
               "type": "null"
@@ -2229,7 +2431,7 @@
           "description": "Whether document links are created for filesystem paths.",
           "anyOf": [
             {
-              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+              "$ref": "#/definitions/ToggleFeatureDefaultFalse"
             },
             {
               "type": "null"
@@ -2239,6 +2441,20 @@
       },
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
+    },
+    "TombiHoverFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/TombiHoverFeatureTree"
+        }
+      ]
+    },
+    "TombiHoverFeatureTree": {
+      "type": "object",
+      "additionalProperties": false
     }
   }
 }

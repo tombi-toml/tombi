@@ -4,10 +4,10 @@ use tombi_comment_directive::value::{
     TableCommonFormatRules, TableCommonLintRules, TombiValueDirectiveContent,
 };
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::{CurrentSchema, SchemaContext};
+use tombi_schema_store::{CurrentSchema, SchemaContext, TableOrderOverrides};
 use tombi_syntax::SyntaxElement;
 
-use crate::rule::table_keys_order::{TableOrderOverrides, get_sorted_accessors, table_keys_order};
+use crate::rule::table_keys_order::{get_sorted_accessors, table_keys_order};
 
 pub async fn root_table_keys_order<'a>(
     key_value_groups: Vec<tombi_ast::KeyValueGroup>,
@@ -50,6 +50,7 @@ pub async fn root_table_keys_order<'a>(
                         .into_document_tree_and_errors(schema_context.toml_version)
                         .tree,
                 ),
+                &[],
                 key_values,
                 current_schema,
                 schema_context,

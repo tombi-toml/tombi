@@ -9,7 +9,6 @@ use tombi_syntax::SyntaxElement;
 
 use crate::node::make_dangling_comment_group_from_leading_comments;
 use crate::rule::root_table_keys_order;
-use crate::rule::{TableOrderOverride, TableOrderOverrides};
 use tombi_ast::{DanglingCommentGroupOr, GetHeaderAccessors};
 
 impl crate::Edit for tombi_ast::Root {
@@ -25,7 +24,12 @@ impl crate::Edit for tombi_ast::Root {
             let mut changes = vec![];
             let mut key_value_groups = vec![];
             let mut table_or_array_of_tables = vec![];
-            let mut table_order_overrides = TableOrderOverrides::default();
+
+            let mut table_order_overrides = schema_context
+                .overrides
+                .table_keys_order
+                .map(ToOwned::to_owned)
+                .unwrap_or_default();
 
             // Detect document comment directives.
             // If dangling comments exist, directives should already be there.
@@ -130,8 +134,11 @@ impl crate::Edit for tombi_ast::Root {
                             .unwrap_or(false);
                         let order = comment_directive.table_keys_order().map(Into::into);
                         if disabled || order.is_some() {
-                            table_order_overrides
-                                .insert(header_accessors, TableOrderOverride { disabled, order });
+                            table_order_overrides.insert_comment_directive_override(
+                                header_accessors,
+                                disabled,
+                                order,
+                            );
                         }
                     }
                 }

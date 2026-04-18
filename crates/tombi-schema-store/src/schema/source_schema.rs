@@ -1,36 +1,45 @@
 use std::sync::Arc;
 
-use itertools::Itertools;
 use tombi_config::TomlVersion;
 use tombi_severity_level::SeverityLevelDefaultWarn;
 
-use super::{DocumentSchema, SchemaUri};
-use crate::{RootAccessor, RootAccessors};
+use super::{DocumentSchema, SchemaOverrides, SchemaUri, TableOrderOverride};
+use crate::RootAccessor;
 
-pub type SubSchemaUriMap = tombi_hashmap::IndexMap<Vec<RootAccessor>, SchemaUri>;
-
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct SourceSchema {
     pub root_schema: Option<Arc<DocumentSchema>>,
-    pub sub_schema_uri_map: SubSchemaUriMap,
+    pub sub_schema_map: SourceSubSchemaMap,
     pub deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
+    pub table_keys_order_enabled: bool,
+    pub overrides: SchemaOverrides,
     /// TOML version override from `[[schemas]]` config entry.
     ///
     /// Use [`toml_version()`](Self::toml_version) to get the resolved value.
     toml_version: Option<TomlVersion>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceSubSchema {
+    pub schema_uri: SchemaUri,
+}
+
+pub type SourceSubSchemaMap = tombi_hashmap::IndexMap<Vec<RootAccessor>, SourceSubSchema>;
+
 impl SourceSchema {
     pub fn new(
         root_schema: Option<Arc<DocumentSchema>>,
-        sub_schema_uri_map: SubSchemaUriMap,
+        sub_schema_map: SourceSubSchemaMap,
         toml_version: Option<TomlVersion>,
         deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
+        table_keys_order_enabled: bool,
     ) -> Self {
         Self {
             root_schema,
-            sub_schema_uri_map,
+            sub_schema_map,
             deprecated_lint_level,
+            table_keys_order_enabled,
+            overrides: Default::default(),
             toml_version,
         }
     }
@@ -45,25 +54,16 @@ impl SourceSchema {
                 .and_then(|root| root.toml_version())
         })
     }
-}
 
-impl std::fmt::Debug for SourceSchema {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let root_schema_uri = self
-            .root_schema
-            .as_ref()
-            .map(|schema| schema.schema_uri.to_string());
-        let sub_schema_uri_map = self
-            .sub_schema_uri_map
-            .iter()
-            .map(|(accessors, url)| {
-                format!("[{:?}]: {}", RootAccessors::from(accessors.clone()), url)
-            })
-            .collect_vec()
-            .join(", ");
-        write!(
-            f,
-            "SourceSchema {{ root_schema: {root_schema_uri:?}, sub_schema_uri_map: {sub_schema_uri_map:?} }}"
-        )
+    pub fn push_table_order_override(
+        &mut self,
+        target: Vec<RootAccessor>,
+        table_order_override: TableOrderOverride,
+    ) {
+        self.overrides.table_keys_order.push_schema_override(
+            target,
+            table_order_override.disabled,
+            table_order_override.order,
+        );
     }
 }
