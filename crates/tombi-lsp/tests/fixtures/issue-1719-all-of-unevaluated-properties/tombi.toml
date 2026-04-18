@@ -1,0 +1,3 @@
+[[schemas]]
+path = "./test_schema.json"
+include = ["test.toml"]

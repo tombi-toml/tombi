@@ -112,6 +112,48 @@ mod diagnostic {
             ]);
         );
     }
+
+    /// Test for issue #1719: local schema with `allOf` + `unevaluatedProperties`
+    /// https://github.com/tombi-toml/tombi/issues/1719
+    mod issue_1719_all_of_unevaluated_properties {
+        use tombi_test_lib::project_root_path;
+
+        use super::*;
+        use std::path::PathBuf;
+
+        fn fixture_path() -> PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-1719-all-of-unevaluated-properties")
+        }
+
+        test_diagnostic_file!(
+            #[tokio::test]
+            async fn test_toml_has_no_false_unevaluated_property_error_on_open(
+                SourcePath(fixture_path().join("test.toml")),
+                ConfigPath(fixture_path().join("tombi.toml")),
+            ) -> Ok([]);
+        );
+
+        test_diagnostic_file!(
+            #[tokio::test]
+            async fn test_toml_has_no_false_unevaluated_property_error_with_schema_directive_only(
+                SourcePath(
+                    project_root_path().join(
+                        "crates/tombi-lsp/tests/fixtures/issue-1719-schema-directive-only/test.toml"
+                    )
+                ),
+            ) -> Ok([]);
+        );
+
+        test_diagnostic_file!(
+            #[tokio::test]
+            async fn first_pull_diagnostic_after_open_has_no_false_unevaluated_property(
+                SourcePath(fixture_path().join("test.toml")),
+                ConfigPath(fixture_path().join("tombi.toml")),
+                LspDiagnosticMode(tombi_lsp::backend::DiagnosticMode::Pull),
+            ) -> Ok([]);
+        );
+    }
 }
 
 // Unified test macro
@@ -154,6 +196,7 @@ macro_rules! test_diagnostic {
             source_text: Option<String>,
             schema_file_path: Option<std::path::PathBuf>,
             config_file_path: Option<std::path::PathBuf>,
+            diagnostic_mode: Option<tombi_lsp::backend::DiagnosticMode>,
             backend_options: tombi_lsp::backend::Options,
         }
 
@@ -198,6 +241,15 @@ macro_rules! test_diagnostic {
             }
         }
 
+        #[allow(unused)]
+        struct LspDiagnosticMode(tombi_lsp::backend::DiagnosticMode);
+
+        impl ApplyTestArg for LspDiagnosticMode {
+            fn apply(self, args: &mut TestArgs) {
+                args.diagnostic_mode = Some(self.0);
+            }
+        }
+
         impl ApplyTestArg for tombi_lsp::backend::Options {
             fn apply(self, args: &mut TestArgs) {
                 args.backend_options = self;
@@ -214,6 +266,10 @@ macro_rules! test_diagnostic {
 
         let backend = service.inner();
 
+        if let Some(diagnostic_mode) = args.diagnostic_mode {
+            backend.capabilities.write().await.diagnostic_mode = diagnostic_mode;
+        }
+
         // Load config file if specified
         if let Some(config_file_path) = args.config_file_path.as_ref() {
             let config_content = std::fs::read_to_string(config_file_path)
@@ -227,7 +283,7 @@ macro_rules! test_diagnostic {
                 .update_config_with_path(tombi_config, config_file_path)
                 .await
                 .map_err(|e| format!("Failed to load config file {}: {}", config_file_path.display(), e))?;
-        } else if let Some(schema_file_path) = config.schema_file_path.as_ref() {
+        } else if let Some(schema_file_path) = args.schema_file_path.as_ref() {
             // Fallback to schema path if no config file
             let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
                 .expect(
@@ -256,7 +312,7 @@ macro_rules! test_diagnostic {
         }
 
         // Determine source based on config
-        let (toml_text, toml_file_url) = if let Some(source_text) = config.source_text {
+        let (toml_text, toml_file_url) = if let Some(source_text) = args.source_text {
             // Use inline text via SourceText
             use std::io::Write;
 
@@ -264,7 +320,7 @@ macro_rules! test_diagnostic {
 
             let current_dir = std::env::current_dir().expect("failed to get current directory");
             // If ConfigPath is specified, use its parent directory for temp file
-            let temp_dir = if let Some(config_path) = config.config_file_path.as_ref() {
+            let temp_dir = if let Some(config_path) = args.config_file_path.as_ref() {
                 config_path.parent().ok_or("failed to get parent directory")?
             } else {
                 current_dir.as_path()
@@ -287,7 +343,7 @@ macro_rules! test_diagnostic {
             (toml_text, toml_file_url)
         } else {
             // Use file path via SourcePath
-            let source_path = config.source_file_path.as_ref()
+            let source_path = args.source_file_path.as_ref()
                 .expect("SourcePath or SourceText must be provided");
             let toml_text = std::fs::read_to_string(source_path)
                 .map_err(|e| format!("Failed to read source file {}: {}", source_path.display(), e))?;
@@ -441,6 +497,7 @@ macro_rules! test_diagnostic_file {
             source_text: Option<String>,
             schema_file_path: Option<std::path::PathBuf>,
             config_file_path: Option<std::path::PathBuf>,
+            diagnostic_mode: Option<tombi_lsp::backend::DiagnosticMode>,
             backend_options: tombi_lsp::backend::Options,
         }
 
@@ -485,6 +542,15 @@ macro_rules! test_diagnostic_file {
             }
         }
 
+        #[allow(unused)]
+        struct LspDiagnosticMode(tombi_lsp::backend::DiagnosticMode);
+
+        impl ApplyTestArg for LspDiagnosticMode {
+            fn apply(self, config: &mut TestArgs) {
+                config.diagnostic_mode = Some(self.0);
+            }
+        }
+
         impl ApplyTestArg for tombi_lsp::backend::Options {
             fn apply(self, config: &mut TestArgs) {
                 config.backend_options = self;
@@ -504,6 +570,10 @@ macro_rules! test_diagnostic_file {
         });
 
         let backend = service.inner();
+
+        if let Some(diagnostic_mode) = config.diagnostic_mode {
+            backend.capabilities.write().await.diagnostic_mode = diagnostic_mode;
+        }
 
         // Load config file if specified
         if let Some(config_file_path) = config.config_file_path.as_ref() {

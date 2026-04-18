@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema#",
+  "title": "Test Schema",
+  "type": "object",
+  "properties": {
+    "a": {
+      "$ref": "#/definitions/type1"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "shared": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    },
+    "type1": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/shared"
+        }
+      ],
+      "properties": {
+        "b": {
+          "type": "integer"
+        }
+      },
+      "unevaluatedProperties": false
+    }
+  }
+}
