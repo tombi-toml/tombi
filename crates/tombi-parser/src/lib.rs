@@ -270,4 +270,30 @@ macro_rules! test_parser {
         }
     };
 
+    {#[test] fn $name:ident($source:expr) -> Err(|$parsed:ident, $root:ident| -> $assert_expr:expr)} => {
+        #[test]
+        fn $name() {
+            tombi_test_lib::init_log();
+
+            let $parsed = $crate::parse(textwrap::dedent($source).trim());
+
+            log::debug!("syntax_node: {:#?}", $parsed.syntax_node());
+
+            assert!(
+                !$parsed.errors.is_empty(),
+                "Err(|parsed, root| -> ...) expected parse errors, but there were none"
+            );
+
+            use tombi_ast::AstNode as _;
+            let $root = tombi_ast::Root::cast($parsed.syntax_node())
+                .expect("parse result must contain ROOT syntax node");
+
+            assert!(
+                $assert_expr,
+                "Err(|parsed, root| -> ...) assertion failed: {}",
+                stringify!($assert_expr)
+            );
+        }
+    };
+
 }

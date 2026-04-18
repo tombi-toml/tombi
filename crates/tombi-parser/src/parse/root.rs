@@ -25,6 +25,9 @@ impl Parse for tombi_ast::Root {
             tombi_ast::KeyValueGroup::parse(p);
 
             if !p.at_ts(TS_LINE_END) {
+                if p.at_ts(TS_NEXT_SECTION) {
+                    break;
+                }
                 invalid_line(p, ExpectedLineBreak);
             }
         }
@@ -65,7 +68,7 @@ fn unknwon_line(p: &mut Parser<'_>) {
 
 #[cfg(test)]
 mod test {
-    use crate::test_parser;
+    use crate::{ErrorKind::*, test_parser};
 
     test_parser! {
         #[test]
@@ -467,5 +470,60 @@ mod test {
                 }
             }
         )
+    }
+
+    test_parser! {
+        #[test]
+        fn recovers_to_next_section_after_invalid_array_value(
+            r#"
+            [[schemas]]
+            path = "tombi://www.schemastore.org/tombi.json"
+            include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+            overrides = [targets=]
+
+            [extensions]
+            "tombi-toml/cargo" = {}
+            "#
+        ) -> Err(|parsed, root| -> {
+            parsed
+                .errors
+                .iter()
+                .any(|error| error.kind() == ExpectedBracketEnd)
+                && root.table_or_array_of_tables().any(|item| match item {
+                    tombi_ast::TableOrArrayOfTable::Table(table) => table
+                        .header()
+                        .and_then(|keys| keys.keys().next())
+                        .and_then(|key| key.token())
+                        .is_some_and(|token| token.text() == "extensions"),
+                    tombi_ast::TableOrArrayOfTable::ArrayOfTable(_) => false,
+                })
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn recovers_to_next_section_after_invalid_inline_table_item(
+            r#"
+            [[schemas]]
+            path = "tombi://www.schemastore.org/tombi.json"
+            include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+            overrides = [{ targets }]
+
+            [extensions]
+            "tombi-toml/cargo" = {}
+            "#
+        ) -> Err(|parsed, root| -> {
+            parsed.errors.iter().any(|error| matches!(
+                error.kind(),
+                ExpectedEqual | ExpectedValue | ExpectedBraceEnd
+            )) && root.table_or_array_of_tables().any(|item| match item {
+                tombi_ast::TableOrArrayOfTable::Table(table) => table
+                    .header()
+                    .and_then(|keys| keys.keys().next())
+                    .and_then(|key| key.token())
+                    .is_some_and(|token| token.text() == "extensions"),
+                tombi_ast::TableOrArrayOfTable::ArrayOfTable(_) => false,
+            })
+        })
     }
 }

@@ -44,6 +44,9 @@ impl Parse for tombi_ast::ArrayOfTable {
             tombi_ast::KeyValueGroup::parse(p);
 
             if !p.at_ts(TS_LINE_END) {
+                if p.at_ts(TS_NEXT_SECTION) {
+                    break;
+                }
                 invalid_line(p, ExpectedLineBreak);
             }
         }

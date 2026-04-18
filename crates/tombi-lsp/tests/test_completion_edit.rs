@@ -87,6 +87,90 @@ mod completion_edit {
                 "#
             );
         }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn tombi_schemars_override_format_inline_table_dot(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.█ }]
+                "#,
+                Select("rules"),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.rules }]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn tombi_schemars_override_format_rules_inline_table_dot(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format = { rules.█ } }]
+                "#,
+                Select("table-keys-order"),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format = { rules.table-keys-order } }]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn tombi_schemars_override_format_rules_table_keys_order_dot(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.rules.table-keys-order.█ }]
+                "#,
+                Select("enabled"),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.rules.table-keys-order.enabled }]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn tombi_schemars_override_format_rules_array_values_order_dot(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.rules.array-values-order.█ }]
+                "#,
+                Select("enabled"),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.rules.array-values-order.enabled }]
+                "#
+            );
+        }
     }
 
     mod cargo_schema {
@@ -1089,6 +1173,7 @@ mod completion_edit {
                     select: Option<String>,
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
+                    completion_context: Option<tower_lsp::lsp_types::CompletionContext>,
                     backend_options: tombi_lsp::backend::Options,
                 }
 
@@ -1127,6 +1212,12 @@ mod completion_edit {
                 impl ApplyTestArg for tombi_lsp::backend::Options {
                     fn apply(self, args: &mut TestArgs) {
                         args.backend_options = self;
+                    }
+                }
+
+                impl ApplyTestArg for tower_lsp::lsp_types::CompletionContext {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.completion_context = Some(self);
                     }
                 }
 
@@ -1245,7 +1336,7 @@ mod completion_edit {
                         partial_result_params: PartialResultParams {
                             partial_result_token: None,
                         },
-                        context: None,
+                        context: args.completion_context,
                     },
                 )
                 .await

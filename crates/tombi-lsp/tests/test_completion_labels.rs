@@ -706,6 +706,414 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_schemars_override_format_inline_table_dot_completion(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.█ }]
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "rules",
+                "{}",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_schemars_override_format_rules_inline_table_dot_completion(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.rules.█ }]
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "array-values-order",
+                "table-keys-order",
+                "{}",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_schemars_override_format_rules_table_keys_order_dot_completion(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.rules.table-keys-order.█ }]
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "\"ascending\"",
+                "\"descending\"",
+                "\"schema\"",
+                "\"version-sort\"",
+                "enabled",
+                "{}",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_schemars_override_format_rules_array_values_order_dot_completion(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.rules.array-values-order.█ }]
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "\"ascending\"",
+                "\"descending\"",
+                "\"version-sort\"",
+                "enabled",
+                "{}",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_schemars_override_targets_equal_completion(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets█ }]
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                ".",
+                "=",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn current_real_tombi_override_format_dot_trigger_character_completion(
+                r#"
+                # Tombi config for this project.
+                #
+                # This file is for checking if the JsonSchema is correct.
+                #
+
+                toml-version = "v1.0.0"
+
+                [files]
+                exclude = [
+                  "editors/intellij/src/test/testData/*",
+                ]
+
+                [format]
+                [format.rules]
+
+                [lint]
+                [lint.rules]
+                key-empty = "warn"
+
+                [lsp]
+                code-action.enabled = true
+
+                [schema]
+                enabled = true
+                catalog = {
+                  paths = [
+                    "tombi://www.schemastore.org/api/json/catalog.json",
+                    "https://www.schemastore.org/api/json/catalog.json",
+                  ],
+                }
+
+                [[schemas]]
+                path = "schemas/type-test.schema.json"
+                include = ["type-test.toml"]
+
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.█ }]
+
+                [extensions]
+                "tombi-toml/cargo" = {
+                  lsp = {
+                    completion = {
+                      dependency-feature.enabled = true,
+                    },
+                  }
+                }
+                "#,
+                SchemaPath(tombi_schema_path()),
+                tower_lsp::lsp_types::CompletionContext {
+                    trigger_kind: tower_lsp::lsp_types::CompletionTriggerKind::TRIGGER_CHARACTER,
+                    trigger_character: Some(".".to_string()),
+                },
+            ) -> Ok([
+                "rules",
+                "{}",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn current_real_tombi_override_format_rules_dot_trigger_character_completion(
+                r#"
+                toml-version = "v1.0.0"
+
+                [files]
+                exclude = [
+                  "editors/intellij/src/test/testData/*",
+                ]
+
+                [format]
+                [format.rules]
+
+                [lint]
+                [lint.rules]
+                key-empty = "warn"
+
+                [lsp]
+                code-action.enabled = true
+
+                [schema]
+                enabled = true
+                catalog = {
+                  paths = [
+                    "tombi://www.schemastore.org/api/json/catalog.json",
+                    "https://www.schemastore.org/api/json/catalog.json",
+                  ],
+                }
+
+                [[schemas]]
+                path = "schemas/type-test.schema.json"
+                include = ["type-test.toml"]
+
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.rules.█ }]
+                "#,
+                SchemaPath(tombi_schema_path()),
+                tower_lsp::lsp_types::CompletionContext {
+                    trigger_kind: tower_lsp::lsp_types::CompletionTriggerKind::TRIGGER_CHARACTER,
+                    trigger_character: Some(".".to_string()),
+                },
+            ) -> Ok([
+                "array-values-order",
+                "table-keys-order",
+                "{}",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn current_real_tombi_override_format_rules_dot_before_equal_trigger_character_completion(
+                r#"
+                toml-version = "v1.0.0"
+
+                [files]
+                exclude = [
+                  "editors/intellij/src/test/testData/*",
+                ]
+
+                [format]
+                [format.rules]
+
+                [lint]
+                [lint.rules]
+                key-empty = "warn"
+
+                [lsp]
+                code-action.enabled = true
+
+                [schema]
+                enabled = true
+                catalog = {
+                  paths = [
+                    "tombi://www.schemastore.org/api/json/catalog.json",
+                    "https://www.schemastore.org/api/json/catalog.json",
+                  ],
+                }
+
+                [[schemas]]
+                path = "schemas/type-test.schema.json"
+                include = ["type-test.toml"]
+
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.rules.█ = "" }]
+                "#,
+                SchemaPath(tombi_schema_path()),
+                tower_lsp::lsp_types::CompletionContext {
+                    trigger_kind: tower_lsp::lsp_types::CompletionTriggerKind::TRIGGER_CHARACTER,
+                    trigger_character: Some(".".to_string()),
+                },
+            ) -> Ok([
+                "array-values-order",
+                "table-keys-order",
+                "{}",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn current_real_tombi_override_format_rules_missing_equal_invoked_completion(
+                r#"
+                toml-version = "v1.0.0"
+
+                [files]
+                exclude = [
+                  "editors/intellij/src/test/testData/*",
+                ]
+
+                [format]
+                [format.rules]
+
+                [lint]
+                [lint.rules]
+                key-empty = "warn"
+
+                [lsp]
+                code-action.enabled = true
+
+                [schema]
+                enabled = true
+                catalog = {
+                  paths = [
+                    "tombi://www.schemastore.org/api/json/catalog.json",
+                    "https://www.schemastore.org/api/json/catalog.json",
+                  ],
+                }
+
+                [[schemas]]
+                path = "schemas/type-test.schema.json"
+                include = ["type-test.toml"]
+
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = [""], format.rules█ }]
+                "#,
+                SchemaPath(tombi_schema_path()),
+                tower_lsp::lsp_types::CompletionContext {
+                    trigger_kind: tower_lsp::lsp_types::CompletionTriggerKind::INVOKED,
+                    trigger_character: None,
+                },
+            ) -> Ok([
+                ".",
+                "=",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn current_real_tombi_override_targets_invoked_completion(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets█ }]
+                "#,
+                SchemaPath(tombi_schema_path()),
+                tower_lsp::lsp_types::CompletionContext {
+                    trigger_kind: tower_lsp::lsp_types::CompletionTriggerKind::INVOKED,
+                    trigger_character: None,
+                },
+            ) -> Ok([
+                ".",
+                "=",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn current_real_tombi_override_targets_value_invoked_completion(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = █ }]
+                "#,
+                SchemaPath(tombi_schema_path()),
+                tower_lsp::lsp_types::CompletionContext {
+                    trigger_kind: tower_lsp::lsp_types::CompletionTriggerKind::INVOKED,
+                    trigger_character: None,
+                },
+            ) -> Ok([
+                "[]",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn current_real_tombi_override_targets_value_with_next_section_invoked_completion(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets = █ }]
+
+                [extensions]
+                "tombi-toml/cargo" = {}
+                "#,
+                SchemaPath(tombi_schema_path()),
+                tower_lsp::lsp_types::CompletionContext {
+                    trigger_kind: tower_lsp::lsp_types::CompletionTriggerKind::INVOKED,
+                    trigger_character: None,
+                },
+            ) -> Ok([
+                "[]",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn current_real_tombi_override_targets_missing_equal_invoked_completion(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets█ }]
+                "#,
+                SchemaPath(tombi_schema_path()),
+                tower_lsp::lsp_types::CompletionContext {
+                    trigger_kind: tower_lsp::lsp_types::CompletionTriggerKind::INVOKED,
+                    trigger_character: None,
+                },
+            ) -> Ok([
+                ".",
+                "=",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn current_real_tombi_override_targets_missing_equal_with_next_section_invoked_completion(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [{ targets█ }]
+
+                [extensions]
+                "tombi-toml/cargo" = {}
+                "#,
+                SchemaPath(tombi_schema_path()),
+                tower_lsp::lsp_types::CompletionContext {
+                    trigger_kind: tower_lsp::lsp_types::CompletionTriggerKind::INVOKED,
+                    trigger_character: None,
+                },
+            ) -> Ok([
+                ".",
+                "=",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_toml_version_v1_0_0_comment_directive(
                 r#"
                 toml-version = "v1.0.0" # tombi:█
@@ -2488,6 +2896,7 @@ mod completion_labels {
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
                     subschemas: Vec<SubSchema>,
+                    completion_context: Option<tower_lsp::lsp_types::CompletionContext>,
                     backend_options: tombi_lsp::backend::Options,
                 }
 
@@ -2529,6 +2938,12 @@ mod completion_labels {
                 impl ApplyTestArg for tombi_lsp::backend::Options {
                     fn apply(self, args: &mut TestArgs) {
                         args.backend_options = self;
+                    }
+                }
+
+                impl ApplyTestArg for tower_lsp::lsp_types::CompletionContext {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.completion_context = Some(self);
                     }
                 }
 
@@ -2664,7 +3079,7 @@ mod completion_labels {
                         partial_result_params: PartialResultParams {
                             partial_result_token: None,
                         },
-                        context: None,
+                        context: args.completion_context,
                     },
                 )
                 .await
