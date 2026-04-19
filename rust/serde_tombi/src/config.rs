@@ -11,7 +11,7 @@ use tombi_config::{
 /// Therefore, [crate::config::from_str], which does not use schema_store and is not async, is called to prevent stack overflow.
 ///
 /// This function is not public and is only used internally.
-pub(crate) fn from_str(
+pub fn from_str(
     toml_text: &str,
     config_path: &std::path::Path,
 ) -> Result<Config, crate::de::Error> {

@@ -137,17 +137,16 @@ async fn get_comment_directive_toml_content_hover_content(
             tombi_hashmap::IndexMap::with_capacity(0),
             Some(toml_version),
             None,
+            true,
+            true,
         );
 
-        let schema_context = tombi_schema_store::SchemaContext {
+        let schema_context = tombi_schema_store::SchemaContext::from_source_schema(
             toml_version,
-            root_schema: source_schema.root_schema.as_deref(),
-            sub_schema_uri_map: None,
-            deprecated_lint_level: None,
-            schema_visits: Default::default(),
-            store: schema_store,
-            strict: None,
-        };
+            Some(&source_schema),
+            schema_store,
+            None,
+        );
 
         if let Some(hover_content) = get_hover_content(
             &directive_ast

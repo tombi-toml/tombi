@@ -5,7 +5,7 @@ use crate::{
     parse::Parse,
     parser::Parser,
     support::{leading_comments, peek_leading_comments, trailing_comment},
-    token_set::TS_INLINE_TABLE_END,
+    token_set::{TS_INLINE_TABLE_END, TS_NEXT_SECTION},
 };
 
 impl Parse for tombi_ast::InlineTable {
@@ -27,6 +27,12 @@ impl Parse for tombi_ast::InlineTable {
 
             let n = peek_leading_comments(p);
             if p.nth_at_ts(n, TS_INLINE_TABLE_END) {
+                break;
+            }
+            if p.nth_at_ts(n, TS_NEXT_SECTION)
+                && (p.recovered_to_next_section() || !matches!(p.previous(), T![,] | T!['{']))
+            {
+                p.mark_recovered_to_next_section();
                 break;
             }
 
@@ -233,6 +239,33 @@ mod test {
                 }
             }
         )
+    }
+
+    test_parser! {
+        #[test]
+        fn recovers_to_next_section_after_invalid_inline_table_value(
+            r#"
+            [[schemas]]
+            overrides = [{ targets }]
+
+            [extensions]
+            "tombi-toml/cargo" = {}
+            "#
+        ) -> Err(|parsed, root| -> {
+            parsed.errors.iter().any(|error| matches!(
+                error.kind(),
+                ExpectedEqual | ExpectedValue | ExpectedBraceEnd
+            )) && root
+                .table_or_array_of_tables()
+                .any(|item| match item {
+                    tombi_ast::TableOrArrayOfTable::Table(table) => table
+                        .header()
+                        .and_then(|keys| keys.keys().next())
+                        .and_then(|key| key.token())
+                        .is_some_and(|token| token.text() == "extensions"),
+                    tombi_ast::TableOrArrayOfTable::ArrayOfTable(_) => false,
+                })
+        })
     }
 
     test_parser! {

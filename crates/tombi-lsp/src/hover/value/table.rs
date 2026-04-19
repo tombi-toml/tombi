@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
+use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
+use tombi_comment_directive_serde::get_comment_directive_content;
 
 use tombi_future::Boxable;
 use tombi_schema_store::{
@@ -98,7 +100,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         .required
                                         .as_ref()
                                         .map(|r| r.contains(&key.value))
-                                        .unwrap_or(false);
+                                        .unwrap_or_default();
 
                                     if let Ok(Some(current_schema)) = table_schema
                                         .resolve_property_schema(
@@ -556,6 +558,16 @@ impl GetHoverContent for tombi_document_tree::Table {
                                 hover_content.as_mut()
                             {
                                 hover_value_content.range = Some(self.range());
+                                if let Some(constraints) = hover_value_content.constraints.as_mut()
+                                {
+                                    constraints.keys_order = schema_context
+                                        .table_keys_order(
+                                            accessors,
+                                            Some(current_schema),
+                                            comment_directive_table_keys_order(self).as_ref(),
+                                        )
+                                        .await;
+                                }
                             } else {
                                 if let Some(one_of_schema) = table_schema.one_of.as_deref() {
                                     if let Some(hover_content) = get_one_of_hover_content(
@@ -684,6 +696,28 @@ impl GetHoverContent for tombi_document_tree::Table {
         }
         .boxed()
     }
+}
+
+fn comment_directive_table_keys_order(
+    table: &tombi_document_tree::Table,
+) -> Option<tombi_schema_store::TableOrderOverride> {
+    let comment_directive = get_comment_directive_content::<
+        TableCommonFormatRules,
+        TableCommonLintRules,
+    >(table.comment_directives()?.cloned())?;
+
+    let (disabled, order) = (
+        comment_directive
+            .table_keys_order_disabled()
+            .unwrap_or_default(),
+        comment_directive.table_keys_order().map(Into::into),
+    );
+
+    (disabled || order.is_some()).then_some(tombi_schema_store::TableOrderOverride {
+        target: Vec::new(),
+        disabled,
+        order,
+    })
 }
 
 impl GetHoverContent for TableSchema {

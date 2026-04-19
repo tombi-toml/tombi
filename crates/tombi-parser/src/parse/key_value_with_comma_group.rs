@@ -4,7 +4,7 @@ use crate::{
     parse::{Parse, is_group_separator},
     parser::Parser,
     support::peek_leading_comments,
-    token_set::{TS_INLINE_TABLE_END, TS_KEY_FIRST},
+    token_set::{TS_INLINE_TABLE_END, TS_KEY_FIRST, TS_NEXT_SECTION},
 };
 
 impl Parse for tombi_ast::KeyValueWithCommaGroup {
@@ -23,9 +23,14 @@ impl Parse for tombi_ast::KeyValueWithCommaGroup {
                 tombi_ast::Comma::parse(p);
             } else if p.nth_at_ts(n, TS_INLINE_TABLE_END) {
                 break;
+            } else if p.recovered_to_next_section() && p.nth_at_ts(n, TS_NEXT_SECTION) {
+                break;
             }
 
             let n = peek_leading_comments(p);
+            if p.recovered_to_next_section() && p.nth_at_ts(n, TS_NEXT_SECTION) {
+                break;
+            }
             if !p.nth_at_ts(n, TS_KEY_FIRST) {
                 break;
             }

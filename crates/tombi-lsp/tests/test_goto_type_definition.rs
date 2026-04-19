@@ -688,7 +688,9 @@ mod goto_type_definition_tests {
                         toml_version: None,
                         path: schema_uri.to_string(),
                         include: vec!["*.toml".to_string()],
-                    lint: None,
+                        lint: None,
+                        format: None,
+                        overrides: None,
                     }));
                 }
 
@@ -707,6 +709,8 @@ mod goto_type_definition_tests {
                         include: vec!["*.toml".to_string()],
                         root: subschema.root.clone(),
                         lint: None,
+                        format: None,
+                        overrides: None,
                     }));
                 }
 

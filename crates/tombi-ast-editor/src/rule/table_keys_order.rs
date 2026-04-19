@@ -7,23 +7,16 @@ use tombi_comment_directive::value::{
 };
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaContext, TableSchema,
-    ValueSchema, XTombiTableKeysOrder,
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaContext,
+    TableOrderOverrides, TableSchema, ValueSchema, XTombiTableKeysOrder,
 };
 use tombi_syntax::SyntaxElement;
 use tombi_validator::Validate;
 use tombi_x_keyword::{TableKeysOrder, TableKeysOrderGroupKind};
 
-#[derive(Debug, Clone, Copy)]
-pub struct TableOrderOverride {
-    pub disabled: bool,
-    pub order: Option<TableKeysOrder>,
-}
-
-pub type TableOrderOverrides = tombi_hashmap::HashMap<Vec<Accessor>, TableOrderOverride>;
-
 pub async fn table_keys_order<'a>(
     value: &'a tombi_document_tree::Value,
+    accessors: &'a [tombi_schema_store::Accessor],
     key_values: Vec<tombi_ast::KeyValue>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -35,17 +28,21 @@ pub async fn table_keys_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    if comment_directive
+    let (disabled, order) = comment_directive
         .as_ref()
-        .and_then(|c| c.table_keys_order_disabled())
-        .unwrap_or(false)
-    {
+        .map(|comment_directive| {
+            (
+                comment_directive
+                    .table_keys_order_disabled()
+                    .unwrap_or_default(),
+                comment_directive.table_keys_order().map(Into::into),
+            )
+        })
+        .unwrap_or_default();
+
+    if disabled {
         return Vec::with_capacity(0);
     }
-
-    let order = comment_directive
-        .as_ref()
-        .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
 
     let old = std::ops::RangeInclusive::new(
         SyntaxElement::Node(key_values.first().unwrap().syntax().clone()),
@@ -54,7 +51,7 @@ pub async fn table_keys_order<'a>(
 
     let Some(sorted_key_values) = get_sorted_accessors(
         value,
-        &[],
+        accessors,
         key_values
             .into_iter()
             .map(|kv| {
@@ -134,13 +131,26 @@ where
                                 .await
                                 .is_ok()
                             {
+                                let resolved_order = if order.is_some() {
+                                    order
+                                } else if schema_context
+                                    .table_keys_order_enabled(
+                                        accessors,
+                                        current_schema.schema_uri.as_ref(),
+                                    )
+                                    .await
+                                {
+                                    *keys_order
+                                } else {
+                                    None
+                                };
                                 return get_sorted_accessors(
                                     value,
                                     accessors,
                                     targets.clone(),
                                     Some(current_schema),
                                     schema_context,
-                                    order.or(*keys_order),
+                                    resolved_order,
                                     table_order_overrides,
                                 )
                                 .await;
@@ -173,17 +183,22 @@ where
                     .iter()
                     .all(|(accessor, _)| matches!(accessor, Accessor::Key(_))) =>
             {
-                let table_override =
-                    table_order_overrides.and_then(|overrides| overrides.get(accessors));
-                let table_order_override = table_override.and_then(|override_order| {
-                    if override_order.disabled {
-                        None
-                    } else {
-                        override_order.order
-                    }
-                });
-                let table_order =
-                    get_table_keys_order(table_order_override.or(order), current_schema);
+                let table_override = table_order_overrides
+                    .and_then(|overrides| overrides.get(accessors))
+                    .or_else(|| schema_context.table_order_override(accessors));
+                let comment_directive_override =
+                    order.map(|order| tombi_schema_store::TableOrderOverride {
+                        target: Vec::new(),
+                        disabled: false,
+                        order: Some(order),
+                    });
+                let table_order = schema_context
+                    .table_keys_order(
+                        accessors,
+                        current_schema,
+                        table_override.or(comment_directive_override.as_ref()),
+                    )
+                    .await;
                 let table_schema = current_schema.and_then(|current_schema| {
                     if let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref() {
                         Some(table_schema)
@@ -193,8 +208,9 @@ where
                 });
 
                 let sorted_targets = if table_override
+                    .as_ref()
                     .map(|override_order| override_order.disabled)
-                    .unwrap_or(false)
+                    .unwrap_or_default()
                 {
                     sort_targets_map.into_iter().collect_vec()
                 } else {
@@ -227,7 +243,7 @@ where
                                     targets,
                                     Some(&current_schema),
                                     schema_context,
-                                    order,
+                                    None,
                                     table_order_overrides,
                                 )
                                 .await?,
@@ -257,7 +273,7 @@ where
                                     targets,
                                     Some(&current_schema),
                                     schema_context,
-                                    order,
+                                    None,
                                     table_order_overrides,
                                 )
                                 .await?,
@@ -277,7 +293,7 @@ where
                             targets,
                             None,
                             schema_context,
-                            order,
+                            None,
                             table_order_overrides,
                         )
                         .await?,
@@ -317,7 +333,7 @@ where
                                 targets,
                                 Some(&current_schema),
                                 schema_context,
-                                order,
+                                None,
                                 table_order_overrides,
                             )
                             .await?,
@@ -339,7 +355,7 @@ where
                             targets,
                             None,
                             schema_context,
-                            order,
+                            None,
                             table_order_overrides,
                         )
                         .await?,
@@ -396,23 +412,6 @@ async fn sort_targets<T>(
         }
     };
     targets
-}
-
-fn get_table_keys_order(
-    order: Option<TableKeysOrder>,
-    current_schema: Option<&CurrentSchema>,
-) -> Option<XTombiTableKeysOrder> {
-    match order {
-        Some(order) => Some(XTombiTableKeysOrder::All(order)),
-        None => {
-            if let Some(current_schema) = current_schema
-                && let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref()
-            {
-                return table_schema.keys_order.clone();
-            }
-            None
-        }
-    }
 }
 
 async fn sort_table_targets<T>(

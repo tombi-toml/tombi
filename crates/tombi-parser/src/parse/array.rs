@@ -5,7 +5,7 @@ use crate::{
     parse::Parse,
     parser::Parser,
     support::{leading_comments, peek_leading_comments, trailing_comment},
-    token_set::TS_ARRAY_END,
+    token_set::{TS_ARRAY_END, TS_NEXT_SECTION},
 };
 
 impl Parse for tombi_ast::Array {
@@ -27,6 +27,12 @@ impl Parse for tombi_ast::Array {
 
             let n = peek_leading_comments(p);
             if p.nth_at_ts(n, TS_ARRAY_END) {
+                break;
+            }
+            if p.nth_at_ts(n, TS_NEXT_SECTION)
+                && (p.recovered_to_next_section() || !matches!(p.previous(), T![,] | T!['[']))
+            {
+                p.mark_recovered_to_next_section();
                 break;
             }
 

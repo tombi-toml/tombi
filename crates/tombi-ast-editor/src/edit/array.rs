@@ -91,13 +91,6 @@ impl crate::Edit for tombi_ast::Array {
                     },
                 );
 
-            let array_schema_values_order = current_schema.and_then(|current_schema| {
-                if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
-                    array_schema.values_order.clone()
-                } else {
-                    None
-                }
-            });
             let mut nodes_iter = array_node.values().iter().enumerate();
             for group in self.value_with_comma_groups() {
                 let DanglingCommentGroupOr::ItemGroup(value_group) = group else {
@@ -117,7 +110,6 @@ impl crate::Edit for tombi_ast::Array {
                         accessors,
                         current_item_schema.as_ref(),
                         schema_context,
-                        array_schema_values_order.clone(),
                         comment_directive.clone(),
                     )
                     .await,

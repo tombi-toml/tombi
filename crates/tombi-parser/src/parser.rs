@@ -10,6 +10,7 @@ pub(crate) struct Parser<'t> {
     source: &'t str,
     input_tokens: &'t [tombi_lexer::Token],
     pos: usize,
+    recovered_to_next_section: bool,
     pub tokens: Vec<tombi_lexer::Token>,
     pub(crate) events: Vec<crate::Event>,
 }
@@ -20,6 +21,7 @@ impl<'t> Parser<'t> {
             source,
             input_tokens,
             pos: 0, // Start from the beginning to preserve leading trivia
+            recovered_to_next_section: false,
             tokens: Vec::new(),
             events: Vec::new(),
         }
@@ -52,6 +54,28 @@ impl<'t> Parser<'t> {
             pos -= 1;
         }
         self.input_tokens[pos].range()
+    }
+
+    #[inline]
+    pub(crate) fn previous(&self) -> SyntaxKind {
+        if self.pos == 0 {
+            return EOF;
+        }
+        let mut pos = self.pos - 1;
+        while pos > 0 && self.input_tokens[pos].kind().is_trivia() {
+            pos -= 1;
+        }
+        self.input_tokens[pos].kind()
+    }
+
+    #[inline]
+    pub(crate) fn recovered_to_next_section(&self) -> bool {
+        self.recovered_to_next_section
+    }
+
+    #[inline]
+    pub(crate) fn mark_recovered_to_next_section(&mut self) {
+        self.recovered_to_next_section = true;
     }
 
     fn nth_index(&self, n: usize) -> usize {
@@ -185,6 +209,7 @@ impl<'t> Parser<'t> {
 
     pub(crate) fn bump_float_key(&mut self) {
         debug_assert!(self.nth(0) == FLOAT);
+        self.recovered_to_next_section = false;
         let token = self.nth_token(0);
         let text = &self.source[token.span()];
 
@@ -282,6 +307,7 @@ impl<'t> Parser<'t> {
     }
 
     fn do_bump(&mut self, kind: SyntaxKind, n_raw_tokens: u8) {
+        self.recovered_to_next_section = false;
         self.push_event(Event::Token { kind, n_raw_tokens });
         let nth_index = self.nth_index((n_raw_tokens) as usize);
         self.tokens.extend(&self.input_tokens[self.pos..nth_index]);

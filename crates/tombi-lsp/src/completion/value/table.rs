@@ -643,14 +643,14 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 }
                             }
 
-                            if let Some(sub_schema_uri_map) = schema_context.sub_schema_uri_map {
-                                for (root_accessors, sub_schema_uri) in sub_schema_uri_map {
+                            if let Some(sub_schema_map) = schema_context.sub_schema_map {
+                                for (root_accessors, sub_schema) in sub_schema_map {
                                     if let Some(last_key) =
                                         matching_subschema_completion_key(root_accessors, accessors)
                                     {
                                         let Ok(Some(document_schema)) = schema_context
                                             .store
-                                            .try_get_document_schema(sub_schema_uri)
+                                            .try_get_document_schema(&sub_schema.schema_uri)
                                             .await
                                         else {
                                             continue;

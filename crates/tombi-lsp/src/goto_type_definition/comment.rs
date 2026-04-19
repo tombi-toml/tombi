@@ -65,17 +65,16 @@ pub async fn get_tombi_value_comment_directive_type_definition(
         tombi_hashmap::IndexMap::with_capacity(0),
         Some(toml_version),
         None,
+        true,
+        true,
     );
 
-    let schema_context = tombi_schema_store::SchemaContext {
-        toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
-        root_schema: source_schema.root_schema.as_deref(),
-        sub_schema_uri_map: None,
-        deprecated_lint_level: None,
-        schema_visits: Default::default(),
-        store: schema_store,
-        strict: None,
-    };
+    let schema_context = tombi_schema_store::SchemaContext::from_source_schema(
+        TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+        Some(&source_schema),
+        schema_store,
+        None,
+    );
 
     get_type_definition(&document_tree, position_in_content, &keys, &schema_context).await
 }

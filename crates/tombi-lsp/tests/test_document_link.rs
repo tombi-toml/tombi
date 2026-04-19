@@ -804,6 +804,9 @@ mod document_link_tests {
             #[tokio::test]
             async fn tombi_schema_catalog_path_disabled_by_extensions(
                 r#"
+                [extensions]
+                "tombi-toml/tombi" = { lsp.document-link.path.enabled = false }
+
                 [schema]
                 catalog = { paths = ["https://www.schemastore.org/api/json/catalog.json"] }
                 "#,
@@ -1115,7 +1118,9 @@ macro_rules! test_document_link {
                     toml_version: None,
                     path: schema_uri.to_string(),
                     include: vec!["*.toml".to_string()],
-                lint: None,
+                    lint: None,
+                    format: None,
+                    overrides: None,
                 }));
             }
 
@@ -1134,6 +1139,8 @@ macro_rules! test_document_link {
                     include: vec!["*.toml".to_string()],
                     root: subschema.root.clone(),
                     lint: None,
+                    format: None,
+                    overrides: None,
                 }));
             }
 

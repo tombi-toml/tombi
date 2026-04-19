@@ -4,10 +4,10 @@ use tombi_comment_directive::value::{
     TableCommonFormatRules, TableCommonLintRules, TombiValueDirectiveContent,
 };
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::{CurrentSchema, SchemaContext};
+use tombi_schema_store::{CurrentSchema, SchemaContext, TableOrderOverrides};
 use tombi_syntax::SyntaxElement;
 
-use crate::rule::table_keys_order::{TableOrderOverrides, get_sorted_accessors, table_keys_order};
+use crate::rule::table_keys_order::{get_sorted_accessors, table_keys_order};
 
 pub async fn root_table_keys_order<'a>(
     key_value_groups: Vec<tombi_ast::KeyValueGroup>,
@@ -23,17 +23,21 @@ pub async fn root_table_keys_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    if comment_directive
+    let (disabled, order) = comment_directive
         .as_ref()
-        .and_then(|c| c.table_keys_order_disabled())
-        .unwrap_or(false)
-    {
+        .map(|comment_directive| {
+            (
+                comment_directive
+                    .table_keys_order_disabled()
+                    .unwrap_or_default(),
+                comment_directive.table_keys_order().map(Into::into),
+            )
+        })
+        .unwrap_or_default();
+
+    if disabled {
         return Vec::with_capacity(0);
     }
-
-    let order = comment_directive
-        .as_ref()
-        .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
 
     let mut changes = Vec::new();
     for key_value_group in key_value_groups {
@@ -50,6 +54,7 @@ pub async fn root_table_keys_order<'a>(
                         .into_document_tree_and_errors(schema_context.toml_version)
                         .tree,
                 ),
+                &[],
                 key_values,
                 current_schema,
                 schema_context,

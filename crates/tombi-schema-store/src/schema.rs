@@ -41,14 +41,155 @@ pub use referable_schema::{
     CurrentSchema, Referable, is_online_url, resolve_and_collect_schemas, resolve_json_pointer,
     resolve_schema_item,
 };
-pub use schema_context::SchemaContext;
+pub use schema_context::{SchemaContext, SchemaContextOverrides};
 pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};
-pub use source_schema::{SourceSchema, SubSchemaUriMap};
+pub use source_schema::{SourceSchema, SourceSubSchema, SourceSubSchemaMap};
 pub use string_schema::StringSchema;
 pub use table_schema::{Dependency, TableKeysOrderGroup, TableSchema, XTombiTableKeysOrder};
 pub use tombi_accessor::{RootAccessor, RootAccessors, SchemaAccessor, SchemaAccessors};
 pub use tombi_uri::{CatalogUri, SchemaUri};
 pub use value_schema::*;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OrderOverride<T> {
+    pub target: Vec<RootAccessor>,
+    pub disabled: bool,
+    pub order: Option<T>,
+}
+
+pub type ArrayOrderOverride = OrderOverride<tombi_x_keyword::ArrayValuesOrder>;
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ArrayOrderOverrides(Vec<ArrayOrderOverride>);
+
+impl ArrayOrderOverrides {
+    pub fn push_schema_override(
+        &mut self,
+        target: Vec<RootAccessor>,
+        disabled: bool,
+        order: Option<tombi_x_keyword::ArrayValuesOrder>,
+    ) {
+        self.0.push(ArrayOrderOverride {
+            target,
+            disabled,
+            order,
+        });
+    }
+
+    pub fn get(&self, accessors: &[Accessor]) -> Option<&ArrayOrderOverride> {
+        self.0.iter().find(|override_item| {
+            override_item.target.len() == accessors.len()
+                && override_item
+                    .target
+                    .iter()
+                    .zip(accessors)
+                    .all(|(expected, actual)| expected == actual)
+        })
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<'_, ArrayOrderOverride> {
+        self.0.iter()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+impl From<Vec<ArrayOrderOverride>> for ArrayOrderOverrides {
+    fn from(value: Vec<ArrayOrderOverride>) -> Self {
+        Self(value)
+    }
+}
+
+impl FromIterator<ArrayOrderOverride> for ArrayOrderOverrides {
+    fn from_iter<T: IntoIterator<Item = ArrayOrderOverride>>(iter: T) -> Self {
+        Self(iter.into_iter().collect())
+    }
+}
+
+pub type TableOrderOverride = OrderOverride<tombi_x_keyword::TableKeysOrder>;
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct TableOrderOverrides(Vec<TableOrderOverride>);
+
+impl TableOrderOverrides {
+    pub fn push_schema_override(
+        &mut self,
+        target: Vec<RootAccessor>,
+        disabled: bool,
+        order: Option<tombi_x_keyword::TableKeysOrder>,
+    ) {
+        self.0.push(TableOrderOverride {
+            target,
+            disabled,
+            order,
+        });
+    }
+
+    pub fn insert_comment_directive_override(
+        &mut self,
+        accessors: Vec<Accessor>,
+        disabled: bool,
+        order: Option<tombi_x_keyword::TableKeysOrder>,
+    ) {
+        self.0.insert(
+            0,
+            TableOrderOverride {
+                target: accessors
+                    .into_iter()
+                    .map(|accessor| match accessor {
+                        Accessor::Key(key) => RootAccessor::Key(key),
+                        Accessor::Index(_) => RootAccessor::Index,
+                    })
+                    .collect(),
+                disabled,
+                order,
+            },
+        );
+    }
+
+    pub fn get(&self, accessors: &[Accessor]) -> Option<&TableOrderOverride> {
+        self.0.iter().find(|override_item| {
+            override_item.target.len() == accessors.len()
+                && override_item
+                    .target
+                    .iter()
+                    .zip(accessors)
+                    .all(|(expected, actual)| expected == actual)
+        })
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<'_, TableOrderOverride> {
+        self.0.iter()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+impl From<Vec<TableOrderOverride>> for TableOrderOverrides {
+    fn from(value: Vec<TableOrderOverride>) -> Self {
+        Self(value)
+    }
+}
+
+impl FromIterator<TableOrderOverride> for TableOrderOverrides {
+    fn from_iter<T: IntoIterator<Item = TableOrderOverride>>(iter: T) -> Self {
+        Self(iter.into_iter().collect())
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct SchemaOverrides {
+    pub array_values_order: ArrayOrderOverrides,
+    pub table_keys_order: TableOrderOverrides,
+}
 
 pub type SchemaProperties =
     Arc<tokio::sync::RwLock<tombi_hashmap::IndexMap<SchemaAccessor, PropertySchema>>>;
@@ -289,6 +430,9 @@ pub struct Schema {
     pub catalog_uri: Option<Arc<tombi_uri::CatalogUri>>,
     pub include: Vec<String>,
     pub sub_root_accessors: Option<Vec<RootAccessor>>,
+    pub array_values_order_enabled: bool,
+    pub table_keys_order_enabled: bool,
+    pub overrides: SchemaOverrides,
 }
 
 pub trait FindSchemaCandidates {

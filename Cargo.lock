@@ -3667,6 +3667,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.12",
+ "tombi-accessor",
  "tombi-severity-level",
  "tombi-toml-version",
  "tombi-uri",
@@ -3842,6 +3843,7 @@ dependencies = [
  "rstest",
  "schemars",
  "serde",
+ "serde_tombi",
  "textwrap",
  "tokio",
  "tombi-ast",
@@ -3855,6 +3857,7 @@ dependencies = [
  "tombi-text",
  "tombi-uri",
  "tombi-validator",
+ "tombi-x-keyword",
  "unicode-segmentation",
 ]
 
@@ -3997,6 +4000,7 @@ dependencies = [
  "tombi-ast",
  "tombi-cache",
  "tombi-comment-directive",
+ "tombi-comment-directive-serde",
  "tombi-comment-directive-store",
  "tombi-config",
  "tombi-date-time",

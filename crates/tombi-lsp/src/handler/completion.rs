@@ -8,7 +8,8 @@ use tower_lsp::lsp_types::{
 use crate::{
     backend,
     completion::{
-        extract_keys_and_hint, find_completion_contents_with_tree, get_comment_context,
+        extract_keys_and_hint, find_completion_contents_with_accessors,
+        find_completion_contents_with_tree, get_comment_context,
         get_document_comment_directive_completion_contents,
     },
     config_manager::ConfigSchemaStore,
@@ -83,10 +84,6 @@ pub async fn handle_completion(
         .ok()
         .flatten();
 
-    let root_schema = source_schema
-        .as_ref()
-        .and_then(|schema| schema.root_schema.as_deref());
-
     // Skip completion if the trigger character is a whitespace or if there is no schema.
     if let Some(CompletionContext {
         trigger_kind: CompletionTriggerKind::TRIGGER_CHARACTER,
@@ -98,7 +95,11 @@ pub async fn handle_completion(
         let pos_line = position.line as usize;
         if pos_line > 0
             && let Some(prev_line) = &document_source.text().lines().nth(pos_line - 1)
-            && (prev_line.trim().is_empty() || root_schema.is_none())
+            && (prev_line.trim().is_empty()
+                || source_schema
+                    .as_ref()
+                    .and_then(|schema| schema.root_schema.as_deref())
+                    .is_none())
         {
             log::trace!("completion skipped due to consecutive line breaks");
             return Ok(None);
@@ -145,30 +146,45 @@ pub async fn handle_completion(
                 return Ok(Some(Vec::with_capacity(0)));
             };
 
-            let schema_context = tombi_schema_store::SchemaContext {
+            let schema_context = tombi_schema_store::SchemaContext::from_source_schema(
                 toml_version,
-                root_schema,
-                sub_schema_uri_map: source_schema
-                    .as_ref()
-                    .map(|schema| &schema.sub_schema_uri_map),
-                deprecated_lint_level: source_schema
-                    .as_ref()
-                    .and_then(|schema| schema.deprecated_lint_level),
-                schema_visits: Default::default(),
-                store: &schema_store,
-                strict: None,
-            };
-
-            completion_items.extend(
-                find_completion_contents_with_tree(
-                    &document_tree,
-                    position,
-                    &keys,
-                    &schema_context,
-                    completion_hint,
-                )
-                .await,
+                source_schema.as_ref(),
+                &schema_store,
+                None,
             );
+
+            let mut schema_completion_items = find_completion_contents_with_tree(
+                &document_tree,
+                position,
+                &keys,
+                &schema_context,
+                completion_hint,
+            )
+            .await;
+
+            if schema_completion_items.is_empty()
+                && matches!(completion_hint, Some(CompletionHint::DotTrigger { .. }))
+            {
+                let accessors =
+                    tombi_document_tree::get_accessors(&document_tree, &keys, position);
+                // `get_accessors` appends `Accessor::Index` entries when `position` is
+                // inside an array value, so more accessors than keys means we have a
+                // deeper context that the tree-based completion didn't reach.
+                if accessors.len() > keys.len() {
+                    let accessor_completion_items = find_completion_contents_with_accessors(
+                        position,
+                        &accessors,
+                        &schema_context,
+                        completion_hint,
+                    )
+                    .await;
+                    if !accessor_completion_items.is_empty() {
+                        schema_completion_items = accessor_completion_items;
+                    }
+                }
+            }
+
+            completion_items.extend(schema_completion_items);
 
             (keys, completion_hint)
         }

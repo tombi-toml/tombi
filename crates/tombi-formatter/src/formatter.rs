@@ -69,7 +69,7 @@ impl<'a> Formatter<'a> {
 
         if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive
             && let Some(format) = &tombi_document_comment_directive.format
-            && format.disabled.unwrap_or(false)
+            && format.disabled.unwrap_or_default()
         {
             match self.source_uri_or_path.map(|path| match path {
                 Either::Left(url) => url.to_string(),
@@ -121,31 +121,18 @@ impl<'a> Formatter<'a> {
             Either::Right(path) => Some(path.to_path_buf()),
         });
 
-        let root = tombi_ast_editor::Editor::new(
-            root,
-            source_path.as_deref(),
-            &tombi_schema_store::SchemaContext {
-                toml_version: self.toml_version,
-                root_schema: source_schema
-                    .as_ref()
-                    .and_then(|schema| schema.root_schema.as_deref()),
-                sub_schema_uri_map: source_schema
-                    .as_ref()
-                    .map(|schema| &schema.sub_schema_uri_map),
-                deprecated_lint_level: source_schema
-                    .as_ref()
-                    .and_then(|schema| schema.deprecated_lint_level),
-                schema_visits: Default::default(),
-                store: self.schema_store,
-                strict: tombi_document_comment_directive
-                    .as_ref()
-                    .and_then(|directive| {
-                        directive.schema.as_ref().and_then(|schema| schema.strict)
-                    }),
-            },
-        )
-        .edit()
-        .await;
+        let schema_context = tombi_schema_store::SchemaContext::from_source_schema(
+            self.toml_version,
+            source_schema.as_ref(),
+            self.schema_store,
+            tombi_document_comment_directive
+                .as_ref()
+                .and_then(|directive| directive.schema.as_ref().and_then(|schema| schema.strict)),
+        );
+
+        let root = tombi_ast_editor::Editor::new(root, source_path.as_deref(), &schema_context)
+            .edit()
+            .await;
 
         log::trace!("TOML AST after editing: {:#?}", root);
 

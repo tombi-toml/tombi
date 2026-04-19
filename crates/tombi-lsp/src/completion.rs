@@ -17,9 +17,13 @@ use tombi_future::Boxable;
 use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
     Accessor, AccessorKeyKind, AllOfSchema, AnyOfSchema, CompositeSchema, CurrentSchema,
-    KeyContext, OneOfSchema, SchemaDefinitions, SchemaStore, SchemaUri, ValueSchema,
+    KeyContext, OneOfSchema, SchemaAccessor, SchemaDefinitions, SchemaStore, SchemaUri,
+    ValueSchema,
 };
 use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
+
+use crate::completion::schema_completion::SchemaCompletion;
+use crate::schema_resolver::resolve_array_item_schema;
 
 pub fn get_comment_context(
     root: &tombi_ast::Root,
@@ -267,6 +271,139 @@ pub async fn find_completion_contents_with_tree(
                 .next()
         })
         .collect()
+}
+
+pub async fn find_completion_contents_with_accessors(
+    position: tombi_text::Position,
+    accessors: &[Accessor],
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+    completion_hint: Option<CompletionHint>,
+) -> Vec<CompletionContent> {
+    let Some(document_schema) = schema_context.root_schema else {
+        return Vec::new();
+    };
+    let Some(root_value_schema) = document_schema.value_schema.as_ref() else {
+        return Vec::new();
+    };
+
+    let Some(current_schema) = resolve_schema_with_accessors(
+        CurrentSchema {
+            value_schema: root_value_schema.clone(),
+            schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
+            definitions: Cow::Owned(document_schema.definitions.clone()),
+        },
+        accessors,
+        schema_context,
+    )
+    .await
+    else {
+        return Vec::new();
+    };
+
+    dedup_completion_contents(
+        SchemaCompletion
+            .find_completion_contents(
+                position,
+                &[],
+                &[],
+                Some(&current_schema),
+                schema_context,
+                completion_hint,
+            )
+            .await,
+    )
+}
+
+fn resolve_schema_with_accessors<'a: 'b, 'b>(
+    current_schema: CurrentSchema<'static>,
+    accessors: &'a [Accessor],
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+) -> tombi_future::BoxFuture<'b, Option<CurrentSchema<'static>>> {
+    async move {
+        let Some((accessor, remaining_accessors)) = accessors.split_first() else {
+            return Some(current_schema);
+        };
+
+        let composite_schemas = match current_schema.value_schema.as_ref() {
+            ValueSchema::OneOf(schema) => Some(schema.schemas.clone()),
+            ValueSchema::AnyOf(schema) => Some(schema.schemas.clone()),
+            ValueSchema::AllOf(schema) => Some(schema.schemas.clone()),
+            _ => None,
+        };
+        if let Some(schemas) = composite_schemas {
+            return resolve_composite_schema_with_accessors(
+                &schemas,
+                current_schema,
+                accessors,
+                schema_context,
+            )
+            .await;
+        }
+
+        match (accessor, current_schema.value_schema.as_ref()) {
+            (Accessor::Key(_), ValueSchema::Table(table_schema)) => {
+                let next_schema = table_schema
+                    .resolve_property_schema(
+                        &SchemaAccessor::from(accessor),
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                    )
+                    .await
+                    .inspect_err(|err| log::warn!("{err}"))
+                    .ok()
+                    .flatten()?
+                    .into_owned();
+                resolve_schema_with_accessors(next_schema, remaining_accessors, schema_context)
+                    .await
+            }
+            (Accessor::Index(index), ValueSchema::Array(array_schema)) => {
+                let next_schema = resolve_array_item_schema(
+                    *index,
+                    array_schema,
+                    &current_schema,
+                    schema_context,
+                )
+                .await?
+                .into_owned();
+                resolve_schema_with_accessors(next_schema, remaining_accessors, schema_context)
+                    .await
+            }
+            _ => None,
+        }
+    }
+    .boxed()
+}
+
+fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
+    schemas: &'a tombi_schema_store::ReferableValueSchemas,
+    current_schema: CurrentSchema<'static>,
+    accessors: &'a [Accessor],
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+) -> tombi_future::BoxFuture<'b, Option<CurrentSchema<'static>>> {
+    async move {
+        let schema_visits = tombi_schema_store::SchemaVisits::default();
+        let collected = tombi_schema_store::resolve_and_collect_schemas(
+            schemas,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+            &schema_visits,
+            accessors,
+        )
+        .await?;
+
+        for schema in collected {
+            if let Some(resolved) =
+                resolve_schema_with_accessors(schema.into_owned(), accessors, schema_context).await
+            {
+                return Some(resolved);
+            }
+        }
+
+        None
+    }
+    .boxed()
 }
 
 pub trait FindCompletionContents {

@@ -303,7 +303,9 @@ macro_rules! test_diagnostic {
                             toml_version: None,
                             path: schema_uri.to_string(),
                             include: vec!["*.toml".to_string()],
-                        lint: None,
+                            lint: None,
+                            format: None,
+                            overrides: None,
                         }),
                     ]);
                     editor_config
@@ -608,7 +610,9 @@ macro_rules! test_diagnostic_file {
                             toml_version: None,
                             path: schema_uri.to_string(),
                             include: vec!["*.toml".to_string()],
-                        lint: None,
+                            lint: None,
+                            format: None,
+                            overrides: None,
                         }),
                     ]);
                     editor_config

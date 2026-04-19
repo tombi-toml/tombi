@@ -44,6 +44,9 @@ impl Parse for tombi_ast::Table {
             tombi_ast::KeyValueGroup::parse(p);
 
             if !p.at_ts(TS_LINE_END) {
+                if p.at_ts(TS_NEXT_SECTION) {
+                    break;
+                }
                 invalid_line(p, ExpectedLineBreak);
             }
         }
@@ -274,7 +277,7 @@ mod test {
 
             table
                 .map(|table| table.dangling_comment_groups().count() == 0 && table.key_value_groups().count() == 1)
-                .unwrap_or(false)
+                .unwrap_or_default()
         })
     }
 

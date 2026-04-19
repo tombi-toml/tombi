@@ -10,6 +10,7 @@ use crate::rule::{inline_table_comma_trailing_comment, table_keys_order::get_sor
 
 pub async fn inline_table_keys_order<'a>(
     node: &'a tombi_document_tree::Value,
+    accessors: &'a [tombi_schema_store::Accessor],
     key_values_with_comma: Vec<(tombi_ast::KeyValue, Option<tombi_ast::Comma>)>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -21,24 +22,28 @@ pub async fn inline_table_keys_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    if comment_directive
+    let (disabled, order) = comment_directive
         .as_ref()
-        .and_then(|c| c.table_keys_order_disabled())
-        .unwrap_or(false)
-    {
+        .map(|comment_directive| {
+            (
+                comment_directive
+                    .table_keys_order_disabled()
+                    .unwrap_or_default(),
+                comment_directive.table_keys_order().map(Into::into),
+            )
+        })
+        .unwrap_or_default();
+
+    if disabled {
         return Vec::with_capacity(0);
     }
-
-    let order = comment_directive
-        .as_ref()
-        .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
 
     let mut changes = vec![];
 
     let is_last_comma = key_values_with_comma
         .last()
         .map(|(_, comma)| comma.is_some())
-        .unwrap_or(false);
+        .unwrap_or_default();
 
     let old = std::ops::RangeInclusive::new(
         SyntaxElement::Node(key_values_with_comma.first().unwrap().0.syntax().clone()),
@@ -47,7 +52,7 @@ pub async fn inline_table_keys_order<'a>(
 
     let Some(mut sorted_key_values_with_comma) = get_sorted_accessors(
         node,
-        &[],
+        accessors,
         key_values_with_comma
             .into_iter()
             .map(|(kv, comma)| {

@@ -63,6 +63,7 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
                             changes.extend(
                                 table_keys_order(
                                     node,
+                                    &accessors,
                                     key_values,
                                     current_schema.as_ref(),
                                     schema_context,

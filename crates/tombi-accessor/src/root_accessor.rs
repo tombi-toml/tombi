@@ -12,12 +12,12 @@ pub enum RootAccessor {
 
 impl RootAccessor {
     pub fn parse(path: &str) -> Option<Vec<RootAccessor>> {
+        if path.is_empty() {
+            return Some(Vec::new());
+        }
+
         let mut accessors = Vec::new();
         let mut current_key = String::new();
-
-        if path.is_empty() {
-            return None;
-        }
 
         let chars: Vec<char> = path.chars().collect();
         let mut i = 0;
@@ -50,14 +50,23 @@ impl RootAccessor {
                     i = next_index;
                 }
                 '.' => {
-                    if !current_key.is_empty() {
-                        accessors.push(parse_key_or_wildcard(current_key));
-                        current_key = String::new();
+                    if current_key.is_empty() {
+                        if i == 0 || chars[i - 1] == '.' {
+                            return None;
+                        }
+                        i += 1;
+                        continue;
                     }
+                    accessors.push(parse_key_or_wildcard(current_key));
+                    current_key = String::new();
                 }
                 c => current_key.push(c),
             }
             i += 1;
+        }
+
+        if chars.last() == Some(&'.') {
+            return None;
         }
 
         if !current_key.is_empty() {
@@ -178,6 +187,7 @@ mod tests {
     use super::*;
 
     #[rstest]
+    #[case("", vec![])]
     #[case("tool.*", vec![
         RootAccessor::Key("tool".to_string()),
         RootAccessor::AnyKey,
@@ -224,7 +234,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case("")]
+    #[case(".")]
     #[case("items[*")]
     #[case("items[foo]")]
     fn test_root_accessor_parse_invalid(#[case] input: &str) {
