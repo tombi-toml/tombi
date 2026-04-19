@@ -35,6 +35,18 @@ impl SchemaContext<'_> {
     }
 
     #[inline]
+    pub fn deprecated_enabled(
+        &self,
+        current_schema: Option<&crate::CurrentSchema<'_>>,
+        accessors: &[crate::Accessor],
+    ) -> bool {
+        self.schema_overrides(current_schema)
+            .and_then(|overrides| overrides.deprecated.find(accessors))
+            .map(|override_item| override_item.enabled)
+            .unwrap_or(true)
+    }
+
+    #[inline]
     pub fn schema_array_values_order_enabled(
         &self,
         current_schema: Option<&crate::CurrentSchema<'_>>,

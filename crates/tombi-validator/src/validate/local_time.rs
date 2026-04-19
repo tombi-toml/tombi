@@ -190,6 +190,7 @@ async fn validate_local_time(
             local_time_schema.deprecated,
             accessors,
             local_time_value,
+            Some(current_schema),
             schema_context,
             local_time_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),

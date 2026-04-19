@@ -21,7 +21,8 @@ pub use schema::{
     PatternAccessor, RootSchema, SchemaArrayValuesOrderRule, SchemaFormatOptions,
     SchemaFormatRules, SchemaItem, SchemaLintOptions, SchemaLintRules,
     SchemaOverrideArrayValuesOrderRule, SchemaOverrideFormatOptions, SchemaOverrideFormatRules,
-    SchemaOverrideItem, SchemaOverrideTableKeysOrderRule, SchemaTableKeysOrderRule, SubSchema,
+    SchemaOverrideDeprecatedRule, SchemaOverrideItem, SchemaOverrideLintOptions,
+    SchemaOverrideLintRules, SchemaOverrideTableKeysOrderRule, SchemaTableKeysOrderRule, SubSchema,
 };
 pub use server::{LspCompletion, LspDiagnostic, LspOptions};
 pub use tombi_severity_level::SeverityLevel;

@@ -108,6 +108,7 @@ pub fn handle_deprecated<'a, T>(
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
+    current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<
         impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
@@ -116,7 +117,7 @@ pub fn handle_deprecated<'a, T>(
 ) where
     T: tombi_document_tree::ValueImpl,
 {
-    if deprecated == Some(true) {
+    if deprecated == Some(true) && schema_context.deprecated_enabled(current_schema, accessors) {
         let level = resolve_deprecated_lint_level(common_rules, schema_context);
 
         crate::Diagnostic {
@@ -140,6 +141,7 @@ pub fn handle_deprecated_value<'a, T>(
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
+    current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<
         impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
@@ -148,7 +150,7 @@ pub fn handle_deprecated_value<'a, T>(
 ) where
     T: tombi_document_tree::ValueImpl + ToString,
 {
-    if deprecated == Some(true) {
+    if deprecated == Some(true) && schema_context.deprecated_enabled(current_schema, accessors) {
         let level = resolve_deprecated_lint_level(common_rules, schema_context);
 
         crate::Diagnostic {
@@ -335,6 +337,7 @@ fn validate_deprecated<'a, T>(
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
+    current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<
         impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
@@ -350,6 +353,7 @@ where
         deprecated,
         accessors,
         value,
+        current_schema,
         schema_context,
         comment_directives,
         common_rules,

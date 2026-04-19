@@ -137,6 +137,36 @@ fn deprecated_sub_schema_config(deprecated_level: Option<SeverityLevel>) -> tomb
     config
 }
 
+fn deprecated_override_config(enabled: bool) -> tombi_config::Config {
+    let schema_path = project_root_path()
+        .join("schemas")
+        .join("deprecated-test.schema.json");
+    let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path).unwrap();
+
+    let mut config = tombi_config::Config::default();
+    config.schemas = Some(vec![tombi_config::SchemaItem::Root(
+        tombi_config::RootSchema {
+            toml_version: None,
+            path: schema_uri.to_string(),
+            include: vec!["*.toml".to_string()],
+            lint: None,
+            format: None,
+            overrides: Some(vec![tombi_config::SchemaOverrideItem {
+                targets: vec!["value".into()],
+                format: None,
+                lint: Some(tombi_config::SchemaOverrideLintOptions {
+                    rules: Some(tombi_config::SchemaOverrideLintRules {
+                        deprecated: Some(tombi_config::SchemaOverrideDeprecatedRule {
+                            enabled: Some(enabled.into()),
+                        }),
+                    }),
+                }),
+            }]),
+        },
+    )]);
+    config
+}
+
 test_lint! {
     #[test]
     fn test_deprecated_schema_lint_level_default_config(
@@ -186,5 +216,24 @@ test_lint! {
     ) -> Diagnostics([{
         code: "deprecated",
         level: tombi_diagnostic::Level::ERROR,
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_deprecated_schema_override_disabled(
+        "value = 1\n",
+        Config(deprecated_override_config(false)),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_deprecated_schema_override_enabled(
+        "value = 1\n",
+        Config(deprecated_override_config(true)),
+    ) -> Diagnostics([{
+        code: "deprecated",
+        level: tombi_diagnostic::Level::WARNING,
     }])
 }
