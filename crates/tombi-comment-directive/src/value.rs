@@ -388,7 +388,7 @@ pub struct ErrorRuleOptions {
 
 impl From<&WarnRuleOptions> for SeverityLevelDefaultWarn {
     fn from(value: &WarnRuleOptions) -> Self {
-        if value.disabled.unwrap_or(false) {
+        if value.disabled.unwrap_or_default() {
             SeverityLevel::Off.into()
         } else {
             Self::default()
@@ -398,7 +398,7 @@ impl From<&WarnRuleOptions> for SeverityLevelDefaultWarn {
 
 impl From<&ErrorRuleOptions> for SeverityLevelDefaultError {
     fn from(value: &ErrorRuleOptions) -> Self {
-        if value.disabled.unwrap_or(false) {
+        if value.disabled.unwrap_or_default() {
             SeverityLevel::Off.into()
         } else {
             Self::default()

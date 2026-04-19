@@ -98,7 +98,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         .required
                                         .as_ref()
                                         .map(|r| r.contains(&key.value))
-                                        .unwrap_or(false);
+                                        .unwrap_or_default();
 
                                     if let Ok(Some(current_schema)) = table_schema
                                         .resolve_property_schema(

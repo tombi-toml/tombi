@@ -68,7 +68,7 @@ impl<'a> Linter<'a> {
 
         if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive
             && let Some(lint) = &tombi_document_comment_directive.lint
-            && lint.disabled.unwrap_or(false)
+            && lint.disabled.unwrap_or_default()
         {
             // Only skip linting if there are no validation errors
             if self.diagnostics.is_empty() {

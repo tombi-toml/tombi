@@ -43,7 +43,7 @@ async fn check_dotted_keys_out_of_order(
     if comment_directive
         .as_ref()
         .and_then(|comment_directive| comment_directive.table_keys_order_disabled())
-        .unwrap_or(false)
+        .unwrap_or_default()
     {
         return;
     }
