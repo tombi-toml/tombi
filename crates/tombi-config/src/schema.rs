@@ -313,6 +313,7 @@ pub struct SchemaTableKeysOrderRule {
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("minLength" = 0)))]
 pub struct Target(pub String);
 
 impl std::ops::Deref for Target {
