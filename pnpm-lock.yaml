@@ -11,7 +11,7 @@ overrides:
   brace-expansion: ^2.1.0
   h3: 1.15.11
   minimatch: ^5.1.9
-  vite: ^7.3.2
+  vitest>vite: ^7.3.2
 
 importers:
 
@@ -36,11 +36,11 @@ importers:
         specifier: ^0.29.4
         version: 0.29.4(solid-js@1.9.12)
       '@solidjs/router':
-        specifier: ^0.15.4
+        specifier: 0.15.4
         version: 0.15.4(solid-js@1.9.12)
       '@solidjs/start':
-        specifier: ^1.2.0
-        version: 1.3.2(solid-js@1.9.12)(vinxi@0.5.11(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
+        specifier: 1.2.0
+        version: 1.2.0(solid-js@1.9.12)(vinxi@0.5.8(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
       '@vinxi/plugin-mdx':
         specifier: ^3.7.2
         version: 3.7.2(@mdx-js/mdx@3.1.1)
@@ -70,10 +70,10 @@ importers:
         version: 1.9.12
       solid-mdx:
         specifier: ^0.0.7
-        version: 0.0.7(solid-js@1.9.12)(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
+        version: 0.0.7(solid-js@1.9.12)(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
       vinxi:
-        specifier: ^0.5.8
-        version: 0.5.11(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
+        specifier: 0.5.8
+        version: 0.5.8(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
     devDependencies:
       '@types/jsdom':
         specifier: ^21.1.7
@@ -84,9 +84,6 @@ importers:
       '@types/prismjs':
         specifier: ^1.26.5
         version: 1.26.5
-      glob:
-        specifier: ^11.1.0
-        version: 11.1.0
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
@@ -97,8 +94,8 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0
       remark-gfm:
-        specifier: ^4.0.0
-        version: 4.0.1
+        specifier: 4.0.0
+        version: 4.0.0
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
@@ -106,8 +103,11 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0
       unocss:
-        specifier: ^65.5.0
-        version: 65.5.0(postcss@8.5.10)(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))
+        specifier: 65.5.0
+        version: 65.5.0(postcss@8.5.10)(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))
+      vite:
+        specifier: 6.3.3
+        version: 6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
 
   editors/vscode:
     dependencies:
@@ -1471,8 +1471,8 @@ packages:
     peerDependencies:
       solid-js: ^1.8.6
 
-  '@solidjs/start@1.3.2':
-    resolution: {integrity: sha512-tasDl3utVbtP0rr4InB3ntBIFV2upvEiFrOOCkRrAA3yBfjx9elpxnc94sJQXo65PNYdAAAkPIC6h93vLrtwHg==}
+  '@solidjs/start@1.2.0':
+    resolution: {integrity: sha512-SRv1g3R+4sxZnxCBPK1IedtLKsPhPJ7W/Yv4xEHjM4jJGPWi3ed35/yd0D5zhRK0C7zJIkZKbhnR/S3g8JUD5w==}
     peerDependencies:
       vinxi: ^0.5.7
 
@@ -1486,7 +1486,7 @@ packages:
     resolution: {integrity: sha512-B9z/HbF7gJBaRHieyX7f2uQ4LpLLAVAEutBZipH6w+CYD6RHRJvSVPzECGHF7icFhNWTiJQL2QR6K07s59yzEw==}
     engines: {node: '>=12'}
     peerDependencies:
-      vite: ^7.3.2
+      vite: '>=6.0.0'
 
   '@tanstack/router-utils@1.161.6':
     resolution: {integrity: sha512-nRcYw+w2OEgK6VfjirYvGyPLOK+tZQz1jkYcmH5AjMamQ9PycnlxZF2aEZtPpNoUsaceX2bHptn6Ub5hGXqNvw==}
@@ -1653,7 +1653,7 @@ packages:
   '@unocss/astro@65.5.0':
     resolution: {integrity: sha512-z0uLbOQhINYpd57p0p/fpVeBY1+Rv0t4GQQUMF00tH8tpIHGUdyHH9aE/yGZaeLI2onmaShTDgIVXT+7fR9fMw==}
     peerDependencies:
-      vite: ^7.3.2
+      vite: ^2.9.0 || ^3.0.0-0 || ^4.0.0 || ^5.0.0-0 || ^6.0.0-0
     peerDependenciesMeta:
       vite:
         optional: true
@@ -1728,7 +1728,7 @@ packages:
   '@unocss/vite@65.5.0':
     resolution: {integrity: sha512-v2rFIrBaWGQmSJeKv7us+2OMos2RqdZYpf/seOpf4MFHrmjjiFQ1ZWkTqFyNfUxAwj6VID5frVJhxJfZuEhhug==}
     peerDependencies:
-      vite: ^7.3.2
+      vite: ^2.9.0 || ^3.0.0-0 || ^4.0.0 || ^5.0.0-0 || ^6.0.0-0
 
   '@vercel/nft@1.5.0':
     resolution: {integrity: sha512-IWTDeIoWhQ7ZtRO/JRKH+jhmeQvZYhtGPmzw/QGDY+wDCQqfm25P9yIdoAFagu4fWsK4IwZXDFIjrmp5rRm/sA==}
@@ -1761,7 +1761,7 @@ packages:
     resolution: {integrity: sha512-R9HTZBhW6yCSGbGQnDnH3QHfJxokKN4KB+Yvk9Q1le7eQNYwiCyKxmLmurSpFy6BzJanSLuEUDrD+j97Q+ZLPg==}
     peerDependencies:
       msw: ^2.4.9
-      vite: ^7.3.2
+      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
     peerDependenciesMeta:
       msw:
         optional: true
@@ -4019,8 +4019,8 @@ packages:
   rehype-recma@1.0.0:
     resolution: {integrity: sha512-lqA4rGUf1JmacCNWWZx0Wv1dHqMwxzsDWYMTowuplHF3xH0N/MmrZ/G3BDZnzAkRmxDadujCjaKM2hqYdCBOGw==}
 
-  remark-gfm@4.0.1:
-    resolution: {integrity: sha512-1quofZ2RQ9EWdeN34S79+KExV1764+wCUGop5CPL1WGdD0ocPpu91lzPGbwWMECpEpd42kJGQwzRfyov9j4yNg==}
+  remark-gfm@4.0.0:
+    resolution: {integrity: sha512-U92vJgBPkbw4Zfu/IiW2oTZLSL3Zpv+uI7My2eq8JxKgqraFdU8YUGicEJCEgSbeaG+QDFqIcwwfMTOEelPxuA==}
 
   remark-mdx@3.1.1:
     resolution: {integrity: sha512-Pjj2IYlUY3+D8x00UJsIOg5BEvfMyeI+2uLPn9VO9Wg4MEtN/VTIq2NEJQfde9PnX15KgtHyl9S0BcTnWrIuWg==}
@@ -4268,7 +4268,7 @@ packages:
     resolution: {integrity: sha512-dYKGOu5ZiaX3sfEMZYtfyXm30u33kF+T/pr67CMeyHzENDkWD3st4XEJ12Akp0J0PG9jzyHe5sAAKEXSnEcDEw==}
     peerDependencies:
       solid-js: ^1.2.6
-      vite: ^7.3.2
+      vite: '*'
 
   solid-refresh@0.6.3:
     resolution: {integrity: sha512-F3aPsX6hVw9ttm5LYlth8Q15x6MlI/J3Dn+o3EQyRTtTxidepSTwAYdozt01/YA+7ObcciagGEyXIopGZzQtbA==}
@@ -4658,7 +4658,7 @@ packages:
     engines: {node: '>=14'}
     peerDependencies:
       '@unocss/webpack': 65.5.0
-      vite: ^7.3.2
+      vite: ^2.9.0 || ^3.0.0-0 || ^4.0.0 || ^5.0.0-0 || ^6.0.0-0
     peerDependenciesMeta:
       '@unocss/webpack':
         optional: true
@@ -4813,8 +4813,8 @@ packages:
   vfile@6.0.3:
     resolution: {integrity: sha512-KzIbH/9tXat2u30jf+smMwFCsno4wHVdNmzFyL+T/L3UGqqk6JKfVqOFOZEpZSHADH1k40ab6NUIXZq422ov3Q==}
 
-  vinxi@0.5.11:
-    resolution: {integrity: sha512-82Qm+EG/b2PRFBvXBbz1lgWBGcd9totIL6SJhnrZYfakjloTVG9+5l6gfO6dbCCtztm5pqWFzLY0qpZ3H3ww/w==}
+  vinxi@0.5.8:
+    resolution: {integrity: sha512-1pGA+cU1G9feBQ1sd5FMftPuLUT8NSX880AvELhNWqoqWhe2jeSOQxjDPxlA3f1AC+Bbknl4UPKHyVXmfLZQjw==}
     hasBin: true
 
   vite-plugin-solid@2.11.12:
@@ -4822,9 +4822,49 @@ packages:
     peerDependencies:
       '@testing-library/jest-dom': ^5.16.6 || ^5.17.0 || ^6.*
       solid-js: ^1.7.2
-      vite: ^7.3.2
+      vite: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
     peerDependenciesMeta:
       '@testing-library/jest-dom':
+        optional: true
+
+  vite@6.3.3:
+    resolution: {integrity: sha512-5nXH+QsELbFKhsEfWLkHrvgRpTdGJzqOZ+utSdmPTvwHmvU6ITTm3xx+mRusihkcI8GeC7lCDyn3kDtiki9scw==}
+    engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
+    hasBin: true
+    peerDependencies:
+      '@types/node': ^18.0.0 || ^20.0.0 || >=22.0.0
+      jiti: '>=1.21.0'
+      less: '*'
+      lightningcss: ^1.21.0
+      sass: '*'
+      sass-embedded: '*'
+      stylus: '*'
+      sugarss: '*'
+      terser: ^5.16.0
+      tsx: ^4.8.1
+      yaml: ^2.4.2
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+      jiti:
+        optional: true
+      less:
+        optional: true
+      lightningcss:
+        optional: true
+      sass:
+        optional: true
+      sass-embedded:
+        optional: true
+      stylus:
+        optional: true
+      sugarss:
+        optional: true
+      terser:
+        optional: true
+      tsx:
+        optional: true
+      yaml:
         optional: true
 
   vite@7.3.2:
@@ -4870,7 +4910,7 @@ packages:
   vitefu@1.1.3:
     resolution: {integrity: sha512-ub4okH7Z5KLjb6hDyjqrGXqWtWvoYdU3IGm/NorpgHncKoLTCfRIbvlhBm7r0YstIaQRYlp4yEbFqDcKSzXSSg==}
     peerDependencies:
-      vite: ^7.3.2
+      vite: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
     peerDependenciesMeta:
       vite:
         optional: true
@@ -5093,8 +5133,8 @@ packages:
     resolution: {integrity: sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA==}
     engines: {node: '>= 14'}
 
-  zod@4.3.6:
-    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -6175,11 +6215,11 @@ snapshots:
     dependencies:
       solid-js: 1.9.12
 
-  '@solidjs/start@1.3.2(solid-js@1.9.12)(vinxi@0.5.11(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))':
+  '@solidjs/start@1.2.0(solid-js@1.9.12)(vinxi@0.5.8(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))':
     dependencies:
-      '@tanstack/server-functions-plugin': 1.121.21(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
-      '@vinxi/plugin-directives': 0.5.1(vinxi@0.5.11(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
-      '@vinxi/server-components': 0.5.1(vinxi@0.5.11(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
+      '@tanstack/server-functions-plugin': 1.121.21(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
+      '@vinxi/plugin-directives': 0.5.1(vinxi@0.5.8(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
+      '@vinxi/server-components': 0.5.1(vinxi@0.5.8(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
       cookie-es: 2.0.1
       defu: 6.1.7
       error-stack-parser: 2.1.4
@@ -6191,8 +6231,8 @@ snapshots:
       source-map-js: 1.2.1
       terracotta: 1.1.0(solid-js@1.9.12)
       tinyglobby: 0.2.16
-      vinxi: 0.5.11(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
-      vite-plugin-solid: 2.11.12(solid-js@1.9.12)(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
+      vinxi: 0.5.8(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
+      vite-plugin-solid: 2.11.12(solid-js@1.9.12)(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
     transitivePeerDependencies:
       - '@testing-library/jest-dom'
       - solid-js
@@ -6203,7 +6243,7 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@tanstack/directive-functions-plugin@1.121.21(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))':
+  '@tanstack/directive-functions-plugin@1.121.21(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))':
     dependencies:
       '@babel/code-frame': 7.26.2
       '@babel/core': 7.29.0
@@ -6212,7 +6252,7 @@ snapshots:
       '@tanstack/router-utils': 1.161.6
       babel-dead-code-elimination: 1.0.12
       tiny-invariant: 1.3.3
-      vite: 7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
+      vite: 6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -6230,7 +6270,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@tanstack/server-functions-plugin@1.121.21(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))':
+  '@tanstack/server-functions-plugin@1.121.21(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))':
     dependencies:
       '@babel/code-frame': 7.26.2
       '@babel/core': 7.29.0
@@ -6239,7 +6279,7 @@ snapshots:
       '@babel/template': 7.28.6
       '@babel/traverse': 7.29.0
       '@babel/types': 7.29.0
-      '@tanstack/directive-functions-plugin': 1.121.21(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
+      '@tanstack/directive-functions-plugin': 1.121.21(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
       babel-dead-code-elimination: 1.0.12
       tiny-invariant: 1.3.3
     transitivePeerDependencies:
@@ -6400,13 +6440,13 @@ snapshots:
 
   '@ungap/structured-clone@1.3.0': {}
 
-  '@unocss/astro@65.5.0(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))':
+  '@unocss/astro@65.5.0(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))':
     dependencies:
       '@unocss/core': 65.5.0
       '@unocss/reset': 65.5.0
-      '@unocss/vite': 65.5.0(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))
+      '@unocss/vite': 65.5.0(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))
     optionalDependencies:
-      vite: 7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
+      vite: 6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
     transitivePeerDependencies:
       - vue
 
@@ -6528,7 +6568,7 @@ snapshots:
     dependencies:
       '@unocss/core': 65.5.0
 
-  '@unocss/vite@65.5.0(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))':
+  '@unocss/vite@65.5.0(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@unocss/config': 65.5.0
@@ -6538,7 +6578,7 @@ snapshots:
       magic-string: 0.30.21
       tinyglobby: 0.2.16
       unplugin-utils: 0.2.5
-      vite: 7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
+      vite: 6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
     transitivePeerDependencies:
       - vue
 
@@ -6581,7 +6621,7 @@ snapshots:
       untun: 0.1.3
       uqr: 0.1.3
 
-  '@vinxi/plugin-directives@0.5.1(vinxi@0.5.11(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))':
+  '@vinxi/plugin-directives@0.5.1(vinxi@0.5.8(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))':
     dependencies:
       '@babel/parser': 7.29.2
       acorn: 8.16.0
@@ -6592,7 +6632,7 @@ snapshots:
       magicast: 0.2.11
       recast: 0.23.11
       tslib: 2.8.1
-      vinxi: 0.5.11(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
+      vinxi: 0.5.8(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
 
   '@vinxi/plugin-mdx@3.7.2(@mdx-js/mdx@3.1.1)':
     dependencies:
@@ -6603,16 +6643,16 @@ snapshots:
       unified: 9.2.2
       vfile: 5.3.7
 
-  '@vinxi/server-components@0.5.1(vinxi@0.5.11(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))':
+  '@vinxi/server-components@0.5.1(vinxi@0.5.8(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))':
     dependencies:
-      '@vinxi/plugin-directives': 0.5.1(vinxi@0.5.11(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
+      '@vinxi/plugin-directives': 0.5.1(vinxi@0.5.8(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
       acorn: 8.16.0
       acorn-loose: 8.5.2
       acorn-typescript: 1.4.13(acorn@8.16.0)
       astring: 1.9.0
       magicast: 0.2.11
       recast: 0.23.11
-      vinxi: 0.5.11(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
+      vinxi: 0.5.8(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
 
   '@vitest/expect@4.1.4':
     dependencies:
@@ -9420,7 +9460,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  remark-gfm@4.0.1:
+  remark-gfm@4.0.0:
     dependencies:
       '@types/mdast': 4.0.4
       mdast-util-gfm: 3.1.0
@@ -9761,10 +9801,10 @@ snapshots:
       seroval: 1.5.2
       seroval-plugins: 1.5.2(seroval@1.5.2)
 
-  solid-mdx@0.0.7(solid-js@1.9.12)(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)):
+  solid-mdx@0.0.7(solid-js@1.9.12)(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)):
     dependencies:
       solid-js: 1.9.12
-      vite: 7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
+      vite: 6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
 
   solid-refresh@0.6.3(solid-js@1.9.12):
     dependencies:
@@ -10191,9 +10231,9 @@ snapshots:
 
   universalify@2.0.1: {}
 
-  unocss@65.5.0(postcss@8.5.10)(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2)):
+  unocss@65.5.0(postcss@8.5.10)(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2)):
     dependencies:
-      '@unocss/astro': 65.5.0(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))
+      '@unocss/astro': 65.5.0(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))
       '@unocss/cli': 65.5.0
       '@unocss/core': 65.5.0
       '@unocss/postcss': 65.5.0(postcss@8.5.10)
@@ -10209,9 +10249,9 @@ snapshots:
       '@unocss/transformer-compile-class': 65.5.0
       '@unocss/transformer-directives': 65.5.0
       '@unocss/transformer-variant-group': 65.5.0
-      '@unocss/vite': 65.5.0(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))
+      '@unocss/vite': 65.5.0(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))
     optionalDependencies:
-      vite: 7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
+      vite: 6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
     transitivePeerDependencies:
       - postcss
       - supports-color
@@ -10344,7 +10384,7 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vinxi@0.5.11(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0):
+  vinxi@0.5.8(@azure/identity@4.13.1)(@types/node@24.10.1)(db0@0.3.4)(ioredis@5.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0):
     dependencies:
       '@babel/core': 7.29.0
       '@babel/plugin-syntax-jsx': 7.28.6(@babel/core@7.29.0)
@@ -10378,8 +10418,8 @@ snapshots:
       unctx: 2.5.0
       unenv: 1.10.0
       unstorage: 1.17.5(@azure/identity@4.13.1)(db0@0.3.4)(ioredis@5.10.1)
-      vite: 7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
-      zod: 4.3.6
+      vite: 6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
+      zod: 3.25.76
     transitivePeerDependencies:
       - '@azure/app-configuration'
       - '@azure/cosmos'
@@ -10426,7 +10466,7 @@ snapshots:
       - xml2js
       - yaml
 
-  vite-plugin-solid@2.11.12(solid-js@1.9.12)(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)):
+  vite-plugin-solid@2.11.12(solid-js@1.9.12)(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)):
     dependencies:
       '@babel/core': 7.29.0
       '@types/babel__core': 7.20.5
@@ -10434,10 +10474,25 @@ snapshots:
       merge-anything: 5.1.7
       solid-js: 1.9.12
       solid-refresh: 0.6.3(solid-js@1.9.12)
-      vite: 7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
-      vitefu: 1.1.3(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
+      vite: 6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
+      vitefu: 1.1.3(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
     transitivePeerDependencies:
       - supports-color
+
+  vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0):
+    dependencies:
+      esbuild: 0.25.12
+      fdir: 6.5.0(picomatch@4.0.4)
+      picomatch: 4.0.4
+      postcss: 8.5.10
+      rollup: 4.60.1
+      tinyglobby: 0.2.16
+    optionalDependencies:
+      '@types/node': 24.10.1
+      fsevents: 2.3.3
+      jiti: 2.6.1
+      terser: 5.46.1
+      tsx: 4.21.0
 
   vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0):
     dependencies:
@@ -10454,9 +10509,9 @@ snapshots:
       terser: 5.46.1
       tsx: 4.21.0
 
-  vitefu@1.1.3(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)):
+  vitefu@1.1.3(vite@6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)):
     optionalDependencies:
-      vite: 7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
+      vite: 6.3.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
 
   vitest@4.1.4(@types/node@24.10.1)(jsdom@26.1.0)(vite@7.3.2(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)):
     dependencies:
@@ -10663,6 +10718,6 @@ snapshots:
       compress-commons: 6.0.2
       readable-stream: 4.7.0
 
-  zod@4.3.6: {}
+  zod@3.25.76: {}
 
   zwitch@2.0.4: {}
