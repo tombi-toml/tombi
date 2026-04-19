@@ -4,14 +4,14 @@ use tombi_toml_version::TomlVersion;
 use crate::Accessor;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum RootAccessor {
+pub enum PatternAccessor {
     Key(String),
     AnyKey,
     Index,
 }
 
-impl RootAccessor {
-    pub fn parse(path: &str) -> Option<Vec<RootAccessor>> {
+impl PatternAccessor {
+    pub fn parse(path: &str) -> Option<Vec<PatternAccessor>> {
         let mut accessors = Vec::new();
         let mut current_key = String::new();
 
@@ -39,14 +39,14 @@ impl RootAccessor {
                         return None;
                     }
                     if index_str == "*" || index_str.parse::<usize>().is_ok() {
-                        accessors.push(RootAccessor::Index);
+                        accessors.push(PatternAccessor::Index);
                     } else {
                         return None;
                     }
                 }
                 '\'' | '"' if current_key.is_empty() => {
                     let (quoted_key, next_index) = parse_quoted_key(&chars, i)?;
-                    accessors.push(RootAccessor::Key(quoted_key));
+                    accessors.push(PatternAccessor::Key(quoted_key));
                     i = next_index;
                 }
                 '.' => {
@@ -68,22 +68,22 @@ impl RootAccessor {
     }
 }
 
-impl PartialEq<Accessor> for RootAccessor {
+impl PartialEq<Accessor> for PatternAccessor {
     fn eq(&self, other: &Accessor) -> bool {
         match (self, other) {
-            (RootAccessor::Key(expected), Accessor::Key(actual)) => expected == actual,
-            (RootAccessor::AnyKey, Accessor::Key(_)) => true,
-            (RootAccessor::Index, Accessor::Index(_)) => true,
+            (PatternAccessor::Key(expected), Accessor::Key(actual)) => expected == actual,
+            (PatternAccessor::AnyKey, Accessor::Key(_)) => true,
+            (PatternAccessor::Index, Accessor::Index(_)) => true,
             _ => false,
         }
     }
 }
 
-fn parse_key_or_wildcard(key: String) -> RootAccessor {
+fn parse_key_or_wildcard(key: String) -> PatternAccessor {
     if key == "*" {
-        RootAccessor::AnyKey
+        PatternAccessor::AnyKey
     } else {
-        RootAccessor::Key(key)
+        PatternAccessor::Key(key)
     }
 }
 
@@ -116,29 +116,29 @@ fn parse_quoted_key(chars: &[char], start: usize) -> Option<(String, usize)> {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
-pub struct RootAccessors(Vec<RootAccessor>);
+pub struct PatternAccessors(Vec<PatternAccessor>);
 
-impl From<Vec<RootAccessor>> for RootAccessors {
-    fn from(accessors: Vec<RootAccessor>) -> Self {
+impl From<Vec<PatternAccessor>> for PatternAccessors {
+    fn from(accessors: Vec<PatternAccessor>) -> Self {
         Self(accessors)
     }
 }
 
-impl From<&[RootAccessor]> for RootAccessors {
-    fn from(accessors: &[RootAccessor]) -> Self {
+impl From<&[PatternAccessor]> for PatternAccessors {
+    fn from(accessors: &[PatternAccessor]) -> Self {
         Self(accessors.to_vec())
     }
 }
 
-impl std::fmt::Display for RootAccessors {
+impl std::fmt::Display for PatternAccessors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut iter = self.0.iter();
         if let Some(accessor) = iter.next() {
             write!(f, "{accessor}")?;
             for accessor in iter {
                 match accessor {
-                    RootAccessor::Key(_) | RootAccessor::AnyKey => write!(f, ".{accessor}")?,
-                    RootAccessor::Index => write!(f, "{accessor}")?,
+                    PatternAccessor::Key(_) | PatternAccessor::AnyKey => write!(f, ".{accessor}")?,
+                    PatternAccessor::Index => write!(f, "{accessor}")?,
                 }
             }
         }
@@ -146,24 +146,24 @@ impl std::fmt::Display for RootAccessors {
     }
 }
 
-impl std::fmt::Display for RootAccessor {
+impl std::fmt::Display for PatternAccessor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RootAccessor::Key(key) => write!(f, "{}", tombi_toml_text::to_key_string(key)),
-            RootAccessor::AnyKey => write!(f, "*"),
-            RootAccessor::Index => write!(f, "[*]"),
+            PatternAccessor::Key(key) => write!(f, "{}", tombi_toml_text::to_key_string(key)),
+            PatternAccessor::AnyKey => write!(f, "*"),
+            PatternAccessor::Index => write!(f, "[*]"),
         }
     }
 }
 
-impl From<&[Accessor]> for RootAccessors {
+impl From<&[Accessor]> for PatternAccessors {
     fn from(accessors: &[Accessor]) -> Self {
         Self(
             accessors
                 .iter()
                 .map(|accessor| match accessor {
-                    Accessor::Key(key) => RootAccessor::Key(key.clone()),
-                    Accessor::Index(_) => RootAccessor::Index,
+                    Accessor::Key(key) => PatternAccessor::Key(key.clone()),
+                    Accessor::Index(_) => PatternAccessor::Index,
                 })
                 .collect_vec(),
         )
@@ -179,46 +179,46 @@ mod tests {
 
     #[rstest]
     #[case("tool.*", vec![
-        RootAccessor::Key("tool".to_string()),
-        RootAccessor::AnyKey,
+        PatternAccessor::Key("tool".to_string()),
+        PatternAccessor::AnyKey,
     ])]
     #[case("tool.'*'", vec![
-        RootAccessor::Key("tool".to_string()),
-        RootAccessor::Key("*".to_string()),
+        PatternAccessor::Key("tool".to_string()),
+        PatternAccessor::Key("*".to_string()),
     ])]
     #[case("tool.\"*\"", vec![
-        RootAccessor::Key("tool".to_string()),
-        RootAccessor::Key("*".to_string()),
+        PatternAccessor::Key("tool".to_string()),
+        PatternAccessor::Key("*".to_string()),
     ])]
     #[case("\"a.b\".c", vec![
-        RootAccessor::Key("a.b".to_string()),
-        RootAccessor::Key("c".to_string()),
+        PatternAccessor::Key("a.b".to_string()),
+        PatternAccessor::Key("c".to_string()),
     ])]
     #[case("items[*].name", vec![
-        RootAccessor::Key("items".to_string()),
-        RootAccessor::Index,
-        RootAccessor::Key("name".to_string()),
+        PatternAccessor::Key("items".to_string()),
+        PatternAccessor::Index,
+        PatternAccessor::Key("name".to_string()),
     ])]
-    fn test_root_accessor_parse(#[case] input: &str, #[case] expected: Vec<RootAccessor>) {
-        let result = RootAccessor::parse(input).unwrap();
+    fn test_root_accessor_parse(#[case] input: &str, #[case] expected: Vec<PatternAccessor>) {
+        let result = PatternAccessor::parse(input).unwrap();
         pretty_assertions::assert_eq!(result, expected, "Failed for input: {}", input);
     }
 
     #[test]
     fn test_root_accessors_display() {
-        let accessors = RootAccessors::from(vec![
-            RootAccessor::Key("tool".to_string()),
-            RootAccessor::AnyKey,
-            RootAccessor::Key("enabled".to_string()),
+        let accessors = PatternAccessors::from(vec![
+            PatternAccessor::Key("tool".to_string()),
+            PatternAccessor::AnyKey,
+            PatternAccessor::Key("enabled".to_string()),
         ]);
         assert_eq!(format!("{accessors}"), "tool.*.enabled");
     }
 
     #[test]
     fn test_root_accessors_display_literal_asterisk_key() {
-        let accessors = RootAccessors::from(vec![
-            RootAccessor::Key("tool".to_string()),
-            RootAccessor::Key("*".to_string()),
+        let accessors = PatternAccessors::from(vec![
+            PatternAccessor::Key("tool".to_string()),
+            PatternAccessor::Key("*".to_string()),
         ]);
         assert_eq!(format!("{accessors}"), r#"tool."*""#);
     }
@@ -228,19 +228,22 @@ mod tests {
     #[case("items[*")]
     #[case("items[foo]")]
     fn test_root_accessor_parse_invalid(#[case] input: &str) {
-        assert_eq!(RootAccessor::parse(input), None);
+        assert_eq!(PatternAccessor::parse(input), None);
     }
 
     #[test]
     fn test_root_accessor_matches() {
-        assert_eq!(RootAccessor::AnyKey, Accessor::Key("taskipy".to_string()));
-        assert_eq!(RootAccessor::Index, Accessor::Index(3));
         assert_eq!(
-            RootAccessor::Key("tool".to_string()),
+            PatternAccessor::AnyKey,
+            Accessor::Key("taskipy".to_string())
+        );
+        assert_eq!(PatternAccessor::Index, Accessor::Index(3));
+        assert_eq!(
+            PatternAccessor::Key("tool".to_string()),
             Accessor::Key("tool".to_string())
         );
         assert_ne!(
-            RootAccessor::Key("tool".to_string()),
+            PatternAccessor::Key("tool".to_string()),
             Accessor::Key("other".to_string())
         );
     }
