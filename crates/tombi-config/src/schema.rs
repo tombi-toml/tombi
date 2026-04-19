@@ -325,11 +325,11 @@ pub struct SchemaTableKeysOrderRule {
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub struct AccessorPattern(
-    #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))] pub String,
+pub struct PatternAccessor(
+    #[cfg_attr(feature = "jsonschema", schemars(length(min = 0)))] pub String,
 );
 
-impl std::ops::Deref for AccessorPattern {
+impl std::ops::Deref for PatternAccessor {
     type Target = String;
 
     fn deref(&self) -> &Self::Target {
@@ -337,7 +337,7 @@ impl std::ops::Deref for AccessorPattern {
     }
 }
 
-impl From<&str> for AccessorPattern {
+impl From<&str> for PatternAccessor {
     fn from(value: &str) -> Self {
         Self(value.to_string())
     }
@@ -353,7 +353,7 @@ impl From<&str> for AccessorPattern {
 pub struct SchemaOverrideItem {
     /// # Accessor patterns to override
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    pub targets: Vec<AccessorPattern>,
+    pub targets: Vec<PatternAccessor>,
 
     /// # Format options to override
     pub format: Option<SchemaOverrideFormatOptions>,

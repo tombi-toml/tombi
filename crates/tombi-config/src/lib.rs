@@ -18,7 +18,7 @@ pub use lint::*;
 pub use overrides::*;
 pub use schema::SchemaOverviewOptions;
 pub use schema::{
-    AccessorPattern, RootSchema, SchemaArrayValuesOrderRule, SchemaFormatOptions,
+    PatternAccessor, RootSchema, SchemaArrayValuesOrderRule, SchemaFormatOptions,
     SchemaFormatRules, SchemaItem, SchemaLintOptions, SchemaLintRules,
     SchemaOverrideArrayValuesOrderRule, SchemaOverrideFormatOptions, SchemaOverrideFormatRules,
     SchemaOverrideItem, SchemaOverrideTableKeysOrderRule, SchemaTableKeysOrderRule, SubSchema,
