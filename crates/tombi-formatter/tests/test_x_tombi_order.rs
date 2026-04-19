@@ -1878,6 +1878,7 @@ mod schema_overrides {
                             )),
                         }),
                     }),
+                    lint: None,
                 },
                 SchemaOverrideItem {
                     targets: vec!["dependency-groups.dev".into()],
@@ -1889,6 +1890,7 @@ mod schema_overrides {
                             table_keys_order: None,
                         }),
                     }),
+                    lint: None,
                 },
             ]),
         })]);
@@ -1915,6 +1917,7 @@ mod schema_overrides {
                         )),
                     }),
                 }),
+                lint: None,
             }]),
         })]);
         config
@@ -2083,6 +2086,7 @@ mod schema_overrides {
                         )),
                     }),
                 }),
+                lint: None,
             }]),
         })]);
         config

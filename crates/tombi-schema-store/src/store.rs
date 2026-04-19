@@ -1118,17 +1118,30 @@ fn schema_overrides(schema: &tombi_config::SchemaItem) -> crate::SchemaOverrides
     let mut overrides = crate::SchemaOverrides::default();
 
     for override_item in schema.overrides().into_iter().flatten() {
-        let rules = override_item
+        let format_rules = override_item
             .format
             .as_ref()
             .and_then(|format| format.rules.as_ref());
+        let lint_rules = override_item
+            .lint
+            .as_ref()
+            .and_then(|lint| lint.rules.as_ref());
         let targets = override_item
             .targets
             .iter()
             .filter_map(|target| parse_override_target(target))
             .collect_vec();
 
-        if let Some(rule) = rules.and_then(|r| r.array_values_order.as_ref()) {
+        if let Some(level) = lint_rules.and_then(|r| r.deprecated) {
+            overrides.deprecated.extend(
+                targets
+                    .iter()
+                    .cloned()
+                    .map(|target| crate::DeprecatedOverride { target, level }),
+            );
+        }
+
+        if let Some(rule) = format_rules.and_then(|r| r.array_values_order.as_ref()) {
             let disabled = !rule.enabled().unwrap_or_default().value();
             let order = rule.order();
             overrides
@@ -1145,7 +1158,7 @@ fn schema_overrides(schema: &tombi_config::SchemaItem) -> crate::SchemaOverrides
                 );
         }
 
-        if let Some(rule) = rules.and_then(|r| r.table_keys_order.as_ref()) {
+        if let Some(rule) = format_rules.and_then(|r| r.table_keys_order.as_ref()) {
             let disabled = !rule.enabled().unwrap_or_default().value();
             let order = rule.order();
             overrides
