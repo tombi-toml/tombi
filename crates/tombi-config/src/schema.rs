@@ -209,11 +209,11 @@ pub struct SubSchema {
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     pub include: Vec<String>,
 
-    /// # Schema-specific lint options
-    pub lint: Option<SchemaLintOptions>,
-
     /// # Schema-specific format options
     pub format: Option<SchemaFormatOptions>,
+
+    /// # Schema-specific lint options
+    pub lint: Option<SchemaLintOptions>,
 
     /// # Schema-specific overrides
     pub overrides: Option<Vec<SchemaOverrideItem>>,

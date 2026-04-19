@@ -1250,22 +1250,22 @@
           },
           "minItems": 1
         },
-        "lint": {
-          "title": "Schema-specific lint options",
+        "format": {
+          "title": "Schema-specific format options",
           "anyOf": [
             {
-              "$ref": "#/definitions/SchemaLintOptions"
+              "$ref": "#/definitions/SchemaFormatOptions"
             },
             {
               "type": "null"
             }
           ]
         },
-        "format": {
-          "title": "Schema-specific format options",
+        "lint": {
+          "title": "Schema-specific lint options",
           "anyOf": [
             {
-              "$ref": "#/definitions/SchemaFormatOptions"
+              "$ref": "#/definitions/SchemaLintOptions"
             },
             {
               "type": "null"
