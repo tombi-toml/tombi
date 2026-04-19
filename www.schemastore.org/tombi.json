@@ -1108,7 +1108,7 @@
           "title": "Accessor patterns to override",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Target"
+            "$ref": "#/definitions/AccessorPattern"
           },
           "minItems": 1
         },
@@ -1130,7 +1130,7 @@
       ],
       "x-tombi-table-keys-order": "schema"
     },
-    "Target": {
+    "AccessorPattern": {
       "title": "Accessor pattern",
       "description": "To apply it to the Root Table, use \"\".\n\nArray indices are matched as wildcards. That means `[*]` and numeric\nindices such as `[0]` are treated the same and will match any array\nelement, so `items[0].name` behaves like `items[*].name`.\n\n## Example\n  - \"\"\n  - \"tool.*\"\n  - \"items[*].name\"",
       "type": "string",

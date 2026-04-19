@@ -18,10 +18,10 @@ pub use lint::*;
 pub use overrides::*;
 pub use schema::SchemaOverviewOptions;
 pub use schema::{
-    RootSchema, SchemaArrayValuesOrderRule, SchemaFormatOptions, SchemaFormatRules, SchemaItem,
-    SchemaLintOptions, SchemaLintRules, SchemaOverrideArrayValuesOrderRule,
-    SchemaOverrideFormatOptions, SchemaOverrideFormatRules, SchemaOverrideItem,
-    SchemaOverrideTableKeysOrderRule, SchemaTableKeysOrderRule, SubSchema, Target,
+    AccessorPattern, RootSchema, SchemaArrayValuesOrderRule, SchemaFormatOptions,
+    SchemaFormatRules, SchemaItem, SchemaLintOptions, SchemaLintRules,
+    SchemaOverrideArrayValuesOrderRule, SchemaOverrideFormatOptions, SchemaOverrideFormatRules,
+    SchemaOverrideItem, SchemaOverrideTableKeysOrderRule, SchemaTableKeysOrderRule, SubSchema,
 };
 pub use server::{LspCompletion, LspDiagnostic, LspOptions};
 pub use tombi_severity_level::SeverityLevel;
