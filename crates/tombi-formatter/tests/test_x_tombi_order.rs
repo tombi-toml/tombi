@@ -1944,7 +1944,63 @@ mod schema_overrides {
 
     test_format! {
         #[tokio::test]
+        async fn test_schema_format_rules_disabled_can_be_overridden_by_matching_table_override(
+            r#"
+            [project]
+            version = "0.1.0"
+            name = "test-project"
+            description = "A test project"
+            requires-python = ">=3.10"
+            "#,
+            Config(pyproject_schema_overrides_config()),
+        ) -> Ok(
+            r#"
+            [project]
+            name = "test-project"
+            version = "0.1.0"
+            description = "A test project"
+            requires-python = ">=3.10"
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
         async fn test_schema_overrides_reenable_array_values_order_for_matched_target(
+            r#"
+            [project]
+            name = "tombi"
+            version = "1.0.0"
+            requires-python = ">=3.10"
+            dependencies = []
+
+            [dependency-groups]
+            dev = [
+              "ruff>=0.7.4",
+              "pytest>=8.3.3",
+            ]
+            "#,
+            Config(pyproject_schema_overrides_config()),
+        ) -> Ok(
+            r#"
+            [project]
+            name = "tombi"
+            version = "1.0.0"
+            requires-python = ">=3.10"
+            dependencies = []
+
+            [dependency-groups]
+            dev = [
+              "pytest>=8.3.3",
+              "ruff>=0.7.4",
+            ]
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn test_schema_format_rules_disabled_can_be_overridden_by_matching_array_override(
             r#"
             [project]
             name = "tombi"
