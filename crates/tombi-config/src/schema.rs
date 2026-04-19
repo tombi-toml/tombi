@@ -341,6 +341,10 @@ pub struct SchemaOverrideItem {
     ///
     /// To apply it to the Root Table, use "".
     ///
+    /// Array indices are matched as wildcards. That means `[*]` and numeric
+    /// indices such as `[0]` are treated the same and will match any array
+    /// element, so `items[0].name` behaves like `items[*].name`.
+    ///
     /// ## Example
     ///   - ""
     ///   - "tool.*"

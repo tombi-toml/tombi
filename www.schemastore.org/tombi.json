@@ -1106,7 +1106,7 @@
       "properties": {
         "targets": {
           "title": "Accessor patterns to override",
-          "description": "To apply it to the Root Table, use \"\".\n\n## Example\n  - \"\"\n  - \"tool.*\"\n  - \"items[*].name\"",
+          "description": "To apply it to the Root Table, use \"\".\n\nArray indices are matched as wildcards. That means `[*]` and numeric\nindices such as `[0]` are treated the same and will match any array\nelement, so `items[0].name` behaves like `items[*].name`.\n\n## Example\n  - \"\"\n  - \"tool.*\"\n  - \"items[*].name\"",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Target"

@@ -2053,4 +2053,60 @@ mod schema_overrides {
             "#
         )
     }
+
+    fn pyproject_schema_override_reenable_without_order_config() -> Config {
+        let mut config = Config::default();
+        config.schemas = Some(vec![SchemaItem::Root(RootSchema {
+            toml_version: None,
+            path: pyproject_schema_path().to_string_lossy().into_owned(),
+            include: vec!["*.toml".to_string()],
+            lint: None,
+            format: Some(SchemaFormatOptions {
+                rules: Some(SchemaFormatRules {
+                    array_values_order: Some(SchemaArrayValuesOrderRule {
+                        enabled: Some(false.into()),
+                    }),
+                    table_keys_order: Some(SchemaTableKeysOrderRule {
+                        enabled: Some(false.into()),
+                    }),
+                }),
+            }),
+            overrides: Some(vec![SchemaOverrideItem {
+                targets: vec!["project".into()],
+                format: Some(SchemaOverrideFormatOptions {
+                    rules: Some(SchemaOverrideFormatRules {
+                        array_values_order: None,
+                        table_keys_order: Some(SchemaOverrideTableKeysOrderRule::Rule(
+                            SchemaTableKeysOrderRule {
+                                enabled: Some(true.into()),
+                            },
+                        )),
+                    }),
+                }),
+            }]),
+        })]);
+        config
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn test_schema_overrides_reenable_without_explicit_order_uses_schema_default(
+            r#"
+            [project]
+            version = "0.1.0"
+            name = "test-project"
+            description = "A test project"
+            requires-python = ">=3.10"
+            "#,
+            Config(pyproject_schema_override_reenable_without_order_config()),
+        ) -> Ok(
+            r#"
+            [project]
+            name = "test-project"
+            version = "0.1.0"
+            description = "A test project"
+            requires-python = ">=3.10"
+            "#
+        )
+    }
 }

@@ -195,10 +195,13 @@ where
                     .and_then(|override_order| override_order.order)
                     .or(order)
                     .or_else(|| schema_override.and_then(|override_order| override_order.order));
+                let schema_override_enabled =
+                    schema_override.is_some_and(|override_order| !override_order.disabled);
                 let table_order = get_table_keys_order(
                     override_order,
                     current_schema,
-                    schema_context.schema_table_keys_order_enabled(current_schema),
+                    schema_override_enabled
+                        || schema_context.schema_table_keys_order_enabled(current_schema),
                 );
 
                 let sorted_targets = if sorting_disabled || table_order.is_none() {
