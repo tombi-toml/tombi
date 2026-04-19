@@ -4,7 +4,7 @@ use futures::future::join_all;
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, CurrentSchema, FindSchemaCandidates, Referable, RootAccessor, SchemaAccessor,
+    Accessor, CurrentSchema, FindSchemaCandidates, PatternAccessor, Referable, SchemaAccessor,
     SchemaStore, TableSchema, ValueSchema, is_online_url,
 };
 
@@ -1323,10 +1323,10 @@ fn key_singleton_literal_label(schema_candidates: &[ValueSchema]) -> Option<Stri
 }
 
 fn matching_subschema_completion_key<'a>(
-    root_accessors: &'a [RootAccessor],
+    root_accessors: &'a [PatternAccessor],
     accessors: &[Accessor],
 ) -> Option<&'a str> {
-    let (RootAccessor::Key(last_key), head_accessors) = root_accessors.split_last()? else {
+    let (PatternAccessor::Key(last_key), head_accessors) = root_accessors.split_last()? else {
         return None;
     };
 
@@ -1345,16 +1345,16 @@ fn current_editing_key_range(
 
 #[cfg(test)]
 mod tests {
-    use tombi_schema_store::{Accessor, RootAccessor};
+    use tombi_schema_store::{Accessor, PatternAccessor};
 
     use super::matching_subschema_completion_key;
 
     #[test]
     fn wildcard_subschema_root_matches_completion_parent_path() {
         let root_accessors = vec![
-            RootAccessor::Key("tool".to_string()),
-            RootAccessor::AnyKey,
-            RootAccessor::Key("enabled".to_string()),
+            PatternAccessor::Key("tool".to_string()),
+            PatternAccessor::AnyKey,
+            PatternAccessor::Key("enabled".to_string()),
         ];
         let accessors = vec![
             Accessor::Key("tool".to_string()),
@@ -1370,9 +1370,9 @@ mod tests {
     #[test]
     fn wildcard_leaf_is_not_exposed_as_completion_key() {
         let root_accessors = vec![
-            RootAccessor::Key("tool".to_string()),
-            RootAccessor::Key("taskipy".to_string()),
-            RootAccessor::AnyKey,
+            PatternAccessor::Key("tool".to_string()),
+            PatternAccessor::Key("taskipy".to_string()),
+            PatternAccessor::AnyKey,
         ];
         let accessors = vec![
             Accessor::Key("tool".to_string()),

@@ -4,7 +4,7 @@ use tombi_ast::DocumentCommentDirectives;
 use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{Accessor, CurrentSchema, RootAccessor};
+use tombi_schema_store::{Accessor, CurrentSchema, PatternAccessor};
 use tombi_syntax::SyntaxElement;
 
 use crate::node::make_dangling_comment_group_from_leading_comments;
@@ -165,12 +165,12 @@ impl crate::Edit for tombi_ast::Root {
     }
 }
 
-fn accessors_to_root(accessors: &[Accessor]) -> Vec<RootAccessor> {
+fn accessors_to_root(accessors: &[Accessor]) -> Vec<PatternAccessor> {
     accessors
         .iter()
         .map(|accessor| match accessor {
-            Accessor::Key(key) => RootAccessor::Key(key.clone()),
-            Accessor::Index(_) => RootAccessor::Index,
+            Accessor::Key(key) => PatternAccessor::Key(key.clone()),
+            Accessor::Index(_) => PatternAccessor::Index,
         })
         .collect()
 }
