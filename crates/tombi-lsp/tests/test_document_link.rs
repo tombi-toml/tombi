@@ -1117,6 +1117,7 @@ macro_rules! test_document_link {
                     include: vec!["*.toml".to_string()],
                     lint: None,
                     format: None,
+                    overrides: None,
                 }));
             }
 
@@ -1136,6 +1137,7 @@ macro_rules! test_document_link {
                     root: subschema.root.clone(),
                     lint: None,
                     format: None,
+                    overrides: None,
                 }));
             }
 

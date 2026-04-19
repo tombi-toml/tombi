@@ -1810,6 +1810,7 @@ mod schema_format_rules {
                     }),
                 }),
             }),
+            overrides: None,
         })]);
         config
     }
@@ -1832,6 +1833,165 @@ mod schema_format_rules {
             version = "0.1.0"
             name = "test-project"
             dependencies = ["tombi-cli>=0.0.0", "maturin>=1.5,<2.0"]
+            description = "A test project"
+            requires-python = ">=3.10"
+            "#
+        )
+    }
+}
+
+mod schema_overrides {
+    use tombi_config::{
+        Config, RootSchema, SchemaArrayValuesOrderRule, SchemaFormatOptions, SchemaFormatRules,
+        SchemaItem, SchemaOverrideArrayValuesOrder, SchemaOverrideArrayValuesOrderRule,
+        SchemaOverrideFormatOptions, SchemaOverrideFormatRules, SchemaOverrideItem,
+        SchemaOverrideTableKeysOrder, SchemaOverrideTableKeysOrderRule, SchemaTableKeysOrderRule,
+    };
+    use tombi_formatter::{Formatter, test_format};
+    use tombi_test_lib::pyproject_schema_path;
+
+    fn pyproject_schema_overrides_config() -> Config {
+        let mut config = Config::default();
+        config.schemas = Some(vec![SchemaItem::Root(RootSchema {
+            toml_version: None,
+            path: pyproject_schema_path().to_string_lossy().into_owned(),
+            include: vec!["*.toml".to_string()],
+            lint: None,
+            format: Some(SchemaFormatOptions {
+                rules: Some(SchemaFormatRules {
+                    array_values_order: Some(SchemaArrayValuesOrderRule {
+                        enabled: Some(false.into()),
+                    }),
+                    table_keys_order: Some(SchemaTableKeysOrderRule {
+                        enabled: Some(false.into()),
+                    }),
+                }),
+            }),
+            overrides: Some(vec![
+                SchemaOverrideItem {
+                    targets: vec!["project".into()],
+                    format: Some(SchemaOverrideFormatOptions {
+                        rules: Some(SchemaOverrideFormatRules {
+                            array_values_order: None,
+                            table_keys_order: Some(SchemaOverrideTableKeysOrderRule::Order(
+                                SchemaOverrideTableKeysOrder::Schema,
+                            )),
+                        }),
+                    }),
+                },
+                SchemaOverrideItem {
+                    targets: vec!["dependency-groups.dev".into()],
+                    format: Some(SchemaOverrideFormatOptions {
+                        rules: Some(SchemaOverrideFormatRules {
+                            array_values_order: Some(SchemaOverrideArrayValuesOrderRule::Order(
+                                SchemaOverrideArrayValuesOrder::Ascending,
+                            )),
+                            table_keys_order: None,
+                        }),
+                    }),
+                },
+            ]),
+        })]);
+        config
+    }
+
+    fn pyproject_schema_override_disable_project_config() -> Config {
+        let mut config = Config::default();
+        config.schemas = Some(vec![SchemaItem::Root(RootSchema {
+            toml_version: None,
+            path: pyproject_schema_path().to_string_lossy().into_owned(),
+            include: vec!["*.toml".to_string()],
+            lint: None,
+            format: None,
+            overrides: Some(vec![SchemaOverrideItem {
+                targets: vec!["project".into()],
+                format: Some(SchemaOverrideFormatOptions {
+                    rules: Some(SchemaOverrideFormatRules {
+                        array_values_order: None,
+                        table_keys_order: Some(SchemaOverrideTableKeysOrderRule::Rule(
+                            SchemaTableKeysOrderRule {
+                                enabled: Some(false.into()),
+                            },
+                        )),
+                    }),
+                }),
+            }]),
+        })]);
+        config
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn test_schema_overrides_reenable_table_keys_order_for_matched_target(
+            r#"
+            [project]
+            version = "0.1.0"
+            name = "test-project"
+            description = "A test project"
+            requires-python = ">=3.10"
+            "#,
+            Config(pyproject_schema_overrides_config()),
+        ) -> Ok(
+            r#"
+            [project]
+            name = "test-project"
+            version = "0.1.0"
+            description = "A test project"
+            requires-python = ">=3.10"
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn test_schema_overrides_reenable_array_values_order_for_matched_target(
+            r#"
+            [project]
+            name = "tombi"
+            version = "1.0.0"
+            requires-python = ">=3.10"
+            dependencies = []
+
+            [dependency-groups]
+            dev = [
+              "ruff>=0.7.4",
+              "pytest>=8.3.3",
+            ]
+            "#,
+            Config(pyproject_schema_overrides_config()),
+        ) -> Ok(
+            r#"
+            [project]
+            name = "tombi"
+            version = "1.0.0"
+            requires-python = ">=3.10"
+            dependencies = []
+
+            [dependency-groups]
+            dev = [
+              "pytest>=8.3.3",
+              "ruff>=0.7.4",
+            ]
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn test_schema_overrides_disable_table_keys_order_for_matched_target(
+            r#"
+            [project]
+            version = "0.1.0"
+            name = "test-project"
+            description = "A test project"
+            requires-python = ">=3.10"
+            "#,
+            Config(pyproject_schema_override_disable_project_config()),
+        ) -> Ok(
+            r#"
+            [project]
+            version = "0.1.0"
+            name = "test-project"
             description = "A test project"
             requires-python = ">=3.10"
             "#

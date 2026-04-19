@@ -23,10 +23,6 @@ pub async fn root_table_keys_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    if !schema_context.schema_table_keys_order_enabled(current_schema) {
-        return Vec::with_capacity(0);
-    }
-
     if comment_directive
         .as_ref()
         .and_then(|c| c.table_keys_order_disabled())
@@ -54,6 +50,7 @@ pub async fn root_table_keys_order<'a>(
                         .into_document_tree_and_errors(schema_context.toml_version)
                         .tree,
                 ),
+                &[],
                 key_values,
                 current_schema,
                 schema_context,

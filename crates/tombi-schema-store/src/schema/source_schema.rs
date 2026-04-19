@@ -4,11 +4,12 @@ use itertools::Itertools;
 use tombi_config::{SchemaFormatRules, TomlVersion};
 use tombi_severity_level::SeverityLevelDefaultWarn;
 
-use super::{DocumentSchema, SchemaUri};
+use super::{DocumentSchema, SchemaOverrides, SchemaUri};
 use crate::{RootAccessor, RootAccessors};
 
 pub type SubSchemaUriMap = tombi_hashmap::IndexMap<Vec<RootAccessor>, SchemaUri>;
 pub type SchemaFormatRulesMap = tombi_hashmap::HashMap<SchemaUri, SchemaFormatRules>;
+pub type SchemaOverridesMap = tombi_hashmap::HashMap<SchemaUri, SchemaOverrides>;
 
 #[derive(Clone, Default)]
 pub struct SourceSchema {
@@ -16,6 +17,7 @@ pub struct SourceSchema {
     pub sub_schema_uri_map: SubSchemaUriMap,
     pub deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
     pub schema_format_rules: SchemaFormatRulesMap,
+    pub schema_overrides: SchemaOverridesMap,
     /// TOML version override from `[[schemas]]` config entry.
     ///
     /// Use [`toml_version()`](Self::toml_version) to get the resolved value.
@@ -29,12 +31,14 @@ impl SourceSchema {
         toml_version: Option<TomlVersion>,
         deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
         schema_format_rules: SchemaFormatRulesMap,
+        schema_overrides: SchemaOverridesMap,
     ) -> Self {
         Self {
             root_schema,
             sub_schema_uri_map,
             deprecated_lint_level,
             schema_format_rules,
+            schema_overrides,
             toml_version,
         }
     }

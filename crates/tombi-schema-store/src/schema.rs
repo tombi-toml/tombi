@@ -43,12 +43,28 @@ pub use referable_schema::{
 };
 pub use schema_context::SchemaContext;
 pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};
-pub use source_schema::{SchemaFormatRulesMap, SourceSchema, SubSchemaUriMap};
+pub use source_schema::{SchemaFormatRulesMap, SchemaOverridesMap, SourceSchema, SubSchemaUriMap};
 pub use string_schema::StringSchema;
 pub use table_schema::{Dependency, TableKeysOrderGroup, TableSchema, XTombiTableKeysOrder};
 pub use tombi_accessor::{RootAccessor, RootAccessors, SchemaAccessor, SchemaAccessors};
 pub use tombi_uri::{CatalogUri, SchemaUri};
 pub use value_schema::*;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OrderOverride<T> {
+    pub target: Vec<RootAccessor>,
+    pub disabled: bool,
+    pub order: Option<T>,
+}
+
+pub type ArrayOrderOverride = OrderOverride<tombi_x_keyword::ArrayValuesOrder>;
+pub type TableOrderOverride = OrderOverride<tombi_x_keyword::TableKeysOrder>;
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SchemaOverrides {
+    pub array_values_order: Vec<ArrayOrderOverride>,
+    pub table_keys_order: Vec<TableOrderOverride>,
+}
 
 pub type SchemaProperties =
     Arc<tokio::sync::RwLock<tombi_hashmap::IndexMap<SchemaAccessor, PropertySchema>>>;
@@ -285,6 +301,7 @@ pub struct Schema {
     pub description: Option<String>,
     pub deprecated_lint_level: Option<tombi_severity_level::SeverityLevelDefaultWarn>,
     pub format_rules: Option<tombi_config::SchemaFormatRules>,
+    pub overrides: SchemaOverrides,
     pub toml_version: Option<tombi_config::TomlVersion>,
     pub schema_uri: tombi_uri::SchemaUri,
     pub catalog_uri: Option<Arc<tombi_uri::CatalogUri>>,
