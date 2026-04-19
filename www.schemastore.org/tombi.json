@@ -1132,8 +1132,7 @@
       "x-tombi-table-keys-order": "schema"
     },
     "Target": {
-      "type": "string",
-      "minLength": 0
+      "type": "string"
     },
     "SchemaOverrideFormatOptions": {
       "title": "Schema-specific override format options",
