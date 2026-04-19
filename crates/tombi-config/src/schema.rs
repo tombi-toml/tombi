@@ -337,9 +337,14 @@ impl From<&str> for Target {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct SchemaOverrideItem {
-    /// # Accessor pattern(s) to override
+    /// # Accessor patterns to override
     ///
-    /// Use `""` to target the root table.
+    /// To apply it to the Root Table, use "".
+    ///
+    /// ## Example
+    ///   - ""
+    ///   - "tool.*"
+    ///   - "items[*].name"
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     pub targets: Vec<Target>,
 

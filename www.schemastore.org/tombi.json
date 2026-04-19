@@ -1105,8 +1105,8 @@
       "type": "object",
       "properties": {
         "targets": {
-          "title": "Accessor pattern(s) to override",
-          "description": "Use `\"\"` to target the root table.",
+          "title": "Accessor patterns to override",
+          "description": "To apply it to the Root Table, use \"\".\n\n## Example\n  - \"\"\n  - \"tool.*\"\n  - \"items[*].name\"",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Target"
