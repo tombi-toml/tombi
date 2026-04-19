@@ -200,17 +200,19 @@ catalog = {
 toml-version = "v1.0.0"
 path = "https://example.com/schema.json"
 include = ["example.toml"]
-format.rules = {
-  array-values-order.enabled = true,
-  table-keys-order.enabled = true,
-}
-overrides = [
-  {
-    targets = ["", "tool.*"],
-    format.rules.array-values-order = "ascending"
-    format.rules.table-keys-order = "ascending"
-  },
-]
+
+[schemas.format.rules.array-values-order]
+enabled = true
+
+[schemas.format.rules.table-keys-order]
+enabled = true
+
+[[schemas.overrides]]
+targets = ["", "tool.*"]
+
+[schemas.overrides.format.rules]
+array-values-order = "ascending"
+table-keys-order = "ascending"
 
 [schemas.lint.rules]
 deprecated = "error"
@@ -888,9 +890,11 @@ These rules currently control whether ordering metadata from the matched JSON Sc
 
 ### schemas[*].format.rules.array-values-order
 
-Enable or disable schema-defined ordering for array values.
+Configure schema-defined ordering for array values.
 
-- Type: `Table | "ascending" | "descending" | "schema" | "version-sort"`
+- Type: `Table`
+
+Use `{ enabled = true }` to apply ordering metadata from the matched JSON Schema. Use `{ enabled = false }` to ignore schema-defined ordering for array values.
 
 ### schemas[*].format.rules.array-values-order.enabled
 
@@ -901,9 +905,11 @@ Enable or disable schema-defined array value ordering.
 
 ### schemas[*].format.rules.table-keys-order
 
-Enable or disable schema-defined ordering for table keys.
+Configure schema-defined ordering for table keys.
 
-- Type: `Table | "ascending" | "descending" | "schema" | "version-sort"`
+- Type: `Table`
+
+Use `{ enabled = true }` to apply ordering metadata from the matched JSON Schema. Use `{ enabled = false }` to ignore schema-defined ordering for table keys.
 
 ### schemas[*].format.rules.table-keys-order.enabled
 
