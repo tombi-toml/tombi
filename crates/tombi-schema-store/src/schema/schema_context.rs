@@ -30,20 +30,15 @@ impl SchemaContext<'_> {
     }
 
     #[inline]
-    pub fn deprecated_lint_level(&self) -> Option<SeverityLevelDefaultWarn> {
-        self.deprecated_lint_level
-    }
-
-    #[inline]
-    pub fn deprecated_enabled(
+    pub fn deprecated_lint_level(
         &self,
         current_schema: Option<&crate::CurrentSchema<'_>>,
         accessors: &[crate::Accessor],
-    ) -> bool {
+    ) -> Option<SeverityLevelDefaultWarn> {
         self.schema_overrides(current_schema)
             .and_then(|overrides| overrides.deprecated.find(accessors))
-            .map(|override_item| override_item.enabled)
-            .unwrap_or(true)
+            .map(|override_item| override_item.level)
+            .or(self.deprecated_lint_level)
     }
 
     #[inline]

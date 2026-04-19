@@ -1132,13 +1132,12 @@ fn schema_overrides(schema: &tombi_config::SchemaItem) -> crate::SchemaOverrides
             .filter_map(|target| parse_override_target(target))
             .collect_vec();
 
-        if let Some(rule) = lint_rules.and_then(|r| r.deprecated.as_ref()) {
-            let enabled = rule.enabled.unwrap_or_default().value();
+        if let Some(level) = lint_rules.and_then(|r| r.deprecated) {
             overrides.deprecated.extend(
                 targets
                     .iter()
                     .cloned()
-                    .map(|target| crate::DeprecatedOverride { target, enabled }),
+                    .map(|target| crate::DeprecatedOverride { target, level }),
             );
         }
 

@@ -60,19 +60,19 @@ pub struct OrderOverride<T: Copy> {
 pub type ArrayOrderOverride = OrderOverride<tombi_x_keyword::ArrayValuesOrder>;
 pub type TableOrderOverride = OrderOverride<tombi_x_keyword::TableKeysOrder>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EnabledOverride {
+#[derive(Debug, Clone, PartialEq)]
+pub struct DeprecatedOverride {
     pub target: Vec<PatternAccessor>,
-    pub enabled: bool,
+    pub level: tombi_severity_level::SeverityLevelDefaultWarn,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct EnabledOverrides {
-    inner: Vec<EnabledOverride>,
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct DeprecatedOverrides {
+    inner: Vec<DeprecatedOverride>,
 }
 
-impl EnabledOverrides {
-    pub fn find(&self, accessors: &[Accessor]) -> Option<&EnabledOverride> {
+impl DeprecatedOverrides {
+    pub fn find(&self, accessors: &[Accessor]) -> Option<&DeprecatedOverride> {
         self.inner.iter().find(|override_item| {
             override_item.target.len() == accessors.len()
                 && override_item
@@ -84,14 +84,11 @@ impl EnabledOverrides {
     }
 }
 
-impl Extend<EnabledOverride> for EnabledOverrides {
-    fn extend<I: IntoIterator<Item = EnabledOverride>>(&mut self, iter: I) {
+impl Extend<DeprecatedOverride> for DeprecatedOverrides {
+    fn extend<I: IntoIterator<Item = DeprecatedOverride>>(&mut self, iter: I) {
         self.inner.extend(iter);
     }
 }
-
-pub type DeprecatedOverride = EnabledOverride;
-pub type DeprecatedOverrides = EnabledOverrides;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderOverrides<T: Copy> {
@@ -130,7 +127,7 @@ impl<T: Copy> Extend<OrderOverride<T>> for OrderOverrides<T> {
 pub type ArrayOrderOverrides = OrderOverrides<tombi_x_keyword::ArrayValuesOrder>;
 pub type TableOrderOverrides = OrderOverrides<tombi_x_keyword::TableKeysOrder>;
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct SchemaOverrides {
     pub deprecated: DeprecatedOverrides,
     pub array_values_order: ArrayOrderOverrides,

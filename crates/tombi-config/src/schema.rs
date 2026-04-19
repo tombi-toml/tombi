@@ -410,19 +410,7 @@ pub struct SchemaOverrideLintOptions {
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct SchemaOverrideLintRules {
     /// # Override deprecated diagnostics for matched roots
-    pub deprecated: Option<SchemaOverrideDeprecatedRule>,
-}
-
-/// # Override deprecated diagnostics for matched roots
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
-#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct SchemaOverrideDeprecatedRule {
-    /// # Whether deprecated diagnostics are enabled
-    pub enabled: Option<BoolDefaultTrue>,
+    pub deprecated: Option<SeverityLevelDefaultWarn>,
 }
 
 /// # Override array values ordering for matched roots
