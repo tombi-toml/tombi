@@ -90,9 +90,19 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
   - [schemas[\*].root](#sub-schema)
   - [schemas[\*].path](#root-schema)
   - [schemas[\*].include](#root-schema)
+  - [schemas[\*].format](#schemas-format)
+    - [schemas[\*].format.rules](#schemas-format-rules)
+      - [schemas[\*].format.rules.array-values-order](#schemas-format-rules-array-values-order)
+      - [schemas[\*].format.rules.table-keys-order](#schemas-format-rules-table-keys-order)
   - [schemas[\*].lint](#schemas-lint)
     - [schemas[\*].lint.rules](#schemas-lint-rules)
       - [schemas[\*].lint.rules.deprecated](#schemas-lint-rules-deprecated)
+  - [schemas[\*].overrides](#schemas-overrides)
+    - [schemas[\*].overrides[\*].targets](#schemas-overrides-targets)
+    - [schemas[\*].overrides[\*].format](#schemas-overrides-format)
+      - [schemas[\*].overrides[\*].format.rules](#schemas-overrides-format-rules)
+        - [schemas[\*].overrides[\*].format.rules.array-values-order](#schemas-overrides-format-rules-array-values-order)
+        - [schemas[\*].overrides[\*].format.rules.table-keys-order](#schemas-overrides-format-rules-table-keys-order)
 - [overrides](#overrides)
   - [overrides[\*].files](#overrides-files)
     - [overrides[\*].files.include](#overrides-files-include)
@@ -190,6 +200,19 @@ catalog = {
 toml-version = "v1.0.0"
 path = "https://example.com/schema.json"
 include = ["example.toml"]
+
+[schemas.format.rules.array-values-order]
+enabled = true
+
+[schemas.format.rules.table-keys-order]
+enabled = true
+
+[[schemas.overrides]]
+targets = ["", "tool.*"]
+
+[schemas.overrides.format.rules]
+array-values-order = "ascending"
+table-keys-order = "ascending"
 
 [schemas.lint.rules]
 deprecated = "error"
@@ -817,6 +840,9 @@ deprecated = "error"
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
 - `lint.rules.deprecated`(optional): Override the deprecated diagnostic level for this schema with `"off"`, `"warn"`, or `"error"`
+- `format.rules.array-values-order.enabled`(optional): Enable schema-defined array value ordering for this schema
+- `format.rules.table-keys-order.enabled`(optional): Enable schema-defined table key ordering for this schema
+- `overrides`(optional): Per-target ordering overrides within the matched schema
 
 <Note>
 For local paths, `path` is resolved relative to the directory containing the loaded config file.
@@ -844,6 +870,53 @@ deprecated = "warn"
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
 - `lint.rules.deprecated`(optional): Override the deprecated diagnostic level for this schema with `"off"`, `"warn"`, or `"error"`
+- `format.rules.array-values-order.enabled`(optional): Enable schema-defined array value ordering for this schema
+- `format.rules.table-keys-order.enabled`(optional): Enable schema-defined table key ordering for this schema
+- `overrides`(optional): Per-target ordering overrides within the matched schema
+
+### schemas[*].format
+
+Configure schema-specific formatting settings.
+
+- Type: `Table`
+
+### schemas[*].format.rules
+
+Configure schema-specific format rules.
+
+- Type: `Table`
+
+These rules currently control whether ordering metadata from the matched JSON Schema is applied.
+
+### schemas[*].format.rules.array-values-order
+
+Configure schema-defined ordering for array values.
+
+- Type: `Table`
+
+Use `{ enabled = true }` to apply ordering metadata from the matched JSON Schema. Use `{ enabled = false }` to ignore schema-defined ordering for array values.
+
+### schemas[*].format.rules.array-values-order.enabled
+
+Enable or disable schema-defined array value ordering.
+
+- Type: `Boolean`
+- Default: `true`
+
+### schemas[*].format.rules.table-keys-order
+
+Configure schema-defined ordering for table keys.
+
+- Type: `Table`
+
+Use `{ enabled = true }` to apply ordering metadata from the matched JSON Schema. Use `{ enabled = false }` to ignore schema-defined ordering for table keys.
+
+### schemas[*].format.rules.table-keys-order.enabled
+
+Enable or disable schema-defined table key ordering.
+
+- Type: `Boolean`
+- Default: `true`
 
 ### schemas[*].lint
 
@@ -864,6 +937,67 @@ This applies when the matched JSON Schema marks a value as `deprecated: true`.
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"warn"`
+
+### schemas[*].overrides
+
+Override schema-derived ordering behavior for specific accessor targets within a matched schema.
+
+- Type: `Table[]`
+
+```toml
+[[schemas]]
+path = "https://example.com/schema.json"
+include = ["example.toml"]
+
+[[schemas.overrides]]
+targets = [""]
+
+[schemas.overrides.format.rules]
+table-keys-order = "ascending"
+
+[[schemas.overrides]]
+targets = ["items[*]", "tool.tasks[*]"]
+
+[schemas.overrides.format.rules]
+array-values-order.enabled = false
+```
+
+### schemas[*].overrides[*].targets
+
+Accessor patterns to which the override applies.
+
+- Type: `String[]`
+- Required: `true`
+
+Use `""` to target the root table. Use `*` for any key segment and `[*]` for any array element. Numeric array indices are treated as wildcards too, so `items[0].name` behaves the same as `items[*].name`.
+
+### schemas[*].overrides[*].format
+
+Override schema-specific format settings for matched targets.
+
+- Type: `Table`
+
+### schemas[*].overrides[*].format.rules
+
+Override schema-derived ordering rules for matched targets.
+
+- Type: `Table`
+
+### schemas[*].overrides[*].format.rules.array-values-order
+
+Override array value ordering for matched targets.
+
+- Type: `Table | "ascending" | "descending" | "schema" | "version-sort"`
+
+Set an explicit order to force that ordering, or use `{ enabled = false }` to disable schema-defined ordering for the matched targets. `{ enabled = true }` re-enables schema-defined ordering without forcing a specific order.
+
+### schemas[*].overrides[*].format.rules.table-keys-order
+
+Override table key ordering for matched targets.
+
+- Type: `Table | "ascending" | "descending" | "schema" | "version-sort"`
+
+Set an explicit order to force that ordering. `"schema"` means to follow the order defined by the JSON Schema. `{ enabled = false }` disables schema-defined ordering for the matched targets, and `{ enabled = true }` re-enables it.
 
 ### overrides
 
