@@ -129,6 +129,13 @@ impl SchemaItem {
             Self::Sub(item) => item.deprecated_lint_level(),
         }
     }
+
+    pub fn format(&self) -> Option<&SchemaFormatOptions> {
+        match self {
+            Self::Root(item) => item.format.as_ref(),
+            Self::Sub(item) => item.format.as_ref(),
+        }
+    }
 }
 
 /// # The schema for the root table
@@ -154,6 +161,9 @@ pub struct RootSchema {
 
     /// # Schema-specific lint options
     pub lint: Option<SchemaLintOptions>,
+
+    /// # Schema-specific format options
+    pub format: Option<SchemaFormatOptions>,
 }
 
 impl RootSchema {
@@ -190,6 +200,9 @@ pub struct SubSchema {
 
     /// # Schema-specific lint options
     pub lint: Option<SchemaLintOptions>,
+
+    /// # Schema-specific format options
+    pub format: Option<SchemaFormatOptions>,
 }
 
 impl SubSchema {
@@ -230,6 +243,57 @@ pub struct SchemaLintRules {
     ///
     /// Override the deprecated diagnostic level for this schema.
     pub deprecated: Option<SeverityLevelDefaultWarn>,
+}
+
+/// # Schema-specific format options
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaFormatOptions {
+    /// # Schema-specific format rules
+    pub rules: Option<SchemaFormatRules>,
+}
+
+/// # Schema-specific format rules
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaFormatRules {
+    /// # Whether schema-defined array values ordering is enabled
+    pub array_values_order: Option<SchemaArrayValuesOrderRule>,
+
+    /// # Whether schema-defined table key ordering is enabled
+    pub table_keys_order: Option<SchemaTableKeysOrderRule>,
+}
+
+/// # Schema-defined array values ordering
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaArrayValuesOrderRule {
+    /// # Whether schema-defined array values ordering is enabled
+    pub enabled: Option<BoolDefaultTrue>,
+}
+
+/// # Schema-defined table key ordering
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaTableKeysOrderRule {
+    /// # Whether schema-defined table key ordering is enabled
+    pub enabled: Option<BoolDefaultTrue>,
 }
 
 #[cfg(test)]

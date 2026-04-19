@@ -1115,7 +1115,8 @@ macro_rules! test_document_link {
                     toml_version: None,
                     path: schema_uri.to_string(),
                     include: vec!["*.toml".to_string()],
-                lint: None,
+                    lint: None,
+                    format: None,
                 }));
             }
 
@@ -1134,6 +1135,7 @@ macro_rules! test_document_link {
                     include: vec!["*.toml".to_string()],
                     root: subschema.root.clone(),
                     lint: None,
+                    format: None,
                 }));
             }
 
