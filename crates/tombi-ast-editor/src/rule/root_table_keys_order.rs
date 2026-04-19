@@ -27,7 +27,7 @@ pub async fn root_table_keys_order<'a>(
     if comment_directive
         .as_ref()
         .and_then(|c| c.table_keys_order_disabled())
-        .unwrap_or(false)
+        .unwrap_or_default()
     {
         return Vec::with_capacity(0);
     }

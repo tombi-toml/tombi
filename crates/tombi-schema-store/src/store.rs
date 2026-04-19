@@ -72,7 +72,7 @@ impl SchemaStore {
 
     /// Offline mode
     pub fn offline(&self) -> bool {
-        self.options.offline.unwrap_or(false)
+        self.options.offline.unwrap_or_default()
     }
 
     /// Cache options
@@ -1014,7 +1014,7 @@ fn matches_schema_include(
                     || (path_for_matching != absolute_source_path
                         && glob_pat.matches_path(absolute_source_path))
             })
-            .unwrap_or(false)
+            .unwrap_or_default()
     })
 }
 
