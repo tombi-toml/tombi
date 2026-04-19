@@ -310,12 +310,26 @@ pub struct SchemaTableKeysOrderRule {
     pub enabled: Option<BoolDefaultTrue>,
 }
 
+/// # Accessor pattern
+///
+/// To apply it to the Root Table, use `""`.
+///
+/// Array indices are matched as wildcards. That means `[*]` and numeric
+/// indices such as `[0]` are treated the same and will match any array
+/// element, so `items[0].name` behaves like `items[*].name`.
+///
+/// **Example**:
+///   - `""`
+///   - `"tool.*"`
+///   - `"items[*].name"`
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub struct Target(pub String);
+pub struct PatternAccessor(
+    #[cfg_attr(feature = "jsonschema", schemars(length(min = 0)))] pub String,
+);
 
-impl std::ops::Deref for Target {
+impl std::ops::Deref for PatternAccessor {
     type Target = String;
 
     fn deref(&self) -> &Self::Target {
@@ -323,7 +337,7 @@ impl std::ops::Deref for Target {
     }
 }
 
-impl From<&str> for Target {
+impl From<&str> for PatternAccessor {
     fn from(value: &str) -> Self {
         Self(value.to_string())
     }
@@ -338,19 +352,8 @@ impl From<&str> for Target {
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct SchemaOverrideItem {
     /// # Accessor patterns to override
-    ///
-    /// To apply it to the Root Table, use "".
-    ///
-    /// Array indices are matched as wildcards. That means `[*]` and numeric
-    /// indices such as `[0]` are treated the same and will match any array
-    /// element, so `items[0].name` behaves like `items[*].name`.
-    ///
-    /// ## Example
-    ///   - ""
-    ///   - "tool.*"
-    ///   - "items[*].name"
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    pub targets: Vec<Target>,
+    pub targets: Vec<PatternAccessor>,
 
     /// # Format options to override
     pub format: Option<SchemaOverrideFormatOptions>,

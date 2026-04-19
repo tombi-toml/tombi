@@ -111,7 +111,7 @@ impl crate::InlineTable {
                     .last()
                     .map(|(_, comma)| comma.is_some()),
             })
-            .unwrap_or(false)
+            .unwrap_or_default()
     }
 
     #[inline]

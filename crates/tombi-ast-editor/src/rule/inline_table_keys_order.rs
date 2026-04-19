@@ -25,7 +25,7 @@ pub async fn inline_table_keys_order<'a>(
     if comment_directive
         .as_ref()
         .and_then(|c| c.table_keys_order_disabled())
-        .unwrap_or(false)
+        .unwrap_or_default()
     {
         return Vec::with_capacity(0);
     }
@@ -39,7 +39,7 @@ pub async fn inline_table_keys_order<'a>(
     let is_last_comma = key_values_with_comma
         .last()
         .map(|(_, comma)| comma.is_some())
-        .unwrap_or(false);
+        .unwrap_or_default();
 
     let old = std::ops::RangeInclusive::new(
         SyntaxElement::Node(key_values_with_comma.first().unwrap().0.syntax().clone()),

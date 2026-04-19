@@ -138,7 +138,7 @@ impl std::fmt::Display for ValueConstraints {
             write!(f, "Max Values: `{max_items}`\n\n")?;
         }
 
-        if self.unique_items.unwrap_or(false) {
+        if self.unique_items.unwrap_or_default() {
             write!(f, "Unique Values: `true`\n\n")?;
         }
 
@@ -186,7 +186,7 @@ impl std::fmt::Display for ValueConstraints {
             }
         }
 
-        if self.additional_keys.unwrap_or(false) {
+        if self.additional_keys.unwrap_or_default() {
             write!(f, "Additional Keys: `true`\n\n")?;
         }
 

@@ -357,7 +357,7 @@ async fn validate_array(
         };
 
         for (index, value) in array_value.values().iter().enumerate() {
-            if evaluated.get(index).copied().unwrap_or(false) {
+            if evaluated.get(index).copied().unwrap_or_default() {
                 continue;
             }
             evaluated[index] = true;
