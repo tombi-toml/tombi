@@ -944,6 +944,17 @@
               "type": "null"
             }
           ]
+        },
+        "format": {
+          "title": "Schema-specific format options",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaFormatOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -992,6 +1003,93 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "schema"
     },
+    "SchemaFormatOptions": {
+      "title": "Schema-specific format options",
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Schema-specific format rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaFormatRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
+    },
+    "SchemaFormatRules": {
+      "title": "Schema-specific format rules",
+      "type": "object",
+      "properties": {
+        "array-values-order": {
+          "title": "Whether schema-defined array values ordering is enabled",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaArrayValuesOrderRule"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "table-keys-order": {
+          "title": "Whether schema-defined table key ordering is enabled",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaTableKeysOrderRule"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "SchemaArrayValuesOrderRule": {
+      "title": "Schema-defined array values ordering",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "title": "Whether schema-defined array values ordering is enabled",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
+    },
+    "SchemaTableKeysOrderRule": {
+      "title": "Schema-defined table key ordering",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "title": "Whether schema-defined table key ordering is enabled",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
+    },
     "SubSchema": {
       "title": "The schema for the sub value",
       "type": "object",
@@ -1023,6 +1121,17 @@
           "anyOf": [
             {
               "$ref": "#/definitions/SchemaLintOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "format": {
+          "title": "Schema-specific format options",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaFormatOptions"
             },
             {
               "type": "null"

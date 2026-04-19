@@ -128,6 +128,9 @@ impl<'a> Linter<'a> {
                 deprecated_lint_level: source_schema
                     .as_ref()
                     .and_then(|source_schema| source_schema.deprecated_lint_level),
+                schema_format_rules: source_schema
+                    .as_ref()
+                    .map(|source_schema| &source_schema.schema_format_rules),
                 schema_visits: Default::default(),
                 store: self.schema_store,
                 strict: tombi_document_comment_directive

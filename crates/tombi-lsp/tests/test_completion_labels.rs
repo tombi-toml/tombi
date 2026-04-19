@@ -635,6 +635,7 @@ mod completion_labels {
                 "include",
                 "path",
                 "root",
+                "format",
                 "lint",
                 "toml-version",
             ]);
@@ -2553,7 +2554,8 @@ mod completion_labels {
                         toml_version: None,
                         path: schema_uri.to_string(),
                         include: vec!["*.toml".to_string()],
-                    lint: None,
+                        lint: None,
+                        format: None,
                     }));
                 }
 
@@ -2572,6 +2574,7 @@ mod completion_labels {
                         include: vec!["*.toml".to_string()],
                         root: subschema.root.to_string(),
                         lint: None,
+                        format: None,
                     }));
                 }
 

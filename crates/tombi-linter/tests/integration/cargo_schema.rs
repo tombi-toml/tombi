@@ -104,6 +104,7 @@ fn deprecated_schema_config(deprecated_level: Option<SeverityLevel>) -> tombi_co
                     )),
                 }),
             }),
+            format: None,
         },
     )]);
     config
@@ -128,6 +129,7 @@ fn deprecated_sub_schema_config(deprecated_level: Option<SeverityLevel>) -> tomb
                     )),
                 }),
             }),
+            format: None,
         },
     )]);
     config

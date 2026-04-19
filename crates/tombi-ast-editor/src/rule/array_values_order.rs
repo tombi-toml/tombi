@@ -45,6 +45,10 @@ pub async fn array_values_order<'a>(
         return Vec::with_capacity(0);
     }
 
+    if !schema_context.schema_array_values_order_enabled(current_schema) {
+        return Vec::with_capacity(0);
+    }
+
     if comment_directive
         .as_ref()
         .and_then(|content| content.array_values_order_disabled())

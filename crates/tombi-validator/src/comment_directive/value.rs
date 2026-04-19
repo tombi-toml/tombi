@@ -410,6 +410,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
         tombi_hashmap::IndexMap::with_capacity(0),
         Some(toml_version),
         None,
+        Default::default(),
     );
 
     let schema_context = tombi_schema_store::SchemaContext {
@@ -417,6 +418,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
         root_schema: source_schema.root_schema.as_deref(),
         sub_schema_uri_map: None,
         deprecated_lint_level: None,
+        schema_format_rules: None,
         schema_visits: Default::default(),
         store: schema_store,
         strict: None,
