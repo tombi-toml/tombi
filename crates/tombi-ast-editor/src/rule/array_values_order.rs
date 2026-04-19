@@ -53,7 +53,7 @@ pub async fn array_values_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    let order: Option<ArrayValuesOrder> = comment_directive
+    let comment_directive_order: Option<ArrayValuesOrder> = comment_directive
         .as_ref()
         .and_then(|comment_directive| comment_directive.array_values_order().map(Into::into));
 
@@ -62,9 +62,9 @@ pub async fn array_values_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    let values_order = match order {
+    let values_order = match comment_directive_order {
         Some(values_order) => Some(XTombiArrayValuesOrder::All(values_order)),
-        None => match schema_override.and_then(|override_item| override_item.order.clone()) {
+        None => match schema_override.and_then(|override_item| override_item.order) {
             Some(values_order) => Some(XTombiArrayValuesOrder::All(values_order)),
             None if schema_context.schema_array_values_order_enabled(current_schema) => {
                 array_schema_values_order

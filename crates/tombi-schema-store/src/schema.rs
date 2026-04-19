@@ -51,7 +51,7 @@ pub use tombi_uri::{CatalogUri, SchemaUri};
 pub use value_schema::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OrderOverride<T> {
+pub struct OrderOverride<T: Copy> {
     pub target: Vec<RootAccessor>,
     pub disabled: bool,
     pub order: Option<T>,
