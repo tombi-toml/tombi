@@ -1842,10 +1842,10 @@ mod schema_format_rules {
 
 mod schema_overrides {
     use tombi_config::{
-        Config, RootSchema, SchemaArrayValuesOrderRule, SchemaFormatOptions, SchemaFormatRules,
-        SchemaItem, SchemaOverrideArrayValuesOrder, SchemaOverrideArrayValuesOrderRule,
+        ArrayValuesOrder, Config, RootSchema, SchemaArrayValuesOrderRule, SchemaFormatOptions,
+        SchemaFormatRules, SchemaItem, SchemaOverrideArrayValuesOrderRule,
         SchemaOverrideFormatOptions, SchemaOverrideFormatRules, SchemaOverrideItem,
-        SchemaOverrideTableKeysOrder, SchemaOverrideTableKeysOrderRule, SchemaTableKeysOrderRule,
+        SchemaOverrideTableKeysOrderRule, SchemaTableKeysOrderRule, TableKeysOrder,
     };
     use tombi_formatter::{Formatter, test_format};
     use tombi_test_lib::pyproject_schema_path;
@@ -1874,7 +1874,7 @@ mod schema_overrides {
                         rules: Some(SchemaOverrideFormatRules {
                             array_values_order: None,
                             table_keys_order: Some(SchemaOverrideTableKeysOrderRule::Order(
-                                SchemaOverrideTableKeysOrder::Schema,
+                                TableKeysOrder::Schema,
                             )),
                         }),
                     }),
@@ -1884,7 +1884,7 @@ mod schema_overrides {
                     format: Some(SchemaOverrideFormatOptions {
                         rules: Some(SchemaOverrideFormatRules {
                             array_values_order: Some(SchemaOverrideArrayValuesOrderRule::Order(
-                                SchemaOverrideArrayValuesOrder::Ascending,
+                                ArrayValuesOrder::Ascending,
                             )),
                             table_keys_order: None,
                         }),

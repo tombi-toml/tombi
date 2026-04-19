@@ -1187,14 +1187,14 @@
       "title": "Override array values ordering for matched roots",
       "anyOf": [
         {
-          "$ref": "#/definitions/SchemaOverrideArrayValuesOrder"
+          "$ref": "#/definitions/ArrayValuesOrder"
         },
         {
           "$ref": "#/definitions/SchemaArrayValuesOrderRule"
         }
       ]
     },
-    "SchemaOverrideArrayValuesOrder": {
+    "ArrayValuesOrder": {
       "type": "string",
       "enum": [
         "ascending",
@@ -1206,14 +1206,14 @@
       "title": "Override table key ordering for matched roots",
       "anyOf": [
         {
-          "$ref": "#/definitions/SchemaOverrideTableKeysOrder"
+          "$ref": "#/definitions/TableKeysOrder"
         },
         {
           "$ref": "#/definitions/SchemaTableKeysOrderRule"
         }
       ]
     },
-    "SchemaOverrideTableKeysOrder": {
+    "TableKeysOrder": {
       "type": "string",
       "enum": [
         "ascending",

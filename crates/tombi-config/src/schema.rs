@@ -380,7 +380,7 @@ pub struct SchemaOverrideFormatRules {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, PartialEq)]
 pub enum SchemaOverrideArrayValuesOrderRule {
-    Order(SchemaOverrideArrayValuesOrder),
+    Order(ArrayValuesOrder),
     Rule(SchemaArrayValuesOrderRule),
 }
 
@@ -394,28 +394,8 @@ impl SchemaOverrideArrayValuesOrderRule {
 
     pub fn order(&self) -> Option<ArrayValuesOrder> {
         match self {
-            Self::Order(order) => Some(order.clone().into()),
+            Self::Order(order) => Some(*order),
             Self::Rule(_) => None,
-        }
-    }
-}
-
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[derive(Debug, Clone, PartialEq)]
-pub enum SchemaOverrideArrayValuesOrder {
-    Ascending,
-    Descending,
-    VersionSort,
-}
-
-impl From<SchemaOverrideArrayValuesOrder> for ArrayValuesOrder {
-    fn from(value: SchemaOverrideArrayValuesOrder) -> Self {
-        match value {
-            SchemaOverrideArrayValuesOrder::Ascending => Self::Ascending,
-            SchemaOverrideArrayValuesOrder::Descending => Self::Descending,
-            SchemaOverrideArrayValuesOrder::VersionSort => Self::VersionSort,
         }
     }
 }
@@ -426,7 +406,7 @@ impl From<SchemaOverrideArrayValuesOrder> for ArrayValuesOrder {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, PartialEq)]
 pub enum SchemaOverrideTableKeysOrderRule {
-    Order(SchemaOverrideTableKeysOrder),
+    Order(TableKeysOrder),
     Rule(SchemaTableKeysOrderRule),
 }
 
@@ -440,30 +420,8 @@ impl SchemaOverrideTableKeysOrderRule {
 
     pub fn order(&self) -> Option<TableKeysOrder> {
         match self {
-            Self::Order(order) => Some(order.clone().into()),
+            Self::Order(order) => Some(*order),
             Self::Rule(_) => None,
-        }
-    }
-}
-
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[derive(Debug, Clone, PartialEq)]
-pub enum SchemaOverrideTableKeysOrder {
-    Ascending,
-    Descending,
-    Schema,
-    VersionSort,
-}
-
-impl From<SchemaOverrideTableKeysOrder> for TableKeysOrder {
-    fn from(value: SchemaOverrideTableKeysOrder) -> Self {
-        match value {
-            SchemaOverrideTableKeysOrder::Ascending => Self::Ascending,
-            SchemaOverrideTableKeysOrder::Descending => Self::Descending,
-            SchemaOverrideTableKeysOrder::Schema => Self::Schema,
-            SchemaOverrideTableKeysOrder::VersionSort => Self::VersionSort,
         }
     }
 }
