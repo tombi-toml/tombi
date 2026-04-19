@@ -5,9 +5,9 @@ use tombi_config::{SchemaFormatRules, TomlVersion};
 use tombi_severity_level::SeverityLevelDefaultWarn;
 
 use super::{DocumentSchema, SchemaOverrides, SchemaUri};
-use crate::{RootAccessor, RootAccessors};
+use crate::{PatternAccessor, PatternAccessors};
 
-pub type SubSchemaUriMap = tombi_hashmap::IndexMap<Vec<RootAccessor>, SchemaUri>;
+pub type SubSchemaUriMap = tombi_hashmap::IndexMap<Vec<PatternAccessor>, SchemaUri>;
 pub type SchemaFormatRulesMap = tombi_hashmap::HashMap<SchemaUri, SchemaFormatRules>;
 pub type SchemaOverridesMap = tombi_hashmap::HashMap<SchemaUri, SchemaOverrides>;
 
@@ -65,7 +65,7 @@ impl std::fmt::Debug for SourceSchema {
             .sub_schema_uri_map
             .iter()
             .map(|(accessors, url)| {
-                format!("[{:?}]: {}", RootAccessors::from(accessors.clone()), url)
+                format!("[{:?}]: {}", PatternAccessors::from(accessors.clone()), url)
             })
             .collect_vec()
             .join(", ");

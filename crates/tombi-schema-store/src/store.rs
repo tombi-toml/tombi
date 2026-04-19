@@ -2,8 +2,8 @@ use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 
 use crate::resolve_json_pointer;
 use crate::{
-    AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, RootAccessor, RootAccessors,
-    SourceSchema, SubSchemaUriMap, ValueSchema, get_tombi_schemastore_content,
+    AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, PatternAccessor,
+    PatternAccessors, SourceSchema, SubSchemaUriMap, ValueSchema, get_tombi_schemastore_content,
     http_client::HttpClient, json::JsonCatalog,
 };
 use itertools::{Either, Itertools};
@@ -200,7 +200,7 @@ impl SchemaStore {
                 catalog_uri: None,
                 include: schema.include().to_vec(),
                 toml_version: schema.toml_version(),
-                sub_root_accessors: schema.root().and_then(RootAccessor::parse),
+                sub_root_accessors: schema.root().and_then(PatternAccessor::parse),
             });
         }))
         .await;
@@ -953,7 +953,7 @@ impl SchemaStore {
                 for (accessors, schema_uri) in &source_schema.sub_schema_uri_map {
                     log::trace!(
                         "find sub schema {:?} from {}",
-                        RootAccessors::from(accessors.clone()),
+                        PatternAccessors::from(accessors.clone()),
                         schema_uri
                     );
                 }
@@ -1166,11 +1166,11 @@ fn schema_overrides(schema: &tombi_config::SchemaItem) -> crate::SchemaOverrides
     overrides
 }
 
-fn parse_override_target(target: &str) -> Option<Vec<RootAccessor>> {
+fn parse_override_target(target: &str) -> Option<Vec<PatternAccessor>> {
     if target.is_empty() {
         Some(Vec::new())
     } else {
-        RootAccessor::parse(target)
+        PatternAccessor::parse(target)
     }
 }
 
