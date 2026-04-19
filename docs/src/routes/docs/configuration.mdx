@@ -103,6 +103,9 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
       - [schemas[\*].overrides[\*].format.rules](#schemas-overrides-format-rules)
         - [schemas[\*].overrides[\*].format.rules.array-values-order](#schemas-overrides-format-rules-array-values-order)
         - [schemas[\*].overrides[\*].format.rules.table-keys-order](#schemas-overrides-format-rules-table-keys-order)
+    - [schemas[\*].overrides[\*].lint](#schemas-overrides-lint)
+      - [schemas[\*].overrides[\*].lint.rules](#schemas-overrides-lint-rules)
+        - [schemas[\*].overrides[\*].lint.rules.deprecated](#schemas-overrides-lint-rules-deprecated)
 - [overrides](#overrides)
   - [overrides[\*].files](#overrides-files)
     - [overrides[\*].files.include](#overrides-files-include)
@@ -998,6 +1001,26 @@ Override table key ordering for matched targets.
 - Type: `Table | "ascending" | "descending" | "schema" | "version-sort"`
 
 Set an explicit order to force that ordering. `"schema"` means to follow the order defined by the JSON Schema. `{ enabled = false }` disables schema-defined ordering for the matched targets, and `{ enabled = true }` re-enables it.
+
+### schemas[*].overrides[*].lint
+
+Override schema-specific lint settings for matched targets.
+
+- Type: `Table`
+
+### schemas[*].overrides[*].lint.rules
+
+Override schema-specific lint rules for matched targets.
+
+- Type: `Table`
+
+### schemas[*].overrides[*].lint.rules.deprecated
+
+Override the deprecated diagnostic level for matched targets.
+This applies when the matched JSON Schema marks a value as `deprecated: true`.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
 
 ### overrides
 
