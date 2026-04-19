@@ -119,6 +119,7 @@ impl crate::Edit for tombi_ast::Array {
                         schema_context,
                         array_schema_values_order.clone(),
                         comment_directive.clone(),
+                        None,
                     )
                     .await,
                 );

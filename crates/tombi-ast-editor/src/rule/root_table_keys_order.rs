@@ -7,7 +7,8 @@ use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 use tombi_syntax::SyntaxElement;
 
-use crate::rule::table_keys_order::{TableOrderOverrides, get_sorted_accessors, table_keys_order};
+use crate::rule::TableOrderOverrides;
+use crate::rule::table_keys_order::{get_sorted_accessors, table_keys_order};
 
 pub async fn root_table_keys_order<'a>(
     key_value_groups: Vec<tombi_ast::KeyValueGroup>,

@@ -1118,44 +1118,48 @@ fn schema_overrides(schema: &tombi_config::SchemaItem) -> crate::SchemaOverrides
     let mut overrides = crate::SchemaOverrides::default();
 
     for override_item in schema.overrides().into_iter().flatten() {
-        if let Some(rule) = override_item
+        let rules = override_item
             .format
             .as_ref()
-            .and_then(|format| format.rules.as_ref())
-            .and_then(|rules| rules.array_values_order.as_ref())
-        {
-            for target in override_item
-                .targets
-                .iter()
-                .filter_map(|target| parse_override_target(target))
-            {
-                overrides
-                    .array_values_order
-                    .push(crate::ArrayOrderOverride {
-                        target,
-                        disabled: !rule.enabled().unwrap_or_default().value(),
-                        order: rule.order(),
-                    });
-            }
+            .and_then(|format| format.rules.as_ref());
+        let targets = override_item
+            .targets
+            .iter()
+            .filter_map(|target| parse_override_target(target))
+            .collect_vec();
+
+        if let Some(rule) = rules.and_then(|r| r.array_values_order.as_ref()) {
+            let disabled = !rule.enabled().unwrap_or_default().value();
+            let order = rule.order();
+            overrides
+                .array_values_order
+                .extend(
+                    targets
+                        .iter()
+                        .cloned()
+                        .map(|target| crate::ArrayOrderOverride {
+                            target,
+                            disabled,
+                            order,
+                        }),
+                );
         }
 
-        if let Some(rule) = override_item
-            .format
-            .as_ref()
-            .and_then(|format| format.rules.as_ref())
-            .and_then(|rules| rules.table_keys_order.as_ref())
-        {
-            for target in override_item
-                .targets
-                .iter()
-                .filter_map(|target| parse_override_target(target))
-            {
-                overrides.table_keys_order.push(crate::TableOrderOverride {
-                    target,
-                    disabled: !rule.enabled().unwrap_or_default().value(),
-                    order: rule.order(),
-                });
-            }
+        if let Some(rule) = rules.and_then(|r| r.table_keys_order.as_ref()) {
+            let disabled = !rule.enabled().unwrap_or_default().value();
+            let order = rule.order();
+            overrides
+                .table_keys_order
+                .extend(
+                    targets
+                        .iter()
+                        .cloned()
+                        .map(|target| crate::TableOrderOverride {
+                            target,
+                            disabled,
+                            order,
+                        }),
+                );
         }
     }
 

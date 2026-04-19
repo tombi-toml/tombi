@@ -60,10 +60,47 @@ pub struct OrderOverride<T: Copy> {
 pub type ArrayOrderOverride = OrderOverride<tombi_x_keyword::ArrayValuesOrder>;
 pub type TableOrderOverride = OrderOverride<tombi_x_keyword::TableKeysOrder>;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OrderOverrides<T: Copy> {
+    inner: Vec<OrderOverride<T>>,
+}
+
+impl<T: Copy> Default for OrderOverrides<T> {
+    fn default() -> Self {
+        Self { inner: Vec::new() }
+    }
+}
+
+impl<T: Copy> OrderOverrides<T> {
+    pub fn push(&mut self, override_item: OrderOverride<T>) {
+        self.inner.push(override_item);
+    }
+
+    pub fn find(&self, accessors: &[Accessor]) -> Option<&OrderOverride<T>> {
+        self.inner.iter().find(|override_item| {
+            override_item.target.len() == accessors.len()
+                && override_item
+                    .target
+                    .iter()
+                    .zip(accessors)
+                    .all(|(expected, actual)| expected == actual)
+        })
+    }
+}
+
+impl<T: Copy> Extend<OrderOverride<T>> for OrderOverrides<T> {
+    fn extend<I: IntoIterator<Item = OrderOverride<T>>>(&mut self, iter: I) {
+        self.inner.extend(iter);
+    }
+}
+
+pub type ArrayOrderOverrides = OrderOverrides<tombi_x_keyword::ArrayValuesOrder>;
+pub type TableOrderOverrides = OrderOverrides<tombi_x_keyword::TableKeysOrder>;
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SchemaOverrides {
-    pub array_values_order: Vec<ArrayOrderOverride>,
-    pub table_keys_order: Vec<TableOrderOverride>,
+    pub array_values_order: ArrayOrderOverrides,
+    pub table_keys_order: TableOrderOverrides,
 }
 
 pub type SchemaProperties =

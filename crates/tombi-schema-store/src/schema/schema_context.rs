@@ -73,15 +73,7 @@ impl SchemaContext<'_> {
     ) -> Option<&crate::ArrayOrderOverride> {
         self.schema_overrides(current_schema)?
             .array_values_order
-            .iter()
-            .find(|override_item| {
-                override_item.target.len() == accessors.len()
-                    && override_item
-                        .target
-                        .iter()
-                        .zip(accessors)
-                        .all(|(expected, actual)| expected == actual)
-            })
+            .find(accessors)
     }
 
     pub fn table_order_override(
@@ -91,15 +83,7 @@ impl SchemaContext<'_> {
     ) -> Option<&crate::TableOrderOverride> {
         self.schema_overrides(current_schema)?
             .table_keys_order
-            .iter()
-            .find(|override_item| {
-                override_item.target.len() == accessors.len()
-                    && override_item
-                        .target
-                        .iter()
-                        .zip(accessors)
-                        .all(|(expected, actual)| expected == actual)
-            })
+            .find(accessors)
     }
 
     fn schema_overrides(
