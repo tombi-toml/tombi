@@ -8,7 +8,8 @@ use tower_lsp::lsp_types::{
 use crate::{
     backend,
     completion::{
-        extract_keys_and_hint, find_completion_contents_with_tree, get_comment_context,
+        extract_keys_and_hint, find_completion_contents_with_accessors,
+        find_completion_contents_with_tree, get_comment_context,
         get_document_comment_directive_completion_contents,
     },
     config_manager::ConfigSchemaStore,
@@ -152,16 +153,38 @@ pub async fn handle_completion(
                 None,
             );
 
-            completion_items.extend(
-                find_completion_contents_with_tree(
-                    &document_tree,
-                    position,
-                    &keys,
-                    &schema_context,
-                    completion_hint,
-                )
-                .await,
-            );
+            let mut schema_completion_items = find_completion_contents_with_tree(
+                &document_tree,
+                position,
+                &keys,
+                &schema_context,
+                completion_hint,
+            )
+            .await;
+
+            if schema_completion_items.is_empty()
+                && matches!(completion_hint, Some(CompletionHint::DotTrigger { .. }))
+            {
+                let accessors =
+                    tombi_document_tree::get_accessors(&document_tree, &keys, position);
+                // `get_accessors` appends `Accessor::Index` entries when `position` is
+                // inside an array value, so more accessors than keys means we have a
+                // deeper context that the tree-based completion didn't reach.
+                if accessors.len() > keys.len() {
+                    let accessor_completion_items = find_completion_contents_with_accessors(
+                        position,
+                        &accessors,
+                        &schema_context,
+                        completion_hint,
+                    )
+                    .await;
+                    if !accessor_completion_items.is_empty() {
+                        schema_completion_items = accessor_completion_items;
+                    }
+                }
+            }
+
+            completion_items.extend(schema_completion_items);
 
             (keys, completion_hint)
         }
