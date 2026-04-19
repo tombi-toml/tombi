@@ -357,6 +357,9 @@ pub struct SchemaOverrideItem {
 
     /// # Format options to override
     pub format: Option<SchemaOverrideFormatOptions>,
+
+    /// # Lint options to override
+    pub lint: Option<SchemaOverrideLintOptions>,
 }
 
 /// # Schema-specific override format options
@@ -384,6 +387,30 @@ pub struct SchemaOverrideFormatRules {
 
     /// # Override table key ordering for matched roots
     pub table_keys_order: Option<SchemaOverrideTableKeysOrderRule>,
+}
+
+/// # Schema-specific override lint options
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaOverrideLintOptions {
+    /// # Schema-specific override lint rules
+    pub rules: Option<SchemaOverrideLintRules>,
+}
+
+/// # Schema-specific override lint rules
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaOverrideLintRules {
+    /// # Override deprecated diagnostics for matched roots
+    pub deprecated: Option<SeverityLevelDefaultWarn>,
 }
 
 /// # Override array values ordering for matched roots

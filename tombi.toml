@@ -47,6 +47,7 @@ overrides = [
   {
     targets = [""],
     format.rules.table-keys-order = "schema",
+    lint.rules.deprecated = "error"
   }
 ]
 

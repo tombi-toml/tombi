@@ -1122,6 +1122,17 @@
               "type": "null"
             }
           ]
+        },
+        "lint": {
+          "title": "Lint options to override",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaOverrideLintOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -1223,6 +1234,44 @@
         "schema",
         "version-sort"
       ]
+    },
+    "SchemaOverrideLintOptions": {
+      "title": "Schema-specific override lint options",
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Schema-specific override lint rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaOverrideLintRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
+    },
+    "SchemaOverrideLintRules": {
+      "title": "Schema-specific override lint rules",
+      "type": "object",
+      "properties": {
+        "deprecated": {
+          "title": "Override deprecated diagnostics for matched roots",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
     },
     "SubSchema": {
       "title": "The schema for the sub value",

@@ -60,6 +60,36 @@ pub struct OrderOverride<T: Copy> {
 pub type ArrayOrderOverride = OrderOverride<tombi_x_keyword::ArrayValuesOrder>;
 pub type TableOrderOverride = OrderOverride<tombi_x_keyword::TableKeysOrder>;
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct DeprecatedOverride {
+    pub target: Vec<PatternAccessor>,
+    pub level: tombi_severity_level::SeverityLevelDefaultWarn,
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct DeprecatedOverrides {
+    inner: Vec<DeprecatedOverride>,
+}
+
+impl DeprecatedOverrides {
+    pub fn find(&self, accessors: &[Accessor]) -> Option<&DeprecatedOverride> {
+        self.inner.iter().find(|override_item| {
+            override_item.target.len() == accessors.len()
+                && override_item
+                    .target
+                    .iter()
+                    .zip(accessors)
+                    .all(|(expected, actual)| expected == actual)
+        })
+    }
+}
+
+impl Extend<DeprecatedOverride> for DeprecatedOverrides {
+    fn extend<I: IntoIterator<Item = DeprecatedOverride>>(&mut self, iter: I) {
+        self.inner.extend(iter);
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderOverrides<T: Copy> {
     inner: Vec<OrderOverride<T>>,
@@ -97,8 +127,9 @@ impl<T: Copy> Extend<OrderOverride<T>> for OrderOverrides<T> {
 pub type ArrayOrderOverrides = OrderOverrides<tombi_x_keyword::ArrayValuesOrder>;
 pub type TableOrderOverrides = OrderOverrides<tombi_x_keyword::TableKeysOrder>;
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct SchemaOverrides {
+    pub deprecated: DeprecatedOverrides,
     pub array_values_order: ArrayOrderOverrides,
     pub table_keys_order: TableOrderOverrides,
 }
