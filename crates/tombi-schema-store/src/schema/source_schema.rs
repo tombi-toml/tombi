@@ -1,19 +1,21 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-use tombi_config::TomlVersion;
+use tombi_config::{SchemaFormatRules, TomlVersion};
 use tombi_severity_level::SeverityLevelDefaultWarn;
 
 use super::{DocumentSchema, SchemaUri};
 use crate::{RootAccessor, RootAccessors};
 
 pub type SubSchemaUriMap = tombi_hashmap::IndexMap<Vec<RootAccessor>, SchemaUri>;
+pub type SchemaFormatRulesMap = tombi_hashmap::HashMap<SchemaUri, SchemaFormatRules>;
 
 #[derive(Clone, Default)]
 pub struct SourceSchema {
     pub root_schema: Option<Arc<DocumentSchema>>,
     pub sub_schema_uri_map: SubSchemaUriMap,
     pub deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
+    pub schema_format_rules: SchemaFormatRulesMap,
     /// TOML version override from `[[schemas]]` config entry.
     ///
     /// Use [`toml_version()`](Self::toml_version) to get the resolved value.
@@ -26,11 +28,13 @@ impl SourceSchema {
         sub_schema_uri_map: SubSchemaUriMap,
         toml_version: Option<TomlVersion>,
         deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
+        schema_format_rules: SchemaFormatRulesMap,
     ) -> Self {
         Self {
             root_schema,
             sub_schema_uri_map,
             deprecated_lint_level,
+            schema_format_rules,
             toml_version,
         }
     }

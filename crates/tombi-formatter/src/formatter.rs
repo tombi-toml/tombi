@@ -135,6 +135,9 @@ impl<'a> Formatter<'a> {
                 deprecated_lint_level: source_schema
                     .as_ref()
                     .and_then(|schema| schema.deprecated_lint_level),
+                schema_format_rules: source_schema
+                    .as_ref()
+                    .map(|schema| &schema.schema_format_rules),
                 schema_visits: Default::default(),
                 store: self.schema_store,
                 strict: tombi_document_comment_directive

@@ -40,6 +40,7 @@ macro_rules! test_format {
             pub struct TestArgs {
                 pub toml_version: TomlVersion,
                 pub options: FormatOptions,
+                pub config: Option<tombi_config::Config>,
                 pub schema_path: Option<std::path::PathBuf>,
             }
 
@@ -57,6 +58,16 @@ macro_rules! test_format {
             impl ApplyTestArg for FormatOptions {
                 fn apply(self, args: &mut TestArgs) {
                     args.options = self;
+                }
+            }
+
+            /// Set full config for the test case.
+            #[allow(unused)]
+            pub struct Config(pub tombi_config::Config);
+
+            impl ApplyTestArg for Config {
+                fn apply(self, args: &mut TestArgs) {
+                    args.config = Some(self.0);
                 }
             }
 
@@ -79,7 +90,9 @@ macro_rules! test_format {
             // Initialize schema store
             let schema_store = SchemaStore::new();
 
-            if let Some(schema_path) = &args.schema_path {
+            if let Some(config) = &args.config {
+                schema_store.load_config(config, None).await.unwrap();
+            } else if let Some(schema_path) = &args.schema_path {
                 let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path.as_path())
                     .expect("failed to convert test schema path to schema uri");
                 schema_store
@@ -146,6 +159,7 @@ macro_rules! test_format {
             pub struct TestArgs {
                 pub toml_version: TomlVersion,
                 pub options: FormatOptions,
+                pub config: Option<tombi_config::Config>,
                 pub schema_path: Option<std::path::PathBuf>,
             }
 
@@ -163,6 +177,16 @@ macro_rules! test_format {
             impl ApplyTestArg for FormatOptions {
                 fn apply(self, config: &mut TestArgs) {
                     config.options = self;
+                }
+            }
+
+            /// Set full config for the test case.
+            #[allow(unused)]
+            pub struct Config(pub tombi_config::Config);
+
+            impl ApplyTestArg for Config {
+                fn apply(self, config: &mut TestArgs) {
+                    config.config = Some(self.0);
                 }
             }
 
@@ -185,7 +209,9 @@ macro_rules! test_format {
             // Initialize schema store
             let schema_store = SchemaStore::new();
 
-            if let Some(schema_path) = config.schema_path {
+            if let Some(config_value) = &config.config {
+                schema_store.load_config(config_value, None).await.unwrap();
+            } else if let Some(schema_path) = config.schema_path {
                 let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path)
                     .expect("failed to convert test schema path to schema uri");
                 schema_store
