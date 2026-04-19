@@ -371,6 +371,7 @@ mod goto_declaration_tests {
                         include: vec!["*.toml".to_string()],
                         lint: None,
                         format: None,
+                        overrides: None,
                     }));
                 }
 
@@ -390,6 +391,7 @@ mod goto_declaration_tests {
                         root: subschema.root.clone(),
                         lint: None,
                         format: None,
+                        overrides: None,
                     }));
                 }
 

@@ -77,6 +77,30 @@ test_lint! {
 
 test_lint! {
     #[test]
+    fn test_tombi_schema_overrides(
+        r#"
+        [[schemas]]
+        path = "schemas/type-test.schema.json"
+        include = ["*.toml"]
+
+        [[schemas.overrides]]
+        targets = [""]
+
+        [schemas.overrides.format.rules]
+        table-keys-order = "ascending"
+
+        [[schemas.overrides]]
+        targets = ["items[0].name"]
+
+        [schemas.overrides.format.rules.array-values-order]
+        enabled = false
+        "#,
+        SchemaPath(tombi_schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
     fn test_tombi_schema_lint_rules_key_empty_undefined(
         r#"
         [lint.rules]

@@ -19,11 +19,14 @@ pub use overrides::*;
 pub use schema::SchemaOverviewOptions;
 pub use schema::{
     RootSchema, SchemaArrayValuesOrderRule, SchemaFormatOptions, SchemaFormatRules, SchemaItem,
-    SchemaLintOptions, SchemaLintRules, SchemaTableKeysOrderRule, SubSchema,
+    SchemaLintOptions, SchemaLintRules, SchemaOverrideArrayValuesOrderRule,
+    SchemaOverrideFormatOptions, SchemaOverrideFormatRules, SchemaOverrideItem,
+    SchemaOverrideTableKeysOrderRule, SchemaTableKeysOrderRule, SubSchema, Target,
 };
 pub use server::{LspCompletion, LspDiagnostic, LspOptions};
 pub use tombi_severity_level::SeverityLevel;
 pub use tombi_toml_version::TomlVersion;
+pub use tombi_x_keyword::{ArrayValuesOrder, TableKeysOrder};
 pub use types::*;
 
 pub const DOT_TOMBI_TOML_FILENAME: &str = ".tombi.toml";

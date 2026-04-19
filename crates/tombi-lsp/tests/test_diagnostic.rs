@@ -305,6 +305,7 @@ macro_rules! test_diagnostic {
                             include: vec!["*.toml".to_string()],
                             lint: None,
                             format: None,
+                            overrides: None,
                         }),
                     ]);
                     editor_config
@@ -611,6 +612,7 @@ macro_rules! test_diagnostic_file {
                             include: vec!["*.toml".to_string()],
                             lint: None,
                             format: None,
+                            overrides: None,
                         }),
                     ]);
                     editor_config

@@ -26,5 +26,6 @@ jsonschema = [
   "serde",
   "tombi-severity-level/jsonschema",
   "tombi-toml-version/jsonschema",
+  "tombi-x-keyword/jsonschema",
 ]
 serde = ["dep:serde", "tombi-severity-level/serde"]
