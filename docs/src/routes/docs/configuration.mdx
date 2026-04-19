@@ -103,6 +103,9 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
       - [schemas[\*].overrides[\*].format.rules](#schemas-overrides-format-rules)
         - [schemas[\*].overrides[\*].format.rules.array-values-order](#schemas-overrides-format-rules-array-values-order)
         - [schemas[\*].overrides[\*].format.rules.table-keys-order](#schemas-overrides-format-rules-table-keys-order)
+    - [schemas[\*].overrides[\*].lint](#schemas-overrides-lint)
+      - [schemas[\*].overrides[\*].lint.rules](#schemas-overrides-lint-rules)
+        - [schemas[\*].overrides[\*].lint.rules.deprecated](#schemas-overrides-lint-rules-deprecated)
 - [overrides](#overrides)
   - [overrides[\*].files](#overrides-files)
     - [overrides[\*].files.include](#overrides-files-include)
@@ -201,21 +204,21 @@ toml-version = "v1.0.0"
 path = "https://example.com/schema.json"
 include = ["example.toml"]
 
-[schemas.format.rules.array-values-order]
-enabled = true
-
-[schemas.format.rules.table-keys-order]
-enabled = true
-
-[[schemas.overrides]]
-targets = ["", "tool.*"]
-
-[schemas.overrides.format.rules]
-array-values-order = "ascending"
-table-keys-order = "ascending"
-
-[schemas.lint.rules]
-deprecated = "error"
+format.rules = {
+  array-values-order.enabled = true,
+  table-keys-order.enabled = true,
+}
+lint.rules = {
+  deprecated = "warn",
+}
+overrides = [
+  {
+    targets = ["", "tool.*"],
+    format.rules.array-values-order = "ascending",
+    format.rules.table-keys-order = "ascending",
+    lint.rules.deprecated = "warn",
+  },
+]
 
 # Sub Schema
 [[schemas]]
@@ -894,7 +897,7 @@ Configure schema-defined ordering for array values.
 
 - Type: `Table`
 
-Use `{ enabled = true }` to apply ordering metadata from the matched JSON Schema. Use `{ enabled = false }` to ignore schema-defined ordering for array values.
+Use `{ enabled = false }` to ignore schema-defined ordering for array values.
 
 ### schemas[*].format.rules.array-values-order.enabled
 
@@ -909,7 +912,7 @@ Configure schema-defined ordering for table keys.
 
 - Type: `Table`
 
-Use `{ enabled = true }` to apply ordering metadata from the matched JSON Schema. Use `{ enabled = false }` to ignore schema-defined ordering for table keys.
+Use `{ enabled = false }` to ignore schema-defined ordering for table keys.
 
 ### schemas[*].format.rules.table-keys-order.enabled
 
@@ -998,6 +1001,26 @@ Override table key ordering for matched targets.
 - Type: `Table | "ascending" | "descending" | "schema" | "version-sort"`
 
 Set an explicit order to force that ordering. `"schema"` means to follow the order defined by the JSON Schema. `{ enabled = false }` disables schema-defined ordering for the matched targets, and `{ enabled = true }` re-enables it.
+
+### schemas[*].overrides[*].lint
+
+Override schema-specific lint settings for matched targets.
+
+- Type: `Table`
+
+### schemas[*].overrides[*].lint.rules
+
+Override schema-specific lint rules for matched targets.
+
+- Type: `Table`
+
+### schemas[*].overrides[*].lint.rules.deprecated
+
+Override the deprecated diagnostic level for matched targets.
+This applies when the matched JSON Schema marks a value as `deprecated: true`.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
 
 ### overrides
 
