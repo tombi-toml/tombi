@@ -1,6 +1,5 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { globSync } from "glob";
 import matter from "gray-matter";
 
 interface DocumentData {
@@ -18,9 +17,25 @@ function extractTextContent(markdown: string): string {
     .trim();
 }
 
+function collectMdxFiles(dir: string, baseDir = dir): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      return collectMdxFiles(fullPath, baseDir);
+    }
+
+    if (!entry.isFile() || !entry.name.endsWith(".mdx")) {
+      return [];
+    }
+
+    return [fullPath.slice(baseDir.length + 1)];
+  });
+}
+
 function generateSearchIndex() {
   const docsDir = join(process.cwd(), "src/routes/docs");
-  const files = globSync("**/*.mdx", { cwd: docsDir });
+  const files = collectMdxFiles(docsDir);
 
   const documents: DocumentData[] = files.map((file: string, index: number) => {
     const fullPath = join(docsDir, file);
