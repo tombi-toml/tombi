@@ -91,7 +91,10 @@ macro_rules! test_format {
             let schema_store = SchemaStore::new();
 
             if let Some(config) = &args.config {
-                schema_store.load_config(config, None).await.unwrap();
+                schema_store
+                    .load_config(config, None)
+                    .await
+                    .expect("failed to load formatter test config");
             } else if let Some(schema_path) = &args.schema_path {
                 let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path.as_path())
                     .expect("failed to convert test schema path to schema uri");
@@ -131,7 +134,10 @@ macro_rules! test_format {
                 expected.push_str(line_ending);
             }
 
-            let formatted = formatter.format(&source).await.unwrap();
+            let formatted = formatter
+                .format(&source)
+                .await
+                .expect("formatter test should succeed");
             pretty_assertions::assert_eq!(
                 formatted,
                 expected,
@@ -210,7 +216,10 @@ macro_rules! test_format {
             let schema_store = SchemaStore::new();
 
             if let Some(config_value) = &config.config {
-                schema_store.load_config(config_value, None).await.unwrap();
+                schema_store
+                    .load_config(config_value, None)
+                    .await
+                    .expect("failed to load formatter test config");
             } else if let Some(schema_path) = config.schema_path {
                 let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path)
                     .expect("failed to convert test schema path to schema uri");
