@@ -127,7 +127,7 @@ impl crate::Edit for tombi_ast::Root {
                     if let Some(comment_directive) = comment_directive {
                         let disabled = comment_directive
                             .table_keys_order_disabled()
-                            .unwrap_or(false);
+                            .unwrap_or_default();
                         let order = comment_directive.table_keys_order().map(Into::into);
                         if disabled || order.is_some() {
                             table_order_overrides.push(TableOrderOverride {

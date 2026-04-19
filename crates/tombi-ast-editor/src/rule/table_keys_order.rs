@@ -33,7 +33,7 @@ pub async fn table_keys_order<'a>(
     if comment_directive
         .as_ref()
         .and_then(|c| c.table_keys_order_disabled())
-        .unwrap_or(false)
+        .unwrap_or_default()
     {
         return Vec::with_capacity(0);
     }
@@ -187,10 +187,10 @@ where
 
                 let sorting_disabled = comment_directive_override
                     .map(|override_order| override_order.disabled)
-                    .unwrap_or(false)
+                    .unwrap_or_default()
                     || schema_override
                         .map(|override_order| override_order.disabled)
-                        .unwrap_or(false);
+                        .unwrap_or_default();
                 let override_order = comment_directive_override
                     .and_then(|override_order| override_order.order)
                     .or(order)
