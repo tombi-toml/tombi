@@ -224,7 +224,7 @@ impl CompletionEdit {
                 CompletionHint::DotTrigger { range, .. } | CompletionHint::EqualTrigger { range },
             ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: " = {{ $1 }}$0".to_string(),
+                    new_text: " = { $1 }$0".to_string(),
                     range: tombi_text::Range::at(position),
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
@@ -256,7 +256,7 @@ impl CompletionEdit {
             Some(CompletionHint::InTableHeader) => None,
             Some(CompletionHint::Comma { .. }) | None => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: "{{ $1 }}$0".to_string(),
+                    new_text: "{ $1 }$0".to_string(),
                     range: tombi_text::Range::at(position),
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
