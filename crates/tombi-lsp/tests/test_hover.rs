@@ -1055,6 +1055,7 @@ mod hover_keys_value {
                         include: vec!["*.toml".to_string()],
                         lint: None,
                         format: None,
+                        overrides: None,
                     }));
                 }
 
@@ -1074,6 +1075,7 @@ mod hover_keys_value {
                         root: subschema.root.clone(),
                         lint: None,
                         format: None,
+                        overrides: None,
                     }));
                 }
 

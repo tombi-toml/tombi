@@ -7,7 +7,8 @@ use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 use tombi_syntax::SyntaxElement;
 
-use crate::rule::table_keys_order::{TableOrderOverrides, get_sorted_accessors, table_keys_order};
+use crate::rule::TableOrderOverrides;
+use crate::rule::table_keys_order::{get_sorted_accessors, table_keys_order};
 
 pub async fn root_table_keys_order<'a>(
     key_value_groups: Vec<tombi_ast::KeyValueGroup>,
@@ -20,10 +21,6 @@ pub async fn root_table_keys_order<'a>(
     table_order_overrides: Option<&TableOrderOverrides>,
 ) -> Vec<crate::Change> {
     if key_value_groups.is_empty() && table_or_array_of_tables.is_empty() {
-        return Vec::with_capacity(0);
-    }
-
-    if !schema_context.schema_table_keys_order_enabled(current_schema) {
         return Vec::with_capacity(0);
     }
 
@@ -54,6 +51,7 @@ pub async fn root_table_keys_order<'a>(
                         .into_document_tree_and_errors(schema_context.toml_version)
                         .tree,
                 ),
+                &[],
                 key_values,
                 current_schema,
                 schema_context,

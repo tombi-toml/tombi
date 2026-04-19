@@ -690,6 +690,7 @@ mod goto_type_definition_tests {
                         include: vec!["*.toml".to_string()],
                         lint: None,
                         format: None,
+                        overrides: None,
                     }));
                 }
 
@@ -709,6 +710,7 @@ mod goto_type_definition_tests {
                         root: subschema.root.clone(),
                         lint: None,
                         format: None,
+                        overrides: None,
                     }));
                 }
 

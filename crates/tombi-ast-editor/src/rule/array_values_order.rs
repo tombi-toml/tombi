@@ -28,6 +28,7 @@ use local_time::create_local_time_sortable_values;
 use offset_date_time::create_offset_date_time_sortable_values;
 use string::create_string_sortable_values;
 
+use crate::rule::ArrayOrderOverrides;
 use crate::rule::array_comma_trailing_comment;
 
 pub async fn array_values_order<'a>(
@@ -40,12 +41,9 @@ pub async fn array_values_order<'a>(
     comment_directive: Option<
         TombiValueDirectiveContent<ArrayCommonFormatRules, ArrayCommonLintRules>,
     >,
+    array_order_overrides: Option<&'a ArrayOrderOverrides>,
 ) -> Vec<crate::Change> {
     if values_with_comma.is_empty() {
-        return Vec::with_capacity(0);
-    }
-
-    if !schema_context.schema_array_values_order_enabled(current_schema) {
         return Vec::with_capacity(0);
     }
 
@@ -57,13 +55,33 @@ pub async fn array_values_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    let order: Option<ArrayValuesOrder> = comment_directive
+    let comment_directive_order: Option<ArrayValuesOrder> = comment_directive
         .as_ref()
         .and_then(|comment_directive| comment_directive.array_values_order().map(Into::into));
 
-    let values_order = match order {
+    let comment_directive_override =
+        array_order_overrides.and_then(|overrides| overrides.find(accessors));
+    let schema_override = schema_context.array_order_override(current_schema, accessors);
+    if comment_directive_override.is_some_and(|override_item| override_item.disabled)
+        || schema_override.is_some_and(|override_item| override_item.disabled)
+    {
+        return Vec::with_capacity(0);
+    }
+
+    let override_order = comment_directive_override
+        .and_then(|override_item| override_item.order)
+        .or(comment_directive_order)
+        .or_else(|| schema_override.and_then(|override_item| override_item.order));
+    let schema_override_enabled =
+        schema_override.is_some_and(|override_item| !override_item.disabled);
+    let values_order = match override_order {
         Some(values_order) => Some(XTombiArrayValuesOrder::All(values_order)),
-        None => array_schema_values_order,
+        None if schema_override_enabled
+            || schema_context.schema_array_values_order_enabled(current_schema) =>
+        {
+            array_schema_values_order
+        }
+        None => None,
     };
 
     let Some(values_order) = values_order else {

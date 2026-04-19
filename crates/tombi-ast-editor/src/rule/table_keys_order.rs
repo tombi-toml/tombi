@@ -14,16 +14,11 @@ use tombi_syntax::SyntaxElement;
 use tombi_validator::Validate;
 use tombi_x_keyword::{TableKeysOrder, TableKeysOrderGroupKind};
 
-#[derive(Debug, Clone, Copy)]
-pub struct TableOrderOverride {
-    pub disabled: bool,
-    pub order: Option<TableKeysOrder>,
-}
-
-pub type TableOrderOverrides = tombi_hashmap::HashMap<Vec<Accessor>, TableOrderOverride>;
+use crate::rule::TableOrderOverrides;
 
 pub async fn table_keys_order<'a>(
     value: &'a tombi_document_tree::Value,
+    accessors: &'a [Accessor],
     key_values: Vec<tombi_ast::KeyValue>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -35,10 +30,6 @@ pub async fn table_keys_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    if !schema_context.schema_table_keys_order_enabled(current_schema) {
-        return Vec::with_capacity(0);
-    }
-
     if comment_directive
         .as_ref()
         .and_then(|c| c.table_keys_order_disabled())
@@ -47,9 +38,14 @@ pub async fn table_keys_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    let order = comment_directive
+    let comment_directive_order = comment_directive
         .as_ref()
         .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
+
+    let schema_override = schema_context.table_order_override(current_schema, accessors);
+    if schema_override.is_some_and(|override_item| override_item.disabled) {
+        return Vec::with_capacity(0);
+    }
 
     let old = std::ops::RangeInclusive::new(
         SyntaxElement::Node(key_values.first().unwrap().syntax().clone()),
@@ -58,7 +54,7 @@ pub async fn table_keys_order<'a>(
 
     let Some(sorted_key_values) = get_sorted_accessors(
         value,
-        &[],
+        accessors,
         key_values
             .into_iter()
             .map(|kv| {
@@ -71,7 +67,7 @@ pub async fn table_keys_order<'a>(
             .collect_vec(),
         current_schema,
         schema_context,
-        order,
+        comment_directive_order,
         None,
     )
     .await
@@ -177,17 +173,10 @@ where
                     .iter()
                     .all(|(accessor, _)| matches!(accessor, Accessor::Key(_))) =>
             {
-                let table_override =
-                    table_order_overrides.and_then(|overrides| overrides.get(accessors));
-                let table_order_override = table_override.and_then(|override_order| {
-                    if override_order.disabled {
-                        None
-                    } else {
-                        override_order.order
-                    }
-                });
-                let table_order =
-                    get_table_keys_order(table_order_override.or(order), current_schema);
+                let comment_directive_override =
+                    table_order_overrides.and_then(|overrides| overrides.find(accessors));
+                let schema_override =
+                    schema_context.table_order_override(current_schema, accessors);
                 let table_schema = current_schema.and_then(|current_schema| {
                     if let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref() {
                         Some(table_schema)
@@ -196,10 +185,26 @@ where
                     }
                 });
 
-                let sorted_targets = if table_override
+                let sorting_disabled = comment_directive_override
                     .map(|override_order| override_order.disabled)
                     .unwrap_or(false)
-                {
+                    || schema_override
+                        .map(|override_order| override_order.disabled)
+                        .unwrap_or(false);
+                let override_order = comment_directive_override
+                    .and_then(|override_order| override_order.order)
+                    .or(order)
+                    .or_else(|| schema_override.and_then(|override_order| override_order.order));
+                let schema_override_enabled =
+                    schema_override.is_some_and(|override_order| !override_order.disabled);
+                let table_order = get_table_keys_order(
+                    override_order,
+                    current_schema,
+                    schema_override_enabled
+                        || schema_context.schema_table_keys_order_enabled(current_schema),
+                );
+
+                let sorted_targets = if sorting_disabled || table_order.is_none() {
                     sort_targets_map.into_iter().collect_vec()
                 } else {
                     sort_table_targets(sort_targets_map, table_schema, table_order.as_ref()).await
@@ -405,11 +410,13 @@ async fn sort_targets<T>(
 fn get_table_keys_order(
     order: Option<TableKeysOrder>,
     current_schema: Option<&CurrentSchema>,
+    schema_order_enabled: bool,
 ) -> Option<XTombiTableKeysOrder> {
     match order {
         Some(order) => Some(XTombiTableKeysOrder::All(order)),
         None => {
-            if let Some(current_schema) = current_schema
+            if schema_order_enabled
+                && let Some(current_schema) = current_schema
                 && let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref()
             {
                 return table_schema.keys_order.clone();

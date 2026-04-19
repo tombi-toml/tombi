@@ -1156,6 +1156,7 @@ mod completion_edit {
                         include: vec!["*.toml".to_string()],
                         lint: None,
                         format: None,
+                        overrides: None,
                     }));
                 }
 

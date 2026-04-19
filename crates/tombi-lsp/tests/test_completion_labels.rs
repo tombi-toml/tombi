@@ -637,7 +637,23 @@ mod completion_labels {
                 "root",
                 "format",
                 "lint",
+                "overrides",
                 "toml-version",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_schemars_overrides_rules(
+                r#"
+                [[schemas]]
+                overrides = [{ targets = [""], format.rules.█ }]
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "array-values-order",
+                "table-keys-order",
+                "{}",
             ]);
         }
 
@@ -2556,6 +2572,7 @@ mod completion_labels {
                         include: vec!["*.toml".to_string()],
                         lint: None,
                         format: None,
+                        overrides: None,
                     }));
                 }
 
@@ -2575,6 +2592,7 @@ mod completion_labels {
                         root: subschema.root.to_string(),
                         lint: None,
                         format: None,
+                        overrides: None,
                     }));
                 }
 

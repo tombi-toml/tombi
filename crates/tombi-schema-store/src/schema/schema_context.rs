@@ -10,6 +10,7 @@ pub struct SchemaContext<'a> {
     pub sub_schema_uri_map: Option<&'a crate::SubSchemaUriMap>,
     pub deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
     pub schema_format_rules: Option<&'a crate::SchemaFormatRulesMap>,
+    pub schema_overrides: Option<&'a crate::SchemaOverridesMap>,
     pub schema_visits: SchemaVisits,
     pub store: &'a crate::SchemaStore,
     pub strict: Option<bool>,
@@ -61,12 +62,48 @@ impl SchemaContext<'_> {
         &self,
         current_schema: Option<&crate::CurrentSchema<'_>>,
     ) -> Option<&SchemaFormatRules> {
+        let schema_uri = self.normalize_schema_uri(current_schema)?;
+        self.schema_format_rules?.get(&schema_uri)
+    }
+
+    pub fn array_order_override(
+        &self,
+        current_schema: Option<&crate::CurrentSchema<'_>>,
+        accessors: &[crate::Accessor],
+    ) -> Option<&crate::ArrayOrderOverride> {
+        self.schema_overrides(current_schema)?
+            .array_values_order
+            .find(accessors)
+    }
+
+    pub fn table_order_override(
+        &self,
+        current_schema: Option<&crate::CurrentSchema<'_>>,
+        accessors: &[crate::Accessor],
+    ) -> Option<&crate::TableOrderOverride> {
+        self.schema_overrides(current_schema)?
+            .table_keys_order
+            .find(accessors)
+    }
+
+    fn schema_overrides(
+        &self,
+        current_schema: Option<&crate::CurrentSchema<'_>>,
+    ) -> Option<&crate::SchemaOverrides> {
+        let schema_uri = self.normalize_schema_uri(current_schema)?;
+        self.schema_overrides?.get(&schema_uri)
+    }
+
+    fn normalize_schema_uri(
+        &self,
+        current_schema: Option<&crate::CurrentSchema<'_>>,
+    ) -> Option<crate::SchemaUri> {
         let current_schema = current_schema?;
         let mut schema_uri = current_schema.schema_uri.clone().into_owned();
         if schema_uri.fragment().is_some() {
             schema_uri.set_fragment(None);
         }
-        self.schema_format_rules?.get(&schema_uri)
+        Some(schema_uri)
     }
 
     pub async fn get_subschema(
