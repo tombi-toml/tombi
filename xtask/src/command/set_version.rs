@@ -28,6 +28,7 @@ pub fn run(sh: &Shell) -> anyhow::Result<()> {
     set_pyproject_toml_version(sh, &version)?;
     set_package_json_versions(sh, &version)?;
     set_snapcraft_yaml_version(sh, &version)?;
+    set_install_sh_version(sh, &version)?;
 
     println!("TOMBI_VERSION={version}");
 
@@ -107,6 +108,13 @@ fn set_snapcraft_yaml_version(sh: &Shell, version: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn set_install_sh_version(sh: &Shell, version: &str) -> anyhow::Result<()> {
+    let mut patch = Patch::new(sh, project_root_path().join("docs").join("public").join("install.sh"))?;
+    patch.replace_install_sh_version(version);
+    patch.commit(sh)?;
+    Ok(())
+}
+
 struct Patch {
     path: PathBuf,
     contents: String,
@@ -127,6 +135,23 @@ impl Patch {
             format!("Expected '{}' to be in '{}'", from, self.path.display())
         );
         self.contents = self.contents.replace(from, to);
+        self
+    }
+
+    fn replace_install_sh_version(&mut self, version: &str) -> &mut Patch {
+        let prefix = r#"LATEST_STABLE_VERSION=""#;
+        let start = self
+            .contents
+            .find(prefix)
+            .unwrap_or_else(|| panic!("Expected '{prefix}' to be in '{}'", self.path.display()));
+        let value_start = start + prefix.len();
+        let value_end = self.contents[value_start..]
+            .find('"')
+            .map(|offset| value_start + offset)
+            .unwrap_or_else(|| panic!("Expected closing quote after '{prefix}' in '{}'", self.path.display()));
+
+        self.contents
+            .replace_range(value_start..value_end, version);
         self
     }
 
