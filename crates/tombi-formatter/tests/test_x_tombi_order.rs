@@ -2118,7 +2118,7 @@ mod schema_overrides {
             ConfigText(
                 r#"
                 [[schemas]]
-                path = "tombi://www.schemastore.org/tombi.json"
+                path = "tombi://www.schemastore.org/pyproject.json"
                 include = ["*.toml"]
 
                 [schemas.format.rules]
@@ -2131,7 +2131,7 @@ mod schema_overrides {
 
                 [[schemas]]
                 root = "tool.tombi"
-                path = "tombi://www.schemastore.org/pyproject.json"
+                path = "tombi://www.schemastore.org/tombi.json"
                 include = ["*.toml"]
 
                 [schemas.format.rules]
@@ -2163,7 +2163,7 @@ mod schema_overrides {
             ConfigText(
                 r#"
                 [[schemas]]
-                path = "tombi://www.schemastore.org/tombi.json"
+                path = "tombi://www.schemastore.org/pyproject.json"
                 include = ["*.toml"]
 
                 [schemas.format.rules]
@@ -2172,7 +2172,7 @@ mod schema_overrides {
 
                 [[schemas]]
                 root = "tool.tombi"
-                path = "tombi://www.schemastore.org/pyproject.json"
+                path = "tombi://www.schemastore.org/tombi.json"
                 include = ["*.toml"]
 
                 [schemas.format.rules]
@@ -2208,7 +2208,7 @@ mod schema_overrides {
             ConfigText(
                 r#"
                 [[schemas]]
-                path = "tombi://www.schemastore.org/tombi.json"
+                path = "tombi://www.schemastore.org/pyproject.json"
                 include = ["*.toml"]
 
                 [schemas.format.rules]
@@ -2221,7 +2221,7 @@ mod schema_overrides {
 
                 [[schemas]]
                 root = "tool.tombi"
-                path = "tombi://www.schemastore.org/pyproject.json"
+                path = "tombi://www.schemastore.org/tombi.json"
                 include = ["*.toml"]
 
                 [schemas.format.rules]
@@ -2257,12 +2257,11 @@ mod schema_overrides {
             ConfigText(
                 r#"
                 [[schemas]]
-                path = "tombi://www.schemastore.org/tombi.json"
+                path = "tombi://www.schemastore.org/pyproject.json"
                 include = ["*.toml"]
 
                 [schemas.format.rules]
                 array-values-order.enabled = false
-                [schemas.format.rules]
                 table-keys-order.enabled = false
 
                 [[schemas.overrides]]
@@ -2271,7 +2270,7 @@ mod schema_overrides {
 
                 [[schemas]]
                 root = "tool.tombi"
-                path = "tombi://www.schemastore.org/pyproject.json"
+                path = "tombi://www.schemastore.org/tombi.json"
                 include = ["*.toml"]
 
                 [schemas.format.rules]
@@ -2299,7 +2298,7 @@ mod schema_overrides {
             ConfigText(
                 r#"
                 [[schemas]]
-                path = "tombi://www.schemastore.org/tombi.json"
+                path = "tombi://www.schemastore.org/pyproject.json"
                 include = ["*.toml"]
 
                 [schemas.format.rules]
@@ -2308,7 +2307,7 @@ mod schema_overrides {
 
                 [[schemas]]
                 root = "tool.tombi"
-                path = "tombi://www.schemastore.org/pyproject.json"
+                path = "tombi://www.schemastore.org/tombi.json"
                 include = ["*.toml"]
 
                 [schemas.format.rules]
@@ -2340,7 +2339,7 @@ mod schema_overrides {
             ConfigText(
                 r#"
                 [[schemas]]
-                path = "tombi://www.schemastore.org/tombi.json"
+                path = "tombi://www.schemastore.org/pyproject.json"
                 include = ["*.toml"]
 
                 [schemas.format.rules]
@@ -2353,7 +2352,7 @@ mod schema_overrides {
 
                 [[schemas]]
                 root = "tool.tombi"
-                path = "tombi://www.schemastore.org/pyproject.json"
+                path = "tombi://www.schemastore.org/tombi.json"
                 include = ["*.toml"]
                 format.rules.array-values-order.enabled = false
                 format.rules.table-keys-order.enabled = false
