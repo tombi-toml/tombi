@@ -40,7 +40,7 @@ macro_rules! test_format {
             pub struct TestArgs {
                 pub toml_version: TomlVersion,
                 pub options: FormatOptions,
-                pub config: Option<tombi_config::Config>,
+                pub config_text: Option<String>,
                 pub schema_path: Option<std::path::PathBuf>,
                 pub source_path: Option<std::path::PathBuf>,
             }
@@ -62,13 +62,13 @@ macro_rules! test_format {
                 }
             }
 
-            /// Set full config for the test case.
+            /// Set full config TOML text for the test case.
             #[allow(unused)]
-            pub struct Config(pub tombi_config::Config);
+            pub struct ConfigText<T: Into<String>>(pub T);
 
-            impl ApplyTestArg for Config {
+            impl<T: Into<String>> ApplyTestArg for ConfigText<T> {
                 fn apply(self, args: &mut TestArgs) {
-                    args.config = Some(self.0);
+                    args.config_text = Some(textwrap::dedent(&self.0.into()).trim().to_string());
                 }
             }
 
@@ -101,9 +101,12 @@ macro_rules! test_format {
             // Initialize schema store
             let schema_store = SchemaStore::new();
 
-            if let Some(config) = &args.config {
+            if let Some(config_text) = &args.config_text {
+                let config: tombi_config::Config = serde_tombi::from_str_async(config_text)
+                    .await
+                    .expect("failed to parse formatter test config text");
                 schema_store
-                    .load_config(config, None)
+                    .load_config(&config, None)
                     .await
                     .expect("failed to load formatter test config");
             } else if let Some(schema_path) = &args.schema_path {
@@ -179,7 +182,7 @@ macro_rules! test_format {
             pub struct TestArgs {
                 pub toml_version: TomlVersion,
                 pub options: FormatOptions,
-                pub config: Option<tombi_config::Config>,
+                pub config_text: Option<String>,
                 pub schema_path: Option<std::path::PathBuf>,
                 pub source_path: Option<std::path::PathBuf>,
             }
@@ -201,13 +204,13 @@ macro_rules! test_format {
                 }
             }
 
-            /// Set full config for the test case.
+            /// Set full config TOML text for the test case.
             #[allow(unused)]
-            pub struct Config(pub tombi_config::Config);
+            pub struct ConfigText<T: Into<String>>(pub T);
 
-            impl ApplyTestArg for Config {
-                fn apply(self, config: &mut TestArgs) {
-                    config.config = Some(self.0);
+            impl<T: Into<String>> ApplyTestArg for ConfigText<T> {
+                fn apply(self, args: &mut TestArgs) {
+                    args.config_text = Some(textwrap::dedent(&self.0.into()).trim().to_string());
                 }
             }
 
@@ -240,9 +243,12 @@ macro_rules! test_format {
             // Initialize schema store
             let schema_store = SchemaStore::new();
 
-            if let Some(config_value) = &config.config {
+            if let Some(config_text) = &config.config_text {
+                let config_value: tombi_config::Config = serde_tombi::from_str_async(config_text)
+                    .await
+                    .expect("failed to parse formatter test config text");
                 schema_store
-                    .load_config(config_value, None)
+                    .load_config(&config_value, None)
                     .await
                     .expect("failed to load formatter test config");
             } else if let Some(schema_path) = config.schema_path {
