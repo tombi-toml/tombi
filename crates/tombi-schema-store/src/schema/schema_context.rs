@@ -95,16 +95,12 @@ impl SchemaContext<'_> {
         current_schema: Option<&crate::CurrentSchema<'_>>,
         accessors: &[crate::Accessor],
     ) -> Option<&crate::ArrayOrderOverride> {
-        if let Some(root_override) = self
-            .root_schema_overrides()
+        self.schema_overrides(current_schema)
             .and_then(|overrides| overrides.array_values_order.find(accessors))
-        {
-            return Some(root_override);
-        }
-
-        self.schema_overrides(current_schema)?
-            .array_values_order
-            .find(accessors)
+            .or_else(|| {
+                self.root_schema_overrides()
+                    .and_then(|overrides| overrides.array_values_order.find(accessors))
+            })
     }
 
     pub fn table_order_override(
@@ -112,16 +108,12 @@ impl SchemaContext<'_> {
         current_schema: Option<&crate::CurrentSchema<'_>>,
         accessors: &[crate::Accessor],
     ) -> Option<&crate::TableOrderOverride> {
-        if let Some(root_override) = self
-            .root_schema_overrides()
+        self.schema_overrides(current_schema)
             .and_then(|overrides| overrides.table_keys_order.find(accessors))
-        {
-            return Some(root_override);
-        }
-
-        self.schema_overrides(current_schema)?
-            .table_keys_order
-            .find(accessors)
+            .or_else(|| {
+                self.root_schema_overrides()
+                    .and_then(|overrides| overrides.table_keys_order.find(accessors))
+            })
     }
 
     pub fn root_table_order_overrides(&self) -> Option<&crate::TableOrderOverrides> {

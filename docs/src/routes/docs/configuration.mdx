@@ -965,6 +965,11 @@ targets = ["items[*]", "tool.tasks[*]"]
 array-values-order.enabled = false
 ```
 
+<Note>
+If both a root schema override and a sub schema override match the same target, the sub schema override takes precedence.
+This precedence is shared by both `format.rules.table-keys-order` and `format.rules.array-values-order`.
+</Note>
+
 ### schemas[*].overrides[*].targets
 
 Accessor patterns to which the override applies.
