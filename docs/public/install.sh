@@ -21,6 +21,20 @@ print_success() {
 	printf '\033[32mSuccess:\033[m %s\n' "$1" >&2
 }
 
+download_to_file() {
+	URL="$1"
+	OUTPUT_FILE="$2"
+
+	if command -v curl >/dev/null 2>&1; then
+		curl -L -f -s "${URL}" -o "${OUTPUT_FILE}"
+	elif command -v wget >/dev/null 2>&1; then
+		wget --tries=1 -q "${URL}" -O "${OUTPUT_FILE}"
+	else
+		print_error "Neither curl nor wget is installed. Please install one of them."
+		exit 1
+	fi
+}
+
 # Parse command line options
 __SPECIFIED_VERSION=""
 __SPECIFIED_INSTALL_DIR=""
@@ -124,18 +138,8 @@ download_and_install() {
 	print_step "Download from ${DOWNLOAD_URL}"
 	print_step "Downloading tombi ${VERSION} (${TARGET})..."
 
-	if command -v curl >/dev/null 2>&1; then
-		if ! curl -L -f -s "${DOWNLOAD_URL}" -o "${TEMP_FILE}"; then
-			print_error "Download failed. Please check the URL: ${DOWNLOAD_URL}"
-			exit 1
-		fi
-	elif command -v wget >/dev/null 2>&1; then
-		if ! wget --tries=1 -q "${DOWNLOAD_URL}" -O "${TEMP_FILE}"; then
-			print_error "Download failed. Please check the URL: ${DOWNLOAD_URL}"
-			exit 1
-		fi
-	else
-		print_error "Neither curl nor wget is installed. Please install one of them."
+	if ! download_to_file "${DOWNLOAD_URL}" "${TEMP_FILE}"; then
+		print_error "Download failed. Please check the URL: ${DOWNLOAD_URL}"
 		exit 1
 	fi
 
@@ -160,19 +164,14 @@ download_and_install() {
 }
 
 # Version
+LATEST_STABLE_VERSION="0.9.20"
 if [ -n "${__SPECIFIED_VERSION}" ]; then
 	VERSION="${__SPECIFIED_VERSION}"
 	print_step "Using specified version: ${VERSION}"
 else
-	RELEASE_URL="https://api.github.com/repos/tombi-toml/tombi/releases/latest"
-	if [ -n "${GITHUB_TOKEN}" ]; then
-		RELEASE_JSON=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${RELEASE_URL}")
-	else
-		RELEASE_JSON=$(curl -s "${RELEASE_URL}")
-	fi
-	VERSION=$(echo "${RELEASE_JSON}" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
-	if [ -z "${VERSION}" ]; then
-		print_error "Failed to get the latest version. Please try again later. API Response: ${RELEASE_JSON}"
+	VERSION="${LATEST_STABLE_VERSION}"
+	if ! printf '%s' "${VERSION}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+		print_error "Invalid embedded stable version '${VERSION}'."
 		exit 1
 	fi
 	print_step "Using latest version: ${VERSION}"
