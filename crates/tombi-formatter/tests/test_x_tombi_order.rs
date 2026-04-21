@@ -2197,7 +2197,7 @@ mod schema_overrides {
 
     test_format! {
         #[tokio::test]
-        async fn test_root_schema_override_precedes_subschema_override(
+        async fn test_subschema_override_precedes_root_schema_override(
             r#"
             [tool.tombi.format.rules]
             trailing-comment-alignment = true
@@ -2238,10 +2238,10 @@ mod schema_overrides {
         ) -> Ok(
             r#"
             [tool.tombi.format.rules]
-            indent-table-key-value-pairs = true
-            inline-table-brace-space-width = 0
-            key-value-equals-sign-alignment = true
             trailing-comment-alignment = true
+            key-value-equals-sign-alignment = true
+            inline-table-brace-space-width = 0
+            indent-table-key-value-pairs = true
             "#
         )
     }
@@ -2330,7 +2330,7 @@ mod schema_overrides {
 
     test_format! {
         #[tokio::test]
-        async fn test_root_array_override_precedes_subschema_override(
+        async fn test_subschema_array_override_precedes_root_array_override(
             r#"
             [[tool.tombi.schemas]]
             include = ["z.toml", "a.toml"]
@@ -2365,7 +2365,7 @@ mod schema_overrides {
         ) -> Ok(
             r#"
             [[tool.tombi.schemas]]
-            include = ["a.toml", "z.toml"]
+            include = ["z.toml", "a.toml"]
             path = "tombi://www.schemastore.org/tombi.json"
             "#
         )
