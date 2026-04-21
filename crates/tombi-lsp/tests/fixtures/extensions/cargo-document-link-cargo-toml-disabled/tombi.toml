@@ -3,9 +3,9 @@
   lsp = {
     document-link = {
       cargo-toml.enabled = false,
+      git.enabled = true,
       path.enabled = true,
       workspace.enabled = true,
-      git.enabled = true,
     },
   },
 }
