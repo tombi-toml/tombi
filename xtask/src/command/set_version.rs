@@ -109,10 +109,28 @@ fn set_snapcraft_yaml_version(sh: &Shell, version: &str) -> anyhow::Result<()> {
 }
 
 fn set_install_sh_version(sh: &Shell, version: &str) -> anyhow::Result<()> {
+    if !is_stable_semver(version) {
+        return Ok(());
+    }
+
     let mut patch = Patch::new(sh, project_root_path().join("docs").join("public").join("install.sh"))?;
     patch.replace_install_sh_version(version);
     patch.commit(sh)?;
     Ok(())
+}
+
+fn is_stable_semver(version: &str) -> bool {
+    let mut parts = version.split('.');
+    matches!(
+        (parts.next(), parts.next(), parts.next(), parts.next()),
+        (Some(major), Some(minor), Some(patch), None)
+            if !major.is_empty()
+                && !minor.is_empty()
+                && !patch.is_empty()
+                && major.chars().all(|c| c.is_ascii_digit())
+                && minor.chars().all(|c| c.is_ascii_digit())
+                && patch.chars().all(|c| c.is_ascii_digit())
+    )
 }
 
 struct Patch {
