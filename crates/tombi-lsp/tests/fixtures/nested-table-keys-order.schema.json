@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "nested": {
+      "type": "object",
+      "x-tombi-table-keys-order": "ascending",
+      "properties": {
+        "a": {
+          "type": "integer"
+        },
+        "b": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
