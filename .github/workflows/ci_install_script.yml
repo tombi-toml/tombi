@@ -57,8 +57,6 @@ jobs:
         run: |
           chmod +x ./docs/public/install.sh
           ./docs/public/install.sh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify tombi binary exists
         run: |
