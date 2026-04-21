@@ -7,6 +7,16 @@ use tombi_test_lib::{
     ref_sibling_annotations_test_schema_path, string_format_test_schema_path, tombi_schema_path,
 };
 
+fn nested_table_keys_order_schema_path() -> PathBuf {
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/nested-table-keys-order.schema.json")
+}
+
+fn array_values_order_schema_path() -> PathBuf {
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/array-values-order.schema.json")
+}
+
 fn cargo_feature_usage_hover_description(
     project_root: &Path,
     locations: &[(PathBuf, u32)],
@@ -948,6 +958,158 @@ mod hover_keys_value {
         );
     }
 
+    mod table_keys_order_schema {
+        use super::*;
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn hides_keys_order_when_schema_format_rule_is_disabled(
+                r#"
+                [nested█]
+                b = 1
+                a = 2
+                "#,
+                SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                    toml_version: None,
+                    path: tombi_schema_store::SchemaUri::from_file_path(
+                        nested_table_keys_order_schema_path(),
+                    )
+                    .unwrap()
+                    .to_string(),
+                    include: vec!["*.toml".to_string()],
+                    lint: None,
+                    format: Some(tombi_config::SchemaFormatOptions {
+                        rules: Some(tombi_config::SchemaFormatRules {
+                            array_values_order: None,
+                            table_keys_order: Some(tombi_config::SchemaTableKeysOrderRule {
+                                enabled: Some(false.into()),
+                            }),
+                        }),
+                    }),
+                    overrides: None,
+                })),
+            ) -> Ok({
+                "Keys": "nested",
+                "Value": "Table?",
+                "Keys Order": None::<&str>
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn uses_schema_override_for_keys_order_in_hover(
+                r#"
+                [nested█]
+                b = 1
+                a = 2
+                "#,
+                SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                    toml_version: None,
+                    path: tombi_schema_store::SchemaUri::from_file_path(
+                        nested_table_keys_order_schema_path(),
+                    )
+                    .unwrap()
+                    .to_string(),
+                    include: vec!["*.toml".to_string()],
+                    lint: None,
+                    format: None,
+                    overrides: Some(vec![tombi_config::SchemaOverrideItem {
+                        targets: vec!["nested".into()],
+                        lint: None,
+                        format: Some(tombi_config::SchemaOverrideFormatOptions {
+                            rules: Some(tombi_config::SchemaOverrideFormatRules {
+                                array_values_order: None,
+                                table_keys_order: Some(
+                                    tombi_config::SchemaOverrideTableKeysOrderRule::Order(
+                                        tombi_x_keyword::TableKeysOrder::Descending,
+                                    ),
+                                ),
+                            }),
+                        }),
+                    }]),
+                })),
+            ) -> Ok({
+                "Keys": "nested",
+                "Value": "Table?",
+                "Keys Order": Some("descending")
+            });
+        );
+    }
+
+    mod array_values_order_schema {
+        use super::*;
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn hides_values_order_when_schema_format_rule_is_disabled(
+                r#"
+                items = ["b", "a"]█
+                "#,
+                SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                    toml_version: None,
+                    path: tombi_schema_store::SchemaUri::from_file_path(
+                        array_values_order_schema_path(),
+                    )
+                    .unwrap()
+                    .to_string(),
+                    include: vec!["*.toml".to_string()],
+                    lint: None,
+                    format: Some(tombi_config::SchemaFormatOptions {
+                        rules: Some(tombi_config::SchemaFormatRules {
+                            array_values_order: Some(tombi_config::SchemaArrayValuesOrderRule {
+                                enabled: Some(false.into()),
+                            }),
+                            table_keys_order: None,
+                        }),
+                    }),
+                    overrides: None,
+                })),
+            ) -> Ok({
+                "Keys": "items",
+                "Value": "Array?",
+                "Values Order": None::<&str>
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn uses_schema_override_for_values_order_in_hover(
+                r#"
+                items = ["b", "a"]█
+                "#,
+                SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                    toml_version: None,
+                    path: tombi_schema_store::SchemaUri::from_file_path(
+                        array_values_order_schema_path(),
+                    )
+                    .unwrap()
+                    .to_string(),
+                    include: vec!["*.toml".to_string()],
+                    lint: None,
+                    format: None,
+                    overrides: Some(vec![tombi_config::SchemaOverrideItem {
+                        targets: vec!["items".into()],
+                        lint: None,
+                        format: Some(tombi_config::SchemaOverrideFormatOptions {
+                            rules: Some(tombi_config::SchemaOverrideFormatRules {
+                                array_values_order: Some(
+                                    tombi_config::SchemaOverrideArrayValuesOrderRule::Order(
+                                        tombi_x_keyword::ArrayValuesOrder::Descending,
+                                    ),
+                                ),
+                                table_keys_order: None,
+                            }),
+                        }),
+                    }]),
+                })),
+            ) -> Ok({
+                "Keys": "items",
+                "Value": "Array?",
+                "Values Order": Some("descending")
+            });
+        );
+    }
+
     #[macro_export]
     macro_rules! test_hover_keys_value {
         (#[tokio::test] async fn $name:ident(
@@ -955,6 +1117,9 @@ mod hover_keys_value {
         ) -> Ok({
             "Keys": $keys:expr,
             "Value": $value_type:expr
+            $(, "Schema": $has_schema:expr)?
+            $(, "Keys Order": $keys_order:expr)?
+            $(, "Values Order": $values_order:expr)?
             $(, "Title": $title:expr)?
             $(, "Description": $description:expr)?
             $(, "Enum": [$($enum_values:expr),* $(,)?])?
@@ -983,6 +1148,7 @@ mod hover_keys_value {
                 struct TestArgs {
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
+                    schema_items: Vec<tombi_config::SchemaItem>,
                     subschemas: Vec<SubSchemaPath>,
                     backend_options: tombi_lsp::backend::Options,
                 }
@@ -1007,6 +1173,15 @@ mod hover_keys_value {
                 impl ApplyTestArg for SchemaPath {
                     fn apply(self, args: &mut TestArgs) {
                         args.schema_file_path = Some(self.0);
+                    }
+                }
+
+                #[allow(unused)]
+                struct SchemaItemArg(tombi_config::SchemaItem);
+
+                impl ApplyTestArg for SchemaItemArg {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.schema_items.push(self.0);
                     }
                 }
 
@@ -1037,7 +1212,7 @@ mod hover_keys_value {
                 });
 
                 let backend = service.inner();
-                let mut schema_items = Vec::new();
+                let mut schema_items = args.schema_items.clone();
 
                 if let Some(schema_file_path) = args.schema_file_path.as_ref() {
                     let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
@@ -1176,7 +1351,13 @@ mod hover_keys_value {
 
                 log::debug!("hover_content: {:#?}", hover_content);
 
-                if args.schema_file_path.is_some() {
+                if let Some(expected_has_schema) = None::<bool> $(.or(Some($has_schema)))? {
+                    assert_eq!(
+                        hover_content.schema_uri.is_some(),
+                        expected_has_schema,
+                        "Schema presence is not equal",
+                    );
+                } else if args.schema_file_path.is_some() || !args.schema_items.is_empty() {
                     assert!(hover_content.schema_uri.is_some(), "The hover target is not defined in the schema.");
                 } else {
                     assert!(hover_content.schema_uri.is_none(), "The hover target is defined in the schema.");
@@ -1184,6 +1365,67 @@ mod hover_keys_value {
 
                 pretty_assertions::assert_eq!(hover_content.accessors.to_string(), $keys, "Keys are not equal");
                 pretty_assertions::assert_eq!(hover_content.value_type.to_string(), $value_type, "Value type are not equal");
+                $(
+                    let expected_keys_order = $keys_order.map(ToString::to_string);
+                    let actual_keys_order = hover_content
+                        .constraints
+                        .as_ref()
+                        .and_then(|constraints| constraints.keys_order.as_ref())
+                        .map(|keys_order| match keys_order {
+                            tombi_schema_store::XTombiTableKeysOrder::All(keys_order) => {
+                                keys_order.to_string()
+                            }
+                            tombi_schema_store::XTombiTableKeysOrder::Groups(groups) => groups
+                                .iter()
+                                .map(|group| format!("{}={}", group.target, group.order))
+                                .collect::<Vec<_>>()
+                                .join(","),
+                        });
+                    pretty_assertions::assert_eq!(
+                        actual_keys_order,
+                        expected_keys_order,
+                        "Keys order is not equal"
+                    );
+                )?
+                $(
+                    let expected_values_order = $values_order.map(ToString::to_string);
+                    let actual_values_order = hover_content
+                        .constraints
+                        .as_ref()
+                        .and_then(|constraints| constraints.values_order.as_ref())
+                        .map(|values_order| match values_order {
+                            tombi_schema_store::XTombiArrayValuesOrder::All(values_order) => {
+                                values_order.to_string()
+                            }
+                            tombi_schema_store::XTombiArrayValuesOrder::Groups(groups) => match groups {
+                                tombi_x_keyword::ArrayValuesOrderGroup::OneOf(values_order) => {
+                                    format!(
+                                        "oneOf:{}",
+                                        values_order
+                                            .iter()
+                                            .map(ToString::to_string)
+                                            .collect::<Vec<_>>()
+                                            .join(",")
+                                    )
+                                }
+                                tombi_x_keyword::ArrayValuesOrderGroup::AnyOf(values_order) => {
+                                    format!(
+                                        "anyOf:{}",
+                                        values_order
+                                            .iter()
+                                            .map(ToString::to_string)
+                                            .collect::<Vec<_>>()
+                                            .join(",")
+                                    )
+                                }
+                            },
+                        });
+                    pretty_assertions::assert_eq!(
+                        actual_values_order,
+                        expected_values_order,
+                        "Values order is not equal"
+                    );
+                )?
                 $(
                     let expected_title = $title;
                     pretty_assertions::assert_eq!(

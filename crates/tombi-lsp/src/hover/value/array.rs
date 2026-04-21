@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
+use tombi_comment_directive::value::{ArrayCommonFormatRules, ArrayCommonLintRules};
+use tombi_comment_directive_serde::get_comment_directive_content;
 
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, Accessors, ArraySchema, CurrentSchema, ValueSchema, ValueType};
@@ -214,6 +216,13 @@ impl GetHoverContent for tombi_document_tree::Array {
                             hover_content.as_mut()
                         {
                             hover_value_content.range = Some(self.range());
+                            if let Some(constraints) = hover_value_content.constraints.as_mut() {
+                                constraints.values_order = schema_context.array_values_order(
+                                    accessors,
+                                    Some(current_schema),
+                                    comment_directive_array_values_order(self).as_ref(),
+                                );
+                            }
                         }
 
                         return hover_content;
@@ -322,6 +331,26 @@ impl GetHoverContent for tombi_document_tree::Array {
         }
         .boxed()
     }
+}
+
+fn comment_directive_array_values_order(
+    array: &tombi_document_tree::Array,
+) -> Option<tombi_schema_store::ArrayOrderOverride> {
+    let comment_directive = get_comment_directive_content::<
+        ArrayCommonFormatRules,
+        ArrayCommonLintRules,
+    >(array.comment_directives()?.cloned())?;
+
+    let disabled = comment_directive
+        .array_values_order_disabled()
+        .unwrap_or_default();
+    let order = comment_directive.array_values_order().map(Into::into);
+
+    (disabled || order.is_some()).then_some(tombi_schema_store::ArrayOrderOverride {
+        target: Vec::new(),
+        disabled,
+        order,
+    })
 }
 
 impl GetHoverContent for ArraySchema {

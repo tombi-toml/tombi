@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "x-tombi-array-values-order": "ascending",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

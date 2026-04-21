@@ -3998,6 +3998,7 @@ dependencies = [
  "tombi-ast",
  "tombi-cache",
  "tombi-comment-directive",
+ "tombi-comment-directive-serde",
  "tombi-comment-directive-store",
  "tombi-config",
  "tombi-date-time",
