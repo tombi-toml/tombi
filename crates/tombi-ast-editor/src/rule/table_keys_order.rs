@@ -134,13 +134,22 @@ where
                                 .await
                                 .is_ok()
                             {
+                                let keys_order = if order.is_some() {
+                                    order
+                                } else if schema_context
+                                    .schema_table_keys_order_enabled(Some(current_schema))
+                                {
+                                    *keys_order
+                                } else {
+                                    None
+                                };
                                 return get_sorted_accessors(
                                     value,
                                     accessors,
                                     targets.clone(),
                                     Some(current_schema),
                                     schema_context,
-                                    order.or(*keys_order),
+                                    keys_order,
                                     table_order_overrides,
                                 )
                                 .await;

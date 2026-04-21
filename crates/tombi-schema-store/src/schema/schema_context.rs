@@ -70,7 +70,9 @@ impl SchemaContext<'_> {
         current_schema: Option<&crate::CurrentSchema<'_>>,
     ) -> Option<&SchemaFormatRules> {
         let schema_uri = self.normalize_schema_uri(current_schema)?;
-        self.schema_format_rules?.get(&schema_uri)
+        self.schema_format_rules
+            .and_then(|rules| rules.get(&schema_uri))
+            .or_else(|| self.root_schema_format_rules())
     }
 
     pub fn array_order_override(
@@ -78,6 +80,13 @@ impl SchemaContext<'_> {
         current_schema: Option<&crate::CurrentSchema<'_>>,
         accessors: &[crate::Accessor],
     ) -> Option<&crate::ArrayOrderOverride> {
+        if let Some(root_override) = self
+            .root_schema_overrides()
+            .and_then(|overrides| overrides.array_values_order.find(accessors))
+        {
+            return Some(root_override);
+        }
+
         self.schema_overrides(current_schema)?
             .array_values_order
             .find(accessors)
@@ -88,9 +97,20 @@ impl SchemaContext<'_> {
         current_schema: Option<&crate::CurrentSchema<'_>>,
         accessors: &[crate::Accessor],
     ) -> Option<&crate::TableOrderOverride> {
+        if let Some(root_override) = self
+            .root_schema_overrides()
+            .and_then(|overrides| overrides.table_keys_order.find(accessors))
+        {
+            return Some(root_override);
+        }
+
         self.schema_overrides(current_schema)?
             .table_keys_order
             .find(accessors)
+    }
+
+    pub fn root_table_order_overrides(&self) -> Option<&crate::TableOrderOverrides> {
+        Some(&self.root_schema_overrides()?.table_keys_order)
     }
 
     fn schema_overrides(
@@ -99,6 +119,24 @@ impl SchemaContext<'_> {
     ) -> Option<&crate::SchemaOverrides> {
         let schema_uri = self.normalize_schema_uri(current_schema)?;
         self.schema_overrides?.get(&schema_uri)
+    }
+
+    fn root_schema_overrides(&self) -> Option<&crate::SchemaOverrides> {
+        let document_schema = self.root_schema?;
+        let mut schema_uri = document_schema.schema_uri.clone();
+        if schema_uri.fragment().is_some() {
+            schema_uri.set_fragment(None);
+        }
+        self.schema_overrides?.get(&schema_uri)
+    }
+
+    fn root_schema_format_rules(&self) -> Option<&SchemaFormatRules> {
+        let document_schema = self.root_schema?;
+        let mut schema_uri = document_schema.schema_uri.clone();
+        if schema_uri.fragment().is_some() {
+            schema_uri.set_fragment(None);
+        }
+        self.schema_format_rules?.get(&schema_uri)
     }
 
     fn normalize_schema_uri(
