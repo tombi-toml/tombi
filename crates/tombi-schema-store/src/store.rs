@@ -170,6 +170,12 @@ impl SchemaStore {
         Ok(())
     }
 
+    fn normalize_schema_uri_key(schema_uri: &SchemaUri) -> SchemaUri {
+        let mut normalized = schema_uri.clone();
+        normalized.set_fragment(None);
+        normalized
+    }
+
     async fn load_config_schemas(
         &self,
         schemas: &[SchemaItem],
@@ -804,29 +810,33 @@ impl SchemaStore {
                                 .sub_schema_uri_map
                                 .contains_key(sub_root_accessors)
                             {
+                                let schema_uri_key =
+                                    Self::normalize_schema_uri_key(&document_schema.schema_uri);
                                 source_schema.sub_schema_uri_map.insert(
                                     sub_root_accessors.clone(),
                                     document_schema.schema_uri.clone(),
                                 );
                                 if let Some(format_rules) = &matching_schema.format_rules {
                                     source_schema.schema_format_rules.insert(
-                                        document_schema.schema_uri.clone(),
+                                        schema_uri_key.clone(),
                                         format_rules.clone(),
                                     );
                                 }
                                 if let Some(lint_rules) = &matching_schema.lint_rules {
                                     source_schema.schema_lint_rules.insert(
-                                        document_schema.schema_uri.clone(),
+                                        schema_uri_key.clone(),
                                         lint_rules.clone(),
                                     );
                                 }
                                 source_schema.schema_overrides.insert(
-                                    document_schema.schema_uri.clone(),
+                                    schema_uri_key,
                                     matching_schema.overrides.clone(),
                                 );
                             }
                         }
                         None => {
+                            let schema_uri_key =
+                                Self::normalize_schema_uri_key(&document_schema.schema_uri);
                             let mut sub_schema_uri_map = SubSchemaUriMap::default();
                             sub_schema_uri_map.insert(
                                 sub_root_accessors.clone(),
@@ -834,21 +844,16 @@ impl SchemaStore {
                             );
                             let mut schema_format_rules = crate::SchemaFormatRulesMap::default();
                             if let Some(format_rules) = &matching_schema.format_rules {
-                                schema_format_rules.insert(
-                                    document_schema.schema_uri.clone(),
-                                    format_rules.clone(),
-                                );
+                                schema_format_rules
+                                    .insert(schema_uri_key.clone(), format_rules.clone());
                             }
                             let mut schema_lint_rules = crate::SchemaLintRulesMap::default();
                             if let Some(lint_rules) = &matching_schema.lint_rules {
-                                schema_lint_rules
-                                    .insert(document_schema.schema_uri.clone(), lint_rules.clone());
+                                schema_lint_rules.insert(schema_uri_key.clone(), lint_rules.clone());
                             }
                             let mut schema_overrides = crate::SchemaOverridesMap::default();
-                            schema_overrides.insert(
-                                document_schema.schema_uri.clone(),
-                                matching_schema.overrides.clone(),
-                            );
+                            schema_overrides
+                                .insert(schema_uri_key, matching_schema.overrides.clone());
                             let new_source = SourceSchema::new(
                                 None,
                                 sub_schema_uri_map,
@@ -864,6 +869,8 @@ impl SchemaStore {
                     None => match source_schema {
                         Some(ref mut existing) => {
                             if existing.root_schema.is_none() {
+                                let schema_uri_key =
+                                    Self::normalize_schema_uri_key(&document_schema.schema_uri);
                                 let toml_version =
                                     existing.toml_version().or(matching_schema.toml_version);
                                 let sub_schema_uri_map =
@@ -875,21 +882,15 @@ impl SchemaStore {
                                 let mut schema_overrides =
                                     std::mem::take(&mut existing.schema_overrides);
                                 if let Some(format_rules) = &matching_schema.format_rules {
-                                    schema_format_rules.insert(
-                                        document_schema.schema_uri.clone(),
-                                        format_rules.clone(),
-                                    );
+                                    schema_format_rules
+                                        .insert(schema_uri_key.clone(), format_rules.clone());
                                 }
                                 if let Some(lint_rules) = &matching_schema.lint_rules {
-                                    schema_lint_rules.insert(
-                                        document_schema.schema_uri.clone(),
-                                        lint_rules.clone(),
-                                    );
+                                    schema_lint_rules
+                                        .insert(schema_uri_key.clone(), lint_rules.clone());
                                 }
-                                schema_overrides.insert(
-                                    document_schema.schema_uri.clone(),
-                                    matching_schema.overrides.clone(),
-                                );
+                                schema_overrides
+                                    .insert(schema_uri_key, matching_schema.overrides.clone());
                                 *existing = SourceSchema::new(
                                     Some(document_schema),
                                     sub_schema_uri_map,
@@ -902,23 +903,20 @@ impl SchemaStore {
                             }
                         }
                         None => {
+                            let schema_uri_key =
+                                Self::normalize_schema_uri_key(&document_schema.schema_uri);
                             let mut schema_format_rules = crate::SchemaFormatRulesMap::default();
                             if let Some(format_rules) = &matching_schema.format_rules {
-                                schema_format_rules.insert(
-                                    document_schema.schema_uri.clone(),
-                                    format_rules.clone(),
-                                );
+                                schema_format_rules
+                                    .insert(schema_uri_key.clone(), format_rules.clone());
                             }
                             let mut schema_lint_rules = crate::SchemaLintRulesMap::default();
                             if let Some(lint_rules) = &matching_schema.lint_rules {
-                                schema_lint_rules
-                                    .insert(document_schema.schema_uri.clone(), lint_rules.clone());
+                                schema_lint_rules.insert(schema_uri_key.clone(), lint_rules.clone());
                             }
                             let mut schema_overrides = crate::SchemaOverridesMap::default();
-                            schema_overrides.insert(
-                                document_schema.schema_uri.clone(),
-                                matching_schema.overrides.clone(),
-                            );
+                            schema_overrides
+                                .insert(schema_uri_key, matching_schema.overrides.clone());
                             let new_source = SourceSchema::new(
                                 Some(document_schema),
                                 Default::default(),
