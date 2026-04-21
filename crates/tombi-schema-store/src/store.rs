@@ -195,6 +195,7 @@ impl SchemaStore {
                 description: None,
                 deprecated_lint_level: schema.deprecated_lint_level(),
                 format_rules: schema.format().and_then(|format| format.rules.clone()),
+                lint_rules: schema.lint().and_then(|lint| lint.rules.clone()),
                 overrides: schema_overrides(schema),
                 schema_uri,
                 catalog_uri: None,
@@ -339,6 +340,7 @@ impl SchemaStore {
                     description: Some(schema.description),
                     deprecated_lint_level: None,
                     format_rules: None,
+                    lint_rules: None,
                     overrides: Default::default(),
                     schema_uri: schema.url,
                     catalog_uri: Some(catalog_uri.clone()),
@@ -658,6 +660,7 @@ impl SchemaStore {
             toml_version,
             deprecated_lint_level,
             schema_format_rules,
+            schema_lint_rules,
             schema_overrides,
         ) = if let Some(source_schema) = source_schema {
             let toml_version = source_schema.toml_version();
@@ -667,6 +670,7 @@ impl SchemaStore {
                 toml_version,
                 source_schema.deprecated_lint_level,
                 source_schema.schema_format_rules,
+                source_schema.schema_lint_rules,
                 source_schema.schema_overrides,
             )
         } else {
@@ -675,6 +679,7 @@ impl SchemaStore {
                 Default::default(),
                 None,
                 None,
+                Default::default(),
                 Default::default(),
                 Default::default(),
             )
@@ -688,6 +693,7 @@ impl SchemaStore {
             toml_version,
             deprecated_lint_level,
             schema_format_rules,
+            schema_lint_rules,
             schema_overrides,
         )))
     }
@@ -808,6 +814,12 @@ impl SchemaStore {
                                         format_rules.clone(),
                                     );
                                 }
+                                if let Some(lint_rules) = &matching_schema.lint_rules {
+                                    source_schema.schema_lint_rules.insert(
+                                        document_schema.schema_uri.clone(),
+                                        lint_rules.clone(),
+                                    );
+                                }
                                 source_schema.schema_overrides.insert(
                                     document_schema.schema_uri.clone(),
                                     matching_schema.overrides.clone(),
@@ -827,6 +839,11 @@ impl SchemaStore {
                                     format_rules.clone(),
                                 );
                             }
+                            let mut schema_lint_rules = crate::SchemaLintRulesMap::default();
+                            if let Some(lint_rules) = &matching_schema.lint_rules {
+                                schema_lint_rules
+                                    .insert(document_schema.schema_uri.clone(), lint_rules.clone());
+                            }
                             let mut schema_overrides = crate::SchemaOverridesMap::default();
                             schema_overrides.insert(
                                 document_schema.schema_uri.clone(),
@@ -838,6 +855,7 @@ impl SchemaStore {
                                 matching_schema.toml_version,
                                 matching_schema.deprecated_lint_level,
                                 schema_format_rules,
+                                schema_lint_rules,
                                 schema_overrides,
                             );
                             source_schema = Some(new_source);
@@ -852,12 +870,20 @@ impl SchemaStore {
                                     std::mem::take(&mut existing.sub_schema_uri_map);
                                 let mut schema_format_rules =
                                     std::mem::take(&mut existing.schema_format_rules);
+                                let mut schema_lint_rules =
+                                    std::mem::take(&mut existing.schema_lint_rules);
                                 let mut schema_overrides =
                                     std::mem::take(&mut existing.schema_overrides);
                                 if let Some(format_rules) = &matching_schema.format_rules {
                                     schema_format_rules.insert(
                                         document_schema.schema_uri.clone(),
                                         format_rules.clone(),
+                                    );
+                                }
+                                if let Some(lint_rules) = &matching_schema.lint_rules {
+                                    schema_lint_rules.insert(
+                                        document_schema.schema_uri.clone(),
+                                        lint_rules.clone(),
                                     );
                                 }
                                 schema_overrides.insert(
@@ -870,6 +896,7 @@ impl SchemaStore {
                                     toml_version,
                                     matching_schema.deprecated_lint_level,
                                     schema_format_rules,
+                                    schema_lint_rules,
                                     schema_overrides,
                                 );
                             }
@@ -882,6 +909,11 @@ impl SchemaStore {
                                     format_rules.clone(),
                                 );
                             }
+                            let mut schema_lint_rules = crate::SchemaLintRulesMap::default();
+                            if let Some(lint_rules) = &matching_schema.lint_rules {
+                                schema_lint_rules
+                                    .insert(document_schema.schema_uri.clone(), lint_rules.clone());
+                            }
                             let mut schema_overrides = crate::SchemaOverridesMap::default();
                             schema_overrides.insert(
                                 document_schema.schema_uri.clone(),
@@ -893,6 +925,7 @@ impl SchemaStore {
                                 matching_schema.toml_version,
                                 matching_schema.deprecated_lint_level,
                                 schema_format_rules,
+                                schema_lint_rules,
                                 schema_overrides,
                             );
                             source_schema = Some(new_source);
@@ -972,6 +1005,7 @@ impl SchemaStore {
             description: options.description.clone(),
             deprecated_lint_level: None,
             format_rules: None,
+            lint_rules: None,
             overrides: Default::default(),
             schema_uri,
             catalog_uri: None,

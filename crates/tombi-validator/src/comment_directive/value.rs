@@ -412,6 +412,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
         None,
         Default::default(),
         Default::default(),
+        Default::default(),
     );
 
     let schema_context = tombi_schema_store::SchemaContext {
@@ -420,6 +421,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
         sub_schema_uri_map: None,
         deprecated_lint_level: None,
         schema_format_rules: None,
+        schema_lint_rules: None,
         schema_overrides: None,
         schema_visits: Default::default(),
         store: schema_store,

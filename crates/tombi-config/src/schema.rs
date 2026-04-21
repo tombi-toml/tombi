@@ -138,6 +138,13 @@ impl SchemaItem {
         }
     }
 
+    pub fn lint(&self) -> Option<&SchemaLintOptions> {
+        match self {
+            Self::Root(item) => item.lint.as_ref(),
+            Self::Sub(item) => item.lint.as_ref(),
+        }
+    }
+
     pub fn overrides(&self) -> Option<&Vec<SchemaOverrideItem>> {
         match self {
             Self::Root(item) => item.overrides.as_ref(),

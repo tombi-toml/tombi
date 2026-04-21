@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-use tombi_config::{SchemaFormatRules, TomlVersion};
+use tombi_config::{SchemaFormatRules, SchemaLintRules, TomlVersion};
 use tombi_severity_level::SeverityLevelDefaultWarn;
 
 use super::{DocumentSchema, SchemaOverrides, SchemaUri};
@@ -9,6 +9,7 @@ use crate::{PatternAccessor, PatternAccessors};
 
 pub type SubSchemaUriMap = tombi_hashmap::IndexMap<Vec<PatternAccessor>, SchemaUri>;
 pub type SchemaFormatRulesMap = tombi_hashmap::HashMap<SchemaUri, SchemaFormatRules>;
+pub type SchemaLintRulesMap = tombi_hashmap::HashMap<SchemaUri, SchemaLintRules>;
 pub type SchemaOverridesMap = tombi_hashmap::HashMap<SchemaUri, SchemaOverrides>;
 
 #[derive(Clone, Default)]
@@ -17,6 +18,7 @@ pub struct SourceSchema {
     pub sub_schema_uri_map: SubSchemaUriMap,
     pub deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
     pub schema_format_rules: SchemaFormatRulesMap,
+    pub schema_lint_rules: SchemaLintRulesMap,
     pub schema_overrides: SchemaOverridesMap,
     /// TOML version override from `[[schemas]]` config entry.
     ///
@@ -31,6 +33,7 @@ impl SourceSchema {
         toml_version: Option<TomlVersion>,
         deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
         schema_format_rules: SchemaFormatRulesMap,
+        schema_lint_rules: SchemaLintRulesMap,
         schema_overrides: SchemaOverridesMap,
     ) -> Self {
         Self {
@@ -38,6 +41,7 @@ impl SourceSchema {
             sub_schema_uri_map,
             deprecated_lint_level,
             schema_format_rules,
+            schema_lint_rules,
             schema_overrides,
             toml_version,
         }
