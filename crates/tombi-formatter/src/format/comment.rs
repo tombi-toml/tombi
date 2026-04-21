@@ -136,9 +136,16 @@ fn format_comment(
     write!(f, "{}", iter.next().unwrap())?;
 
     if let Some(mut c) = iter.next() {
-        // For https://crates.io/crates/document-features crate, the comment starts with '#' or '!'.
-        {
-            if matches!(c, '#' | '!') {
+        // Preserve only `#!` or repeated `#` prefixes like `#####`.
+        if c == '!' {
+            write!(f, "{c}")?;
+            if let Some(next) = iter.next() {
+                c = next;
+            } else {
+                return Ok(());
+            }
+        } else if c == '#' {
+            while c == '#' {
                 write!(f, "{c}")?;
                 if let Some(next) = iter.next() {
                     c = next;
@@ -318,7 +325,40 @@ mod tests {
     test_format! {
         // Reference: https://crates.io/crates/document-features
         #[tokio::test]
-        async fn strip_prefix_space_document_features_double_sharp(r"###  hello") -> Ok(r"## #  hello")
+        async fn strip_prefix_space_document_features_double_sharp(r"###  hello") -> Ok(r"### hello")
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn preserve_multi_hash_comment_prefixes(
+            r#"
+            ###### comment 6 ###
+            #####  comment 5 ###
+            ####   comment 4 ###
+            ###    comment 3 ###
+            ##     comment 2 ###
+            #      comment 1 ###
+            "#
+        ) -> Ok(
+            r#"
+            ###### comment 6 ###
+            #####  comment 5 ###
+            ####   comment 4 ###
+            ###    comment 3 ###
+            ##     comment 2 ###
+            #      comment 1 ###
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn reject_mixed_comment_prefixes_sharp_bang(r"#!#!#!  hello") -> Ok(r"#! #!#!  hello")
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn reject_mixed_comment_prefixes_bang_sharp(r"#!!##  hello") -> Ok(r"#! !##  hello")
     }
 
     test_format! {
