@@ -1,4 +1,4 @@
-use tombi_config::SchemaFormatRules;
+use tombi_config::{SchemaFormatRules, SchemaLintRules};
 use tombi_severity_level::SeverityLevelDefaultWarn;
 use tombi_x_keyword::StringFormat;
 
@@ -10,6 +10,7 @@ pub struct SchemaContext<'a> {
     pub sub_schema_uri_map: Option<&'a crate::SubSchemaUriMap>,
     pub deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
     pub schema_format_rules: Option<&'a crate::SchemaFormatRulesMap>,
+    pub schema_lint_rules: Option<&'a crate::SchemaLintRulesMap>,
     pub schema_overrides: Option<&'a crate::SchemaOverridesMap>,
     pub schema_visits: SchemaVisits,
     pub store: &'a crate::SchemaStore,
@@ -38,6 +39,10 @@ impl SchemaContext<'_> {
         self.schema_overrides(current_schema)
             .and_then(|overrides| overrides.deprecated.find(accessors))
             .map(|override_item| override_item.level)
+            .or_else(|| {
+                self.schema_lint_rules(current_schema)
+                    .and_then(|rules| rules.deprecated)
+            })
             .or(self.deprecated_lint_level)
     }
 
@@ -70,7 +75,19 @@ impl SchemaContext<'_> {
         current_schema: Option<&crate::CurrentSchema<'_>>,
     ) -> Option<&SchemaFormatRules> {
         let schema_uri = self.normalize_schema_uri(current_schema)?;
-        self.schema_format_rules?.get(&schema_uri)
+        self.schema_format_rules
+            .and_then(|rules| rules.get(&schema_uri))
+            .or_else(|| self.root_schema_format_rules())
+    }
+
+    fn schema_lint_rules(
+        &self,
+        current_schema: Option<&crate::CurrentSchema<'_>>,
+    ) -> Option<&SchemaLintRules> {
+        let schema_uri = self.normalize_schema_uri(current_schema)?;
+        self.schema_lint_rules
+            .and_then(|rules| rules.get(&schema_uri))
+            .or_else(|| self.root_schema_lint_rules())
     }
 
     pub fn array_order_override(
@@ -78,6 +95,13 @@ impl SchemaContext<'_> {
         current_schema: Option<&crate::CurrentSchema<'_>>,
         accessors: &[crate::Accessor],
     ) -> Option<&crate::ArrayOrderOverride> {
+        if let Some(root_override) = self
+            .root_schema_overrides()
+            .and_then(|overrides| overrides.array_values_order.find(accessors))
+        {
+            return Some(root_override);
+        }
+
         self.schema_overrides(current_schema)?
             .array_values_order
             .find(accessors)
@@ -88,9 +112,20 @@ impl SchemaContext<'_> {
         current_schema: Option<&crate::CurrentSchema<'_>>,
         accessors: &[crate::Accessor],
     ) -> Option<&crate::TableOrderOverride> {
+        if let Some(root_override) = self
+            .root_schema_overrides()
+            .and_then(|overrides| overrides.table_keys_order.find(accessors))
+        {
+            return Some(root_override);
+        }
+
         self.schema_overrides(current_schema)?
             .table_keys_order
             .find(accessors)
+    }
+
+    pub fn root_table_order_overrides(&self) -> Option<&crate::TableOrderOverrides> {
+        Some(&self.root_schema_overrides()?.table_keys_order)
     }
 
     fn schema_overrides(
@@ -99,6 +134,33 @@ impl SchemaContext<'_> {
     ) -> Option<&crate::SchemaOverrides> {
         let schema_uri = self.normalize_schema_uri(current_schema)?;
         self.schema_overrides?.get(&schema_uri)
+    }
+
+    fn root_schema_overrides(&self) -> Option<&crate::SchemaOverrides> {
+        let document_schema = self.root_schema?;
+        let mut schema_uri = document_schema.schema_uri.clone();
+        if schema_uri.fragment().is_some() {
+            schema_uri.set_fragment(None);
+        }
+        self.schema_overrides?.get(&schema_uri)
+    }
+
+    fn root_schema_format_rules(&self) -> Option<&SchemaFormatRules> {
+        let document_schema = self.root_schema?;
+        let mut schema_uri = document_schema.schema_uri.clone();
+        if schema_uri.fragment().is_some() {
+            schema_uri.set_fragment(None);
+        }
+        self.schema_format_rules?.get(&schema_uri)
+    }
+
+    fn root_schema_lint_rules(&self) -> Option<&SchemaLintRules> {
+        let document_schema = self.root_schema?;
+        let mut schema_uri = document_schema.schema_uri.clone();
+        if schema_uri.fragment().is_some() {
+            schema_uri.set_fragment(None);
+        }
+        self.schema_lint_rules?.get(&schema_uri)
     }
 
     fn normalize_schema_uri(

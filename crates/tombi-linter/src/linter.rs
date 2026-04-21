@@ -131,6 +131,9 @@ impl<'a> Linter<'a> {
                 schema_format_rules: source_schema
                     .as_ref()
                     .map(|source_schema| &source_schema.schema_format_rules),
+                schema_lint_rules: source_schema
+                    .as_ref()
+                    .map(|source_schema| &source_schema.schema_lint_rules),
                 schema_overrides: source_schema
                     .as_ref()
                     .map(|source_schema| &source_schema.schema_overrides),

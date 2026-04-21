@@ -43,7 +43,9 @@ pub use referable_schema::{
 };
 pub use schema_context::SchemaContext;
 pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};
-pub use source_schema::{SchemaFormatRulesMap, SchemaOverridesMap, SourceSchema, SubSchemaUriMap};
+pub use source_schema::{
+    SchemaFormatRulesMap, SchemaLintRulesMap, SchemaOverridesMap, SourceSchema, SubSchemaUriMap,
+};
 pub use string_schema::StringSchema;
 pub use table_schema::{Dependency, TableKeysOrderGroup, TableSchema, XTombiTableKeysOrder};
 pub use tombi_accessor::{PatternAccessor, PatternAccessors, SchemaAccessor, SchemaAccessors};
@@ -369,6 +371,7 @@ pub struct Schema {
     pub description: Option<String>,
     pub deprecated_lint_level: Option<tombi_severity_level::SeverityLevelDefaultWarn>,
     pub format_rules: Option<tombi_config::SchemaFormatRules>,
+    pub lint_rules: Option<tombi_config::SchemaLintRules>,
     pub overrides: SchemaOverrides,
     pub toml_version: Option<tombi_config::TomlVersion>,
     pub schema_uri: tombi_uri::SchemaUri,

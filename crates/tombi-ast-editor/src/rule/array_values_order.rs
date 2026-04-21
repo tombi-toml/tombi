@@ -74,14 +74,14 @@ pub async fn array_values_order<'a>(
         .or_else(|| schema_override.and_then(|override_item| override_item.order));
     let schema_override_enabled =
         schema_override.is_some_and(|override_item| !override_item.disabled);
-    let values_order = match override_order {
-        Some(values_order) => Some(XTombiArrayValuesOrder::All(values_order)),
-        None if schema_override_enabled
-            || schema_context.schema_array_values_order_enabled(current_schema) =>
-        {
-            array_schema_values_order
-        }
-        None => None,
+    let values_order = if let Some(order) = override_order {
+        Some(XTombiArrayValuesOrder::All(order))
+    } else if schema_override_enabled
+        || schema_context.schema_array_values_order_enabled(current_schema)
+    {
+        array_schema_values_order
+    } else {
+        None
     };
 
     let Some(values_order) = values_order else {
