@@ -139,6 +139,7 @@ async fn get_comment_directive_toml_content_hover_content(
             None,
             Default::default(),
             Default::default(),
+            Default::default(),
         );
 
         let schema_context = tombi_schema_store::SchemaContext {
@@ -147,6 +148,7 @@ async fn get_comment_directive_toml_content_hover_content(
             sub_schema_uri_map: None,
             deprecated_lint_level: None,
             schema_format_rules: None,
+            schema_lint_rules: None,
             schema_overrides: None,
             schema_visits: Default::default(),
             store: schema_store,

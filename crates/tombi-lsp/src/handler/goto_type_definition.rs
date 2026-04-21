@@ -100,6 +100,7 @@ pub async fn handle_goto_type_definition(
                 sub_schema_uri_map: source_schema.as_ref().map(|s| &s.sub_schema_uri_map),
                 deprecated_lint_level: source_schema.as_ref().and_then(|s| s.deprecated_lint_level),
                 schema_format_rules: source_schema.as_ref().map(|s| &s.schema_format_rules),
+                schema_lint_rules: source_schema.as_ref().map(|s| &s.schema_lint_rules),
                 schema_overrides: source_schema.as_ref().map(|s| &s.schema_overrides),
                 schema_visits: Default::default(),
                 store: &schema_store,

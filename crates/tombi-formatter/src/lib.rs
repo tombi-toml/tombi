@@ -42,6 +42,7 @@ macro_rules! test_format {
                 pub options: FormatOptions,
                 pub config: Option<tombi_config::Config>,
                 pub schema_path: Option<std::path::PathBuf>,
+                pub source_path: Option<std::path::PathBuf>,
             }
 
             #[allow(unused)]
@@ -81,6 +82,16 @@ macro_rules! test_format {
                 }
             }
 
+            /// Set source path for the test case.
+            #[allow(unused)]
+            pub struct SourcePath(pub std::path::PathBuf);
+
+            impl ApplyTestArg for SourcePath {
+                fn apply(self, args: &mut TestArgs) {
+                    args.source_path = Some(self.0);
+                }
+            }
+
             #[allow(unused_mut)]
             let mut args = TestArgs::default();
             $(
@@ -108,7 +119,10 @@ macro_rules! test_format {
             }
 
             // Initialize formatter
-            let source_path = tombi_test_lib::project_root_path().join("test.toml");
+            let source_path = args
+                .source_path
+                .clone()
+                .unwrap_or_else(|| tombi_test_lib::project_root_path().join("test.toml"));
             let formatter = Formatter::new(
                 args.toml_version,
                 &args.options,
@@ -167,6 +181,7 @@ macro_rules! test_format {
                 pub options: FormatOptions,
                 pub config: Option<tombi_config::Config>,
                 pub schema_path: Option<std::path::PathBuf>,
+                pub source_path: Option<std::path::PathBuf>,
             }
 
             #[allow(unused)]
@@ -206,6 +221,16 @@ macro_rules! test_format {
                 }
             }
 
+            /// Set source path for the test case.
+            #[allow(unused)]
+            pub struct SourcePath(pub std::path::PathBuf);
+
+            impl ApplyTestArg for SourcePath {
+                fn apply(self, config: &mut TestArgs) {
+                    config.source_path = Some(self.0);
+                }
+            }
+
             #[allow(unused_mut)]
             let mut config = TestArgs::default();
             $(
@@ -233,7 +258,10 @@ macro_rules! test_format {
             }
 
             // Initialize formatter
-            let source_path = tombi_test_lib::project_root_path().join("test.toml");
+            let source_path = config
+                .source_path
+                .clone()
+                .unwrap_or_else(|| tombi_test_lib::project_root_path().join("test.toml"));
             let formatter = Formatter::new(
                 config.toml_version,
                 &config.options,

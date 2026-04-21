@@ -1,6 +1,6 @@
 use tombi_linter::test_lint;
 use tombi_severity_level::SeverityLevel;
-use tombi_test_lib::{cargo_schema_path, project_root_path};
+use tombi_test_lib::{cargo_schema_path, project_root_path, pyproject_schema_path};
 
 test_lint! {
     #[test]
@@ -165,6 +165,38 @@ fn deprecated_override_config(deprecated_level: SeverityLevel) -> tombi_config::
     config
 }
 
+fn deprecated_root_lint_for_subschema_config(deprecated_level: SeverityLevel) -> tombi_config::Config {
+    let schema_path = project_root_path()
+        .join("schemas")
+        .join("deprecated-test.schema.json");
+    let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path).unwrap();
+
+    let mut config = tombi_config::Config::default();
+    config.schemas = Some(vec![
+        tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+            toml_version: None,
+            path: pyproject_schema_path().to_string_lossy().into_owned(),
+            include: vec!["pyproject.toml".to_string()],
+            lint: Some(tombi_config::SchemaLintOptions {
+                rules: Some(tombi_config::SchemaLintRules {
+                    deprecated: Some(deprecated_level.into()),
+                }),
+            }),
+            format: None,
+            overrides: None,
+        }),
+        tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
+            root: "tool.example".to_string(),
+            path: schema_uri.to_string(),
+            include: vec!["pyproject.toml".to_string()],
+            lint: None,
+            format: None,
+            overrides: None,
+        }),
+    ]);
+    config
+}
+
 test_lint! {
     #[test]
     fn test_deprecated_schema_lint_level_default_config(
@@ -230,6 +262,18 @@ test_lint! {
     fn test_deprecated_schema_override_error(
         "value = 1\n",
         Config(deprecated_override_config(SeverityLevel::Error)),
+    ) -> Diagnostics([{
+        code: "deprecated",
+        level: tombi_diagnostic::Level::ERROR,
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_root_schema_lint_rules_propagate_to_subschema(
+        "[tool.example]\nvalue = 1\n",
+        Config(deprecated_root_lint_for_subschema_config(SeverityLevel::Error)),
+        SourcePath(project_root_path().join("pyproject.toml")),
     ) -> Diagnostics([{
         code: "deprecated",
         level: tombi_diagnostic::Level::ERROR,

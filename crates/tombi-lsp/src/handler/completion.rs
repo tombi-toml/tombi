@@ -157,6 +157,9 @@ pub async fn handle_completion(
                 schema_format_rules: source_schema
                     .as_ref()
                     .map(|schema| &schema.schema_format_rules),
+                schema_lint_rules: source_schema
+                    .as_ref()
+                    .map(|schema| &schema.schema_lint_rules),
                 schema_overrides: source_schema
                     .as_ref()
                     .map(|schema| &schema.schema_overrides),
