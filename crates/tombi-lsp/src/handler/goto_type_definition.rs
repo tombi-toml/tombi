@@ -87,14 +87,12 @@ pub async fn handle_goto_type_definition(
         return Ok(Default::default());
     }
 
+    let schema_context =
+        SchemaContext::from_source_schema(toml_version, source_schema.as_ref(), &schema_store, None);
+
     Ok(
-        match get_type_definition(
-            &document_source.document_tree(),
-            position,
-            &keys,
-            &SchemaContext::from_source_schema(toml_version, source_schema.as_ref(), &schema_store, None),
-        )
-        .await
+        match get_type_definition(&document_source.document_tree(), position, &keys, &schema_context)
+            .await
         {
             Some(TypeDefinition {
                 schema_uri, range, ..

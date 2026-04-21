@@ -86,13 +86,10 @@ pub async fn handle_hover(
         return Ok(None);
     }
 
-    let mut hover_content = get_hover_content(
-        &document_tree,
-        position,
-        &keys,
-        &SchemaContext::from_source_schema(toml_version, source_schema.as_ref(), &schema_store, None),
-    )
-    .await;
+    let schema_context =
+        SchemaContext::from_source_schema(toml_version, source_schema.as_ref(), &schema_store, None);
+
+    let mut hover_content = get_hover_content(&document_tree, position, &keys, &schema_context).await;
 
     if let Some(HoverContent::Value(hover_value_content)) = &mut hover_content {
         hover_value_content.range = range;
