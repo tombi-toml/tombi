@@ -817,21 +817,18 @@ impl SchemaStore {
                                     document_schema.schema_uri.clone(),
                                 );
                                 if let Some(format_rules) = &matching_schema.format_rules {
-                                    source_schema.schema_format_rules.insert(
-                                        schema_uri_key.clone(),
-                                        format_rules.clone(),
-                                    );
+                                    source_schema
+                                        .schema_format_rules
+                                        .insert(schema_uri_key.clone(), format_rules.clone());
                                 }
                                 if let Some(lint_rules) = &matching_schema.lint_rules {
-                                    source_schema.schema_lint_rules.insert(
-                                        schema_uri_key.clone(),
-                                        lint_rules.clone(),
-                                    );
+                                    source_schema
+                                        .schema_lint_rules
+                                        .insert(schema_uri_key.clone(), lint_rules.clone());
                                 }
-                                source_schema.schema_overrides.insert(
-                                    schema_uri_key,
-                                    matching_schema.overrides.clone(),
-                                );
+                                source_schema
+                                    .schema_overrides
+                                    .insert(schema_uri_key, matching_schema.overrides.clone());
                             }
                         }
                         None => {
@@ -849,7 +846,8 @@ impl SchemaStore {
                             }
                             let mut schema_lint_rules = crate::SchemaLintRulesMap::default();
                             if let Some(lint_rules) = &matching_schema.lint_rules {
-                                schema_lint_rules.insert(schema_uri_key.clone(), lint_rules.clone());
+                                schema_lint_rules
+                                    .insert(schema_uri_key.clone(), lint_rules.clone());
                             }
                             let mut schema_overrides = crate::SchemaOverridesMap::default();
                             schema_overrides
@@ -912,7 +910,8 @@ impl SchemaStore {
                             }
                             let mut schema_lint_rules = crate::SchemaLintRulesMap::default();
                             if let Some(lint_rules) = &matching_schema.lint_rules {
-                                schema_lint_rules.insert(schema_uri_key.clone(), lint_rules.clone());
+                                schema_lint_rules
+                                    .insert(schema_uri_key.clone(), lint_rules.clone());
                             }
                             let mut schema_overrides = crate::SchemaOverridesMap::default();
                             schema_overrides

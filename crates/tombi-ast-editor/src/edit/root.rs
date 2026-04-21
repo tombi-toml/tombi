@@ -8,8 +8,8 @@ use tombi_schema_store::{Accessor, CurrentSchema, PatternAccessor};
 use tombi_syntax::SyntaxElement;
 
 use crate::node::make_dangling_comment_group_from_leading_comments;
-use crate::rule::root_table_keys_order;
 use crate::rule::TableOrderOverride;
+use crate::rule::root_table_keys_order;
 use tombi_ast::{DanglingCommentGroupOr, GetHeaderAccessors};
 
 impl crate::Edit for tombi_ast::Root {

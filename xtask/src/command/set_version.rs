@@ -113,7 +113,13 @@ fn set_install_sh_version(sh: &Shell, version: &str) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let mut patch = Patch::new(sh, project_root_path().join("docs").join("public").join("install.sh"))?;
+    let mut patch = Patch::new(
+        sh,
+        project_root_path()
+            .join("docs")
+            .join("public")
+            .join("install.sh"),
+    )?;
     patch.replace_install_sh_version(version);
     patch.commit(sh)?;
     Ok(())
@@ -166,10 +172,14 @@ impl Patch {
         let value_end = self.contents[value_start..]
             .find('"')
             .map(|offset| value_start + offset)
-            .unwrap_or_else(|| panic!("Expected closing quote after '{prefix}' in '{}'", self.path.display()));
+            .unwrap_or_else(|| {
+                panic!(
+                    "Expected closing quote after '{prefix}' in '{}'",
+                    self.path.display()
+                )
+            });
 
-        self.contents
-            .replace_range(value_start..value_end, version);
+        self.contents.replace_range(value_start..value_end, version);
         self
     }
 

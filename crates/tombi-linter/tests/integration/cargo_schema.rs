@@ -165,7 +165,9 @@ fn deprecated_override_config(deprecated_level: SeverityLevel) -> tombi_config::
     config
 }
 
-fn deprecated_root_lint_for_subschema_config(deprecated_level: SeverityLevel) -> tombi_config::Config {
+fn deprecated_root_lint_for_subschema_config(
+    deprecated_level: SeverityLevel,
+) -> tombi_config::Config {
     let schema_path = project_root_path()
         .join("schemas")
         .join("deprecated-test.schema.json");
