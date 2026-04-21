@@ -3842,6 +3842,7 @@ dependencies = [
  "rstest",
  "schemars",
  "serde",
+ "serde_tombi",
  "textwrap",
  "tokio",
  "tombi-ast",

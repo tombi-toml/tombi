@@ -26,6 +26,7 @@ unicode-segmentation.workspace = true
 [dev-dependencies]
 pretty_assertions.workspace = true
 rstest.workspace = true
+serde_tombi.workspace = true
 textwrap.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tombi-test-lib.workspace = true
