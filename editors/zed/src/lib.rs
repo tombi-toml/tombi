@@ -104,12 +104,29 @@ impl TombiExtension {
             return Some(venv_bin_path.to_string_lossy().to_string());
         }
 
-        let node_modules_bin_path = worktree_root_path.join("node_modules/.bin/tombi");
-        if node_modules_bin_path.is_file() {
-            return Some(node_modules_bin_path.to_string_lossy().to_string());
+        if let Some(path) = Self::resolve_node_modules_install(worktree_root_path, binary_name) {
+            return Some(path);
         }
 
         worktree.which("tombi")
+    }
+
+    fn resolve_node_modules_install(
+        worktree_root_path: &std::path::Path,
+        binary_name: &str,
+    ) -> Option<String> {
+        let candidate_names: &[&str] = match zed::current_platform() {
+            (zed::Os::Windows, _) => &["tombi.cmd", "tombi.ps1", binary_name],
+            _ => &[binary_name],
+        };
+
+        candidate_names.iter().find_map(|candidate_name| {
+            let node_modules_bin_path =
+                worktree_root_path.join(format!("node_modules/.bin/{candidate_name}"));
+            node_modules_bin_path
+                .is_file()
+                .then(|| node_modules_bin_path.to_string_lossy().to_string())
+        })
     }
 
     fn resolve_process_local_cached_path(&self) -> Option<String> {
