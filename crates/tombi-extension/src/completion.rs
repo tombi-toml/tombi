@@ -334,7 +334,8 @@ impl CompletionContent {
 
         let key_range = match completion_hint {
             Some(
-                CompletionHint::DotTrigger { range } | CompletionHint::EqualTrigger { range, .. },
+                CompletionHint::DotTrigger { range, .. }
+                | CompletionHint::EqualTrigger { range, .. },
             ) => tombi_text::Range::new(range.end, position),
             _ => replace_range.unwrap_or_else(|| tombi_text::Range::at(position)),
         };

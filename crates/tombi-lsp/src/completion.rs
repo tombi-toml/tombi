@@ -103,6 +103,10 @@ pub fn extract_keys_and_hint(
             {
                 completion_hint = Some(CompletionHint::DotTrigger {
                     range: last_token.range(),
+                    cleanup_range: tombi_text::Range {
+                        start: last_token.range().start,
+                        end: position,
+                    },
                 });
             }
             continue;
@@ -114,7 +118,13 @@ pub fn extract_keys_and_hint(
             match (kv.eq(), kv.value()) {
                 (Some(_), Some(_)) => {}
                 (Some(eq), None) => {
-                    completion_hint = Some(CompletionHint::EqualTrigger { range: eq.range() });
+                    completion_hint = Some(CompletionHint::EqualTrigger {
+                        range: eq.range(),
+                        cleanup_range: tombi_text::Range {
+                            start: kv_keys.range().end,
+                            end: position,
+                        },
+                    });
                 }
                 (None, None) => {
                     if let Some(last_dot) = kv_keys
@@ -128,6 +138,10 @@ pub fn extract_keys_and_hint(
                     {
                         completion_hint = Some(CompletionHint::DotTrigger {
                             range: last_dot.range(),
+                            cleanup_range: tombi_text::Range {
+                                start: last_dot.range().start,
+                                end: position,
+                            },
                         });
                     }
                 }

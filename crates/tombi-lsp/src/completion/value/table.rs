@@ -1049,7 +1049,8 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
         if keys.len() == 1 {
             match completion_hint {
                 Some(
-                    CompletionHint::DotTrigger { range } | CompletionHint::EqualTrigger { range },
+                    CompletionHint::DotTrigger { range, .. }
+                    | CompletionHint::EqualTrigger { range, .. },
                 ) => {
                     let key = keys.first().unwrap();
                     if current_schema.is_none() {

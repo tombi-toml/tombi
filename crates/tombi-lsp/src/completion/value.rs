@@ -192,7 +192,7 @@ impl FindCompletionContents for tombi_document_tree::Value {
                         let last_key = keys.last();
 
                         match (&last_key, completion_hint) {
-                            (Some(last_key), Some(CompletionHint::EqualTrigger { range }))
+                            (Some(last_key), Some(CompletionHint::EqualTrigger { range, .. }))
                                 if range.end < position =>
                             {
                                 vec![CompletionContent::new_type_hint_key(
@@ -238,7 +238,8 @@ pub fn type_hint_value(
     if let Some(key) = key {
         let need_key_hint = match completion_hint {
             Some(
-                CompletionHint::DotTrigger { range, .. } | CompletionHint::EqualTrigger { range },
+                CompletionHint::DotTrigger { range, .. }
+                | CompletionHint::EqualTrigger { range, .. },
             ) => range.end == position || range.end <= key.range().start,
             Some(
                 CompletionHint::InTableHeader
