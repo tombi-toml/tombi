@@ -138,3 +138,7 @@ ignored = [
   "wasm-bindgen",
   "wasm-bindgen-futures",
 ]
+
+[workspace.lints.rust]
+aarch64_softfloat_neon = "warn"
+deprecated = "warn"
