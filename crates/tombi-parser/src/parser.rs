@@ -57,18 +57,6 @@ impl<'t> Parser<'t> {
     }
 
     #[inline]
-    pub(crate) fn previous(&self) -> SyntaxKind {
-        if self.pos == 0 {
-            return EOF;
-        }
-        let mut pos = self.pos - 1;
-        while pos > 0 && self.input_tokens[pos].kind().is_trivia() {
-            pos -= 1;
-        }
-        self.input_tokens[pos].kind()
-    }
-
-    #[inline]
     pub(crate) fn recovered_to_next_section(&self) -> bool {
         self.recovered_to_next_section
     }

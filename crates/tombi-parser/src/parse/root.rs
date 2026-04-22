@@ -488,7 +488,7 @@ mod test {
             parsed
                 .errors
                 .iter()
-                .any(|error| error.kind() == ExpectedBracketEnd)
+                .any(|error| error.kind() == ExpectedValue)
                 && root.table_or_array_of_tables().any(|item| match item {
                     tombi_ast::TableOrArrayOfTable::Table(table) => table
                         .header()

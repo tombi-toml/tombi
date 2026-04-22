@@ -1,9 +1,10 @@
 use tombi_syntax::{SyntaxKind, SyntaxKind::*, T};
 
 pub(crate) const TS_LINE_END: TokenSet = TokenSet::new(&[LINE_BREAK, EOF]);
-pub(crate) const TS_COMMEMT_OR_LINE_END: TokenSet = TokenSet::new(&[COMMENT, LINE_BREAK, EOF]);
+pub(crate) const TS_VALUE_RECOVERY_END: TokenSet =
+    TokenSet::new(&[COMMENT, LINE_BREAK, T![,], T![']'], T!['}'], EOF]);
 pub(crate) const TS_NEXT_SECTION: TokenSet = TokenSet::new(&[T!['['], T!("[["), EOF]);
-pub(crate) const TS_INLINE_TABLE_END: TokenSet = TokenSet::new(&[T!['}'], EOF]);
+pub(crate) const TS_INLINE_TABLE_END: TokenSet = TokenSet::new(&[T!['}'], T![']'], EOF]);
 pub(crate) const TS_ARRAY_END: TokenSet = TokenSet::new(&[T![']'], EOF]);
 pub(crate) const TS_VALUE_FIRST: TokenSet = TokenSet::new(&[
     BASIC_STRING,

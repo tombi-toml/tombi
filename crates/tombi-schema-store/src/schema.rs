@@ -430,6 +430,8 @@ pub struct Schema {
     pub catalog_uri: Option<Arc<tombi_uri::CatalogUri>>,
     pub include: Vec<String>,
     pub sub_root_accessors: Option<Vec<RootAccessor>>,
+    pub explicit_array_values_order_enabled: Option<bool>,
+    pub explicit_table_keys_order_enabled: Option<bool>,
     pub array_values_order_enabled: bool,
     pub table_keys_order_enabled: bool,
     pub overrides: SchemaOverrides,

@@ -1274,9 +1274,9 @@ mod table_keys_order {
                 path = "tombi://www.schemastore.org/tombi.json"
                 include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
                 overrides = [
-                    {
+                  {
                     targets = ["schemas[*]"],
-                    }
+                  }
                 ]
                 "#
             )

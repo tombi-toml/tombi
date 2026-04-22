@@ -108,7 +108,7 @@ impl crate::Edit for tombi_ast::Array {
                         nodes,
                         values_with_comma,
                         accessors,
-                        current_item_schema.as_ref(),
+                        current_schema,
                         schema_context,
                         comment_directive.clone(),
                     )

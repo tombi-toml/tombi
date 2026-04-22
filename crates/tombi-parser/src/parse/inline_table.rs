@@ -21,7 +21,10 @@ impl Parse for tombi_ast::InlineTable {
         trailing_comment(p);
 
         loop {
-            while p.eat(LINE_BREAK) {}
+            let mut line_break_count = 0;
+            while p.eat(LINE_BREAK) {
+                line_break_count += 1;
+            }
 
             Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
 
@@ -29,9 +32,7 @@ impl Parse for tombi_ast::InlineTable {
             if p.nth_at_ts(n, TS_INLINE_TABLE_END) {
                 break;
             }
-            if p.nth_at_ts(n, TS_NEXT_SECTION)
-                && (p.recovered_to_next_section() || !matches!(p.previous(), T![,] | T!['{']))
-            {
+            if line_break_count >= 2 && p.nth_at_ts(n, TS_NEXT_SECTION) {
                 p.mark_recovered_to_next_section();
                 break;
             }
@@ -265,6 +266,26 @@ mod test {
                         .is_some_and(|token| token.text() == "extensions"),
                     tombi_ast::TableOrArrayOfTable::ArrayOfTable(_) => false,
                 })
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn incomplete_inline_table_in_array_recovers_at_array_end(
+            r#"
+            key = [
+              {
+            ]
+            "#
+        ) -> Err(|parsed, root| -> {
+            parsed.errors.iter().any(|error| matches!(error.kind(), ExpectedEqual | ExpectedBraceEnd))
+                && root
+                    .key_value_groups()
+                    .find_map(|group| group.into_item_group())
+                    .and_then(|group| group.key_values().next())
+                    .and_then(|key_value| key_value.value())
+                    .and_then(|value| tombi_ast::Array::cast(value.syntax().clone()))
+                    .is_some()
         })
     }
 

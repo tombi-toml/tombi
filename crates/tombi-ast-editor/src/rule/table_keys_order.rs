@@ -243,7 +243,7 @@ where
                                     targets,
                                     Some(&current_schema),
                                     schema_context,
-                                    None,
+                                    order,
                                     table_order_overrides,
                                 )
                                 .await?,
@@ -273,7 +273,7 @@ where
                                     targets,
                                     Some(&current_schema),
                                     schema_context,
-                                    None,
+                                    order,
                                     table_order_overrides,
                                 )
                                 .await?,
@@ -293,7 +293,7 @@ where
                             targets,
                             None,
                             schema_context,
-                            None,
+                            order,
                             table_order_overrides,
                         )
                         .await?,
@@ -333,7 +333,7 @@ where
                                 targets,
                                 Some(&current_schema),
                                 schema_context,
-                                None,
+                                order,
                                 table_order_overrides,
                             )
                             .await?,
@@ -355,7 +355,7 @@ where
                             targets,
                             None,
                             schema_context,
-                            None,
+                            order,
                             table_order_overrides,
                         )
                         .await?,

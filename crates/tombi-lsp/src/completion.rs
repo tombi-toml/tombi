@@ -96,7 +96,7 @@ pub fn extract_keys_and_hint(
     comment_context: Option<&CommentContext>,
 ) -> Option<(Vec<tombi_document_tree::Key>, Option<CompletionHint>)> {
     let mut keys: Vec<tombi_document_tree::Key> = vec![];
-    let mut completion_hint = None;
+    let mut completion_hint = get_comma_completion_hint(root.syntax(), position);
     let is_tombi_value_comment_directive =
         matches!(comment_context, Some(CommentContext::ValueDirective(_)));
 
@@ -780,7 +780,13 @@ fn get_leading_comma(node: &SyntaxNode, position: tombi_text::Position) -> Optio
     }
     if let Some(sibling) = node
         .siblings_with_tokens(Direction::Prev)
-        .find(|node_or_token| !node_or_token.range().contains(position))
+        .find(|node_or_token| {
+            !node_or_token.range().contains(position)
+                && !matches!(
+                    node_or_token.kind(),
+                    SyntaxKind::WHITESPACE | SyntaxKind::LINE_BREAK
+                )
+        })
         && sibling.kind() == SyntaxKind::COMMA
     {
         return Some(CommaHint {
@@ -790,8 +796,83 @@ fn get_leading_comma(node: &SyntaxNode, position: tombi_text::Position) -> Optio
     None
 }
 
+fn get_comma_completion_hint(
+    root: &SyntaxNode,
+    position: tombi_text::Position,
+) -> Option<CompletionHint> {
+    let (prev_token, next_token) = match root.token_at_position(position) {
+        TokenAtOffset::Single(token) => {
+            let prev_token = if is_trivia(token.kind()) {
+                token.prev_token()
+            } else {
+                Some(token.clone())
+            };
+            let next_token = if is_trivia(token.kind()) {
+                token.next_token()
+            } else {
+                Some(token)
+            };
+            (prev_token, next_token)
+        }
+        TokenAtOffset::Between(left, right) => (Some(left), Some(right)),
+        TokenAtOffset::None => (None, None),
+    };
+
+    let leading_comma = prev_token
+        .and_then(|token| prev_non_trivia_token(&token).or(Some(token)))
+        .filter(|token| token.kind() == SyntaxKind::COMMA)
+        .map(|token| CommaHint {
+            range: token.range(),
+        });
+    let trailing_comma = next_token
+        .and_then(|token| next_non_trivia_token(&token).or(Some(token)))
+        .filter(|token| token.kind() == SyntaxKind::COMMA)
+        .map(|token| CommaHint {
+            range: token.range(),
+        });
+
+    (leading_comma.is_some() || trailing_comma.is_some()).then_some(CompletionHint::Comma {
+        leading_comma,
+        trailing_comma,
+    })
+}
+
+fn is_trivia(kind: SyntaxKind) -> bool {
+    matches!(kind, SyntaxKind::WHITESPACE | SyntaxKind::LINE_BREAK)
+}
+
+fn prev_non_trivia_token(token: &tombi_syntax::SyntaxToken) -> Option<tombi_syntax::SyntaxToken> {
+    let mut current = Some(token.clone());
+    while let Some(token) = current {
+        if !is_trivia(token.kind()) {
+            return Some(token);
+        }
+        current = token.prev_token();
+    }
+    None
+}
+
+fn next_non_trivia_token(token: &tombi_syntax::SyntaxToken) -> Option<tombi_syntax::SyntaxToken> {
+    let mut current = Some(token.clone());
+    while let Some(token) = current {
+        if !is_trivia(token.kind()) {
+            return Some(token);
+        }
+        current = token.next_token();
+    }
+    None
+}
+
 fn get_trailing_comma(node: &SyntaxNode, position: tombi_text::Position) -> Option<CommaHint> {
-    if let Some(sibling) = node.siblings_with_tokens(Direction::Next).next() {
+    if let Some(sibling) = node
+        .siblings_with_tokens(Direction::Next)
+        .find(|node_or_token| {
+            !matches!(
+                node_or_token.kind(),
+                SyntaxKind::WHITESPACE | SyntaxKind::LINE_BREAK
+            )
+        })
+    {
         match sibling.kind() {
             SyntaxKind::COMMA => {
                 // Case like:

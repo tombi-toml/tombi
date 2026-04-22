@@ -200,28 +200,11 @@ async fn get_sorted_values_order_groups<'a>(
 ) -> Option<Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>> {
     let current_schema = current_schema?;
 
-    match (values_order_group, current_schema.value_schema.as_ref()) {
-        (
-            ArrayValuesOrderGroup::OneOf(group_orders),
-            ValueSchema::OneOf(OneOfSchema { schemas, .. }),
-        )
-        | (
-            ArrayValuesOrderGroup::AnyOf(group_orders),
-            ValueSchema::AnyOf(AnyOfSchema { schemas, .. }),
-        ) => {
+    match resolve_grouped_array_item_schemas(values_order_group, current_schema, accessors, schema_context)
+        .await
+    {
+        Some((group_orders, resolved_schemas)) => {
             let mut sorted_values_with_comma = Vec::with_capacity(values_with_comma.len());
-            let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
-                schemas,
-                current_schema.schema_uri.clone(),
-                current_schema.definitions.clone(),
-                schema_context.store,
-                &schema_context.schema_visits,
-                accessors,
-            )
-            .await
-            else {
-                return Some(values_with_comma);
-            };
 
             for (group_order, current_schema) in group_orders.iter().zip(resolved_schemas.iter()) {
                 let mut group_values_with_comma = Vec::new();
@@ -274,6 +257,68 @@ async fn get_sorted_values_order_groups<'a>(
     }
 }
 
+async fn resolve_grouped_array_item_schemas<'a>(
+    mut values_order_group: ArrayValuesOrderGroup,
+    current_schema: &'a CurrentSchema<'a>,
+    accessors: &'a [Accessor],
+    schema_context: &'a SchemaContext<'a>,
+) -> Option<(Vec<ArrayValuesOrder>, Vec<CurrentSchema<'static>>)> {
+    let mut current_schema = current_schema.clone().into_owned();
+
+    loop {
+        match (values_order_group, current_schema.value_schema.as_ref()) {
+            (
+                ArrayValuesOrderGroup::OneOf(group_orders),
+                ValueSchema::OneOf(OneOfSchema { schemas, .. }),
+            ) => {
+                return Some((
+                    group_orders,
+                    tombi_schema_store::resolve_and_collect_schemas(
+                        schemas,
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                        &schema_context.schema_visits,
+                        accessors,
+                    )
+                    .await?,
+                ));
+            }
+            (
+                ArrayValuesOrderGroup::AnyOf(group_orders),
+                ValueSchema::AnyOf(AnyOfSchema { schemas, .. }),
+            ) => {
+                return Some((
+                    group_orders,
+                    tombi_schema_store::resolve_and_collect_schemas(
+                        schemas,
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                        &schema_context.schema_visits,
+                        accessors,
+                    )
+                    .await?,
+                ));
+            }
+            (group, ValueSchema::Array(array_schema)) => {
+                let item_schema = array_schema.items.as_ref()?;
+                current_schema = tombi_schema_store::resolve_schema_item(
+                    item_schema,
+                    current_schema.schema_uri.clone(),
+                    current_schema.definitions.clone(),
+                    schema_context.store,
+                )
+                .await
+                .inspect_err(|err| log::warn!("{err}"))
+                .ok()??;
+                values_order_group = group;
+            }
+            _ => return None,
+        }
+    }
+}
+
 fn sort_array_values(
     sortable_values: SortableValues,
     values_order: ArrayValuesOrder,
@@ -305,8 +350,10 @@ fn try_array_values_order_by_from_item_schema<'a: 'b, 'b>(
     schema_context: &'a SchemaContext<'a>,
 ) -> BoxFuture<'b, Result<ArrayValuesOrderBy, SortFailReason>> {
     async move {
-        if let Some(current_schema) = current_schema {
-            match current_schema.value_schema.as_ref() {
+        let mut current_schema = current_schema.cloned().map(CurrentSchema::into_owned);
+
+        while let Some(schema) = current_schema {
+            match schema.value_schema.as_ref() {
                 ValueSchema::Table(TableSchema {
                     array_values_order_by: Some(array_values_order_by),
                     ..
@@ -318,8 +365,8 @@ fn try_array_values_order_by_from_item_schema<'a: 'b, 'b>(
                 | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
                     if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
                         schemas,
-                        current_schema.schema_uri.clone(),
-                        current_schema.definitions.clone(),
+                        schema.schema_uri.clone(),
+                        schema.definitions.clone(),
                         schema_context.store,
                         &schema_context.schema_visits,
                         accessors,
@@ -343,8 +390,26 @@ fn try_array_values_order_by_from_item_schema<'a: 'b, 'b>(
                         }
                     }
                 }
+                ValueSchema::Array(array_schema) => {
+                    let Some(item_schema) = array_schema.items.as_ref() else {
+                        break;
+                    };
+                    current_schema = tombi_schema_store::resolve_schema_item(
+                        item_schema,
+                        schema.schema_uri.clone(),
+                        schema.definitions.clone(),
+                        schema_context.store,
+                    )
+                    .await
+                    .inspect_err(|err| log::warn!("{err}"))
+                    .ok()
+                    .flatten();
+                    continue;
+                }
                 _ => {}
             }
+
+            break;
         }
 
         Err(SortFailReason::ArrayValuesOrderByRequired)

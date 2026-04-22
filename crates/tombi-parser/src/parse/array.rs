@@ -21,7 +21,10 @@ impl Parse for tombi_ast::Array {
         trailing_comment(p);
 
         loop {
-            while p.eat(LINE_BREAK) {}
+            let mut line_break_count = 0;
+            while p.eat(LINE_BREAK) {
+                line_break_count += 1;
+            }
 
             Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
 
@@ -29,9 +32,7 @@ impl Parse for tombi_ast::Array {
             if p.nth_at_ts(n, TS_ARRAY_END) {
                 break;
             }
-            if p.nth_at_ts(n, TS_NEXT_SECTION)
-                && (p.recovered_to_next_section() || !matches!(p.previous(), T![,] | T!['[']))
-            {
+            if line_break_count >= 2 && p.nth_at_ts(n, TS_NEXT_SECTION) {
                 p.mark_recovered_to_next_section();
                 break;
             }

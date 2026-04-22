@@ -92,6 +92,15 @@ impl SchemaContext<'_> {
 
         let mut normalized = schema_uri.clone();
         normalized.set_fragment(None);
+        let root_explicit = if let Some(root_schema) = self.root_schema {
+            let mut root_schema_uri = root_schema.schema_uri.clone();
+            root_schema_uri.set_fragment(None);
+            self.store
+                .explicit_table_keys_order_enabled_for_schema(&root_schema_uri, None)
+                .await
+        } else {
+            None
+        };
 
         if self.root_schema.is_some_and(|root_schema| {
             let mut root_schema_uri = root_schema.schema_uri.clone();
@@ -121,6 +130,17 @@ impl SchemaContext<'_> {
                 })
         });
 
+        let explicit = self
+            .store
+            .explicit_table_keys_order_enabled_for_schema(&normalized, sub_root_accessors)
+            .await;
+        if let Some(explicit) = explicit {
+            return explicit;
+        }
+        if let Some(root_explicit) = root_explicit {
+            return root_explicit;
+        }
+
         self.store
             .table_keys_order_enabled_for_schema(&normalized, sub_root_accessors)
             .await
@@ -144,6 +164,15 @@ impl SchemaContext<'_> {
 
         let mut normalized = schema_uri.clone();
         normalized.set_fragment(None);
+        let root_explicit = if let Some(root_schema) = self.root_schema {
+            let mut root_schema_uri = root_schema.schema_uri.clone();
+            root_schema_uri.set_fragment(None);
+            self.store
+                .explicit_array_values_order_enabled_for_schema(&root_schema_uri, None)
+                .await
+        } else {
+            None
+        };
 
         if self.root_schema.is_some_and(|root_schema| {
             let mut root_schema_uri = root_schema.schema_uri.clone();
@@ -172,6 +201,17 @@ impl SchemaContext<'_> {
                     .then_some(sub_root_accessors.as_slice())
                 })
         });
+
+        let explicit = self
+            .store
+            .explicit_array_values_order_enabled_for_schema(&normalized, sub_root_accessors)
+            .await;
+        if let Some(explicit) = explicit {
+            return explicit;
+        }
+        if let Some(root_explicit) = root_explicit {
+            return root_explicit;
+        }
 
         self.store
             .array_values_order_enabled_for_schema(&normalized, sub_root_accessors)

@@ -191,6 +191,19 @@ impl SchemaStore {
 
             log::debug!("Load schema from config: {}", schema_uri);
 
+            let explicit_array_values_order_enabled = schema
+                .format()
+                .and_then(|format| format.rules.as_ref())
+                .and_then(|rules| rules.array_values_order.as_ref())
+                .and_then(|rule| rule.enabled)
+                .map(|enabled| enabled.value());
+            let explicit_table_keys_order_enabled = schema
+                .format()
+                .and_then(|format| format.rules.as_ref())
+                .and_then(|rules| rules.table_keys_order.as_ref())
+                .and_then(|rule| rule.enabled)
+                .map(|enabled| enabled.value());
+
             self.schemas.write().await.push(crate::Schema {
                 title: None,
                 description: None,
@@ -200,20 +213,10 @@ impl SchemaStore {
                 include: schema.include().to_vec(),
                 toml_version: schema.toml_version(),
                 sub_root_accessors: schema.root().and_then(RootAccessor::parse),
-                array_values_order_enabled: schema
-                    .format()
-                    .and_then(|format| format.rules.as_ref())
-                    .and_then(|rules| rules.array_values_order.as_ref())
-                    .and_then(|rule| rule.enabled)
-                    .unwrap_or_default()
-                    .value(),
-                table_keys_order_enabled: schema
-                    .format()
-                    .and_then(|format| format.rules.as_ref())
-                    .and_then(|rules| rules.table_keys_order.as_ref())
-                    .and_then(|rule| rule.enabled)
-                    .unwrap_or_default()
-                    .value(),
+                explicit_array_values_order_enabled,
+                explicit_table_keys_order_enabled,
+                array_values_order_enabled: explicit_array_values_order_enabled.unwrap_or(true),
+                table_keys_order_enabled: explicit_table_keys_order_enabled.unwrap_or(true),
                 overrides: crate::SchemaOverrides {
                     array_values_order: schema
                         .overrides()
@@ -420,6 +423,8 @@ impl SchemaStore {
                     include: schema.file_match,
                     toml_version: None,
                     sub_root_accessors: None,
+                    explicit_array_values_order_enabled: None,
+                    explicit_table_keys_order_enabled: None,
                     array_values_order_enabled: true,
                     table_keys_order_enabled: true,
                     overrides: Default::default(),
@@ -1072,6 +1077,8 @@ impl SchemaStore {
             include,
             toml_version: options.toml_version,
             sub_root_accessors: None,
+            explicit_array_values_order_enabled: None,
+            explicit_table_keys_order_enabled: None,
             array_values_order_enabled: true,
             table_keys_order_enabled: true,
             overrides: Default::default(),
@@ -1096,12 +1103,18 @@ impl SchemaStore {
         schema_uri: &SchemaUri,
         sub_root_accessors: Option<&[RootAccessor]>,
     ) -> Option<bool> {
+        if let Some(explicit) = self
+            .explicit_table_keys_order_enabled_for_schema(schema_uri, sub_root_accessors)
+            .await
+        {
+            return Some(explicit);
+        }
+
         let mut normalized = schema_uri.clone();
         normalized.set_fragment(None);
 
-        self.schemas
-            .read()
-            .await
+        let schemas = self.schemas.read().await;
+        schemas
             .iter()
             .rev()
             .find(|schema| {
@@ -1117,7 +1130,7 @@ impl SchemaStore {
             .map(|schema| schema.table_keys_order_enabled)
     }
 
-    pub(crate) async fn array_values_order_enabled_for_schema(
+    pub(crate) async fn explicit_table_keys_order_enabled_for_schema(
         &self,
         schema_uri: &SchemaUri,
         sub_root_accessors: Option<&[RootAccessor]>,
@@ -1125,9 +1138,42 @@ impl SchemaStore {
         let mut normalized = schema_uri.clone();
         normalized.set_fragment(None);
 
-        self.schemas
-            .read()
+        let schemas = self.schemas.read().await;
+        schemas
+            .iter()
+            .rev()
+            .find(|schema| {
+                let mut candidate_uri = schema.schema_uri.clone();
+                candidate_uri.set_fragment(None);
+                candidate_uri == normalized
+                    && match (&schema.sub_root_accessors, sub_root_accessors) {
+                        (None, None) => true,
+                        (Some(candidate), Some(target)) => candidate.as_slice() == target,
+                        _ => false,
+                    }
+                    && schema.catalog_uri.is_none()
+                    && schema.explicit_table_keys_order_enabled.is_some()
+            })
+            .and_then(|schema| schema.explicit_table_keys_order_enabled)
+    }
+
+    pub(crate) async fn array_values_order_enabled_for_schema(
+        &self,
+        schema_uri: &SchemaUri,
+        sub_root_accessors: Option<&[RootAccessor]>,
+    ) -> Option<bool> {
+        if let Some(explicit) = self
+            .explicit_array_values_order_enabled_for_schema(schema_uri, sub_root_accessors)
             .await
+        {
+            return Some(explicit);
+        }
+
+        let mut normalized = schema_uri.clone();
+        normalized.set_fragment(None);
+
+        let schemas = self.schemas.read().await;
+        schemas
             .iter()
             .rev()
             .find(|schema| {
@@ -1141,6 +1187,30 @@ impl SchemaStore {
                     }
             })
             .map(|schema| schema.array_values_order_enabled)
+    }
+
+    pub(crate) async fn explicit_array_values_order_enabled_for_schema(
+        &self,
+        schema_uri: &SchemaUri,
+        sub_root_accessors: Option<&[RootAccessor]>,
+    ) -> Option<bool> {
+        let mut normalized = schema_uri.clone();
+        normalized.set_fragment(None);
+
+        let schemas = self.schemas.read().await;
+        schemas.iter().rev().find(|schema| {
+            let mut candidate_uri = schema.schema_uri.clone();
+            candidate_uri.set_fragment(None);
+            candidate_uri == normalized
+                && match (&schema.sub_root_accessors, sub_root_accessors) {
+                    (None, None) => true,
+                    (Some(candidate), Some(target)) => candidate.as_slice() == target,
+                    _ => false,
+                }
+                && schema.catalog_uri.is_none()
+                && schema.explicit_array_values_order_enabled.is_some()
+        })
+        .and_then(|schema| schema.explicit_array_values_order_enabled)
     }
 }
 
@@ -1279,9 +1349,9 @@ mod tests {
     use crate::{CatalogUri, RootAccessor, ValueSchema};
     use tombi_config::{
         Config, RootSchema, SchemaFormatOptions, SchemaFormatRules, SchemaItem,
-        SchemaOverrideArrayValuesOrderRule, SchemaOverrideFormatOptions, SchemaOverrideFormatRules,
-        SchemaOverrideItem, SchemaOverrideTableKeysOrderRule, SchemaOverviewOptions,
-        SchemaTableKeysOrderRule, SubSchema, Target,
+        SchemaOverrideFormatOptions, SchemaOverrideFormatRules, SchemaOverrideItem,
+        SchemaOverrideTableKeysOrderRule, SchemaOverviewOptions, SchemaTableKeysOrderRule,
+        SubSchema, Target,
     };
     use tombi_uri::SchemaUri;
     use tombi_x_keyword::TableKeysOrder;

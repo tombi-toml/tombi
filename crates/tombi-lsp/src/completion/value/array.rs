@@ -185,7 +185,16 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                     schema_context,
                                     if self.kind() == ArrayKind::Array {
                                         if new_item_index == 0 {
+                                            let has_separator_before_next_value = self
+                                                .values()
+                                                .first()
+                                                .is_some_and(|next_value| {
+                                                    position.line < next_value.range().start.line
+                                                        && position.column
+                                                            < next_value.range().start.column
+                                                });
                                             let add_trailing_comma = if self.is_empty()
+                                                || has_separator_before_next_value
                                                 || matches!(
                                                     completion_hint,
                                                     Some(CompletionHint::Comma {

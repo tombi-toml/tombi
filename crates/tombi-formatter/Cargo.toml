@@ -30,7 +30,6 @@ serde_tombi.workspace = true
 textwrap.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tombi-test-lib.workspace = true
-tombi-x-keyword.workspace = true
 
 [features]
 jsonschema = ["dep:schemars", "serde"]

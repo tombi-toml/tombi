@@ -3,7 +3,11 @@ use tombi_syntax::{SyntaxKind::*, T};
 use super::Parse;
 use crate::parse::key::eat_keys;
 use crate::support::{leading_comments, peek_leading_comments, trailing_comment};
-use crate::{ErrorKind::*, parser::Parser, token_set::TS_COMMEMT_OR_LINE_END};
+use crate::{
+    ErrorKind::*,
+    parser::Parser,
+    token_set::TS_VALUE_RECOVERY_END,
+};
 
 impl Parse for tombi_ast::Value {
     fn parse(p: &mut Parser<'_>) {
@@ -69,7 +73,7 @@ fn parse_invalid_value(p: &mut Parser<'_>, n: usize) {
 
     let start_range = p.current_range();
     let mut end_range = start_range;
-    while !p.at_ts(TS_COMMEMT_OR_LINE_END) {
+    while !p.at_ts(TS_VALUE_RECOVERY_END) {
         end_range = p.current_range();
         p.bump_any();
     }
