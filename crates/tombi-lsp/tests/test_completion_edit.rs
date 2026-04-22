@@ -31,10 +31,44 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn tombi_lsp_completion_dot_with_trailing_space(
+                r#"
+                [lsp]
+                completion. █
+                "#,
+                Select("enabled"),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok(
+                r#"
+                [lsp]
+                completion.enabled
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn tombi_lsp_completion_equal(
                 r#"
                 [lsp]
                 completion=█
+                "#,
+                Select("enabled"),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok(
+                r#"
+                [lsp]
+                completion = { enabled$1 }$0
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn tombi_lsp_completion_equal_with_trailing_space(
+                r#"
+                [lsp]
+                completion = █
                 "#,
                 Select("enabled"),
                 SchemaPath(tombi_schema_path()),
@@ -130,10 +164,44 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn cargo_dependencies_serde_dot_work_with_trailing_space(
+                r#"
+                [dependencies]
+                serde. work█
+                "#,
+                Select("workspace = true"),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                serde.workspace = true
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn cargo_dependencies_serde_eq_work(
                 r#"
                 [dependencies]
                 serde=work█
+                "#,
+                Select("workspace = true"),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                serde = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_dependencies_serde_eq_work_with_trailing_space(
+                r#"
+                [dependencies]
+                serde = work█
                 "#,
                 Select("workspace = true"),
                 SchemaPath(cargo_schema_path()),
@@ -175,6 +243,23 @@ mod completion_edit {
                 r#"
                 [dependencies]
                 serde = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_lib_proc_macro_equal_with_trailing_space(
+                r#"
+                [lib]
+                proc-macro = █
+                "#,
+                Select("true"),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [lib]
+                proc-macro = true
                 "#
             );
         }
@@ -811,6 +896,16 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn key_dot_select_true_with_trailing_space(
+                "key. █",
+                Select("true"),
+            ) -> Ok(
+                "key = true"
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn key_dot_select_false(
                 "key.█",
                 Select("false"),
@@ -843,6 +938,16 @@ mod completion_edit {
             #[tokio::test]
             async fn key_dot_select_basic_string(
                 "key.█",
+                Select("\"\""),
+            ) -> Ok(
+                "key = \"$1\"$0"
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn key_dot_select_basic_string_with_trailing_space(
+                "key. █",
                 Select("\"\""),
             ) -> Ok(
                 "key = \"$1\"$0"
@@ -901,6 +1006,16 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn key_dot_select_array_with_trailing_space(
+                "key. █",
+                Select("[]"),
+            ) -> Ok(
+                "key = [$1]$0"
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn key_equal_select_true(
                 "key=█",
                 Select("true"),
@@ -913,6 +1028,16 @@ mod completion_edit {
             #[tokio::test]
             async fn key_equal_select_false(
                 "key=█",
+                Select("false"),
+            ) -> Ok(
+                "key = false"
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn key_equal_select_false_with_trailing_space(
+                "key = █",
                 Select("false"),
             ) -> Ok(
                 "key = false"
@@ -1230,6 +1355,9 @@ mod completion_edit {
                 )
                 .await;
 
+                let cursor_position = tombi_text::Position::default()
+                    + tombi_text::RelativePosition::of(&toml_text[..index]);
+
                 let Ok(Some(completion_contents)) = tombi_lsp::handler::handle_completion(
                     &backend,
                     CompletionParams {
@@ -1237,9 +1365,7 @@ mod completion_edit {
                             text_document: TextDocumentIdentifier {
                                 uri: toml_file_url,
                             },
-                            position: (tombi_text::Position::default()
-                                + tombi_text::RelativePosition::of(&toml_text[..index]))
-                            .into_lsp(&line_index),
+                            position: cursor_position.into_lsp(&line_index),
                         },
                         work_done_progress_params: WorkDoneProgressParams::default(),
                         partial_result_params: PartialResultParams {
@@ -1287,6 +1413,62 @@ mod completion_edit {
                 let mut new_text = "".to_string();
                 match completion_edit.text_edit {
                     CompletionTextEdit::Edit(text_edit) => {
+                        let pre_cursor_text = {
+                            let start_line = text_edit.range.start.line as usize;
+                            let start_col = text_edit.range.start.column as usize;
+                            let cursor_line = cursor_position.line as usize;
+                            let cursor_col = cursor_position.column as usize;
+                            let before_cursor = &toml_text[..index];
+                            let line_starts: Vec<usize> = std::iter::once(0)
+                                .chain(before_cursor.match_indices('\n').map(|(i, _)| i + 1))
+                                .collect();
+                            if start_line > cursor_line
+                                || (start_line == cursor_line && start_col >= cursor_col)
+                            {
+                                None
+                            } else if start_line < line_starts.len() {
+                                let line_start_byte = line_starts[start_line];
+                                let byte_start = line_start_byte + start_col;
+                                if byte_start <= index && byte_start <= before_cursor.len() {
+                                    Some(&before_cursor[byte_start..index])
+                                } else {
+                                    Some("")
+                                }
+                            } else {
+                                Some("")
+                            }
+                        };
+                        if let Some(pre_cursor_text) = pre_cursor_text {
+                            let filter_text = completion_content
+                                .filter_text
+                                .as_deref()
+                                .unwrap_or(completion_content.label.as_str());
+                            assert!(
+                                filter_text.starts_with(pre_cursor_text),
+                                "text_edit.range covers text {:?} before the cursor that is not a \
+                                 prefix of the completion's filter_text/label ({:?}).\n\
+                                 \n\
+                                 VSCode hides completion candidates whose `text_edit` range spans \
+                                 pre-cursor text that is not a prefix of the completion's \
+                                 `filterText` (or `label`, when `filterText` is unset). Such items \
+                                 never reach the suggestion list, so the completion silently stops \
+                                 working in the editor — even though tests that apply edits directly \
+                                 (like this one) still produce the expected output.\n\
+                                 \n\
+                                 Keep `text_edit.range` scoped to either the cursor position \
+                                 (`Range::at(position)`) or the exact range of the word prefix being \
+                                 completed (so the pre-cursor slice is a prefix of the filter_text). \
+                                 Any pre-cursor cleanup — deleting trigger characters like `.` / `=`, \
+                                 trailing whitespace, partial keys that are NOT the filter prefix, \
+                                 etc. — MUST be expressed via `additional_text_edits`.\n\
+                                 \n\
+                                 See `CompletionEdit` in \
+                                 `crates/tombi-extension/src/completion/completion_edit.rs` for examples.",
+                                pre_cursor_text,
+                                filter_text,
+                            );
+                        }
+
                         let mut cursor = toml_text.split('\n').enumerate();
                         let start_line = text_edit.range.start.line as usize;
                         let end_line = text_edit.range.end.line as usize;

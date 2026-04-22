@@ -7,9 +7,11 @@ pub enum CompletionHint {
     },
     DotTrigger {
         range: tombi_text::Range,
+        cleanup_range: tombi_text::Range,
     },
     EqualTrigger {
         range: tombi_text::Range,
+        cleanup_range: tombi_text::Range,
     },
     Comma {
         leading_comma: Option<CommaHint>,

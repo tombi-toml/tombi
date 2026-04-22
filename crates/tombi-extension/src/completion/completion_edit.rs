@@ -35,8 +35,8 @@ impl CompletionEdit {
     ) -> Option<Self> {
         match completion_hint {
             Some(
-                CompletionHint::DotTrigger { range, .. }
-                | CompletionHint::EqualTrigger { range, .. },
+                CompletionHint::DotTrigger { cleanup_range, .. }
+                | CompletionHint::EqualTrigger { cleanup_range, .. },
             ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = {label}"),
@@ -44,7 +44,7 @@ impl CompletionEdit {
                 }),
                 insert_text_format: None,
                 additional_text_edits: Some(vec![TextEdit {
-                    range,
+                    range: cleanup_range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -79,8 +79,8 @@ impl CompletionEdit {
     ) -> Option<Self> {
         match completion_hint {
             Some(
-                CompletionHint::DotTrigger { range, .. }
-                | CompletionHint::EqualTrigger { range, .. },
+                CompletionHint::DotTrigger { cleanup_range, .. }
+                | CompletionHint::EqualTrigger { cleanup_range, .. },
             ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = ${{0:{label}}}"),
@@ -88,7 +88,7 @@ impl CompletionEdit {
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: Some(vec![TextEdit {
-                    range,
+                    range: cleanup_range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -103,8 +103,8 @@ impl CompletionEdit {
     ) -> Option<Self> {
         match completion_hint {
             Some(
-                CompletionHint::DotTrigger { range, .. }
-                | CompletionHint::EqualTrigger { range, .. },
+                CompletionHint::DotTrigger { cleanup_range, .. }
+                | CompletionHint::EqualTrigger { cleanup_range, .. },
             ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = {quote}$1{quote}$0"),
@@ -112,7 +112,7 @@ impl CompletionEdit {
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: Some(vec![TextEdit {
-                    range,
+                    range: cleanup_range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -169,8 +169,8 @@ impl CompletionEdit {
     ) -> Option<Self> {
         match completion_hint {
             Some(
-                CompletionHint::DotTrigger { range, .. }
-                | CompletionHint::EqualTrigger { range, .. },
+                CompletionHint::DotTrigger { cleanup_range, .. }
+                | CompletionHint::EqualTrigger { cleanup_range, .. },
             ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: " = [$1]$0".to_string(),
@@ -178,7 +178,7 @@ impl CompletionEdit {
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: Some(vec![TextEdit {
-                    range,
+                    range: cleanup_range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -221,7 +221,8 @@ impl CompletionEdit {
     ) -> Option<Self> {
         match completion_hint {
             Some(
-                CompletionHint::DotTrigger { range, .. } | CompletionHint::EqualTrigger { range },
+                CompletionHint::DotTrigger { cleanup_range, .. }
+                | CompletionHint::EqualTrigger { cleanup_range, .. },
             ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: " = { $1 }$0".to_string(),
@@ -229,7 +230,7 @@ impl CompletionEdit {
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: Some(vec![TextEdit {
-                    range,
+                    range: cleanup_range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -291,25 +292,25 @@ impl CompletionEdit {
                     additional_text_edits,
                 })
             }
-            Some(CompletionHint::EqualTrigger { range, .. }) => Some(Self {
+            Some(CompletionHint::EqualTrigger { cleanup_range, .. }) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = {{ {key_name}$1 }}$0"),
-                    range: key_range,
+                    range: tombi_text::Range::at(cleanup_range.end),
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: Some(vec![TextEdit {
-                    range,
+                    range: cleanup_range,
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::DotTrigger { range, .. }) => Some(Self {
+            Some(CompletionHint::DotTrigger { cleanup_range, .. }) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(".{key_name}"),
-                    range: key_range,
+                    range: tombi_text::Range::at(cleanup_range.end),
                 }),
                 insert_text_format: None,
                 additional_text_edits: Some(vec![TextEdit {
-                    range,
+                    range: cleanup_range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -353,25 +354,25 @@ impl CompletionEdit {
                     additional_text_edits,
                 })
             }
-            Some(CompletionHint::EqualTrigger { range, .. }) => Some(Self {
+            Some(CompletionHint::EqualTrigger { cleanup_range, .. }) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = {{ {key_name} = {value_label} }}"),
-                    range: key_range,
+                    range: tombi_text::Range::at(cleanup_range.end),
                 }),
                 insert_text_format: None,
                 additional_text_edits: Some(vec![TextEdit {
-                    range,
+                    range: cleanup_range,
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::DotTrigger { range, .. }) => Some(Self {
+            Some(CompletionHint::DotTrigger { cleanup_range, .. }) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(".{key_name} = {value_label}"),
-                    range: key_range,
+                    range: tombi_text::Range::at(cleanup_range.end),
                 }),
                 insert_text_format: None,
                 additional_text_edits: Some(vec![TextEdit {
-                    range,
+                    range: cleanup_range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -413,25 +414,25 @@ impl CompletionEdit {
                     additional_text_edits,
                 })
             }
-            Some(CompletionHint::EqualTrigger { range, .. }) => Some(Self {
+            Some(CompletionHint::EqualTrigger { cleanup_range, .. }) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = {{ ${{1:{key_name}}} }}$0"),
-                    range,
+                    range: tombi_text::Range::at(cleanup_range.end),
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: Some(vec![TextEdit {
-                    range,
+                    range: cleanup_range,
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::DotTrigger { range, .. }) => Some(Self {
+            Some(CompletionHint::DotTrigger { cleanup_range, .. }) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(".${{0:{key_name}}}"),
-                    range,
+                    range: tombi_text::Range::at(cleanup_range.end),
                 }),
                 insert_text_format: None,
                 additional_text_edits: Some(vec![TextEdit {
-                    range,
+                    range: cleanup_range,
                     new_text: "".to_string(),
                 }]),
             }),
