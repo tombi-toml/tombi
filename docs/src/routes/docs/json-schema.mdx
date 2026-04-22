@@ -16,19 +16,23 @@ This section explains how Tombi prioritizes the application of `x-tombi-*` keys 
 
 ## Built-in schemas
 
-Tombi embeds a subset of SchemaStore schemas into the binary. To use an embedded schema, replace the `https://` scheme with `tombi://`.
+Tombi embeds a subset of JSON Schema Store schemas into the binary. To use an embedded schema, replace the `https://` scheme with `tombi://`.
 
 For example, use `tombi://www.schemastore.org/cargo.json` instead of `https://www.schemastore.org/cargo.json`.
 
-Currently, the following built-in schemas are available:
+The authoritative list of embedded schemas is available from the embedded catalog:
 
 - `tombi://www.schemastore.org/api/json/catalog.json`
+
+Some common embedded schema URIs include:
+
 - `tombi://www.schemastore.org/cargo.json`
 - `tombi://www.schemastore.org/pyproject.json`
 - `tombi://www.schemastore.org/tombi.json`
 
 <Note>
 Built-in schemas are useful when you want schema validation and completion to work offline, or when you want to avoid fetching schemas over the network.
+The embedded catalog above is the source of truth for which schemas are built into the current binary.
 </Note>
 
 ## Tombi metadata
