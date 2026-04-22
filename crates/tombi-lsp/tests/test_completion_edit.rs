@@ -1205,6 +1205,7 @@ mod completion_edit {
                     LspService,
                 };
                 use tombi_text::IntoLsp;
+                use unicode_segmentation::UnicodeSegmentation;
 
                 tombi_test_lib::init_log();
 
@@ -1418,24 +1419,30 @@ mod completion_edit {
                             let start_col = text_edit.range.start.column as usize;
                             let cursor_line = cursor_position.line as usize;
                             let cursor_col = cursor_position.column as usize;
-                            let before_cursor = &toml_text[..index];
-                            let line_starts: Vec<usize> = std::iter::once(0)
-                                .chain(before_cursor.match_indices('\n').map(|(i, _)| i + 1))
-                                .collect();
-                            if start_line > cursor_line
-                                || (start_line == cursor_line && start_col >= cursor_col)
-                            {
+                            if (start_line, start_col) >= (cursor_line, cursor_col) {
                                 None
-                            } else if start_line < line_starts.len() {
-                                let line_start_byte = line_starts[start_line];
-                                let byte_start = line_start_byte + start_col;
-                                if byte_start <= index && byte_start <= before_cursor.len() {
-                                    Some(&before_cursor[byte_start..index])
-                                } else {
-                                    Some("")
-                                }
                             } else {
-                                Some("")
+                                // `column` is a grapheme count (see
+                                // `tombi_text::RelativePosition::of`), so convert it to a
+                                // byte offset via the same grapheme iteration instead of
+                                // treating it as a byte index.
+                                let before_cursor = &toml_text[..index];
+                                let line_start = std::iter::once(0)
+                                    .chain(
+                                        before_cursor
+                                            .char_indices()
+                                            .filter_map(|(i, c)| (c == '\n').then_some(i + 1)),
+                                    )
+                                    .nth(start_line)
+                                    .unwrap_or(before_cursor.len());
+                                let byte_offset_in_line: usize = before_cursor[line_start..]
+                                    .graphemes(true)
+                                    .take(start_col)
+                                    .map(str::len)
+                                    .sum();
+                                let byte_start =
+                                    (line_start + byte_offset_in_line).min(before_cursor.len());
+                                Some(&before_cursor[byte_start..])
                             }
                         };
                         if let Some(pre_cursor_text) = pre_cursor_text {
