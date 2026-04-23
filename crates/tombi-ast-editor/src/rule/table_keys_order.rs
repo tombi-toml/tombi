@@ -19,14 +19,14 @@ use crate::rule::TableOrderOverrides;
 pub async fn table_keys_order<'a>(
     value: &'a tombi_document_tree::Value,
     accessors: &'a [Accessor],
-    key_values: Vec<tombi_ast::KeyValue>,
+    key_values_with_comma: Vec<(tombi_ast::KeyValue, Option<tombi_ast::Comma>)>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     comment_directive: Option<
         TombiValueDirectiveContent<TableCommonFormatRules, TableCommonLintRules>,
     >,
 ) -> Vec<crate::Change> {
-    if key_values.is_empty() {
+    if key_values_with_comma.is_empty() {
         return Vec::with_capacity(0);
     }
 
@@ -47,26 +47,21 @@ pub async fn table_keys_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    let original_ranges = key_values
-        .iter()
-        .map(|key_value| key_value.syntax().range())
-        .collect_vec();
-
     let old = std::ops::RangeInclusive::new(
-        SyntaxElement::Node(key_values.first().unwrap().syntax().clone()),
-        SyntaxElement::Node(key_values.last().unwrap().syntax().clone()),
+        SyntaxElement::Node(key_values_with_comma.first().unwrap().0.syntax().clone()),
+        SyntaxElement::Node(key_values_with_comma.last().unwrap().0.syntax().clone()),
     );
 
-    let Some(sorted_key_values) = get_sorted_accessors(
+    let Some(sorted_key_values_with_comma) = get_sorted_accessors(
         value,
         accessors,
-        key_values
+        key_values_with_comma
             .into_iter()
-            .map(|kv| {
+            .map(|(kv, comma)| {
                 (
                     kv.get_accessors(schema_context.toml_version)
                         .unwrap_or_default(),
-                    kv,
+                    (kv, comma),
                 )
             })
             .collect_vec(),
@@ -80,17 +75,18 @@ pub async fn table_keys_order<'a>(
         return Vec::with_capacity(0);
     };
 
-    if sorted_key_values
-        .iter()
-        .map(|key_value| key_value.syntax().range())
-        .eq(original_ranges)
-    {
-        return Vec::with_capacity(0);
-    }
-
-    let new = sorted_key_values
+    let new = sorted_key_values_with_comma
         .into_iter()
-        .map(|kv| SyntaxElement::Node(kv.syntax().clone()))
+        .flat_map(|(value, comma)| {
+            if let Some(comma) = comma {
+                vec![
+                    SyntaxElement::Node(value.syntax().clone()),
+                    SyntaxElement::Node(comma.syntax().clone()),
+                ]
+            } else {
+                vec![SyntaxElement::Node(value.syntax().clone())]
+            }
+        })
         .collect_vec();
 
     vec![crate::Change::ReplaceRange { old, new }]

@@ -65,6 +65,8 @@ impl Format for tombi_ast::ArrayOfTable {
 
 #[cfg(test)]
 mod tests {
+    use tombi_config::FormatRules;
+
     use crate::{Formatter, test_format};
 
     test_format! {
@@ -169,6 +171,31 @@ mod tests {
             name = "toml-rs"  # key trailing comment
             ,  # comma trailing comment
             version = "0.4.0"
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn array_of_table_keeps_comma_when_both_key_value_and_comma_have_trailing_comments_with_indent(
+            r#"
+            [[package]]
+            name = "toml-rs" # key trailing comment
+            , # comma trailing comment
+            version = "0.4.0"
+            "#,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    indent_table_key_value_pairs: Some(true),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(
+            r#"
+            [[package]]
+              name = "toml-rs"  # key trailing comment
+              ,  # comma trailing comment
+              version = "0.4.0"
             "#
         )
     }
