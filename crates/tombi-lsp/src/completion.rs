@@ -1,10 +1,12 @@
 mod comment;
+mod completion_source;
 mod schema_completion;
 mod value;
 
-use std::{borrow::Cow, sync::Arc};
+use std::{borrow::Cow, ops::Deref, sync::Arc};
 
 pub use comment::get_document_comment_directive_completion_contents;
+use completion_source::CompletionSource;
 use itertools::Itertools;
 use tombi_ast::{AstNode, AstToken, algo::ancestors_at_position};
 use tombi_config::TomlVersion;
@@ -237,50 +239,94 @@ pub fn extract_keys_and_hint(
     Some((keys, completion_hint))
 }
 
-pub async fn find_completion_contents_with_tree(
+pub async fn find_completion_contents(
     document_tree: &tombi_document_tree::DocumentTree,
     position: tombi_text::Position,
     keys: &[tombi_document_tree::Key],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
-    let current_schema = schema_context.root_schema.and_then(|document_schema| {
-        document_schema
-            .value_schema
-            .as_ref()
-            .map(|value_schema| CurrentSchema {
-                value_schema: value_schema.clone(),
-                schema_uri: Cow::Borrowed(&document_schema.schema_uri),
-                definitions: Cow::Borrowed(&document_schema.definitions),
-            })
-    });
-
-    document_tree
-        .find_completion_contents(
-            position,
-            keys,
-            &[],
-            current_schema.as_ref(),
-            schema_context,
-            completion_hint,
-        )
-        .await
-        .into_iter()
-        .fold(
-            tombi_hashmap::IndexMap::new(),
-            |mut acc: tombi_hashmap::IndexMap<_, Vec<_>>, content| {
-                acc.entry(content.label.clone()).or_default().push(content);
-                acc
-            },
-        )
-        .into_iter()
-        .filter_map(|(_, contents)| {
-            contents
-                .into_iter()
-                .sorted_by(|a, b| a.priority.cmp(&b.priority))
-                .next()
-        })
-        .collect()
+    match CompletionSource::new(
+        document_tree,
+        position,
+        keys,
+        schema_context,
+        completion_hint,
+    )
+    .await
+    {
+        Some(CompletionSource::Root {
+            remaining_keys,
+            accessors,
+            current_schema,
+        }) => {
+            document_tree
+                .deref()
+                .find_completion_contents(
+                    position,
+                    remaining_keys,
+                    &accessors,
+                    current_schema.as_ref(),
+                    schema_context,
+                    completion_hint,
+                )
+                .await
+        }
+        Some(CompletionSource::Value {
+            remaining_keys,
+            accessors,
+            current_schema,
+        }) => {
+            if let Some((_, value)) = tombi_document_tree::dig_accessors(document_tree, &accessors)
+            {
+                value
+                    .find_completion_contents(
+                        position,
+                        remaining_keys,
+                        &accessors,
+                        current_schema.as_ref(),
+                        schema_context,
+                        completion_hint,
+                    )
+                    .await
+            } else {
+                Vec::new()
+            }
+        }
+        Some(CompletionSource::Schema {
+            remaining_keys,
+            accessors,
+            current_schema,
+        }) => {
+            schema_completion::SchemaCompletion
+                .find_completion_contents(
+                    position,
+                    remaining_keys,
+                    &accessors,
+                    Some(&current_schema),
+                    schema_context,
+                    completion_hint,
+                )
+                .await
+        }
+        None => Vec::new(),
+    }
+    .into_iter()
+    .fold(
+        tombi_hashmap::IndexMap::new(),
+        |mut acc: tombi_hashmap::IndexMap<_, Vec<_>>, content| {
+            acc.entry(content.label.clone()).or_default().push(content);
+            acc
+        },
+    )
+    .into_iter()
+    .filter_map(|(_, contents)| {
+        contents
+            .into_iter()
+            .sorted_by(|a, b| a.priority.cmp(&b.priority))
+            .next()
+    })
+    .collect()
 }
 
 pub trait FindCompletionContents {

@@ -382,6 +382,20 @@ impl FindCompletionContents for tombi_document_tree::Array {
                         }
 
                         let accessor = Accessor::Index(index);
+                        let completion_hint = match completion_hint {
+                            Some(
+                                CompletionHint::DotTrigger { .. }
+                                | CompletionHint::EqualTrigger { .. }
+                                | CompletionHint::InTableHeader
+                                | CompletionHint::InArray { .. },
+                            ) => completion_hint,
+                            Some(CompletionHint::Comma { .. }) | None => {
+                                Some(CompletionHint::InArray {
+                                    add_leading_comma: None,
+                                    add_trailing_comma: None,
+                                })
+                            }
+                        };
                         return value
                             .find_completion_contents(
                                 position,

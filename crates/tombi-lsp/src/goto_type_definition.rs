@@ -2,9 +2,10 @@ mod all_of;
 mod any_of;
 mod comment;
 mod one_of;
+mod type_definition_source;
 mod value;
 
-use std::{borrow::Cow, ops::Deref};
+use std::ops::Deref;
 
 pub use comment::get_tombi_document_comment_directive_type_definition;
 use itertools::Itertools;
@@ -15,31 +16,66 @@ use tower_lsp::lsp_types::GotoDefinitionResponse;
 
 use crate::{Backend, goto_definition::open_remote_file};
 
+use self::type_definition_source::TypeDefinitionSource;
+
 pub async fn get_type_definition(
     document_tree: &tombi_document_tree::DocumentTree,
     position: tombi_text::Position,
     keys: &[tombi_document_tree::Key],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Option<TypeDefinition> {
-    let table = document_tree.deref();
-    match schema_context.root_schema {
-        Some(document_schema) => {
-            let current_schema =
-                document_schema
-                    .value_schema
-                    .as_ref()
-                    .map(|value_schema| CurrentSchema {
-                        value_schema: value_schema.clone(),
-                        schema_uri: Cow::Borrowed(&document_schema.schema_uri),
-                        definitions: Cow::Borrowed(&document_schema.definitions),
-                    });
-            table
-                .get_type_definition(position, keys, &[], current_schema.as_ref(), schema_context)
+    let source = TypeDefinitionSource::new(document_tree, position, keys, schema_context).await?;
+
+    match source {
+        TypeDefinitionSource::Root {
+            remaining_keys,
+            accessors,
+            current_schema,
+        } => {
+            document_tree
+                .deref()
+                .get_type_definition(
+                    position,
+                    remaining_keys,
+                    &accessors,
+                    current_schema.as_ref(),
+                    schema_context,
+                )
                 .await
         }
-        None => {
-            table
-                .get_type_definition(position, keys, &[], None, schema_context)
+        TypeDefinitionSource::Value {
+            remaining_keys,
+            accessors,
+            current_schema,
+        } => {
+            let Some((_, value)) = tombi_document_tree::dig_accessors(document_tree, &accessors)
+            else {
+                return None;
+            };
+            value
+                .get_type_definition(
+                    position,
+                    remaining_keys,
+                    &accessors,
+                    current_schema.as_ref(),
+                    schema_context,
+                )
+                .await
+        }
+        TypeDefinitionSource::Schema {
+            remaining_keys,
+            accessors,
+            current_schema,
+        } => {
+            current_schema
+                .value_schema
+                .get_type_definition(
+                    position,
+                    remaining_keys,
+                    &accessors,
+                    Some(&current_schema),
+                    schema_context,
+                )
                 .await
         }
     }

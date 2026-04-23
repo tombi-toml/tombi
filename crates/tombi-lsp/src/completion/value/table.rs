@@ -1075,6 +1075,17 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                 }
                 Some(CompletionHint::InArray { .. } | CompletionHint::Comma { .. }) | None => {
                     if matches!(value, tombi_document_tree::Value::Incomplete { .. }) {
+                        if current_schema.is_none()
+                            && matches!(completion_hint, Some(CompletionHint::InArray { .. }))
+                        {
+                            return vec![CompletionContent::new_type_hint_key(
+                                &key.value,
+                                key.range(),
+                                None,
+                                completion_hint,
+                            )];
+                        }
+
                         return CompletionContent::new_magic_triggers(
                             &key.value,
                             position,
