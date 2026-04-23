@@ -152,7 +152,7 @@ impl crate::InlineTable {
     }
 
     #[inline]
-    pub fn has_direct_inner_comments(&self) -> bool {
+    fn has_direct_inner_comments(&self) -> bool {
         self.brace_start_trailing_comment().is_some()
             || self.dangling_comment_groups().next().is_some()
             || self
