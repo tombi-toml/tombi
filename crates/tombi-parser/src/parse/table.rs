@@ -131,6 +131,65 @@ mod test {
 
     test_parser! {
         #[test]
+        fn table_multi_keys_with_trailing_commas(
+            r#"
+            [package]
+            name = "toml-rs",
+            version = "0.4.0",
+            "#
+        ) -> Ok(
+            {
+                TABLE: {
+                    BRACKET_START: "[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "package"
+                        }
+                    },
+                    BRACKET_END: "]",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "name"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"toml-rs\""
+                            }
+                        },
+                        COMMA: {
+                            COMMA: ","
+                        },
+                        KEY_VALUE: {
+                            LINE_BREAK: "\n",
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "version"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"0.4.0\""
+                            }
+                        },
+                        COMMA: {
+                            COMMA: ","
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    test_parser! {
+        #[test]
         fn hex_like_table_key(
             r#"
             [0x96f]

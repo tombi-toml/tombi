@@ -38,21 +38,23 @@ pub async fn root_table_keys_order<'a>(
 
     let mut changes = Vec::new();
     for key_value_group in key_value_groups {
-        let key_values = key_value_group.key_values().collect_vec();
-        if key_values.is_empty() {
+        let key_values_with_comma = key_value_group.key_values_with_comma().collect_vec();
+        if key_values_with_comma.is_empty() {
             continue;
         }
 
         changes.extend(
             table_keys_order(
                 &tombi_document_tree::Value::Table(
-                    key_values
-                        .clone()
+                    key_values_with_comma
+                        .iter()
+                        .map(|(kv, _)| kv.clone())
+                        .collect_vec()
                         .into_document_tree_and_errors(schema_context.toml_version)
                         .tree,
                 ),
                 &[],
-                key_values,
+                key_values_with_comma,
                 current_schema,
                 schema_context,
                 comment_directive.clone(),

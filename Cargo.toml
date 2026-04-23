@@ -131,6 +131,10 @@ xshell.version = "0.2.7"
 zed_extension_api = "0.7.0"
 zip = { version = "2.3.0" }
 
+[workspace.lints.rust]
+aarch64_softfloat_neon = "warn"
+deprecated = "warn"
+
 [workspace.metadata.cargo-shear]
 ignored = [
   "semver",

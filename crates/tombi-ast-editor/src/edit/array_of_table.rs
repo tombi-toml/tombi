@@ -45,8 +45,9 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
                                 continue;
                             };
 
-                            let key_values = key_value_group.key_values().collect_vec();
-                            for key_value in &key_values {
+                            let key_values_with_comma =
+                                key_value_group.key_values_with_comma().collect_vec();
+                            for (key_value, _) in &key_values_with_comma {
                                 changes.extend(
                                     key_value
                                         .edit(
@@ -64,7 +65,7 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
                                 table_keys_order(
                                     node,
                                     &accessors,
-                                    key_values,
+                                    key_values_with_comma,
                                     current_schema.as_ref(),
                                     schema_context,
                                     comment_directive.clone(),

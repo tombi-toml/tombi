@@ -799,6 +799,49 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn pyproject_source_package_key_hover_metadata(
+                r#"
+                [tool.uv.workspace]
+                members = ["members/my-package1"]
+
+                [tool.uv.sources]
+                my-package1█ = { workspace = true }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject-hover-metadata/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok({
+                "Keys": "tool.uv.sources.my-package1",
+                "Value": "(Table | Array)?",
+                "Title": Some("my-package1"),
+                "Description": Some("A test package used by hover fixtures."),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn pyproject_source_child_field_hover_keeps_schema_metadata(
+                r#"
+                [tool.uv.workspace]
+                members = ["members/my-package1"]
+
+                [tool.uv.sources]
+                my-package1.workspace█ = true
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject-hover-metadata/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok({
+                "Keys": "tool.uv.sources.my-package1.workspace",
+                "Value": "Boolean",
+                "Description": Some("When set to `false`, the package will be fetched from the remote index, rather than\nincluded as a workspace package."),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn pyproject_workspace_dependency_hover_metadata_disabled_by_extensions(
                 r#"
                 [project]
