@@ -44,10 +44,8 @@ pub async fn hover(
     if matches_accessors!(accessors, ["tool", "uv", "sources", _])
         || matches_accessors!(accessors, ["tool", "uv", "sources", _, _])
     {
-        if let Some((_, tombi_document_tree::Value::Table(table))) =
-            dig_accessors(document_tree, &accessors[..3])
-        {
-            if table.keys().all(|key| !key.range().contains(position)) {
+        if let Some((_, value)) = dig_accessors(document_tree, &accessors[..4]) {
+            if value.contains(position) {
                 return Ok(None);
             }
         };
