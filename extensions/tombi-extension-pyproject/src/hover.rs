@@ -28,7 +28,7 @@ pub async fn hover(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
-    _position: tombi_text::Position,
+    position: tombi_text::Position,
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
@@ -44,6 +44,14 @@ pub async fn hover(
     if matches_accessors!(accessors, ["tool", "uv", "sources", _])
         || matches_accessors!(accessors, ["tool", "uv", "sources", _, _])
     {
+        if let Some((_, tombi_document_tree::Value::Table(table))) =
+            dig_accessors(document_tree, &accessors[..3])
+        {
+            if table.keys().all(|key| !key.range().contains(position)) {
+                return Ok(None);
+            }
+        };
+
         return Ok(resolve_pyproject_source_metadata(
             document_tree,
             &accessors[..4],
