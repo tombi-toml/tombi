@@ -19,11 +19,13 @@ fn check_key_value_groups(
                 continue;
             };
 
-            l.extend_diagnostics(Diagnostic {
-                kind: DiagnosticKind::ForbiddenKeyValueTrailingComma,
-                level: SeverityLevel::Error,
-                range: comma.range(),
-            });
+            if let Some(comma_token) = comma.comma() {
+                l.extend_diagnostics(Diagnostic {
+                    kind: DiagnosticKind::ForbiddenKeyValueTrailingComma,
+                    level: SeverityLevel::Error,
+                    range: comma_token.range(),
+                });
+            }
         }
     }
 }

@@ -4,7 +4,7 @@ pub enum DiagnosticKind {
     DottedKeysOutOfOrder,
     #[error("Defining tables out-of-order is discouraged")]
     TablesOutOfOrder,
-    #[error("trailing comma after key-value not allowed")]
+    #[error("Trailing comma after key-value is not allowed")]
     ForbiddenKeyValueTrailingComma,
     #[error("inline table must be single line in TOML v1.0.0 or earlier")]
     InlineTableMustSingleLine,
