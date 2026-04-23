@@ -44,9 +44,13 @@ pub async fn hover(
     if matches_accessors!(accessors, ["tool", "uv", "sources", _])
         || matches_accessors!(accessors, ["tool", "uv", "sources", _, _])
     {
-        if !is_hovering_source_package_key(document_tree, &accessors[..4], position) {
-            return Ok(None);
-        }
+        if let Some((_, tombi_document_tree::Value::Table(table))) =
+            dig_accessors(document_tree, &accessors[..3])
+        {
+            if table.keys().all(|key| !key.range().contains(position)) {
+                return Ok(None);
+            }
+        };
 
         return Ok(resolve_pyproject_source_metadata(
             document_tree,
@@ -89,25 +93,6 @@ pub async fn hover(
     }
 
     fetch_pypi_metadata(package_name, offline, cache_options).await
-}
-
-fn is_hovering_source_package_key(
-    document_tree: &tombi_document_tree::DocumentTree,
-    source_accessors: &[Accessor],
-    position: tombi_text::Position,
-) -> bool {
-    let source_keys = source_accessors
-        .iter()
-        .map(Accessor::as_key)
-        .collect::<Option<Vec<_>>>();
-    let Some(source_keys) = source_keys else {
-        return false;
-    };
-    let Some((source_key, _)) = dig_keys(document_tree, &source_keys) else {
-        return false;
-    };
-
-    source_key.range().contains(position)
 }
 
 fn resolve_pyproject_dependency_metadata_from_sources(
