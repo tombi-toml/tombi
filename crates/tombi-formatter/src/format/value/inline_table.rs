@@ -312,6 +312,114 @@ mod tests {
 
     test_format! {
         #[tokio::test]
+        async fn inline_table_inner_comment_only_v1_0_0(
+            r#"
+            inline_table = {
+              # comment
+            }"#,
+            TomlVersion::V1_0_0
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn inline_table_comma_trailing_comment_v1_0_0(
+            r#"
+            zip = {
+              version = "2.3.0",  # comment
+              features = []
+            }"#,
+            TomlVersion::V1_0_0
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn inline_table_moves_key_value_trailing_comment_to_comma_v1_0_0(
+            r#"
+            zip = {
+              version = "2.3.0"  # comment
+              ,
+              features = []
+            }"#,
+            TomlVersion::V1_0_0
+        ) -> Ok(
+            r#"
+            zip = {
+              version = "2.3.0",  # comment
+              features = []
+            }
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn inline_table_keeps_comma_when_key_value_and_comma_have_trailing_comments_v1_0_0(
+            r#"
+            zip = {
+              version = "2.3.0"  # key comment
+              ,  # comma comment
+              features = []
+            }"#,
+            TomlVersion::V1_0_0
+        ) -> Ok(
+            r#"
+            zip = {
+              version = "2.3.0"  # key comment
+              ,  # comma comment
+              features = []
+            }
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn inline_table_keeps_comma_when_comma_has_leading_comment_v1_0_0(
+            r#"
+            zip = {
+              version = "2.3.0"
+              # comma leading comment
+              ,  # comma trailing comment
+              features = []
+            }"#,
+            TomlVersion::V1_0_0
+        ) -> Ok(
+            r#"
+            zip = {
+              version = "2.3.0"
+              # comma leading comment
+              ,  # comma trailing comment
+              features = []
+            }
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn inline_table_end_dangling_comment_after_trailing_comma_v1_0_0(
+            r#"
+            zip = {
+              version = "2.3.0",
+
+              # comment
+            }"#,
+            TomlVersion::V1_0_0
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn inline_table_trailing_comment_stays_singleline_v1_0_0(
+            r#"zip = { version = "2.3.0" }  # comment"#,
+            TomlVersion::V1_0_0
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
         async fn inline_table_exceeds_line_width_v1_0_0(
             r#"table = { key1 = 1111111111, key2 = 2222222222, key3 = 3333333333 }"#,
             TomlVersion::V1_0_0,

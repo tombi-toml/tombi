@@ -90,7 +90,7 @@ impl crate::InlineTable {
     #[inline]
     pub fn should_be_multiline(&self, toml_version: TomlVersion) -> bool {
         if toml_version == TomlVersion::V1_0_0 {
-            return false;
+            return self.has_inner_comments();
         }
 
         self.has_last_key_value_trailing_comma()
