@@ -219,6 +219,28 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn schema_override_used_table_key_with_remaining_nested_key(
+                r#"
+                [[schemas]]
+                path = "tombi://www.schemastore.org/tombi.json"
+                include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
+                overrides = [
+                  {
+                    targets = [""],
+                    format.rules.table-keys-order = "ascending",
+                    █
+                  }
+                ]
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "format",
+                "lint",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_lint_rules_key_empty_equal_warn_and_space(
                 r#"
                 [lint.rules]
