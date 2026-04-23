@@ -420,6 +420,21 @@ mod tests {
 
     test_format! {
         #[tokio::test]
+        async fn inline_table_with_commented_array_stays_singleline_v1_0_0(
+            r#"
+            zip = { version = "2.3.0", features = [
+              # comment
+
+              "std",
+              "derive",
+            ] }
+            "#,
+            TomlVersion::V1_0_0
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
         async fn inline_table_exceeds_line_width_v1_0_0(
             r#"table = { key1 = 1111111111, key2 = 2222222222, key3 = 3333333333 }"#,
             TomlVersion::V1_0_0,
