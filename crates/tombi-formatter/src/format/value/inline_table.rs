@@ -435,6 +435,54 @@ mod tests {
 
     test_format! {
         #[tokio::test]
+        async fn nested_inline_table_array_singleline_array_singleline_v1_0_0(
+            r#"root = { items = [{ values = [1, 2] }] }"#,
+            TomlVersion::V1_0_0
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn nested_inline_table_array_multiline_array_singleline_v1_0_0(
+            r#"
+            root = { items = [
+              { values = [1, 2] },
+            ] }
+            "#,
+            TomlVersion::V1_0_0
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn nested_inline_table_array_singleline_array_multiline_v1_0_0(
+            r#"
+            root = { items = [{ values = [
+              1,
+              2,
+            ] }] }
+            "#,
+            TomlVersion::V1_0_0
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn nested_inline_table_array_multiline_array_multiline_v1_0_0(
+            r#"
+            root = { items = [
+              { values = [
+                1,
+                2,
+              ] },
+            ] }
+            "#,
+            TomlVersion::V1_0_0
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
         async fn inline_table_exceeds_line_width_v1_0_0(
             r#"table = { key1 = 1111111111, key2 = 2222222222, key3 = 3333333333 }"#,
             TomlVersion::V1_0_0,
