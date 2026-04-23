@@ -1,5 +1,3 @@
-#![allow(clippy::result_large_err)]
-
 mod all_of;
 mod any_of;
 mod array;
@@ -176,6 +174,7 @@ pub fn handle_deprecated_value<'a, T>(
     }
 }
 
+#[allow(clippy::result_large_err)]
 fn handle_type_mismatch(
     expected: tombi_schema_store::ValueType,
     actual: tombi_document_tree::ValueType,
@@ -210,6 +209,7 @@ fn handle_type_mismatch(
     }
 }
 
+#[allow(clippy::result_large_err)]
 #[inline]
 pub(crate) fn handle_anything_schema<T>(
     _value: &T,
@@ -220,6 +220,7 @@ where
     Ok(crate::EvaluatedLocations::new())
 }
 
+#[allow(clippy::result_large_err)]
 pub(crate) fn handle_nothing_schema<T>(value: &T) -> Result<crate::EvaluatedLocations, crate::Error>
 where
     T: tombi_document_tree::ValueImpl,
@@ -286,6 +287,7 @@ fn handle_unused_noqa<'a>(
     }
 }
 
+#[allow(clippy::result_large_err)]
 pub(crate) fn with_lint_diagnostics(
     result: Result<crate::EvaluatedLocations, crate::Error>,
     lint_rules_diagnostics: Vec<tombi_diagnostic::Diagnostic>,
@@ -339,6 +341,7 @@ fn is_multiple_of_with_tolerance(value: f64, multiple_of: f64) -> bool {
     (quotient - nearest).abs() <= tolerance
 }
 
+#[allow(clippy::result_large_err)]
 fn validate_deprecated<'a, T>(
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
@@ -372,6 +375,7 @@ where
     }
 }
 
+#[allow(clippy::result_large_err)]
 pub(crate) fn merge_validation_results(
     primary: Result<crate::EvaluatedLocations, crate::Error>,
     secondary: Result<crate::EvaluatedLocations, crate::Error>,
@@ -395,6 +399,7 @@ pub(crate) fn merge_validation_results(
     }
 }
 
+#[allow(clippy::result_large_err)]
 pub(crate) fn filter_table_strict_additional_diagnostics(
     mut error: crate::Error,
 ) -> Result<crate::EvaluatedLocations, crate::Error> {

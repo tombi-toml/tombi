@@ -48,7 +48,7 @@ pub async fn hover(
             && value.contains(position)
         {
             return Ok(None);
-        };
+        }
 
         return Ok(resolve_pyproject_source_metadata(
             document_tree,

@@ -721,14 +721,14 @@ fn workspace_dependency_target(
 }
 
 fn dependency_key_tooltip(
-    tooltip: &str,
+    tooltip: std::borrow::Cow<'static, str>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Option<std::borrow::Cow<'static, str>> {
-    if tooltip_matches(tooltip, DocumentLinkToolTip::PathFile) {
+    if tooltip_matches(&tooltip, DocumentLinkToolTip::PathFile) {
         cargo_toml_document_link_enabled(features)
             .then(|| std::borrow::Cow::Borrowed(DocumentLinkToolTip::CargoToml.into()))
     } else {
-        Some(std::borrow::Cow::Owned(tooltip.to_owned()))
+        Some(tooltip)
     }
 }
 
@@ -767,7 +767,9 @@ fn document_link_for_workspace_dependency(
             .into_iter()
             .flat_map(|document_link| {
                 let mut links = Vec::with_capacity(2);
-                if let Some(tooltip) = dependency_key_tooltip(&document_link.tooltip, features) {
+                if let Some(tooltip) =
+                    dependency_key_tooltip(document_link.tooltip.clone(), features)
+                {
                     links.push(tombi_extension::DocumentLink {
                         target: document_link.target.clone(),
                         range: crate_key.unquoted_range(),
@@ -805,7 +807,9 @@ fn document_link_for_crate_dependency_has_workspace(
             .into_iter()
             .flat_map(|document_link| {
                 let mut links = Vec::with_capacity(2);
-                if let Some(tooltip) = dependency_key_tooltip(&document_link.tooltip, features) {
+                if let Some(tooltip) =
+                    dependency_key_tooltip(document_link.tooltip.clone(), features)
+                {
                     links.push(tombi_extension::DocumentLink {
                         target: document_link.target.clone(),
                         range: crate_key.unquoted_range(),
@@ -1371,7 +1375,7 @@ version = "0.1.0"
         let features = disabled_cargo_toml_link_features();
 
         let tooltip = dependency_key_tooltip(
-            &std::borrow::Cow::Borrowed("Open Path File"),
+            std::borrow::Cow::Borrowed("Open Path File"),
             Some(&features),
         );
 

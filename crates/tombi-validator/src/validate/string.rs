@@ -1,5 +1,3 @@
-#![allow(clippy::result_large_err)]
-
 use itertools::Itertools;
 use tombi_ast::TombiValueCommentDirective;
 use tombi_comment_directive::value::KeyLinkRules;
@@ -267,6 +265,7 @@ fn should_validate_key_empty(
     )
 }
 
+#[allow(clippy::result_large_err)]
 fn validate_key_empty_rule<T>(
     string_value: &T,
     key_rules: Option<&KeyLinkRules>,
@@ -364,6 +363,7 @@ where
 ///
 /// When `lint_rules` is `None`, all checks use default error severity
 /// and noqa handling is skipped.
+#[allow(clippy::result_large_err)]
 pub(crate) fn validate_raw_string<'a>(
     value: &str,
     display_value: &str,
@@ -606,6 +606,7 @@ pub(crate) fn validate_raw_string<'a>(
 /// When a string value encounters a TOML date/time schema,
 /// check if x-tombi-string-formats includes the corresponding format.
 /// If so, validate the string against the format; otherwise, report type mismatch.
+#[allow(clippy::result_large_err)]
 fn validate_string_as_date_format(
     string_value: &(impl LikeString + ValueImpl + ToString),
     string_format: StringFormat,
