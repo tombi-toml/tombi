@@ -4,6 +4,8 @@ pub enum DiagnosticKind {
     DottedKeysOutOfOrder,
     #[error("Defining tables out-of-order is discouraged")]
     TablesOutOfOrder,
+    #[error("trailing comma after key-value not allowed")]
+    ForbiddenKeyValueTrailingComma,
     #[error("inline table must be single line in TOML v1.0.0 or earlier")]
     InlineTableMustSingleLine,
     #[error("trailing comma in inline table not allowed in TOML v1.0.0 or earlier")]
@@ -26,6 +28,7 @@ impl Diagnostic {
         match self.kind {
             DiagnosticKind::DottedKeysOutOfOrder => "dotted-keys-out-of-order",
             DiagnosticKind::TablesOutOfOrder => "tables-out-of-order",
+            DiagnosticKind::ForbiddenKeyValueTrailingComma => "forbidden-key-value-trailing-comma",
             DiagnosticKind::InlineTableMustSingleLine => "inline-table-must-single-line",
             DiagnosticKind::ForbiddenInlineTableLastComma => "forbidden-inline-table-last-comma",
             DiagnosticKind::MissingArrayComma => "missing-array-comma",

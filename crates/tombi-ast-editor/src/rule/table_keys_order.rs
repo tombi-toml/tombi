@@ -47,6 +47,11 @@ pub async fn table_keys_order<'a>(
         return Vec::with_capacity(0);
     }
 
+    let original_ranges = key_values
+        .iter()
+        .map(|key_value| key_value.syntax().range())
+        .collect_vec();
+
     let old = std::ops::RangeInclusive::new(
         SyntaxElement::Node(key_values.first().unwrap().syntax().clone()),
         SyntaxElement::Node(key_values.last().unwrap().syntax().clone()),
@@ -74,6 +79,14 @@ pub async fn table_keys_order<'a>(
     else {
         return Vec::with_capacity(0);
     };
+
+    if sorted_key_values
+        .iter()
+        .map(|key_value| key_value.syntax().range())
+        .eq(original_ranges)
+    {
+        return Vec::with_capacity(0);
+    }
 
     let new = sorted_key_values
         .into_iter()

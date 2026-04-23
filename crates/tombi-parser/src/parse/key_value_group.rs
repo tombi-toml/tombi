@@ -1,4 +1,4 @@
-use tombi_syntax::SyntaxKind::*;
+use tombi_syntax::{SyntaxKind::*, T};
 
 use crate::{
     parse::{Parse, is_group_separator},
@@ -17,6 +17,11 @@ impl Parse for tombi_ast::KeyValueGroup {
             }
 
             tombi_ast::KeyValue::parse(p);
+
+            let n = peek_leading_comments(p);
+            if p.nth_at(n, T![,]) {
+                tombi_ast::Comma::parse(p);
+            }
 
             if !p.at(LINE_BREAK) {
                 break;
