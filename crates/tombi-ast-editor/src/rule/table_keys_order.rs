@@ -49,7 +49,13 @@ pub async fn table_keys_order<'a>(
 
     let old = std::ops::RangeInclusive::new(
         SyntaxElement::Node(key_values_with_comma.first().unwrap().0.syntax().clone()),
-        SyntaxElement::Node(key_values_with_comma.last().unwrap().0.syntax().clone()),
+        {
+            let (last_key_value, last_comma) = key_values_with_comma.last().unwrap();
+            match last_comma {
+                Some(comma) => SyntaxElement::Node(comma.syntax().clone()),
+                None => SyntaxElement::Node(last_key_value.syntax().clone()),
+            }
+        },
     );
 
     let Some(sorted_key_values_with_comma) = get_sorted_accessors(
