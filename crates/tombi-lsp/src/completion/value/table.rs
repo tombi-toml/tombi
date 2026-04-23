@@ -1149,6 +1149,87 @@ fn check_used_table_value(
     false
 }
 
+fn table_schema_has_remaining_key_completion<'a>(
+    table: &'a tombi_document_tree::Table,
+    table_schema: &'a TableSchema,
+    schema_uri: Cow<'a, tombi_schema_store::SchemaUri>,
+    definitions: Cow<'a, tombi_schema_store::SchemaDefinitions>,
+    schema_store: &'a SchemaStore,
+    strict: bool,
+) -> BoxFuture<'a, bool> {
+    async move {
+        if table_schema.allows_any_additional_properties(strict) {
+            return true;
+        }
+
+        let property_keys = table_schema
+            .properties
+            .read()
+            .await
+            .keys()
+            .cloned()
+            .collect_vec();
+        for property_key in property_keys {
+            let Some(key_name) = property_key.as_key() else {
+                continue;
+            };
+
+            let Some(value) = table.get(key_name) else {
+                return true;
+            };
+
+            let tombi_document_tree::Value::Table(table) = value else {
+                continue;
+            };
+
+            let Ok(Some(current_schema)) = table_schema
+                .resolve_property_schema(
+                    &property_key,
+                    Cow::Borrowed(&schema_uri),
+                    Cow::Borrowed(&definitions),
+                    schema_store,
+                )
+                .await
+            else {
+                continue;
+            };
+
+            let (schema_candidates, errors) = current_schema
+                .value_schema
+                .find_schema_candidates(
+                    &[],
+                    &current_schema.schema_uri,
+                    &current_schema.definitions,
+                    schema_store,
+                )
+                .await;
+
+            for error in errors {
+                log::warn!("{}", error);
+            }
+
+            for schema_candidate in schema_candidates {
+                if let ValueSchema::Table(nested_table_schema) = schema_candidate
+                    && table_schema_has_remaining_key_completion(
+                        table,
+                        &nested_table_schema,
+                        Cow::Borrowed(&current_schema.schema_uri),
+                        Cow::Borrowed(&current_schema.definitions),
+                        schema_store,
+                        strict,
+                    )
+                    .await
+                {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+    .boxed()
+}
+
 fn collect_table_key_completion_contents<'a: 'b, 'b>(
     table: &'a tombi_document_tree::Table,
     key_name: &'a str,
@@ -1209,16 +1290,18 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                     {
                         return None;
                     }
-                    if let Some(tombi_document_tree::Value::Table(table)) = table.get(key_name) {
-                        let properties = table_schema.properties.read().await;
-                        if !table_schema.allows_any_additional_properties(schema_context.strict())
-                            && properties.keys().all(|key| {
-                                key.as_key()
-                                    .is_some_and(|property_name| table.get(property_name).is_some())
-                            })
-                        {
-                            return None;
-                        }
+                    if let Some(tombi_document_tree::Value::Table(table)) = table.get(key_name)
+                        && !table_schema_has_remaining_key_completion(
+                            table,
+                            table_schema,
+                            Cow::Borrowed(&current_schema.schema_uri),
+                            Cow::Borrowed(&current_schema.definitions),
+                            schema_context.store,
+                            schema_context.strict(),
+                        )
+                        .await
+                    {
+                        return None;
                     }
                 }
                 ValueSchema::Anything(_) => {}
