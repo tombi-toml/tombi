@@ -101,6 +101,80 @@ mod tests {
 
     test_format! {
         #[tokio::test]
+        async fn table_removes_trailing_commas(
+            r#"
+            [package]
+            name = "toml-rs",
+            version = "0.4.0",
+            "#
+        ) -> Ok(
+            r#"
+            [package]
+            name = "toml-rs"
+            version = "0.4.0"
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn table_moves_comma_trailing_comment_to_key_value(
+            r#"
+            [package]
+            name = "toml-rs", # comma trailing comment
+            version = "0.4.0"
+            "#
+        ) -> Ok(
+            r#"
+            [package]
+            name = "toml-rs"  # comma trailing comment
+            version = "0.4.0"
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn table_keeps_comma_when_comma_has_leading_comment(
+            r#"
+            [package]
+            name = "toml-rs"
+            # comma leading comment
+            , # comma trailing comment
+            version = "0.4.0"
+            "#
+        ) -> Ok(
+            r#"
+            [package]
+            name = "toml-rs"
+            # comma leading comment
+            ,  # comma trailing comment
+            version = "0.4.0"
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn table_keeps_comma_when_both_key_value_and_comma_have_trailing_comments(
+            r#"
+            [package]
+            name = "toml-rs" # key trailing comment
+            , # comma trailing comment
+            version = "0.4.0"
+            "#
+        ) -> Ok(
+            r#"
+            [package]
+            name = "toml-rs"  # key trailing comment
+            ,  # comma trailing comment
+            version = "0.4.0"
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
         async fn table_with_full_comment(
             r#"
             # header leading comment1

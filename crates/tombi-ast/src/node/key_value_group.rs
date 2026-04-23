@@ -1,6 +1,7 @@
 use tombi_syntax::SyntaxNode;
 
 use crate::AstNode;
+use crate::support::iter::WithCommaIter;
 use tombi_syntax::SyntaxKind::KEY_VALUE_GROUP;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -21,6 +22,20 @@ impl KeyValueGroup {
         self.syntax()
             .children_with_tokens()
             .filter_map(|el| el.into_node().and_then(crate::KeyValue::cast))
+    }
+
+    #[inline]
+    pub fn key_values_with_comma(
+        &self,
+    ) -> impl Iterator<Item = (crate::KeyValue, Option<crate::Comma>)> {
+        WithCommaIter::new(self.syntax().children())
+    }
+
+    #[inline]
+    pub fn into_key_values_with_comma(
+        self,
+    ) -> impl Iterator<Item = (crate::KeyValue, Option<crate::Comma>)> {
+        WithCommaIter::new(self.syntax.children())
     }
 
     #[inline]
