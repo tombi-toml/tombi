@@ -272,6 +272,7 @@ jobs:
         if: steps.stable-version.outputs.stable_version != ''
         with:
           ref: main
+          fetch-depth: 0
 
       - name: Decide whether install.sh should be updated
         id: should-update
@@ -281,12 +282,23 @@ jobs:
           STABLE_VERSION: ${{ steps.stable-version.outputs.stable_version }}
         run: |
           set -euo pipefail
+          semver_re='^[0-9]+\.[0-9]+\.[0-9]+$'
           current_version="$(
-            sed -n 's/^LATEST_STABLE_VERSION="\([0-9][0-9.]*\)"$/\1/p' docs/public/install.sh
+            sed -n 's/^LATEST_STABLE_VERSION="\([0-9]\+\.[0-9]\+\.[0-9]\+\)"$/\1/p' docs/public/install.sh
           )"
 
           if [ -z "${current_version}" ]; then
             echo "LATEST_STABLE_VERSION entry not found in docs/public/install.sh" >&2
+            exit 1
+          fi
+
+          if ! [[ "${current_version}" =~ ${semver_re} ]]; then
+            echo "LATEST_STABLE_VERSION must be a stable semver, got: ${current_version}" >&2
+            exit 1
+          fi
+
+          if ! [[ "${STABLE_VERSION}" =~ ${semver_re} ]]; then
+            echo "Stable tag version must be a stable semver, got: ${STABLE_VERSION}" >&2
             exit 1
           fi
 
