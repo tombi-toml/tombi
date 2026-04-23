@@ -214,13 +214,12 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
     schema_context: &'a SchemaContext<'a>,
 ) -> tombi_future::BoxFuture<'b, Option<CurrentSchema<'static>>> {
     async move {
-        let schema_visits = tombi_schema_store::SchemaVisits::default();
         let collected = tombi_schema_store::resolve_and_collect_schemas(
             schemas,
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
             schema_context.store,
-            &schema_visits,
+            &schema_context.schema_visits,
             accessors,
         )
         .await?;
@@ -238,7 +237,7 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
     .boxed()
 }
 
-pub fn remaining_keys<'a>(
+pub(crate) fn remaining_keys<'a>(
     keys: &'a [tombi_document_tree::Key],
     accessors: &[Accessor],
 ) -> &'a [tombi_document_tree::Key] {
