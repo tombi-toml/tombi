@@ -6,6 +6,7 @@ impl Lint for tombi_ast::Table {
     fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
         async move {
             crate::rule::DottedKeysOutOfOrderRule::check(self, l).await;
+            crate::rule::TrailingCommaRule::check(self, l).await;
 
             for key_value in self.key_values() {
                 key_value.lint(l).await;

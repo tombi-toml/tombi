@@ -3,7 +3,7 @@ use std::fmt::Write;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 
-use crate::{Format, types::WithAlignmentHint};
+use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
 
 impl Format for tombi_ast::KeyValue {
     #[inline]
@@ -48,12 +48,16 @@ impl Format for WithAlignmentHint<&tombi_ast::KeyValue> {
 
 impl Format for tombi_ast::KeyValueGroup {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        let key_values = self.key_values().collect_vec();
-        let equal_alignment_width = f.key_value_equal_alignment_width(key_values.iter());
-        let trailing_comment_alignment_width =
-            f.trailing_comment_alignment_width(key_values.iter(), equal_alignment_width)?;
+        let key_values_with_comma = self.key_values_with_comma().collect_vec();
+        let equal_alignment_width = f.key_value_equal_alignment_width(
+            key_values_with_comma.iter().map(|(key_value, _)| key_value),
+        );
+        let trailing_comment_alignment_width = f.trailing_comment_alignment_width(
+            key_values_with_comma.iter().map(|(key_value, _)| key_value),
+            equal_alignment_width,
+        )?;
 
-        for (i, key_value) in key_values.iter().enumerate() {
+        for (i, (key_value, comma)) in key_values_with_comma.iter().enumerate() {
             if i != 0 {
                 write!(f, "{}", f.line_ending())?;
             }
@@ -64,6 +68,45 @@ impl Format for tombi_ast::KeyValueGroup {
                 trailing_comment_alignment_width,
             }
             .format(f)?;
+
+            if let Some(comma) = comma {
+                let leading_comments = comma.leading_comments().collect_vec();
+                let key_value_has_trailing_comment = key_value.trailing_comment().is_some();
+                if let Some(trailing_comment) = comma.trailing_comment() {
+                    if leading_comments.is_empty() && !key_value_has_trailing_comment {
+                        if let Some(trailing_comment_alignment_width) =
+                            trailing_comment_alignment_width
+                        {
+                            write_trailing_comment_alignment_space(
+                                f,
+                                trailing_comment_alignment_width,
+                            )?;
+                        }
+                        trailing_comment.format(f)?;
+                    } else {
+                        write!(f, "{}", f.line_ending())?;
+                        if !leading_comments.is_empty() {
+                            leading_comments.format(f)?;
+                        }
+                        f.write_indent()?;
+                        write!(f, ",")?;
+                        if let Some(trailing_comment_alignment_width) =
+                            trailing_comment_alignment_width
+                        {
+                            write_trailing_comment_alignment_space(
+                                f,
+                                trailing_comment_alignment_width,
+                            )?;
+                        }
+                        trailing_comment.format(f)?;
+                    }
+                } else if !leading_comments.is_empty() {
+                    write!(f, "{}", f.line_ending())?;
+                    leading_comments.format(f)?;
+                    f.write_indent()?;
+                    write!(f, ",")?;
+                }
+            }
         }
 
         Ok(())
