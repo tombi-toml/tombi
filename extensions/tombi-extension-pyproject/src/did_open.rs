@@ -122,8 +122,8 @@ fn pyproject_sources(document_tree: &DocumentTree) -> Option<&Table> {
     }
 }
 
-fn workspace_pyproject_sources<'a>(
-    document_tree: &'a DocumentTree,
+fn workspace_pyproject_sources(
+    document_tree: &DocumentTree,
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<Table> {

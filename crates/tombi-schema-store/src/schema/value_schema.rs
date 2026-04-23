@@ -15,6 +15,7 @@ use crate::{
     schema::if_then_else_schema::IfThenElseSchema,
 };
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone)]
 pub enum ValueSchema {
     Boolean(BooleanSchema),
@@ -183,8 +184,8 @@ impl ValueSchema {
                 object,
                 string_formats,
                 dialect,
-                anchor_collector.as_deref_mut(),
-                dynamic_anchor_collector.as_deref_mut(),
+                anchor_collector,
+                dynamic_anchor_collector,
             )));
         }
 
@@ -196,11 +197,11 @@ impl ValueSchema {
     /// When "type" is not explicitly specified, we can infer the type from keywords
     /// that are only valid for specific types:
     /// - String: minLength, maxLength, pattern, format, contentEncoding,
-    ///           contentMediaType, contentSchema (content annotations)
+    ///   contentMediaType, contentSchema (content annotations)
     /// - Number: minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf
     /// - Array: items, prefixItems, minItems, maxItems, uniqueItems
     /// - Object: properties, patternProperties, additionalProperties, required,
-    ///           minProperties, maxProperties, propertyNames
+    ///   minProperties, maxProperties, propertyNames
     fn infer_type_from_keywords(
         object: &tombi_json::ObjectNode,
         dialect: Option<crate::JsonSchemaDialect>,

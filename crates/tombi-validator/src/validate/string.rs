@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 use itertools::Itertools;
 use tombi_ast::TombiValueCommentDirective;
 use tombi_comment_directive::value::KeyLinkRules;
@@ -229,12 +231,10 @@ where
                     lint_rules.as_ref().map(|rules| &rules.common),
                 ),
             }
+        } else if enable_key_empty_validation && should_validate_key_empty(None) {
+            validate_key_empty_rule(string_value, key_rules.as_ref())
         } else {
-            if enable_key_empty_validation && should_validate_key_empty(None) {
-                validate_key_empty_rule(string_value, key_rules.as_ref())
-            } else {
-                Ok(crate::EvaluatedLocations::new())
-            }
+            Ok(crate::EvaluatedLocations::new())
         };
 
         match result {

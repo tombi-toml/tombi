@@ -16,8 +16,6 @@ impl NotSchema {
         anchor_collector: Option<&mut AnchorCollector>,
         dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
     ) -> Option<Self> {
-        let anchor_collector = anchor_collector;
-        let dynamic_anchor_collector = dynamic_anchor_collector;
         object
             .get("not")
             .and_then(|value| {

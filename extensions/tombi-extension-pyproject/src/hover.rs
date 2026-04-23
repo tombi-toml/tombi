@@ -44,10 +44,10 @@ pub async fn hover(
     if matches_accessors!(accessors, ["tool", "uv", "sources", _])
         || matches_accessors!(accessors, ["tool", "uv", "sources", _, _])
     {
-        if let Some((_, value)) = dig_accessors(document_tree, &accessors[..4]) {
-            if value.contains(position) {
-                return Ok(None);
-            }
+        if let Some((_, value)) = dig_accessors(document_tree, &accessors[..4])
+            && value.contains(position)
+        {
+            return Ok(None);
         };
 
         return Ok(resolve_pyproject_source_metadata(

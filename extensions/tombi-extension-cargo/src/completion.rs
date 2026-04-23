@@ -445,11 +445,7 @@ fn complete_workspace_dependency_inheritance(
         return None;
     }
 
-    let Some((dependency_table_accessors, dependency_name)) =
-        member_dependency_accessors(accessors)
-    else {
-        return None;
-    };
+    let (dependency_table_accessors, dependency_name) = member_dependency_accessors(accessors)?;
 
     let Some((_, tombi_document_tree::Value::Table(current_dependency_table))) =
         dig_accessors(document_tree, dependency_table_accessors)
@@ -464,24 +460,19 @@ fn complete_workspace_dependency_inheritance(
             return None;
         };
 
-        let Some((current_dependency_key, _)) =
-            current_dependency_table.get_key_value(dependency_name.as_str())
-        else {
-            return None;
-        };
+        let (current_dependency_key, _) =
+            current_dependency_table.get_key_value(dependency_name.as_str())?;
 
         current_dependency_key.range()
     } else {
         tombi_text::Range::at(position)
     };
 
-    let Some((_, _, workspace_document_tree)) = find_workspace_cargo_toml(
+    let (_, _, workspace_document_tree) = find_workspace_cargo_toml(
         cargo_toml_path,
         get_workspace_cargo_toml_path(document_tree),
         toml_version,
-    ) else {
-        return None;
-    };
+    )?;
 
     let Some((_, tombi_document_tree::Value::Table(workspace_dependencies))) =
         dig_keys(&workspace_document_tree, &["workspace", "dependencies"])
@@ -537,9 +528,7 @@ fn complete_workspace_dependency_inheritance(
     }
 }
 
-fn member_dependency_accessors<'a>(
-    accessors: &'a [Accessor],
-) -> Option<(&'a [Accessor], Option<&'a Accessor>)> {
+fn member_dependency_accessors(accessors: &[Accessor]) -> Option<(&[Accessor], Option<&Accessor>)> {
     if matches_accessors!(accessors, ["dependencies"])
         || matches_accessors!(accessors, ["dev-dependencies"])
         || matches_accessors!(accessors, ["build-dependencies"])
@@ -625,7 +614,7 @@ async fn complete_crate_version(
                                     CompletionHint::DotTrigger { range, .. }
                                     | CompletionHint::EqualTrigger { range, .. },
                                 ) => Some(vec![TextEdit {
-                                    range: range,
+                                    range,
                                     new_text: "".to_string(),
                                 }]),
                                 _ => None,

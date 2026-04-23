@@ -179,7 +179,7 @@ fn resolve_relative_file_schema_uri(
             .map(tombi_uri::SchemaUri::from)
             .map_err(|_| uri_text.to_string())
     } else {
-        return Err(uri_text.to_string());
+        Err(uri_text.to_string())
     }
 }
 

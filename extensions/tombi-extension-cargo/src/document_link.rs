@@ -721,22 +721,19 @@ fn workspace_dependency_target(
 }
 
 fn dependency_key_tooltip(
-    tooltip: &std::borrow::Cow<'static, str>,
+    tooltip: &str,
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Option<std::borrow::Cow<'static, str>> {
     if tooltip_matches(tooltip, DocumentLinkToolTip::PathFile) {
         cargo_toml_document_link_enabled(features)
             .then(|| std::borrow::Cow::Borrowed(DocumentLinkToolTip::CargoToml.into()))
     } else {
-        Some(tooltip.clone())
+        Some(std::borrow::Cow::Owned(tooltip.to_owned()))
     }
 }
 
-fn tooltip_matches(
-    tooltip: &std::borrow::Cow<'static, str>,
-    expected: DocumentLinkToolTip,
-) -> bool {
-    tooltip.as_ref() == Into::<&'static str>::into(expected)
+fn tooltip_matches(tooltip: &str, expected: DocumentLinkToolTip) -> bool {
+    tooltip == Into::<&'static str>::into(expected)
 }
 
 fn document_link_for_workspace_dependency(

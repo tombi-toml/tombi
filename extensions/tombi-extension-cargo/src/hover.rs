@@ -188,14 +188,11 @@ fn format_feature_usage_label(project_root: &Path, cargo_toml_path: &Path, line:
 }
 
 fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
-    if matches_accessors!(accessors, ["workspace", "dependencies", _]) {
-        Some(accessors)
-    } else if matches_accessors!(accessors, ["dependencies", _])
+    if matches_accessors!(accessors, ["workspace", "dependencies", _])
+        || matches_accessors!(accessors, ["dependencies", _])
         || matches_accessors!(accessors, ["dev-dependencies", _])
         || matches_accessors!(accessors, ["build-dependencies", _])
-    {
-        Some(accessors)
-    } else if matches_accessors!(accessors, ["target", _, "dependencies", _])
+        || matches_accessors!(accessors, ["target", _, "dependencies", _])
         || matches_accessors!(accessors, ["target", _, "dev-dependencies", _])
         || matches_accessors!(accessors, ["target", _, "build-dependencies", _])
     {

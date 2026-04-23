@@ -136,9 +136,7 @@ pub(super) async fn adjacent_type_definition<
     any_of_schema: Option<&AnyOfSchema>,
     all_of_schema: Option<&AllOfSchema>,
 ) -> Option<TypeDefinition> {
-    let Some(current_schema) = current_schema else {
-        return None;
-    };
+    let current_schema = current_schema?;
 
     if let Some(one_of_schema) = one_of_schema
         && let Some(type_definition) = one_of::get_one_of_type_definition(
