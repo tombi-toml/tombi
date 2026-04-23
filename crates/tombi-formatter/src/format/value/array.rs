@@ -710,7 +710,6 @@ mod tests {
                     array_bracket_space_width: Some(1.into()),
                     ..Default::default()
                 }),
-                ..Default::default()
             }
         ) -> Ok(r#"nested = [ [], [], [ 1, 2 ] ]"#)
     }

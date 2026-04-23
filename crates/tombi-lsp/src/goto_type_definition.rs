@@ -48,10 +48,7 @@ pub async fn get_type_definition(
             accessors,
             current_schema,
         } => {
-            let Some((_, value)) = tombi_document_tree::dig_accessors(document_tree, &accessors)
-            else {
-                return None;
-            };
+            let (_, value) = tombi_document_tree::dig_accessors(document_tree, &accessors)?;
             value
                 .get_type_definition(
                     position,

@@ -747,6 +747,7 @@ pub(crate) fn goto_workspace_member_crates(
 }
 
 #[cfg(test)]
+#[allow(clippy::await_holding_lock)]
 mod tests {
     use std::{
         fs,

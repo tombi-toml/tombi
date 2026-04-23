@@ -467,7 +467,6 @@ mod table_keys_order {
                         inline_table_brace_space_width: Some(0.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
                 }
             ) -> Ok(
                 r#"

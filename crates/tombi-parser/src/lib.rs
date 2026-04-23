@@ -135,9 +135,12 @@ pub fn format_tree(patterns: &[SyntaxTreePattern], indent: usize) -> String {
 macro_rules! syntax_tree {
     ($($tt:tt)*) => {{
         #[allow(unused_mut)]
-        let mut __items: Vec<$crate::SyntaxTreePattern> = Vec::new();
-        $crate::syntax_tree_items!(__items; $($tt)*);
-        __items
+        #[allow(clippy::vec_init_then_push)]
+        {
+            let mut __items: Vec<$crate::SyntaxTreePattern> = Vec::new();
+            $crate::syntax_tree_items!(__items; $($tt)*);
+            __items
+        }
     }};
 }
 

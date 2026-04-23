@@ -27,7 +27,7 @@ async fn validate_test_suite(
     let source_path = temp.path().join("test.toml");
 
     fs::write(&schema_path, serde_json::to_vec_pretty(&schema).unwrap()).unwrap();
-    fs::write(&source_path, &toml_text).unwrap();
+    fs::write(&source_path, toml_text).unwrap();
 
     let schema_store = SchemaStore::new_with_options(SchemaStoreOptions {
         strict: Some(false),
@@ -52,7 +52,7 @@ async fn validate_test_suite(
         &schema_store,
     );
 
-    linter.lint(&toml_text).await
+    linter.lint(toml_text).await
 }
 
 macro_rules! suite_test {
