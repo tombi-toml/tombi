@@ -450,14 +450,10 @@ fn inherit_dependency_from_workspace_code_action(
     let AccessorContext::Key(crate_key_context) = &contexts[1 + offset] else {
         return None;
     };
-    if dig_keys(
+    dig_keys(
         workspace_document_tree,
         &["workspace", "dependencies", crate_name],
-    )
-    .is_none()
-    {
-        return None;
-    }
+    )?;
 
     match value {
         tombi_document_tree::Value::String(version) => {

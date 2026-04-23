@@ -359,7 +359,7 @@ fn get_enum_from_schemas<'a: 'b, 'b>(
 ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
     async move {
         let mut enum_values = Vec::new();
-        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+        let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
             schemas,
             std::borrow::Cow::Borrowed(schema_uri),
             std::borrow::Cow::Borrowed(definitions),
@@ -367,10 +367,7 @@ fn get_enum_from_schemas<'a: 'b, 'b>(
             &schema_context.schema_visits,
             &[],
         )
-        .await
-        else {
-            return None;
-        };
+        .await?;
 
         for resolved in &resolved_schemas {
             if let Some(values) = resolved

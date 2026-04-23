@@ -682,9 +682,7 @@ pub fn completion_file_path(
     let Ok(source_path) = text_document_uri.to_file_path() else {
         return None;
     };
-    let Some(base_dir) = source_path.parent() else {
-        return None;
-    };
+    let base_dir = source_path.parent()?;
 
     let Some((_, tombi_document_tree::Value::String(string))) =
         dig_accessors(document_tree, accessors)

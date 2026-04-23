@@ -671,9 +671,9 @@ fn resolve_dependency_feature_string_target(
     })
 }
 
-fn dependency_entries<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
-) -> Vec<(Vec<Accessor>, &'a tombi_document_tree::Value)> {
+fn dependency_entries(
+    document_tree: &tombi_document_tree::DocumentTree,
+) -> Vec<(Vec<Accessor>, &tombi_document_tree::Value)> {
     let mut entries = Vec::new();
 
     if let Some((_, Value::Table(workspace_dependencies))) =

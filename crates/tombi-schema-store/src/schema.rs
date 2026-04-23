@@ -245,18 +245,20 @@ pub(crate) fn bool_value_schema(allow: bool, range: tombi_text::Range) -> ValueS
     }
 }
 
+type AdjacentApplicators = (
+    Option<Box<OneOfSchema>>,
+    Option<Box<AnyOfSchema>>,
+    Option<Box<AllOfSchema>>,
+    Option<Box<NotSchema>>,
+);
+
 pub(crate) fn adjacent_applicators(
     object: &tombi_json::ObjectNode,
     string_formats: Option<&[tombi_x_keyword::StringFormat]>,
     dialect: Option<crate::JsonSchemaDialect>,
     mut anchor_collector: Option<&mut AnchorCollector>,
     mut dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
-) -> (
-    Option<Box<OneOfSchema>>,
-    Option<Box<AnyOfSchema>>,
-    Option<Box<AllOfSchema>>,
-    Option<Box<NotSchema>>,
-) {
+) -> AdjacentApplicators {
     let one_of = object
         .get("oneOf")
         .is_some()

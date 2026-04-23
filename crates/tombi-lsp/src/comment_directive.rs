@@ -165,9 +165,7 @@ where
     TombiValueDirectiveContent<WithKeyFormatRules<FormatRules>, WithKeyLintRules<LintRules>>:
         TombiCommentDirectiveImpl,
 {
-    let Some(comment_directives) = comment_directives else {
-        return None;
-    };
+    let comment_directives = comment_directives?;
 
     for comment_directive in comment_directives {
         if let Some(comment_directive_context) = comment_directive.get_context(position) {
@@ -198,9 +196,7 @@ where
     TombiValueDirectiveContent<WithKeyFormatRules<FormatRules>, WithKeyTableLintRules<LintRules>>:
         TombiCommentDirectiveImpl,
 {
-    let Some(comment_directives) = comment_directives else {
-        return None;
-    };
+    let comment_directives = comment_directives?;
 
     for comment_directive in comment_directives {
         if let Some(comment_directive_context) = comment_directive.get_context(position) {

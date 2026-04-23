@@ -378,8 +378,8 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     return hover_content;
                                 }
 
-                                if let Some(one_of_schema) = table_schema.one_of.as_deref() {
-                                    if let Some(hover_content) = get_one_of_hover_content(
+                                if let Some(one_of_schema) = table_schema.one_of.as_deref()
+                                    && let Some(hover_content) = get_one_of_hover_content(
                                         self,
                                         position,
                                         keys,
@@ -390,12 +390,11 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         schema_context,
                                     )
                                     .await
-                                    {
-                                        return Some(hover_content);
-                                    }
+                                {
+                                    return Some(hover_content);
                                 }
-                                if let Some(any_of_schema) = table_schema.any_of.as_deref() {
-                                    if let Some(hover_content) = get_any_of_hover_content(
+                                if let Some(any_of_schema) = table_schema.any_of.as_deref()
+                                    && let Some(hover_content) = get_any_of_hover_content(
                                         self,
                                         position,
                                         keys,
@@ -406,12 +405,11 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         schema_context,
                                     )
                                     .await
-                                    {
-                                        return Some(hover_content);
-                                    }
+                                {
+                                    return Some(hover_content);
                                 }
-                                if let Some(all_of_schema) = table_schema.all_of.as_deref() {
-                                    if let Some(hover_content) = get_all_of_hover_content(
+                                if let Some(all_of_schema) = table_schema.all_of.as_deref()
+                                    && let Some(hover_content) = get_all_of_hover_content(
                                         self,
                                         position,
                                         keys,
@@ -422,9 +420,8 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         schema_context,
                                     )
                                     .await
-                                    {
-                                        return Some(hover_content);
-                                    }
+                                {
+                                    return Some(hover_content);
                                 }
 
                                 if let Some(current_schema) =
@@ -492,8 +489,8 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     )
                                     .await
                             } else {
-                                if let Some(one_of_schema) = table_schema.one_of.as_deref() {
-                                    if let Some(hover_content) = get_one_of_hover_content(
+                                if let Some(one_of_schema) = table_schema.one_of.as_deref()
+                                    && let Some(hover_content) = get_one_of_hover_content(
                                         self,
                                         position,
                                         keys,
@@ -504,12 +501,11 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         schema_context,
                                     )
                                     .await
-                                    {
-                                        return Some(hover_content);
-                                    }
+                                {
+                                    return Some(hover_content);
                                 }
-                                if let Some(any_of_schema) = table_schema.any_of.as_deref() {
-                                    if let Some(hover_content) = get_any_of_hover_content(
+                                if let Some(any_of_schema) = table_schema.any_of.as_deref()
+                                    && let Some(hover_content) = get_any_of_hover_content(
                                         self,
                                         position,
                                         keys,
@@ -520,12 +516,11 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         schema_context,
                                     )
                                     .await
-                                    {
-                                        return Some(hover_content);
-                                    }
+                                {
+                                    return Some(hover_content);
                                 }
-                                if let Some(all_of_schema) = table_schema.all_of.as_deref() {
-                                    if let Some(hover_content) = get_all_of_hover_content(
+                                if let Some(all_of_schema) = table_schema.all_of.as_deref()
+                                    && let Some(hover_content) = get_all_of_hover_content(
                                         self,
                                         position,
                                         keys,
@@ -536,9 +531,8 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         schema_context,
                                     )
                                     .await
-                                    {
-                                        return Some(hover_content);
-                                    }
+                                {
+                                    return Some(hover_content);
                                 }
 
                                 None
@@ -567,8 +561,8 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     );
                                 }
                             } else {
-                                if let Some(one_of_schema) = table_schema.one_of.as_deref() {
-                                    if let Some(hover_content) = get_one_of_hover_content(
+                                if let Some(one_of_schema) = table_schema.one_of.as_deref()
+                                    && let Some(hover_content) = get_one_of_hover_content(
                                         self,
                                         position,
                                         keys,
@@ -579,12 +573,11 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         schema_context,
                                     )
                                     .await
-                                    {
-                                        return Some(hover_content);
-                                    }
+                                {
+                                    return Some(hover_content);
                                 }
-                                if let Some(any_of_schema) = table_schema.any_of.as_deref() {
-                                    if let Some(hover_content) = get_any_of_hover_content(
+                                if let Some(any_of_schema) = table_schema.any_of.as_deref()
+                                    && let Some(hover_content) = get_any_of_hover_content(
                                         self,
                                         position,
                                         keys,
@@ -595,12 +588,11 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         schema_context,
                                     )
                                     .await
-                                    {
-                                        return Some(hover_content);
-                                    }
+                                {
+                                    return Some(hover_content);
                                 }
-                                if let Some(all_of_schema) = table_schema.all_of.as_deref() {
-                                    if let Some(hover_content) = get_all_of_hover_content(
+                                if let Some(all_of_schema) = table_schema.all_of.as_deref()
+                                    && let Some(hover_content) = get_all_of_hover_content(
                                         self,
                                         position,
                                         keys,
@@ -611,9 +603,8 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         schema_context,
                                     )
                                     .await
-                                    {
-                                        return Some(hover_content);
-                                    }
+                                {
+                                    return Some(hover_content);
                                 }
                             }
 

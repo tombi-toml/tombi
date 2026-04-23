@@ -40,8 +40,8 @@ pub async fn handle_inlay_hint(
         )
     };
 
-    if config.cargo_inlay_hint_enabled() {
-        if let Some(hints) = tombi_extension_cargo::inlay_hint(
+    if config.cargo_inlay_hint_enabled()
+        && let Some(hints) = tombi_extension_cargo::inlay_hint(
             &text_document_uri,
             &document_tree,
             visible_range,
@@ -51,13 +51,12 @@ pub async fn handle_inlay_hint(
             config.cargo_extension_features(),
         )
         .await?
-        {
-            return Ok(Some(hints));
-        }
+    {
+        return Ok(Some(hints));
     }
 
-    if config.pyproject_inlay_hint_enabled() {
-        if let Some(hints) = tombi_extension_pyproject::inlay_hint(
+    if config.pyproject_inlay_hint_enabled()
+        && let Some(hints) = tombi_extension_pyproject::inlay_hint(
             &text_document_uri,
             &document_tree,
             visible_range,
@@ -65,9 +64,8 @@ pub async fn handle_inlay_hint(
             config.pyproject_extension_features(),
         )
         .await?
-        {
-            return Ok(Some(hints));
-        }
+    {
+        return Ok(Some(hints));
     }
 
     Ok(None)

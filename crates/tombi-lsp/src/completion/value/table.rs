@@ -251,7 +251,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 let Some(mut contents) =
                                                     collect_table_key_completion_contents(
                                                         self,
-                                                        &key_name,
+                                                        key_name,
                                                         position,
                                                         current_editing_key_range(keys, position),
                                                         accessors,
@@ -601,7 +601,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 if let Some((title, description, deprecated)) = online_ref_metadata
                                 {
                                     completion_contents.push(CompletionContent::new_key(
-                                        &key_name,
+                                        key_name,
                                         position,
                                         current_editing_key_range(keys, position),
                                         title,
@@ -626,7 +626,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 {
                                     let Some(contents) = collect_table_key_completion_contents(
                                         self,
-                                        &key_name,
+                                        key_name,
                                         position,
                                         current_editing_key_range(keys, position),
                                         accessors,
