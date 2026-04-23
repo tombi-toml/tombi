@@ -1191,7 +1191,7 @@ fn table_schema_has_remaining_key_completion<'a>(
                 )
                 .await
             else {
-                continue;
+                return true;
             };
 
             let (schema_candidates, errors) = current_schema
@@ -1204,8 +1204,11 @@ fn table_schema_has_remaining_key_completion<'a>(
                 )
                 .await;
 
-            for error in errors {
-                log::warn!("{}", error);
+            if !errors.is_empty() {
+                for error in errors {
+                    log::warn!("{}", error);
+                }
+                return true;
             }
 
             for schema_candidate in schema_candidates {
