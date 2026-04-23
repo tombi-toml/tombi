@@ -1,0 +1,4 @@
+[project]
+name = "my-package1"
+version = "0.1.0"
+description = "A test package used by hover fixtures."

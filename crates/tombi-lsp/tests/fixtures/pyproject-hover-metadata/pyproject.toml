@@ -1,0 +1,9 @@
+[project]
+name = "workspace"
+version = "0.1.0"
+
+[tool.uv.workspace]
+members = ["members/my-package1"]
+
+[tool.uv.sources]
+my-package1 = { workspace = true }
