@@ -155,16 +155,20 @@ impl crate::InlineTable {
     fn has_direct_inner_comments(&self) -> bool {
         self.brace_start_trailing_comment().is_some()
             || self.dangling_comment_groups().next().is_some()
-            || self
-                .key_value_with_comma_groups()
-                .any(|group| matches!(group, DanglingCommentGroupOr::DanglingCommentGroup(_)))
-            || self.key_values_with_comma().any(|(key_value, comma)| {
-                key_value.leading_comments().next().is_some()
-                    || key_value.trailing_comment().is_some()
-                    || comma.is_some_and(|comma| {
-                        comma.leading_comments().next().is_some()
-                            || comma.trailing_comment().is_some()
-                    })
+            || self.key_value_with_comma_groups().any(|group| match group {
+                DanglingCommentGroupOr::DanglingCommentGroup(_) => true,
+                DanglingCommentGroupOr::ItemGroup(group) => {
+                    group
+                        .into_key_values_with_comma()
+                        .any(|(key_value, comma)| {
+                            key_value.leading_comments().next().is_some()
+                                || key_value.trailing_comment().is_some()
+                                || comma.is_some_and(|comma| {
+                                    comma.leading_comments().next().is_some()
+                                        || comma.trailing_comment().is_some()
+                                })
+                        })
+                }
             })
     }
 
