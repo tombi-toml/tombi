@@ -226,13 +226,14 @@ async fn collect_prefetch_urls(
                         .or_else(|| exact_crates_io_version(version_requirement))
                 });
 
-        if prioritize_inlay_hint && dependency.default_features_hint {
-            if let Some(resolved_version) = resolved_version.as_deref() {
-                urls.awaited.insert(format!(
-                    "https://crates.io/api/v1/crates/{}/{}",
-                    dependency.crate_name, resolved_version
-                ));
-            }
+        if prioritize_inlay_hint
+            && dependency.default_features_hint
+            && let Some(resolved_version) = resolved_version.as_deref()
+        {
+            urls.awaited.insert(format!(
+                "https://crates.io/api/v1/crates/{}/{}",
+                dependency.crate_name, resolved_version
+            ));
         }
 
         if warm_feature_details {

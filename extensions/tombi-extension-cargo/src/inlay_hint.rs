@@ -1141,7 +1141,7 @@ async fn load_workspace_cargo_toml_entries(
         .into_iter()
         .filter_map(|dependency_key| {
             let (_, workspace_dependency_value) = dig_keys(
-                &workspace_document_tree,
+                workspace_document_tree,
                 &["workspace", "dependencies", dependency_key.as_str()],
             )?;
             let Value::Table(workspace_dependency_table) = workspace_dependency_value else {

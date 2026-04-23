@@ -36,7 +36,7 @@ where
         let mut enum_values = Vec::new();
         let mut result_accessors = tombi_schema_store::Accessors::from(accessors.to_vec());
 
-        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+        let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
             &all_of_schema.schemas,
             Cow::Borrowed(schema_uri),
             Cow::Borrowed(definitions),
@@ -44,10 +44,7 @@ where
             &schema_context.schema_visits,
             accessors,
         )
-        .await
-        else {
-            return None;
-        };
+        .await?;
 
         for resolved_schema in &resolved_schemas {
             if let Some(values) = resolved_schema
@@ -208,7 +205,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
             let mut value_type_set = tombi_hashmap::IndexSet::new();
             let mut enum_values = Vec::new();
 
-            let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
                 &self.schemas,
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
@@ -216,10 +213,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 &schema_context.schema_visits,
                 accessors,
             )
-            .await
-            else {
-                return None;
-            };
+            .await?;
 
             for resolved_schema in &resolved_schemas {
                 if resolved_schema.value_schema.title().is_some()

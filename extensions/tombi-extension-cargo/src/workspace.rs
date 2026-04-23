@@ -141,10 +141,9 @@ pub(crate) async fn load_workspace_cargo_toml(
                 if let Some((workspace_cargo_toml_path, document_tree)) =
                     load_cargo_toml_document_tree(workspace_cargo_toml_path.clone(), toml_version)
                         .await
+                    && document_tree.contains_key("workspace")
                 {
-                    if document_tree.contains_key("workspace") {
-                        return Some((workspace_cargo_toml_path, document_tree));
-                    }
+                    return Some((workspace_cargo_toml_path, document_tree));
                 }
             } else {
                 return None;
@@ -337,15 +336,13 @@ pub(crate) fn goto_dependency_crates(
                 toml_version,
             ) && let Some((_, tombi_document_tree::Value::String(package_name))) =
                 tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
-            {
-                if let Ok(subcrate_cargo_toml_uri) =
+                && let Ok(subcrate_cargo_toml_uri) =
                     tombi_uri::Uri::from_file_path(&subcrate_cargo_toml_path)
-                {
-                    locations.push(tombi_extension::DefinitionLocation {
-                        uri: subcrate_cargo_toml_uri,
-                        range: package_name.unquoted_range(),
-                    });
-                }
+            {
+                locations.push(tombi_extension::DefinitionLocation {
+                    uri: subcrate_cargo_toml_uri,
+                    range: package_name.unquoted_range(),
+                });
             }
         } else if let Some(tombi_document_tree::Value::Boolean(has_workspace)) =
             table.get("workspace")

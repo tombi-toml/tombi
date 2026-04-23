@@ -33,7 +33,7 @@ where
     async move {
         let mut all_of_type_definition = None;
 
-        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+        let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
             &all_of_schema.schemas,
             Cow::Borrowed(schema_uri),
             Cow::Borrowed(definitions),
@@ -41,10 +41,7 @@ where
             &schema_context.schema_visits,
             accessors,
         )
-        .await
-        else {
-            return None;
-        };
+        .await?;
 
         for resolved_schema in &resolved_schemas {
             if let Some(type_definition) = value

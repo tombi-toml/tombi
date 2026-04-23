@@ -205,8 +205,8 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                         });
                                 }
 
-                                if let Some(one_of_schema) = table_schema.one_of.as_deref() {
-                                    if let Some(type_definition) = get_one_of_type_definition(
+                                if let Some(one_of_schema) = table_schema.one_of.as_deref()
+                                    && let Some(type_definition) = get_one_of_type_definition(
                                         self,
                                         position,
                                         keys,
@@ -217,12 +217,11 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                         schema_context,
                                     )
                                     .await
-                                    {
-                                        return Some(type_definition);
-                                    }
+                                {
+                                    return Some(type_definition);
                                 }
-                                if let Some(any_of_schema) = table_schema.any_of.as_deref() {
-                                    if let Some(type_definition) = get_any_of_type_definition(
+                                if let Some(any_of_schema) = table_schema.any_of.as_deref()
+                                    && let Some(type_definition) = get_any_of_type_definition(
                                         self,
                                         position,
                                         keys,
@@ -233,12 +232,11 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                         schema_context,
                                     )
                                     .await
-                                    {
-                                        return Some(type_definition);
-                                    }
+                                {
+                                    return Some(type_definition);
                                 }
-                                if let Some(all_of_schema) = table_schema.all_of.as_deref() {
-                                    if let Some(type_definition) = get_all_of_type_definition(
+                                if let Some(all_of_schema) = table_schema.all_of.as_deref()
+                                    && let Some(type_definition) = get_all_of_type_definition(
                                         self,
                                         position,
                                         keys,
@@ -249,9 +247,8 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                         schema_context,
                                     )
                                     .await
-                                    {
-                                        return Some(type_definition);
-                                    }
+                                {
+                                    return Some(type_definition);
                                 }
 
                                 if let Some(current_schema) =
@@ -313,8 +310,8 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                 return type_definition;
                             }
 
-                            if let Some(one_of_schema) = table_schema.one_of.as_deref() {
-                                if let Some(type_definition) = get_one_of_type_definition(
+                            if let Some(one_of_schema) = table_schema.one_of.as_deref()
+                                && let Some(type_definition) = get_one_of_type_definition(
                                     self,
                                     position,
                                     keys,
@@ -325,12 +322,11 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     schema_context,
                                 )
                                 .await
-                                {
-                                    return Some(type_definition);
-                                }
+                            {
+                                return Some(type_definition);
                             }
-                            if let Some(any_of_schema) = table_schema.any_of.as_deref() {
-                                if let Some(type_definition) = get_any_of_type_definition(
+                            if let Some(any_of_schema) = table_schema.any_of.as_deref()
+                                && let Some(type_definition) = get_any_of_type_definition(
                                     self,
                                     position,
                                     keys,
@@ -341,12 +337,11 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     schema_context,
                                 )
                                 .await
-                                {
-                                    return Some(type_definition);
-                                }
+                            {
+                                return Some(type_definition);
                             }
-                            if let Some(all_of_schema) = table_schema.all_of.as_deref() {
-                                if let Some(type_definition) = get_all_of_type_definition(
+                            if let Some(all_of_schema) = table_schema.all_of.as_deref()
+                                && let Some(type_definition) = get_all_of_type_definition(
                                     self,
                                     position,
                                     keys,
@@ -357,9 +352,8 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     schema_context,
                                 )
                                 .await
-                                {
-                                    return Some(type_definition);
-                                }
+                            {
+                                return Some(type_definition);
                             }
 
                             None

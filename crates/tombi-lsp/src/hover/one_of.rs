@@ -46,7 +46,7 @@ where
             .as_ref()
             .and_then(|default| DisplayValue::try_from(default).ok());
 
-        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+        let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
             &one_of_schema.schemas,
             Cow::Borrowed(schema_uri),
             Cow::Borrowed(definitions),
@@ -54,10 +54,7 @@ where
             &schema_context.schema_visits,
             accessors,
         )
-        .await
-        else {
-            return None;
-        };
+        .await?;
 
         for resolved_schema in &resolved_schemas {
             if let Some(values) = resolved_schema
@@ -238,7 +235,7 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
                 .as_ref()
                 .and_then(|default| DisplayValue::try_from(default).ok());
 
-            let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
                 &self.schemas,
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
@@ -246,10 +243,7 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
                 &schema_context.schema_visits,
                 accessors,
             )
-            .await
-            else {
-                return None;
-            };
+            .await?;
 
             for resolved_schema in &resolved_schemas {
                 if resolved_schema.value_schema.title().is_some()

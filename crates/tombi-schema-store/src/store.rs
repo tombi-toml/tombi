@@ -14,6 +14,9 @@ use tombi_config::{SchemaItem, SchemaOverviewOptions, TomlVersion};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_uri::SchemaUri;
 
+type DocumentSchemas =
+    Arc<RwLock<tombi_hashmap::HashMap<SchemaUri, Result<Arc<DocumentSchema>, crate::Error>>>>;
+
 /// Options for associating a schema with file patterns
 #[derive(Debug, Clone, Default)]
 pub struct AssociateSchemaOptions {
@@ -27,11 +30,7 @@ pub struct AssociateSchemaOptions {
 #[derive(Debug, Clone)]
 pub struct SchemaStore {
     http_client: HttpClient,
-    document_schemas: Arc<
-        tokio::sync::RwLock<
-            tombi_hashmap::HashMap<SchemaUri, Result<Arc<DocumentSchema>, crate::Error>>,
-        >,
-    >,
+    document_schemas: DocumentSchemas,
     schemas: Arc<RwLock<Vec<crate::Schema>>>,
     options: crate::Options,
     base_dir_path: Arc<RwLock<Option<std::path::PathBuf>>>,
