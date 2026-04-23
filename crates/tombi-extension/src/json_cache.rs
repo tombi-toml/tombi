@@ -99,6 +99,7 @@ where
 }
 
 #[cfg(test)]
+#[allow(clippy::await_holding_lock)]
 mod tests {
     use std::sync::{
         Arc, Mutex, OnceLock,

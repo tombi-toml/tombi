@@ -15,7 +15,7 @@ use crate::{
     DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
     DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
     comment_directive::{CommentDirectiveContext, GetCommentDirectiveContext},
-    completion::{extract_keys_and_hint, find_completion_contents_with_tree},
+    completion::{extract_keys_and_hint, find_completion_contents},
 };
 
 use super::{CompletionContent, CompletionEdit};
@@ -166,7 +166,7 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
     );
 
     Some(
-        find_completion_contents_with_tree(
+        find_completion_contents(
             &document_tree,
             position_in_content,
             &keys,

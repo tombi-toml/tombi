@@ -2229,6 +2229,36 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn aaa_equal_array_inline_table_bbb(
+                "aaa = [{ bbb█ }]"
+            ) -> Ok([
+                ".",
+                "=",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn aaa_equal_array_inline_table_ccc_equal_inline_table_bbb(
+                "aaa = [{ ccc = { bbb█ } }]"
+            ) -> Ok([
+                ".",
+                "=",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn aaa_equal_array_inline_table_ccc_dot_ddd_equal_inline_table_bbb(
+                "aaa = [{ ccc.ddd = { bbb█ } }]"
+            ) -> Ok([
+                ".",
+                "=",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn aaa_equal_array_1_comma_bbb(
                 "aaa = [1, bbb.█]"
             ) -> Ok(AnyValue);

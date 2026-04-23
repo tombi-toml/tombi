@@ -8,7 +8,7 @@ use tower_lsp::lsp_types::{
 use crate::{
     backend,
     completion::{
-        extract_keys_and_hint, find_completion_contents_with_tree, get_comment_context,
+        extract_keys_and_hint, find_completion_contents, get_comment_context,
         get_document_comment_directive_completion_contents,
     },
     config_manager::ConfigSchemaStore,
@@ -145,31 +145,15 @@ pub async fn handle_completion(
                 return Ok(Some(Vec::with_capacity(0)));
             };
 
-            let schema_context = tombi_schema_store::SchemaContext {
+            let schema_context = tombi_schema_store::SchemaContext::from_source_schema(
                 toml_version,
-                root_schema,
-                sub_schema_uri_map: source_schema
-                    .as_ref()
-                    .map(|schema| &schema.sub_schema_uri_map),
-                deprecated_lint_level: source_schema
-                    .as_ref()
-                    .and_then(|schema| schema.deprecated_lint_level),
-                schema_format_rules: source_schema
-                    .as_ref()
-                    .map(|schema| &schema.schema_format_rules),
-                schema_lint_rules: source_schema
-                    .as_ref()
-                    .map(|schema| &schema.schema_lint_rules),
-                schema_overrides: source_schema
-                    .as_ref()
-                    .map(|schema| &schema.schema_overrides),
-                schema_visits: Default::default(),
-                store: &schema_store,
-                strict: None,
-            };
+                source_schema.as_ref(),
+                &schema_store,
+                None,
+            );
 
             completion_items.extend(
-                find_completion_contents_with_tree(
+                find_completion_contents(
                     &document_tree,
                     position,
                     &keys,

@@ -183,6 +183,12 @@ fn resolve_relative_file_schema_uri(
     }
 }
 
+impl AsRef<Comment> for Comment {
+    fn as_ref(&self) -> &Comment {
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -253,11 +259,5 @@ mod tests {
     fn schema_uri_fragment_parse_still_works() {
         let uri = SchemaUri::from_str("file://./schema.json#/definitions/TableValue").unwrap();
         assert_eq!(uri.fragment(), Some("/definitions/TableValue"));
-    }
-}
-
-impl AsRef<Comment> for Comment {
-    fn as_ref(&self) -> &Comment {
-        self
     }
 }
