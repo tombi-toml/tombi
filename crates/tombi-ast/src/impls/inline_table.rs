@@ -90,7 +90,7 @@ impl crate::InlineTable {
     #[inline]
     pub fn should_be_multiline(&self, toml_version: TomlVersion) -> bool {
         if toml_version == TomlVersion::V1_0_0 {
-            return false;
+            return self.has_direct_inner_comments();
         }
 
         self.has_last_key_value_trailing_comma()
@@ -149,6 +149,27 @@ impl crate::InlineTable {
     #[inline]
     pub fn has_inner_comments(&self) -> bool {
         support::comment::has_inner_comments(self.syntax().children_with_tokens(), T!('{'), T!('}'))
+    }
+
+    #[inline]
+    fn has_direct_inner_comments(&self) -> bool {
+        self.brace_start_trailing_comment().is_some()
+            || self.dangling_comment_groups().next().is_some()
+            || self.key_value_with_comma_groups().any(|group| match group {
+                DanglingCommentGroupOr::DanglingCommentGroup(_) => true,
+                DanglingCommentGroupOr::ItemGroup(group) => {
+                    group
+                        .into_key_values_with_comma()
+                        .any(|(key_value, comma)| {
+                            key_value.leading_comments().next().is_some()
+                                || key_value.trailing_comment().is_some()
+                                || comma.is_some_and(|comma| {
+                                    comma.leading_comments().next().is_some()
+                                        || comma.trailing_comment().is_some()
+                                })
+                        })
+                }
+            })
     }
 
     /// Returns `true` if there are `LINE_BREAK` tokens at inline-table level
