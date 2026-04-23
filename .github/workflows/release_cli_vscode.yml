@@ -247,25 +247,93 @@ jobs:
           gh release create ${{ github.ref_name }} --generate-notes ${{ env.ASSETS }}
 
   update-install-script-version:
-    needs: [release-cli-and-vscode]
+    needs: [release-notes]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: write
     steps:
+      - name: Detect stable release tag
+        id: stable-version
+        shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ "${REF_NAME}" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "stable_version=${REF_NAME#v}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "Skipping install.sh update for non-stable tag: ${REF_NAME}"
+            echo "stable_version=" >> "${GITHUB_OUTPUT}"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.stable-version.outputs.stable_version != ''
         with:
           ref: main
 
-      - name: Update embedded stable version
+      - name: Decide whether install.sh should be updated
+        id: should-update
+        if: steps.stable-version.outputs.stable_version != ''
         shell: bash
+        env:
+          STABLE_VERSION: ${{ steps.stable-version.outputs.stable_version }}
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          perl -0pi -e 's/LATEST_STABLE_VERSION="[^"]+"/LATEST_STABLE_VERSION="'"${version}"'"/' docs/public/install.sh
+          current_version="$(
+            sed -n 's/^LATEST_STABLE_VERSION="\([0-9][0-9.]*\)"$/\1/p' docs/public/install.sh
+          )"
+
+          if [ -z "${current_version}" ]; then
+            echo "LATEST_STABLE_VERSION entry not found in docs/public/install.sh" >&2
+            exit 1
+          fi
+
+          IFS=. read -r current_major current_minor current_patch <<EOF
+          ${current_version}
+          EOF
+          IFS=. read -r stable_major stable_minor stable_patch <<EOF
+          ${STABLE_VERSION}
+          EOF
+
+          should_update=false
+          if [ "${stable_major}" -gt "${current_major}" ]; then
+            should_update=true
+          elif [ "${stable_major}" -eq "${current_major}" ] && [ "${stable_minor}" -gt "${current_minor}" ]; then
+            should_update=true
+          elif [ "${stable_major}" -eq "${current_major}" ] \
+            && [ "${stable_minor}" -eq "${current_minor}" ] \
+            && [ "${stable_patch}" -gt "${current_patch}" ]; then
+            should_update=true
+          fi
+
+          echo "current_version=${current_version}" >> "${GITHUB_OUTPUT}"
+          echo "should_update=${should_update}" >> "${GITHUB_OUTPUT}"
+
+          if [ "${should_update}" != "true" ]; then
+            echo "Skipping install.sh update because ${STABLE_VERSION} is not newer than ${current_version}."
+          fi
+
+      - name: Update embedded stable version
+        if: steps.should-update.outputs.should_update == 'true'
+        shell: bash
+        env:
+          STABLE_VERSION: ${{ steps.stable-version.outputs.stable_version }}
+        run: |
+          set -euo pipefail
+          sed -i 's/^LATEST_STABLE_VERSION=.*/LATEST_STABLE_VERSION="'"${STABLE_VERSION}"'"/' docs/public/install.sh
+
+          if ! grep -Fxq "LATEST_STABLE_VERSION=\"${STABLE_VERSION}\"" docs/public/install.sh; then
+            echo "Failed to update embedded stable version to ${STABLE_VERSION}" >&2
+            exit 1
+          fi
 
       - name: Commit updated install script
+        if: steps.should-update.outputs.should_update == 'true'
         shell: bash
+        env:
+          STABLE_VERSION: ${{ steps.stable-version.outputs.stable_version }}
         run: |
           set -euo pipefail
           if git diff --quiet -- docs/public/install.sh; then
@@ -276,5 +344,40 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/public/install.sh
-          git commit -m "docs: update install.sh stable version to ${GITHUB_REF_NAME#v}"
-          git push origin HEAD:main
+          git commit -m "docs: update install.sh stable version to ${STABLE_VERSION}"
+
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push failed on attempt ${attempt}; rebasing on origin/main and retrying."
+            git fetch origin main
+            git rebase origin/main
+          done
+
+          echo "Failed to push install.sh update after multiple attempts." >&2
+          exit 1
+
+      - name: Trigger docs deploy
+        if: steps.should-update.outputs.should_update == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy_docs.yml',
+              ref: 'main',
+            })
+
+      - name: Trigger install.sh CI
+        if: steps.should-update.outputs.should_update == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'ci_install_script.yml',
+              ref: 'main',
+            })
