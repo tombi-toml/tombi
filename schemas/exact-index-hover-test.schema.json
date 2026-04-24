@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ExactIndexItem",
+  "description": "Schema applied only to a specific tuple position",
+  "type": "object",
+  "properties": {
+    "name": {
+      "title": "ScopedName",
+      "description": "Property available only on the targeted tuple item",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

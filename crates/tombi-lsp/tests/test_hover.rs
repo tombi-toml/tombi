@@ -17,6 +17,19 @@ fn array_values_order_schema_path() -> PathBuf {
         .join("crates/tombi-lsp/tests/fixtures/array-values-order.schema.json")
 }
 
+fn exact_index_hover_test_schema_path() -> PathBuf {
+    tombi_test_lib::project_root_path().join("schemas/exact-index-hover-test.schema.json")
+}
+
+fn exact_index_string_test_schema_path() -> PathBuf {
+    tombi_test_lib::project_root_path().join("schemas/exact-index-string-test.schema.json")
+}
+
+fn exact_index_array_values_order_schema_path() -> PathBuf {
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/exact-index-array-values-order.schema.json")
+}
+
 fn cargo_feature_usage_hover_description(
     project_root: &Path,
     locations: &[(PathBuf, u32)],
@@ -722,6 +735,78 @@ mod hover_keys_value {
                 "Value": "String?"
             });
         );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn exact_index_subschema_does_not_apply_to_first_item_hover(
+                r#"
+                items = [{ name = "█zero" }, { name = "one" }]
+                "#,
+                SubSchemaPath {
+                    root: "items[1]".to_string(),
+                    path: exact_index_hover_test_schema_path(),
+                },
+            ) -> Ok({
+                "Keys": "items[0].name",
+                "Value": "String",
+                "Schema": false
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn exact_index_subschema_applies_to_second_item_hover(
+                r#"
+                items = [{ name = "zero" }, { name = "█one" }]
+                "#,
+                SubSchemaPath {
+                    root: "items[1]".to_string(),
+                    path: exact_index_hover_test_schema_path(),
+                },
+            ) -> Ok({
+                "Keys": "items[1].name",
+                "Value": "String?",
+                "Schema": true,
+                "Title": Some("ScopedName".to_string()),
+                "Description": Some("Property available only on the targeted tuple item".to_string())
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn exact_index_string_subschema_does_not_apply_to_first_item_hover(
+                r#"
+                items = ["█zero", "scoped"]
+                "#,
+                SubSchemaPath {
+                    root: "items[1]".to_string(),
+                    path: exact_index_string_test_schema_path(),
+                },
+            ) -> Ok({
+                "Keys": "items[0]",
+                "Value": "String",
+                "Schema": false
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn exact_index_string_subschema_applies_to_second_item_hover(
+                r#"
+                items = ["zero", "█scoped"]
+                "#,
+                SubSchemaPath {
+                    root: "items[1]".to_string(),
+                    path: exact_index_string_test_schema_path(),
+                },
+            ) -> Ok({
+                "Keys": "items[1]",
+                "Value": "String",
+                "Schema": true,
+                "Title": Some("ScopedString".to_string()),
+                "Description": Some("String schema applied only to the targeted array item".to_string())
+            });
+        );
     }
 
     mod pyproject_schema {
@@ -1149,6 +1234,98 @@ mod hover_keys_value {
                 "Keys": "items",
                 "Value": "Array?",
                 "Values Order": Some("descending")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn exact_index_override_applies_only_to_targeted_array_item(
+                r#"
+                items = [["b", "a"]█, ["d", "c"]]
+                "#,
+                SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                    toml_version: None,
+                    path: tombi_schema_store::SchemaUri::from_file_path(
+                        exact_index_array_values_order_schema_path(),
+                    )
+                    .unwrap()
+                    .to_string(),
+                    include: vec!["*.toml".to_string()],
+                    lint: None,
+                    format: None,
+                    overrides: Some(vec![tombi_config::SchemaOverrideItem {
+                        targets: vec!["items[1]".into()],
+                        lint: None,
+                        format: Some(tombi_config::SchemaOverrideFormatOptions {
+                            rules: Some(tombi_config::SchemaOverrideFormatRules {
+                                array_values_order: Some(
+                                    tombi_config::SchemaOverrideArrayValuesOrderRule::Order(
+                                        tombi_x_keyword::ArrayValuesOrder::Ascending,
+                                    ),
+                                ),
+                                table_keys_order: None,
+                            }),
+                        }),
+                    }]),
+                })),
+            ) -> Ok({
+                "Keys": "items[0]",
+                "Value": "Array",
+                "Values Order": None::<&str>
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn exact_index_override_wins_over_wildcard_array_item(
+                r#"
+                items = [["b", "a"], ["d", "c"]█]
+                "#,
+                SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                    toml_version: None,
+                    path: tombi_schema_store::SchemaUri::from_file_path(
+                        exact_index_array_values_order_schema_path(),
+                    )
+                    .unwrap()
+                    .to_string(),
+                    include: vec!["*.toml".to_string()],
+                    lint: None,
+                    format: None,
+                    overrides: Some(vec![
+                        tombi_config::SchemaOverrideItem {
+                            targets: vec!["items[*]".into()],
+                            lint: None,
+                            format: Some(tombi_config::SchemaOverrideFormatOptions {
+                                rules: Some(tombi_config::SchemaOverrideFormatRules {
+                                    array_values_order: Some(
+                                        tombi_config::SchemaOverrideArrayValuesOrderRule::Order(
+                                            tombi_x_keyword::ArrayValuesOrder::Descending,
+                                        ),
+                                    ),
+                                    table_keys_order: None,
+                                }),
+                            }),
+                        },
+                        tombi_config::SchemaOverrideItem {
+                            targets: vec!["items[1]".into()],
+                            lint: None,
+                            format: Some(tombi_config::SchemaOverrideFormatOptions {
+                                rules: Some(tombi_config::SchemaOverrideFormatRules {
+                                    array_values_order: Some(
+                                        tombi_config::SchemaOverrideArrayValuesOrderRule::Order(
+                                            tombi_x_keyword::ArrayValuesOrder::Ascending,
+                                        ),
+                                    ),
+                                    table_keys_order: None,
+                                }),
+                            }),
+                        },
+                    ]),
+                })),
+            ) -> Ok({
+                "Keys": "items[1]",
+                "Value": "Array",
+                "Values Order": Some("ascending")
             });
         );
     }

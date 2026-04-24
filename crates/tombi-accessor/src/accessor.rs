@@ -49,7 +49,8 @@ impl PartialEq<SchemaAccessor> for Accessor {
     fn eq(&self, other: &SchemaAccessor) -> bool {
         match (self, other) {
             (Accessor::Key(key), SchemaAccessor::Key(other_key)) => key == other_key,
-            (Accessor::Index(_), SchemaAccessor::Index) => true,
+            (Accessor::Index(_), SchemaAccessor::AnyIndex) => true,
+            (Accessor::Index(index), SchemaAccessor::Index(other_index)) => index == other_index,
             _ => false,
         }
     }
@@ -78,7 +79,8 @@ impl tombi_hashmap::Equivalent<SchemaAccessor> for Accessor {
     fn equivalent(&self, other: &SchemaAccessor) -> bool {
         match (self, other) {
             (Accessor::Key(key1), SchemaAccessor::Key(key2)) => key1 == key2,
-            (Accessor::Index(_), SchemaAccessor::Index) => true,
+            (Accessor::Index(_), SchemaAccessor::AnyIndex) => true,
+            (Accessor::Index(index1), SchemaAccessor::Index(index2)) => index1 == index2,
             _ => false,
         }
     }

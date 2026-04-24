@@ -199,6 +199,73 @@ fn deprecated_root_lint_for_subschema_config(
     config
 }
 
+fn deprecated_exact_index_override_config() -> tombi_config::Config {
+    let schema_path = project_root_path()
+        .join("schemas")
+        .join("exact-index-override-test.schema.json");
+    let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path).unwrap();
+
+    let mut config = tombi_config::Config::default();
+    config.schemas = Some(vec![tombi_config::SchemaItem::Root(
+        tombi_config::RootSchema {
+            toml_version: None,
+            path: schema_uri.to_string(),
+            include: vec!["*.toml".to_string()],
+            lint: None,
+            format: None,
+            overrides: Some(vec![tombi_config::SchemaOverrideItem {
+                targets: vec!["tuple[1].value".into()],
+                format: None,
+                lint: Some(tombi_config::SchemaOverrideLintOptions {
+                    rules: Some(tombi_config::SchemaOverrideLintRules {
+                        deprecated: Some(SeverityLevel::Off.into()),
+                    }),
+                }),
+            }]),
+        },
+    )]);
+    config
+}
+
+fn deprecated_exact_index_precedence_config() -> tombi_config::Config {
+    let schema_path = project_root_path()
+        .join("schemas")
+        .join("exact-index-override-test.schema.json");
+    let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path).unwrap();
+
+    let mut config = tombi_config::Config::default();
+    config.schemas = Some(vec![tombi_config::SchemaItem::Root(
+        tombi_config::RootSchema {
+            toml_version: None,
+            path: schema_uri.to_string(),
+            include: vec!["*.toml".to_string()],
+            lint: None,
+            format: None,
+            overrides: Some(vec![
+                tombi_config::SchemaOverrideItem {
+                    targets: vec!["tuple[*].value".into()],
+                    format: None,
+                    lint: Some(tombi_config::SchemaOverrideLintOptions {
+                        rules: Some(tombi_config::SchemaOverrideLintRules {
+                            deprecated: Some(SeverityLevel::Off.into()),
+                        }),
+                    }),
+                },
+                tombi_config::SchemaOverrideItem {
+                    targets: vec!["tuple[1].value".into()],
+                    format: None,
+                    lint: Some(tombi_config::SchemaOverrideLintOptions {
+                        rules: Some(tombi_config::SchemaOverrideLintRules {
+                            deprecated: Some(SeverityLevel::Error.into()),
+                        }),
+                    }),
+                },
+            ]),
+        },
+    )]);
+    config
+}
+
 test_lint! {
     #[test]
     fn test_deprecated_schema_lint_level_default_config(
@@ -276,6 +343,45 @@ test_lint! {
         "[tool.example]\nvalue = 1\n",
         Config(deprecated_root_lint_for_subschema_config(SeverityLevel::Error)),
         SourcePath(project_root_path().join("pyproject.toml")),
+    ) -> Diagnostics([{
+        code: "deprecated",
+        level: tombi_diagnostic::Level::ERROR,
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_deprecated_schema_override_matches_exact_tuple_index(
+        "tuple = [{ value = 1 }, { value = 2 }]\n",
+        Config(deprecated_exact_index_override_config()),
+    ) -> Diagnostics([{
+        code: "deprecated",
+        level: tombi_diagnostic::Level::WARNING,
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_deprecated_schema_override_message_keeps_exact_index(
+        "tuple = [{ value = 1 }, { value = 2 }]\n",
+        Config(deprecated_exact_index_override_config()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::DeprecatedValue(
+            tombi_schema_store::SchemaAccessors::from(vec![
+                tombi_schema_store::SchemaAccessor::Key("tuple".to_string()),
+                tombi_schema_store::SchemaAccessor::Index(0),
+                tombi_schema_store::SchemaAccessor::Key("value".to_string()),
+            ]),
+            "1".to_string(),
+        ),
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_deprecated_exact_index_override_beats_wildcard_override(
+        "tuple = [{ value = 1 }, { value = 2 }]\n",
+        Config(deprecated_exact_index_precedence_config()),
     ) -> Diagnostics([{
         code: "deprecated",
         level: tombi_diagnostic::Level::ERROR,
