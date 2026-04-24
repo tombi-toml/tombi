@@ -5,12 +5,19 @@ use std::{
 };
 
 use flate2::{Compression, write::GzEncoder};
+use tar::Builder as TarBuilder;
 use time::OffsetDateTime;
 use xshell::Shell;
 use zip::{DateTime, ZipWriter, write::FileOptions};
 
 use super::set_version::DEV_VERSION;
 use crate::utils::project_root_path;
+
+// Keep this cutoff in sync with:
+//   docs/public/install.sh (version_uses_legacy_unix_artifact)
+//   editors/zed/src/lib.rs (TombiExtension::uses_legacy_unix_artifact)
+//   .github/workflows/release_cli_vscode.yml ("Set CLI artifact extension" step)
+const UNIX_ARCHIVE_FORMAT_CUTOFF: (u64, u64, u64) = (0, 9, 23);
 
 pub fn run(sh: &Shell) -> Result<(), anyhow::Error> {
     let project_root = project_root_path();
@@ -53,10 +60,17 @@ fn dist_server(sh: &Shell, target: &Target) -> Result<(), anyhow::Error> {
         zip(
             &target.server_path,
             target.symbols_path.as_ref(),
+            &target.cli_artifact_dir_name,
             &dist.join(&target.cli_artifact_name),
         )?;
-    } else {
+    } else if Target::uses_legacy_unix_artifact(&target.version) {
         gzip(&target.server_path, &dist.join(&target.cli_artifact_name))?;
+    } else {
+        tar_gz(
+            &target.server_path,
+            &target.cli_artifact_dir_name,
+            &dist.join(&target.cli_artifact_name),
+        )?;
     }
 
     Ok(())
@@ -109,16 +123,41 @@ fn dist_editor_vscode(sh: &Shell, target: &Target) -> Result<(), anyhow::Error> 
 
 #[derive(Debug)]
 struct Target {
+    version: String,
     target_name: String,
     vscode_target_name: String,
     exe_name: String,
     server_path: PathBuf,
     symbols_path: Option<PathBuf>,
+    cli_artifact_dir_name: String,
     cli_artifact_name: String,
     vscode_artifact_name: String,
 }
 
 impl Target {
+    fn uses_legacy_unix_artifact(version: &str) -> bool {
+        if version == DEV_VERSION {
+            return false;
+        }
+
+        let mut parts = version.split('.');
+        let (Some(major), Some(minor), Some(patch), None) =
+            (parts.next(), parts.next(), parts.next(), parts.next())
+        else {
+            return false;
+        };
+
+        let (Ok(major), Ok(minor), Ok(patch)) = (
+            major.parse::<u64>(),
+            minor.parse::<u64>(),
+            patch.parse::<u64>(),
+        ) else {
+            return false;
+        };
+
+        (major, minor, patch) < UNIX_ARCHIVE_FORMAT_CUTOFF
+    }
+
     fn get(project_root: &Path) -> Self {
         let target_name = match std::env::var("TOMBI_TARGET") {
             Ok(target) => target,
@@ -160,23 +199,58 @@ impl Target {
                 ".zip".to_string(),
                 Some(out_path.join("tombi.pdb")),
             )
-        } else {
+        } else if Self::uses_legacy_unix_artifact(&version) {
             (String::new(), ".gz".to_string(), None)
+        } else {
+            (String::new(), ".tar.gz".to_string(), None)
         };
         let exe_name = format!("tombi{exe_suffix}");
         let server_path = out_path.join(&exe_name);
-        let cli_artifact_name = format!("tombi-cli-{version}-{target_name}{cli_artifact_suffix}");
+        let cli_artifact_dir_name = format!("tombi-cli-{version}-{target_name}");
+        let cli_artifact_name = format!("{cli_artifact_dir_name}{cli_artifact_suffix}");
         let vscode_artifact_name = format!("tombi-vscode-{version}-{vscode_target_name}.vsix");
 
         Self {
+            version,
             target_name,
             vscode_target_name,
             exe_name,
             server_path,
             symbols_path,
+            cli_artifact_dir_name,
             cli_artifact_name,
             vscode_artifact_name,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn legacy_cutoff_boundaries() {
+        assert!(Target::uses_legacy_unix_artifact("0.9.22"));
+        assert!(Target::uses_legacy_unix_artifact("0.8.99"));
+        assert!(Target::uses_legacy_unix_artifact("0.0.1"));
+        assert!(!Target::uses_legacy_unix_artifact("0.9.23"));
+        assert!(!Target::uses_legacy_unix_artifact("0.9.24"));
+        assert!(!Target::uses_legacy_unix_artifact("0.10.0"));
+        assert!(!Target::uses_legacy_unix_artifact("1.0.0"));
+    }
+
+    #[test]
+    fn legacy_cutoff_invalid_inputs() {
+        assert!(!Target::uses_legacy_unix_artifact("0.9"));
+        assert!(!Target::uses_legacy_unix_artifact("0.9.23.1"));
+        assert!(!Target::uses_legacy_unix_artifact("invalid"));
+        assert!(!Target::uses_legacy_unix_artifact(""));
+        assert!(!Target::uses_legacy_unix_artifact("0.9.x"));
+    }
+
+    #[test]
+    fn legacy_cutoff_dev_version_uses_new_format() {
+        assert!(!Target::uses_legacy_unix_artifact(DEV_VERSION));
     }
 }
 
@@ -188,11 +262,32 @@ fn gzip(src_path: &Path, dest_path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn zip(src_path: &Path, symbols_path: Option<&PathBuf>, dest_path: &Path) -> anyhow::Result<()> {
+fn tar_gz(src_path: &Path, root_dir: &str, dest_path: &Path) -> anyhow::Result<()> {
+    let encoder = GzEncoder::new(File::create(dest_path)?, Compression::best());
+    let mut archive = TarBuilder::new(encoder);
+    let archive_path = format!(
+        "{root_dir}/{}",
+        src_path.file_name().unwrap().to_str().unwrap()
+    );
+    archive.append_path_with_name(src_path, archive_path)?;
+    archive.finish()?;
+    archive.into_inner()?.finish()?;
+    Ok(())
+}
+
+fn zip(
+    src_path: &Path,
+    symbols_path: Option<&PathBuf>,
+    root_dir: &str,
+    dest_path: &Path,
+) -> anyhow::Result<()> {
     let file = File::create(dest_path)?;
     let mut writer = ZipWriter::new(BufWriter::new(file));
     writer.start_file(
-        src_path.file_name().unwrap().to_str().unwrap(),
+        format!(
+            "{root_dir}/{}",
+            src_path.file_name().unwrap().to_str().unwrap()
+        ),
         FileOptions::<()>::default()
             .last_modified_time(
                 DateTime::try_from(OffsetDateTime::from(
@@ -208,7 +303,10 @@ fn zip(src_path: &Path, symbols_path: Option<&PathBuf>, dest_path: &Path) -> any
     io::copy(&mut input, &mut writer)?;
     if let Some(symbols_path) = symbols_path {
         writer.start_file(
-            symbols_path.file_name().unwrap().to_str().unwrap(),
+            format!(
+                "{root_dir}/{}",
+                symbols_path.file_name().unwrap().to_str().unwrap()
+            ),
             FileOptions::<()>::default()
                 .last_modified_time(
                     DateTime::try_from(OffsetDateTime::from(
