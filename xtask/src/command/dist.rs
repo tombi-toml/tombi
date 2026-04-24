@@ -13,11 +13,6 @@ use zip::{DateTime, ZipWriter, write::FileOptions};
 use super::set_version::DEV_VERSION;
 use crate::utils::project_root_path;
 
-// Keep this cutoff in sync with:
-//   docs/public/install.sh (version_uses_legacy_unix_artifact)
-//   editors/zed/src/lib.rs (TombiExtension::uses_legacy_unix_artifact)
-const UNIX_ARCHIVE_FORMAT_CUTOFF: (u64, u64, u64) = (0, 9, 23);
-
 pub fn run(sh: &Shell) -> Result<(), anyhow::Error> {
     let project_root = project_root_path();
     let target = Target::get(&project_root);
@@ -61,8 +56,6 @@ fn dist_server(sh: &Shell, target: &Target) -> Result<(), anyhow::Error> {
             target.symbols_path.as_ref(),
             &dist.join(&target.cli_artifact_name),
         )?;
-    } else if Target::uses_legacy_unix_artifact(&target.version) {
-        gzip(&target.server_path, &dist.join(&target.cli_artifact_name))?;
     } else {
         tar_gz(
             &target.server_path,
@@ -121,7 +114,6 @@ fn dist_editor_vscode(sh: &Shell, target: &Target) -> Result<(), anyhow::Error> 
 
 #[derive(Debug)]
 struct Target {
-    version: String,
     target_name: String,
     vscode_target_name: String,
     exe_name: String,
@@ -133,34 +125,6 @@ struct Target {
 }
 
 impl Target {
-    fn uses_legacy_unix_artifact(version: &str) -> bool {
-        if version == DEV_VERSION {
-            return false;
-        }
-
-        let version = version
-            .split_once(['-', '+'])
-            .map(|(prefix, _)| prefix)
-            .unwrap_or(version);
-
-        let mut parts = version.split('.');
-        let (Some(major), Some(minor), Some(patch), None) =
-            (parts.next(), parts.next(), parts.next(), parts.next())
-        else {
-            return false;
-        };
-
-        let (Ok(major), Ok(minor), Ok(patch)) = (
-            major.parse::<u64>(),
-            minor.parse::<u64>(),
-            patch.parse::<u64>(),
-        ) else {
-            return false;
-        };
-
-        (major, minor, patch) < UNIX_ARCHIVE_FORMAT_CUTOFF
-    }
-
     fn get(project_root: &Path) -> Self {
         let target_name = match std::env::var("TOMBI_TARGET") {
             Ok(target) => target,
@@ -202,8 +166,6 @@ impl Target {
                 ".zip".to_string(),
                 Some(out_path.join("tombi.pdb")),
             )
-        } else if Self::uses_legacy_unix_artifact(&version) {
-            (String::new(), ".gz".to_string(), None)
         } else {
             (String::new(), ".tar.gz".to_string(), None)
         };
@@ -214,7 +176,6 @@ impl Target {
         let vscode_artifact_name = format!("tombi-vscode-{version}-{vscode_target_name}.vsix");
 
         Self {
-            version,
             target_name,
             vscode_target_name,
             exe_name,
@@ -232,44 +193,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn legacy_cutoff_boundaries() {
-        assert!(Target::uses_legacy_unix_artifact("0.9.22"));
-        assert!(Target::uses_legacy_unix_artifact("0.8.99"));
-        assert!(Target::uses_legacy_unix_artifact("0.0.1"));
-        assert!(!Target::uses_legacy_unix_artifact("0.9.23"));
-        assert!(!Target::uses_legacy_unix_artifact("0.9.24"));
-        assert!(!Target::uses_legacy_unix_artifact("0.10.0"));
-        assert!(!Target::uses_legacy_unix_artifact("1.0.0"));
-    }
+    fn unix_targets_always_use_tar_gz() {
+        unsafe {
+            std::env::set_var("TOMBI_TARGET", "aarch64-apple-darwin");
+        }
+        let target = Target::get(Path::new("."));
+        assert_eq!(
+            target.cli_artifact_name,
+            format!("tombi-cli-{DEV_VERSION}-aarch64-apple-darwin.tar.gz")
+        );
 
-    #[test]
-    fn legacy_cutoff_invalid_inputs() {
-        assert!(!Target::uses_legacy_unix_artifact("0.9"));
-        assert!(!Target::uses_legacy_unix_artifact("0.9.23.1"));
-        assert!(!Target::uses_legacy_unix_artifact("invalid"));
-        assert!(!Target::uses_legacy_unix_artifact(""));
-        assert!(!Target::uses_legacy_unix_artifact("0.9.x"));
+        unsafe {
+            std::env::remove_var("TOMBI_TARGET");
+        }
     }
-
-    #[test]
-    fn legacy_cutoff_prereleases_follow_base_version() {
-        assert!(Target::uses_legacy_unix_artifact("0.9.22-rc.1"));
-        assert!(Target::uses_legacy_unix_artifact("0.9.22+build.7"));
-        assert!(!Target::uses_legacy_unix_artifact("0.9.23-rc.1"));
-    }
-
-    #[test]
-    fn legacy_cutoff_dev_version_uses_new_format() {
-        assert!(!Target::uses_legacy_unix_artifact(DEV_VERSION));
-    }
-}
-
-fn gzip(src_path: &Path, dest_path: &Path) -> anyhow::Result<()> {
-    let mut encoder = GzEncoder::new(File::create(dest_path)?, Compression::best());
-    let mut input = std::io::BufReader::new(File::open(src_path)?);
-    std::io::copy(&mut input, &mut encoder)?;
-    encoder.finish()?;
-    Ok(())
 }
 
 fn tar_gz(src_path: &Path, root_dir: &str, dest_path: &Path) -> anyhow::Result<()> {
