@@ -158,76 +158,83 @@ impl TombiExtension {
             .strip_prefix("v")
             .unwrap_or(&release.version);
 
-        let asset_stem = Self::release_asset_stem(version, platform, arch);
-
-        let version_dir = format!("{VERSION_DIR_PREFIX}{version}");
-        fs::create_dir_all(&version_dir)
-            .map_err(|err| format!("failed to create directory '{version_dir}': {err}"))?;
-        let binary_path = format!("{version_dir}/{binary_name}");
-        let extracted_binary_path = Self::extracted_binary_path(
-            std::path::Path::new(&version_dir),
-            &asset_stem,
-            binary_name,
+        let asset_stem = format!(
+            "tombi-cli-{version}-{arch}-{os}",
+            arch = match arch {
+                zed::Architecture::Aarch64 => "aarch64",
+                zed::Architecture::X86 => "x86",
+                zed::Architecture::X8664 => "x86_64",
+            },
+            os = match platform {
+                zed::Os::Mac => "apple-darwin",
+                zed::Os::Linux => "unknown-linux-musl",
+                zed::Os::Windows => "pc-windows-msvc",
+            }
         );
-        let extracted_binary_path = extracted_binary_path.to_string_lossy().to_string();
+        let asset_name = format!(
+            "{asset_stem}.{suffix}",
+            suffix = match platform {
+                zed::Os::Windows => "zip",
+                _ if Self::uses_legacy_unix_artifact(version) => "gz",
+                _ => "tar.gz",
+            }
+        );
 
-        let (asset_name, file_type, download_path, installed_binary_path) = match platform {
-            zed::Os::Windows => (
-                format!("{asset_stem}.zip"),
-                zed::DownloadedFileType::Zip,
-                version_dir.clone(),
-                binary_path.clone(),
-            ),
-            _ if Self::uses_legacy_unix_artifact(version) => (
-                format!("{asset_stem}.gz"),
-                zed::DownloadedFileType::Gzip,
-                binary_path.clone(),
-                binary_path.clone(),
-            ),
-            _ => (
-                format!("{asset_stem}.tar.gz"),
-                zed::DownloadedFileType::GzipTar,
-                version_dir.clone(),
-                extracted_binary_path,
-            ),
-        };
         let asset = release
             .assets
             .iter()
             .find(|asset| asset.name == asset_name)
             .ok_or_else(|| format!("no asset found matching {asset_name:?}"))?;
 
-        if fs::metadata(&installed_binary_path).is_ok_and(|stat| stat.is_file()) {
-            return Ok(installed_binary_path);
-        }
+        let version_dir = format!("{VERSION_DIR_PREFIX}{version}");
+        fs::create_dir_all(&version_dir)
+            .map_err(|err| format!("failed to create directory '{version_dir}': {err}"))?;
+        let binary_path = format!("{version_dir}/{binary_name}");
 
-        zed::set_language_server_installation_status(
-            language_server_id,
-            &zed::LanguageServerInstallationStatus::Downloading,
-        );
+        if !fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
+            zed::set_language_server_installation_status(
+                language_server_id,
+                &zed::LanguageServerInstallationStatus::Downloading,
+            );
+            let file_kind = match platform {
+                zed::Os::Windows => zed::DownloadedFileType::Zip,
+                _ if Self::uses_legacy_unix_artifact(version) => zed::DownloadedFileType::Gzip,
+                _ => zed::DownloadedFileType::GzipTar,
+            };
 
-        zed::download_file(&asset.download_url, &download_path, file_type)
-            .map_err(|e| format!("failed to download file: {e}"))?;
-        if !fs::metadata(&installed_binary_path).is_ok_and(|stat| stat.is_file()) {
-            return Err(format!(
-                "failed to locate {binary_name:?} after extracting {:?}",
-                asset.name
-            ));
-        }
-        if platform != zed::Os::Windows {
-            zed::make_file_executable(&installed_binary_path)?;
-        }
+            match file_kind {
+                zed::DownloadedFileType::Zip => {
+                    zed::download_file(&asset.download_url, &version_dir, file_kind)
+                        .map_err(|e| format!("failed to download file: {e}"))?;
+                }
+                zed::DownloadedFileType::GzipTar => {
+                    zed::download_file(&asset.download_url, &version_dir, file_kind)
+                        .map_err(|e| format!("failed to download file: {e}"))?;
+                    fs::rename(
+                        format!("{version_dir}/{asset_stem}/{binary_name}"),
+                        &binary_path,
+                    )
+                    .map_err(|err| format!("failed to relocate extracted binary: {err}"))?;
+                    zed::make_file_executable(&binary_path)?;
+                }
+                _ => {
+                    zed::download_file(&asset.download_url, &binary_path, file_kind)
+                        .map_err(|e| format!("failed to download file: {e}"))?;
+                    zed::make_file_executable(&binary_path)?;
+                }
+            }
 
-        let entries =
-            fs::read_dir(".").map_err(|err| format!("failed to list working directory {err}"))?;
-        for entry in entries {
-            let entry = entry.map_err(|err| format!("failed to load directory entry {err}"))?;
-            if entry.file_name().to_str() != Some(&version_dir) {
-                fs::remove_dir_all(entry.path()).ok();
+            let entries = fs::read_dir(".")
+                .map_err(|err| format!("failed to list working directory {err}"))?;
+            for entry in entries {
+                let entry = entry.map_err(|err| format!("failed to load directory entry {err}"))?;
+                if entry.file_name().to_str() != Some(&version_dir) {
+                    fs::remove_dir_all(entry.path()).ok();
+                }
             }
         }
 
-        Ok(installed_binary_path)
+        Ok(binary_path)
     }
 
     // Keep the 0.9.23 cutoff in sync with docs/public/install.sh
@@ -256,30 +263,6 @@ impl TombiExtension {
         (major, minor, patch) < (0, 9, 23)
     }
 
-    fn release_asset_stem(version: &str, platform: zed::Os, arch: zed::Architecture) -> String {
-        format!(
-            "tombi-cli-{version}-{arch}-{os}",
-            arch = match arch {
-                zed::Architecture::Aarch64 => "aarch64",
-                zed::Architecture::X86 => "x86",
-                zed::Architecture::X8664 => "x86_64",
-            },
-            os = match platform {
-                zed::Os::Mac => "apple-darwin",
-                zed::Os::Linux => "unknown-linux-musl",
-                zed::Os::Windows => "pc-windows-msvc",
-            }
-        )
-    }
-
-    fn extracted_binary_path(
-        version_dir: &std::path::Path,
-        asset_stem: &str,
-        binary_name: &str,
-    ) -> std::path::PathBuf {
-        version_dir.join(asset_stem).join(binary_name)
-    }
-
     fn resolve_extension_managed_binary_fallback(binary_name: &str) -> Option<String> {
         fs::read_dir(".")
             .ok()?
@@ -287,23 +270,11 @@ impl TombiExtension {
                 let entry = entry.ok()?;
                 let path = entry.path();
                 let file_name = path.file_name()?.to_str()?;
-                let Some(version) = file_name.strip_prefix(VERSION_DIR_PREFIX) else {
+                if !file_name.starts_with(VERSION_DIR_PREFIX) {
                     return None;
-                };
-                let (platform, arch) = zed::current_platform();
-                let asset_stem = Self::release_asset_stem(version, platform, arch);
+                }
 
-                let direct_binary_path = path.join(binary_name);
-                let binary_path = if direct_binary_path.is_file() {
-                    direct_binary_path
-                } else {
-                    let extracted_binary_path =
-                        Self::extracted_binary_path(&path, &asset_stem, binary_name);
-                    if !extracted_binary_path.is_file() {
-                        return None;
-                    }
-                    extracted_binary_path
-                };
+                let binary_path = path.join(binary_name);
                 let metadata = fs::metadata(&binary_path).ok()?;
                 if !metadata.is_file() {
                     return None;
