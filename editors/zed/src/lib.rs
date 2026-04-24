@@ -14,6 +14,11 @@ impl TombiExtension {
     //   docs/public/install.sh (version_uses_legacy_unix_artifact)
     //   .github/workflows/release_cli_vscode.yml ("Set CLI artifact extension" step)
     fn uses_legacy_unix_artifact(version: &str) -> bool {
+        let version = version
+            .split_once(['-', '+'])
+            .map(|(prefix, _)| prefix)
+            .unwrap_or(version);
+
         let mut parts = version.split('.');
         let (Some(major), Some(minor), Some(patch), None) =
             (parts.next(), parts.next(), parts.next(), parts.next())

@@ -60,7 +60,6 @@ fn dist_server(sh: &Shell, target: &Target) -> Result<(), anyhow::Error> {
         zip(
             &target.server_path,
             target.symbols_path.as_ref(),
-            &target.cli_artifact_dir_name,
             &dist.join(&target.cli_artifact_name),
         )?;
     } else if Target::uses_legacy_unix_artifact(&target.version) {
@@ -139,6 +138,11 @@ impl Target {
         if version == DEV_VERSION {
             return false;
         }
+
+        let version = version
+            .split_once(['-', '+'])
+            .map(|(prefix, _)| prefix)
+            .unwrap_or(version);
 
         let mut parts = version.split('.');
         let (Some(major), Some(minor), Some(patch), None) =
@@ -249,6 +253,13 @@ mod tests {
     }
 
     #[test]
+    fn legacy_cutoff_prereleases_follow_base_version() {
+        assert!(Target::uses_legacy_unix_artifact("0.9.22-rc.1"));
+        assert!(Target::uses_legacy_unix_artifact("0.9.22+build.7"));
+        assert!(!Target::uses_legacy_unix_artifact("0.9.23-rc.1"));
+    }
+
+    #[test]
     fn legacy_cutoff_dev_version_uses_new_format() {
         assert!(!Target::uses_legacy_unix_artifact(DEV_VERSION));
     }
@@ -275,19 +286,11 @@ fn tar_gz(src_path: &Path, root_dir: &str, dest_path: &Path) -> anyhow::Result<(
     Ok(())
 }
 
-fn zip(
-    src_path: &Path,
-    symbols_path: Option<&PathBuf>,
-    root_dir: &str,
-    dest_path: &Path,
-) -> anyhow::Result<()> {
+fn zip(src_path: &Path, symbols_path: Option<&PathBuf>, dest_path: &Path) -> anyhow::Result<()> {
     let file = File::create(dest_path)?;
     let mut writer = ZipWriter::new(BufWriter::new(file));
     writer.start_file(
-        format!(
-            "{root_dir}/{}",
-            src_path.file_name().unwrap().to_str().unwrap()
-        ),
+        src_path.file_name().unwrap().to_str().unwrap(),
         FileOptions::<()>::default()
             .last_modified_time(
                 DateTime::try_from(OffsetDateTime::from(
@@ -303,10 +306,7 @@ fn zip(
     io::copy(&mut input, &mut writer)?;
     if let Some(symbols_path) = symbols_path {
         writer.start_file(
-            format!(
-                "{root_dir}/{}",
-                symbols_path.file_name().unwrap().to_str().unwrap()
-            ),
+            symbols_path.file_name().unwrap().to_str().unwrap(),
             FileOptions::<()>::default()
                 .last_modified_time(
                     DateTime::try_from(OffsetDateTime::from(

@@ -26,13 +26,14 @@ print_success() {
 #   - editors/zed/src/lib.rs (TombiExtension::uses_legacy_unix_artifact)
 #   - .github/workflows/release_cli_vscode.yml ("Set CLI artifact extension" step)
 version_uses_legacy_unix_artifact() {
-	if ! printf '%s' "$1" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+	VERSION_PREFIX=$(printf '%s' "$1" | sed 's/[+-].*$//')
+	if ! printf '%s' "${VERSION_PREFIX}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
 		return 1
 	fi
 
 	old_ifs=$IFS
 	IFS=.
-	set -- $1
+	set -- ${VERSION_PREFIX}
 	IFS=$old_ifs
 	major=$1
 	minor=$2
@@ -190,7 +191,7 @@ create_install_dir() {
 # Download and install tombi
 download_and_install() {
 	if ! download_artifact; then
-		print_error "Download failed. Please check the release assets for tombi ${VERSION} (${TARGET})."
+		print_error "Download failed for tombi ${VERSION} (${TARGET}). Last attempted URL: ${DOWNLOAD_URL:-unknown}"
 		exit 1
 	fi
 
