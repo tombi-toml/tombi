@@ -163,8 +163,8 @@ jobs:
         uses: actions/upload-artifact@v4
         if: matrix.os != 'windows-latest'
         with:
-          name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.gz
-          path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.gz
+          name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.tar.gz
+          path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.tar.gz
 
       - name: Upload tombi-cli artifacts (Windows)
         uses: actions/upload-artifact@v4
