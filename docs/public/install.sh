@@ -21,6 +21,34 @@ print_success() {
 	printf '\033[32mSuccess:\033[m %s\n' "$1" >&2
 }
 
+# Keep the 0.9.23 cutoff in sync with
+# editors/zed/src/lib.rs (TombiExtension::uses_legacy_unix_artifact).
+version_uses_legacy_unix_artifact() {
+	VERSION_PREFIX=$(printf '%s' "$1" | sed 's/[+-].*$//')
+	if ! printf '%s' "${VERSION_PREFIX}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+		return 1
+	fi
+
+	old_ifs=$IFS
+	IFS=.
+	set -- ${VERSION_PREFIX}
+	IFS=$old_ifs
+	major=$1
+	minor=$2
+	patch=$3
+
+	if [ "$major" -gt 0 ]; then
+		return 1
+	fi
+	if [ "$minor" -lt 9 ]; then
+		return 0
+	fi
+	if [ "$minor" -gt 9 ]; then
+		return 1
+	fi
+	[ "$patch" -lt 23 ]
+}
+
 download_to_file() {
 	URL="$1"
 	OUTPUT_FILE="$2"
@@ -111,7 +139,11 @@ artifact_extension() {
 		echo ".zip"
 		;;
 	*)
-		echo ".gz"
+		if version_uses_legacy_unix_artifact "${VERSION}"; then
+			echo ".gz"
+		else
+			echo ".tar.gz"
+		fi
 		;;
 	esac
 }
@@ -132,18 +164,14 @@ create_install_dir() {
 
 # Download and install tombi
 download_and_install() {
-	DOWNLOAD_URL="https://github.com/tombi-toml/tombi/releases/download/v${VERSION}/tombi-cli-${VERSION}-${TARGET}${ARTIFACT_EXTENSION}"
+	ARTIFACT_EXTENSION=$(artifact_extension)
+	DOWNLOAD_URL="${RELEASE_BASE_URL}/v${VERSION}/tombi-cli-${VERSION}-${TARGET}${ARTIFACT_EXTENSION}"
 	TEMP_FILE="${TEMP_DIR}/tombi-${VERSION}${ARTIFACT_EXTENSION}"
 
 	print_step "Download from ${DOWNLOAD_URL}"
 	print_step "Downloading tombi ${VERSION} (${TARGET})..."
 
-	if ! download_to_file "${DOWNLOAD_URL}" "${TEMP_FILE}"; then
-		print_error "Download failed. Please check the URL: ${DOWNLOAD_URL}"
-		exit 1
-	fi
-
-	if [ ! -f "${TEMP_FILE}" ] || [ ! -s "${TEMP_FILE}" ]; then
+	if ! download_to_file "${DOWNLOAD_URL}" "${TEMP_FILE}" || [ ! -s "${TEMP_FILE}" ]; then
 		print_error "Download failed. Please check the URL: ${DOWNLOAD_URL}"
 		exit 1
 	fi
@@ -152,9 +180,20 @@ download_and_install() {
 	if [ "${ARTIFACT_EXTENSION}" = ".zip" ]; then
 		unzip -o "${TEMP_FILE}" -d "${TEMP_DIR}"
 		EXTRACTED_FILE="${TEMP_DIR}/${EXE_NAME}"
-	else
+	elif [ "${ARTIFACT_EXTENSION}" = ".tar.gz" ]; then
+		tar -xzf "${TEMP_FILE}" -C "${TEMP_DIR}"
+		EXTRACTED_FILE="${TEMP_DIR}/tombi-cli-${VERSION}-${TARGET}/${EXE_NAME}"
+	elif [ "${ARTIFACT_EXTENSION}" = ".gz" ]; then
 		gzip -d "${TEMP_FILE}" -f
-		EXTRACTED_FILE="${TEMP_DIR}/tombi-${VERSION}"
+		EXTRACTED_FILE="${TEMP_FILE%.gz}"
+	else
+		print_error "Unsupported artifact extension: ${ARTIFACT_EXTENSION}"
+		exit 1
+	fi
+
+	if [ ! -f "${EXTRACTED_FILE}" ]; then
+		print_error "Failed to locate ${EXE_NAME} in the downloaded archive."
+		exit 1
 	fi
 
 	chmod +x "${EXTRACTED_FILE}"
@@ -176,7 +215,7 @@ else
 	fi
 	print_step "Using latest version: ${VERSION}"
 fi
-ARTIFACT_EXTENSION=$(artifact_extension)
+RELEASE_BASE_URL="https://github.com/tombi-toml/tombi/releases/download"
 
 # Get the executable name based on OS
 get_exe_name() {

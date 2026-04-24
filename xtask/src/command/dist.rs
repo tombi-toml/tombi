@@ -5,6 +5,7 @@ use std::{
 };
 
 use flate2::{Compression, write::GzEncoder};
+use tar::Builder as TarBuilder;
 use time::OffsetDateTime;
 use xshell::Shell;
 use zip::{DateTime, ZipWriter, write::FileOptions};
@@ -56,7 +57,11 @@ fn dist_server(sh: &Shell, target: &Target) -> Result<(), anyhow::Error> {
             &dist.join(&target.cli_artifact_name),
         )?;
     } else {
-        gzip(&target.server_path, &dist.join(&target.cli_artifact_name))?;
+        tar_gz(
+            &target.server_path,
+            &target.cli_artifact_dir_name,
+            &dist.join(&target.cli_artifact_name),
+        )?;
     }
 
     Ok(())
@@ -114,6 +119,7 @@ struct Target {
     exe_name: String,
     server_path: PathBuf,
     symbols_path: Option<PathBuf>,
+    cli_artifact_dir_name: String,
     cli_artifact_name: String,
     vscode_artifact_name: String,
 }
@@ -161,11 +167,12 @@ impl Target {
                 Some(out_path.join("tombi.pdb")),
             )
         } else {
-            (String::new(), ".gz".to_string(), None)
+            (String::new(), ".tar.gz".to_string(), None)
         };
         let exe_name = format!("tombi{exe_suffix}");
         let server_path = out_path.join(&exe_name);
-        let cli_artifact_name = format!("tombi-cli-{version}-{target_name}{cli_artifact_suffix}");
+        let cli_artifact_dir_name = format!("tombi-cli-{version}-{target_name}");
+        let cli_artifact_name = format!("{cli_artifact_dir_name}{cli_artifact_suffix}");
         let vscode_artifact_name = format!("tombi-vscode-{version}-{vscode_target_name}.vsix");
 
         Self {
@@ -174,17 +181,44 @@ impl Target {
             exe_name,
             server_path,
             symbols_path,
+            cli_artifact_dir_name,
             cli_artifact_name,
             vscode_artifact_name,
         }
     }
 }
 
-fn gzip(src_path: &Path, dest_path: &Path) -> anyhow::Result<()> {
-    let mut encoder = GzEncoder::new(File::create(dest_path)?, Compression::best());
-    let mut input = std::io::BufReader::new(File::open(src_path)?);
-    std::io::copy(&mut input, &mut encoder)?;
-    encoder.finish()?;
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unix_targets_always_use_tar_gz() {
+        unsafe {
+            std::env::set_var("TOMBI_TARGET", "aarch64-apple-darwin");
+        }
+        let target = Target::get(Path::new("."));
+        assert_eq!(
+            target.cli_artifact_name,
+            format!("tombi-cli-{DEV_VERSION}-aarch64-apple-darwin.tar.gz")
+        );
+
+        unsafe {
+            std::env::remove_var("TOMBI_TARGET");
+        }
+    }
+}
+
+fn tar_gz(src_path: &Path, root_dir: &str, dest_path: &Path) -> anyhow::Result<()> {
+    let encoder = GzEncoder::new(File::create(dest_path)?, Compression::best());
+    let mut archive = TarBuilder::new(encoder);
+    let archive_path = format!(
+        "{root_dir}/{}",
+        src_path.file_name().unwrap().to_str().unwrap()
+    );
+    archive.append_path_with_name(src_path, archive_path)?;
+    archive.finish()?;
+    archive.into_inner()?.finish()?;
     Ok(())
 }
 
