@@ -21,9 +21,8 @@ print_success() {
 	printf '\033[32mSuccess:\033[m %s\n' "$1" >&2
 }
 
-# Keep the 0.9.23 cutoff in sync with:
-#   - xtask/src/command/dist.rs (UNIX_ARCHIVE_FORMAT_CUTOFF)
-#   - editors/zed/src/lib.rs (TombiExtension::uses_legacy_unix_artifact)
+# Keep the 0.9.23 cutoff in sync with
+# editors/zed/src/lib.rs (TombiExtension::uses_legacy_unix_artifact).
 version_uses_legacy_unix_artifact() {
 	VERSION_PREFIX=$(printf '%s' "$1" | sed 's/[+-].*$//')
 	if ! printf '%s' "${VERSION_PREFIX}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
