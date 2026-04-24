@@ -158,26 +158,17 @@ impl TombiExtension {
             .strip_prefix("v")
             .unwrap_or(&release.version);
 
-        let asset_stem = format!(
-            "tombi-cli-{version}-{arch}-{os}",
-            arch = match arch {
-                zed::Architecture::Aarch64 => "aarch64",
-                zed::Architecture::X86 => "x86",
-                zed::Architecture::X8664 => "x86_64",
-            },
-            os = match platform {
-                zed::Os::Mac => "apple-darwin",
-                zed::Os::Linux => "unknown-linux-musl",
-                zed::Os::Windows => "pc-windows-msvc",
-            }
-        );
+        let asset_stem = Self::release_asset_stem(version, platform, arch);
 
         let version_dir = format!("{VERSION_DIR_PREFIX}{version}");
         fs::create_dir_all(&version_dir)
             .map_err(|err| format!("failed to create directory '{version_dir}': {err}"))?;
         let binary_path = format!("{version_dir}/{binary_name}");
-        let extracted_binary_path =
-            Self::extracted_binary_path(std::path::Path::new(&version_dir), version, binary_name);
+        let extracted_binary_path = Self::extracted_binary_path(
+            std::path::Path::new(&version_dir),
+            &asset_stem,
+            binary_name,
+        );
         let extracted_binary_path = extracted_binary_path.to_string_lossy().to_string();
 
         let (asset_name, file_type, download_path, installed_binary_path) = match platform {
@@ -265,29 +256,28 @@ impl TombiExtension {
         (major, minor, patch) < (0, 9, 23)
     }
 
-    fn extracted_binary_path(
-        version_dir: &std::path::Path,
-        version: &str,
-        binary_name: &str,
-    ) -> std::path::PathBuf {
-        version_dir
-            .join(format!("tombi-cli-{version}-{}", Self::release_target()))
-            .join(binary_name)
+    fn release_asset_stem(version: &str, platform: zed::Os, arch: zed::Architecture) -> String {
+        format!(
+            "tombi-cli-{version}-{arch}-{os}",
+            arch = match arch {
+                zed::Architecture::Aarch64 => "aarch64",
+                zed::Architecture::X86 => "x86",
+                zed::Architecture::X8664 => "x86_64",
+            },
+            os = match platform {
+                zed::Os::Mac => "apple-darwin",
+                zed::Os::Linux => "unknown-linux-musl",
+                zed::Os::Windows => "pc-windows-msvc",
+            }
+        )
     }
 
-    fn release_target() -> &'static str {
-        let (platform, arch) = zed::current_platform();
-        match (platform, arch) {
-            (zed::Os::Mac, zed::Architecture::Aarch64) => "aarch64-apple-darwin",
-            (zed::Os::Mac, zed::Architecture::X86) => "x86-apple-darwin",
-            (zed::Os::Mac, zed::Architecture::X8664) => "x86_64-apple-darwin",
-            (zed::Os::Linux, zed::Architecture::Aarch64) => "aarch64-unknown-linux-musl",
-            (zed::Os::Linux, zed::Architecture::X86) => "x86-unknown-linux-musl",
-            (zed::Os::Linux, zed::Architecture::X8664) => "x86_64-unknown-linux-musl",
-            (zed::Os::Windows, zed::Architecture::Aarch64) => "aarch64-pc-windows-msvc",
-            (zed::Os::Windows, zed::Architecture::X86) => "x86-pc-windows-msvc",
-            (zed::Os::Windows, zed::Architecture::X8664) => "x86_64-pc-windows-msvc",
-        }
+    fn extracted_binary_path(
+        version_dir: &std::path::Path,
+        asset_stem: &str,
+        binary_name: &str,
+    ) -> std::path::PathBuf {
+        version_dir.join(asset_stem).join(binary_name)
     }
 
     fn resolve_extension_managed_binary_fallback(binary_name: &str) -> Option<String> {
@@ -300,13 +290,15 @@ impl TombiExtension {
                 let Some(version) = file_name.strip_prefix(VERSION_DIR_PREFIX) else {
                     return None;
                 };
+                let (platform, arch) = zed::current_platform();
+                let asset_stem = Self::release_asset_stem(version, platform, arch);
 
                 let direct_binary_path = path.join(binary_name);
                 let binary_path = if direct_binary_path.is_file() {
                     direct_binary_path
                 } else {
                     let extracted_binary_path =
-                        Self::extracted_binary_path(&path, version, binary_name);
+                        Self::extracted_binary_path(&path, &asset_stem, binary_name);
                     if !extracted_binary_path.is_file() {
                         return None;
                     }
