@@ -176,26 +176,28 @@ impl TombiExtension {
         fs::create_dir_all(&version_dir)
             .map_err(|err| format!("failed to create directory '{version_dir}': {err}"))?;
         let binary_path = format!("{version_dir}/{binary_name}");
-        let extracted_binary_path = format!("{version_dir}/{asset_stem}/{binary_name}");
+        let extracted_binary_path =
+            Self::extracted_binary_path(std::path::Path::new(&version_dir), version, binary_name);
+        let extracted_binary_path = extracted_binary_path.to_string_lossy().to_string();
 
         let (asset_name, file_type, download_path, installed_binary_path) = match platform {
             zed::Os::Windows => (
                 format!("{asset_stem}.zip"),
                 zed::DownloadedFileType::Zip,
-                version_dir.as_str(),
-                binary_path.as_str(),
+                version_dir.clone(),
+                binary_path.clone(),
             ),
             _ if Self::uses_legacy_unix_artifact(version) => (
                 format!("{asset_stem}.gz"),
                 zed::DownloadedFileType::Gzip,
-                binary_path.as_str(),
-                binary_path.as_str(),
+                binary_path.clone(),
+                binary_path.clone(),
             ),
             _ => (
                 format!("{asset_stem}.tar.gz"),
                 zed::DownloadedFileType::GzipTar,
-                version_dir.as_str(),
-                extracted_binary_path.as_str(),
+                version_dir.clone(),
+                extracted_binary_path,
             ),
         };
         let asset = release
@@ -204,8 +206,8 @@ impl TombiExtension {
             .find(|asset| asset.name == asset_name)
             .ok_or_else(|| format!("no asset found matching {asset_name:?}"))?;
 
-        if fs::metadata(installed_binary_path).is_ok_and(|stat| stat.is_file()) {
-            return Ok(installed_binary_path.to_string());
+        if fs::metadata(&installed_binary_path).is_ok_and(|stat| stat.is_file()) {
+            return Ok(installed_binary_path);
         }
 
         zed::set_language_server_installation_status(
@@ -213,16 +215,16 @@ impl TombiExtension {
             &zed::LanguageServerInstallationStatus::Downloading,
         );
 
-        zed::download_file(&asset.download_url, download_path, file_type)
+        zed::download_file(&asset.download_url, &download_path, file_type)
             .map_err(|e| format!("failed to download file: {e}"))?;
-        if !fs::metadata(installed_binary_path).is_ok_and(|stat| stat.is_file()) {
+        if !fs::metadata(&installed_binary_path).is_ok_and(|stat| stat.is_file()) {
             return Err(format!(
                 "failed to locate {binary_name:?} after extracting {:?}",
                 asset.name
             ));
         }
         if platform != zed::Os::Windows {
-            zed::make_file_executable(installed_binary_path)?;
+            zed::make_file_executable(&installed_binary_path)?;
         }
 
         let entries =
@@ -234,7 +236,7 @@ impl TombiExtension {
             }
         }
 
-        Ok(installed_binary_path.to_string())
+        Ok(installed_binary_path)
     }
 
     // Keep the 0.9.23 cutoff in sync with docs/public/install.sh
@@ -263,6 +265,31 @@ impl TombiExtension {
         (major, minor, patch) < (0, 9, 23)
     }
 
+    fn extracted_binary_path(
+        version_dir: &std::path::Path,
+        version: &str,
+        binary_name: &str,
+    ) -> std::path::PathBuf {
+        version_dir
+            .join(format!("tombi-cli-{version}-{}", Self::release_target()))
+            .join(binary_name)
+    }
+
+    fn release_target() -> &'static str {
+        let (platform, arch) = zed::current_platform();
+        match (platform, arch) {
+            (zed::Os::Mac, zed::Architecture::Aarch64) => "aarch64-apple-darwin",
+            (zed::Os::Mac, zed::Architecture::X86) => "x86-apple-darwin",
+            (zed::Os::Mac, zed::Architecture::X8664) => "x86_64-apple-darwin",
+            (zed::Os::Linux, zed::Architecture::Aarch64) => "aarch64-unknown-linux-musl",
+            (zed::Os::Linux, zed::Architecture::X86) => "x86-unknown-linux-musl",
+            (zed::Os::Linux, zed::Architecture::X8664) => "x86_64-unknown-linux-musl",
+            (zed::Os::Windows, zed::Architecture::Aarch64) => "aarch64-pc-windows-msvc",
+            (zed::Os::Windows, zed::Architecture::X86) => "x86-pc-windows-msvc",
+            (zed::Os::Windows, zed::Architecture::X8664) => "x86_64-pc-windows-msvc",
+        }
+    }
+
     fn resolve_extension_managed_binary_fallback(binary_name: &str) -> Option<String> {
         fs::read_dir(".")
             .ok()?
@@ -270,21 +297,20 @@ impl TombiExtension {
                 let entry = entry.ok()?;
                 let path = entry.path();
                 let file_name = path.file_name()?.to_str()?;
-                if !file_name.starts_with(VERSION_DIR_PREFIX) {
+                let Some(version) = file_name.strip_prefix(VERSION_DIR_PREFIX) else {
                     return None;
-                }
+                };
 
                 let direct_binary_path = path.join(binary_name);
                 let binary_path = if direct_binary_path.is_file() {
                     direct_binary_path
                 } else {
-                    fs::read_dir(&path)
-                        .ok()?
-                        .filter_map(|entry| entry.ok())
-                        .map(|entry| entry.path())
-                        .filter(|path| path.is_dir())
-                        .map(|path| path.join(binary_name))
-                        .find(|path| path.is_file())?
+                    let extracted_binary_path =
+                        Self::extracted_binary_path(&path, version, binary_name);
+                    if !extracted_binary_path.is_file() {
+                        return None;
+                    }
+                    extracted_binary_path
                 };
                 let metadata = fs::metadata(&binary_path).ok()?;
                 if !metadata.is_file() {
