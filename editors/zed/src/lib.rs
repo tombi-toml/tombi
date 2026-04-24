@@ -9,33 +9,6 @@ struct TombiExtension {
 }
 
 impl TombiExtension {
-    // Keep the 0.9.23 cutoff in sync with:
-    //   xtask/src/command/dist.rs (UNIX_ARCHIVE_FORMAT_CUTOFF)
-    //   docs/public/install.sh (version_uses_legacy_unix_artifact)
-    fn uses_legacy_unix_artifact(version: &str) -> bool {
-        let version = version
-            .split_once(['-', '+'])
-            .map(|(prefix, _)| prefix)
-            .unwrap_or(version);
-
-        let mut parts = version.split('.');
-        let (Some(major), Some(minor), Some(patch), None) =
-            (parts.next(), parts.next(), parts.next(), parts.next())
-        else {
-            return false;
-        };
-
-        let (Ok(major), Ok(minor), Ok(patch)) = (
-            major.parse::<u64>(),
-            minor.parse::<u64>(),
-            patch.parse::<u64>(),
-        ) else {
-            return false;
-        };
-
-        (major, minor, patch) < (0, 9, 23)
-    }
-
     fn make_language_server_command(
         &mut self,
         language_server_id: &LanguageServerId,
@@ -258,6 +231,33 @@ impl TombiExtension {
 
         Self::find_binary_in_dir(std::path::Path::new(&version_dir), binary_name)
             .ok_or_else(|| format!("failed to locate installed binary {binary_name:?}"))
+    }
+
+    // Keep the 0.9.23 cutoff in sync with:
+    //   xtask/src/command/dist.rs (UNIX_ARCHIVE_FORMAT_CUTOFF)
+    //   docs/public/install.sh (version_uses_legacy_unix_artifact)
+    fn uses_legacy_unix_artifact(version: &str) -> bool {
+        let version = version
+            .split_once(['-', '+'])
+            .map(|(prefix, _)| prefix)
+            .unwrap_or(version);
+
+        let mut parts = version.split('.');
+        let (Some(major), Some(minor), Some(patch), None) =
+            (parts.next(), parts.next(), parts.next(), parts.next())
+        else {
+            return false;
+        };
+
+        let (Ok(major), Ok(minor), Ok(patch)) = (
+            major.parse::<u64>(),
+            minor.parse::<u64>(),
+            patch.parse::<u64>(),
+        ) else {
+            return false;
+        };
+
+        (major, minor, patch) < (0, 9, 23)
     }
 
     fn find_windows_release_asset<'a>(
