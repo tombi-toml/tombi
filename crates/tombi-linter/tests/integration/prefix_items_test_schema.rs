@@ -74,3 +74,83 @@ test_lint! {
         SchemaPath(prefix_items_test_schema_path()),
     ) -> Ok(_)
 }
+
+test_lint! {
+    #[test]
+    fn test_prefix_items_subschema_root_matches_exact_tuple_index(
+        r#"
+        tuple = [1, "hello"]
+        "#,
+        Config({
+            let mut config = tombi_config::Config::default();
+            config.schema = Some(tombi_config::SchemaOverviewOptions::default());
+            config.schemas = Some(vec![tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
+                root: "tuple[1]".to_string(),
+                path: "schemas/prefix-items-test.schema.json#/properties/extensible/prefixItems/1"
+                    .to_string(),
+                include: vec!["test.toml".to_string()],
+                format: None,
+                lint: None,
+                overrides: None,
+            })]);
+            config
+        }),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_exact_index_string_subschema_does_not_apply_to_first_item(
+        r#"
+        items = [42, "scoped"]
+        "#,
+        Config({
+            let mut config = tombi_config::Config::default();
+            config.schema = Some(tombi_config::SchemaOverviewOptions::default());
+            config.schemas = Some(vec![tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
+                root: "items[1]".to_string(),
+                path: tombi_schema_store::SchemaUri::from_file_path(
+                    tombi_test_lib::project_root_path().join("schemas/exact-index-string-test.schema.json"),
+                )
+                .unwrap()
+                .to_string(),
+                include: vec!["test.toml".to_string()],
+                format: None,
+                lint: None,
+                overrides: None,
+            })]);
+            config
+        }),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_exact_index_string_subschema_applies_to_second_item(
+        r#"
+        items = [42, 7]
+        "#,
+        Config({
+            let mut config = tombi_config::Config::default();
+            config.schema = Some(tombi_config::SchemaOverviewOptions::default());
+            config.schemas = Some(vec![tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
+                root: "items[1]".to_string(),
+                path: tombi_schema_store::SchemaUri::from_file_path(
+                    tombi_test_lib::project_root_path().join("schemas/exact-index-string-test.schema.json"),
+                )
+                .unwrap()
+                .to_string(),
+                include: vec!["test.toml".to_string()],
+                format: None,
+                lint: None,
+                overrides: None,
+            })]);
+            config
+        }),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::TypeMismatch {
+            expected: tombi_schema_store::ValueType::String,
+            actual: tombi_document_tree::ValueType::Integer,
+        },
+    ])
+}

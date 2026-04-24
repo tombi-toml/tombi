@@ -376,7 +376,9 @@ impl TableSchema {
             .keys()
             .map(|accessor| match accessor {
                 SchemaAccessor::Key(key) => Accessor::Key(key.clone()),
-                SchemaAccessor::Index => unreachable!("Table keys should not be index"),
+                SchemaAccessor::AnyIndex | SchemaAccessor::Index(_) => {
+                    unreachable!("Table keys should not be index")
+                }
             })
             .collect_vec()
     }

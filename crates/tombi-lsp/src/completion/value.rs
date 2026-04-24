@@ -54,6 +54,23 @@ impl FindCompletionContents for tombi_document_tree::Value {
         log::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
+            if let Some(Ok(document_schema)) = schema_context
+                .get_subschema(accessors, current_schema)
+                .await
+                && let Some(current_schema) = document_schema.as_current_schema()
+            {
+                return self
+                    .find_completion_contents(
+                        position,
+                        keys,
+                        accessors,
+                        Some(&current_schema),
+                        schema_context,
+                        completion_hint,
+                    )
+                    .await;
+            }
+
             match self {
                 Self::Boolean(boolean) => {
                     boolean

@@ -17,6 +17,14 @@ fn array_values_order_schema_path() -> PathBuf {
         .join("crates/tombi-lsp/tests/fixtures/array-values-order.schema.json")
 }
 
+fn exact_index_hover_test_schema_path() -> PathBuf {
+    tombi_test_lib::project_root_path().join("schemas/exact-index-hover-test.schema.json")
+}
+
+fn exact_index_string_test_schema_path() -> PathBuf {
+    tombi_test_lib::project_root_path().join("schemas/exact-index-string-test.schema.json")
+}
+
 fn cargo_feature_usage_hover_description(
     project_root: &Path,
     locations: &[(PathBuf, u32)],
@@ -720,6 +728,78 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "typed_overflow_tuple[1].id",
                 "Value": "String?"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn exact_index_subschema_does_not_apply_to_first_item_hover(
+                r#"
+                items = [{ name = "█zero" }, { name = "one" }]
+                "#,
+                SubSchemaPath {
+                    root: "items[1]".to_string(),
+                    path: exact_index_hover_test_schema_path(),
+                },
+            ) -> Ok({
+                "Keys": "items[0].name",
+                "Value": "String",
+                "Schema": false
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn exact_index_subschema_applies_to_second_item_hover(
+                r#"
+                items = [{ name = "zero" }, { name = "█one" }]
+                "#,
+                SubSchemaPath {
+                    root: "items[1]".to_string(),
+                    path: exact_index_hover_test_schema_path(),
+                },
+            ) -> Ok({
+                "Keys": "items[1].name",
+                "Value": "String?",
+                "Schema": true,
+                "Title": Some("ScopedName".to_string()),
+                "Description": Some("Property available only on the targeted tuple item".to_string())
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn exact_index_string_subschema_does_not_apply_to_first_item_hover(
+                r#"
+                items = ["█zero", "scoped"]
+                "#,
+                SubSchemaPath {
+                    root: "items[1]".to_string(),
+                    path: exact_index_string_test_schema_path(),
+                },
+            ) -> Ok({
+                "Keys": "items[0]",
+                "Value": "String",
+                "Schema": false
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn exact_index_string_subschema_applies_to_second_item_hover(
+                r#"
+                items = ["zero", "█scoped"]
+                "#,
+                SubSchemaPath {
+                    root: "items[1]".to_string(),
+                    path: exact_index_string_test_schema_path(),
+                },
+            ) -> Ok({
+                "Keys": "items[1]",
+                "Value": "String",
+                "Schema": true,
+                "Title": Some("ScopedString".to_string()),
+                "Description": Some("String schema applied only to the targeted array item".to_string())
             });
         );
     }

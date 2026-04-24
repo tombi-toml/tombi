@@ -1,4 +1,4 @@
-use std::{str::FromStr, sync::Arc};
+use std::{borrow::Cow, str::FromStr, sync::Arc};
 
 use itertools::Itertools;
 use tombi_config::TomlVersion;
@@ -6,7 +6,7 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_x_keyword::{StringFormat, X_TOMBI_STRING_FORMATS, X_TOMBI_TOML_VERSION};
 
 use super::{
-    AnchorCollector, DynamicAnchorCollector, FindSchemaCandidates, SchemaAnchors,
+    AnchorCollector, CurrentSchema, DynamicAnchorCollector, FindSchemaCandidates, SchemaAnchors,
     SchemaDefinitions, SchemaDynamicAnchors, SchemaUri, ValueSchema, referable_schema::Referable,
 };
 use crate::{Accessor, JsonSchemaDialect, SchemaStore};
@@ -196,6 +196,14 @@ impl DocumentSchema {
 
     pub fn base_uri(&self) -> &SchemaUri {
         self.id.as_ref().unwrap_or(&self.schema_uri)
+    }
+
+    pub fn as_current_schema(&self) -> Option<CurrentSchema<'_>> {
+        self.value_schema.as_ref().map(|value_schema| CurrentSchema {
+            value_schema: value_schema.clone(),
+            schema_uri: Cow::Borrowed(&self.schema_uri),
+            definitions: Cow::Borrowed(&self.definitions),
+        })
     }
 }
 

@@ -173,7 +173,7 @@ fn accessors_to_root(accessors: &[Accessor]) -> Vec<PatternAccessor> {
         .iter()
         .map(|accessor| match accessor {
             Accessor::Key(key) => PatternAccessor::Key(key.clone()),
-            Accessor::Index(_) => PatternAccessor::Index,
+            Accessor::Index(index) => PatternAccessor::Index(*index),
         })
         .collect()
 }

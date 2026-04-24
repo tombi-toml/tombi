@@ -280,7 +280,14 @@ impl SchemaContext<'_> {
         if let Some(sub_schema_uri_map) = self.sub_schema_uri_map
             && let Some((_, sub_schema_uri)) = sub_schema_uri_map
                 .iter()
-                .find(|(pattern, _)| pattern.as_slice() == accessors)
+                .filter_map(|(pattern, sub_schema_uri)| {
+                    crate::pattern_match_score(pattern, accessors)
+                        .map(|score| (score, sub_schema_uri))
+                })
+                .fold(None, |best: Option<(usize, _)>, candidate| match best {
+                    Some(best) if best.0 >= candidate.0 => Some(best),
+                    _ => Some(candidate),
+                })
             && current_schema
                 .is_none_or(|current_schema| &*current_schema.schema_uri != sub_schema_uri)
         {
@@ -291,5 +298,171 @@ impl SchemaContext<'_> {
                 .transpose();
         }
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{borrow::Cow, sync::Arc};
+
+    use tombi_x_keyword::ArrayValuesOrder;
+
+    use super::SchemaContext;
+    use crate::{
+        Accessor, ArrayOrderOverride, CurrentSchema, PatternAccessor, SchemaOverrides,
+        SchemaOverridesMap, SchemaStore, SchemaUri, ValueSchema,
+    };
+
+    #[test]
+    fn exact_index_array_override_matches_only_targeted_item() {
+        let schema_uri =
+            SchemaUri::from_file_path("/tmp/exact-index-items-only.schema.json").unwrap();
+        let mut schema_overrides_map = SchemaOverridesMap::default();
+
+        let mut schema_overrides = SchemaOverrides::default();
+        schema_overrides
+            .array_values_order
+            .push(ArrayOrderOverride {
+                target: PatternAccessor::parse("items[1]").unwrap(),
+                disabled: false,
+                order: Some(ArrayValuesOrder::Ascending),
+            });
+        schema_overrides_map.insert(schema_uri.clone(), schema_overrides);
+
+        let store = SchemaStore::new();
+        let current_schema = CurrentSchema {
+            value_schema: Arc::new(ValueSchema::Array(Default::default())),
+            schema_uri: Cow::Owned(schema_uri),
+            definitions: Cow::Owned(Default::default()),
+        };
+
+        let schema_context = SchemaContext {
+            toml_version: Default::default(),
+            root_schema: None,
+            sub_schema_uri_map: None,
+            deprecated_lint_level: None,
+            schema_format_rules: None,
+            schema_lint_rules: None,
+            schema_overrides: Some(&schema_overrides_map),
+            schema_visits: Default::default(),
+            store: &store,
+            strict: None,
+        };
+
+        assert_eq!(
+            schema_context
+                .array_order_override(
+                    Some(&current_schema),
+                    &[Accessor::Key("items".into()), Accessor::Index(0)],
+                )
+                .and_then(|override_item| override_item.order),
+            None
+        );
+        assert_eq!(
+            schema_context
+                .array_order_override(
+                    Some(&current_schema),
+                    &[Accessor::Key("items".into()), Accessor::Index(1)],
+                )
+                .and_then(|override_item| override_item.order),
+            Some(ArrayValuesOrder::Ascending)
+        );
+    }
+
+    #[test]
+    fn exact_index_array_override_is_more_specific_than_wildcard() {
+        let schema_uri = SchemaUri::from_file_path("/tmp/exact-index-precedence.schema.json").unwrap();
+        let mut schema_overrides_map = SchemaOverridesMap::default();
+
+        let mut schema_overrides = SchemaOverrides::default();
+        schema_overrides.array_values_order.push(ArrayOrderOverride {
+            target: PatternAccessor::parse("items[*]").unwrap(),
+            disabled: false,
+            order: Some(ArrayValuesOrder::Descending),
+        });
+        schema_overrides.array_values_order.push(ArrayOrderOverride {
+            target: PatternAccessor::parse("items[1]").unwrap(),
+            disabled: false,
+            order: Some(ArrayValuesOrder::Ascending),
+        });
+        schema_overrides_map.insert(schema_uri.clone(), schema_overrides);
+
+        let store = SchemaStore::new();
+        let current_schema = CurrentSchema {
+            value_schema: Arc::new(ValueSchema::Array(Default::default())),
+            schema_uri: Cow::Owned(schema_uri),
+            definitions: Cow::Owned(Default::default()),
+        };
+
+        let schema_context = SchemaContext {
+            toml_version: Default::default(),
+            root_schema: None,
+            sub_schema_uri_map: None,
+            deprecated_lint_level: None,
+            schema_format_rules: None,
+            schema_lint_rules: None,
+            schema_overrides: Some(&schema_overrides_map),
+            schema_visits: Default::default(),
+            store: &store,
+            strict: None,
+        };
+
+        assert_eq!(
+            schema_context
+                .array_order_override(
+                    Some(&current_schema),
+                    &[Accessor::Key("items".into()), Accessor::Index(1)],
+                )
+                .and_then(|override_item| override_item.order),
+            Some(ArrayValuesOrder::Ascending)
+        );
+    }
+
+    #[tokio::test]
+    async fn exact_index_subschema_is_more_specific_than_wildcard() {
+        let unique = format!(
+            "tombi-schema-context-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        );
+        let temp_dir = std::env::temp_dir().join(unique);
+        std::fs::create_dir_all(&temp_dir).unwrap();
+        let wildcard_path = temp_dir.join("subschema-wildcard.schema.json");
+        let exact_path = temp_dir.join("subschema-exact.schema.json");
+        std::fs::write(&wildcard_path, r#"{"type":"integer"}"#).unwrap();
+        std::fs::write(&exact_path, r#"{"type":"string"}"#).unwrap();
+
+        let wildcard_uri = SchemaUri::from_file_path(&wildcard_path).unwrap();
+        let exact_uri = SchemaUri::from_file_path(&exact_path).unwrap();
+
+        let mut sub_schema_uri_map = crate::SubSchemaUriMap::default();
+        sub_schema_uri_map.insert(PatternAccessor::parse("items[*]").unwrap(), wildcard_uri);
+        sub_schema_uri_map.insert(PatternAccessor::parse("items[1]").unwrap(), exact_uri.clone());
+
+        let store = SchemaStore::new();
+
+        let schema_context = SchemaContext {
+            toml_version: Default::default(),
+            root_schema: None,
+            sub_schema_uri_map: Some(&sub_schema_uri_map),
+            deprecated_lint_level: None,
+            schema_format_rules: None,
+            schema_lint_rules: None,
+            schema_overrides: None,
+            schema_visits: Default::default(),
+            store: &store,
+            strict: None,
+        };
+
+        let resolved = schema_context
+            .get_subschema(&[Accessor::Key("items".into()), Accessor::Index(1)], None)
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(resolved.schema_uri, exact_uri);
     }
 }

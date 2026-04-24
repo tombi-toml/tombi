@@ -355,7 +355,13 @@ impl FindCompletionContents for tombi_document_tree::Array {
                     _ => Vec::with_capacity(0),
                 }
             } else {
+                let mut new_item_index = 0;
+                let mut new_item_start_position = None;
                 for (index, value) in self.values().iter().enumerate() {
+                    if value.range().end < position {
+                        new_item_index = index + 1;
+                        new_item_start_position = Some(value.range().end);
+                    }
                     if value.contains(position) {
                         // Array of tables
                         if let tombi_document_tree::Value::Table(table) = value
@@ -412,11 +418,88 @@ impl FindCompletionContents for tombi_document_tree::Array {
                             .await;
                     }
                 }
+
+                let new_item_accessors = accessors
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::once(Accessor::Index(new_item_index)))
+                    .collect_vec();
+
+                if let Some(Ok(document_schema)) = schema_context
+                    .get_subschema(&new_item_accessors, None)
+                    .await
+                    && let Some(current_schema) = document_schema.as_current_schema()
+                {
+                    let new_item_hint = new_item_completion_hint(
+                        self,
+                        new_item_index,
+                        new_item_start_position,
+                        completion_hint,
+                    );
+                    return SchemaCompletion
+                        .find_completion_contents(
+                            position,
+                            keys,
+                            &new_item_accessors,
+                            Some(&current_schema),
+                            schema_context,
+                            new_item_hint,
+                        )
+                        .await;
+                }
+
                 type_hint_value(None, position, None, completion_hint)
             }
         }
         .boxed()
     }
+}
+
+fn new_item_completion_hint(
+    array: &tombi_document_tree::Array,
+    new_item_index: usize,
+    new_item_start_position: Option<tombi_text::Position>,
+    completion_hint: Option<CompletionHint>,
+) -> Option<CompletionHint> {
+    if array.kind() != ArrayKind::Array {
+        return completion_hint;
+    }
+
+    let has_trailing_comma = matches!(
+        completion_hint,
+        Some(CompletionHint::Comma {
+            trailing_comma: Some(_),
+            ..
+        })
+    );
+    let has_leading_comma = matches!(
+        completion_hint,
+        Some(CompletionHint::Comma {
+            leading_comma: Some(_),
+            ..
+        })
+    );
+
+    if new_item_index == 0 {
+        let add_trailing_comma = (!array.is_empty() && !has_trailing_comma).then_some(AddTrailingComma);
+        return Some(CompletionHint::InArray {
+            add_leading_comma: None,
+            add_trailing_comma,
+        });
+    }
+
+    let add_leading_comma = if has_leading_comma {
+        None
+    } else {
+        new_item_start_position.map(|start_position| AddLeadingComma { start_position })
+    };
+    let add_trailing_comma = (!has_trailing_comma && new_item_index != array.len())
+        .then_some(AddTrailingComma);
+
+    Some(CompletionHint::InArray {
+        add_leading_comma,
+        add_trailing_comma,
+    })
 }
 
 impl FindCompletionContents for ArraySchema {

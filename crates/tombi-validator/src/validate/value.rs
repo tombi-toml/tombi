@@ -10,6 +10,16 @@ impl Validate for tombi_document_tree::Value {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
         async move {
+            if let Some(Ok(document_schema)) = schema_context
+                .get_subschema(accessors, current_schema)
+                .await
+                && let Some(current_schema) = document_schema.as_current_schema()
+            {
+                return self
+                    .validate(accessors, Some(&current_schema), schema_context)
+                    .await;
+            }
+
             match self {
                 Self::Boolean(boolean) => {
                     boolean

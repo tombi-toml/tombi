@@ -31,6 +31,22 @@ impl GetHoverContent for tombi_document_tree::Value {
         log::trace!("current_schema = {:?}", current_schema);
 
         async move {
+            if let Some(Ok(document_schema)) = schema_context
+                .get_subschema(accessors, current_schema)
+                .await
+                && let Some(current_schema) = document_schema.as_current_schema()
+            {
+                return self
+                    .get_hover_content(
+                        position,
+                        keys,
+                        accessors,
+                        Some(&current_schema),
+                        schema_context,
+                    )
+                    .await;
+            }
+
             match self {
                 Self::Boolean(boolean) => {
                     boolean

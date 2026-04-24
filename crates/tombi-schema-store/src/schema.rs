@@ -75,14 +75,7 @@ pub struct DeprecatedOverrides {
 
 impl DeprecatedOverrides {
     pub fn find(&self, accessors: &[Accessor]) -> Option<&DeprecatedOverride> {
-        self.inner.iter().find(|override_item| {
-            override_item.target.len() == accessors.len()
-                && override_item
-                    .target
-                    .iter()
-                    .zip(accessors)
-                    .all(|(expected, actual)| expected == actual)
-        })
+        find_best_pattern_match(&self.inner, accessors, |override_item| &override_item.target)
     }
 }
 
@@ -109,14 +102,7 @@ impl<T: Copy> OrderOverrides<T> {
     }
 
     pub fn find(&self, accessors: &[Accessor]) -> Option<&OrderOverride<T>> {
-        self.inner.iter().find(|override_item| {
-            override_item.target.len() == accessors.len()
-                && override_item
-                    .target
-                    .iter()
-                    .zip(accessors)
-                    .all(|(expected, actual)| expected == actual)
-        })
+        find_best_pattern_match(&self.inner, accessors, |override_item| &override_item.target)
     }
 }
 
@@ -148,6 +134,60 @@ pub type SchemaDynamicAnchors = Arc<tokio::sync::RwLock<SchemaMap>>;
 pub type AnchorCollector = SchemaMap;
 pub type DynamicAnchorCollector = SchemaMap;
 pub type ReferableValueSchemas = Arc<tokio::sync::RwLock<Vec<Referable<ValueSchema>>>>;
+
+pub(crate) fn pattern_match_score(
+    pattern: &[PatternAccessor],
+    accessors: &[Accessor],
+) -> Option<usize> {
+    if pattern.len() != accessors.len() {
+        return None;
+    }
+
+    let mut exact_count = 0;
+    for (expected, actual) in pattern.iter().zip(accessors) {
+        match (expected, actual) {
+            (PatternAccessor::Key(expected_key), Accessor::Key(actual_key)) => {
+                if expected_key != actual_key {
+                    return None;
+                }
+                exact_count += 1;
+            }
+            (PatternAccessor::AnyKey, Accessor::Key(_)) => {}
+            (PatternAccessor::AnyIndex, Accessor::Index(_)) => {}
+            (PatternAccessor::Index(expected_index), Accessor::Index(actual_index)) => {
+                if expected_index != actual_index {
+                    return None;
+                }
+                exact_count += 1;
+            }
+            _ => return None,
+        }
+    }
+
+    Some(exact_count)
+}
+
+fn find_best_pattern_match<'a, T>(
+    items: &'a [T],
+    accessors: &[Accessor],
+    pattern: impl Fn(&'a T) -> &'a [PatternAccessor],
+) -> Option<&'a T> {
+    let mut best_item = None;
+    let mut best_score = None;
+
+    for item in items {
+        let Some(score) = pattern_match_score(pattern(item), accessors) else {
+            continue;
+        };
+
+        if best_score.is_none_or(|best_score| score > best_score) {
+            best_item = Some(item);
+            best_score = Some(score);
+        }
+    }
+
+    best_item
+}
 
 pub trait CompositeSchema {
     fn title(&self) -> Option<String>;

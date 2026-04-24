@@ -6,6 +6,10 @@ use tombi_test_lib::{
     today_offset_date_time,
 };
 
+fn exact_index_string_test_schema_path() -> std::path::PathBuf {
+    project_root_path().join("schemas/exact-index-string-test.schema.json")
+}
+
 mod completion_labels {
     use super::*;
 
@@ -944,6 +948,35 @@ mod completion_labels {
                 "#,
                 SchemaPath(lsp_consistency_test_schema_path()),
             ) -> Ok(["id"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn exact_index_string_subschema_does_not_apply_to_first_item_completion(
+                r#"
+                items = [█, "scoped"]
+                "#,
+                SubSchema {
+                    root: "items[1]",
+                    path: exact_index_string_test_schema_path(),
+                },
+            ) -> Ok(AnyValue);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn exact_index_string_subschema_applies_to_second_item_completion(
+                r#"
+                items = ["zero", █]
+                "#,
+                SubSchema {
+                    root: "items[1]",
+                    path: exact_index_string_test_schema_path(),
+                },
+            ) -> Ok([
+                "\"\"",
+                "''",
+            ]);
         }
     }
 
