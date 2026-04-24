@@ -199,11 +199,13 @@ impl DocumentSchema {
     }
 
     pub fn as_current_schema(&self) -> Option<CurrentSchema<'_>> {
-        self.value_schema.as_ref().map(|value_schema| CurrentSchema {
-            value_schema: value_schema.clone(),
-            schema_uri: Cow::Borrowed(&self.schema_uri),
-            definitions: Cow::Borrowed(&self.definitions),
-        })
+        self.value_schema
+            .as_ref()
+            .map(|value_schema| CurrentSchema {
+                value_schema: value_schema.clone(),
+                schema_uri: Cow::Borrowed(&self.schema_uri),
+                definitions: Cow::Borrowed(&self.definitions),
+            })
     }
 }
 

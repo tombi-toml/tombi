@@ -75,7 +75,9 @@ pub struct DeprecatedOverrides {
 
 impl DeprecatedOverrides {
     pub fn find(&self, accessors: &[Accessor]) -> Option<&DeprecatedOverride> {
-        find_best_pattern_match(&self.inner, accessors, |override_item| &override_item.target)
+        find_best_pattern_match(&self.inner, accessors, |override_item| {
+            &override_item.target
+        })
     }
 }
 
@@ -102,7 +104,9 @@ impl<T: Copy> OrderOverrides<T> {
     }
 
     pub fn find(&self, accessors: &[Accessor]) -> Option<&OrderOverride<T>> {
-        find_best_pattern_match(&self.inner, accessors, |override_item| &override_item.target)
+        find_best_pattern_match(&self.inner, accessors, |override_item| {
+            &override_item.target
+        })
     }
 }
 

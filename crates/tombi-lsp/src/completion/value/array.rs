@@ -481,7 +481,8 @@ fn new_item_completion_hint(
     );
 
     if new_item_index == 0 {
-        let add_trailing_comma = (!array.is_empty() && !has_trailing_comma).then_some(AddTrailingComma);
+        let add_trailing_comma =
+            (!array.is_empty() && !has_trailing_comma).then_some(AddTrailingComma);
         return Some(CompletionHint::InArray {
             add_leading_comma: None,
             add_trailing_comma,
@@ -493,8 +494,8 @@ fn new_item_completion_hint(
     } else {
         new_item_start_position.map(|start_position| AddLeadingComma { start_position })
     };
-    let add_trailing_comma = (!has_trailing_comma && new_item_index != array.len())
-        .then_some(AddTrailingComma);
+    let add_trailing_comma =
+        (!has_trailing_comma && new_item_index != array.len()).then_some(AddTrailingComma);
 
     Some(CompletionHint::InArray {
         add_leading_comma,
