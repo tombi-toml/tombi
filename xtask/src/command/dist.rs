@@ -16,7 +16,6 @@ use crate::utils::project_root_path;
 // Keep this cutoff in sync with:
 //   docs/public/install.sh (version_uses_legacy_unix_artifact)
 //   editors/zed/src/lib.rs (TombiExtension::uses_legacy_unix_artifact)
-//   .github/workflows/release_cli_vscode.yml ("Set CLI artifact extension" step)
 const UNIX_ARCHIVE_FORMAT_CUTOFF: (u64, u64, u64) = (0, 9, 23);
 
 pub fn run(sh: &Shell) -> Result<(), anyhow::Error> {

@@ -12,7 +12,6 @@ impl TombiExtension {
     // Keep the 0.9.23 cutoff in sync with:
     //   xtask/src/command/dist.rs (UNIX_ARCHIVE_FORMAT_CUTOFF)
     //   docs/public/install.sh (version_uses_legacy_unix_artifact)
-    //   .github/workflows/release_cli_vscode.yml ("Set CLI artifact extension" step)
     fn uses_legacy_unix_artifact(version: &str) -> bool {
         let version = version
             .split_once(['-', '+'])

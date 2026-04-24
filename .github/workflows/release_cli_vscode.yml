@@ -136,23 +136,6 @@ jobs:
 
       - uses: ./.github/actions/set-version
 
-      # Keep the 0.9.23 cutoff in sync with:
-      #   xtask/src/command/dist.rs (UNIX_ARCHIVE_FORMAT_CUTOFF)
-      #   docs/public/install.sh (version_uses_legacy_unix_artifact)
-      #   editors/zed/src/lib.rs (TombiExtension::uses_legacy_unix_artifact)
-      - name: Set CLI artifact extension
-        if: matrix.os != 'windows-latest'
-        shell: bash
-        run: |
-          VERSION_PREFIX="${TOMBI_VERSION%%[-+]*}"
-          if [[ "${VERSION_PREFIX}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] && ((
-            BASH_REMATCH[1] == 0 && (BASH_REMATCH[2] < 9 || (BASH_REMATCH[2] == 9 && BASH_REMATCH[3] < 23))
-          )); then
-            echo "CLI_ARTIFACT_EXT=.gz" >> "$GITHUB_ENV"
-          else
-            echo "CLI_ARTIFACT_EXT=.tar.gz" >> "$GITHUB_ENV"
-          fi
-
       - name: Rub xtask dist
         run: cargo xtask dist
         env:
@@ -180,8 +163,8 @@ jobs:
         uses: actions/upload-artifact@v4
         if: matrix.os != 'windows-latest'
         with:
-          name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}${{ env.CLI_ARTIFACT_EXT }}
-          path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}${{ env.CLI_ARTIFACT_EXT }}
+          name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.tar.gz
+          path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.tar.gz
 
       - name: Upload tombi-cli artifacts (Windows)
         uses: actions/upload-artifact@v4

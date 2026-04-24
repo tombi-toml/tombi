@@ -24,7 +24,6 @@ print_success() {
 # Keep the 0.9.23 cutoff in sync with:
 #   - xtask/src/command/dist.rs (UNIX_ARCHIVE_FORMAT_CUTOFF)
 #   - editors/zed/src/lib.rs (TombiExtension::uses_legacy_unix_artifact)
-#   - .github/workflows/release_cli_vscode.yml ("Set CLI artifact extension" step)
 version_uses_legacy_unix_artifact() {
 	VERSION_PREFIX=$(printf '%s' "$1" | sed 's/[+-].*$//')
 	if ! printf '%s' "${VERSION_PREFIX}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
