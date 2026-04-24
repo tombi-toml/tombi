@@ -148,11 +148,6 @@ artifact_extension() {
 	esac
 }
 
-find_extracted_binary() {
-	EXE_NAME=$(get_exe_name)
-	find "${TEMP_DIR}" -type f -name "${EXE_NAME}" | head -n 1
-}
-
 # Create installation directories
 create_install_dir() {
 	if [ -n "${__SPECIFIED_INSTALL_DIR}" ]; then
@@ -184,16 +179,16 @@ download_and_install() {
 	EXE_NAME=$(get_exe_name)
 	if [ "${ARTIFACT_EXTENSION}" = ".zip" ]; then
 		unzip -o "${TEMP_FILE}" -d "${TEMP_DIR}"
-		EXTRACTED_FILE=$(find_extracted_binary)
+		EXTRACTED_FILE="${TEMP_DIR}/${EXE_NAME}"
 	elif [ "${ARTIFACT_EXTENSION}" = ".tar.gz" ]; then
 		tar -xzf "${TEMP_FILE}" -C "${TEMP_DIR}"
-		EXTRACTED_FILE=$(find_extracted_binary)
+		EXTRACTED_FILE="${TEMP_DIR}/tombi-cli-${VERSION}-${TARGET}/${EXE_NAME}"
 	else
 		gzip -d "${TEMP_FILE}" -f
 		EXTRACTED_FILE="${TEMP_FILE%.gz}"
 	fi
 
-	if [ -z "${EXTRACTED_FILE}" ] || [ ! -f "${EXTRACTED_FILE}" ]; then
+	if [ ! -f "${EXTRACTED_FILE}" ]; then
 		print_error "Failed to locate ${EXE_NAME} in the downloaded archive."
 		exit 1
 	fi
