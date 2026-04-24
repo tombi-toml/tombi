@@ -176,20 +176,36 @@ impl TombiExtension {
         fs::create_dir_all(&version_dir)
             .map_err(|err| format!("failed to create directory '{version_dir}': {err}"))?;
         let binary_path = format!("{version_dir}/{binary_name}");
+        let extracted_binary_path = format!("{version_dir}/{asset_stem}/{binary_name}");
 
-        let (extension, file_type) = match platform {
-            zed::Os::Windows => (".zip", zed::DownloadedFileType::Zip),
-            _ if Self::uses_legacy_unix_artifact(version) => {
-                (".gz", zed::DownloadedFileType::Gzip)
-            }
-            _ => (".tar.gz", zed::DownloadedFileType::GzipTar),
+        let (asset_name, file_type, download_path, installed_binary_path) = match platform {
+            zed::Os::Windows => (
+                format!("{asset_stem}.zip"),
+                zed::DownloadedFileType::Zip,
+                version_dir.as_str(),
+                binary_path.as_str(),
+            ),
+            _ if Self::uses_legacy_unix_artifact(version) => (
+                format!("{asset_stem}.gz"),
+                zed::DownloadedFileType::Gzip,
+                binary_path.as_str(),
+                binary_path.as_str(),
+            ),
+            _ => (
+                format!("{asset_stem}.tar.gz"),
+                zed::DownloadedFileType::GzipTar,
+                version_dir.as_str(),
+                extracted_binary_path.as_str(),
+            ),
         };
-        let asset = Self::find_release_asset(&release, &asset_stem, extension)?;
+        let asset = release
+            .assets
+            .iter()
+            .find(|asset| asset.name == asset_name)
+            .ok_or_else(|| format!("no asset found matching {asset_name:?}"))?;
 
-        if let Some(path) =
-            Self::find_binary_in_dir(std::path::Path::new(&version_dir), binary_name)
-        {
-            return Ok(path);
+        if fs::metadata(installed_binary_path).is_ok_and(|stat| stat.is_file()) {
+            return Ok(installed_binary_path.to_string());
         }
 
         zed::set_language_server_installation_status(
@@ -197,36 +213,20 @@ impl TombiExtension {
             &zed::LanguageServerInstallationStatus::Downloading,
         );
 
-        let resolved_binary_path = match file_type {
-            zed::DownloadedFileType::Gzip => {
-                zed::download_file(&asset.download_url, &binary_path, file_type)
-                    .map_err(|e| format!("failed to download file: {e}"))?;
-                zed::make_file_executable(&binary_path)?;
-                binary_path
-            }
-            zed::DownloadedFileType::Zip | zed::DownloadedFileType::GzipTar => {
-                zed::download_file(&asset.download_url, &version_dir, file_type)
-                    .map_err(|e| format!("failed to download file: {e}"))?;
-                let extracted =
-                    Self::find_binary_in_dir(std::path::Path::new(&version_dir), binary_name)
-                        .ok_or_else(|| {
-                            format!(
-                                "failed to locate {binary_name:?} after extracting {:?}",
-                                asset.name
-                            )
-                        })?;
-                if platform != zed::Os::Windows {
-                    zed::make_file_executable(&extracted)?;
-                }
-                extracted
-            }
-            zed::DownloadedFileType::Uncompressed => {
-                return Err("unexpected uncompressed release asset".to_string());
-            }
-        };
+        zed::download_file(&asset.download_url, download_path, file_type)
+            .map_err(|e| format!("failed to download file: {e}"))?;
+        if !fs::metadata(installed_binary_path).is_ok_and(|stat| stat.is_file()) {
+            return Err(format!(
+                "failed to locate {binary_name:?} after extracting {:?}",
+                asset.name
+            ));
+        }
+        if platform != zed::Os::Windows {
+            zed::make_file_executable(installed_binary_path)?;
+        }
 
-        let entries = fs::read_dir(".")
-            .map_err(|err| format!("failed to list working directory {err}"))?;
+        let entries =
+            fs::read_dir(".").map_err(|err| format!("failed to list working directory {err}"))?;
         for entry in entries {
             let entry = entry.map_err(|err| format!("failed to load directory entry {err}"))?;
             if entry.file_name().to_str() != Some(&version_dir) {
@@ -234,7 +234,7 @@ impl TombiExtension {
             }
         }
 
-        Ok(resolved_binary_path)
+        Ok(installed_binary_path.to_string())
     }
 
     // Keep the 0.9.23 cutoff in sync with docs/public/install.sh
@@ -263,40 +263,6 @@ impl TombiExtension {
         (major, minor, patch) < (0, 9, 23)
     }
 
-    fn find_release_asset<'a>(
-        release: &'a zed::GithubRelease,
-        asset_stem: &str,
-        extension: &str,
-    ) -> Result<&'a zed::GithubReleaseAsset> {
-        let asset_name = format!("{asset_stem}{extension}");
-        release
-            .assets
-            .iter()
-            .find(|asset| asset.name == asset_name)
-            .ok_or_else(|| format!("no asset found matching {asset_name:?}"))
-    }
-
-    fn find_binary_in_dir(dir: &std::path::Path, binary_name: &str) -> Option<String> {
-        let mut pending = vec![dir.to_path_buf()];
-
-        while let Some(dir) = pending.pop() {
-            let entries = fs::read_dir(&dir).ok()?;
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_dir() {
-                    pending.push(path);
-                    continue;
-                }
-
-                if path.file_name().and_then(|file_name| file_name.to_str()) == Some(binary_name) {
-                    return Some(path.to_string_lossy().to_string());
-                }
-            }
-        }
-
-        None
-    }
-
     fn resolve_extension_managed_binary_fallback(binary_name: &str) -> Option<String> {
         fs::read_dir(".")
             .ok()?
@@ -308,14 +274,25 @@ impl TombiExtension {
                     return None;
                 }
 
-                let binary_path = Self::find_binary_in_dir(&path, binary_name)?;
+                let direct_binary_path = path.join(binary_name);
+                let binary_path = if direct_binary_path.is_file() {
+                    direct_binary_path
+                } else {
+                    fs::read_dir(&path)
+                        .ok()?
+                        .filter_map(|entry| entry.ok())
+                        .map(|entry| entry.path())
+                        .filter(|path| path.is_dir())
+                        .map(|path| path.join(binary_name))
+                        .find(|path| path.is_file())?
+                };
                 let metadata = fs::metadata(&binary_path).ok()?;
                 if !metadata.is_file() {
                     return None;
                 }
 
                 let modified = metadata.modified().ok()?;
-                Some((modified, std::path::PathBuf::from(binary_path)))
+                Some((modified, binary_path))
             })
             .max_by_key(|(modified, _)| *modified)
             .map(|(_, path)| path.to_string_lossy().to_string())
