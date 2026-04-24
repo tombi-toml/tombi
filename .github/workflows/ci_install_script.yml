@@ -26,6 +26,8 @@ jobs:
           head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           paths: |
             docs/public/install.sh
+            xtask/src/command/dist.rs
+            .github/workflows/release_cli_vscode.yml
             .github/actions/relevant-changes/**
             .github/workflows/ci_install_script.yml
 
