@@ -313,10 +313,13 @@ mod tests {
         SchemaOverridesMap, SchemaStore, SchemaUri, ValueSchema,
     };
 
+    fn temp_schema_uri(file_name: &str) -> SchemaUri {
+        SchemaUri::from_file_path(std::env::temp_dir().join(file_name)).unwrap()
+    }
+
     #[test]
     fn exact_index_array_override_matches_only_targeted_item() {
-        let schema_uri =
-            SchemaUri::from_file_path("/tmp/exact-index-items-only.schema.json").unwrap();
+        let schema_uri = temp_schema_uri("exact-index-items-only.schema.json");
         let mut schema_overrides_map = SchemaOverridesMap::default();
 
         let mut schema_overrides = SchemaOverrides::default();
@@ -371,7 +374,7 @@ mod tests {
 
     #[test]
     fn exact_index_array_override_is_more_specific_than_wildcard() {
-        let schema_uri = SchemaUri::from_file_path("/tmp/exact-index-precedence.schema.json").unwrap();
+        let schema_uri = temp_schema_uri("exact-index-precedence.schema.json");
         let mut schema_overrides_map = SchemaOverridesMap::default();
 
         let mut schema_overrides = SchemaOverrides::default();
