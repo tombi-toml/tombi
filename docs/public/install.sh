@@ -131,7 +131,7 @@ detect_os_arch() {
 	print_step "Detected system: ${TARGET}"
 }
 
-artifact_extensions() {
+artifact_extension() {
 	OS="$(uname -s)"
 
 	case "${OS}" in
@@ -140,9 +140,9 @@ artifact_extensions() {
 		;;
 	*)
 		if version_uses_legacy_unix_artifact "${VERSION}"; then
-			echo ".gz .tar.gz"
+			echo ".gz"
 		else
-			echo ".tar.gz .gz"
+			echo ".tar.gz"
 		fi
 		;;
 	esac
@@ -151,25 +151,6 @@ artifact_extensions() {
 find_extracted_binary() {
 	EXE_NAME=$(get_exe_name)
 	find "${TEMP_DIR}" -type f -name "${EXE_NAME}" | head -n 1
-}
-
-download_artifact() {
-	print_step "Downloading tombi ${VERSION} (${TARGET})..."
-	for extension in $(artifact_extensions); do
-		CANDIDATE_URL="${RELEASE_BASE_URL}/v${VERSION}/tombi-cli-${VERSION}-${TARGET}${extension}"
-		CANDIDATE_FILE="${TEMP_DIR}/tombi-${VERSION}${extension}"
-		rm -f "${CANDIDATE_FILE}"
-
-		print_step "Trying ${CANDIDATE_URL}"
-		if download_to_file "${CANDIDATE_URL}" "${CANDIDATE_FILE}" && [ -s "${CANDIDATE_FILE}" ]; then
-			ARTIFACT_EXTENSION="${extension}"
-			DOWNLOAD_URL="${CANDIDATE_URL}"
-			TEMP_FILE="${CANDIDATE_FILE}"
-			return 0
-		fi
-	done
-
-	return 1
 }
 
 # Create installation directories
@@ -188,8 +169,15 @@ create_install_dir() {
 
 # Download and install tombi
 download_and_install() {
-	if ! download_artifact; then
-		print_error "Download failed for tombi ${VERSION} (${TARGET}). Last attempted URL: ${DOWNLOAD_URL:-unknown}"
+	ARTIFACT_EXTENSION=$(artifact_extension)
+	DOWNLOAD_URL="${RELEASE_BASE_URL}/v${VERSION}/tombi-cli-${VERSION}-${TARGET}${ARTIFACT_EXTENSION}"
+	TEMP_FILE="${TEMP_DIR}/tombi-${VERSION}${ARTIFACT_EXTENSION}"
+
+	print_step "Download from ${DOWNLOAD_URL}"
+	print_step "Downloading tombi ${VERSION} (${TARGET})..."
+
+	if ! download_to_file "${DOWNLOAD_URL}" "${TEMP_FILE}" || [ ! -s "${TEMP_FILE}" ]; then
+		print_error "Download failed. Please check the URL: ${DOWNLOAD_URL}"
 		exit 1
 	fi
 

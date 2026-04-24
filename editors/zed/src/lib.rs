@@ -177,29 +177,14 @@ impl TombiExtension {
             .map_err(|err| format!("failed to create directory '{version_dir}': {err}"))?;
         let binary_path = format!("{version_dir}/{binary_name}");
 
-        let (asset, file_type) = match platform {
-            zed::Os::Windows => Self::find_release_asset(
-                &release,
-                &asset_stem,
-                &[(".zip", zed::DownloadedFileType::Zip)],
-            )?,
-            _ if Self::uses_legacy_unix_artifact(version) => Self::find_release_asset(
-                &release,
-                &asset_stem,
-                &[
-                    (".gz", zed::DownloadedFileType::Gzip),
-                    (".tar.gz", zed::DownloadedFileType::GzipTar),
-                ],
-            )?,
-            _ => Self::find_release_asset(
-                &release,
-                &asset_stem,
-                &[
-                    (".tar.gz", zed::DownloadedFileType::GzipTar),
-                    (".gz", zed::DownloadedFileType::Gzip),
-                ],
-            )?,
+        let (extension, file_type) = match platform {
+            zed::Os::Windows => (".zip", zed::DownloadedFileType::Zip),
+            _ if Self::uses_legacy_unix_artifact(version) => {
+                (".gz", zed::DownloadedFileType::Gzip)
+            }
+            _ => (".tar.gz", zed::DownloadedFileType::GzipTar),
         };
+        let asset = Self::find_release_asset(&release, &asset_stem, extension)?;
 
         if let Some(path) =
             Self::find_binary_in_dir(std::path::Path::new(&version_dir), binary_name)
@@ -281,26 +266,14 @@ impl TombiExtension {
     fn find_release_asset<'a>(
         release: &'a zed::GithubRelease,
         asset_stem: &str,
-        candidates: &[(&str, zed::DownloadedFileType)],
-    ) -> Result<(&'a zed::GithubReleaseAsset, zed::DownloadedFileType)> {
-        for (extension, file_type) in candidates {
-            if let Some(asset) = release
-                .assets
-                .iter()
-                .find(|asset| asset.name == format!("{asset_stem}{extension}"))
-            {
-                return Ok((asset, *file_type));
-            }
-        }
-
-        let extensions = candidates
+        extension: &str,
+    ) -> Result<&'a zed::GithubReleaseAsset> {
+        let asset_name = format!("{asset_stem}{extension}");
+        release
+            .assets
             .iter()
-            .map(|(extension, _)| *extension)
-            .collect::<Vec<_>>()
-            .join(" or ");
-        Err(format!(
-            "no asset found matching {asset_stem:?} with extension {extensions}"
-        ))
+            .find(|asset| asset.name == asset_name)
+            .ok_or_else(|| format!("no asset found matching {asset_name:?}"))
     }
 
     fn find_binary_in_dir(dir: &std::path::Path, binary_name: &str) -> Option<String> {
