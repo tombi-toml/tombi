@@ -205,38 +205,11 @@ impl TombiExtension {
         let binary_path = format!("{version_dir}/{binary_name}");
 
         let asset = match platform {
-            zed::Os::Windows => release
-                .assets
-                .iter()
-                .find(|asset| asset.name == format!("{asset_stem}.zip"))
-                .map(|asset| (asset, zed::DownloadedFileType::Zip))
-                .ok_or_else(|| format!("no asset found matching {:?}.zip", asset_stem))?,
-            _ if Self::uses_legacy_unix_artifact(version) => release
-                .assets
-                .iter()
-                .find(|asset| asset.name == format!("{asset_stem}.gz"))
-                .map(|asset| (asset, zed::DownloadedFileType::Gzip))
-                .or_else(|| {
-                    release
-                        .assets
-                        .iter()
-                        .find(|asset| asset.name == format!("{asset_stem}.tar.gz"))
-                        .map(|asset| (asset, zed::DownloadedFileType::GzipTar))
-                })
-                .ok_or_else(|| format!("no asset found matching {asset_stem:?}.gz or .tar.gz"))?,
-            _ => release
-                .assets
-                .iter()
-                .find(|asset| asset.name == format!("{asset_stem}.tar.gz"))
-                .map(|asset| (asset, zed::DownloadedFileType::GzipTar))
-                .or_else(|| {
-                    release
-                        .assets
-                        .iter()
-                        .find(|asset| asset.name == format!("{asset_stem}.gz"))
-                        .map(|asset| (asset, zed::DownloadedFileType::Gzip))
-                })
-                .ok_or_else(|| format!("no asset found matching {asset_stem:?}.tar.gz or .gz"))?,
+            zed::Os::Windows => Self::find_windows_release_asset(&release, &asset_stem)?,
+            _ if Self::uses_legacy_unix_artifact(version) => {
+                Self::find_legacy_unix_release_asset(&release, &asset_stem)?
+            }
+            _ => Self::find_unix_release_asset(&release, &asset_stem)?,
         };
 
         if Self::find_binary_in_dir(std::path::Path::new(&version_dir), binary_name).is_none() {
@@ -285,6 +258,56 @@ impl TombiExtension {
 
         Self::find_binary_in_dir(std::path::Path::new(&version_dir), binary_name)
             .ok_or_else(|| format!("failed to locate installed binary {binary_name:?}"))
+    }
+
+    fn find_windows_release_asset<'a>(
+        release: &'a zed::GithubRelease,
+        asset_stem: &str,
+    ) -> Result<(&'a zed::GithubReleaseAsset, zed::DownloadedFileType)> {
+        release
+            .assets
+            .iter()
+            .find(|asset| asset.name == format!("{asset_stem}.zip"))
+            .map(|asset| (asset, zed::DownloadedFileType::Zip))
+            .ok_or_else(|| format!("no asset found matching {:?}.zip", asset_stem))
+    }
+
+    fn find_legacy_unix_release_asset<'a>(
+        release: &'a zed::GithubRelease,
+        asset_stem: &str,
+    ) -> Result<(&'a zed::GithubReleaseAsset, zed::DownloadedFileType)> {
+        release
+            .assets
+            .iter()
+            .find(|asset| asset.name == format!("{asset_stem}.gz"))
+            .map(|asset| (asset, zed::DownloadedFileType::Gzip))
+            .or_else(|| {
+                release
+                    .assets
+                    .iter()
+                    .find(|asset| asset.name == format!("{asset_stem}.tar.gz"))
+                    .map(|asset| (asset, zed::DownloadedFileType::GzipTar))
+            })
+            .ok_or_else(|| format!("no asset found matching {asset_stem:?}.gz or .tar.gz"))
+    }
+
+    fn find_unix_release_asset<'a>(
+        release: &'a zed::GithubRelease,
+        asset_stem: &str,
+    ) -> Result<(&'a zed::GithubReleaseAsset, zed::DownloadedFileType)> {
+        release
+            .assets
+            .iter()
+            .find(|asset| asset.name == format!("{asset_stem}.tar.gz"))
+            .map(|asset| (asset, zed::DownloadedFileType::GzipTar))
+            .or_else(|| {
+                release
+                    .assets
+                    .iter()
+                    .find(|asset| asset.name == format!("{asset_stem}.gz"))
+                    .map(|asset| (asset, zed::DownloadedFileType::Gzip))
+            })
+            .ok_or_else(|| format!("no asset found matching {asset_stem:?}.tar.gz or .gz"))
     }
 
     fn find_binary_in_dir(dir: &std::path::Path, binary_name: &str) -> Option<String> {
