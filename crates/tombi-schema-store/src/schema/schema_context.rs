@@ -280,7 +280,14 @@ impl SchemaContext<'_> {
         if let Some(sub_schema_uri_map) = self.sub_schema_uri_map
             && let Some((_, sub_schema_uri)) = sub_schema_uri_map
                 .iter()
-                .find(|(pattern, _)| pattern.as_slice() == accessors)
+                .filter_map(|(pattern, sub_schema_uri)| {
+                    crate::pattern_match_score(pattern, accessors)
+                        .map(|score| (score, sub_schema_uri))
+                })
+                .fold(None, |best: Option<(usize, _)>, candidate| match best {
+                    Some(best) if best.0 >= candidate.0 => Some(best),
+                    _ => Some(candidate),
+                })
             && current_schema
                 .is_none_or(|current_schema| &*current_schema.schema_uri != sub_schema_uri)
         {

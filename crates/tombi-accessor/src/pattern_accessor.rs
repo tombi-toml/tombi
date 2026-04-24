@@ -7,7 +7,8 @@ use crate::Accessor;
 pub enum PatternAccessor {
     Key(String),
     AnyKey,
-    Index,
+    AnyIndex,
+    Index(usize),
 }
 
 impl PatternAccessor {
@@ -38,8 +39,10 @@ impl PatternAccessor {
                     if i >= chars.len() || chars[i] != ']' {
                         return None;
                     }
-                    if index_str == "*" || index_str.parse::<usize>().is_ok() {
-                        accessors.push(PatternAccessor::Index);
+                    if index_str == "*" {
+                        accessors.push(PatternAccessor::AnyIndex);
+                    } else if let Ok(index) = index_str.parse::<usize>() {
+                        accessors.push(PatternAccessor::Index(index));
                     } else {
                         return None;
                     }
@@ -73,7 +76,8 @@ impl PartialEq<Accessor> for PatternAccessor {
         match (self, other) {
             (PatternAccessor::Key(expected), Accessor::Key(actual)) => expected == actual,
             (PatternAccessor::AnyKey, Accessor::Key(_)) => true,
-            (PatternAccessor::Index, Accessor::Index(_)) => true,
+            (PatternAccessor::AnyIndex, Accessor::Index(_)) => true,
+            (PatternAccessor::Index(expected), Accessor::Index(actual)) => expected == actual,
             _ => false,
         }
     }
@@ -138,7 +142,9 @@ impl std::fmt::Display for PatternAccessors {
             for accessor in iter {
                 match accessor {
                     PatternAccessor::Key(_) | PatternAccessor::AnyKey => write!(f, ".{accessor}")?,
-                    PatternAccessor::Index => write!(f, "{accessor}")?,
+                    PatternAccessor::AnyIndex | PatternAccessor::Index(_) => {
+                        write!(f, "{accessor}")?
+                    }
                 }
             }
         }
@@ -151,7 +157,8 @@ impl std::fmt::Display for PatternAccessor {
         match self {
             PatternAccessor::Key(key) => write!(f, "{}", tombi_toml_text::to_key_string(key)),
             PatternAccessor::AnyKey => write!(f, "*"),
-            PatternAccessor::Index => write!(f, "[*]"),
+            PatternAccessor::AnyIndex => write!(f, "[*]"),
+            PatternAccessor::Index(index) => write!(f, "[{index}]"),
         }
     }
 }
@@ -163,7 +170,7 @@ impl From<&[Accessor]> for PatternAccessors {
                 .iter()
                 .map(|accessor| match accessor {
                     Accessor::Key(key) => PatternAccessor::Key(key.clone()),
-                    Accessor::Index(_) => PatternAccessor::Index,
+                    Accessor::Index(index) => PatternAccessor::Index(*index),
                 })
                 .collect_vec(),
         )
@@ -196,7 +203,12 @@ mod tests {
     ])]
     #[case("items[*].name", vec![
         PatternAccessor::Key("items".to_string()),
-        PatternAccessor::Index,
+        PatternAccessor::AnyIndex,
+        PatternAccessor::Key("name".to_string()),
+    ])]
+    #[case("items[1].name", vec![
+        PatternAccessor::Key("items".to_string()),
+        PatternAccessor::Index(1),
         PatternAccessor::Key("name".to_string()),
     ])]
     fn test_root_accessor_parse(#[case] input: &str, #[case] expected: Vec<PatternAccessor>) {
@@ -212,6 +224,16 @@ mod tests {
             PatternAccessor::Key("enabled".to_string()),
         ]);
         assert_eq!(format!("{accessors}"), "tool.*.enabled");
+    }
+
+    #[test]
+    fn test_root_accessors_display_exact_index() {
+        let accessors = PatternAccessors::from(vec![
+            PatternAccessor::Key("items".to_string()),
+            PatternAccessor::Index(1),
+            PatternAccessor::Key("name".to_string()),
+        ]);
+        assert_eq!(format!("{accessors}"), "items[1].name");
     }
 
     #[test]
@@ -237,7 +259,9 @@ mod tests {
             PatternAccessor::AnyKey,
             Accessor::Key("taskipy".to_string())
         );
-        assert_eq!(PatternAccessor::Index, Accessor::Index(3));
+        assert_eq!(PatternAccessor::AnyIndex, Accessor::Index(3));
+        assert_eq!(PatternAccessor::Index(3), Accessor::Index(3));
+        assert_ne!(PatternAccessor::Index(1), Accessor::Index(3));
         assert_eq!(
             PatternAccessor::Key("tool".to_string()),
             Accessor::Key("tool".to_string())

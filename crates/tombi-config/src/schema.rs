@@ -321,14 +321,14 @@ pub struct SchemaTableKeysOrderRule {
 ///
 /// To apply it to the Root Table, use `""`.
 ///
-/// Array indices are matched as wildcards. That means `[*]` and numeric
-/// indices such as `[0]` are treated the same and will match any array
-/// element, so `items[0].name` behaves like `items[*].name`.
+/// Use `[*]` to match any array element, or a numeric index such as `[1]`
+/// to match a specific tuple position.
 ///
 /// **Example**:
 ///   - `""`
 ///   - `"tool.*"`
 ///   - `"items[*].name"`
+///   - `"items[1].name"`
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
