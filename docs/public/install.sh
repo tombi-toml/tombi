@@ -183,9 +183,12 @@ download_and_install() {
 	elif [ "${ARTIFACT_EXTENSION}" = ".tar.gz" ]; then
 		tar -xzf "${TEMP_FILE}" -C "${TEMP_DIR}"
 		EXTRACTED_FILE="${TEMP_DIR}/tombi-cli-${VERSION}-${TARGET}/${EXE_NAME}"
-	else
+	elif [ "${ARTIFACT_EXTENSION}" = ".gz" ]; then
 		gzip -d "${TEMP_FILE}" -f
 		EXTRACTED_FILE="${TEMP_FILE%.gz}"
+	else
+		print_error "Unsupported artifact extension: ${ARTIFACT_EXTENSION}"
+		exit 1
 	fi
 
 	if [ ! -f "${EXTRACTED_FILE}" ]; then
