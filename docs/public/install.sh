@@ -212,7 +212,7 @@ else
 	fi
 	print_step "Using latest version: ${VERSION}"
 fi
-RELEASE_BASE_URL="${TOMBI_RELEASE_BASE_URL:-https://github.com/tombi-toml/tombi/releases/download}"
+RELEASE_BASE_URL="https://github.com/tombi-toml/tombi/releases/download"
 
 # Get the executable name based on OS
 get_exe_name() {
