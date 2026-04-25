@@ -9,7 +9,3 @@ repository = "https://github.com/tombi-toml/tombi"
 [language_servers.tombi]
 name = "Tombi"
 languages = ["TOML"]
-
-[grammars.toml]
-repository = "https://github.com/tree-sitter/tree-sitter-toml"
-commit = "342d9be207c2dba869b9967124c679b5e6fd0ebe"
