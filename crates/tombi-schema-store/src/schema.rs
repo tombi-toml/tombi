@@ -41,7 +41,7 @@ pub use referable_schema::{
     CurrentSchema, Referable, is_online_url, resolve_and_collect_schemas, resolve_json_pointer,
     resolve_schema_item,
 };
-pub use schema_context::SchemaContext;
+pub use schema_context::{ResolvedFormatOrder, SchemaContext};
 pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};
 pub use source_schema::{
     SchemaFormatRulesMap, SchemaLintRulesMap, SchemaOverridesMap, SourceSchema, SubSchemaUriMap,

@@ -738,7 +738,7 @@ impl GetHoverContent for TableSchema {
                     key_patterns: None,
                     additional_keys: self.additional_properties(),
                     pattern_keys: self.pattern_properties.is_some(),
-                    keys_order: self.keys_order.clone(),
+                    keys_order: self.keys_order.clone().map(Into::into),
                     array_values_order_by: self.array_values_order_by.clone(),
                     ..Default::default()
                 }),

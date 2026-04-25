@@ -17,6 +17,11 @@ fn array_values_order_schema_path() -> PathBuf {
         .join("crates/tombi-lsp/tests/fixtures/array-values-order.schema.json")
 }
 
+fn array_values_order_one_of_schema_path() -> PathBuf {
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/array-values-order-one-of.schema.json")
+}
+
 fn exact_index_hover_test_schema_path() -> PathBuf {
     tombi_test_lib::project_root_path().join("schemas/exact-index-hover-test.schema.json")
 }
@@ -1091,7 +1096,7 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
-            async fn hides_keys_order_when_schema_format_rule_is_disabled(
+            async fn shows_struck_through_keys_order_when_schema_format_rule_is_disabled(
                 r#"
                 [nested█]
                 b = 1
@@ -1119,7 +1124,9 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "nested",
                 "Value": "Table?",
-                "Keys Order": None::<&str>
+                "Keys Order": None,
+                "Disabled Keys Order": Some("ascending"),
+                "Hover Contains": ["Keys Order: ~~`ascending`~~"]
             });
         );
 
@@ -1162,6 +1169,69 @@ mod hover_keys_value {
                 "Keys Order": Some("descending")
             });
         );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn shows_struck_through_keys_order_when_override_disables_it(
+                r#"
+                [nested█]
+                b = 1
+                a = 2
+                "#,
+                SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                    toml_version: None,
+                    path: tombi_schema_store::SchemaUri::from_file_path(
+                        nested_table_keys_order_schema_path(),
+                    )
+                    .unwrap()
+                    .to_string(),
+                    include: vec!["*.toml".to_string()],
+                    lint: None,
+                    format: None,
+                    overrides: Some(vec![tombi_config::SchemaOverrideItem {
+                        targets: vec!["nested".into()],
+                        lint: None,
+                        format: Some(tombi_config::SchemaOverrideFormatOptions {
+                            rules: Some(tombi_config::SchemaOverrideFormatRules {
+                                array_values_order: None,
+                                table_keys_order: Some(
+                                    tombi_config::SchemaOverrideTableKeysOrderRule::Rule(
+                                        tombi_config::SchemaTableKeysOrderRule {
+                                            enabled: Some(false.into()),
+                                        },
+                                    ),
+                                ),
+                            }),
+                        }),
+                    }]),
+                })),
+            ) -> Ok({
+                "Keys": "nested",
+                "Value": "Table?",
+                "Keys Order": None,
+                "Disabled Keys Order": Some("ascending"),
+                "Hover Contains": ["Keys Order: ~~`ascending`~~"]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn shows_struck_through_keys_order_when_comment_directive_disables_it(
+                r#"
+                # tombi: format.rules.table-keys-order.disabled = true
+                [nested█]
+                b = 1
+                a = 2
+                "#,
+                SchemaPath(nested_table_keys_order_schema_path()),
+            ) -> Ok({
+                "Keys": "nested",
+                "Value": "Table?",
+                "Keys Order": None,
+                "Disabled Keys Order": Some("ascending"),
+                "Hover Contains": ["Keys Order: ~~`ascending`~~"]
+            });
+        );
     }
 
     mod array_values_order_schema {
@@ -1169,7 +1239,7 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
-            async fn hides_values_order_when_schema_format_rule_is_disabled(
+            async fn shows_struck_through_values_order_when_schema_format_rule_is_disabled(
                 r#"
                 items = ["b", "a"]█
                 "#,
@@ -1195,7 +1265,9 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "items",
                 "Value": "Array?",
-                "Values Order": None::<&str>
+                "Values Order": None,
+                "Disabled Values Order": Some("ascending"),
+                "Hover Contains": ["Values Order: ~~`ascending`~~"]
             });
         );
 
@@ -1239,6 +1311,107 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn shows_struck_through_values_order_when_override_disables_it(
+                r#"
+                items = ["b", "a"]█
+                "#,
+                SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                    toml_version: None,
+                    path: tombi_schema_store::SchemaUri::from_file_path(
+                        array_values_order_schema_path(),
+                    )
+                    .unwrap()
+                    .to_string(),
+                    include: vec!["*.toml".to_string()],
+                    lint: None,
+                    format: None,
+                    overrides: Some(vec![tombi_config::SchemaOverrideItem {
+                        targets: vec!["items".into()],
+                        lint: None,
+                        format: Some(tombi_config::SchemaOverrideFormatOptions {
+                            rules: Some(tombi_config::SchemaOverrideFormatRules {
+                                array_values_order: Some(
+                                    tombi_config::SchemaOverrideArrayValuesOrderRule::Rule(
+                                        tombi_config::SchemaArrayValuesOrderRule {
+                                            enabled: Some(false.into()),
+                                        },
+                                    ),
+                                ),
+                                table_keys_order: None,
+                            }),
+                        }),
+                    }]),
+                })),
+            ) -> Ok({
+                "Keys": "items",
+                "Value": "Array?",
+                "Values Order": None,
+                "Disabled Values Order": Some("ascending"),
+                "Hover Contains": ["Values Order: ~~`ascending`~~"]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn shows_struck_through_values_order_when_comment_directive_disables_it(
+                r#"
+                items = [
+                  # tombi: format.rules.array-values-order.disabled = true
+
+                  "b",
+                  "a",
+                ]█
+                "#,
+                SchemaPath(array_values_order_schema_path()),
+            ) -> Ok({
+                "Keys": "items",
+                "Value": "Array?",
+                "Values Order": None,
+                "Disabled Values Order": Some("ascending"),
+                "Hover Contains": ["Values Order: ~~`ascending`~~"]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn shows_struck_through_one_of_values_order_when_schema_format_rule_is_disabled(
+                r#"
+                items = ["b", "a"]█
+                "#,
+                SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                    toml_version: None,
+                    path: tombi_schema_store::SchemaUri::from_file_path(
+                        array_values_order_one_of_schema_path(),
+                    )
+                    .unwrap()
+                    .to_string(),
+                    include: vec!["*.toml".to_string()],
+                    lint: None,
+                    format: Some(tombi_config::SchemaFormatOptions {
+                        rules: Some(tombi_config::SchemaFormatRules {
+                            array_values_order: Some(tombi_config::SchemaArrayValuesOrderRule {
+                                enabled: Some(false.into()),
+                            }),
+                            table_keys_order: None,
+                        }),
+                    }),
+                    overrides: None,
+                })),
+            ) -> Ok({
+                "Keys": "items",
+                "Value": "Array?",
+                "Values Order": None,
+                "Disabled Values Order": Some("oneOf:ascending,descending"),
+                "Hover Contains": [
+                    "Values Order: ~~`oneOf`~~",
+                    "  - ~~`ascending`~~",
+                    "  - ~~`descending`~~",
+                ]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn exact_index_override_applies_only_to_targeted_array_item(
                 r#"
                 items = [["b", "a"]█, ["d", "c"]]
@@ -1271,7 +1444,7 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "items[0]",
                 "Value": "Array",
-                "Values Order": None::<&str>
+                "Values Order": None
             });
         );
 
@@ -1339,7 +1512,10 @@ mod hover_keys_value {
             "Value": $value_type:expr
             $(, "Schema": $has_schema:expr)?
             $(, "Keys Order": $keys_order:expr)?
+            $(, "Disabled Keys Order": $disabled_keys_order:expr)?
             $(, "Values Order": $values_order:expr)?
+            $(, "Disabled Values Order": $disabled_values_order:expr)?
+            $(, "Hover Contains": [$($hover_contains:expr),* $(,)?])?
             $(, "Title": $title:expr)?
             $(, "Description": $description:expr)?
             $(, "Enum": [$($enum_values:expr),* $(,)?])?
@@ -1586,12 +1762,13 @@ mod hover_keys_value {
                 pretty_assertions::assert_eq!(hover_content.accessors.to_string(), $keys, "Keys are not equal");
                 pretty_assertions::assert_eq!(hover_content.value_type.to_string(), $value_type, "Value type are not equal");
                 $(
-                    let expected_keys_order = $keys_order.map(ToString::to_string);
+                    let expected_keys_order = $keys_order.map(str::to_string);
                     let actual_keys_order = hover_content
                         .constraints
                         .as_ref()
                         .and_then(|constraints| constraints.keys_order.as_ref())
-                        .map(|keys_order| match keys_order {
+                        .filter(|keys_order| !keys_order.disabled)
+                        .map(|keys_order| match &keys_order.order {
                             tombi_schema_store::XTombiTableKeysOrder::All(keys_order) => {
                                 keys_order.to_string()
                             }
@@ -1608,12 +1785,37 @@ mod hover_keys_value {
                     );
                 )?
                 $(
-                    let expected_values_order = $values_order.map(ToString::to_string);
+                    let expected_disabled_keys_order =
+                        $disabled_keys_order.map(str::to_string);
+                    let actual_disabled_keys_order = hover_content
+                        .constraints
+                        .as_ref()
+                        .and_then(|constraints| constraints.keys_order.as_ref())
+                        .filter(|keys_order| keys_order.disabled)
+                        .map(|keys_order| match &keys_order.order {
+                            tombi_schema_store::XTombiTableKeysOrder::All(keys_order) => {
+                                keys_order.to_string()
+                            }
+                            tombi_schema_store::XTombiTableKeysOrder::Groups(groups) => groups
+                                .iter()
+                                .map(|group| format!("{}={}", group.target, group.order))
+                                .collect::<Vec<_>>()
+                                .join(","),
+                        });
+                    pretty_assertions::assert_eq!(
+                        actual_disabled_keys_order,
+                        expected_disabled_keys_order,
+                        "Disabled keys order is not equal"
+                    );
+                )?
+                $(
+                    let expected_values_order = $values_order.map(str::to_string);
                     let actual_values_order = hover_content
                         .constraints
                         .as_ref()
                         .and_then(|constraints| constraints.values_order.as_ref())
-                        .map(|values_order| match values_order {
+                        .filter(|values_order| !values_order.disabled)
+                        .map(|values_order| match &values_order.order {
                             tombi_schema_store::XTombiArrayValuesOrder::All(values_order) => {
                                 values_order.to_string()
                             }
@@ -1645,6 +1847,58 @@ mod hover_keys_value {
                         expected_values_order,
                         "Values order is not equal"
                     );
+                )?
+                $(
+                    let expected_disabled_values_order =
+                        $disabled_values_order.map(str::to_string);
+                    let actual_disabled_values_order = hover_content
+                        .constraints
+                        .as_ref()
+                        .and_then(|constraints| constraints.values_order.as_ref())
+                        .filter(|values_order| values_order.disabled)
+                        .map(|values_order| match &values_order.order {
+                            tombi_schema_store::XTombiArrayValuesOrder::All(values_order) => {
+                                values_order.to_string()
+                            }
+                            tombi_schema_store::XTombiArrayValuesOrder::Groups(groups) => match groups {
+                                tombi_x_keyword::ArrayValuesOrderGroup::OneOf(values_order) => {
+                                    format!(
+                                        "oneOf:{}",
+                                        values_order
+                                            .iter()
+                                            .map(ToString::to_string)
+                                            .collect::<Vec<_>>()
+                                            .join(",")
+                                    )
+                                }
+                                tombi_x_keyword::ArrayValuesOrderGroup::AnyOf(values_order) => {
+                                    format!(
+                                        "anyOf:{}",
+                                        values_order
+                                            .iter()
+                                            .map(ToString::to_string)
+                                            .collect::<Vec<_>>()
+                                            .join(",")
+                                    )
+                                }
+                            },
+                        });
+                    pretty_assertions::assert_eq!(
+                        actual_disabled_values_order,
+                        expected_disabled_values_order,
+                        "Disabled values order is not equal"
+                    );
+                )?
+                $(
+                    let rendered_hover = hover_content.to_string();
+                    $(
+                        assert!(
+                            rendered_hover.contains($hover_contains),
+                            "Rendered hover does not contain expected text: {}\nrendered: {}",
+                            $hover_contains,
+                            rendered_hover
+                        );
+                    )*
                 )?
                 $(
                     let expected_title = $title;
