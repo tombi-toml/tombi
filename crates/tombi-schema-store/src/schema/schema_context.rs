@@ -4,6 +4,21 @@ use tombi_x_keyword::StringFormat;
 
 use crate::schema::schema_cycle_guard::SchemaVisits;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ResolvedFormatOrder<T> {
+    pub order: T,
+    pub disabled: bool,
+}
+
+impl<T> From<T> for ResolvedFormatOrder<T> {
+    fn from(order: T) -> Self {
+        Self {
+            order,
+            disabled: false,
+        }
+    }
+}
+
 pub struct SchemaContext<'a> {
     pub toml_version: tombi_config::TomlVersion,
     pub root_schema: Option<&'a crate::DocumentSchema>,
@@ -160,34 +175,47 @@ impl SchemaContext<'_> {
         accessors: &[crate::Accessor],
         current_schema: Option<&crate::CurrentSchema<'_>>,
         comment_directive_override: Option<&crate::TableOrderOverride>,
-    ) -> Option<crate::XTombiTableKeysOrder> {
+    ) -> Option<ResolvedFormatOrder<crate::XTombiTableKeysOrder>> {
         if let Some(override_item) = comment_directive_override {
             if override_item.disabled {
-                return None;
+                return self
+                    .table_keys_order(accessors, current_schema, None)
+                    .map(|resolved| ResolvedFormatOrder {
+                        order: resolved.order,
+                        disabled: true,
+                    });
             }
             if let Some(order) = override_item.order {
-                return Some(crate::XTombiTableKeysOrder::All(order));
+                return Some(ResolvedFormatOrder {
+                    order: crate::XTombiTableKeysOrder::All(order),
+                    disabled: false,
+                });
             }
         }
 
         if let Some(override_item) = self.table_order_override(current_schema, accessors) {
             if override_item.disabled {
-                return None;
+                return self
+                    .table_keys_order_from_schema(current_schema)
+                    .map(|order| ResolvedFormatOrder {
+                        order,
+                        disabled: true,
+                    });
             }
             if let Some(order) = override_item.order {
-                return Some(crate::XTombiTableKeysOrder::All(order));
+                return Some(ResolvedFormatOrder {
+                    order: crate::XTombiTableKeysOrder::All(order),
+                    disabled: false,
+                });
             }
         }
 
         let current_schema = current_schema?;
-        if !self.schema_table_keys_order_enabled(Some(current_schema)) {
-            return None;
-        }
-
-        match current_schema.value_schema.as_ref() {
-            crate::ValueSchema::Table(table_schema) => table_schema.keys_order.clone(),
-            _ => None,
-        }
+        let order = self.table_keys_order_from_schema(Some(current_schema))?;
+        Some(ResolvedFormatOrder {
+            order,
+            disabled: !self.schema_table_keys_order_enabled(Some(current_schema)),
+        })
     }
 
     pub fn array_values_order(
@@ -195,31 +223,64 @@ impl SchemaContext<'_> {
         accessors: &[crate::Accessor],
         current_schema: Option<&crate::CurrentSchema<'_>>,
         comment_directive_override: Option<&crate::ArrayOrderOverride>,
-    ) -> Option<crate::XTombiArrayValuesOrder> {
+    ) -> Option<ResolvedFormatOrder<crate::XTombiArrayValuesOrder>> {
         if let Some(override_item) = comment_directive_override {
             if override_item.disabled {
-                return None;
+                return self
+                    .array_values_order(accessors, current_schema, None)
+                    .map(|resolved| ResolvedFormatOrder {
+                        order: resolved.order,
+                        disabled: true,
+                    });
             }
             if let Some(order) = override_item.order {
-                return Some(crate::XTombiArrayValuesOrder::All(order));
+                return Some(ResolvedFormatOrder {
+                    order: crate::XTombiArrayValuesOrder::All(order),
+                    disabled: false,
+                });
             }
         }
 
         if let Some(override_item) = self.array_order_override(current_schema, accessors) {
             if override_item.disabled {
-                return None;
+                return self
+                    .array_values_order_from_schema(current_schema)
+                    .map(|order| ResolvedFormatOrder {
+                        order,
+                        disabled: true,
+                    });
             }
             if let Some(order) = override_item.order {
-                return Some(crate::XTombiArrayValuesOrder::All(order));
+                return Some(ResolvedFormatOrder {
+                    order: crate::XTombiArrayValuesOrder::All(order),
+                    disabled: false,
+                });
             }
         }
 
         let current_schema = current_schema?;
-        if !self.schema_array_values_order_enabled(Some(current_schema)) {
-            return None;
-        }
+        let order = self.array_values_order_from_schema(Some(current_schema))?;
+        Some(ResolvedFormatOrder {
+            order,
+            disabled: !self.schema_array_values_order_enabled(Some(current_schema)),
+        })
+    }
 
-        match current_schema.value_schema.as_ref() {
+    fn table_keys_order_from_schema(
+        &self,
+        current_schema: Option<&crate::CurrentSchema<'_>>,
+    ) -> Option<crate::XTombiTableKeysOrder> {
+        match current_schema?.value_schema.as_ref() {
+            crate::ValueSchema::Table(table_schema) => table_schema.keys_order.clone(),
+            _ => None,
+        }
+    }
+
+    fn array_values_order_from_schema(
+        &self,
+        current_schema: Option<&crate::CurrentSchema<'_>>,
+    ) -> Option<crate::XTombiArrayValuesOrder> {
+        match current_schema?.value_schema.as_ref() {
             crate::ValueSchema::Array(array_schema) => array_schema.values_order.clone(),
             _ => None,
         }

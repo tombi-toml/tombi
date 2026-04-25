@@ -1,4 +1,4 @@
-use tombi_schema_store::{XTombiArrayValuesOrder, XTombiTableKeysOrder};
+use tombi_schema_store::{ResolvedFormatOrder, XTombiArrayValuesOrder, XTombiTableKeysOrder};
 use tombi_x_keyword::{ArrayValuesOrderBy, ArrayValuesOrderGroup, StringFormat};
 
 use super::display_value::DisplayValue;
@@ -59,7 +59,7 @@ pub struct ValueConstraints {
     pub min_items: Option<usize>,
     pub max_items: Option<usize>,
     pub unique_items: Option<bool>,
-    pub values_order: Option<XTombiArrayValuesOrder>,
+    pub values_order: Option<ResolvedFormatOrder<XTombiArrayValuesOrder>>,
 
     // Table
     pub required_keys: Option<Vec<String>>,
@@ -68,7 +68,7 @@ pub struct ValueConstraints {
     pub key_patterns: Option<Vec<String>>,
     pub additional_keys: Option<bool>,
     pub pattern_keys: bool,
-    pub keys_order: Option<XTombiTableKeysOrder>,
+    pub keys_order: Option<ResolvedFormatOrder<XTombiTableKeysOrder>>,
     pub array_values_order_by: Option<ArrayValuesOrderBy>,
 }
 
@@ -143,25 +143,7 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         if let Some(values_order) = &self.values_order {
-            match values_order {
-                XTombiArrayValuesOrder::All(values_order) => {
-                    write!(f, "Values Order: `{values_order}`\n\n")?
-                }
-                XTombiArrayValuesOrder::Groups(values_order) => match values_order {
-                    ArrayValuesOrderGroup::OneOf(values_order) => {
-                        write!(f, "Values Order: `oneOf`\n\n")?;
-                        for value in values_order.iter() {
-                            write!(f, "  - `{value}`\n\n")?;
-                        }
-                    }
-                    ArrayValuesOrderGroup::AnyOf(values_order) => {
-                        write!(f, "Values Order: `anyOf`\n\n")?;
-                        for value in values_order.iter() {
-                            write!(f, "  - `{value}`\n\n")?;
-                        }
-                    }
-                },
-            }
+            write_array_values_order(f, &values_order.order, values_order.disabled)?;
         }
 
         if let Some(required_keys) = &self.required_keys {
@@ -195,17 +177,7 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         if let Some(keys_order) = &self.keys_order {
-            match keys_order {
-                XTombiTableKeysOrder::All(keys_order) => {
-                    write!(f, "Keys Order: `{keys_order}`\n\n")?
-                }
-                XTombiTableKeysOrder::Groups(keys_order) => {
-                    write!(f, "Keys Order:\n\n")?;
-                    for key in keys_order.iter() {
-                        write!(f, "  - {}: `{}`\n\n", key.target, key.order)?;
-                    }
-                }
-            }
+            write_table_keys_order(f, &keys_order.order, keys_order.disabled)?;
         }
 
         if let Some(array_values_order_by) = &self.array_values_order_by {
@@ -213,5 +185,89 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         Ok(())
+    }
+}
+
+fn write_array_values_order(
+    f: &mut std::fmt::Formatter<'_>,
+    values_order: &XTombiArrayValuesOrder,
+    strike: bool,
+) -> std::fmt::Result {
+    match values_order {
+        XTombiArrayValuesOrder::All(values_order) => {
+            writeln!(f, "Values Order: {}\n", markdown_code(values_order, strike))
+        }
+        XTombiArrayValuesOrder::Groups(values_order) => match values_order {
+            ArrayValuesOrderGroup::OneOf(values_order) => {
+                writeln!(f, "Values Order: {}\n", markdown_code("oneOf", strike))?;
+                for value in values_order.iter() {
+                    writeln!(f, "  - {}\n", markdown_code(value, strike))?;
+                }
+                Ok(())
+            }
+            ArrayValuesOrderGroup::AnyOf(values_order) => {
+                writeln!(f, "Values Order: {}\n", markdown_code("anyOf", strike))?;
+                for value in values_order.iter() {
+                    writeln!(f, "  - {}\n", markdown_code(value, strike))?;
+                }
+                Ok(())
+            }
+        },
+    }
+}
+
+fn write_table_keys_order(
+    f: &mut std::fmt::Formatter<'_>,
+    keys_order: &XTombiTableKeysOrder,
+    strike: bool,
+) -> std::fmt::Result {
+    match keys_order {
+        XTombiTableKeysOrder::All(keys_order) => {
+            writeln!(f, "Keys Order: {}\n", markdown_code(keys_order, strike))
+        }
+        XTombiTableKeysOrder::Groups(keys_order) => {
+            writeln!(f, "Keys Order:\n")?;
+            for key in keys_order.iter() {
+                writeln!(
+                    f,
+                    "  - {}: {}\n",
+                    key.target,
+                    markdown_code(&key.order, strike)
+                )?;
+            }
+            Ok(())
+        }
+    }
+}
+
+fn markdown_code(value: impl std::fmt::Display, strike: bool) -> String {
+    let code = format!("`{value}`");
+    if strike { format!("~~{code}~~") } else { code }
+}
+
+#[cfg(test)]
+mod tests {
+    use tombi_schema_store::{ResolvedFormatOrder, XTombiArrayValuesOrder, XTombiTableKeysOrder};
+    use tombi_x_keyword::{ArrayValuesOrder, TableKeysOrder};
+
+    use super::ValueConstraints;
+
+    #[test]
+    fn renders_disabled_sort_orders_with_strikethrough() {
+        let constraints = ValueConstraints {
+            values_order: Some(ResolvedFormatOrder {
+                order: XTombiArrayValuesOrder::All(ArrayValuesOrder::Descending),
+                disabled: true,
+            }),
+            keys_order: Some(ResolvedFormatOrder {
+                order: XTombiTableKeysOrder::All(TableKeysOrder::Ascending),
+                disabled: true,
+            }),
+            ..Default::default()
+        };
+
+        let rendered = constraints.to_string();
+        assert!(rendered.contains("Values Order: ~~`descending`~~"));
+        assert!(rendered.contains("Keys Order: ~~`ascending`~~"));
     }
 }
