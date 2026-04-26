@@ -969,6 +969,11 @@
           "title": "Wheel Builder",
           "description": "Build Python wheels for all platforms."
         },
+        "fastapi": {
+          "$ref": "https://www.schemastore.org/partial-fastapi.json",
+          "title": "Web Framework",
+          "description": "FastAPI web framework configuration."
+        },
         "mypy": {
           "$ref": "https://www.schemastore.org/partial-mypy.json",
           "title": "Static Type Checker",

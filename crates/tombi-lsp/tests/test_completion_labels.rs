@@ -1235,6 +1235,7 @@ mod completion_labels {
             ) -> Ok([
                 "black",
                 "cibuildwheel",
+                "fastapi",
                 "hatch",
                 "maturin",
                 "mypy",
