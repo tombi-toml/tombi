@@ -1,0 +1,4 @@
+interface:
+  display_name: "github-pr-flow"
+  short_description: "Create a PR, request Copilot review, then hand off to the unified review workflow"
+  default_prompt: "Use $github-pr-flow to create a PR from current changes, request Copilot review with `gh pr edit --add-reviewer @copilot`, then use $github-pr-resolve for waiting, CI fixes, and review-thread resolution before stopping short of merge."

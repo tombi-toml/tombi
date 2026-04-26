@@ -1,5 +1,13 @@
-# Claude Code Development
+# Tombi
 
-## Development Guidelines
-- Think in English, but generate responses in Japanese (思考は英語、回答の生成は日本語で行うように)
-- 自動テストを作成・追加する際は、必ずそのリポジトリで用意されているテスト用マクロ（例: `test_format!`）を利用すること
+TOML toolkit (parser / formatter / linter / LSP) の polyglot repository。Rust workspace を中心に editor integration、Python packaging、docs を同居させている。
+
+## 必須ルール
+
+- Think in English, but generate responses in Japanese
+- 自動テストには既存の宣言的テストマクロ（例: `test_format!`）を必ず再利用する
+
+## 補助設定
+
+- Claude Code: `.claude/`
+- Codex: `.codex/`（`.claude/` 配下を symlink）
