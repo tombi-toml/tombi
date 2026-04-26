@@ -268,12 +268,6 @@ jobs:
             echo "stable_version=" >> "${GITHUB_OUTPUT}"
           fi
 
-      - uses: actions/checkout@v4
-        if: steps.stable-version.outputs.stable_version != ''
-        with:
-          ref: main
-          fetch-depth: 0
-
       - name: Create GitHub App token for main update
         id: app-token
         if: steps.stable-version.outputs.stable_version != ''
@@ -285,6 +279,13 @@ jobs:
           repositories: |
             ${{ github.event.repository.name }}
           permission-contents: write
+
+      - uses: actions/checkout@v4
+        if: steps.stable-version.outputs.stable_version != ''
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Decide whether install.sh should be updated
         id: should-update
@@ -376,9 +377,18 @@ jobs:
       - name: Push updated install script to main
         if: steps.commit-install-script.outputs.created_commit == 'true'
         shell: bash
-        env:
-          APP_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          git remote set-url origin "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push origin HEAD:main
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+
+            if [ "${attempt}" -eq 3 ]; then
+              echo "Failed to push updated install.sh to main after ${attempt} attempts." >&2
+              exit 1
+            fi
+          done
