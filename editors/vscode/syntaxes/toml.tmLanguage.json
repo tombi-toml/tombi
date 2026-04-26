@@ -94,21 +94,7 @@
         },
         {
           "name": "punctuation.separator.key.toml",
-          "match": "\\."
-        }
-      ]
-    },
-    "dottedKey": {
-      "patterns": [
-        {
-          "include": "#quotedKey"
-        },
-        {
-          "include": "#bareKey"
-        },
-        {
-          "name": "punctuation.separator.key.toml",
-          "match": "\\."
+          "match": "\\s*\\.\\s*"
         }
       ]
     },
@@ -180,10 +166,6 @@
         }
       ]
     },
-    "bareKey": {
-      "name": "variable.other.key.toml",
-      "match": "[A-Za-z0-9_-]+"
-    },
     "quotedTableKey": {
       "patterns": [
         {
@@ -203,30 +185,6 @@
         },
         {
           "name": "entity.name.type.table.toml string.quoted.single.toml",
-          "begin": "'",
-          "end": "'"
-        }
-      ]
-    },
-    "quotedKey": {
-      "patterns": [
-        {
-          "name": "variable.other.key.toml string.quoted.double.toml",
-          "begin": "\"",
-          "end": "\"",
-          "patterns": [
-            {
-              "match": "\\\\([btnfr\"\\\\\\n/ ]|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})",
-              "name": "constant.character.escape.toml"
-            },
-            {
-              "match": "\\\\[^btnfr/\"\\\\\\n]",
-              "name": "invalid.illegal.escape.toml"
-            }
-          ]
-        },
-        {
-          "name": "variable.other.key.toml string.quoted.single.toml",
           "begin": "'",
           "end": "'"
         }
@@ -308,7 +266,7 @@
         },
         {
           "name": "string.regexp constant.other.datetime.offset.toml",
-          "match": "(?<!\\w)(\\d{4}\\-\\d{2}\\-\\d{2}[T| ]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[\\+\\-]\\d{2}:\\d{2}))(?!\\w)"
+          "match": "(?<!\\w)(\\d{4}\\-\\d{2}\\-\\d{2}[T ]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[\\+\\-]\\d{2}:\\d{2}))(?!\\w)"
         },
         {
           "name": "string.regexp constant.other.datetime.local.toml",
