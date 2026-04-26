@@ -86,6 +86,13 @@
         "language": "toml",
         "scopeName": "source.toml",
         "path": "./syntaxes/toml.tmLanguage.json"
+      },
+      {
+        "scopeName": "text.toml.frontmatter.markdown",
+        "path": "./syntaxes/toml.frontmatter.injection.tmLanguage.json",
+        "injectTo": [
+          "text.html.markdown"
+        ]
       }
     ],
     "semanticTokenTypes": [
@@ -98,6 +105,11 @@
         "id": "key",
         "superType": "variable",
         "description": "Key"
+      },
+      {
+        "id": "boolean",
+        "superType": "keyword",
+        "description": "Boolean"
       },
       {
         "id": "offsetDateTime",

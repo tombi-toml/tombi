@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "scopeName": "text.toml.frontmatter.markdown",
+  "injectionSelector": "L:text.html.markdown",
+  "patterns": [
+    {
+      "begin": "\\A(\\+\\+\\+)\\s*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.section.front-matter.begin.toml"
+        }
+      },
+      "end": "^(\\+\\+\\+)\\s*$",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.section.front-matter.end.toml"
+        }
+      },
+      "contentName": "source.toml",
+      "patterns": [
+        {
+          "include": "source.toml"
+        }
+      ]
+    }
+  ]
+}
