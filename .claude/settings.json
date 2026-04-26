@@ -15,5 +15,7 @@
       "Bash(mkdir:*)"
     ]
   },
-  "enableAllProjectMcpServers": true
+  "enabledMcpjsonServers": [
+    "playwright"
+  ]
 }

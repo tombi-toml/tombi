@@ -27,6 +27,7 @@ tombi リポジトリで、GitHub PR の CI 修正とレビュー会話の解決
 ## 前提
 
 - `gh auth status` が成功する
+- `gh` と `jq` の両方がインストール済み（review request 判定や thread 解析で `jq` を必須にする。macOS なら `brew install jq`、Debian/Ubuntu なら `apt-get install jq`）
 - PR の head branch に push できる
 - 返信前に、必要なローカル検証を終える
 - thread は無言で resolve しない。必ず返信してから resolve する
@@ -144,13 +145,13 @@ attempt=0
 while true; do
   attempt=$((attempt + 1))
 
-  echo "[copilot-wait] $(date -Iseconds) (${attempt}/${max_attempts}) Copilot review を確認中..."
+  echo "[copilot-wait] $(date -u "+%Y-%m-%dT%H:%M:%SZ") (${attempt}/${max_attempts}) Copilot review を確認中..."
 
   copilot_requested=$(
     gh api graphql \
-      -f owner=<owner> \
-      -f repo=<repo> \
-      -F number=<number> \
+      -f owner=tombi-toml \
+      -f repo=tombi \
+      -F number=<pr-number> \
       -f query='
 query($owner: String!, $repo: String!, $number: Int!) {
   repository(owner: $owner, name: $repo) {
@@ -199,9 +200,9 @@ query($owner: String!, $repo: String!, $number: Int!) {
   copilot_has_thread=$(
     gh api graphql \
       -f query='...reviewThreads...' \
-      -F owner=<owner> \
-      -F repo=<repo> \
-      -F number=<number> |
+      -F owner=tombi-toml \
+      -F repo=tombi \
+      -F number=<pr-number> |
       jq '
         [
           .. | objects | select(has("author")) | .author.login?

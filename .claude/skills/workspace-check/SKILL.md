@@ -1,6 +1,6 @@
 ---
 name: workspace-check
-description: tombi で作業を完了する前に、Rust / Node / Python / docs / workflow のどの面に検証コマンドが必要かを切り分け、実行済みと未実行のギャップを残リスクとしてまとめる
+description: tombi で作業を完了する前に、Rust / Node / Python / docs / workflow のどの面に検証コマンドが必要かを切り分け、実行済みと未実行のギャップを残るリスクとしてまとめる
 ---
 
 # workspace-check
