@@ -268,11 +268,24 @@ jobs:
             echo "stable_version=" >> "${GITHUB_OUTPUT}"
           fi
 
+      - name: Create GitHub App token for main update
+        id: app-token
+        if: steps.stable-version.outputs.stable_version != ''
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.VERSION_UPDATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.VERSION_UPDATE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            ${{ github.event.repository.name }}
+          permission-contents: write
+
       - uses: actions/checkout@v4
         if: steps.stable-version.outputs.stable_version != ''
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Decide whether install.sh should be updated
         id: should-update
@@ -355,42 +368,27 @@ jobs:
             exit 0
           fi
 
-          branch_name="github-actions/install-sh-v${STABLE_VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -B "${branch_name}"
           git add docs/public/install.sh
           git commit -m "docs: update install.sh stable version to ${STABLE_VERSION}"
-          echo "branch_name=${branch_name}" >> "${GITHUB_OUTPUT}"
           echo "created_commit=true" >> "${GITHUB_OUTPUT}"
 
-      - name: Push branch and create pull request
+      - name: Push updated install script to main
         if: steps.commit-install-script.outputs.created_commit == 'true'
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          STABLE_VERSION: ${{ steps.stable-version.outputs.stable_version }}
-          BRANCH_NAME: ${{ steps.commit-install-script.outputs.branch_name }}
         run: |
           set -euo pipefail
-          git push --force origin HEAD:"${BRANCH_NAME}"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
 
-          existing_pr_number="$(
-            gh pr list \
-              --base main \
-              --head "${BRANCH_NAME}" \
-              --state open \
-              --json number \
-              --jq '.[0].number // empty'
-          )"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
 
-          if [ -n "${existing_pr_number}" ]; then
-            echo "Pull request #${existing_pr_number} already exists for ${BRANCH_NAME}."
-            exit 0
-          fi
-
-          gh pr create \
-            --base main \
-            --head "${BRANCH_NAME}" \
-            --title "docs: update install.sh stable version to ${STABLE_VERSION}" \
-            --body "This PR updates \`docs/public/install.sh\` to use the stable release \`${STABLE_VERSION}\`."
+            if [ "${attempt}" -eq 3 ]; then
+              echo "Failed to push updated install.sh to main after ${attempt} attempts." >&2
+              exit 1
+            fi
+          done
