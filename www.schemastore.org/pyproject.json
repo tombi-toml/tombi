@@ -970,7 +970,7 @@
           "description": "Build Python wheels for all platforms."
         },
         "fastapi": {
-          "$ref": "https://json.schemastore.org/partial-fastapi.json",
+          "$ref": "https://www.schemastore.org/partial-fastapi.json",
           "title": "Web Framework",
           "description": "FastAPI web framework configuration."
         },
