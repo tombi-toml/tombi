@@ -9,10 +9,42 @@
       "include": "#comment"
     },
     {
-      "include": "#value"
+      "include": "#arrayTable"
+    },
+    {
+      "include": "#table"
+    },
+    {
+      "include": "#keyValue"
     }
   ],
   "repository": {
+    "arrayTable": {
+      "name": "meta.table.array.toml",
+      "match": "^(\\s*)(\\[\\[)([^\\]]+)(\\]\\])(\\s*(?:#.*)?)$",
+      "captures": {
+        "2": {
+          "name": "punctuation.definition.table.array.begin.toml"
+        },
+        "3": {
+          "patterns": [
+            {
+              "include": "#dottedTableKey"
+            }
+          ]
+        },
+        "4": {
+          "name": "punctuation.definition.table.array.end.toml"
+        },
+        "5": {
+          "patterns": [
+            {
+              "include": "#comment"
+            }
+          ]
+        }
+      }
+    },
     "comment": {
       "captures": {
         "1": {
@@ -25,8 +57,173 @@
       "comment": "Comments",
       "match": "\\s*((#).*)$"
     },
+    "array": {
+      "name": "meta.sequence.toml",
+      "begin": "\\[",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.array.begin.toml"
+        }
+      },
+      "end": "\\]",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.array.end.toml"
+        }
+      },
+      "patterns": [
+        {
+          "name": "punctuation.separator.sequence.toml",
+          "match": ","
+        },
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#value"
+        }
+      ]
+    },
+    "dottedTableKey": {
+      "patterns": [
+        {
+          "include": "#quotedTableKey"
+        },
+        {
+          "include": "#bareTableKey"
+        },
+        {
+          "name": "punctuation.separator.key.toml",
+          "match": "\\s*\\.\\s*"
+        }
+      ]
+    },
+    "bareTableKey": {
+      "name": "entity.name.type.table.toml",
+      "match": "[A-Za-z0-9_-]+"
+    },
+    "keyValue": {
+      "name": "meta.mapping.key-value.toml",
+      "begin": "^(\\s*)(?=[A-Za-z0-9_\\-\"'])",
+      "end": "$",
+      "patterns": [
+        {
+          "name": "variable.other.key.toml",
+          "match": "(?:\"(?:\\\\.|[^\"])*\"|'[^']*'|[A-Za-z0-9_-]+)(?:\\s*\\.\\s*(?:\"(?:\\\\.|[^\"])*\"|'[^']*'|[A-Za-z0-9_-]+))*(?=\\s*=)"
+        },
+        {
+          "name": "keyword.operator.assignment.toml",
+          "match": "="
+        },
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#value"
+        }
+      ]
+    },
+    "inlineKeyValue": {
+      "name": "meta.mapping.key-value.inline.toml",
+      "patterns": [
+        {
+          "name": "variable.other.key.toml",
+          "match": "(?:\"(?:\\\\.|[^\"])*\"|'[^']*'|[A-Za-z0-9_-]+)(?:\\s*\\.\\s*(?:\"(?:\\\\.|[^\"])*\"|'[^']*'|[A-Za-z0-9_-]+))*(?=\\s*=)"
+        },
+        {
+          "name": "keyword.operator.assignment.toml",
+          "match": "="
+        },
+        {
+          "name": "punctuation.separator.sequence.toml",
+          "match": ","
+        },
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#value"
+        }
+      ]
+    },
+    "inlineTable": {
+      "name": "meta.inline.table.toml",
+      "begin": "\\{",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.inline-table.begin.toml"
+        }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.inline-table.end.toml"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#inlineKeyValue"
+        }
+      ]
+    },
+    "quotedTableKey": {
+      "patterns": [
+        {
+          "name": "entity.name.type.table.toml string.quoted.double.toml",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "match": "\\\\([btnfr\"\\\\\\n/ ]|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})",
+              "name": "constant.character.escape.toml"
+            },
+            {
+              "match": "\\\\[^btnfr/\"\\\\\\n]",
+              "name": "invalid.illegal.escape.toml"
+            }
+          ]
+        },
+        {
+          "name": "entity.name.type.table.toml string.quoted.single.toml",
+          "begin": "'",
+          "end": "'"
+        }
+      ]
+    },
+    "table": {
+      "name": "meta.table.toml",
+      "match": "^(\\s*)(\\[)([^\\]]+)(\\])(\\s*(?:#.*)?)$",
+      "captures": {
+        "2": {
+          "name": "punctuation.definition.table.begin.toml"
+        },
+        "3": {
+          "patterns": [
+            {
+              "include": "#dottedTableKey"
+            }
+          ]
+        },
+        "4": {
+          "name": "punctuation.definition.table.end.toml"
+        },
+        "5": {
+          "patterns": [
+            {
+              "include": "#comment"
+            }
+          ]
+        }
+      }
+    },
     "value": {
       "patterns": [
+        {
+          "include": "#inlineTable"
+        },
+        {
+          "include": "#array"
+        },
         {
           "name": "string.quoted.triple.basic.block.toml",
           "begin": "\"\"\"",
@@ -68,92 +265,52 @@
           "end": "'"
         },
         {
-          "captures": {
-            "1": {
-              "name": "constant.other.datetime.offset.toml"
-            }
-          },
-          "match": "(?<!\\w)(\\d{4}\\-\\d{2}\\-\\d{2}[T| ]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[\\+\\-]\\d{2}:\\d{2}))(?!\\w)"
+          "name": "string.regexp constant.other.datetime.offset.toml",
+          "match": "(?<!\\w)(\\d{4}\\-\\d{2}\\-\\d{2}[T ]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[\\+\\-]\\d{2}:\\d{2}))(?!\\w)"
         },
         {
-          "captures": {
-            "1": {
-              "name": "constant.other.datetime.local.toml"
-            }
-          },
+          "name": "string.regexp constant.other.datetime.local.toml",
           "match": "(\\d{4}\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?)"
         },
         {
-          "name": "constant.other.date.local.toml",
+          "name": "string.regexp constant.other.date.local.toml",
           "match": "\\d{4}\\-\\d{2}\\-\\d{2}"
         },
         {
-          "name": "constant.other.time.local.toml",
+          "name": "string.regexp constant.other.time.local.toml",
           "match": "\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?"
         },
         {
-          "match": "(?<!\\w)(true|false)(?!\\w)",
-          "captures": {
-            "1": {
-              "name": "constant.language.boolean.toml"
-            }
-          }
+          "name": "constant.language.boolean.toml",
+          "match": "(?<!\\w)(true|false)(?!\\w)"
         },
         {
-          "match": "(?<!\\w)([\\+\\-]?(0|([1-9](([0-9]|_[0-9])+)?))(?:(?:\\.([0-9]+))?[eE][\\+\\-]?[1-9]_?[0-9]*|(?:\\.[0-9_]*)))(?!\\w)",
-          "captures": {
-            "1": {
-              "name": "constant.numeric.float.toml"
-            }
-          }
+          "name": "constant.numeric.float.toml",
+          "match": "(?<!\\w)([\\+\\-]?(0|([1-9](([0-9]|_[0-9])+)?))(?:(?:\\.([0-9]+))?[eE][\\+\\-]?[1-9]_?[0-9]*|(?:\\.[0-9_]*)))(?!\\w)"
         },
         {
-          "match": "(?<!\\w)((?:[\\+\\-]?(0|([1-9](([0-9]|_[0-9])+)?))))(?!\\w)",
-          "captures": {
-            "1": {
-              "name": "constant.numeric.integer.dec.toml"
-            }
-          }
+          "name": "constant.numeric.integer.dec.toml",
+          "match": "(?<!\\w)((?:[\\+\\-]?(0|([1-9](([0-9]|_[0-9])+)?))))(?!\\w)"
         },
         {
-          "match": "(?<!\\w)([\\+\\-]?inf)(?!\\w)",
-          "captures": {
-            "1": {
-              "name": "constant.numeric.float.inf.toml"
-            }
-          }
+          "name": "constant.numeric.float.inf.toml",
+          "match": "(?<!\\w)([\\+\\-]?inf)(?!\\w)"
         },
         {
-          "match": "(?<!\\w)([\\+\\-]?nan)(?!\\w)",
-          "captures": {
-            "1": {
-              "name": "constant.numeric.float.nan.toml"
-            }
-          }
+          "name": "constant.numeric.float.nan.toml",
+          "match": "(?<!\\w)([\\+\\-]?nan)(?!\\w)"
         },
         {
-          "match": "(?<!\\w)((?:0x(([0-9a-fA-F](([0-9a-fA-F]|_[0-9a-fA-F])+)?))))(?!\\w)",
-          "captures": {
-            "1": {
-              "name": "constant.numeric.integer.hex.toml"
-            }
-          }
+          "name": "constant.numeric.integer.hex.toml",
+          "match": "(?<!\\w)((?:0x(([0-9a-fA-F](([0-9a-fA-F]|_[0-9a-fA-F])+)?))))(?!\\w)"
         },
         {
-          "match": "(?<!\\w)(0o[0-7](_?[0-7])*)(?!\\w)",
-          "captures": {
-            "1": {
-              "name": "constant.numeric.integer.oct.toml"
-            }
-          }
+          "name": "constant.numeric.integer.oct.toml",
+          "match": "(?<!\\w)(0o[0-7](_?[0-7])*)(?!\\w)"
         },
         {
-          "match": "(?<!\\w)(0b[01](_?[01])*)(?!\\w)",
-          "captures": {
-            "1": {
-              "name": "constant.numeric.integer.bin.toml"
-            }
-          }
+          "name": "constant.numeric.integer.bin.toml",
+          "match": "(?<!\\w)(0b[01](_?[01])*)(?!\\w)"
         }
       ]
     }

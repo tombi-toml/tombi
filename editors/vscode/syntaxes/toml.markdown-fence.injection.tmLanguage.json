@@ -1,0 +1,53 @@
+{
+  "version": "1.0.0",
+  "scopeName": "text.toml.markdown-fence",
+  "injectionSelector": "L:text.html.markdown",
+  "patterns": [
+    {
+      "begin": "^\\s*(`{3,})\\s*(toml|TOML)\\s*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.fenced.markdown"
+        },
+        "2": {
+          "name": "fenced_code.block.language.markdown"
+        }
+      },
+      "end": "^\\s*(`{3,})\\s*$",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.fenced.markdown"
+        }
+      },
+      "contentName": "meta.embedded.block.toml",
+      "patterns": [
+        {
+          "include": "source.toml"
+        }
+      ]
+    },
+    {
+      "begin": "^\\s*(~{3,})\\s*(toml|TOML)\\s*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.fenced.markdown"
+        },
+        "2": {
+          "name": "fenced_code.block.language.markdown"
+        }
+      },
+      "end": "^\\s*(~{3,})\\s*$",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.fenced.markdown"
+        }
+      },
+      "contentName": "meta.embedded.block.toml",
+      "patterns": [
+        {
+          "include": "source.toml"
+        }
+      ]
+    }
+  ]
+}
