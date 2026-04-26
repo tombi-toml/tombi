@@ -93,6 +93,19 @@
         "injectTo": [
           "text.html.markdown"
         ]
+      },
+      {
+        "scopeName": "text.toml.markdown-fence",
+        "path": "./syntaxes/toml.markdown-fence.injection.tmLanguage.json",
+        "injectTo": [
+          "text.html.markdown"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.toml": "toml"
+        },
+        "tokenTypes": {
+          "meta.embedded.block.toml": "other"
+        }
       }
     ],
     "semanticTokenTypes": [
