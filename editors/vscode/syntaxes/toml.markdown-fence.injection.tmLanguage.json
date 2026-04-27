@@ -4,50 +4,42 @@
   "injectionSelector": "L:text.html.markdown",
   "patterns": [
     {
-      "begin": "^\\s*(`{3,})\\s*(toml|TOML)\\s*$",
+      "include": "#toml-code-block"
+    }
+  ],
+  "repository": {
+    "toml-code-block": {
+      "begin": "(?:^|\\G)([\\t ]*)(([`~])\\3\\3(\\3*))[\\t ]*(?i:(toml)([\\t ]+[^`~\\r\\n]*)?$)",
       "beginCaptures": {
-        "1": {
-          "name": "punctuation.definition.fenced.markdown"
-        },
         "2": {
+          "name": "punctuation.definition.markdown"
+        },
+        "5": {
           "name": "fenced_code.block.language.markdown"
+        },
+        "6": {
+          "name": "fenced_code.block.language.attributes.markdown"
         }
       },
-      "end": "^\\s*(`{3,})\\s*$",
+      "name": "markup.fenced_code.block.markdown",
+      "end": "(?:^|\\G)(\\1|[\\t ]{0,3})(\\3\\3\\3\\4\\3*)[\\t ]*$",
       "endCaptures": {
-        "1": {
-          "name": "punctuation.definition.fenced.markdown"
+        "2": {
+          "name": "punctuation.definition.markdown"
         }
       },
-      "contentName": "meta.embedded.block.toml",
       "patterns": [
         {
-          "include": "source.toml"
-        }
-      ]
-    },
-    {
-      "begin": "^\\s*(~{3,})\\s*(toml|TOML)\\s*$",
-      "beginCaptures": {
-        "1": {
-          "name": "punctuation.definition.fenced.markdown"
-        },
-        "2": {
-          "name": "fenced_code.block.language.markdown"
-        }
-      },
-      "end": "^\\s*(~{3,})\\s*$",
-      "endCaptures": {
-        "1": {
-          "name": "punctuation.definition.fenced.markdown"
-        }
-      },
-      "contentName": "meta.embedded.block.toml",
-      "patterns": [
-        {
-          "include": "source.toml"
+          "begin": "(?:^|\\G)([\\t ]*)(.*)",
+          "while": "(?:^|\\G)(?![\\t ]*([`~]{3,})[\\t ]*$)",
+          "contentName": "meta.embedded.block.toml",
+          "patterns": [
+            {
+              "include": "source.toml"
+            }
+          ]
         }
       ]
     }
-  ]
+  }
 }
