@@ -205,14 +205,19 @@ Cursor, Windsurf, etc.
 />
 
 <Warning>
-After installing the extension, we recommend creating a `tombi.toml` file in your workspace with the following initial setting:
+If you use Zed's edit predictions, add the following to Zed's settings file (for example, `settings.json`) to disable them for TOML and avoid unwanted `lsp edit` tabs while editing files such as `pyproject.toml` or `Cargo.toml`:
 
-```toml
-[lsp]
-goto-type-definition.enabled = false
+```json
+{
+  "languages": {
+    "TOML": {
+      "show_edit_predictions": false
+    }
+  }
+}
 ```
 
-This helps prevent the issue described in [#1556](https://github.com/tombi-toml/tombi/issues/1556), where pressing any key while editing files such as `pyproject.toml` or `Cargo.toml` in Zed may trigger unwanted `lsp edit` tabs due to type definition requests. For additional configuration tips specific to your editor, see the [Zed Extension](/docs/editors/zed-extension) page.
+This is the recommended workaround for [#1556](https://github.com/tombi-toml/tombi/issues/1556), where Zed may open `lsp edit` tabs because of background type definition requests. For other Zed-specific configuration tips and separate workarounds, see the [Zed Extension](/docs/editors/zed-extension) page.
 </Warning>
 
 ## Helix
