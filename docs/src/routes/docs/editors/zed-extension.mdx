@@ -24,8 +24,11 @@ The tombi Zed extension selects the Language Server binary in the following orde
 | 2     | venv             | `tombi` binary found in a Python virtual environment (`.venv/bin/tombi`) in the workspace   |
 | 3     | node_modules     | `tombi` binary found in the `node_modules/.bin` directory in the workspace                  |
 | 4     | local            | `tombi` binary found in the system PATH (via `which tombi`)                                 |
-| 5     | cached           | Previously downloaded `tombi` binary from a previous session                                 |
-| 6     | downloaded       | `tombi` binary downloaded from the latest GitHub release                                     |
+| 5     | cached           | `tombi` binary cached in the current Zed process from a previous extension-managed resolution |
+| 6     | downloaded       | Download the latest `tombi` binary from GitHub                                                |
+| 7     | fallback         | If the download fails, use the newest already-downloaded extension-managed `tombi` binary     |
+
+When the extension needs to manage the binary itself for the first time in a given Zed process, step 5 is skipped because no process-local cache exists yet. In that case, the extension attempts step 6 first and only falls back to step 7 if the download fails.
 
 ## Configuration
 

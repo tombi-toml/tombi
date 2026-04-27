@@ -35,10 +35,16 @@ impl TombiExtension {
 
         // Resolve the language server in descending priority:
         // 1. explicit user configuration,
-        // 2. project-local installs (.venv, node_modules, PATH),
-        // 3. the process-local cached path from a previous resolution,
-        // 4. a fresh GitHub release download,
-        // 5. fallback to an already installed extension-managed binary.
+        // 2. project-local installs in a Python virtual environment,
+        // 3. project-local installs in node_modules/.bin,
+        // 4. project-local installs found via PATH,
+        // 5. the process-local cached path from a previous extension-managed resolution,
+        // 6. download the latest tombi binary from GitHub,
+        // 7. fallback to the newest extension-managed install already on disk.
+        //
+        // On the first extension-managed resolution in a Zed process, step 5 is skipped
+        // because no process-local cache exists yet. In that case, the extension attempts
+        // step 6 first and only falls back to step 7 if the download fails.
         if let Some(path) = binary_settings.and_then(|binary_settings| binary_settings.path.clone())
         {
             return Ok(zed::Command {
@@ -48,20 +54,12 @@ impl TombiExtension {
             });
         }
 
-        let worktree_root_path = worktree.root_path();
-        let worktree_root_path = std::path::Path::new(&worktree_root_path);
-
-        let (venv_script_dir, binary_name) = match zed::current_platform() {
-            (zed::Os::Windows, _) => ("Scripts", "tombi.exe"),
-            _ => ("bin", "tombi"),
+        let binary_name = match zed::current_platform() {
+            (zed::Os::Windows, _) => "tombi.exe",
+            _ => "tombi",
         };
 
-        if let Some(path) = Self::resolve_project_local_install(
-            worktree,
-            worktree_root_path,
-            venv_script_dir,
-            binary_name,
-        ) {
+        if let Some(path) = Self::resolve_project_local_install(worktree, binary_name) {
             return Ok(zed::Command {
                 command: path,
                 args,
@@ -69,18 +67,13 @@ impl TombiExtension {
             });
         }
 
-        if let Some(path) = self.resolve_process_local_cached_path() {
-            return Ok(zed::Command {
-                command: path,
-                args,
-                env,
-            });
-        }
-
-        let binary_path = match Self::download_fresh_github_release(language_server_id, binary_name)
-        {
-            Ok(path) => path,
-            Err(err) => Self::resolve_extension_managed_binary_fallback(binary_name).ok_or(err)?,
+        let binary_path = if let Some(path) = self.resolve_memory_cached_path() {
+            path
+        } else {
+            match Self::download_fresh_github_release(language_server_id, binary_name) {
+                Ok(path) => path,
+                Err(err) => Self::resolve_file_cached_path(binary_name).ok_or(err)?,
+            }
         };
 
         self.cached_binary_path = Some(binary_path.clone());
@@ -94,14 +87,13 @@ impl TombiExtension {
 
     fn resolve_project_local_install(
         worktree: &zed::Worktree,
-        worktree_root_path: &std::path::Path,
-        venv_script_dir: &str,
         binary_name: &str,
     ) -> Option<String> {
-        let venv_bin_path =
-            worktree_root_path.join(format!(".venv/{venv_script_dir}/{binary_name}"));
-        if venv_bin_path.is_file() {
-            return Some(venv_bin_path.to_string_lossy().to_string());
+        let worktree_root_path = worktree.root_path();
+        let worktree_root_path = std::path::Path::new(&worktree_root_path);
+
+        if let Some(path) = Self::resolve_venv_install(worktree_root_path, binary_name) {
+            return Some(path);
         }
 
         if let Some(path) = Self::resolve_node_modules_install(worktree_root_path, binary_name) {
@@ -109,6 +101,22 @@ impl TombiExtension {
         }
 
         worktree.which("tombi")
+    }
+
+    fn resolve_venv_install(
+        worktree_root_path: &std::path::Path,
+        binary_name: &str,
+    ) -> Option<String> {
+        let venv_script_dir = match zed::current_platform() {
+            (zed::Os::Windows, _) => "Scripts",
+            _ => "bin",
+        };
+
+        let venv_bin_path =
+            worktree_root_path.join(format!(".venv/{venv_script_dir}/{binary_name}"));
+        venv_bin_path
+            .is_file()
+            .then(|| venv_bin_path.to_string_lossy().to_string())
     }
 
     fn resolve_node_modules_install(
@@ -129,7 +137,7 @@ impl TombiExtension {
         })
     }
 
-    fn resolve_process_local_cached_path(&self) -> Option<String> {
+    fn resolve_memory_cached_path(&self) -> Option<String> {
         self.cached_binary_path
             .as_ref()
             .filter(|path| fs::metadata(path).is_ok_and(|stat| stat.is_file()))
@@ -263,7 +271,27 @@ impl TombiExtension {
         (major, minor, patch) < (0, 9, 23)
     }
 
-    fn resolve_extension_managed_binary_fallback(binary_name: &str) -> Option<String> {
+    fn parse_release_version(version: &str) -> Option<(u64, u64, u64)> {
+        let version = version
+            .split_once(['-', '+'])
+            .map(|(prefix, _)| prefix)
+            .unwrap_or(version);
+
+        let mut parts = version.split('.');
+        let (Some(major), Some(minor), Some(patch), None) =
+            (parts.next(), parts.next(), parts.next(), parts.next())
+        else {
+            return None;
+        };
+
+        Some((
+            major.parse::<u64>().ok()?,
+            minor.parse::<u64>().ok()?,
+            patch.parse::<u64>().ok()?,
+        ))
+    }
+
+    fn resolve_file_cached_path(binary_name: &str) -> Option<String> {
         fs::read_dir(".")
             .ok()?
             .filter_map(|entry| {
@@ -274,16 +302,17 @@ impl TombiExtension {
                     return None;
                 }
 
+                let version = file_name.strip_prefix(VERSION_DIR_PREFIX)?;
+                let version = Self::parse_release_version(version)?;
                 let binary_path = path.join(binary_name);
                 let metadata = fs::metadata(&binary_path).ok()?;
                 if !metadata.is_file() {
                     return None;
                 }
 
-                let modified = metadata.modified().ok()?;
-                Some((modified, binary_path))
+                Some((version, binary_path))
             })
-            .max_by_key(|(modified, _)| *modified)
+            .max_by_key(|(version, _)| *version)
             .map(|(_, path)| path.to_string_lossy().to_string())
     }
 }
