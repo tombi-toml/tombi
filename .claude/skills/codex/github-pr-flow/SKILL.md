@@ -7,7 +7,7 @@ metadata:
 
 # GitHub PR Flow
 
-現在のローカル差分をもとに、必要なら別 Skill で PR を作成し、その後の Copilot レビュー依頼を `gh pr edit --add-reviewer @copilot` で行い、待機とレビュー対応を統一 Skill [`../../github-pr-resolve/SKILL.md`](../../github-pr-resolve/SKILL.md) に委譲する Codex 専用 Skill。
+現在のローカル差分をもとに、必要なら別 Skill で PR を作成し、その後の Copilot レビュー依頼を `gh pr edit --add-reviewer @copilot` で行い、待機とレビュー対応を統一 Skill [`../../github-pr-resolve/SKILL.md`](../../github-pr-resolve/SKILL.md) に委譲する Codex 専用 Skill。途中で simplify 系の別 Skill は実行しない。
 
 ## Use This Skill When
 
@@ -48,6 +48,8 @@ PR 作成そのものは別 skill に従う。優先順位:
    - `gh pr create --base main --head <branch> --title ... --body ... --label ...`
 
 PR URL がまだ無い場合は、この Skill の中で PR 作成まで進めてから戻る。
+
+この Step では PR 作成に必要な処理だけを行い、simplify 系の別 Skill を前処理として挟まない。
 
 ### 2. `gh` で Copilot にレビュー依頼する
 
