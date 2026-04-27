@@ -79,6 +79,9 @@
           "uv.lock"
         ],
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "toml-markdown-fence"
       }
     ],
     "grammars": [
@@ -95,16 +98,14 @@
         ]
       },
       {
-        "scopeName": "text.toml.markdown-fence",
+        "language": "toml-markdown-fence",
+        "scopeName": "text.markdown.toml.codeblock",
         "path": "./syntaxes/toml.markdown-fence.injection.tmLanguage.json",
         "injectTo": [
           "text.html.markdown"
         ],
         "embeddedLanguages": {
           "meta.embedded.block.toml": "toml"
-        },
-        "tokenTypes": {
-          "meta.embedded.block.toml": "other"
         }
       }
     ],

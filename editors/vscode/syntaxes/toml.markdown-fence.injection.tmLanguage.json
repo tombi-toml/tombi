@@ -1,6 +1,7 @@
 {
+  "fileTypes": [],
   "version": "1.0.0",
-  "scopeName": "text.toml.markdown-fence",
+  "scopeName": "text.markdown.toml.codeblock",
   "injectionSelector": "L:text.html.markdown",
   "patterns": [
     {
@@ -15,10 +16,10 @@
           "name": "punctuation.definition.markdown"
         },
         "5": {
-          "name": "fenced_code.block.language.markdown"
+          "name": "fenced_code.block.language"
         },
         "6": {
-          "name": "fenced_code.block.language.attributes.markdown"
+          "name": "fenced_code.block.language.attributes"
         }
       },
       "name": "markup.fenced_code.block.markdown",
