@@ -273,7 +273,7 @@ jobs:
         if: steps.stable-version.outputs.stable_version != ''
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.VERSION_UPDATE_APP_CLIENT_ID }}
+          client-id: ${{ secrets.VERSION_UPDATE_APP_CLIENT_ID }}
           private-key: ${{ secrets.VERSION_UPDATE_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: |
