@@ -248,27 +248,7 @@ impl TombiExtension {
     // Keep the 0.9.23 cutoff in sync with docs/public/install.sh
     // (version_uses_legacy_unix_artifact).
     fn uses_legacy_unix_artifact(version: &str) -> bool {
-        let version = version
-            .split_once(['-', '+'])
-            .map(|(prefix, _)| prefix)
-            .unwrap_or(version);
-
-        let mut parts = version.split('.');
-        let (Some(major), Some(minor), Some(patch), None) =
-            (parts.next(), parts.next(), parts.next(), parts.next())
-        else {
-            return false;
-        };
-
-        let (Ok(major), Ok(minor), Ok(patch)) = (
-            major.parse::<u64>(),
-            minor.parse::<u64>(),
-            patch.parse::<u64>(),
-        ) else {
-            return false;
-        };
-
-        (major, minor, patch) < (0, 9, 23)
+        Self::parse_release_version(version).is_some_and(|version| version < (0, 9, 23))
     }
 
     fn parse_release_version(version: &str) -> Option<(u64, u64, u64)> {
