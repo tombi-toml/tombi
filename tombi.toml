@@ -65,13 +65,7 @@ overrides = [
       dependency-version.enabled = true,
       path.enabled = true,
     },
-    document-link = {
-      cargo-toml.enabled = true,
-      crates-io.enabled = true,
-      git.enabled = true,
-      path.enabled = true,
-      workspace.enabled = true,
-    },
+    document-link.enabled = true,
     goto-declaration = {
       dependency.enabled = true,
       member.enabled = true,
