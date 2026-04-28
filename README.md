@@ -1,5 +1,5 @@
 <div align="center" style="display: flex; flex-direction: column; gap: 0;">
-    <img src="https://raw.githubusercontent.com/tombi-toml/tombi/refs/heads/main/docs/public/tombi.svg" alt="Logo" style="display: block; margin: 0;">
+    <img src="https://raw.githubusercontent.com/tombi-toml/tombi/refs/heads/main/docs/public/tombi.png" alt="Logo" style="display: block; margin: 0;">
     <img src="https://raw.githubusercontent.com/tombi-toml/tombi/refs/heads/main/docs/public/demo.gif" style="display: block; margin: 0;" />
 </div>
 
@@ -9,9 +9,9 @@
 [![Open VSX Registry](https://img.shields.io/open-vsx/v/tombi-toml/tombi?label=Open%20VSX%20Registry&labelColor=374151&color=60a5fa)](https://open-vsx.org/extension/tombi-toml/tombi)
 [![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/28017-tombi?label=JetBrains%20Marketplace&labelColor=374151&color=60a5fa)](https://plugins.jetbrains.com/plugin/28017-tombi)
 [![Zed Extension](https://img.shields.io/badge/Zed%20Extension-v0.2.0-blue?labelColor=374151&color=60a5fa)](https://zed.dev/extensions/tombi)
-[![homebrew](https://img.shields.io/homebrew/v/tombi.svg?labelColor=374151&color=60a5fa)](https://formulae.brew.sh/formula/tombi)
-[![pypi](https://img.shields.io/pypi/v/tombi.svg?labelColor=374151&color=60a5fa)](https://pypi.python.org/pypi/tombi)
-[![npm](https://img.shields.io/npm/v/tombi.svg?labelColor=374151&color=60a5fa)](https://www.npmjs.com/package/tombi)
+[![homebrew](https://img.shields.io/homebrew/v/tombi.jpg?labelColor=374151&color=60a5fa)](https://formulae.brew.sh/formula/tombi)
+[![pypi](https://img.shields.io/pypi/v/tombi.jpg?labelColor=374151&color=60a5fa)](https://pypi.python.org/pypi/tombi)
+[![npm](https://img.shields.io/npm/v/tombi.jpg?labelColor=374151&color=60a5fa)](https://www.npmjs.com/package/tombi)
 [![toml-test](https://github.com/tombi-toml/tombi/actions/workflows/toml-test.yml/badge.svg)](https://github.com/tombi-toml/tombi/actions)
 [![GitHub license](https://badgen.net/github/license/tombi-toml/tombi?style=flat-square&labelColor=374151)](https://github.com/tombi-toml/tombi/blob/main/LICENSE)
 
