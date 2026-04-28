@@ -444,6 +444,33 @@ These boundaries remain significant for auto-sorting. The formatter only caps th
 - Default: `1`
 - Minimum: `1`
 
+```toml
+# BEFORE
+key1 = "value1"
+key2 = "value2"
+
+key3 = "value3"
+
+
+key4 = "value4"
+
+
+
+key5 = "value5"
+
+# AFTER (`group-blank-lines-limit = 2`)
+key1 = "value1"
+key2 = "value2"
+
+key3 = "value3"
+
+
+key4 = "value4"
+
+
+key5 = "value5"
+```
+
 ### format.rules.indent-style
 
 The style of indentation
@@ -596,6 +623,35 @@ The number of blank lines inserted between table or array-of-table blocks when t
 - Type: `Number`
 - Default: `1`
 - Minimum: `0`
+
+```toml
+# BEFORE
+[aaa]
+key1 = "value1"
+[bbb]
+key2 = "value2"
+
+# AFTER (`table-blank-lines = 2`)
+[aaa]
+key1 = "value1"
+
+
+[bbb]
+key2 = "value2"
+```
+
+Tight parent/child table adjacency is controlled separately, so this does not apply when a child table follows a parent table that has no key-value pairs.
+
+```toml
+# BEFORE
+[aaa]
+
+[aaa.bbb]
+
+# AFTER
+[aaa]
+[aaa.bbb]
+```
 
 ### format.rules.trailing-comment-alignment
 
