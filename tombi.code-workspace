@@ -66,9 +66,9 @@
     }
   ],
   "settings": {
-    "editor.formatOnSave": true,
     "[toml]": {
       "editor.tabSize": 2,
+      "editor.formatOnSave": true,
       "editor.defaultFormatter": "tombi-toml.tombi",
       "files.trimTrailingWhitespace": false,
       "files.trimFinalNewlines": false,
