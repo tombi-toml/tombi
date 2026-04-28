@@ -66,6 +66,14 @@
     }
   ],
   "settings": {
+    "editor.formatOnSave": true,
+    "[toml]": {
+      "editor.tabSize": 2,
+      "editor.defaultFormatter": "tombi-toml.tombi",
+      "files.trimTrailingWhitespace": false,
+      "files.trimFinalNewlines": false,
+      "files.insertFinalNewline": false
+    }
     // "tombi.args": ["lsp", "-vv"]
   }
 }
