@@ -626,18 +626,22 @@ The number of blank lines inserted between table or array-of-table blocks when t
 
 ```toml
 # BEFORE
-[aaa]
 key1 = "value1"
-[bbb]
+[aaa]
 key2 = "value2"
+[bbb]
+key3 = "value3"
 
 # AFTER (`table-blank-lines = 2`)
-[aaa]
 key1 = "value1"
 
 
-[bbb]
+[aaa]
 key2 = "value2"
+
+
+[bbb]
+key3 = "value3"
 ```
 
 Tight parent/child table adjacency is controlled separately, so this does not apply when a child table follows a parent table that has no key-value pairs.

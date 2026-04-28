@@ -236,6 +236,63 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
+            async fn test_group_blank_lines_limit_two_between_comment_and_first_table(
+                r#"
+                # comment
+
+
+                [table]
+                key = "value"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(2.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                # comment
+
+
+                [table]
+                key = "value"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_two_before_table_is_clamped_by_table_blank_lines(
+                r#"
+                key = "value"
+
+                # comment
+
+
+                [table]
+                key = "value"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(2.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                key = "value"
+
+                # comment
+
+                [table]
+                key = "value"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_group_blank_lines_limit_in_array(
                 r#"
                 key = [
