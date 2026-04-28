@@ -366,6 +366,70 @@ mod test {
 
     test_format! {
         #[tokio::test]
+        async fn test_document_comment_directive_format_with_group_blank_lines_limit_2(r#"
+            #:tombi toml-version = "v1.1.0"
+
+
+            key1 = 1  # key value1 trailing comment
+            "#,
+            FormatOptions{
+                rules: Some(FormatRules {
+                    group_blank_lines_limit: Some(2.try_into().unwrap()),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(r#"
+            #:tombi toml-version = "v1.1.0"
+
+
+            key1 = 1  # key value1 trailing comment
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn test_document_comment_directive_format_table(r#"
+            #:tombi toml-version = "v1.1.0"
+            [table]
+            key1 = 1
+            "#
+        ) -> Ok(r#"
+            #:tombi toml-version = "v1.1.0"
+
+            [table]
+            key1 = 1
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn test_document_comment_directive_format_table_with_group_blank_lines_limit_2(r#"
+            #:tombi toml-version = "v1.1.0"
+
+
+            [table]
+            key1 = 1  # key value1 trailing comment
+            "#,
+            FormatOptions{
+                rules: Some(FormatRules {
+                    group_blank_lines_limit: Some(2.try_into().unwrap()),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(r#"
+            #:tombi toml-version = "v1.1.0"
+
+
+            [table]
+            key1 = 1  # key value1 trailing comment
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
         async fn test_sample_toml(
 r#"
 # key values begin dangling comment1

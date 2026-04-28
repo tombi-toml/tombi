@@ -127,6 +127,479 @@ mod format_options {
         }
     }
 
+    mod group_blank_lines_limit {
+        use super::*;
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_one(
+                r#"
+                key1 = "value1"
+                key2 = "value2"
+
+                key3 = "value3"
+
+
+                key4 = "value4"
+
+
+
+                key5 = "value5"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(1.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                key1 = "value1"
+                key2 = "value2"
+
+                key3 = "value3"
+
+                key4 = "value4"
+
+                key5 = "value5"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_two(
+                r#"
+                key1 = "value1"
+                key2 = "value2"
+
+                key3 = "value3"
+
+
+                key4 = "value4"
+
+
+
+                key5 = "value5"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(2.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                key1 = "value1"
+                key2 = "value2"
+
+                key3 = "value3"
+
+
+                key4 = "value4"
+
+
+                key5 = "value5"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_mixed_root_groups_two(
+                r#"
+                key1 = "value1"
+
+                # aaa
+
+
+
+                key2 = "value2"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(2.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                key1 = "value1"
+
+                # aaa
+
+
+                key2 = "value2"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_in_array(
+                r#"
+                key = [
+                  1111111111,
+                  2222222222,
+
+                  3333333333,
+
+
+                  4444444444,
+
+
+
+                  5555555555
+                ]
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(1.try_into().unwrap()),
+                        line_width: Some(10.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                key = [
+                  1111111111,
+                  2222222222,
+
+                  3333333333,
+
+                  4444444444,
+
+                  5555555555
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_in_array_two(
+                r#"
+                key = [
+                  1111111111,
+                  2222222222,
+
+                  3333333333,
+
+
+                  4444444444,
+
+
+
+                  5555555555
+                ]
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(2.try_into().unwrap()),
+                        line_width: Some(10.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                key = [
+                  1111111111,
+                  2222222222,
+
+                  3333333333,
+
+
+                  4444444444,
+
+
+                  5555555555
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_mixed_groups_in_array_two(
+                r#"
+                key = [
+                  1111111111,
+
+                  # aaa
+
+
+
+                  2222222222
+                ]
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(2.try_into().unwrap()),
+                        line_width: Some(10.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                key = [
+                  1111111111,
+
+                  # aaa
+
+
+                  2222222222
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_between_array_dangling_comments_and_first_item_group(
+                r#"
+                key = [
+                  # aaa
+
+
+
+                  1111111111
+                ]
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(1.try_into().unwrap()),
+                        line_width: Some(10.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                key = [
+                  # aaa
+
+                  1111111111
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_between_array_dangling_comments_and_first_item_group_two(
+                r#"
+                key = [
+                  # aaa
+
+
+
+                  1111111111
+                ]
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(2.try_into().unwrap()),
+                        line_width: Some(10.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                key = [
+                  # aaa
+
+
+                  1111111111
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_in_inline_table(
+                r#"
+                table = {
+                  key1 = "value1",
+                  key2 = "value2",
+
+                  key3 = "value3",
+
+
+                  key4 = "value4",
+
+
+
+                  key5 = "value5"
+                }
+                "#,
+                tombi_config::TomlVersion::V1_1_0,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(1.try_into().unwrap()),
+                        line_width: Some(20.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                table = {
+                  key1 = "value1",
+                  key2 = "value2",
+
+                  key3 = "value3",
+
+                  key4 = "value4",
+
+                  key5 = "value5"
+                }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_in_inline_table_two(
+                r#"
+                table = {
+                  key1 = "value1",
+                  key2 = "value2",
+
+                  key3 = "value3",
+
+
+                  key4 = "value4",
+
+
+
+                  key5 = "value5"
+                }
+                "#,
+                tombi_config::TomlVersion::V1_1_0,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(2.try_into().unwrap()),
+                        line_width: Some(20.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                table = {
+                  key1 = "value1",
+                  key2 = "value2",
+
+                  key3 = "value3",
+
+
+                  key4 = "value4",
+
+
+                  key5 = "value5"
+                }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_mixed_groups_in_inline_table_two(
+                r#"
+                table = {
+                  key1 = "value1",
+
+                  # aaa
+
+
+
+                  key2 = "value2"
+                }
+                "#,
+                tombi_config::TomlVersion::V1_1_0,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(2.try_into().unwrap()),
+                        line_width: Some(20.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                table = {
+                  key1 = "value1",
+
+                  # aaa
+
+
+                  key2 = "value2"
+                }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_between_inline_table_dangling_comments_and_first_item_group(
+                r#"
+                table = {
+                  # aaa
+
+
+
+                  key1 = "value1"
+                }
+                "#,
+                tombi_config::TomlVersion::V1_1_0,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(1.try_into().unwrap()),
+                        line_width: Some(20.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                table = {
+                  # aaa
+
+                  key1 = "value1"
+                }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_group_blank_lines_limit_between_inline_table_dangling_comments_and_first_item_group_two(
+                r#"
+                table = {
+                  # aaa
+
+
+
+                  key1 = "value1"
+                }
+                "#,
+                tombi_config::TomlVersion::V1_1_0,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        group_blank_lines_limit: Some(2.try_into().unwrap()),
+                        line_width: Some(20.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                table = {
+                  # aaa
+
+
+                  key1 = "value1"
+                }
+                "#
+            )
+        }
+    }
+
     mod date_time_delimiter {
         use super::*;
 
@@ -183,6 +656,197 @@ mod format_options {
             ) -> Ok(
                 r#"
                 key = 2024-01-01T10:00:00
+                "#
+            )
+        }
+    }
+
+    mod table_blank_lines {
+        use super::*;
+
+        test_format! {
+            #[tokio::test]
+            async fn test_table_blank_lines_one(
+                r#"
+                [aaa]
+                key1 = "value1"
+                [bbb]
+                key2 = "value2"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        table_blank_lines: Some(1.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                [aaa]
+                key1 = "value1"
+
+                [bbb]
+                key2 = "value2"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_table_blank_lines_zero(
+                r#"
+                [aaa]
+                key1 = "value1"
+
+                [bbb]
+                key2 = "value2"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        table_blank_lines: Some(0.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                [aaa]
+                key1 = "value1"
+                [bbb]
+                key2 = "value2"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_table_blank_lines_two_between_parent_and_child_table_with_key_values(
+                r#"
+                [foo]
+                key1 = "value1"
+                [foo.bar]
+                key2 = "value2"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        table_blank_lines: Some(2.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                [foo]
+                key1 = "value1"
+
+
+                [foo.bar]
+                key2 = "value2"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_table_blank_lines_two_between_parent_and_child_array_of_tables_with_key_values(
+                r#"
+                [foo]
+                key1 = "value1"
+                [[foo.bar]]
+                key2 = "value2"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        table_blank_lines: Some(2.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                [foo]
+                key1 = "value1"
+
+
+                [[foo.bar]]
+                key2 = "value2"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_table_blank_lines_two(
+                r#"
+                [aaa]
+                key1 = "value1"
+                [bbb]
+                key2 = "value2"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        table_blank_lines: Some(2.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                [aaa]
+                key1 = "value1"
+
+
+                [bbb]
+                key2 = "value2"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_table_blank_lines_zero_between_array_of_tables_with_same_header(
+                r#"
+                [[foo]]
+                key1 = "value1"
+
+                [[foo]]
+                key2 = "value2"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        table_blank_lines: Some(0.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                [[foo]]
+                key1 = "value1"
+                [[foo]]
+                key2 = "value2"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_table_blank_lines_three(
+                r#"
+                [aaa]
+                key1 = "value1"
+                [bbb]
+                key2 = "value2"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        table_blank_lines: Some(3.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                [aaa]
+                key1 = "value1"
+
+
+
+                [bbb]
+                key2 = "value2"
                 "#
             )
         }

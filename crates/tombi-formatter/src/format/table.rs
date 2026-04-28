@@ -1,6 +1,7 @@
 use std::fmt::Write;
 
 use itertools::Itertools;
+use tombi_ast::DanglingCommentGroupOr;
 
 use crate::{Format, format::filter_map_unique_keys};
 
@@ -31,18 +32,14 @@ impl Format for tombi_ast::Table {
             f.inc_indent();
         }
 
-        let dangling_comment_groups = self.dangling_comment_groups().collect_vec();
-        if !dangling_comment_groups.is_empty() {
-            write!(f, "{}", f.line_ending())?;
-            dangling_comment_groups.format(f)?;
-        }
-
-        let key_value_groups = self.key_value_groups().collect_vec();
+        let key_value_groups = itertools::chain!(
+            self.dangling_comment_groups()
+                .map(DanglingCommentGroupOr::DanglingCommentGroup),
+            self.key_value_groups()
+        )
+        .collect_vec();
         if !key_value_groups.is_empty() {
-            if !dangling_comment_groups.is_empty() {
-                write!(f, "{}", f.line_ending())?;
-            }
-            write!(f, "{}", f.line_ending())?;
+            f.write_line_ending()?;
             key_value_groups.format(f)?;
         }
 
@@ -65,6 +62,8 @@ impl Format for tombi_ast::Table {
 
 #[cfg(test)]
 mod tests {
+    use tombi_config::FormatRules;
+
     use crate::{Formatter, test_format};
 
     test_format! {
@@ -97,6 +96,101 @@ mod tests {
             version = "0.4.0"
             "#
         ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn table_group_blank_lines_limit(
+            r#"
+            [table]
+            key1 = "value1"
+            key2 = "value2"
+
+            key3 = "value3"
+
+
+            key4 = "value4"
+
+
+
+            key5 = "value5"
+            "#,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    group_blank_lines_limit: Some(2.try_into().unwrap()),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(
+            r#"
+            [table]
+            key1 = "value1"
+            key2 = "value2"
+
+            key3 = "value3"
+
+
+            key4 = "value4"
+
+
+            key5 = "value5"
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn table_group_blank_lines_limit_between_dangling_comments_and_first_key_value(
+            r#"
+            [dependencies]
+            # aaa
+
+
+
+            tombi-schema-store.workspace = true
+            "#,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    group_blank_lines_limit: Some(1.try_into().unwrap()),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(
+            r#"
+            [dependencies]
+            # aaa
+
+            tombi-schema-store.workspace = true
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn table_group_blank_lines_limit_between_dangling_comments_and_first_key_value_two(
+            r#"
+            [dependencies]
+            # aaa
+
+
+
+            tombi-schema-store.workspace = true
+            "#,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    group_blank_lines_limit: Some(2.try_into().unwrap()),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(
+            r#"
+            [dependencies]
+            # aaa
+
+
+            tombi-schema-store.workspace = true
+            "#
+        )
     }
 
     test_format! {

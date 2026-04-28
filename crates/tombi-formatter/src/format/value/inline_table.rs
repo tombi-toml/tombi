@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use itertools::Itertools;
-use tombi_ast::AstNode;
+use tombi_ast::{AstNode, DanglingCommentGroupOr};
 use tombi_config::TomlVersion;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -105,28 +105,21 @@ fn format_multiline_inline_table(
 
     f.inc_indent();
 
-    let dangling_comment_groups = table.dangling_comment_groups().collect_vec();
-    dangling_comment_groups.format(f)?;
-
     let key_values = table.key_values().collect_vec();
     let equal_alignment_width = f.key_value_equal_alignment_width(key_values.iter());
 
     let groups = table
-        .key_value_with_comma_groups()
-        .map(|group| {
+        .dangling_comment_groups()
+        .map(DanglingCommentGroupOr::DanglingCommentGroup)
+        .chain(table.key_value_with_comma_groups().map(|group| {
             WithAlignmentHint::new_with_dangling_comment_group_or(
                 group,
                 equal_alignment_width,
                 *trailing_comment_alignment_width,
             )
-        })
+        }))
         .collect_vec();
     if !groups.is_empty() {
-        if !dangling_comment_groups.is_empty() {
-            write!(f, "{}", f.line_ending())?;
-            write!(f, "{}", f.line_ending())?;
-        }
-
         groups.format(f)?;
     }
 

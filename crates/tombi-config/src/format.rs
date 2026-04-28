@@ -8,9 +8,10 @@
 //! this structure is currently empty.
 
 use crate::{
-    ArrayBracketSpaceWidth, ArrayCommaSpaceWidth, DateTimeDelimiter, IndentStyle, IndentWidth,
-    InlineTableBraceSpaceWidth, InlineTableCommaSpaceWidth, KeyValueEqualsSignSpaceWidth,
-    LineEnding, LineWidth, StringQuoteStyle, TrailingCommentSpaceWidth,
+    ArrayBracketSpaceWidth, ArrayCommaSpaceWidth, BlankLines, BlankLinesLimit, DateTimeDelimiter,
+    IndentStyle, IndentWidth, InlineTableBraceSpaceWidth, InlineTableCommaSpaceWidth,
+    KeyValueEqualsSignSpaceWidth, LineEnding, LineWidth, StringQuoteStyle,
+    TrailingCommentSpaceWidth,
 };
 
 /// # Formatter options
@@ -68,6 +69,32 @@ pub struct FormatRules {
         schemars(default = "DateTimeDelimiter::default")
     )]
     pub date_time_delimiter: Option<DateTimeDelimiter>,
+
+    /// # The blank lines limit between groups.
+    ///
+    /// Consecutive groups remain separate for sorting purposes,
+    /// and existing blank lines between them are preserved up to this limit.
+    ///
+    /// ```toml
+    /// # BEFORE
+    /// key1 = "value1"
+    /// key2 = "value2"
+    ///
+    /// key3 = "value3"
+    ///
+    ///
+    /// key4 = "value4"
+    ///
+    /// # AFTER (`group-blank-lines-limit = 1`)
+    /// key1 = "value1"
+    /// key2 = "value2"
+    ///
+    /// key3 = "value3"
+    ///
+    /// key4 = "value4"
+    /// ```
+    #[cfg_attr(feature = "jsonschema", schemars(default = "BlankLinesLimit::default"))]
+    pub group_blank_lines_limit: Option<BlankLinesLimit>,
 
     /// # The style of indentation
     ///
@@ -212,6 +239,42 @@ pub struct FormatRules {
     #[cfg_attr(feature = "jsonschema", schemars(default = "LineWidth::default"))]
     pub line_width: Option<LineWidth>,
 
+    /// # The number of blank lines between tables.
+    ///
+    /// This applies when the formatter inserts spacing between table or array-of-table blocks.
+    ///
+    /// ```toml
+    /// # BEFORE
+    /// [aaa]
+    /// key1 = "value1"
+    /// [bbb]
+    /// key2 = "value2"
+    ///
+    /// # AFTER (`table-blank-lines = 2`)
+    /// [aaa]
+    /// key1 = "value1"
+    ///
+    ///
+    /// [bbb]
+    /// key2 = "value2"
+    /// ```
+    ///
+    /// Tight parent/child table adjacency is controlled separately, so this does not apply
+    /// when a child table follows a parent table that has no key-value pairs.
+    ///
+    /// ```toml
+    /// # BEFORE
+    /// [aaa]
+    ///
+    /// [aaa.bbb]
+    ///
+    /// # AFTER
+    /// [aaa]
+    /// [aaa.bbb]
+    /// ```
+    #[cfg_attr(feature = "jsonschema", schemars(default = "BlankLines::default"))]
+    pub table_blank_lines: Option<BlankLines>,
+
     /// # The number of spaces before the trailing comment.
     ///
     /// ```toml
@@ -237,6 +300,9 @@ impl FormatRules {
             date_time_delimiter: self
                 .date_time_delimiter
                 .or(override_rules.date_time_delimiter),
+            group_blank_lines_limit: self
+                .group_blank_lines_limit
+                .or(override_rules.group_blank_lines_limit),
             indent_style: self.indent_style.or(override_rules.indent_style),
             indent_sub_tables: self.indent_sub_tables.or(override_rules.indent_sub_tables),
             indent_table_key_value_pairs: self
@@ -263,6 +329,7 @@ impl FormatRules {
                 .or(override_rules.key_value_equals_sign_space_width),
             line_ending: self.line_ending.or(override_rules.line_ending),
             line_width: self.line_width.or(override_rules.line_width),
+            table_blank_lines: self.table_blank_lines.or(override_rules.table_blank_lines),
             trailing_comment_space_width: self
                 .trailing_comment_space_width
                 .or(override_rules.trailing_comment_space_width),

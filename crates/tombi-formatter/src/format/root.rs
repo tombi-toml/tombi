@@ -1,30 +1,31 @@
-use std::fmt::Write;
-
 use itertools::Itertools;
+use tombi_ast::DanglingCommentGroupOr;
 
-use super::Format;
+use super::{Format, blank_lines_before};
 
 impl Format for tombi_ast::Root {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         f.reset();
 
         let dangling_comment_groups = self.dangling_comment_groups().collect_vec();
-        dangling_comment_groups.format(f)?;
-
         let key_value_groups = self.key_value_groups().collect_vec();
-        if !dangling_comment_groups.is_empty() && !key_value_groups.is_empty() {
-            write!(f, "{}", f.line_ending())?;
-            write!(f, "{}", f.line_ending())?;
-        }
-        key_value_groups.format(f)?;
+        let has_root_content = !dangling_comment_groups.is_empty() || !key_value_groups.is_empty();
+        let groups = itertools::chain!(
+            dangling_comment_groups
+                .into_iter()
+                .map(DanglingCommentGroupOr::DanglingCommentGroup),
+            key_value_groups
+        )
+        .collect_vec();
+
+        groups.format(f)?;
 
         let table_or_array_of_tables = self.table_or_array_of_tables().collect_vec();
 
-        if (!dangling_comment_groups.is_empty() || !key_value_groups.is_empty())
-            && !table_or_array_of_tables.is_empty()
-        {
-            write!(f, "{}", f.line_ending())?;
-            write!(f, "{}", f.line_ending())?;
+        if has_root_content && !table_or_array_of_tables.is_empty() {
+            f.write_blank_lines(
+                blank_lines_before(&table_or_array_of_tables[0]).min(f.group_blank_lines_limit()),
+            )?;
         }
         table_or_array_of_tables.format(f)?;
 
@@ -37,7 +38,7 @@ impl Format for Vec<tombi_ast::TableOrArrayOfTable> {
         let mut header = Header::Root;
         for (i, table_or_array_of_table) in self.iter().enumerate() {
             if i != 0 {
-                write!(f, "{}", f.line_ending())?;
+                f.write_line_ending()?;
             }
             match table_or_array_of_table {
                 tombi_ast::TableOrArrayOfTable::Table(table) => {
@@ -61,7 +62,9 @@ impl Format for Vec<tombi_ast::TableOrArrayOfTable> {
                                 || !header_keys.starts_with(&pre_header_keys)
                                 || has_dangling_comments
                             {
-                                write!(f, "{}", f.line_ending())?;
+                                for _ in 0..f.table_blank_lines() {
+                                    f.write_line_ending()?;
+                                }
                             }
                         }
                     };
@@ -90,7 +93,9 @@ impl Format for Vec<tombi_ast::TableOrArrayOfTable> {
                                 || !header_keys.starts_with(&pre_header_keys)
                                 || has_dangling_comments
                             {
-                                write!(f, "{}", f.line_ending())?;
+                                for _ in 0..f.table_blank_lines() {
+                                    f.write_line_ending()?;
+                                }
                             }
                         }
                         Header::ArrayOfTable {
@@ -103,7 +108,9 @@ impl Format for Vec<tombi_ast::TableOrArrayOfTable> {
                                 || pre_header_keys.same_as(&header_keys)
                                 || has_dangling_comments
                             {
-                                write!(f, "{}", f.line_ending())?;
+                                for _ in 0..f.table_blank_lines() {
+                                    f.write_line_ending()?;
+                                }
                             }
                         }
                     };
@@ -142,6 +149,8 @@ enum Header {
 
 #[cfg(test)]
 mod test {
+    use tombi_config::FormatRules;
+
     use crate::{Formatter, test_format};
 
     test_format! {
@@ -156,6 +165,57 @@ mod test {
 
     test_format! {
         #[tokio::test]
+        async fn root_group_blank_lines_limit_between_dangling_comments_and_first_key_value(
+            r#"
+            # aaa
+
+
+
+            key = "value"
+            "#,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    group_blank_lines_limit: Some(1.try_into().unwrap()),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(
+            r#"
+            # aaa
+
+            key = "value"
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn root_group_blank_lines_limit_between_dangling_comments_and_first_key_value_two(
+            r#"
+            # aaa
+
+
+
+            key = "value"
+            "#,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    group_blank_lines_limit: Some(2.try_into().unwrap()),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(
+            r#"
+            # aaa
+
+
+            key = "value"
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
         async fn empty_table_space_on_other_table(
             r#"
             [foo]
@@ -163,6 +223,27 @@ mod test {
             [bar.baz]
             "#
         ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn table_blank_lines_does_not_expand_tight_parent_child_tables(
+            r#"
+            [foo]
+            [foo.bar]
+            "#,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    table_blank_lines: Some(3.try_into().unwrap()),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(
+            r#"
+            [foo]
+            [foo.bar]
+            "#
+        )
     }
 
     test_format! {

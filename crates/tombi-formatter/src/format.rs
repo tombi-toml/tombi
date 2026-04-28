@@ -40,33 +40,21 @@ fn filter_map_unique_keys<'a>(
         .unique()
 }
 
-pub(crate) fn has_empty_line_before<T: AstNode>(node: &T) -> bool {
-    fn previous_non_whitespace(
-        mut element: tombi_syntax::SyntaxElement,
-    ) -> Option<tombi_syntax::SyntaxElement> {
-        loop {
-            if element.kind() != WHITESPACE {
-                return Some(element);
+pub(crate) fn blank_lines_before<T: AstNode>(node: &T) -> u8 {
+    let mut line_break_count = 0usize;
+    let mut current = node.syntax().prev_sibling_or_token();
+
+    while let Some(element) = current {
+        match element.kind() {
+            WHITESPACE => current = element.prev_sibling_or_token(),
+            LINE_BREAK => {
+                line_break_count += 1;
+                current = element.prev_sibling_or_token();
             }
-            element = element.prev_sibling_or_token()?;
+            _ => break,
         }
     }
 
-    let Some(prev) = node
-        .syntax()
-        .prev_sibling_or_token()
-        .and_then(previous_non_whitespace)
-    else {
-        return false;
-    };
-    if prev.kind() != LINE_BREAK {
-        return false;
-    }
-    let Some(prev_prev) = prev
-        .prev_sibling_or_token()
-        .and_then(previous_non_whitespace)
-    else {
-        return false;
-    };
-    prev_prev.kind() == LINE_BREAK
+    let blank_lines = line_break_count.saturating_sub(1);
+    u8::try_from(blank_lines).unwrap_or(u8::MAX)
 }

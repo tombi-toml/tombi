@@ -11,6 +11,8 @@ use tombi_config::{DateTimeDelimiter, FormatOptions, IndentStyle, StringQuoteSty
 pub struct FormatDefinitions {
     pub line_width: u8,
     pub line_ending: tombi_config::LineEnding,
+    pub group_blank_lines_limit: u8,
+    pub table_blank_lines: u8,
     pub indent_style: IndentStyle,
     pub indent_sub_tables: bool,
     pub indent_table_key_values: bool,
@@ -41,6 +43,18 @@ impl FormatDefinitions {
                 .as_ref()
                 .and_then(|rules| rules.line_ending)
                 .unwrap_or_default(),
+            group_blank_lines_limit: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.group_blank_lines_limit)
+                .unwrap_or_default()
+                .value(),
+            table_blank_lines: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.table_blank_lines)
+                .unwrap_or_default()
+                .value(),
             indent_style: options
                 .rules
                 .as_ref()

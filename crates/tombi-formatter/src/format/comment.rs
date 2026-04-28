@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 use tombi_ast::{AstNode, DanglingCommentGroupOr, LeadingComment, TrailingComment};
 
-use super::{Format, has_empty_line_before};
+use super::{Format, blank_lines_before};
 
 impl Format for tombi_ast::DanglingCommentGroup {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
@@ -27,10 +27,18 @@ impl Format for Vec<tombi_ast::DanglingCommentGroup> {
             return Ok(());
         }
 
-        for (i, group) in self.iter().enumerate() {
-            if i != 0 {
-                write!(f, "{}", f.line_ending())?;
-                write!(f, "{}", f.line_ending())?;
+        let mut has_written_group = false;
+
+        for group in self {
+            if has_written_group {
+                let blank_lines = blank_lines_before(group).min(f.group_blank_lines_limit());
+                if blank_lines == 0 {
+                    f.write_line_ending()?;
+                } else {
+                    f.write_blank_lines(blank_lines)?;
+                }
+            } else {
+                has_written_group = true;
             }
             group.format(f)?;
         }
@@ -50,10 +58,13 @@ impl<T: Format + AstNode> Format for Vec<DanglingCommentGroupOr<T>> {
                         continue;
                     }
                     if has_written_group {
-                        if has_empty_line_before(comment_group) {
-                            write!(f, "{}", f.line_ending())?;
+                        let blank_lines =
+                            blank_lines_before(group).min(f.group_blank_lines_limit());
+                        if blank_lines == 0 {
+                            f.write_line_ending()?;
+                        } else {
+                            f.write_blank_lines(blank_lines)?;
                         }
-                        write!(f, "{}", f.line_ending())?;
                     } else {
                         has_written_group = true;
                     }
@@ -61,8 +72,13 @@ impl<T: Format + AstNode> Format for Vec<DanglingCommentGroupOr<T>> {
                 }
                 DanglingCommentGroupOr::ItemGroup(item_group) => {
                     if has_written_group {
-                        write!(f, "{}", f.line_ending())?;
-                        write!(f, "{}", f.line_ending())?;
+                        let blank_lines =
+                            blank_lines_before(group).min(f.group_blank_lines_limit());
+                        if blank_lines == 0 {
+                            f.write_line_ending()?;
+                        } else {
+                            f.write_blank_lines(blank_lines)?;
+                        }
                     } else {
                         has_written_group = true;
                     }
@@ -176,6 +192,7 @@ fn format_comment(
 mod tests {
     use itertools::Itertools;
     use tombi_ast::AstNode;
+    use tombi_config::FormatRules;
 
     use crate::{Formatter, test_format};
 
@@ -202,6 +219,62 @@ mod tests {
             "#,
             TomlVersion::V1_0_0
         ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn comment_groups_follow_group_blank_lines_limit(
+            r#"
+            # comment1
+            # comment2
+
+            # comment3
+
+
+            # comment4
+            "#,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    group_blank_lines_limit: Some(1.try_into().unwrap()),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(
+            r#"
+            # comment1
+            # comment2
+
+            # comment3
+
+            # comment4
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn comment_groups_follow_group_blank_lines_limit_two(
+            r#"
+            # comment1
+
+
+
+            # comment2
+            "#,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    group_blank_lines_limit: Some(2.try_into().unwrap()),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(
+            r#"
+            # comment1
+
+
+            # comment2
+            "#
+        )
     }
 
     test_format! {

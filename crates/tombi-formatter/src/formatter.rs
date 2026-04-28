@@ -238,6 +238,16 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
+    pub(crate) const fn group_blank_lines_limit(&self) -> u8 {
+        self.definitions.group_blank_lines_limit
+    }
+
+    #[inline]
+    pub(crate) const fn table_blank_lines(&self) -> u8 {
+        self.definitions.table_blank_lines
+    }
+
+    #[inline]
     pub(crate) const fn indent_sub_tables(&self) -> bool {
         self.definitions.indent_sub_tables
     }
@@ -352,6 +362,16 @@ impl<'a> Formatter<'a> {
     #[inline]
     pub(crate) fn reset(&mut self) {
         self.reset_indent();
+    }
+
+    #[inline]
+    pub(crate) fn write_line_ending(&mut self) -> Result<(), std::fmt::Error> {
+        write!(self, "{}", self.line_ending())
+    }
+
+    #[inline]
+    pub(crate) fn write_blank_lines(&mut self, count: u8) -> Result<(), std::fmt::Error> {
+        self.write_str(&self.line_ending().repeat(usize::from(count) + 1))
     }
 
     #[inline]

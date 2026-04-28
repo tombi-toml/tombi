@@ -6,6 +6,13 @@ pub fn make_comma() -> tombi_syntax::SyntaxNode {
     parse_as::<tombi_ast::Comma>(",").into_syntax_node_mut()
 }
 
+pub fn make_break_line() -> tombi_syntax::SyntaxToken {
+    parse_as::<tombi_ast::Root>("\n")
+        .into_syntax_node_mut()
+        .first_token()
+        .unwrap()
+}
+
 pub fn make_comma_with_trailing_comment(
     trailing_comment: &tombi_ast::TrailingComment,
 ) -> tombi_syntax::SyntaxNode {
