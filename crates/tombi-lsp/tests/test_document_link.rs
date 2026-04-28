@@ -1,5 +1,11 @@
 use tombi_test_lib::{cargo_feature_navigation_fixture_path, project_root_path};
 
+fn cargo_document_link_all_enabled_config_path() -> std::path::PathBuf {
+    project_root_path().join(
+        "crates/tombi-lsp/tests/fixtures/extensions/cargo-document-link-all-enabled/tombi.toml",
+    )
+}
+
 mod document_link_tests {
     use super::*;
 
@@ -82,6 +88,7 @@ mod document_link_tests {
                 tombi-lsp.path = "crates/tombi-lsp"
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: project_root_path().join("crates/tombi-lsp/Cargo.toml"),
@@ -147,6 +154,7 @@ mod document_link_tests {
                 serde = { git = "https://github.com/serde-rs/serde" }
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     url: "https://github.com/serde-rs/serde",
@@ -172,6 +180,7 @@ mod document_link_tests {
                 tombi-lsp.path = "../../crates/tombi-lsp"
                 "#,
                 SourcePath(project_root_path().join("rust/tombi-cli/Cargo.toml")),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: project_root_path().join("crates/tombi-lsp/Cargo.toml"),
@@ -237,6 +246,7 @@ mod document_link_tests {
                 serde = { git = "https://github.com/serde-rs/serde" }
                 "#,
                 SourcePath(project_root_path().join("subcrate/Cargo.toml")),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     url: "https://github.com/serde-rs/serde",
@@ -262,6 +272,7 @@ mod document_link_tests {
                 tombi-lsp = { workspace = true, default-features = [] }
                 "#,
                 SourcePath(project_root_path().join("subcrate/Cargo.toml")),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: project_root_path().join("crates/tombi-lsp/Cargo.toml"),
@@ -328,6 +339,7 @@ mod document_link_tests {
                 SourcePath(project_root_path().join(
                     "crates/tombi-lsp/tests/fixtures/extensions/cargo-document-link-workspace-renamed/consumer/Cargo.toml"
                 )),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: project_root_path().join(
@@ -367,6 +379,7 @@ mod document_link_tests {
                 workspace = "../../"
                 "#,
                 SourcePath(project_root_path().join("crates/tombi-lsp/Cargo.toml")),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: project_root_path().join("Cargo.toml"),
@@ -395,6 +408,7 @@ mod document_link_tests {
                 tombi-ast = { path = "crates/tombi-ast" }
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     url: "https://crates.io/crates/serde",
@@ -428,6 +442,7 @@ mod document_link_tests {
                 path = "src/bin/profile.rs"
                 "#,
                 SourcePath(project_root_path().join("crates/tombi-glob/Cargo.toml")),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: project_root_path().join("crates/tombi-glob/src/bin/profile.rs"),
@@ -463,6 +478,7 @@ mod document_link_tests {
                 serde = { workspace = true }
                 "#,
                 SourcePath(project_root_path().join("crates/subcrate/Cargo.toml")),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     url: "https://crates.io/crates/serde",
@@ -488,6 +504,7 @@ mod document_link_tests {
                 tombi-ast = { path = "../tombi-ast" }
                 "#,
                 SourcePath(project_root_path().join("crates/tombi-lsp/Cargo.toml")),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
@@ -518,6 +535,7 @@ mod document_link_tests {
                 bundle = ["local", "schemars", "dep:schemars"]
                 "#,
                 SourcePath(cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     url: "https://crates.io/crates/schemars",
@@ -547,6 +565,7 @@ mod document_link_tests {
                 bundle = ["schemars"]
                 "#,
                 SourcePath(cargo_feature_navigation_fixture_path().join("implicit/Cargo.toml")),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     url: "https://crates.io/crates/schemars",
@@ -578,6 +597,7 @@ mod document_link_tests {
                 SourcePath(
                     cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml")
                 ),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
@@ -619,6 +639,7 @@ mod document_link_tests {
                 SourcePath(
                     cargo_feature_navigation_fixture_path().join("workspace/weak-consumer/Cargo.toml")
                 ),
+                ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
@@ -1046,6 +1067,7 @@ macro_rules! test_document_link {
                 source_file_path: Option<std::path::PathBuf>,
                 schema_file_path: Option<std::path::PathBuf>,
                 subschemas: Vec<SubSchemaPath>,
+                config_file_path: Option<std::path::PathBuf>,
                 backend_options: tombi_lsp::backend::Options,
             }
 
@@ -1084,6 +1106,15 @@ macro_rules! test_document_link {
                 }
             }
 
+            #[allow(unused)]
+            struct ConfigPath(std::path::PathBuf);
+
+            impl ApplyTestArg for ConfigPath {
+                fn apply(self, args: &mut TestArgs) {
+                    args.config_file_path = Some(self.0);
+                }
+            }
+
             impl ApplyTestArg for tombi_lsp::backend::Options {
                 fn apply(self, args: &mut TestArgs) {
                     args.backend_options = self;
@@ -1100,6 +1131,56 @@ macro_rules! test_document_link {
 
             let backend = service.inner();
             let mut schema_items = Vec::new();
+
+            let _temp_file = tempfile::NamedTempFile::with_suffix_in(
+                ".toml",
+                std::env::current_dir().expect("failed to get current directory"),
+            )
+            .expect("failed to create temporary file for test document path");
+
+            let source_path = match args.source_file_path.as_ref() {
+                Some(path) => path,
+                None => return Err("SourcePath(..) is required".into()),
+            };
+
+            if let Some(config_file_path) = args.config_file_path.as_ref() {
+                let config_content = std::fs::read_to_string(config_file_path).map_err(|e| {
+                    format!(
+                        "failed to read config file {}: {}",
+                        config_file_path.display(),
+                        e
+                    )
+                })?;
+                let config: tombi_config::Config =
+                    serde_tombi::from_str_async(&config_content).await.map_err(|e| {
+                        format!(
+                            "failed to parse config file {}: {}",
+                            config_file_path.display(),
+                            e
+                        )
+                    })?;
+
+                let config_schema_store = backend
+                    .config_manager
+                    .config_schema_store_for_file(source_path)
+                    .await;
+
+                if let Some(config_path) = config_schema_store.config_path {
+                    backend
+                        .config_manager
+                        .update_config_with_path(config, &config_path)
+                        .await
+                        .map_err(|e| {
+                            format!(
+                                "failed to update config {}: {}",
+                                config_path.display(),
+                                e
+                            )
+                        })?;
+                } else {
+                    backend.config_manager.update_editor_config(config).await;
+                }
+            }
 
             if let Some(schema_file_path) = args.schema_file_path.as_ref() {
                 let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
@@ -1140,17 +1221,6 @@ macro_rules! test_document_link {
                     overrides: None,
                 }));
             }
-
-            let _temp_file = tempfile::NamedTempFile::with_suffix_in(
-                ".toml",
-                std::env::current_dir().expect("failed to get current directory"),
-            )
-            .expect("failed to create temporary file for test document path");
-
-            let source_path = match args.source_file_path.as_ref() {
-                Some(path) => path,
-                None => return Err("SourcePath(..) is required".into()),
-            };
 
             if !schema_items.is_empty() {
                 let config_schema_store = backend
