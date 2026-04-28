@@ -1,7 +1,9 @@
 use itertools::Itertools;
 use tombi_ast::DanglingCommentGroupOr;
 
-use super::{Format, blank_lines_before};
+use crate::format::blank_lines_before;
+
+use super::Format;
 
 impl Format for tombi_ast::Root {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
@@ -9,7 +11,9 @@ impl Format for tombi_ast::Root {
 
         let dangling_comment_groups = self.dangling_comment_groups().collect_vec();
         let key_value_groups = self.key_value_groups().collect_vec();
-        let has_root_content = !dangling_comment_groups.is_empty() || !key_value_groups.is_empty();
+        let dangling_comment_group_is_empty = dangling_comment_groups.is_empty();
+        let key_value_groups_is_empty = key_value_groups.is_empty();
+
         let groups = itertools::chain!(
             dangling_comment_groups
                 .into_iter()
@@ -22,10 +26,17 @@ impl Format for tombi_ast::Root {
 
         let table_or_array_of_tables = self.table_or_array_of_tables().collect_vec();
 
-        if has_root_content && !table_or_array_of_tables.is_empty() {
-            f.write_blank_lines(
-                blank_lines_before(&table_or_array_of_tables[0]).min(f.group_blank_lines_limit()),
-            )?;
+        if (!dangling_comment_group_is_empty || !key_value_groups_is_empty)
+            && !table_or_array_of_tables.is_empty()
+        {
+            if key_value_groups_is_empty {
+                f.write_blank_lines(
+                    blank_lines_before(&table_or_array_of_tables[0])
+                        .min(f.group_blank_lines_limit()),
+                )?;
+            } else {
+                f.write_blank_lines(f.table_blank_lines())?;
+            }
         }
         table_or_array_of_tables.format(f)?;
 

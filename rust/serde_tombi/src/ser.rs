@@ -865,6 +865,7 @@ opt = "optional"
             .expect("TOML serialization failed");
         let expected = r#"
 simple_value = 42
+
 [nested]
 value = "nested value"
 "#;

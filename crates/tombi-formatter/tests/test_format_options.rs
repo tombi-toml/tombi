@@ -666,6 +666,54 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
+            async fn test_table_blank_lines_one_between_root_key_values_and_first_table(
+                r#"
+                key1 = "value1"
+                [bbb]
+                key2 = "value2"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        table_blank_lines: Some(1.into()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                key1 = "value1"
+
+                [bbb]
+                key2 = "value2"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_table_blank_lines_zero_between_root_key_values_and_first_table(
+                r#"
+                key1 = "value1"
+
+                [bbb]
+                key2 = "value2"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        table_blank_lines: Some(0.into()),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                key1 = "value1"
+                [bbb]
+                key2 = "value2"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_table_blank_lines_one(
                 r#"
                 [aaa]
