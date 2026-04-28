@@ -1,0 +1,10 @@
+[extensions]
+"tombi-toml/cargo" = {
+  lsp.document-link = {
+    cargo-toml.enabled = true,
+    crates-io.enabled = true,
+    git.enabled = true,
+    path.enabled = true,
+    workspace.enabled = true,
+  },
+}
