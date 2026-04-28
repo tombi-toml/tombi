@@ -9,20 +9,29 @@
   ],
   "repository": {
     "toml-code-block": {
-      "begin": "(?i)(?<=[`~])(toml)(\\s+[^`~]*)?$",
-      "end": "(^|\\G)(?=\\s*[`~]{3,}\\s*$)",
+      "begin": "(?:^|\\G)([\\t ]*)(([`~])\\3\\3(\\3*))[\\t ]*(?i:(toml)([\\t ]+[^`~\\r\\n]*)?$)",
+      "name": "markup.fenced_code.block.markdown",
+      "end": "(?:^|\\G)(\\1|[\\t ]{0,3})(\\3\\3\\3\\4\\3*)[\\t ]*$",
       "beginCaptures": {
-        "1": {
+        "2": {
+          "name": "punctuation.definition.markdown"
+        },
+        "5": {
           "name": "fenced_code.block.language.markdown"
         },
-        "2": {
+        "6": {
           "name": "fenced_code.block.language.attributes.markdown"
+        }
+      },
+      "endCaptures": {
+        "2": {
+          "name": "punctuation.definition.markdown"
         }
       },
       "patterns": [
         {
-          "begin": "(^|\\G)(\\s*)(.*)",
-          "while": "(^|\\G)(?!\\s*([`~]{3,})\\s*$)",
+          "begin": "(?:^|\\G)([\\t ]*)(.*)",
+          "while": "(?:^|\\G)(?![\\t ]*(\\3\\3\\3\\4\\3*)[\\t ]*$)",
           "contentName": "meta.embedded.block.toml",
           "patterns": [
             {
