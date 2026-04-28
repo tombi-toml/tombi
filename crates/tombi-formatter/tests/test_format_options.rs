@@ -675,7 +675,7 @@ mod format_options {
                 "#,
                 FormatOptions {
                     rules: Some(FormatRules {
-                        table_blank_lines: Some(1.try_into().unwrap()),
+                        table_blank_lines: Some(1.into()),
                         ..Default::default()
                     }),
                 }
@@ -702,7 +702,7 @@ mod format_options {
                 "#,
                 FormatOptions {
                     rules: Some(FormatRules {
-                        table_blank_lines: Some(0.try_into().unwrap()),
+                        table_blank_lines: Some(0.into()),
                         ..Default::default()
                     }),
                 }
@@ -727,7 +727,7 @@ mod format_options {
                 "#,
                 FormatOptions {
                     rules: Some(FormatRules {
-                        table_blank_lines: Some(2.try_into().unwrap()),
+                        table_blank_lines: Some(2.into()),
                         ..Default::default()
                     }),
                 }
@@ -754,7 +754,7 @@ mod format_options {
                 "#,
                 FormatOptions {
                     rules: Some(FormatRules {
-                        table_blank_lines: Some(2.try_into().unwrap()),
+                        table_blank_lines: Some(2.into()),
                         ..Default::default()
                     }),
                 }
@@ -781,7 +781,7 @@ mod format_options {
                 "#,
                 FormatOptions {
                     rules: Some(FormatRules {
-                        table_blank_lines: Some(2.try_into().unwrap()),
+                        table_blank_lines: Some(2.into()),
                         ..Default::default()
                     }),
                 }
@@ -809,7 +809,7 @@ mod format_options {
                 "#,
                 FormatOptions {
                     rules: Some(FormatRules {
-                        table_blank_lines: Some(0.try_into().unwrap()),
+                        table_blank_lines: Some(0.into()),
                         ..Default::default()
                     }),
                 }
@@ -834,7 +834,7 @@ mod format_options {
                 "#,
                 FormatOptions {
                     rules: Some(FormatRules {
-                        table_blank_lines: Some(3.try_into().unwrap()),
+                        table_blank_lines: Some(3.into()),
                         ..Default::default()
                     }),
                 }

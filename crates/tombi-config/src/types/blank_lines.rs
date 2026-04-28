@@ -18,11 +18,9 @@ impl Default for BlankLines {
     }
 }
 
-impl TryFrom<u8> for BlankLines {
-    type Error = &'static str;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Ok(Self(value))
+impl From<u8> for BlankLines {
+    fn from(value: u8) -> Self {
+        Self(value)
     }
 }
 

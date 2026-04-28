@@ -10,7 +10,7 @@ pub fn make_break_line() -> tombi_syntax::SyntaxToken {
     parse_as::<tombi_ast::Root>("\n")
         .into_syntax_node_mut()
         .first_token()
-        .unwrap()
+        .expect("parsing a newline as Root should produce a line-break token")
 }
 
 pub fn make_comma_with_trailing_comment(

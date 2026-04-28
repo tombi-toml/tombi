@@ -234,7 +234,7 @@ mod test {
             "#,
             FormatOptions {
                 rules: Some(FormatRules {
-                    table_blank_lines: Some(3.try_into().unwrap()),
+                    table_blank_lines: Some(3.into()),
                     ..Default::default()
                 }),
             }
