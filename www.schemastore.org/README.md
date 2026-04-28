@@ -10,22 +10,22 @@ To use these embedded schemas, simply replace the `http://` or `https://` scheme
 
 Instead of:
 ```
-https://json.schemastore.org/cargo.json
+https://www.schemastore.org/cargo.json
 ```
 
 Use:
 ```
-tombi://json.schemastore.org/cargo.json
+tombi://www.schemastore.org/cargo.json
 ```
 
 ## Available Schemas
 
 The following schemas are available:
 
-- `tombi://json.schemastore.org/api/json/catalog.json` - Schema catalog
-- `tombi://json.schemastore.org/cargo.json` - Cargo manifest schema
-- `tombi://json.schemastore.org/pyproject.json` - PyProject schema
-- `tombi://json.schemastore.org/tombi.json` - Tombi configuration schema
+- `tombi://www.schemastore.org/api/json/catalog.json` - Schema catalog
+- `tombi://www.schemastore.org/cargo.json` - Cargo manifest schema
+- `tombi://www.schemastore.org/pyproject.json` - PyProject schema
+- `tombi://www.schemastore.org/tombi.json` - Tombi configuration schema
 
 ## Benefits
 
@@ -37,7 +37,7 @@ The following schemas are available:
 ## Compatibility
 
 The `tombi://` scheme is fully compatible with the standard JSON Schema Store URLs. You can use either:
-- `https://json.schemastore.org/...` (fetches from the internet)
-- `tombi://json.schemastore.org/...` (uses embedded schema)
+- `https://www.schemastore.org/...` (fetches from the internet)
+- `tombi://www.schemastore.org/...` (uses embedded schema)
 
 Both URLs point to the same schema content, but the `tombi://` version uses the embedded copy for better performance and offline support.

@@ -837,7 +837,7 @@ mod table_keys_order {
                 ConfigText(
                     r#"
                     [[schemas]]
-                    path = "tombi://json.schemastore.org/cargo.json"
+                    path = "tombi://www.schemastore.org/cargo.json"
                     include = ["Cargo.toml"]
                     [schemas.format.rules.array-values-order]
                     enabled = false
