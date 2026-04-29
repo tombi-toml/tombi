@@ -165,6 +165,26 @@ pub struct RootSchema {
     pub toml_version: Option<TomlVersion>,
 
     /// # The schema path
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(example = "https://www.schemastore.org/cargo.json")
+    )]
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(example = "https://www.schemastore.org/pyproject.json")
+    )]
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(example = "tombi://www.schemastore.org/cargo.json")
+    )]
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(example = "tombi://www.schemastore.org/pyproject.json")
+    )]
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(example = "tombi://www.schemastore.org/tombi.json")
+    )]
     pub path: String,
 
     /// # The file match pattern of the schema

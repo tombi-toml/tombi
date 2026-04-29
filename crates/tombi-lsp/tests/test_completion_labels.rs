@@ -692,6 +692,11 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "\"https://www.schemastore.org/cargo.json\"",
+                "\"https://www.schemastore.org/pyproject.json\"",
+                "\"tombi://www.schemastore.org/cargo.json\"",
+                "\"tombi://www.schemastore.org/pyproject.json\"",
+                "\"tombi://www.schemastore.org/tombi.json\"",
                 "\"\"",
                 "''",
             ]);
@@ -745,6 +750,11 @@ mod completion_labels {
                 "unevaluated-properties-test.schema.json",
                 "untagged-union.schema.json",
                 "x-tombi-table-keys-order.schema.json",
+                "\"https://www.schemastore.org/cargo.json\"",
+                "\"https://www.schemastore.org/pyproject.json\"",
+                "\"tombi://www.schemastore.org/cargo.json\"",
+                "\"tombi://www.schemastore.org/pyproject.json\"",
+                "\"tombi://www.schemastore.org/tombi.json\"",
             ]);
         }
 
