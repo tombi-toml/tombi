@@ -25,13 +25,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event_name == 'pull_request' &&
+            github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
       - id: filter
         uses: ./.github/actions/relevant-changes
         with:
-          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          base-sha: ${{ github.event_name == 'pull_request' &&
+            github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event_name == 'pull_request' &&
+            github.event.pull_request.head.sha || github.sha }}
           paths: |
             .cargo/**
             .config/nextest.toml
@@ -68,9 +71,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.TOMBI_CACHE_HOME }}
-          key: ${{ runner.os }}-tombi-cache-${{ hashFiles('Cargo.lock', 'uv.lock', 'schemas/**', 'www.schemastore.org/**', 'www.schemastore.tombi/**', 'tombi.toml', 'type-test.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-tombi-cache-
+          key: ${{ runner.os }}-tombi-cache
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
       - name: Build
