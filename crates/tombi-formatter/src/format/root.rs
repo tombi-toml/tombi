@@ -72,6 +72,7 @@ impl Format for Vec<tombi_ast::TableOrArrayOfTable> {
                             if key_value_size > 0
                                 || !header_keys.starts_with(&pre_header_keys)
                                 || has_dangling_comments
+                                || table.header_leading_comments().next().is_some()
                             {
                                 for _ in 0..f.table_blank_lines() {
                                     f.write_line_ending()?;
@@ -103,6 +104,7 @@ impl Format for Vec<tombi_ast::TableOrArrayOfTable> {
                             if key_value_size > 0
                                 || !header_keys.starts_with(&pre_header_keys)
                                 || has_dangling_comments
+                                || array_of_table.header_leading_comments().next().is_some()
                             {
                                 for _ in 0..f.table_blank_lines() {
                                     f.write_line_ending()?;
@@ -172,6 +174,24 @@ mod test {
             [foo.bar]
             "#
         ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn empty_table_space_on_own_subtable_with_leading_comment(
+            r#"
+            [foo]
+            # table leading comment
+            [foo.bar]
+            "#
+        ) -> Ok(
+            r#"
+            [foo]
+
+            # table leading comment
+            [foo.bar]
+            "#
+        )
     }
 
     test_format! {
@@ -265,6 +285,24 @@ mod test {
             [[foo.bar]]
             "#
         ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn empty_table_space_on_own_array_of_sub_tables_with_leading_comment(
+            r#"
+            [foo]
+            # table leading comment
+            [[foo.bar]]
+            "#
+        ) -> Ok(
+            r#"
+            [foo]
+
+            # table leading comment
+            [[foo.bar]]
+             "#
+        )
     }
 
     test_format! {
