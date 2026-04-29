@@ -111,13 +111,6 @@ pub fn load_with_path_and_level(
     let home_dir = dirs::home_dir();
     if let Some(mut current_dir) = search_dir {
         loop {
-            if home_dir
-                .as_ref()
-                .is_some_and(|home_dir| current_dir == *home_dir)
-            {
-                break;
-            }
-
             for config_path in [
                 current_dir.join(DOT_TOMBI_TOML_FILENAME),
                 current_dir.join(TOMBI_TOML_FILENAME),
@@ -162,6 +155,13 @@ pub fn load_with_path_and_level(
                         );
                     }
                 };
+            }
+
+            if home_dir
+                .as_ref()
+                .is_some_and(|home_dir| current_dir == *home_dir)
+            {
+                break;
             }
 
             if !current_dir.pop() {

@@ -115,7 +115,6 @@ impl SchemaStore {
     ) -> Result<(), crate::Error> {
         let base_dir_path_buf = config_path
             .and_then(config_base_dir)
-            .as_deref()
             .map(canonicalize_path_for_matching);
         let base_dir_path = base_dir_path_buf.as_deref();
 

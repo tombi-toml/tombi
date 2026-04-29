@@ -1333,6 +1333,7 @@ mod completion_labels {
                     { path = "www.schemastore.org/**/*.json", format = "sdist" },
                 ]
                 "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok([
                 "format",

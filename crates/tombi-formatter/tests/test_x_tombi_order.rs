@@ -4,7 +4,7 @@ mod table_keys_order {
     mod pyproject {
         use super::*;
         use tombi_config::FormatRules;
-        use tombi_test_lib::pyproject_schema_path;
+        use tombi_test_lib::{project_root_path, pyproject_schema_path};
 
         test_format! {
             #[tokio::test]
@@ -335,6 +335,7 @@ mod table_keys_order {
                 pandas = "^2.2.0"
                 "#,
                 SchemaPath(pyproject_schema_path()),
+                SourcePath(project_root_path().join("pyproject.toml")),
             ) -> Ok(
                 r#"
                 [project]
@@ -399,6 +400,7 @@ mod table_keys_order {
                 ]
                 "#,
                 SchemaPath(pyproject_schema_path()),
+                SourcePath(project_root_path().join("pyproject.toml")),
             ) -> Ok(
                 r#"
                 [tool.maturin]

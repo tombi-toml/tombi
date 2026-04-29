@@ -48,6 +48,7 @@ impl FileSearch {
         let root = match config_level {
             ConfigLevel::Project => config_path
                 .and_then(config_base_dir)
+                .map(PathBuf::from)
                 .unwrap_or_else(|| PathBuf::from(".")),
             _ => PathBuf::from("."),
         };
