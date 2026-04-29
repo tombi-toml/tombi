@@ -10,6 +10,10 @@ fn exact_index_string_test_schema_path() -> std::path::PathBuf {
     project_root_path().join("schemas/exact-index-string-test.schema.json")
 }
 
+fn dot_config_project_root_fixture_path() -> std::path::PathBuf {
+    project_root_path().join("crates/tombi-lsp/tests/fixtures/dot-config-project-root")
+}
+
 mod completion_labels {
     use super::*;
 
@@ -755,6 +759,20 @@ mod completion_labels {
                 "\"tombi://www.schemastore.org/cargo.json\"",
                 "\"tombi://www.schemastore.org/pyproject.json\"",
                 "\"tombi://www.schemastore.org/tombi.json\"",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_schemars_path_file_completion_from_dot_config_project_root(
+                r#"
+                [[schemas]]
+                path = "sch█"
+                "#,
+                SourcePath(dot_config_project_root_fixture_path().join(".config/tombi.toml")),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "schemas/",
             ]);
         }
 

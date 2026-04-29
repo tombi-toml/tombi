@@ -42,6 +42,30 @@ mod diagnostic {
         );
     }
 
+    mod dot_config_project_root_relative_schema {
+        use tombi_test_lib::project_root_path;
+
+        use super::*;
+        use std::path::PathBuf;
+
+        fn fixture_path() -> PathBuf {
+            project_root_path().join("crates/tombi-lsp/tests/fixtures/dot-config-project-root")
+        }
+
+        test_diagnostic_file!(
+            #[tokio::test]
+            async fn product_toml_uses_schema_path_relative_to_project_root(
+                SourcePath(fixture_path().join("product.toml")),
+                ConfigPath(fixture_path().join(".config/tombi.toml")),
+            ) -> Ok([
+                Diagnostic {
+                    message: "Expected a value of type String, but found Boolean",
+                    range: ((0, 7), (0, 12)),
+                }
+            ]);
+        );
+    }
+
     /// Test for issue #1566: `project.license-files` false additional-key warnings
     /// https://github.com/tombi-toml/tombi/issues/1566
     mod issue_1566_pyproject_license_files {

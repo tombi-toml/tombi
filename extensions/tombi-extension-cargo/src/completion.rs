@@ -10,7 +10,7 @@ use tombi_extension::CompletionKind;
 use tombi_extension::CompletionTextEdit;
 use tombi_extension::TextEdit;
 use tombi_extension::fetch_cached_remote_json;
-use tombi_extension::{completion_directory_path, completion_file_path};
+use tombi_extension::{completion_directory_path, completion_file_path_from_uri};
 use tombi_future::Boxable;
 use tombi_hashmap::HashSet;
 use tombi_schema_store::Accessor;
@@ -142,7 +142,7 @@ fn completion_cargo_file_path(
         || matches_accessors!(accessors, ["example", _, "path"])
         || matches_accessors!(accessors, ["test", _, "path"])
         || matches_accessors!(accessors, ["bench", _, "path"]))
-        && let Some(completions) = completion_file_path(
+        && let Some(completions) = completion_file_path_from_uri(
             text_document_uri,
             document_tree,
             position,
@@ -196,7 +196,7 @@ fn completion_cargo_file_path(
             accessors,
             ["project", "metadata", "playdate", "dev-assets", _]
         ))
-        && let Some(completions) = completion_file_path(
+        && let Some(completions) = completion_file_path_from_uri(
             text_document_uri,
             document_tree,
             position,

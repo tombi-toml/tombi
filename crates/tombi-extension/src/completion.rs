@@ -672,7 +672,7 @@ impl FromLsp<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
 /// [package.build]
 /// path = "src/█"
 /// ```
-pub fn completion_file_path(
+pub fn completion_file_path_from_uri(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     position: tombi_text::Position,
@@ -684,6 +684,22 @@ pub fn completion_file_path(
     };
     let base_dir = source_path.parent()?;
 
+    completion_file_path_from_base_dir(
+        base_dir,
+        document_tree,
+        position,
+        accessors,
+        allowed_extensions,
+    )
+}
+
+pub fn completion_file_path_from_base_dir(
+    base_dir: &std::path::Path,
+    document_tree: &tombi_document_tree::DocumentTree,
+    position: tombi_text::Position,
+    accessors: &[Accessor],
+    allowed_extensions: Option<&[&str]>,
+) -> Option<Vec<CompletionContent>> {
     let Some((_, tombi_document_tree::Value::String(string))) =
         dig_accessors(document_tree, accessors)
     else {
@@ -724,7 +740,7 @@ pub fn completion_directory_path(
     position: tombi_text::Position,
     accessors: &[Accessor],
 ) -> Option<Vec<CompletionContent>> {
-    completion_file_path(
+    completion_file_path_from_uri(
         text_document_uri,
         document_tree,
         position,

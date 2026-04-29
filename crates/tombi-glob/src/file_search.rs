@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use tombi_config::{Config, ConfigLevel, FilesOptions};
+use tombi_config::{Config, ConfigLevel, FilesOptions, config_base_dir};
 
 use crate::WalkDir;
 
@@ -46,8 +46,10 @@ impl FileSearch {
         config_level: ConfigLevel,
     ) -> Self {
         let root = match config_level {
-            ConfigLevel::Project => config_path.and_then(|p| p.parent()).unwrap_or(".".as_ref()),
-            _ => ".".as_ref(),
+            ConfigLevel::Project => config_path
+                .and_then(config_base_dir)
+                .unwrap_or_else(|| PathBuf::from(".")),
+            _ => PathBuf::from("."),
         };
         let files_options = config.files.clone().unwrap_or_default();
 
@@ -56,7 +58,7 @@ impl FileSearch {
             FileInputType::Project => {
                 log::debug!("Searching for TOML files using configured patterns...");
 
-                FileSearch::Files(search_pattern_matched_paths(root, files_options).await)
+                FileSearch::Files(search_pattern_matched_paths(&root, files_options).await)
             }
             FileInputType::Files => {
                 log::debug!("Searching for TOML files using user input patterns...");
@@ -69,7 +71,7 @@ impl FileSearch {
                     if is_glob_pattern(file_path) {
                         matched_paths.extend(
                             search_pattern_matched_paths(
-                                root,
+                                &root,
                                 FilesOptions {
                                     include: Some(vec![file_path.to_string()]),
                                     exclude: files_options.exclude.clone(),
@@ -80,7 +82,7 @@ impl FileSearch {
                     } else {
                         let path = PathBuf::from(file_path);
                         if path.is_file() {
-                            if is_excluded(&path, root, files_options.exclude.as_deref()) {
+                            if is_excluded(&path, &root, files_options.exclude.as_deref()) {
                                 log::debug!(
                                     "Skipping {path:?} because it matches an exclude pattern"
                                 );
