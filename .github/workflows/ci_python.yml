@@ -58,6 +58,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Create Tombi cache directory
+        run: mkdir -p "$TOMBI_CACHE_HOME"
       - uses: actions/cache@v4
         with:
           path: ${{ env.TOMBI_CACHE_HOME }}

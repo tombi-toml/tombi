@@ -25,16 +25,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' &&
-            github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
       - id: filter
         uses: ./.github/actions/relevant-changes
         with:
-          base-sha: ${{ github.event_name == 'pull_request' &&
-            github.event.pull_request.base.sha || github.event.before }}
-          head-sha: ${{ github.event_name == 'pull_request' &&
-            github.event.pull_request.head.sha || github.sha }}
+          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           paths: |
             .cargo/**
             .config/nextest.toml
@@ -66,6 +63,8 @@ jobs:
       TOMBI_HTTP_TIMEOUT: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Create Tombi cache directory
+        run: mkdir -p "$TOMBI_CACHE_HOME"
       - uses: actions/cache@v4
         with:
           path: ${{ env.TOMBI_CACHE_HOME }}
