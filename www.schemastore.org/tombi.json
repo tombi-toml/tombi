@@ -930,7 +930,7 @@
       "additionalProperties": false
     },
     "SchemaCatalogPath": {
-      "description": "Generic value that can be either single or multiple",
+      "description": "Schema catalog path or URL",
       "type": "string",
       "examples": [
         "tombi://www.schemastore.org/api/json/catalog.json",

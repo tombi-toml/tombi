@@ -9,7 +9,7 @@ pub const JSON_SCHEMASTORE_CATALOG_URL: &str = concat!(
     "/api/json/catalog.json"
 );
 
-/// Generic value that can be either single or multiple
+/// Schema catalog path or URL
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
