@@ -108,7 +108,6 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
 pub fn load_with_path_and_level(
     search_dir: Option<std::path::PathBuf>,
 ) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
-    let home_dir = dirs::home_dir();
     if let Some(mut current_dir) = search_dir {
         loop {
             for config_path in [
@@ -157,21 +156,13 @@ pub fn load_with_path_and_level(
                 };
             }
 
-            if home_dir
-                .as_ref()
-                .is_some_and(|home_dir| current_dir == *home_dir)
-            {
-                break;
-            }
-
             if !current_dir.pop() {
                 break;
             }
         }
     }
 
-    if let Some((user_config_path, config_level)) =
-        get_user_or_system_tombi_config_path_and_level(home_dir)
+    if let Some((user_config_path, config_level)) = get_user_or_system_tombi_config_path_and_level()
     {
         log::debug!("{CONFIG_TOML_FILENAME} found at {:?}", &user_config_path);
         let Some(config) = try_from_path(&user_config_path)? else {
@@ -199,9 +190,7 @@ pub fn load(search_dir: Option<std::path::PathBuf>) -> Result<Config, tombi_conf
     Ok(config)
 }
 
-fn get_user_or_system_tombi_config_path_and_level(
-    home_dir: Option<std::path::PathBuf>,
-) -> Option<(std::path::PathBuf, ConfigLevel)> {
+fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBuf, ConfigLevel)> {
     // 1. $XDG_CONFIG_HOME/tombi/config.toml
     if let Ok(xdg_config_home) = std::env::var("XDG_CONFIG_HOME") {
         let mut config_path = std::path::PathBuf::from(xdg_config_home);
@@ -212,7 +201,7 @@ fn get_user_or_system_tombi_config_path_and_level(
         }
     }
 
-    if let Some(home_dir) = home_dir {
+    if let Some(home_dir) = dirs::home_dir() {
         // 2. ~/.config/tombi/config.toml
         let mut config_path = home_dir.clone();
         config_path.push(".config");
