@@ -1,5 +1,5 @@
 <div align="center" style="display: flex; flex-direction: column; gap: 0;">
-    <img src="https://raw.githubusercontent.com/tombi-toml/tombi/refs/heads/main/docs/public/tombi.png" alt="Logo" style="display: block; margin: 0;">
+    <img src="https://raw.githubusercontent.com/tombi-toml/tombi/refs/heads/main/docs/public/tombi.svg" alt="Logo" style="display: block; margin: 0;">
     <img src="https://raw.githubusercontent.com/tombi-toml/tombi/refs/heads/main/docs/public/demo.gif" style="display: block; margin: 0;" />
 </div>
 
