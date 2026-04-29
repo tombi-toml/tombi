@@ -58,6 +58,8 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
+    env:
+      TOMBI_HTTP_TIMEOUT: 60
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
