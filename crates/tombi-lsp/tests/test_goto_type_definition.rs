@@ -20,7 +20,7 @@ mod goto_type_definition_tests {
                 r#"
                 toml-version = "█v1.0.0"
                 "#,
-                SourcePath(tombi_schema_path()),
+                SourcePath("tombi.toml".into()),
                 SchemaPath(tombi_schema_path()),
             ) -> Ok(tombi_schema_path());
         );
@@ -32,7 +32,7 @@ mod goto_type_definition_tests {
                 [schema.catalog]
                 path = "█https://www.schemastore.org/api/json/catalog.json"
                 "#,
-                SourcePath(tombi_schema_path()),
+                SourcePath("tombi.toml".into()),
                 SchemaPath(tombi_schema_path()),
             ) -> Ok(tombi_schema_path());
         );
@@ -43,7 +43,7 @@ mod goto_type_definition_tests {
                 r#"
                 [[schemas█]]
                 "#,
-                SourcePath(tombi_schema_path()),
+                SourcePath("tombi.toml".into()),
                 SchemaPath(tombi_schema_path()),
             ) -> Ok(tombi_schema_path());
         );
@@ -60,7 +60,7 @@ mod goto_type_definition_tests {
                 [package]
                 name█ = "tombi"
                 "#,
-                SourcePath(cargo_schema_path()),
+                SourcePath("Cargo.toml".into()),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok(cargo_schema_path());
         );
@@ -72,7 +72,7 @@ mod goto_type_definition_tests {
                 [package]
                 readme = "█README.md"
                 "#,
-                SourcePath(cargo_schema_path()),
+                SourcePath("Cargo.toml".into()),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok(cargo_schema_path());
         );
@@ -84,7 +84,7 @@ mod goto_type_definition_tests {
                 [dependencies]
                 serde█ = { workspace = true }
                 "#,
-                SourcePath(cargo_schema_path()),
+                SourcePath("Cargo.toml".into()),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok(cargo_schema_path());
         );
@@ -96,7 +96,7 @@ mod goto_type_definition_tests {
                 [profile.release]
                 strip = "debuginfo█"
                 "#,
-                SourcePath(cargo_schema_path()),
+                SourcePath("Cargo.toml".into()),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok(cargo_schema_path());
         );
@@ -114,7 +114,7 @@ mod goto_type_definition_tests {
                 [project]
                 readme = "█1.0.0"
                 "#,
-                SourcePath(pyproject_schema_path()),
+                SourcePath("pyproject.toml".into()),
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok(pyproject_schema_path());
         );
@@ -128,7 +128,7 @@ mod goto_type_definition_tests {
                     "█pytest>=8.3.3",
                 ]
                 "#,
-                SourcePath(pyproject_schema_path()),
+                SourcePath("pyproject.toml".into()),
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok(pyproject_schema_path());
         );
@@ -140,7 +140,7 @@ mod goto_type_definition_tests {
                 [tool.taskipy.tasks]
                 format█ = "ruff"
                 "#,
-                SourcePath(pyproject_schema_path()),
+                SourcePath("pyproject.toml".into()),
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok("https://json.schemastore.org/partial-taskipy.json");
         );
@@ -153,7 +153,7 @@ mod goto_type_definition_tests {
                 [project]
                 name = "tombi"
                 "#,
-                SourcePath(pyproject_schema_path()),
+                SourcePath("pyproject.toml".into()),
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-document-directive.json");
         );
@@ -170,7 +170,6 @@ mod goto_type_definition_tests {
                 repo = "builtin"
                 ho█oks = []
                 "#,
-                SourcePath(adjacent_one_of_hover_test_schema_path()),
                 SchemaPath(adjacent_one_of_hover_test_schema_path()),
             ) -> Ok(adjacent_one_of_hover_test_schema_path());
         );
@@ -185,7 +184,6 @@ mod goto_type_definition_tests {
                   { id = "█hook" }
                 ]
                 "#,
-                SourcePath(adjacent_one_of_hover_test_schema_path()),
                 SchemaPath(adjacent_one_of_hover_test_schema_path()),
             ) -> Ok(adjacent_one_of_hover_test_schema_path());
         );
@@ -200,7 +198,6 @@ mod goto_type_definition_tests {
                 r#"
                 offset_date_time_all = 2024-01-15T█10:30:00Z
                 "#,
-                SourcePath(adjacent_applicators_test_schema_path()),
                 SchemaPath(adjacent_applicators_test_schema_path()),
             ) -> Ok(adjacent_applicators_test_schema_path());
         );
@@ -211,7 +208,6 @@ mod goto_type_definition_tests {
                 r#"
                 boolean_all = tr█ue
                 "#,
-                SourcePath(adjacent_applicators_test_schema_path()),
                 SchemaPath(adjacent_applicators_test_schema_path()),
             ) -> Ok(adjacent_applicators_test_schema_path());
         );
@@ -227,7 +223,6 @@ mod goto_type_definition_tests {
                 [typed_extra_table]
                 extra = { id = "█value" }
                 "#,
-                SourcePath(lsp_consistency_test_schema_path()),
                 SchemaPath(lsp_consistency_test_schema_path()),
             ) -> Ok(lsp_consistency_test_schema_path());
         );
@@ -238,7 +233,6 @@ mod goto_type_definition_tests {
                 r#"
                 typed_unevaluated_tuple = [1, { id = "█value" }]
                 "#,
-                SourcePath(lsp_consistency_test_schema_path()),
                 SchemaPath(lsp_consistency_test_schema_path()),
             ) -> Ok(lsp_consistency_test_schema_path());
         );
@@ -249,7 +243,6 @@ mod goto_type_definition_tests {
                 r#"
                 typed_overflow_tuple = [1, { id = "█value" }]
                 "#,
-                SourcePath(lsp_consistency_test_schema_path()),
                 SchemaPath(lsp_consistency_test_schema_path()),
             ) -> Ok(lsp_consistency_test_schema_path());
         );
@@ -260,7 +253,6 @@ mod goto_type_definition_tests {
                 r#"
                 items = ["zero", "█scoped"]
                 "#,
-                SourcePath(lsp_consistency_test_schema_path()),
                 SubSchemaPath {
                     root: "items[1]".to_string(),
                     path: exact_index_string_test_schema_path(),
@@ -283,7 +275,6 @@ mod goto_type_definition_tests {
                 [table]
                 integer = 42
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-document-directive.json");
         );
@@ -295,7 +286,6 @@ mod goto_type_definition_tests {
                 #:tombi schema.strict█ = true
                 integer = 42
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-document-directive.json");
         );
@@ -309,7 +299,6 @@ mod goto_type_definition_tests {
                 [table]
                 integer = 42
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-document-directive.json");
         );
@@ -322,7 +311,6 @@ mod goto_type_definition_tests {
 
                 key = "value"
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-root-table-directive.json");
         );
@@ -335,7 +323,6 @@ mod goto_type_definition_tests {
 
                 # tombi: lint.rules.const-value.disabled█ = true
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-group-boundary-directive.json");
         );
@@ -347,7 +334,6 @@ mod goto_type_definition_tests {
                 # tombi: lint.rules.key-empty█ = "off"
                 string = "string"
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-key-string-directive.json");
         );
@@ -362,7 +348,6 @@ mod goto_type_definition_tests {
                   "string"
                 ]
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-key-array-directive.json");
         );
@@ -377,7 +362,6 @@ mod goto_type_definition_tests {
                   "string"
                 ]
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-array-directive.json");
         );
@@ -391,7 +375,6 @@ mod goto_type_definition_tests {
                   "string"
                 ]
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-string-directive.json");
         );
@@ -404,7 +387,6 @@ mod goto_type_definition_tests {
                   "string" # tombi: lint.rules.string-min-length█ = "off"
                 ]
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-string-directive.json");
         );
@@ -417,7 +399,6 @@ mod goto_type_definition_tests {
                   "string", # tombi: lint.rules.string-min-length█ = "off"
                 ]
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-string-directive.json");
         );
@@ -431,7 +412,6 @@ mod goto_type_definition_tests {
                   , # tombi: lint.rules.string-min-length█ = "off"
                 ]
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-string-directive.json");
         );
@@ -445,7 +425,6 @@ mod goto_type_definition_tests {
                   # tombi: lint.rules.array-min-items█ = "off"
                 ]
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-group-boundary-directive.json");
         );
@@ -459,7 +438,6 @@ mod goto_type_definition_tests {
                   ,
                 ] # tombi: lint.rules.array-min-items█ = "off"
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-key-array-directive.json");
         );
@@ -473,7 +451,6 @@ mod goto_type_definition_tests {
                   []
                 ]
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-array-directive.json");
         );
@@ -485,7 +462,6 @@ mod goto_type_definition_tests {
                 # tombi: lint.rules.table-min-properties█ = "off"
                 inline-table = { key = "value", }
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-key-inline-table-directive.json");
         );
@@ -499,7 +475,6 @@ mod goto_type_definition_tests {
                   { key = "value", }
                 ]
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-inline-table-directive.json");
         );
@@ -512,7 +487,6 @@ mod goto_type_definition_tests {
                   key = "value",
                 }
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-key-inline-table-directive.json");
         );
@@ -523,7 +497,6 @@ mod goto_type_definition_tests {
                 r#"
                 inline-table = { key = "value", } # tombi: lint.rules.table-min-properties█ = "off"
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-key-inline-table-directive.json");
         );
@@ -535,7 +508,6 @@ mod goto_type_definition_tests {
                 # tombi: lint.rules.const-value.disabled█ = true
                 [table]
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-key-table-directive.json");
         );
@@ -547,7 +519,6 @@ mod goto_type_definition_tests {
                 [table]
                 # tombi: lint.rules.const-value.disabled█ = true
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-table-directive.json");
         );
@@ -559,7 +530,6 @@ mod goto_type_definition_tests {
                 # tombi: lint.rules.const-value.disabled█ = true
                 [[array]]
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-key-array-of-table-directive.json");
         );
@@ -570,7 +540,6 @@ mod goto_type_definition_tests {
                 r#"
                 [[array]] # tombi: lint.rules.const-value.disabled█ = true
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-key-array-of-table-directive.json");
         );
@@ -582,7 +551,6 @@ mod goto_type_definition_tests {
                 [[array]]
                 # tombi: lint.rules.const-value.disabled█ = true
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-table-directive.json");
         );
@@ -593,7 +561,6 @@ mod goto_type_definition_tests {
                 r#"
                 key = "value"  # tombi: lint.rules.string-pattern.disabled█ = true
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-key-string-directive.json");
         );
@@ -604,7 +571,6 @@ mod goto_type_definition_tests {
                 r#"
                 key1.key2 = "value"  # tombi: lint.rules.string-pattern.disabled█ = true
                 "#,
-                SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-key-string-directive.json");
         );
@@ -735,8 +701,7 @@ mod goto_type_definition_tests {
 
                 let source_path = args
                     .source_file_path
-                    .as_ref()
-                    .ok_or("SourcePath must be provided for goto_type_definition tests")?;
+                    .unwrap_or("test.toml".into());
 
                 let temp_dir = source_path.parent().ok_or("failed to get parent directory")?;
                 let Ok(temp_file) = tempfile::NamedTempFile::with_suffix_in(

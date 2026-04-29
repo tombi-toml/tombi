@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use itertools::Itertools;
-use tombi_ast::AstNode;
+use tombi_ast::{AstNode, DanglingCommentGroupOr};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
@@ -98,25 +98,18 @@ fn format_multiline_array(
 
     f.inc_indent();
 
-    let dangling_comment_groups = array.dangling_comment_groups().collect_vec();
-    dangling_comment_groups.format(f)?;
-
     let groups = array
-        .value_with_comma_groups()
-        .map(|group| {
+        .dangling_comment_groups()
+        .map(DanglingCommentGroupOr::DanglingCommentGroup)
+        .chain(array.value_with_comma_groups().map(|group| {
             WithAlignmentHint::new_with_dangling_comment_group_or(
                 group,
                 None,
                 *trailing_comment_alignment_width,
             )
-        })
+        }))
         .collect_vec();
     if !groups.is_empty() {
-        if !dangling_comment_groups.is_empty() {
-            write!(f, "{}", f.line_ending())?;
-            write!(f, "{}", f.line_ending())?;
-        }
-
         groups.format(f)?;
     }
 

@@ -155,8 +155,14 @@ The following table shows the correspondence between [Taplo's options](https://t
     </tr>
     <tr>
       <td><code>allowed_blank_lines</code></td>
-      <td>Not supported</td>
-      <td>For [Auto Sorting](/docs/formatter/auto-sorting).</td>
+      <td>
+        [`group-blank-lines-limit`](/docs/configuration#format-rules-group-blank-lines-limit), <br />
+        [`table-blank-lines`](/docs/configuration#format-rules-table-blank-lines)
+      </td>
+      <td>
+        Use <code>group-blank-lines-limit</code> to preserve blank lines between groups, and
+        <code>table-blank-lines</code> to control blank lines between tables.
+      </td>
     </tr>
     <tr>
       <td><code>crlf</code></td>

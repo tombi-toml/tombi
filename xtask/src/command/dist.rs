@@ -188,27 +188,6 @@ impl Target {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn unix_targets_always_use_tar_gz() {
-        unsafe {
-            std::env::set_var("TOMBI_TARGET", "aarch64-apple-darwin");
-        }
-        let target = Target::get(Path::new("."));
-        assert_eq!(
-            target.cli_artifact_name,
-            format!("tombi-cli-{DEV_VERSION}-aarch64-apple-darwin.tar.gz")
-        );
-
-        unsafe {
-            std::env::remove_var("TOMBI_TARGET");
-        }
-    }
-}
-
 fn tar_gz(src_path: &Path, root_dir: &str, dest_path: &Path) -> anyhow::Result<()> {
     let encoder = GzEncoder::new(File::create(dest_path)?, Compression::best());
     let mut archive = TarBuilder::new(encoder);
@@ -258,4 +237,25 @@ fn zip(src_path: &Path, symbols_path: Option<&PathBuf>, dest_path: &Path) -> any
     }
     writer.finish()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unix_targets_always_use_tar_gz() {
+        unsafe {
+            std::env::set_var("TOMBI_TARGET", "aarch64-apple-darwin");
+        }
+        let target = Target::get(Path::new("."));
+        assert_eq!(
+            target.cli_artifact_name,
+            format!("tombi-cli-{DEV_VERSION}-aarch64-apple-darwin.tar.gz")
+        );
+
+        unsafe {
+            std::env::remove_var("TOMBI_TARGET");
+        }
+    }
 }

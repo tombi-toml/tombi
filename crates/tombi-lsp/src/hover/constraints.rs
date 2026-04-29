@@ -232,7 +232,7 @@ fn write_table_keys_order(
                     f,
                     "  - {}: {}\n",
                     key.target,
-                    markdown_code(&key.order, strike)
+                    markdown_code(key.order, strike)
                 )?;
             }
             Ok(())

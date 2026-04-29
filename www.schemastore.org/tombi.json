@@ -216,6 +216,19 @@
           ],
           "default": "T"
         },
+        "group-blank-lines-limit": {
+          "title": "The blank lines limit between groups.",
+          "description": "Consecutive groups remain separate for sorting purposes,\nand existing blank lines between them are preserved up to this limit.\n\n```toml\n# BEFORE\nkey1 = \"value1\"\nkey2 = \"value2\"\n\nkey3 = \"value3\"\n\n\nkey4 = \"value4\"\n\n# AFTER (`group-blank-lines-limit = 1`)\nkey1 = \"value1\"\nkey2 = \"value2\"\n\nkey3 = \"value3\"\n\nkey4 = \"value4\"\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BlankLinesLimit"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 1
+        },
         "indent-style": {
           "title": "The style of indentation",
           "description": "Whether to use spaces or tabs for indentation.\n\n- `space`: Use spaces for indentation.\n- `tab`: Use tabs for indentation.",
@@ -356,6 +369,19 @@
           ],
           "default": 80
         },
+        "table-blank-lines": {
+          "title": "The number of blank lines between tables.",
+          "description": "This applies when the formatter inserts spacing between table or array-of-table blocks.\n\n```toml\n# BEFORE\n[aaa]\nkey1 = \"value1\"\n[bbb]\nkey2 = \"value2\"\n\n# AFTER (`table-blank-lines = 2`)\n[aaa]\nkey1 = \"value1\"\n\n\n[bbb]\nkey2 = \"value2\"\n```\n\nTight parent/child table adjacency is controlled separately, so this does not apply\nwhen a child table follows a parent table that has no key-value pairs.\n\n```toml\n# BEFORE\n[aaa]\n\n[aaa.bbb]\n\n# AFTER\n[aaa]\n[aaa.bbb]\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BlankLines"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 1
+        },
         "trailing-comment-space-width": {
           "title": "The number of spaces before the trailing comment.",
           "description": "```toml\nkey = \"value\"  # trailing comment\n#            ^^  <- this\n```",
@@ -404,6 +430,12 @@
           "const": "preserve"
         }
       ]
+    },
+    "BlankLinesLimit": {
+      "type": "integer",
+      "format": "uint8",
+      "minimum": 1,
+      "maximum": 255
     },
     "IndentStyle": {
       "type": "string",
@@ -476,6 +508,12 @@
       "type": "integer",
       "format": "uint8",
       "minimum": 1,
+      "maximum": 255
+    },
+    "BlankLines": {
+      "type": "integer",
+      "format": "uint8",
+      "minimum": 0,
       "maximum": 255
     },
     "TrailingCommentSpaceWidth": {

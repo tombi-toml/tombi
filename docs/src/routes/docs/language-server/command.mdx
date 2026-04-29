@@ -177,7 +177,7 @@ Returns `true` if the schema was updated successfully, `false` otherwise.
 ```typescript
 // Update a schema from its remote source
 const updated = await client.sendRequest("tombi/updateSchema", {
-  textDocument: { uri: "https://json.schemastore.org/cargo.json" }
+  textDocument: { uri: "https://www.schemastore.org/cargo.json" }
 });
 
 if (updated) {

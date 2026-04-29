@@ -1,5 +1,6 @@
 mod array_bracket_space_width;
 mod array_comma_space_width;
+mod blank_lines;
 mod bool_default_false;
 mod bool_default_true;
 mod date_time_delimiter;
@@ -17,6 +18,7 @@ mod trailing_comment_space_width;
 
 pub use array_bracket_space_width::ArrayBracketSpaceWidth;
 pub use array_comma_space_width::ArrayCommaSpaceWidth;
+pub use blank_lines::{BlankLines, BlankLinesLimit};
 pub use bool_default_false::BoolDefaultFalse;
 pub use bool_default_true::BoolDefaultTrue;
 pub use date_time_delimiter::DateTimeDelimiter;

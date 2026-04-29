@@ -7,6 +7,7 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{Accessor, CurrentSchema, PatternAccessor};
 use tombi_syntax::SyntaxElement;
 
+use crate::node::make_break_line;
 use crate::node::make_dangling_comment_group_from_leading_comments;
 use crate::rule::TableOrderOverride;
 use crate::rule::root_table_keys_order;
@@ -51,7 +52,11 @@ impl crate::Edit for tombi_ast::Root {
                         )
                     {
                         changes.push(crate::Change::AppendTop {
-                            new: vec![SyntaxElement::Node(dangling_comment_group)],
+                            new: vec![
+                                SyntaxElement::Node(dangling_comment_group),
+                                SyntaxElement::Token(make_break_line()),
+                                SyntaxElement::Token(make_break_line()),
+                            ],
                         });
                         for comment in self.first_item_leading_comments() {
                             changes.push(crate::Change::Remove {
