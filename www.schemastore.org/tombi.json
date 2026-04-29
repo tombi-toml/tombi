@@ -923,7 +923,14 @@
         },
         "path": {
           "title": "The schema path",
-          "type": "string"
+          "type": "string",
+          "examples": [
+            "https://www.schemastore.org/cargo.json",
+            "https://www.schemastore.org/pyproject.json",
+            "tombi://www.schemastore.org/cargo.json",
+            "tombi://www.schemastore.org/pyproject.json",
+            "tombi://www.schemastore.org/tombi.json"
+          ]
         },
         "include": {
           "title": "The file match pattern of the schema",
