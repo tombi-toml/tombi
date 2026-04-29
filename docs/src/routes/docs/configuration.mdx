@@ -4,24 +4,30 @@ import { Tip, Warning, Note } from "~/components/Highlight";
 
 Learn how to configure Tombi using the `tombi.toml` configuration file.
 
-Tombi uses a TOML configuration file named `tombi.toml`(or `.tombi.toml`).
-Also, we supports `[tool.tombi]` in `pyproject.toml`.
+Tombi uses a TOML configuration file named `tombi.toml` (or `.tombi.toml`).
+It also supports `[tool.tombi]` in `pyproject.toml`.
 
 ## Search Priority
 
-For each directory from the current directory up to the filesystem root:
+### Project Level
+For each directory from the current directory up to, but not including, the home directory:
 
 1. `.tombi.toml`
 2. `tombi.toml`
-3. `.config/tombi.toml` (See [config-dir](https://github.com/pi0/config-dir) or [dot-config.github.io](https://dot-config.github.io/))
+3. `.config/tombi.toml` (see [config-dir](https://github.com/pi0/config-dir) or [dot-config.github.io](https://dot-config.github.io/))
 4. `[tool.tombi]` in `pyproject.toml`
 
+### User Level
 If nothing is found, Tombi then falls back to:
 
 5. `$XDG_CONFIG_HOME/tombi/config.toml`
 6. `~/.config/tombi/config.toml`
 7. `~/Library/Application Support/tombi/config.toml` (macOS), `%APPDATA%\tombi\config.toml` (Windows)
+
+### System Level
 8. `/etc/tombi/config.toml` (Linux)
+
+### Default Level
 9. editor settings via [workspace/didChangeConfiguration](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didChangeConfiguration) (LSP only)
 
 <Warning>
