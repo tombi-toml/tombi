@@ -1,9 +1,11 @@
 
 # Formatter
 
-Tombi's formatter ensures consistent styling of your TOML files by automatically applying formatting rules.
+The most significant feature of Tombi's formatter is its Auto Sorting,
+which sorts entries by default based on [JSON Schema](https://json-schema.org/) metadata retrieved from [Schema Store](https://www.schemastore.org/).
 
-Tombi has a formatter function inspired by [Black](https://black.readthedocs.io/en/stable/index.html) and features such as Magic Trailing Comma,
-and it has [several options](/docs/configuration#available-options) for adjusting the formatting of its output like `line-width`, `indent-style`, and more.
+Tombi was originally designed as a uniform formatter inspired by [Black](https://black.readthedocs.io/en/stable/index.html).
+To better accommodate Taplo users, this policy was gradually relaxed, and Tombi has evolved into a formatter with many [config options](/docs/configuration#available-options).
 
-Furthermore, it features automatic sorting via JSON Schema metadata to maintain consistent order across all projects.
+Tombi's default formatting options reflect its core philosophy.
+You can also influence formatting while typing by using [Magic Trailing Comma](/docs/formatter/magic-trailing-comma) or [Magic Trigger](/docs/language-server/completion#magic-trigger) instead of configuration.
