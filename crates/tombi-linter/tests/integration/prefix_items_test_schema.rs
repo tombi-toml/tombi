@@ -88,7 +88,7 @@ test_lint! {
                 root: "tuple[1]".to_string(),
                 path: "schemas/prefix-items-test.schema.json#/properties/extensible/prefixItems/1"
                     .to_string(),
-                include: vec!["test.toml".to_string()],
+                include: vec!["test.toml".into()],
                 exclude: None,
                 format: None,
                 lint: None,
@@ -115,7 +115,7 @@ test_lint! {
                 )
                 .unwrap()
                 .to_string(),
-                include: vec!["test.toml".to_string()],
+                include: vec!["test.toml".into()],
                 exclude: None,
                 format: None,
                 lint: None,
@@ -142,7 +142,7 @@ test_lint! {
                 )
                 .unwrap()
                 .to_string(),
-                include: vec!["test.toml".to_string()],
+                include: vec!["test.toml".into()],
                 exclude: None,
                 format: None,
                 lint: None,

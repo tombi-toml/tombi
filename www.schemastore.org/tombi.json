@@ -132,7 +132,7 @@
             "null"
           ],
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/GlobPattern"
           },
           "minItems": 1,
           "default": [
@@ -147,12 +147,17 @@
             "null"
           ],
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/GlobPattern"
           }
         }
       },
       "additionalProperties": false,
       "x-tombi-table-keys-order": "schema"
+    },
+    "GlobPattern": {
+      "description": "Glob pattern used by config include/exclude lists.",
+      "type": "string",
+      "minLength": 1
     },
     "FormatOptions": {
       "title": "Formatter options",
@@ -978,7 +983,7 @@
           "description": "The file match pattern to include the target to apply the schema.\nSupports glob pattern.",
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/GlobPattern"
           },
           "minItems": 1
         },
@@ -990,7 +995,7 @@
             "null"
           ],
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/GlobPattern"
           }
         },
         "format": {
@@ -1354,7 +1359,7 @@
           "description": "The file match pattern to include the target to apply the sub schema.\nSupports glob pattern.",
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/GlobPattern"
           },
           "minItems": 1
         },
@@ -1366,7 +1371,7 @@
             "null"
           ],
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/GlobPattern"
           }
         },
         "format": {
@@ -1460,7 +1465,7 @@
           "description": "The file match pattern to include in formatting and linting.\nSupports glob pattern.",
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/GlobPattern"
           },
           "minItems": 1
         },
@@ -1472,7 +1477,7 @@
             "null"
           ],
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/GlobPattern"
           }
         }
       },

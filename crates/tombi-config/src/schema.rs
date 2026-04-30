@@ -3,7 +3,8 @@ use tombi_toml_version::TomlVersion;
 use tombi_x_keyword::{ArrayValuesOrder, TableKeysOrder};
 
 use crate::{
-    BoolDefaultTrue, JSON_SCHEMASTORE_CATALOG_URL, SchemaCatalogPath, TOMBI_SCHEMASTORE_CATALOG_URL,
+    BoolDefaultTrue, GlobPattern, JSON_SCHEMASTORE_CATALOG_URL, SchemaCatalogPath,
+    TOMBI_SCHEMASTORE_CATALOG_URL,
 };
 
 /// # Schema overview options
@@ -104,17 +105,19 @@ impl SchemaItem {
     }
 
     pub fn include(&self) -> &[String] {
-        match self {
+        let include = match self {
             Self::Root(item) => &item.include,
             Self::Sub(item) => &item.include,
-        }
+        };
+        GlobPattern::as_string_slice(include.as_slice())
     }
 
     pub fn exclude(&self) -> Option<&[String]> {
-        match self {
+        let exclude = match self {
             Self::Root(item) => item.exclude.as_deref(),
             Self::Sub(item) => item.exclude.as_deref(),
-        }
+        };
+        exclude.map(GlobPattern::as_string_slice)
     }
 
     pub fn toml_version(&self) -> Option<TomlVersion> {
@@ -199,13 +202,13 @@ pub struct RootSchema {
     /// The file match pattern to include the target to apply the schema.
     /// Supports glob pattern.
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    pub include: Vec<String>,
+    pub include: Vec<GlobPattern>,
 
     /// # The file match pattern to exclude the schema
     ///
     /// The file match pattern to exclude the target from applying the schema.
     /// Supports glob pattern.
-    pub exclude: Option<Vec<String>>,
+    pub exclude: Option<Vec<GlobPattern>>,
 
     /// # Schema-specific format options
     pub format: Option<SchemaFormatOptions>,
@@ -247,13 +250,13 @@ pub struct SubSchema {
     /// The file match pattern to include the target to apply the sub schema.
     /// Supports glob pattern.
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    pub include: Vec<String>,
+    pub include: Vec<GlobPattern>,
 
     /// # The file match pattern to exclude the sub schema
     ///
     /// The file match pattern to exclude the target from applying the sub schema.
     /// Supports glob pattern.
-    pub exclude: Option<Vec<String>>,
+    pub exclude: Option<Vec<GlobPattern>>,
 
     /// # Schema-specific format options
     pub format: Option<SchemaFormatOptions>,
