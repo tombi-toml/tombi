@@ -2,6 +2,7 @@
 
 # tombi: lint.rules.table-min-keys.disabled = true
 [aaa]
+
 # tombi: lint.rules.table-min-keys.disabled = true
 [aaa.bbb]
 [aaa.bbb.ccc]
