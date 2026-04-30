@@ -1,7 +1,7 @@
 use tombi_config::TomlVersion;
 use tombi_extension::{
     CommentContext, CompletionContent, CompletionHint, completion_directory_path,
-    completion_file_path,
+    completion_file_path_from_uri,
 };
 use tombi_schema_store::{Accessor, matches_accessors};
 
@@ -64,7 +64,7 @@ fn completion_pyproject_file_path(
 
     // Pyproject sources: path to local package (file or directory)
     if matches_accessors!(accessors, ["tool", "uv", "sources", _, "path"]) {
-        return completion_file_path(
+        return completion_file_path_from_uri(
             text_document_uri,
             document_tree,
             position,
@@ -80,7 +80,7 @@ fn completion_pyproject_file_path(
         || matches_accessors!(accessors, ["project", "license", "file"])
         || matches_accessors!(accessors, ["project", "license-files", _])
     {
-        return completion_file_path(
+        return completion_file_path_from_uri(
             text_document_uri,
             document_tree,
             position,

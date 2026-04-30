@@ -140,7 +140,7 @@ mod goto_type_definition_tests {
                 [tool.taskipy.tasks]
                 format█ = "ruff"
                 "#,
-                SourcePath("pyproject.toml".into()),
+                SourcePath(tombi_test_lib::project_root_path().join("pyproject.toml")),
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok("https://json.schemastore.org/partial-taskipy.json");
         );

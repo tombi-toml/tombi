@@ -13,7 +13,7 @@ pub use error::Error;
 pub use extensions::*;
 pub use files::FilesOptions;
 pub use format::*;
-pub use level::ConfigLevel;
+pub use level::*;
 pub use lint::*;
 pub use overrides::*;
 pub use schema::SchemaOverviewOptions;

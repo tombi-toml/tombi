@@ -1,5 +1,7 @@
-use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion};
-use tombi_extension::{CommentContext, CompletionContent, CompletionHint, completion_file_path};
+use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion, config_base_dir};
+use tombi_extension::{
+    CommentContext, CompletionContent, CompletionHint, completion_file_path_from_base_dir,
+};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn completion(
@@ -26,10 +28,22 @@ pub async fn completion(
         return Ok(None);
     }
 
-    let path = text_document_uri.path();
-    if !(path.ends_with(DOT_TOMBI_TOML_FILENAME) || path.ends_with(TOMBI_TOML_FILENAME)) {
+    let Some(text_document_path) = text_document_uri.to_file_path().ok() else {
+        return Ok(None);
+    };
+
+    if !matches!(
+        text_document_path
+            .file_name()
+            .and_then(|name| name.to_str()),
+        Some(DOT_TOMBI_TOML_FILENAME | TOMBI_TOML_FILENAME)
+    ) {
         return Ok(None);
     }
+
+    let Some(base_dir) = config_base_dir(&text_document_path) else {
+        return Ok(None);
+    };
 
     if features
         .and_then(|features| features.lsp())
@@ -40,8 +54,8 @@ pub async fn completion(
         .value()
     {
         if matches_accessors!(accessors, ["schema", "catalog", "path"])
-            && let Some(completions) = completion_file_path(
-                text_document_uri,
+            && let Some(completions) = completion_file_path_from_base_dir(
+                &base_dir,
                 document_tree,
                 position,
                 accessors,
@@ -52,8 +66,8 @@ pub async fn completion(
         }
 
         if matches_accessors!(accessors, ["schemas", _, "path"])
-            && let Some(completions) = completion_file_path(
-                text_document_uri,
+            && let Some(completions) = completion_file_path_from_base_dir(
+                &base_dir,
                 document_tree,
                 position,
                 accessors,

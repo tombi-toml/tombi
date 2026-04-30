@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use fast_glob::glob_match;
-use tombi_config::Config;
+use tombi_config::{Config, config_base_dir};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum MatchResult {
@@ -63,11 +63,11 @@ fn relative_document_text_path<'a>(
             Err(_) => config_path.to_path_buf(),
         };
 
-        if let Some(config_dir) = config_pathbuf.parent()
-            && text_document_absolute_path.starts_with(config_dir)
+        if let Some(config_dir) = config_base_dir(&config_pathbuf)
+            && text_document_absolute_path.starts_with(&config_dir)
         {
             // Use relative path from config directory
-            if let Ok(rel_path) = text_document_absolute_path.strip_prefix(config_dir) {
+            if let Ok(rel_path) = text_document_absolute_path.strip_prefix(&config_dir) {
                 return rel_path.to_string_lossy();
             }
         }

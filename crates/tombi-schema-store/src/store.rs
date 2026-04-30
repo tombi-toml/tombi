@@ -10,7 +10,7 @@ use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
 use tombi_ast::SchemaDocumentCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
-use tombi_config::{SchemaItem, SchemaOverviewOptions, TomlVersion};
+use tombi_config::{SchemaItem, SchemaOverviewOptions, TomlVersion, config_base_dir};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_uri::SchemaUri;
 
@@ -114,7 +114,7 @@ impl SchemaStore {
         config_path: Option<&std::path::Path>,
     ) -> Result<(), crate::Error> {
         let base_dir_path_buf = config_path
-            .and_then(|p| p.parent())
+            .and_then(config_base_dir)
             .map(canonicalize_path_for_matching);
         let base_dir_path = base_dir_path_buf.as_deref();
 
