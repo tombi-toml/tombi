@@ -1,4 +1,4 @@
-use crate::{BoolDefaultTrue, format::FormatRules, lint::LintRules};
+use crate::{BoolDefaultTrue, GlobPattern, format::FormatRules, lint::LintRules};
 
 /// # Override config item
 #[derive(Debug, Clone, PartialEq)]
@@ -31,13 +31,13 @@ pub struct OverrideFilesOptions {
     /// The file match pattern to include in formatting and linting.
     /// Supports glob pattern.
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    pub include: Vec<String>,
+    pub include: Vec<GlobPattern>,
 
     /// # File patterns to exclude
     ///
     /// The file match pattern to exclude from formatting and linting.
     /// Supports glob pattern.
-    pub exclude: Option<Vec<String>>,
+    pub exclude: Option<Vec<GlobPattern>>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]

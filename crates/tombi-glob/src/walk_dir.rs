@@ -120,7 +120,7 @@ mod tests {
         let walker = WalkDir::new_with_options(
             root,
             FilesOptions {
-                include: Some(vec!["*.rs".to_string()]),
+                include: Some(vec!["*.rs".into()]),
                 exclude: None,
             },
         );
@@ -188,7 +188,7 @@ mod tests {
         let walker = WalkDir::new_with_options(
             root,
             FilesOptions {
-                include: Some(vec!["*.toml".to_string()]),
+                include: Some(vec!["*.toml".into()]),
                 exclude: None,
             },
         );
@@ -264,13 +264,13 @@ mod tests {
         let walker = WalkDir::new_with_options(
             &current_dir,
             FilesOptions {
-                include: Some(vec!["*.rs".to_string(), "*.toml".to_string()]),
+                include: Some(vec!["*.rs".into(), "*.toml".into()]),
                 exclude: None,
             },
         );
         assert_eq!(
             walker.options.include,
-            Some(vec!["*.rs".to_string(), "*.toml".to_string()])
+            Some(vec!["*.rs".into(), "*.toml".into()])
         );
     }
 
@@ -281,12 +281,12 @@ mod tests {
             &current_dir,
             FilesOptions {
                 include: None,
-                exclude: Some(vec!["target/**".to_string(), "node_modules/**".to_string()]),
+                exclude: Some(vec!["target/**".into(), "node_modules/**".into()]),
             },
         );
         assert_eq!(
             walker.options.exclude,
-            Some(vec!["target/**".to_string(), "node_modules/**".to_string()])
+            Some(vec!["target/**".into(), "node_modules/**".into()])
         );
     }
 
@@ -296,12 +296,12 @@ mod tests {
         let walker = WalkDir::new_with_options(
             &current_dir,
             FilesOptions {
-                include: Some(vec!["*.rs".to_string()]),
-                exclude: Some(vec!["target/**".to_string()]),
+                include: Some(vec!["*.rs".into()]),
+                exclude: Some(vec!["target/**".into()]),
             },
         );
-        assert_eq!(walker.options.include, Some(vec!["*.rs".to_string()]));
-        assert_eq!(walker.options.exclude, Some(vec!["target/**".to_string()]));
+        assert_eq!(walker.options.include, Some(vec!["*.rs".into()]));
+        assert_eq!(walker.options.exclude, Some(vec!["target/**".into()]));
     }
 
     #[test]
@@ -310,15 +310,12 @@ mod tests {
         let walker = WalkDir::new_with_options(
             &current_dir,
             FilesOptions {
-                include: Some(vec!["invalid[pattern".to_string()]),
+                include: Some(vec!["invalid[pattern".into()]),
                 exclude: None,
             },
         );
         // Invalid patterns will cause panic at runtime, not compile time
-        assert_eq!(
-            walker.options.include,
-            Some(vec!["invalid[pattern".to_string()])
-        );
+        assert_eq!(walker.options.include, Some(vec!["invalid[pattern".into()]));
     }
 
     #[tokio::test]
@@ -327,7 +324,7 @@ mod tests {
         let walker = WalkDir::new_with_options(
             &current_dir,
             FilesOptions {
-                include: Some(vec!["*.rs".to_string()]),
+                include: Some(vec!["*.rs".into()]),
                 exclude: None,
             },
         );
@@ -341,8 +338,8 @@ mod tests {
         let walker = WalkDir::new_with_options(
             &current_dir,
             FilesOptions {
-                include: Some(vec!["*.toml".to_string()]),
-                exclude: Some(vec!["target/**".to_string()]),
+                include: Some(vec!["*.toml".into()]),
+                exclude: Some(vec!["target/**".into()]),
             },
         );
         let result = walker.walk().await;

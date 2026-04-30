@@ -80,12 +80,18 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn include(&self) -> Option<&Vec<String>> {
-        self.files.as_ref().and_then(|files| files.include.as_ref())
+    pub fn include(&self) -> Option<&[String]> {
+        self.files
+            .as_ref()
+            .and_then(|files| files.include.as_deref())
+            .map(GlobPattern::as_string_slice)
     }
 
-    pub fn exclude(&self) -> Option<&Vec<String>> {
-        self.files.as_ref().and_then(|files| files.exclude.as_ref())
+    pub fn exclude(&self) -> Option<&[String]> {
+        self.files
+            .as_ref()
+            .and_then(|files| files.exclude.as_deref())
+            .map(GlobPattern::as_string_slice)
     }
 
     pub fn overrides(&self) -> Option<&Vec<OverrideItem>> {

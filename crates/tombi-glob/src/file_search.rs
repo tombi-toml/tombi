@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use tombi_config::{Config, ConfigLevel, FilesOptions, config_base_dir};
+use tombi_config::{Config, ConfigLevel, FilesOptions, GlobPattern, config_base_dir};
 
 use crate::WalkDir;
 
@@ -74,7 +74,7 @@ impl FileSearch {
                             search_pattern_matched_paths(
                                 &root,
                                 FilesOptions {
-                                    include: Some(vec![file_path.to_string()]),
+                                    include: Some(vec![file_path.into()]),
                                     exclude: files_options.exclude.clone(),
                                 },
                             )
@@ -137,7 +137,7 @@ pub async fn search_pattern_matched_paths<P: AsRef<std::path::Path>>(
     }
 }
 
-fn is_excluded(path: &Path, root: &Path, exclude_patterns: Option<&[String]>) -> bool {
+fn is_excluded(path: &Path, root: &Path, exclude_patterns: Option<&[GlobPattern]>) -> bool {
     exclude_patterns
         .is_some_and(|patterns| crate::pattern::path_matches_patterns(path, root, patterns))
 }
