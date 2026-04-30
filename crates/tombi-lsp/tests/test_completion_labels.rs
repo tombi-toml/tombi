@@ -464,6 +464,8 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "\"https://www.schemastore.org/api/json/catalog.json\"",
+                "\"tombi://www.schemastore.org/api/json/catalog.json\"",
                 "\"\"",
                 "''",
             ]);
@@ -478,6 +480,8 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "\"https://www.schemastore.org/api/json/catalog.json\"",
+                "\"tombi://www.schemastore.org/api/json/catalog.json\"",
                 "\"\"",
                 "''",
             ]);

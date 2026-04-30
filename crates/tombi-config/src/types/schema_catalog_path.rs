@@ -1,5 +1,3 @@
-use super::OneOrMany;
-
 pub const TOMBI_SCHEMASTORE_CATALOG_URL: &str = concat!(
     "tombi://",
     tombi_uri::schemastore_hostname!(),
@@ -11,10 +9,12 @@ pub const JSON_SCHEMASTORE_CATALOG_URL: &str = concat!(
     "/api/json/catalog.json"
 );
 
-/// Generic value that can be either single or multiple
+/// Schema catalog path or URL
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(example = TOMBI_SCHEMASTORE_CATALOG_URL))]
+#[cfg_attr(feature = "jsonschema", schemars(example = JSON_SCHEMASTORE_CATALOG_URL))]
 pub struct SchemaCatalogPath(String);
 
 impl SchemaCatalogPath {
@@ -41,12 +41,6 @@ impl SchemaCatalogPath {
 impl std::fmt::Display for SchemaCatalogPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-impl Default for OneOrMany<SchemaCatalogPath> {
-    fn default() -> Self {
-        Self::One(JSON_SCHEMASTORE_CATALOG_URL.into())
     }
 }
 
