@@ -55,6 +55,7 @@ mod diagnostic {
         test_diagnostic_file!(
             #[tokio::test]
             async fn product_toml_uses_schema_path_relative_to_project_root(
+                "name = false",
                 SourcePath(fixture_path().join("product.toml")),
                 ConfigPath(fixture_path().join(".config/tombi.toml")),
             ) -> Ok([
@@ -126,6 +127,10 @@ mod diagnostic {
         test_diagnostic_file!(
             #[tokio::test]
             async fn input_toml_reports_enum_error_for_invalid_conditional_branch(
+                r#"
+                mode = "a"
+                component = "y"
+                "#,
                 SourcePath(fixture_path().join("input.toml")),
                 ConfigPath(fixture_path().join("tombi.toml")),
             ) -> Ok([
@@ -493,7 +498,7 @@ macro_rules! test_diagnostic_file {
     ) -> Ok($expected:expr);) => {
         test_diagnostic_file! {
             #[tokio::test] async fn $name(
-                SourceText($source.to_string()) $(, $arg)*
+                SourceText(textwrap::dedent($source).trim().to_string()) $(, $arg)*
             ) -> Ok($expected);
         }
     };
