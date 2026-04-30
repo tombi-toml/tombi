@@ -803,6 +803,64 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_files_include_file_completion(
+                r#"
+                [files]
+                include = ["sch█"]
+                "#,
+                SourcePath(project_root_path().join("tombi.toml")),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "schemas/",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_files_exclude_file_completion(
+                r#"
+                [files]
+                exclude = ["sch█"]
+                "#,
+                SourcePath(project_root_path().join("tombi.toml")),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "schemas/",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_files_include_file_completion_from_dot_config_project_root(
+                r#"
+                [files]
+                include = ["█"]
+                "#,
+                SourcePath(dot_config_project_root_fixture_path().join(".config/tombi.toml")),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "product.toml",
+                "schemas/",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_files_exclude_file_completion_from_dot_config_project_root(
+                r#"
+                [files]
+                exclude = ["█"]
+                "#,
+                SourcePath(dot_config_project_root_fixture_path().join(".config/tombi.toml")),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "product.toml",
+                "schemas/",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_toml_version_v1_0_0_comment_directive(
                 r#"
                 toml-version = "v1.0.0" # tombi:█
