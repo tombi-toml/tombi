@@ -476,4 +476,12 @@ fn merge_schema(
             existing_schema.include.push(pattern);
         }
     }
+    if let Some(new_exclude) = new_schema.exclude {
+        let existing_exclude = existing_schema.exclude.get_or_insert_with(Vec::new);
+        for pattern in new_exclude {
+            if !existing_exclude.contains(&pattern) {
+                existing_exclude.push(pattern);
+            }
+        }
+    }
 }

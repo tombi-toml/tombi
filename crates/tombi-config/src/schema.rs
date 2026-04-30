@@ -110,6 +110,13 @@ impl SchemaItem {
         }
     }
 
+    pub fn exclude(&self) -> Option<&[String]> {
+        match self {
+            Self::Root(item) => item.exclude.as_deref(),
+            Self::Sub(item) => item.exclude.as_deref(),
+        }
+    }
+
     pub fn toml_version(&self) -> Option<TomlVersion> {
         match self {
             Self::Root(item) => item.toml_version,
@@ -194,6 +201,12 @@ pub struct RootSchema {
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     pub include: Vec<String>,
 
+    /// # The file match pattern to exclude the schema
+    ///
+    /// The file match pattern to exclude the target from applying the schema.
+    /// Supports glob pattern.
+    pub exclude: Option<Vec<String>>,
+
     /// # Schema-specific format options
     pub format: Option<SchemaFormatOptions>,
 
@@ -235,6 +248,12 @@ pub struct SubSchema {
     /// Supports glob pattern.
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     pub include: Vec<String>,
+
+    /// # The file match pattern to exclude the sub schema
+    ///
+    /// The file match pattern to exclude the target from applying the sub schema.
+    /// Supports glob pattern.
+    pub exclude: Option<Vec<String>>,
 
     /// # Schema-specific format options
     pub format: Option<SchemaFormatOptions>,

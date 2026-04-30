@@ -205,6 +205,7 @@ impl SchemaStore {
                 schema_uri,
                 catalog_uri: None,
                 include: schema.include().to_vec(),
+                exclude: schema.exclude().map(|exclude| exclude.to_vec()),
                 toml_version: schema.toml_version(),
                 sub_root_accessors: schema.root().and_then(PatternAccessor::parse),
             });
@@ -350,6 +351,7 @@ impl SchemaStore {
                     schema_uri: schema.url,
                     catalog_uri: Some(catalog_uri.clone()),
                     include: schema.file_match,
+                    exclude: None,
                     toml_version: None,
                     sub_root_accessors: None,
                 });
@@ -774,8 +776,9 @@ impl SchemaStore {
         let matching_schemas = schemas
             .iter()
             .filter(|schema| {
-                matches_schema_include(
+                matches_schema_patterns(
                     &schema.include,
+                    schema.exclude.as_deref(),
                     &path_for_matching,
                     &canonicalized_source_path,
                 )
@@ -1006,6 +1009,7 @@ impl SchemaStore {
             schema_uri,
             catalog_uri: None,
             include,
+            exclude: None,
             toml_version: options.toml_version,
             sub_root_accessors: None,
         };
@@ -1025,12 +1029,13 @@ impl SchemaStore {
     }
 }
 
-fn matches_schema_include(
+fn matches_schema_patterns(
     include: &[String],
+    exclude: Option<&[String]>,
     path_for_matching: &std::path::Path,
     absolute_source_path: &std::path::Path,
 ) -> bool {
-    include.iter().any(|pat| {
+    let included = include.iter().any(|pat| {
         let pattern = if !pat.contains('*') {
             format!("**/{pat}")
         } else {
@@ -1045,7 +1050,27 @@ fn matches_schema_include(
                         && glob_pat.matches_path(absolute_source_path))
             })
             .unwrap_or_default()
-    })
+    });
+
+    included
+        && !exclude.is_some_and(|exclude| {
+            exclude.iter().any(|pat| {
+                let pattern = if !pat.contains('*') {
+                    format!("**/{pat}")
+                } else {
+                    pat.to_string()
+                };
+
+                glob::Pattern::new(&pattern)
+                    .ok()
+                    .map(|glob_pat| {
+                        glob_pat.matches_path(path_for_matching)
+                            || (path_for_matching != absolute_source_path
+                                && glob_pat.matches_path(absolute_source_path))
+                    })
+                    .unwrap_or_default()
+            })
+        })
 }
 
 async fn load_catalog_from_cache_ignoring_ttl(
@@ -1227,7 +1252,7 @@ mod tests {
 
     use super::{
         SchemaStore, load_catalog_from_cache_ignoring_ttl,
-        load_json_schema_from_cache_ignoring_ttl, matches_schema_include,
+        load_json_schema_from_cache_ignoring_ttl, matches_schema_patterns,
     };
     use crate::{CatalogUri, ValueSchema};
     use tombi_uri::SchemaUri;
@@ -1242,8 +1267,9 @@ mod tests {
 
     #[test]
     fn schema_include_matches_user_config_path_via_absolute_suffix() {
-        assert!(matches_schema_include(
+        assert!(matches_schema_patterns(
             &[String::from("tombi/config.toml")],
+            None,
             Path::new("config.toml"),
             Path::new("/Users/test/.config/tombi/config.toml"),
         ));
@@ -1251,10 +1277,21 @@ mod tests {
 
     #[test]
     fn schema_include_does_not_match_unrelated_config_toml() {
-        assert!(!matches_schema_include(
+        assert!(!matches_schema_patterns(
             &[String::from("tombi/config.toml")],
+            None,
             Path::new("config.toml"),
             Path::new("/Users/test/project/config.toml"),
+        ));
+    }
+
+    #[test]
+    fn schema_exclude_blocks_matching_path() {
+        assert!(!matches_schema_patterns(
+            &[String::from("**/*.toml")],
+            Some(&[String::from("vendor/**/*.toml")]),
+            Path::new("vendor/blocked.toml"),
+            Path::new("/Users/test/project/vendor/blocked.toml"),
         ));
     }
 

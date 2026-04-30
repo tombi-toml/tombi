@@ -1280,6 +1280,7 @@ mod completion_edit {
                         toml_version: None,
                         path: schema_uri.to_string(),
                         include: vec!["*.toml".to_string()],
+                        exclude: None,
                         lint: None,
                         format: None,
                         overrides: None,

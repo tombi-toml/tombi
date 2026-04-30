@@ -98,6 +98,7 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
   - [schemas[\*].root](#sub-schema)
   - [schemas[\*].path](#root-schema)
   - [schemas[\*].include](#root-schema)
+  - [schemas[\*].exclude](#root-schema)
   - [schemas[\*].format](#schemas-format)
     - [schemas[\*].format.rules](#schemas-format-rules)
       - [schemas[\*].format.rules.array-values-order](#schemas-format-rules-array-values-order)
@@ -932,6 +933,7 @@ deprecated = "error"
 - `toml-version`(optional): The TOML version that the schema is available for
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
+- `exclude`(optional): File match patterns to skip even if `include` matched
 - `lint.rules.deprecated`(optional): Override the deprecated diagnostic level for this schema with `"off"`, `"warn"`, or `"error"`
 - `format.rules.array-values-order.enabled`(optional): Enable schema-defined array value ordering for this schema
 - `format.rules.table-keys-order.enabled`(optional): Enable schema-defined table key ordering for this schema
@@ -962,6 +964,7 @@ deprecated = "warn"
 - `root`: The accessor path to apply the sub-schema (e.g., `"tools.tombi"`, `"tool.*"`, `"tool.'*'"`, `"items[1].name"`). Use bare `*` for any key segment, `[*]` for any array element, and numeric indices such as `[1]` for a specific tuple element. If you need the literal key `*`, quote it as `'*'` or `"*"`.
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
+- `exclude`(optional): File match patterns to skip even if `include` matched
 - `lint.rules.deprecated`(optional): Override the deprecated diagnostic level for this schema with `"off"`, `"warn"`, or `"error"`
 - `format.rules.array-values-order.enabled`(optional): Enable schema-defined array value ordering for this schema
 - `format.rules.table-keys-order.enabled`(optional): Enable schema-defined table key ordering for this schema
