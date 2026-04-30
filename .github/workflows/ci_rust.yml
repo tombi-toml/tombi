@@ -15,6 +15,7 @@ env:
   CI: 1
   RUSTUP_MAX_RETRIES: 10
   CARGO_PROFILE_TEST_DEBUG: 0
+  TOMBI_CACHE_HOME: ${{ github.workspace }}/.cache/tombi
 
 jobs:
   detect-changes:
@@ -24,13 +25,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event_name == 'pull_request' &&
+            github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
       - id: filter
         uses: ./.github/actions/relevant-changes
         with:
-          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          base-sha: ${{ github.event_name == 'pull_request' &&
+            github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event_name == 'pull_request' &&
+            github.event.pull_request.head.sha || github.sha }}
           paths: |
             .cargo/**
             .config/nextest.toml
@@ -58,8 +62,16 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
+    env:
+      TOMBI_HTTP_TIMEOUT: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Create Tombi cache directory
+        run: mkdir -p "$TOMBI_CACHE_HOME"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.TOMBI_CACHE_HOME }}
+          key: ${{ runner.os }}-tombi-cache
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
       - name: Build
