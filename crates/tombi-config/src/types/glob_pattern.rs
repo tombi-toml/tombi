@@ -5,6 +5,9 @@
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct GlobPattern(#[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))] String);
 
+const _: [(); std::mem::size_of::<String>()] = [(); std::mem::size_of::<GlobPattern>()];
+const _: [(); std::mem::align_of::<String>()] = [(); std::mem::align_of::<GlobPattern>()];
+
 impl GlobPattern {
     #[inline]
     pub fn as_str(&self) -> &str {
@@ -13,7 +16,7 @@ impl GlobPattern {
 
     #[inline]
     pub(crate) fn as_string_slice(patterns: &[GlobPattern]) -> &[String] {
-        // SAFETY: `GlobPattern` is `repr(transparent)` over `String`.
+        // SAFETY: `GlobPattern` must remain `repr(transparent)` over `String`.
         unsafe { &*(patterns as *const [GlobPattern] as *const [String]) }
     }
 }
