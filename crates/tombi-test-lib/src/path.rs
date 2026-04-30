@@ -22,6 +22,10 @@ pub fn cargo_feature_navigation_fixture_path() -> PathBuf {
     project_root_path().join("crates/tombi-lsp/tests/fixtures/cargo/feature-navigation")
 }
 
+pub fn dot_config_project_root_fixture_path() -> PathBuf {
+    project_root_path().join("crates/tombi-lsp/tests/fixtures/dot-config-project-root")
+}
+
 pub fn cargo_schema_path() -> PathBuf {
     project_root_path()
         .join(tombi_uri::schemastore_hostname!())
@@ -38,6 +42,12 @@ pub fn type_test_schema_path() -> PathBuf {
     project_root_path()
         .join("schemas")
         .join("type-test.schema.json")
+}
+
+pub fn exact_index_string_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("exact-index-string-test.schema.json")
 }
 
 pub fn untagged_union_schema_path() -> PathBuf {

@@ -1,4 +1,6 @@
-use tombi_test_lib::{cargo_feature_navigation_fixture_path, project_root_path};
+use tombi_test_lib::{
+    cargo_feature_navigation_fixture_path, dot_config_project_root_fixture_path, project_root_path,
+};
 
 fn cargo_document_link_all_enabled_config_path() -> std::path::PathBuf {
     project_root_path().join(
@@ -789,6 +791,23 @@ mod document_link_tests {
 
         test_document_link!(
             #[tokio::test]
+            async fn tombi_schemas_path_from_dot_config_tombi_toml(
+                r#"
+                [[schemas]]
+                path = "schemas/name.schema.json"
+                "#,
+                SourcePath(dot_config_project_root_fixture_path().join(".config/tombi.toml")),
+            ) -> Ok(Some(vec![
+                {
+                    path: dot_config_project_root_fixture_path().join("schemas/name.schema.json"),
+                    range: 1:8..1:32,
+                    tooltip: tombi_extension_tombi::DocumentLinkToolTip::Schema,
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
             async fn tombi_schema_catalog_paths(
                 r#"
                 [schema]
@@ -816,6 +835,40 @@ mod document_link_tests {
                 {
                     url: "https://www.schemastore.org/api/json/catalog.json",
                     range: 1:22..1:71,
+                    tooltip: tombi_extension_tombi::DocumentLinkToolTip::Catalog,
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn tombi_schema_catalog_paths_local_path(
+                r#"
+                [schema]
+                catalog = { paths = ["schemas/type-test.schema.json"] }
+                "#,
+                SourcePath(project_root_path().join("tombi.toml")),
+            ) -> Ok(Some(vec![
+                {
+                    path: project_root_path().join("schemas/type-test.schema.json"),
+                    range: 1:22..1:51,
+                    tooltip: tombi_extension_tombi::DocumentLinkToolTip::Catalog,
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn tombi_schema_catalog_paths_local_path_from_dot_config_tombi_toml(
+                r#"
+                [schema]
+                catalog = { paths = ["schemas/name.schema.json"] }
+                "#,
+                SourcePath(dot_config_project_root_fixture_path().join(".config/tombi.toml")),
+            ) -> Ok(Some(vec![
+                {
+                    path: dot_config_project_root_fixture_path().join("schemas/name.schema.json"),
+                    range: 1:22..1:46,
                     tooltip: tombi_extension_tombi::DocumentLinkToolTip::Catalog,
                 }
             ]));

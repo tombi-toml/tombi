@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion};
+use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion, config_base_dir};
 use tombi_document_tree::dig_accessors;
 use tombi_schema_store::matches_accessors;
 
@@ -88,10 +88,10 @@ pub async fn goto_definition(
 fn get_definition_link(url_str: &str, tombi_toml_path: &std::path::Path) -> Option<tombi_uri::Uri> {
     if let Ok(uri) = tombi_uri::Uri::from_str(url_str) {
         Some(uri)
-    } else if let Some(tombi_config_dir) = tombi_toml_path.parent() {
+    } else if let Some(base_dir) = config_base_dir(tombi_toml_path) {
         let mut file_path = std::path::PathBuf::from(url_str);
         if file_path.is_relative() {
-            file_path = tombi_config_dir.join(file_path);
+            file_path = base_dir.join(file_path);
         }
         if file_path.exists() {
             tombi_uri::Uri::from_file_path(file_path).ok()

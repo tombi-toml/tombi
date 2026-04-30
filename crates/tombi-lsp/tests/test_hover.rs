@@ -2,9 +2,10 @@ use std::path::{Path, PathBuf};
 
 use tombi_test_lib::{
     adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
-    cargo_feature_navigation_fixture_path, cargo_schema_path, lsp_consistency_test_schema_path,
-    one_of_hover_discriminator_test_schema_path, pyproject_schema_path,
-    ref_sibling_annotations_test_schema_path, string_format_test_schema_path, tombi_schema_path,
+    cargo_feature_navigation_fixture_path, cargo_schema_path, exact_index_string_test_schema_path,
+    lsp_consistency_test_schema_path, one_of_hover_discriminator_test_schema_path,
+    pyproject_schema_path, ref_sibling_annotations_test_schema_path,
+    string_format_test_schema_path, tombi_schema_path,
 };
 
 fn nested_table_keys_order_schema_path() -> PathBuf {
@@ -24,10 +25,6 @@ fn array_values_order_one_of_schema_path() -> PathBuf {
 
 fn exact_index_hover_test_schema_path() -> PathBuf {
     tombi_test_lib::project_root_path().join("schemas/exact-index-hover-test.schema.json")
-}
-
-fn exact_index_string_test_schema_path() -> PathBuf {
-    tombi_test_lib::project_root_path().join("schemas/exact-index-string-test.schema.json")
 }
 
 fn exact_index_array_values_order_schema_path() -> PathBuf {
