@@ -77,6 +77,19 @@ test_lint! {
 
 test_lint! {
     #[test]
+    fn test_tombi_schema_exclude(
+        r#"
+        [[schemas]]
+        path = "schemas/type-test.schema.json"
+        include = ["*.toml"]
+        exclude = ["vendor/*.toml"]
+        "#,
+        SchemaPath(tombi_schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
     fn test_tombi_schema_overrides(
         r#"
         [[schemas]]

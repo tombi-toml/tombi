@@ -89,6 +89,7 @@ test_lint! {
                 path: "schemas/prefix-items-test.schema.json#/properties/extensible/prefixItems/1"
                     .to_string(),
                 include: vec!["test.toml".to_string()],
+                exclude: None,
                 format: None,
                 lint: None,
                 overrides: None,
@@ -115,6 +116,7 @@ test_lint! {
                 .unwrap()
                 .to_string(),
                 include: vec!["test.toml".to_string()],
+                exclude: None,
                 format: None,
                 lint: None,
                 overrides: None,
@@ -141,6 +143,7 @@ test_lint! {
                 .unwrap()
                 .to_string(),
                 include: vec!["test.toml".to_string()],
+                exclude: None,
                 format: None,
                 lint: None,
                 overrides: None,

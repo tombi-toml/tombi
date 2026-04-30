@@ -97,6 +97,7 @@ fn deprecated_schema_config(deprecated_level: Option<SeverityLevel>) -> tombi_co
             toml_version: None,
             path: schema_uri.to_string(),
             include: vec!["*.toml".to_string()],
+            exclude: None,
             lint: deprecated_level.map(|deprecated_level| tombi_config::SchemaLintOptions {
                 rules: Some(tombi_config::SchemaLintRules {
                     deprecated: Some(tombi_severity_level::SeverityLevelDefaultWarn::from(
@@ -123,6 +124,7 @@ fn deprecated_sub_schema_config(deprecated_level: Option<SeverityLevel>) -> tomb
             root: "tool.example".to_string(),
             path: schema_uri.to_string(),
             include: vec!["*.toml".to_string()],
+            exclude: None,
             lint: deprecated_level.map(|deprecated_level| tombi_config::SchemaLintOptions {
                 rules: Some(tombi_config::SchemaLintRules {
                     deprecated: Some(tombi_severity_level::SeverityLevelDefaultWarn::from(
@@ -149,6 +151,7 @@ fn deprecated_override_config(deprecated_level: SeverityLevel) -> tombi_config::
             toml_version: None,
             path: schema_uri.to_string(),
             include: vec!["*.toml".to_string()],
+            exclude: None,
             lint: None,
             format: None,
             overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -179,6 +182,7 @@ fn deprecated_root_lint_for_subschema_config(
             toml_version: None,
             path: pyproject_schema_path().to_string_lossy().into_owned(),
             include: vec!["pyproject.toml".to_string()],
+            exclude: None,
             lint: Some(tombi_config::SchemaLintOptions {
                 rules: Some(tombi_config::SchemaLintRules {
                     deprecated: Some(deprecated_level.into()),
@@ -191,6 +195,7 @@ fn deprecated_root_lint_for_subschema_config(
             root: "tool.example".to_string(),
             path: schema_uri.to_string(),
             include: vec!["pyproject.toml".to_string()],
+            exclude: None,
             lint: None,
             format: None,
             overrides: None,
@@ -211,6 +216,7 @@ fn deprecated_exact_index_override_config() -> tombi_config::Config {
             toml_version: None,
             path: schema_uri.to_string(),
             include: vec!["*.toml".to_string()],
+            exclude: None,
             lint: None,
             format: None,
             overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -239,6 +245,7 @@ fn deprecated_exact_index_precedence_config() -> tombi_config::Config {
             toml_version: None,
             path: schema_uri.to_string(),
             include: vec!["*.toml".to_string()],
+            exclude: None,
             lint: None,
             format: None,
             overrides: Some(vec![

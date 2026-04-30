@@ -983,6 +983,17 @@
           },
           "minItems": 1
         },
+        "exclude": {
+          "title": "The file match pattern to exclude the schema",
+          "description": "The file match pattern to exclude the target from applying the schema.\nSupports glob pattern.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
         "format": {
           "title": "Schema-specific format options",
           "anyOf": [
@@ -1347,6 +1358,17 @@
             "type": "string"
           },
           "minItems": 1
+        },
+        "exclude": {
+          "title": "The file match pattern to exclude the sub schema",
+          "description": "The file match pattern to exclude the target from applying the sub schema.\nSupports glob pattern.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         },
         "format": {
           "title": "Schema-specific format options",

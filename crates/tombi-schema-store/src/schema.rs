@@ -423,6 +423,7 @@ pub struct Schema {
     pub schema_uri: tombi_uri::SchemaUri,
     pub catalog_uri: Option<Arc<tombi_uri::CatalogUri>>,
     pub include: Vec<String>,
+    pub exclude: Option<Vec<String>>,
     pub sub_root_accessors: Option<Vec<PatternAccessor>>,
 }
 
