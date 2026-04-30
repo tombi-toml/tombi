@@ -31,6 +31,7 @@ key7.key8 = "aaaa"  # tombi: lint.rules.string-format.disabled = true
 # table leading comment1
 # table leading comment2
 [aaaa]
+
 # table leading comment1
 # table leading comment2
 [aaaa.bbb]

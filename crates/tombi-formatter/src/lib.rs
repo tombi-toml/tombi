@@ -450,6 +450,7 @@ key2 = "2"
 # table leading comment1
 # table leading comment2
 [aaaa]
+
 # table leading comment1
 # table leading comment2
 [aaaa.bbb]
