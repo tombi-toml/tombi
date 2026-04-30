@@ -296,8 +296,17 @@ pub async fn get_hover_keys_with_range(
 
         let keys = if let Some(kv) = tombi_ast::KeyValue::cast(node.to_owned()) {
             if hover_range.is_none() {
-                hover_range =
-                    Some(append_comma_range_if_exists(&kv, position).unwrap_or_else(|| kv.range()));
+                hover_range = Some(
+                    append_comma_range_if_exists(&kv, position)
+                        .or_else(|| {
+                            kv.leading_comments()
+                                .next()
+                                .map(|comment| comment.syntax().range().start)
+                                .or_else(|| kv.keys().map(|keys| keys.range().start))
+                                .map(|start| tombi_text::Range::new(start, kv.range().end))
+                        })
+                        .unwrap_or_else(|| kv.range()),
+                );
             }
             kv.keys()
         } else if let Some(table) = tombi_ast::Table::cast(node.to_owned()) {
@@ -717,6 +726,16 @@ mod tests {
             ]
             "#,
         ) -> Ok(((3, 4), (4, 15)));
+    }
+
+    test_hover_range! {
+        #[tokio::test]
+        async fn non_first_root_key_value_hover_range_excludes_previous_line_end(
+            r#"
+            first = 1
+            sec█ond = 2
+            "#,
+        ) -> Ok(((1, 0), (1, 10)));
     }
 
     test_hover_range! {
