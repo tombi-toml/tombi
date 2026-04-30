@@ -90,6 +90,47 @@ test_lint! {
 
 test_lint! {
     #[test]
+    fn test_tombi_schema_include_rejects_empty_glob_pattern(
+        r#"
+        [[schemas]]
+        path = "schemas/type-test.schema.json"
+        include = [""]
+        "#,
+        SchemaPath(tombi_schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::StringMinLength {
+            minimum: 1,
+            actual: 0,
+        },
+        tombi_validator::DiagnosticKind::TableKeyRequired {
+            key: "root".to_string(),
+        },
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_tombi_schema_exclude_rejects_empty_glob_pattern(
+        r#"
+        [[schemas]]
+        path = "schemas/type-test.schema.json"
+        include = ["*.toml"]
+        exclude = [""]
+        "#,
+        SchemaPath(tombi_schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::StringMinLength {
+            minimum: 1,
+            actual: 0,
+        },
+        tombi_validator::DiagnosticKind::TableKeyRequired {
+            key: "root".to_string(),
+        },
+    ])
+}
+
+test_lint! {
+    #[test]
     fn test_tombi_schema_overrides(
         r#"
         [[schemas]]

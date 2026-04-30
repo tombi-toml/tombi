@@ -15,14 +15,22 @@ pub(crate) fn path_for_patterns<'a>(path: &'a Path, root: &Path) -> Cow<'a, str>
 }
 
 /// Returns true if `path_for_patterns` matches any pattern.
-pub(crate) fn matches_any_pattern(path_for_patterns: &str, patterns: &[String]) -> bool {
+pub(crate) fn matches_any_pattern<T: AsRef<str>>(path_for_patterns: &str, patterns: &[T]) -> bool {
     patterns
         .iter()
+        .filter_map(|pattern| {
+            let pattern = pattern.as_ref();
+            (!pattern.is_empty()).then_some(pattern)
+        })
         .any(|pattern| glob_match(pattern, path_for_patterns))
 }
 
 /// Returns true if `path` matches any pattern, using the same relative-path rules as discovery.
-pub(crate) fn path_matches_patterns(path: &Path, root: &Path, patterns: &[String]) -> bool {
+pub(crate) fn path_matches_patterns<T: AsRef<str>>(
+    path: &Path,
+    root: &Path,
+    patterns: &[T],
+) -> bool {
     let path_for_patterns = path_for_patterns(path, root);
     matches_any_pattern(path_for_patterns.as_ref(), patterns)
 }

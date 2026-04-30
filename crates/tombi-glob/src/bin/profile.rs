@@ -24,7 +24,7 @@ async fn main() {
     };
 
     let files_options = config.files.clone().unwrap_or_else(|| FilesOptions {
-        include: Some(vec!["**/*.toml".to_string()]),
+        include: Some(vec!["**/*.toml".into()]),
         exclude: None,
     });
 
