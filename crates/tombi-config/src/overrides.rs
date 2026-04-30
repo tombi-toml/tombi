@@ -37,7 +37,6 @@ pub struct OverrideFilesOptions {
     ///
     /// The file match pattern to exclude from formatting and linting.
     /// Supports glob pattern.
-    #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     pub exclude: Option<Vec<String>>,
 }
 

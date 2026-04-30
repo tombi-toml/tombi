@@ -148,8 +148,7 @@
           ],
           "items": {
             "type": "string"
-          },
-          "minItems": 1
+          }
         }
       },
       "additionalProperties": false,
@@ -1474,8 +1473,7 @@
           ],
           "items": {
             "type": "string"
-          },
-          "minItems": 1
+          }
         }
       },
       "additionalProperties": false,
