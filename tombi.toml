@@ -24,7 +24,7 @@ code-action.enabled = true
 enabled = true
 catalog = {
   paths = [
-    "./www.schemastore.org/api/json/catalog.json",
+    "www.schemastore.org/api/json/catalog.json",
     "https://www.schemastore.org/api/json/catalog.json",
   ],
 }
