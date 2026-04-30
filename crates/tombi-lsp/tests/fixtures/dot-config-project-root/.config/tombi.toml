@@ -5,7 +5,7 @@ include = ["**/*.toml"]
 
 [[schemas]]
 path = "schemas/name.schema.json"
-include = ["**/*.toml"]
+include = ["product.toml"]
 
 [extensions]
 "tombi-toml/tombi" = {
