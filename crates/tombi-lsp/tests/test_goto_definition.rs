@@ -1,4 +1,6 @@
-use tombi_test_lib::{cargo_feature_navigation_fixture_path, project_root_path};
+use tombi_test_lib::{
+    cargo_feature_navigation_fixture_path, dot_config_project_root_fixture_path, project_root_path,
+};
 
 mod goto_definition_tests {
     use super::*;
@@ -779,6 +781,39 @@ mod goto_definition_tests {
 
     mod tombi_schema {
         use super::*;
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn schema_path_from_dot_config_tombi_toml(
+                r#"
+                [[schemas]]
+                path = "█schemas/name.schema.json"
+                "#,
+                SourcePath(dot_config_project_root_fixture_path().join(".config/tombi.toml")),
+            ) -> Ok([dot_config_project_root_fixture_path().join("schemas/name.schema.json")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn schema_catalog_paths_local_path(
+                r#"
+                [schema]
+                catalog = { paths = ["█schemas/type-test.schema.json"] }
+                "#,
+                SourcePath(project_root_path().join("tombi.toml")),
+            ) -> Ok([project_root_path().join("schemas/type-test.schema.json")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn schema_catalog_paths_local_path_from_dot_config_tombi_toml(
+                r#"
+                [schema]
+                catalog = { paths = ["█schemas/name.schema.json"] }
+                "#,
+                SourcePath(dot_config_project_root_fixture_path().join(".config/tombi.toml")),
+            ) -> Ok([dot_config_project_root_fixture_path().join("schemas/name.schema.json")]);
+        );
 
         test_goto_definition!(
             #[tokio::test]

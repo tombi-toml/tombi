@@ -1,5 +1,11 @@
 toml-version = "v1.1.0"
 
+[extensions]
+"tombi-toml/tombi" = {
+  lsp.document-link.path.enabled = true,
+  lsp.goto-definition.path.enabled = true,
+}
+
 [files]
 include = ["**/*.toml"]
 

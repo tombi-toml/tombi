@@ -1,6 +1,6 @@
 use std::{borrow::Cow, str::FromStr};
 
-use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion};
+use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion, config_base_dir};
 use tombi_document_tree::dig_keys;
 use tombi_extension::get_tombi_github_uri;
 
@@ -150,10 +150,10 @@ pub async fn document_link(
 fn get_document_link(uri: &str, tombi_toml_path: &std::path::Path) -> Option<tombi_uri::Uri> {
     if let Ok(target) = tombi_uri::Uri::from_str(uri) {
         get_tombi_github_uri(&target)
-    } else if let Some(tombi_config_dir) = tombi_toml_path.parent() {
+    } else if let Some(base_dir) = config_base_dir(tombi_toml_path) {
         let mut file_path = std::path::PathBuf::from(uri);
         if file_path.is_relative() {
-            file_path = tombi_config_dir.join(file_path);
+            file_path = base_dir.join(file_path);
         }
         if file_path.exists() {
             tombi_uri::Uri::from_file_path(file_path).ok()

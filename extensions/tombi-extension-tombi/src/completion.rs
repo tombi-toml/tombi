@@ -53,7 +53,7 @@ pub async fn completion(
         .unwrap_or_default()
         .value()
     {
-        if matches_accessors!(accessors, ["schema", "catalog", "path"])
+        if matches_accessors!(accessors, ["schema", "catalog", "paths", _])
             && let Some(completions) = completion_file_path_from_base_dir(
                 &base_dir,
                 document_tree,
