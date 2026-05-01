@@ -86,6 +86,8 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
     - [lsp.goto-type-definition.enabled](#lsp-goto-type-definition-enabled)
   - [lsp.hover](#lsp-hover)
     - [lsp.hover.enabled](#lsp-hover-enabled)
+  - [lsp.references](#lsp-references)
+    - [lsp.references.enabled](#lsp-references-enabled)
   - [lsp.workspace-diagnostic](#lsp-workspace-diagnostic)
     - [lsp.workspace-diagnostic.enabled](#lsp-workspace-diagnostic-enabled)
 - [schema](#schema)
@@ -128,22 +130,24 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
 - [extensions](#extensions)
   - [extensions."tombi-toml/cargo"](#extensions-tombi-toml-cargo)
     - [extensions."tombi-toml/cargo".lsp](#extensions-tombi-toml-cargo-lsp)
-      - [extensions."tombi-toml/cargo".lsp.completion](#extensions-tombi-toml-cargo-lsp-completion)
-      - [extensions."tombi-toml/cargo".lsp.goto-definition](#extensions-tombi-toml-cargo-lsp-goto-definition)
-      - [extensions."tombi-toml/cargo".lsp.goto-declaration](#extensions-tombi-toml-cargo-lsp-goto-declaration)
-      - [extensions."tombi-toml/cargo".lsp.document-link](#extensions-tombi-toml-cargo-lsp-document-link)
       - [extensions."tombi-toml/cargo".lsp.code-action](#extensions-tombi-toml-cargo-lsp-code-action)
+      - [extensions."tombi-toml/cargo".lsp.completion](#extensions-tombi-toml-cargo-lsp-completion)
+      - [extensions."tombi-toml/cargo".lsp.document-link](#extensions-tombi-toml-cargo-lsp-document-link)
+      - [extensions."tombi-toml/cargo".lsp.goto-declaration](#extensions-tombi-toml-cargo-lsp-goto-declaration)
+      - [extensions."tombi-toml/cargo".lsp.goto-definition](#extensions-tombi-toml-cargo-lsp-goto-definition)
       - [extensions."tombi-toml/cargo".lsp.hover](#extensions-tombi-toml-cargo-lsp-hover)
       - [extensions."tombi-toml/cargo".lsp.inlay-hint](#extensions-tombi-toml-cargo-lsp-inlay-hint)
+      - [extensions."tombi-toml/cargo".lsp.references](#extensions-tombi-toml-cargo-lsp-references)
   - [extensions."tombi-toml/pyproject"](#extensions-tombi-toml-pyproject)
     - [extensions."tombi-toml/pyproject".lsp](#extensions-tombi-toml-pyproject-lsp)
-      - [extensions."tombi-toml/pyproject".lsp.completion](#extensions-tombi-toml-pyproject-lsp-completion)
-      - [extensions."tombi-toml/pyproject".lsp.goto-definition](#extensions-tombi-toml-pyproject-lsp-goto-definition)
-      - [extensions."tombi-toml/pyproject".lsp.goto-declaration](#extensions-tombi-toml-pyproject-lsp-goto-declaration)
-      - [extensions."tombi-toml/pyproject".lsp.document-link](#extensions-tombi-toml-pyproject-lsp-document-link)
       - [extensions."tombi-toml/pyproject".lsp.code-action](#extensions-tombi-toml-pyproject-lsp-code-action)
+      - [extensions."tombi-toml/pyproject".lsp.completion](#extensions-tombi-toml-pyproject-lsp-completion)
+      - [extensions."tombi-toml/pyproject".lsp.document-link](#extensions-tombi-toml-pyproject-lsp-document-link)
+      - [extensions."tombi-toml/pyproject".lsp.goto-declaration](#extensions-tombi-toml-pyproject-lsp-goto-declaration)
+      - [extensions."tombi-toml/pyproject".lsp.goto-definition](#extensions-tombi-toml-pyproject-lsp-goto-definition)
       - [extensions."tombi-toml/pyproject".lsp.hover](#extensions-tombi-toml-pyproject-lsp-hover)
       - [extensions."tombi-toml/pyproject".lsp.inlay-hint](#extensions-tombi-toml-pyproject-lsp-inlay-hint)
+      - [extensions."tombi-toml/pyproject".lsp.references](#extensions-tombi-toml-pyproject-lsp-references)
   - [extensions."tombi-toml/tombi"](#extensions-tombi-toml-tombi)
     - [extensions."tombi-toml/tombi".lsp](#extensions-tombi-toml-tombi-lsp)
       - [extensions."tombi-toml/tombi".lsp.completion](#extensions-tombi-toml-tombi-lsp-completion)
@@ -868,6 +872,17 @@ Enable or disable hover feature.
 - Type: `Boolean`
 - Default: `true`
 
+### lsp.references
+
+Configure references feature.
+
+### lsp.references.enabled
+
+Enable or disable references feature.
+
+- Type: `Boolean`
+- Default: `true`
+
 ### lsp.workspace-diagnostic
 
 Configure workspace diagnostic feature.
@@ -1365,6 +1380,37 @@ Enable or disable go to definition for Cargo path targets.
 - Type: `Boolean`
 - Default: `true`
 
+### extensions."tombi-toml/cargo".lsp.references
+
+Configure Cargo-specific references features.
+
+See [Cargo Extension > References](/docs/extensions/tombi-extension-cargo#references).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.references.enabled
+
+Enable or disable all Cargo references features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.references.dependency
+
+Configure references for Cargo dependencies.
+This lists dependency-related usages such as feature activations and workspace dependency consumers.
+
+See [Cargo Extension > References](/docs/extensions/tombi-extension-cargo#references).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.references.dependency.enabled
+
+Enable or disable references for Cargo dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
 ### extensions."tombi-toml/cargo".lsp.goto-declaration
 
 Configure Cargo-specific go to declaration features.
@@ -1392,22 +1438,6 @@ See [Cargo Extension > Go to Declaration](/docs/extensions/tombi-extension-cargo
 ### extensions."tombi-toml/cargo".lsp.goto-declaration.dependency.enabled
 
 Enable or disable go to declaration for Cargo dependencies.
-
-- Type: `Boolean`
-- Default: `true`
-
-### extensions."tombi-toml/cargo".lsp.goto-declaration.member
-
-Configure go to declaration for Cargo workspace members.
-This resolves workspace member references back to the manifest that declares them.
-
-See [Cargo Extension > Go to Declaration](/docs/extensions/tombi-extension-cargo#go-to-declaration).
-
-- Type: `Table`
-
-### extensions."tombi-toml/cargo".lsp.goto-declaration.member.enabled
-
-Enable or disable go to declaration for Cargo workspace members.
 
 - Type: `Boolean`
 - Default: `true`
@@ -1796,6 +1826,37 @@ See [Pyproject Extension > Go to Definition](/docs/extensions/tombi-extension-py
 ### extensions."tombi-toml/pyproject".lsp.goto-definition.path.enabled
 
 Enable or disable go to definition for `pyproject.toml` path targets.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.references
+
+Configure `pyproject.toml`-specific references features.
+
+See [Pyproject Extension > References](/docs/extensions/tombi-extension-pyproject#references).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.references.enabled
+
+Enable or disable all `pyproject.toml` references features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.references.dependency
+
+Configure references for `pyproject.toml` dependencies.
+This lists workspace-backed dependency usages and related include-group consumers.
+
+See [Pyproject Extension > References](/docs/extensions/tombi-extension-pyproject#references).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.references.dependency.enabled
+
+Enable or disable references for `pyproject.toml` dependencies.
 
 - Type: `Boolean`
 - Default: `true`

@@ -8,6 +8,9 @@ mod document;
 mod goto_definition;
 mod goto_type_definition;
 mod hover;
+mod location;
+mod references;
+mod remote_file;
 mod schema_resolver;
 mod semantic_tokens;
 
@@ -36,6 +39,7 @@ pub mod handler {
     mod initialized;
     mod inlay_hint;
     mod list_schemas;
+    mod references;
     mod refresh_cache;
     mod semantic_tokens_full;
     mod shutdown;
@@ -69,6 +73,7 @@ pub mod handler {
     pub use initialized::handle_initialized;
     pub use inlay_hint::handle_inlay_hint;
     pub use list_schemas::{ListSchemasParams, ListSchemasResponse, handle_list_schemas};
+    pub use references::handle_references;
     pub use refresh_cache::{RefreshCacheParams, handle_refresh_cache};
     pub use semantic_tokens_full::handle_semantic_tokens_full;
     pub use shutdown::handle_shutdown;

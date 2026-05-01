@@ -10,7 +10,7 @@ pub async fn goto_definition(
     accessors: &[tombi_schema_store::Accessor],
     _toml_version: TomlVersion,
     features: Option<&tombi_config::TombiExtensionFeatures>,
-) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is .tombi.toml or tombi.toml
     let path = text_document_uri.path();
     if !(path.ends_with(DOT_TOMBI_TOML_FILENAME) || path.ends_with(TOMBI_TOML_FILENAME)) {
@@ -46,7 +46,7 @@ pub async fn goto_definition(
                 dig_accessors(document_tree, accessors)
             && let Some(uri) = get_definition_link(path.value(), &tombi_toml_path)
         {
-            locations.push(tombi_extension::DefinitionLocation {
+            locations.push(tombi_extension::Location {
                 uri,
                 range: tombi_text::Range::default(),
             });
@@ -69,7 +69,7 @@ pub async fn goto_definition(
                     continue;
                 }
                 if let Some(uri) = get_definition_link(path.value(), &tombi_toml_path) {
-                    locations.push(tombi_extension::DefinitionLocation {
+                    locations.push(tombi_extension::Location {
                         uri,
                         range: tombi_text::Range::default(),
                     });

@@ -9,7 +9,7 @@ use crate::handler::hover::get_hover_keys_with_range;
 pub async fn handle_goto_declaration(
     backend: &Backend,
     params: GotoDeclarationParams,
-) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
     log::info!("handle_goto_declaration");
     log::trace!("{:?}", params);
 

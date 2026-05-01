@@ -8,7 +8,7 @@ use crate::handler::hover::get_hover_keys_with_range;
 pub async fn handle_goto_definition(
     backend: &Backend,
     params: GotoDefinitionParams,
-) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
     log::info!("handle_goto_definition");
     log::trace!("{:?}", params);
 
@@ -52,8 +52,7 @@ pub async fn handle_goto_definition(
 
     let position = position.into_lsp(line_index);
 
-    if let Some(location) = resolve_schema_definition_location(&root, &text_document_uri, position)
-    {
+    if let Some(location) = resolve_schema_location(&root, &text_document_uri, position) {
         return Ok(Some(vec![location]));
     }
 
@@ -106,11 +105,11 @@ pub async fn handle_goto_definition(
     Ok(Default::default())
 }
 
-fn resolve_schema_definition_location(
+fn resolve_schema_location(
     root: &tombi_ast::Root,
     text_document_uri: &tombi_uri::Uri,
     position: tombi_text::Position,
-) -> Option<tombi_extension::DefinitionLocation> {
+) -> Option<tombi_extension::Location> {
     let document_file_path = text_document_uri.to_file_path().ok()?;
     let schema_directive =
         root.schema_document_comment_directive(Some(document_file_path.as_path()))?;
@@ -133,7 +132,7 @@ fn resolve_schema_definition_location(
         }
     }
 
-    Some(tombi_extension::DefinitionLocation {
+    Some(tombi_extension::Location {
         uri: uri.into(),
         range: tombi_text::Range::default(),
     })

@@ -4,13 +4,13 @@ use crate::extensions::{EnabledOnly, ToggleFeatureDefaultTrue};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum PyprojectNavigationFeatures {
+pub enum CargoGotoDefinitionFeatures {
     Enabled(EnabledOnly),
-    Features(PyprojectNavigationFeatureTree),
+    Features(CargoGotoDefinitionFeatureTree),
 }
 
 toggle_features! {
-    PyprojectNavigationFeatures,
+    CargoGotoDefinitionFeatures,
 
     #[derive(Debug, Default, Clone, PartialEq)]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -23,20 +23,20 @@ toggle_features! {
             "x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending
         ))
     )]
-    pub struct PyprojectNavigationFeatureTree {
-        /// # Dependency navigation feature
+    pub struct CargoGotoDefinitionFeatureTree {
+        /// # Dependency definition navigation feature
         ///
-        /// Whether navigation resolves dependency definitions and declarations.
+        /// Whether definition navigation resolves dependency targets.
         pub dependency: Option<ToggleFeatureDefaultTrue>,
 
-        /// # Member navigation feature
+        /// # Member definition navigation feature
         ///
-        /// Whether navigation resolves workspace member targets.
+        /// Whether definition navigation resolves workspace member targets.
         pub member: Option<ToggleFeatureDefaultTrue>,
 
-        /// # Path navigation feature
+        /// # Path definition navigation feature
         ///
-        /// Whether navigation resolves filesystem paths.
+        /// Whether definition navigation resolves filesystem paths.
         pub path: Option<ToggleFeatureDefaultTrue>,
     }
 }

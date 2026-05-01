@@ -1,11 +1,10 @@
 use crate::{
-    CargoNavigationFeature, classify_cargo_navigation_feature, collect_feature_usage_locations,
-    feature_key_at_accessors, feature_usage_target_for_feature_key,
-    feature_usage_target_for_optional_dependency, goto_definition_for_crate_cargo_toml,
+    feature_key_at_accessors, goto_declaration_for_crate_cargo_toml,
     optional_dependency_value_at_accessors,
 };
 use tombi_config::TomlVersion;
-use tombi_schema_store::matches_accessors;
+use tombi_document_tree::dig_keys;
+use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn goto_declaration(
     text_document_uri: &tombi_uri::Uri,
@@ -13,7 +12,7 @@ pub async fn goto_declaration(
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is Cargo.toml
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(Default::default());
@@ -26,40 +25,13 @@ pub async fn goto_declaration(
         return Ok(None);
     }
 
-    let target = feature_key_at_accessors(document_tree, accessors)
-        .and_then(|_| feature_usage_target_for_feature_key(&cargo_toml_path, accessors))
-        .or_else(|| {
-            optional_dependency_value_at_accessors(document_tree, accessors)
-                .filter(|optional| optional.value())
-                .and_then(|_| {
-                    feature_usage_target_for_optional_dependency(&cargo_toml_path, accessors)
-                })
-        });
-    if let Some(target) = target {
-        let locations =
-            collect_feature_usage_locations(document_tree, &cargo_toml_path, &target, toml_version)
-                .await
-                .into_iter()
-                .filter_map(|location| location.definition_location())
-                .collect::<Vec<_>>();
-        if locations.is_empty() {
-            return Ok(None);
-        }
-
-        return Ok(Some(locations));
-    }
-
-    let locations = if matches_accessors!(accessors[..accessors.len().min(1)], ["workspace"]) {
-        vec![]
-    } else {
-        goto_definition_for_crate_cargo_toml(
-            document_tree,
-            accessors,
-            &cargo_toml_path,
-            toml_version,
-            false,
-        )?
-    };
+    let locations = goto_declaration_for_crate_cargo_toml(
+        document_tree,
+        accessors,
+        &cargo_toml_path,
+        toml_version,
+        false,
+    )?;
 
     if locations.is_empty() {
         return Ok(Default::default());
@@ -75,14 +47,74 @@ fn cargo_navigation_enabled(
     features
         .and_then(|features| features.lsp())
         .and_then(|lsp| lsp.goto_declaration())
-        .and_then(
-            |goto_declaration| match classify_cargo_navigation_feature(accessors) {
-                CargoNavigationFeature::Dependency => goto_declaration.dependency(),
-                CargoNavigationFeature::Member => goto_declaration.member(),
-                CargoNavigationFeature::Path => goto_declaration.path(),
-            },
-        )
+        .and_then(|goto_declaration| {
+            if matches!(
+                accessors.last(),
+                Some(tombi_schema_store::Accessor::Key(key)) if key == "path"
+            ) {
+                goto_declaration.path()
+            } else {
+                goto_declaration.dependency()
+            }
+        })
         .map(|feature| feature.enabled())
         .unwrap_or_default()
         .value()
+}
+
+pub fn get_current_declaration(
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[Accessor],
+    cargo_toml_uri: &tombi_uri::Uri,
+) -> Option<tombi_extension::Location> {
+    if !cargo_toml_uri.path().ends_with("Cargo.toml") {
+        return None;
+    }
+
+    if matches_accessors!(accessors, ["features", _]) {
+        let feature_key = feature_key_at_accessors(document_tree, accessors)?;
+        return Some(tombi_extension::Location {
+            uri: cargo_toml_uri.clone(),
+            range: feature_key.unquoted_range(),
+        });
+    }
+
+    let (dependency_key, _) = if matches_accessors!(accessors, ["dependencies", _, "optional"])
+        || matches_accessors!(accessors, ["dev-dependencies", _, "optional"])
+        || matches_accessors!(accessors, ["build-dependencies", _, "optional"])
+    {
+        if !optional_dependency_value_at_accessors(document_tree, accessors).unwrap_or_default() {
+            return None;
+        }
+        dig_keys(
+            document_tree,
+            &[accessors.first()?.as_key()?, accessors.get(1)?.as_key()?],
+        )?
+    } else if matches_accessors!(accessors, ["target", _, "dependencies", _, "optional"])
+        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _, "optional"])
+        || matches_accessors!(
+            accessors,
+            ["target", _, "build-dependencies", _, "optional"]
+        )
+    {
+        if !optional_dependency_value_at_accessors(document_tree, accessors).unwrap_or_default() {
+            return None;
+        }
+        dig_keys(
+            document_tree,
+            &[
+                "target",
+                accessors.get(1)?.as_key()?,
+                accessors.get(2)?.as_key()?,
+                accessors.get(3)?.as_key()?,
+            ],
+        )?
+    } else {
+        return None;
+    };
+
+    Some(tombi_extension::Location {
+        uri: cargo_toml_uri.clone(),
+        range: dependency_key.unquoted_range(),
+    })
 }

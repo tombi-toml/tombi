@@ -255,9 +255,7 @@ mod goto_definition_tests {
                 semver█ = { version = "1.0.23" }
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
-            ) -> Ok([
-                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
-            ]);
+            ) -> Ok([project_root_path().join("crates/tombi-lsp/Cargo.toml")]);
         );
 
         test_goto_definition!(
@@ -422,6 +420,29 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
+            async fn feature_default_entry_reference_with_workspace_optional_dependency(
+                r#"
+                [package]
+                name = "nagi-config"
+                version = "0.1.0"
+                edition = "2024"
+
+                [dependencies]
+                nagi_uri = { workspace = true, optional = true }
+
+                [features]
+                default = ["postgres█", "serde"]
+                postgres = []
+                serde = ["dep:nagi_uri"]
+                "#,
+                SourcePath(cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")),
+            ) -> Ok([
+                cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")
+            ]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
             async fn feature_key_collects_same_file_and_workspace_usages(
                 r#"
                 [package]
@@ -440,6 +461,29 @@ mod goto_definition_tests {
                 cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml"),
                 cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml"),
                 cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/weak-consumer/Cargo.toml"),
+            ]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn package_name_lists_workspace_and_member_dependency_usages(
+                r#"
+                [package]
+                name = "provider█"
+                version = "0.1.0"
+                edition = "2024"
+
+                [features]
+                jsonschema = []
+                "#,
+                SourcePath(
+                    cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml")
+                ),
+            ) -> Ok([
+                cargo_feature_navigation_fixture_path().join("workspace/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml"),
                 cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
                 cargo_feature_navigation_fixture_path().join("workspace/weak-consumer/Cargo.toml"),
             ]);
@@ -519,6 +563,27 @@ mod goto_definition_tests {
                 [features]
                 local = []
                 bundle = ["local", "schemars", "dep:schemars"]
+                "#,
+                SourcePath(cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")),
+            ) -> Ok([
+                cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")
+            ]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn optional_dependency_definition_collects_dep_syntax_usages_for_workspace_dependency(
+                r#"
+                [package]
+                name = "nagi-config"
+                version = "0.1.0"
+                edition = "2024"
+
+                [dependencies]
+                nagi_uri = { workspace = true, optional█ = true }
+
+                [features]
+                serde = ["dep:nagi_uri"]
                 "#,
                 SourcePath(cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")),
             ) -> Ok([
@@ -757,6 +822,24 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
+            async fn project_name_lists_workspace_and_member_dependency_usages(
+                r#"
+                [project]
+                name = "app2█"
+                version = "0.1.0"
+                dependencies = [
+                  "pydantic",
+                ]
+                "#,
+                SourcePath(pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml")),
+            ) -> Ok([
+                pyproject_workspace_fixtures_path().join("members/app3/pyproject.toml"),
+                pyproject_workspace_fixtures_path().join("members/app3/pyproject.toml"),
+            ]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
             async fn workspace_dependencies_list_member_usages(
                 r#"
                 [project]
@@ -776,6 +859,29 @@ mod goto_definition_tests {
                 pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
                 pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml"),
             ]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn workspace_dependency_with_sources_jumps_to_definition_only(
+                r#"
+                [project]
+                name = "workspace"
+                version = "0.1.0"
+                dependencies = ["app2█"]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+
+                [tool.uv.workspace]
+                members = [
+                    "members/app",
+                    "members/app2",
+                    "members/app3",
+                ]
+                "#,
+                SourcePath(pyproject_workspace_fixtures_path().join("pyproject.toml")),
+            ) -> Ok([pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml")]);
         );
     }
 

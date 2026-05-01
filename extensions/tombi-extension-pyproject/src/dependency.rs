@@ -183,7 +183,7 @@ pub(crate) fn include_group_locations(
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     pyproject_toml_path: &std::path::Path,
-) -> Result<Vec<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     let Some(tombi_schema_store::Accessor::Key(group_name)) = accessors.get(1) else {
         return Ok(Vec::with_capacity(0));
     };
@@ -194,7 +194,7 @@ pub(crate) fn include_group_locations(
 
     Ok(collect_include_group_values(document_tree, group_name)
         .into_iter()
-        .map(|include_group| tombi_extension::DefinitionLocation {
+        .map(|include_group| tombi_extension::Location {
             uri: uri.clone(),
             range: include_group.unquoted_range(),
         })

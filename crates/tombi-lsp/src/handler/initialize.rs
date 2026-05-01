@@ -157,6 +157,7 @@ pub fn server_capabilities(
             resolve_provider: Some(true),
             work_done_progress_options: WorkDoneProgressOptions::default(),
         }),
+        references_provider: Some(OneOf::Left(true)),
         type_definition_provider: Some(TypeDefinitionProviderCapability::Simple(true)),
         declaration_provider: Some(DeclarationCapability::Simple(true)),
         definition_provider: Some(OneOf::Left(true)),

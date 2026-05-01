@@ -110,7 +110,7 @@ pub(crate) fn goto_definition_for_member_pyproject_toml(
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     jump_to_package: bool,
-) -> Result<Vec<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     if matches_accessors!(accessors, ["tool", "uv", "sources", _])
         || matches_accessors!(accessors, ["tool", "uv", "sources", _, "workspace"])
     {
@@ -134,7 +134,7 @@ pub(crate) fn goto_definition_for_workspace_pyproject_toml(
     accessors: &[tombi_schema_store::Accessor],
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<Vec<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     if matches_accessors!(accessors, ["tool", "uv", "workspace", "members"])
         || matches_accessors!(accessors, ["tool", "uv", "workspace", "members", _])
     {
@@ -156,7 +156,7 @@ pub(crate) fn goto_workspace_member(
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     jump_to_package: bool,
-) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     debug_assert!(
         matches_accessors!(accessors, ["tool", "uv", "sources", _])
             || matches_accessors!(accessors, ["tool", "uv", "sources", _, "workspace"])
@@ -204,7 +204,7 @@ pub(crate) fn goto_workspace_member(
             return Ok(None);
         };
 
-        Ok(Some(tombi_extension::DefinitionLocation {
+        Ok(Some(tombi_extension::Location {
             uri: package_pyproject_toml_uri,
             range: package_name.unquoted_range(),
         }))
@@ -215,7 +215,7 @@ pub(crate) fn goto_workspace_member(
             return Ok(None);
         };
 
-        Ok(Some(tombi_extension::DefinitionLocation {
+        Ok(Some(tombi_extension::Location {
             uri: workspace_pyproject_toml_uri,
             range: member_range,
         }))
