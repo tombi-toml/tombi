@@ -167,6 +167,20 @@ pub async fn document_link(
         )?);
     }
 
+    // Handle [build-system] section
+    if let Some((_, tombi_document_tree::Value::Array(requires))) =
+        dig_keys(document_tree, &["build-system", "requires"])
+    {
+        document_links.extend(document_link_for_project_dependencies(
+            requires,
+            pyproject_sources,
+            &pyproject_toml_path,
+            toml_version,
+            pyproject_toml_document_link_enabled.value(),
+            pypi_org_document_link_enabled.value(),
+        )?);
+    }
+
     document_links.extend(document_link_for_tool_uv_dependencies(
         document_tree,
         pyproject_sources,
