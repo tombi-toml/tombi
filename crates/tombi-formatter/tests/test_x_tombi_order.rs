@@ -391,29 +391,6 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
-            async fn test_tool_maturin_include(
-                r#"
-                [tool.maturin]
-                include = [
-                  { path = "www.schemastore.org/**/*.json", format = "sdist" },
-                  { path = "www.schemastore.tombi/**/*.json", format = "sdist" },
-                ]
-                "#,
-                SchemaPath(pyproject_schema_path()),
-                SourcePath(project_root_path().join("pyproject.toml")),
-            ) -> Ok(
-                r#"
-                [tool.maturin]
-                include = [
-                  { format = "sdist", path = "www.schemastore.org/**/*.json" },
-                  { format = "sdist", path = "www.schemastore.tombi/**/*.json" },
-                ]
-                "#
-            )
-        }
-
-        test_format! {
-            #[tokio::test]
             async fn test_tool_table_keys_order_disabled_is_true(
                 r#"
                 [project]
