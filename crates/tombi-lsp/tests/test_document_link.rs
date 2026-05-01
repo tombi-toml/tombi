@@ -1027,6 +1027,25 @@ mod document_link_tests {
 
         test_document_link!(
             #[tokio::test]
+            async fn pyproject_build_system_requires(
+                r#"
+                [build-system]
+                requires = [
+                  "maturin>=1.5,<2.0",
+                ]
+                "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok(Some(vec![
+                {
+                    url: "https://pypi.org/project/maturin/",
+                    range: 2:3..2:20,
+                    tooltip: "Open PyPI Package",
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
             async fn pyproject_default_features_disable_pyproject_toml_links(
                 r#"
                 [project]
