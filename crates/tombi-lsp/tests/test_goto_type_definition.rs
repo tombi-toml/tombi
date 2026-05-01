@@ -213,6 +213,17 @@ mod goto_type_definition_tests {
 
         test_goto_type_definition!(
             #[tokio::test]
+            async fn typed_extra_table_known_scalar_value(
+                r#"
+                [typed_extra_table]
+                known = "█value"
+                "#,
+                SchemaPath(lsp_consistency_test_schema_path()),
+            ) -> Ok(lsp_consistency_test_schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
             async fn typed_extra_table_unevaluated_properties_id_value(
                 r#"
                 [typed_extra_table]
