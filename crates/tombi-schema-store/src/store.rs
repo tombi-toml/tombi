@@ -16,9 +16,15 @@ use tombi_uri::SchemaUri;
 
 type DocumentSchemas = Arc<RwLock<tombi_hashmap::HashMap<SchemaUri, CachedDocumentSchema>>>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct SchemaCacheVersion {
+    modified_at_nanos: u64,
+    len: u64,
+}
+
 #[derive(Debug, Clone)]
 struct CachedDocumentSchema {
-    version: Option<u64>,
+    version: Option<SchemaCacheVersion>,
     document_schema: Result<Arc<DocumentSchema>, crate::Error>,
 }
 
@@ -562,19 +568,30 @@ impl SchemaStore {
                 (uri, fragment)
             };
 
-            let cache_version = schema_cache_version(&schema_uri).await;
-            let cached_document_schema = {
-                self.document_schemas
-                    .read()
-                    .await
-                    .get(&schema_uri)
-                    .cloned()
-                    .filter(|cached| cached.version == cache_version)
-            };
+            let cached_document_schema =
+                self.document_schemas.read().await.get(&schema_uri).cloned();
             let document_schema = if let Some(cached_document_schema) = cached_document_schema {
-                match cached_document_schema.document_schema {
-                    Ok(document_schema) => Some(document_schema),
-                    Err(err) => return Err(err),
+                let cache_version = schema_cache_version(&schema_uri).await;
+                if cached_document_schema.version == cache_version {
+                    match cached_document_schema.document_schema {
+                        Ok(document_schema) => Some(document_schema),
+                        Err(err) => return Err(err),
+                    }
+                } else {
+                    match self.fetch_document_schema(&schema_uri).await.transpose() {
+                        Some(document_schema) => {
+                            let cache_version = schema_cache_version(&schema_uri).await;
+                            self.document_schemas.write().await.insert(
+                                schema_uri.clone(),
+                                CachedDocumentSchema {
+                                    version: cache_version,
+                                    document_schema: document_schema.clone(),
+                                },
+                            );
+                            Some(document_schema?)
+                        }
+                        None => None,
+                    }
                 }
             } else {
                 match self.fetch_document_schema(&schema_uri).await.transpose() {
@@ -1049,7 +1066,7 @@ impl SchemaStore {
     }
 }
 
-async fn schema_cache_version(schema_uri: &SchemaUri) -> Option<u64> {
+async fn schema_cache_version(schema_uri: &SchemaUri) -> Option<SchemaCacheVersion> {
     let path = match schema_uri.scheme() {
         "file" => tombi_uri::Uri::to_file_path(schema_uri).ok(),
         "http" | "https" => get_cache_file_path(schema_uri).await,
@@ -1060,12 +1077,13 @@ async fn schema_cache_version(schema_uri: &SchemaUri) -> Option<u64> {
     let modified = metadata.modified().ok()?;
     let duration = modified.duration_since(std::time::UNIX_EPOCH).ok()?;
 
-    Some(
-        duration
+    Some(SchemaCacheVersion {
+        modified_at_nanos: duration
             .as_secs()
             .saturating_mul(1_000_000_000)
             .saturating_add(u64::from(duration.subsec_nanos())),
-    )
+        len: metadata.len(),
+    })
 }
 
 fn matches_schema_patterns(
