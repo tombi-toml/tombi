@@ -338,7 +338,7 @@ pub(crate) fn feature_key_at_accessors<'a>(
 pub(crate) fn optional_dependency_value_at_accessors<'a>(
     document_tree: &'a tombi_document_tree::DocumentTree,
     accessors: &'a [Accessor],
-) -> Option<&'a tombi_document_tree::Boolean> {
+) -> Option<bool> {
     let dependency_accessors = dependency_optional_accessors(accessors)?;
     let Some((_, Value::Table(table))) = dig_accessors(document_tree, dependency_accessors) else {
         return None;
@@ -346,7 +346,7 @@ pub(crate) fn optional_dependency_value_at_accessors<'a>(
     let Value::Boolean(optional) = table.get("optional")? else {
         return None;
     };
-    Some(optional)
+    Some(optional.value())
 }
 
 pub(crate) fn feature_usage_target_for_optional_dependency(

@@ -22,15 +22,13 @@ pub async fn open_remote_file(
             {
                 return Ok(Some(cached_uri));
             }
-            let remote_uri =
-                tombi_uri::Uri::from_str(&format!("untitled://{}", uri.path())).unwrap();
+            let remote_uri = build_remote_document_uri(uri)?;
             let content = fetch_remote_content(uri).await?;
             open_remote_content(backend, &remote_uri, content).await?;
             Ok(Some(remote_uri))
         }
         "tombi" => {
-            let remote_uri =
-                tombi_uri::Uri::from_str(&format!("untitled://{}", uri.path())).unwrap();
+            let remote_uri = build_remote_document_uri(uri)?;
             let Some(content) = get_tombi_schemastore_content(uri) else {
                 return Ok(None);
             };
@@ -46,12 +44,21 @@ async fn open_remote_content(
     remote_url: &Url,
     content: impl Into<String>,
 ) -> Result<(), tower_lsp::jsonrpc::Error> {
-    let remote_url_path = Url::parse(&format!("untitled://{}", remote_url.path())).unwrap();
-
-    create_empty_file(backend, &remote_url_path).await?;
-    insert_content(backend, &remote_url_path, content).await?;
+    create_empty_file(backend, remote_url).await?;
+    insert_content(backend, remote_url, content).await?;
 
     Ok(())
+}
+
+#[inline]
+fn build_remote_document_uri(
+    uri: &tombi_uri::Uri,
+) -> Result<tombi_uri::Uri, tower_lsp::jsonrpc::Error> {
+    tombi_uri::Uri::from_str(&format!("untitled://{}", uri.path())).map_err(|err| {
+        tower_lsp::jsonrpc::Error::invalid_params(format!(
+            "failed to build untitled URL for remote content: {err}"
+        ))
+    })
 }
 
 async fn create_empty_file(
@@ -150,7 +157,7 @@ async fn fetch_remote_content(url: &Url) -> Result<String, tower_lsp::jsonrpc::E
     };
 
     // Check if the content is valid JSON
-    tombi_json::ValueNode::from_str(&content.clone()).map_err(|e| {
+    tombi_json::ValueNode::from_str(&content).map_err(|e| {
         log::error!("Failed to parse {url} content: {}", e);
         tower_lsp::jsonrpc::Error::new(tower_lsp::jsonrpc::ErrorCode::InternalError)
     })?;

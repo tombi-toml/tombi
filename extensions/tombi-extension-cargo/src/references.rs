@@ -48,8 +48,7 @@ pub async fn references(
         return Ok((!locations.is_empty()).then_some(locations));
     }
 
-    if optional_dependency_value_at_accessors(document_tree, accessors)
-        .is_some_and(|optional| optional.value())
+    if optional_dependency_value_at_accessors(document_tree, accessors).unwrap_or_default()
         && let Some(target) =
             feature_usage_target_for_optional_dependency(&cargo_toml_path, accessors)
     {

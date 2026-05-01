@@ -199,3 +199,27 @@ fn get_path_dependency_declaration(
         range: path_value.unquoted_range(),
     })
 }
+
+pub fn get_current_declaration(
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[tombi_schema_store::Accessor],
+    pyproject_toml_uri: &tombi_uri::Uri,
+) -> Option<tombi_extension::Location> {
+    if !pyproject_toml_uri.path().ends_with("pyproject.toml") {
+        return None;
+    }
+
+    if !matches_accessors!(accessors, ["dependency-groups", _]) {
+        return None;
+    }
+
+    let (group_key, _) = dig_keys(
+        document_tree,
+        &["dependency-groups", accessors.get(1)?.as_key()?],
+    )?;
+
+    Some(tombi_extension::Location {
+        uri: pyproject_toml_uri.clone(),
+        range: group_key.unquoted_range(),
+    })
+}

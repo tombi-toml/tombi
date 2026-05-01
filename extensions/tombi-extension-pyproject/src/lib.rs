@@ -15,6 +15,7 @@ pub use code_action::code_action;
 pub use completion::completion;
 pub use did_open::did_open;
 pub use document_link::document_link;
+pub use goto_declaration::get_current_declaration;
 pub use goto_declaration::goto_declaration;
 pub use goto_definition::goto_definition;
 pub use hover::hover;

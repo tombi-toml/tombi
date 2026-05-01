@@ -60,8 +60,7 @@ pub async fn goto_definition(
         && let Some(location) = location.get_location()
     {
         vec![location]
-    } else if optional_dependency_value_at_accessors(document_tree, accessors)
-        .is_some_and(|optional| optional.value())
+    } else if optional_dependency_value_at_accessors(document_tree, accessors).unwrap_or_default()
         && let Some(target) =
             feature_usage_target_for_optional_dependency(&cargo_toml_path, accessors)
     {

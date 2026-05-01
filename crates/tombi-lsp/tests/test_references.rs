@@ -26,6 +26,7 @@ macro_rules! test_references {
             struct TestArgs {
                 source_file_path: Option<std::path::PathBuf>,
                 config_file_path: Option<std::path::PathBuf>,
+                include_declaration: bool,
                 backend_options: tombi_lsp::backend::Options,
             }
 
@@ -47,6 +48,15 @@ macro_rules! test_references {
             impl ApplyTestArg for ConfigPath {
                 fn apply(self, args: &mut TestArgs) {
                     args.config_file_path = Some(self.0);
+                }
+            }
+
+            #[allow(unused)]
+            struct IncludeDeclaration(bool);
+
+            impl ApplyTestArg for IncludeDeclaration {
+                fn apply(self, args: &mut TestArgs) {
+                    args.include_declaration = self.0;
                 }
             }
 
@@ -140,7 +150,7 @@ macro_rules! test_references {
                     .into_lsp(&line_index),
                 },
                 context: ReferenceContext {
-                    include_declaration: false,
+                    include_declaration: args.include_declaration,
                 },
                 work_done_progress_params: WorkDoneProgressParams::default(),
                 partial_result_params: PartialResultParams::default(),
@@ -232,6 +242,33 @@ mod references_tests {
                 cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
                 cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
                 cargo_feature_navigation_fixture_path().join("workspace/weak-consumer/Cargo.toml"),
+            ]);
+        );
+
+        test_references!(
+            #[tokio::test]
+            async fn include_declaration_appends_definition_location(
+                r#"
+                [package]
+                name = "provider"
+                version = "0.1.0"
+                edition = "2024"
+
+                [features]
+                jsonschema█ = []
+                "#,
+                SourcePath(
+                    cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml")
+                ),
+                IncludeDeclaration(true),
+            ) -> Ok([
+                cargo_feature_navigation_fixture_path().join("workspace/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/weak-consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml"),
             ]);
         );
 
@@ -415,6 +452,24 @@ mod references_tests {
                 ConfigPath(fixture_config_path("pyproject-references-only-enabled")),
             ) -> Ok([
                 pyproject_workspace_fixtures_path().join("pyproject.toml"),
+            ]);
+        );
+
+        test_references!(
+            #[tokio::test]
+            async fn pyproject_include_declaration_adds_current_dependency_group(
+                r#"
+                [dependency-groups]
+                dev = [{ include-group = "ci" }]
+                qa = [{ include-group = "ci" }]
+                ci█ = ["ruff"]
+                "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
+                IncludeDeclaration(true),
+            ) -> Ok([
+                project_root_path().join("pyproject.toml"),
+                project_root_path().join("pyproject.toml"),
+                project_root_path().join("pyproject.toml"),
             ]);
         );
     }
