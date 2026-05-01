@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_accessors, dig_keys};
+use tombi_hashmap::IndexSet;
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
@@ -8,7 +9,8 @@ use crate::{
     collect_dependency_requirements_from_document_tree, find_dependency_group_key,
     find_member_project_toml, find_workspace_pyproject_toml, get_project_name,
     goto_definition_for_member_pyproject_toml, goto_definition_for_workspace_pyproject_toml,
-    load_pyproject_toml_document_tree, parse_requirement, resolve_member_pyproject_toml_path,
+    load_pyproject_toml_document_tree, parse_requirement, project_name_reference_locations,
+    resolve_member_pyproject_toml_path,
 };
 
 pub async fn goto_definition(
@@ -30,7 +32,14 @@ pub async fn goto_definition(
         return Ok(None);
     }
 
-    let locations = if matches_accessors!(
+    let locations = if matches_accessors!(accessors, ["project", "name"]) {
+        project_name_reference_locations(
+            document_tree,
+            accessors,
+            &pyproject_toml_path,
+            toml_version,
+        )?
+    } else if matches_accessors!(
         accessors[..accessors.len().min(3)],
         ["tool", "uv", "sources"]
     ) {
@@ -122,9 +131,15 @@ fn goto_definition_for_dependency_package(
             if !is_workspace.value() {
                 return Ok(Vec::with_capacity(0));
             }
-            if let Some(location) =
+            if let Some(location) = get_current_workspace_dependency_definition(
+                document_tree,
+                package_name,
+                pyproject_toml_path,
+                toml_version,
+            )
+            .or_else(|| {
                 get_workspace_dependency_definition(package_name, pyproject_toml_path, toml_version)
-            {
+            }) {
                 return Ok(vec![location]);
             } else {
                 return Ok(Vec::with_capacity(0));
@@ -141,7 +156,7 @@ fn goto_definition_for_dependency_package(
         }
     }
 
-    let mut locations = Vec::new();
+    let mut locations = IndexSet::new();
 
     // Package references without version info should jump to workspace definition when available
     if requirement.version_or_url.is_none() {
@@ -161,7 +176,7 @@ fn goto_definition_for_dependency_package(
         ));
     }
 
-    Ok(locations)
+    Ok(locations.into_iter().collect())
 }
 
 fn goto_definition_for_include_group(
@@ -209,6 +224,35 @@ fn get_workspace_dependency_definition(
         package_name,
         &workspace_document_tree,
         &workspace_path,
+        toml_version,
+    )?;
+
+    let member_document_tree =
+        load_pyproject_toml_document_tree(&member_pyproject_toml_path, toml_version)?;
+    let package_name = get_project_name(&member_document_tree)?;
+    let member_pyproject_toml_uri =
+        tombi_uri::Uri::from_file_path(&member_pyproject_toml_path).ok()?;
+
+    Some(tombi_extension::Location {
+        uri: member_pyproject_toml_uri,
+        range: package_name.unquoted_range(),
+    })
+}
+
+fn get_current_workspace_dependency_definition(
+    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    package_name: &str,
+    workspace_pyproject_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+) -> Option<tombi_extension::Location> {
+    if dig_keys(workspace_document_tree, &["tool", "uv", "workspace"]).is_none() {
+        return None;
+    }
+
+    let (member_pyproject_toml_path, _) = find_member_project_toml(
+        package_name,
+        workspace_document_tree,
+        workspace_pyproject_toml_path,
         toml_version,
     )?;
 

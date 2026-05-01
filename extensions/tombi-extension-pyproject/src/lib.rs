@@ -35,6 +35,7 @@ pub(crate) use manifest::{
     PackageLocation, find_workspace_pyproject_toml, get_project_name,
     load_pyproject_toml_document_tree, resolve_member_pyproject_toml_path,
 };
+pub(crate) use references::project_name_reference_locations;
 use tombi_schema_store::matches_accessors;
 pub(crate) use workspace::{
     extract_exclude_patterns, extract_member_patterns, find_member_project_toml,

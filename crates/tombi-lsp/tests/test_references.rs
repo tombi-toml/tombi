@@ -310,6 +310,29 @@ mod references_tests {
                 project_root_path().join("crates/tombi-lsp/Cargo.toml"),
             ]);
         );
+
+        test_references!(
+            #[tokio::test]
+            async fn package_name_lists_workspace_and_member_dependency_usages(
+                r#"
+                [package]
+                name = "provider█"
+                version = "0.1.0"
+                edition = "2024"
+
+                [features]
+                jsonschema = []
+                "#,
+                SourcePath(
+                    cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml")
+                ),
+            ) -> Ok([
+                cargo_feature_navigation_fixture_path().join("workspace/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/renamed-consumer/Cargo.toml"),
+                cargo_feature_navigation_fixture_path().join("workspace/weak-consumer/Cargo.toml"),
+            ]);
+        );
     }
 
     mod pyproject_schema {
@@ -356,6 +379,24 @@ mod references_tests {
                 SourcePath(pyproject_workspace_fixtures_path().join("members/app/pyproject.toml")),
             ) -> Ok([
                 pyproject_workspace_fixtures_path().join("pyproject.toml"),
+            ]);
+        );
+
+        test_references!(
+            #[tokio::test]
+            async fn project_name_lists_workspace_and_member_dependency_usages(
+                r#"
+                [project]
+                name = "app2█"
+                version = "0.1.0"
+                dependencies = [
+                  "pydantic",
+                ]
+                "#,
+                SourcePath(pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml")),
+            ) -> Ok([
+                pyproject_workspace_fixtures_path().join("members/app3/pyproject.toml"),
+                pyproject_workspace_fixtures_path().join("members/app3/pyproject.toml"),
             ]);
         );
 
