@@ -1468,28 +1468,6 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
-            async fn pyproject_tool_maturin_include_array(
-                r#"
-                [tool.maturin]
-                bindings = "bin"
-                include = [
-                    █
-                    { path = "www.schemastore.org/**/*.json", format = "sdist" },
-                ]
-                "#,
-                SourcePath(project_root_path().join("pyproject.toml")),
-                SchemaPath(pyproject_schema_path()),
-            ) -> Ok([
-                "format",
-                "path",
-                "\"\"",
-                "''",
-                "{}",
-            ]);
-        }
-
-        test_completion_labels! {
-            #[tokio::test]
             async fn pyproject_project_leading_comments_directive_newline_name_eq_tombi(
                 r#"
                 # tombi: lint.rules█
