@@ -53,6 +53,29 @@ impl<'a> TypeDefinitionSource<'a> {
             }
         }
 
+        if remaining_keys(keys, &accessors).is_empty()
+            && matches!(accessors.last(), Some(Accessor::Key(_)))
+            && tombi_document_tree::dig_accessors(document_tree, &accessors)
+                .is_some_and(|(_, value)| value.is_scalar())
+        {
+            let parent_accessors = accessors[..accessors.len().saturating_sub(1)].to_vec();
+            let (resolved_parent_accessors, resolved_parent_schema) =
+                resolve_accessors_for_document_or_schema(
+                    document_tree,
+                    parent_accessors,
+                    schema_context,
+                )
+                .await;
+            if resolved_parent_accessors.is_empty()
+                || tombi_document_tree::dig_accessors(document_tree, &resolved_parent_accessors)
+                    .is_some()
+                || resolved_parent_schema.is_some()
+            {
+                accessors = resolved_parent_accessors;
+                current_schema = resolved_parent_schema;
+            }
+        }
+
         let remaining_keys = remaining_keys(keys, &accessors);
 
         if accessors.is_empty() {
