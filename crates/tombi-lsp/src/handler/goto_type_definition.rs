@@ -15,7 +15,7 @@ use crate::{
 pub async fn handle_goto_type_definition(
     backend: &Backend,
     params: GotoTypeDefinitionParams,
-) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
     log::info!("handle_goto_type_definition");
     log::trace!("{:?}", params);
 
@@ -67,7 +67,7 @@ pub async fn handle_goto_type_definition(
     if let Some(type_definition) =
         get_tombi_document_comment_directive_type_definition(&root, position).await
     {
-        return Ok(Some(vec![tombi_extension::DefinitionLocation {
+        return Ok(Some(vec![tombi_extension::Location {
             uri: type_definition.schema_uri.into(),
             range: type_definition.range,
         }]));
@@ -105,7 +105,7 @@ pub async fn handle_goto_type_definition(
         {
             Some(TypeDefinition {
                 schema_uri, range, ..
-            }) => Some(vec![tombi_extension::DefinitionLocation {
+            }) => Some(vec![tombi_extension::Location {
                 uri: schema_uri.into(),
                 range,
             }]),

@@ -9,6 +9,7 @@ mod goto_declaration;
 mod goto_definition;
 mod hover;
 mod inlay_hint;
+mod references;
 mod workspace;
 
 pub use code_action::{CodeActionRefactorRewriteName, code_action};
@@ -19,6 +20,7 @@ pub use goto_declaration::goto_declaration;
 pub use goto_definition::goto_definition;
 pub use hover::hover;
 pub use inlay_hint::inlay_hint;
+pub use references::references;
 
 pub(crate) use cargo_toml::{
     CrateLocation, dependency_package_name, find_cargo_toml, get_uri_relative_to_cargo_toml,
@@ -34,9 +36,9 @@ pub(crate) use feature_navigation::{
 };
 pub(crate) use workspace::{
     canonicalize_or_original, find_package_cargo_toml_paths, find_workspace_cargo_toml,
-    get_workspace_cargo_toml_path, goto_definition_for_crate_cargo_toml,
+    get_workspace_cargo_toml_path, goto_declaration_for_crate_cargo_toml,
     goto_definition_for_workspace_cargo_toml, load_cargo_toml_document_tree,
-    load_workspace_cargo_toml, sanitize_dependency_key,
+    load_workspace_cargo_toml, sanitize_dependency_key, workspace_dependency_usage_locations,
 };
 
 pub(crate) enum CargoNavigationFeature {

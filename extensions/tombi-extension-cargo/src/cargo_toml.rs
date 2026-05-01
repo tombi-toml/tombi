@@ -10,13 +10,13 @@ pub(crate) struct CrateLocation {
     pub(crate) package_name_key_range: tombi_text::Range,
 }
 
-impl From<CrateLocation> for Option<tombi_extension::DefinitionLocation> {
+impl From<CrateLocation> for Option<tombi_extension::Location> {
     fn from(crate_location: CrateLocation) -> Self {
         let Ok(uri) = tombi_uri::Uri::from_file_path(&crate_location.cargo_toml_path) else {
             return None;
         };
 
-        Some(tombi_extension::DefinitionLocation {
+        Some(tombi_extension::Location {
             uri,
             range: crate_location.package_name_key_range,
         })

@@ -1,0 +1,8 @@
+[lsp.references]
+enabled = true
+
+[extensions]
+"tombi-toml/pyproject" = {
+  lsp.goto-definition.dependency.enabled = false,
+  lsp.references.dependency.enabled = true
+}

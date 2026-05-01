@@ -4,13 +4,13 @@ use crate::extensions::{EnabledOnly, ToggleFeatureDefaultTrue};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum CargoNavigationFeatures {
+pub enum CargoGotoDeclarationFeatures {
     Enabled(EnabledOnly),
-    Features(CargoNavigationFeatureTree),
+    Features(CargoGotoDeclarationFeatureTree),
 }
 
 toggle_features! {
-    CargoNavigationFeatures,
+    CargoGotoDeclarationFeatures,
 
     #[derive(Debug, Default, Clone, PartialEq)]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -23,20 +23,21 @@ toggle_features! {
             "x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending
         ))
     )]
-    pub struct CargoNavigationFeatureTree {
-        /// # Dependency navigation feature
+    pub struct CargoGotoDeclarationFeatureTree {
+        /// # Dependency declaration navigation feature
         ///
-        /// Whether navigation resolves dependency definitions and declarations.
+        /// Whether declaration navigation resolves dependency declarations.
         pub dependency: Option<ToggleFeatureDefaultTrue>,
 
-        /// # Member navigation feature
+        /// # Deprecated member declaration navigation feature
         ///
-        /// Whether navigation resolves workspace member targets.
+        /// Deprecated. This setting is accepted for backward compatibility but ignored.
+        #[cfg_attr(feature = "jsonschema", schemars(extend("deprecated" = true)))]
         pub member: Option<ToggleFeatureDefaultTrue>,
 
-        /// # Path navigation feature
+        /// # Path declaration navigation feature
         ///
-        /// Whether navigation resolves filesystem paths.
+        /// Whether declaration navigation resolves local filesystem path declarations.
         pub path: Option<ToggleFeatureDefaultTrue>,
     }
 }

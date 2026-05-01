@@ -3,7 +3,7 @@ use crate::{
     collect_feature_usage_locations_in_manifest, dependency_feature_string_context,
     feature_key_at_accessors, feature_table_string_at_accessors,
     feature_usage_target_for_feature_key, feature_usage_target_for_optional_dependency,
-    goto_definition_for_crate_cargo_toml, goto_definition_for_workspace_cargo_toml,
+    goto_declaration_for_crate_cargo_toml, goto_definition_for_workspace_cargo_toml,
     optional_dependency_value_at_accessors, resolve_dependency_feature_string,
     resolve_feature_table_string,
 };
@@ -15,7 +15,7 @@ pub async fn goto_definition(
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is Cargo.toml
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(Default::default());
@@ -35,7 +35,7 @@ pub async fn goto_definition(
             collect_feature_usage_locations(document_tree, &cargo_toml_path, &target, toml_version)
                 .await
                 .into_iter()
-                .filter_map(|location| location.definition_location())
+                .filter_map(|location| location.get_location())
                 .collect::<Vec<_>>();
 
         if locations.is_empty() {
@@ -52,7 +52,7 @@ pub async fn goto_definition(
             feature_string,
             toml_version,
         )
-        && let Some(location) = location.definition_location()
+        && let Some(location) = location.get_location()
     {
         return Ok(Some(vec![location]));
     }
@@ -66,7 +66,7 @@ pub async fn goto_definition(
             feature_string,
             toml_version,
         )
-        && let Some(location) = location.definition_location()
+        && let Some(location) = location.get_location()
     {
         return Ok(Some(vec![location]));
     }
@@ -85,7 +85,7 @@ pub async fn goto_definition(
             toml_version,
         )
         .into_iter()
-        .filter_map(|location| location.definition_location())
+        .filter_map(|location| location.get_location())
         .collect::<Vec<_>>();
 
         if locations.is_empty() {
@@ -108,7 +108,7 @@ pub async fn goto_definition(
             )?,
             // For Root Package
             // See: https://doc.rust-lang.org/cargo/reference/workspaces.html#root-package
-            goto_definition_for_crate_cargo_toml(
+            goto_declaration_for_crate_cargo_toml(
                 document_tree,
                 accessors,
                 &cargo_toml_path,
@@ -117,7 +117,7 @@ pub async fn goto_definition(
             )?,
         ])
     } else {
-        goto_definition_for_crate_cargo_toml(
+        goto_declaration_for_crate_cargo_toml(
             document_tree,
             accessors,
             &cargo_toml_path,

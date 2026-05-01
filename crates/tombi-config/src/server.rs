@@ -29,6 +29,9 @@ pub struct LspOptions {
     /// # Goto Definition Feature options
     pub goto_definition: Option<LspGotoDefinition>,
 
+    /// # References Feature options
+    pub references: Option<LspGotoDefinition>,
+
     /// # Goto Type Definition Feature options
     pub goto_type_definition: Option<LspGotoDefinition>,
 
@@ -49,6 +52,7 @@ impl LspOptions {
             formatting: None,
             goto_declaration: None,
             goto_definition: None,
+            references: None,
             goto_type_definition: None,
             hover: None,
             workspace_diagnostic: None,

@@ -39,15 +39,15 @@ extension_features! {
         /// Configure Tombi completion features.
         pub completion: Option<TombiCompletionFeatures>,
 
-        /// # Goto definition feature options
-        ///
-        /// Configure Tombi go-to-definition features.
-        pub goto_definition: Option<TombiGotoDefinitionFeatures>,
-
         /// # Document link feature options
         ///
         /// Configure Tombi document link features.
         pub document_link: Option<TombiDocumentLinkFeatures>,
+
+        /// # Goto definition feature options
+        ///
+        /// Configure Tombi go-to-definition features.
+        pub goto_definition: Option<TombiGotoDefinitionFeatures>,
 
         /// # Hover feature options
         ///

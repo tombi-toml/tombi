@@ -3,16 +3,20 @@ use crate::extensions::EnabledOnly;
 mod code_action;
 mod completion;
 mod document_link;
+mod goto_declaration;
+mod goto_definition;
 mod hover;
 mod inlay_hint;
-mod navigation;
+mod references;
 
 pub use code_action::*;
 pub use completion::*;
 pub use document_link::*;
+pub use goto_declaration::*;
+pub use goto_definition::*;
 pub use hover::*;
 pub use inlay_hint::*;
-pub use navigation::*;
+pub use references::*;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -38,25 +42,28 @@ extension_features! {
         ))
     )]
     pub struct CargoLspFeatureTree {
+        /// # Code action feature options
+        pub code_action: Option<CargoCodeActionFeatures>,
+
         /// # Completion feature options
         pub completion: Option<CargoCompletionFeatures>,
-
-        /// # Inlay hint feature options
-        pub inlay_hint: Option<CargoInlayHintFeatures>,
-
-        /// # Goto definition feature options
-        pub goto_definition: Option<CargoNavigationFeatures>,
-
-        /// # Goto declaration feature options
-        pub goto_declaration: Option<CargoNavigationFeatures>,
 
         /// # Document link feature options
         pub document_link: Option<CargoDocumentLinkFeatures>,
 
+        /// # Goto declaration feature options
+        pub goto_declaration: Option<CargoGotoDeclarationFeatures>,
+
+        /// # Goto definition feature options
+        pub goto_definition: Option<CargoGotoDefinitionFeatures>,
+
         /// # Hover feature options
         pub hover: Option<CargoHoverFeatures>,
 
-        /// # Code action feature options
-        pub code_action: Option<CargoCodeActionFeatures>,
+        /// # Inlay hint feature options
+        pub inlay_hint: Option<CargoInlayHintFeatures>,
+
+        /// # References feature options
+        pub references: Option<CargoReferencesFeatures>,
     }
 }

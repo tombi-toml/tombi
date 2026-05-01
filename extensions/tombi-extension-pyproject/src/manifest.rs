@@ -10,13 +10,13 @@ pub(crate) struct PackageLocation {
     pub(crate) package_name_key_range: tombi_text::Range,
 }
 
-impl From<PackageLocation> for Option<tombi_extension::DefinitionLocation> {
+impl From<PackageLocation> for Option<tombi_extension::Location> {
     fn from(package_location: PackageLocation) -> Self {
         let Ok(uri) = tombi_uri::Uri::from_file_path(&package_location.pyproject_toml_path) else {
             return None;
         };
 
-        Some(tombi_extension::DefinitionLocation {
+        Some(tombi_extension::Location {
             uri,
             range: package_location.package_name_key_range,
         })

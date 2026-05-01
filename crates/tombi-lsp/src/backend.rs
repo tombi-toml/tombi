@@ -11,8 +11,8 @@ use tower_lsp::lsp_types::{
     DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentLink, DocumentLinkParams,
     DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
     GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
-    InitializeResult, InitializedParams, InlayHint, InlayHintParams, SemanticTokensParams,
-    SemanticTokensResult, TextDocumentIdentifier, Url,
+    InitializeResult, InitializedParams, InlayHint, InlayHintParams, ReferenceParams,
+    SemanticTokensParams, SemanticTokensResult, TextDocumentIdentifier, Url,
     request::{
         GotoDeclarationParams, GotoDeclarationResponse, GotoTypeDefinitionParams,
         GotoTypeDefinitionResponse,
@@ -22,8 +22,8 @@ use tower_lsp::lsp_types::{
 use crate::{
     config_manager::{ConfigManager, ConfigSchemaStore, DefaultConfigSource},
     document::DocumentSource,
-    goto_definition::into_definition_locations,
-    goto_type_definition::into_type_definition_locations,
+    goto_definition::try_get_goto_definition_response,
+    goto_type_definition::try_get_type_definition_response,
     handler::{
         AssociateSchemaParams, GetStatusResponse, GetTomlVersionResponse, ListSchemasParams,
         ListSchemasResponse, RefreshCacheParams, TomlVersionSource, handle_associate_schema,
@@ -33,9 +33,10 @@ use crate::{
         handle_folding_range, handle_formatting, handle_get_status, handle_get_toml_version,
         handle_goto_declaration, handle_goto_definition, handle_goto_type_definition, handle_hover,
         handle_initialize, handle_initialized, handle_inlay_hint, handle_list_schemas,
-        handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown, handle_update_config,
-        handle_update_schema, push_diagnostics,
+        handle_references, handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown,
+        handle_update_config, handle_update_schema, push_diagnostics,
     },
+    references::try_get_reference_locations,
 };
 
 use tombi_text::EncodingKind;
@@ -429,21 +430,29 @@ impl tower_lsp::LanguageServer for Backend {
         &self,
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>, tower_lsp::jsonrpc::Error> {
-        into_definition_locations(self, handle_goto_definition(self, params).await?).await
+        try_get_goto_definition_response(self, handle_goto_definition(self, params).await?).await
     }
 
     async fn goto_type_definition(
         &self,
         params: GotoTypeDefinitionParams,
     ) -> Result<Option<GotoTypeDefinitionResponse>, tower_lsp::jsonrpc::Error> {
-        into_type_definition_locations(self, handle_goto_type_definition(self, params).await?).await
+        try_get_type_definition_response(self, handle_goto_type_definition(self, params).await?)
+            .await
     }
 
     async fn goto_declaration(
         &self,
         params: GotoDeclarationParams,
     ) -> Result<Option<GotoDeclarationResponse>, tower_lsp::jsonrpc::Error> {
-        into_definition_locations(self, handle_goto_declaration(self, params).await?).await
+        try_get_goto_definition_response(self, handle_goto_declaration(self, params).await?).await
+    }
+
+    async fn references(
+        &self,
+        params: ReferenceParams,
+    ) -> Result<Option<Vec<tower_lsp::lsp_types::Location>>, tower_lsp::jsonrpc::Error> {
+        try_get_reference_locations(self, handle_references(self, params).await?).await
     }
 
     async fn code_action(

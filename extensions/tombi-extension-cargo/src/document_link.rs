@@ -1147,10 +1147,6 @@ mod tests {
         tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
             lsp: Some(tombi_config::CargoLspFeatures::Features(
                 tombi_config::CargoLspFeatureTree {
-                    completion: None,
-                    inlay_hint: None,
-                    goto_definition: None,
-                    goto_declaration: None,
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
                         tombi_config::CargoDocumentLinkFeatureTree {
                             cargo_toml: Some(tombi_config::ToggleFeatureDefaultFalse {
@@ -1164,8 +1160,7 @@ mod tests {
                             crates_io: None,
                         },
                     )),
-                    hover: None,
-                    code_action: None,
+                    ..Default::default()
                 },
             )),
         })
@@ -1175,10 +1170,6 @@ mod tests {
         tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
             lsp: Some(tombi_config::CargoLspFeatures::Features(
                 tombi_config::CargoLspFeatureTree {
-                    completion: None,
-                    inlay_hint: None,
-                    goto_definition: None,
-                    goto_declaration: None,
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
                         tombi_config::CargoDocumentLinkFeatureTree {
                             cargo_toml: Some(tombi_config::ToggleFeatureDefaultFalse {
@@ -1194,8 +1185,7 @@ mod tests {
                             crates_io: None,
                         },
                     )),
-                    hover: None,
-                    code_action: None,
+                    ..Default::default()
                 },
             )),
         })
@@ -1205,10 +1195,6 @@ mod tests {
         tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
             lsp: Some(tombi_config::CargoLspFeatures::Features(
                 tombi_config::CargoLspFeatureTree {
-                    completion: None,
-                    inlay_hint: None,
-                    goto_definition: None,
-                    goto_declaration: None,
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
                         tombi_config::CargoDocumentLinkFeatureTree {
                             cargo_toml: None,
@@ -1220,8 +1206,7 @@ mod tests {
                             crates_io: None,
                         },
                     )),
-                    hover: None,
-                    code_action: None,
+                    ..Default::default()
                 },
             )),
         })
@@ -1386,10 +1371,6 @@ version = "0.1.0"
         tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
             lsp: Some(tombi_config::CargoLspFeatures::Features(
                 tombi_config::CargoLspFeatureTree {
-                    completion: None,
-                    inlay_hint: None,
-                    goto_definition: None,
-                    goto_declaration: None,
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
                         tombi_config::CargoDocumentLinkFeatureTree {
                             cargo_toml: None,
@@ -1399,8 +1380,7 @@ version = "0.1.0"
                             crates_io: None,
                         },
                     )),
-                    hover: None,
-                    code_action: None,
+                    ..Default::default()
                 },
             )),
         })
@@ -1440,10 +1420,6 @@ version = "0.1.0"
         tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
             lsp: Some(tombi_config::CargoLspFeatures::Features(
                 tombi_config::CargoLspFeatureTree {
-                    completion: None,
-                    inlay_hint: None,
-                    goto_definition: None,
-                    goto_declaration: None,
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
                         tombi_config::CargoDocumentLinkFeatureTree {
                             cargo_toml: None,
@@ -1455,8 +1431,7 @@ version = "0.1.0"
                             crates_io: None,
                         },
                     )),
-                    hover: None,
-                    code_action: None,
+                    ..Default::default()
                 },
             )),
         })

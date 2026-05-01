@@ -8,6 +8,7 @@ mod goto_definition;
 mod hover;
 mod inlay_hint;
 mod manifest;
+mod references;
 mod workspace;
 
 pub use code_action::code_action;
@@ -18,6 +19,7 @@ pub use goto_declaration::goto_declaration;
 pub use goto_definition::goto_definition;
 pub use hover::hover;
 pub use inlay_hint::inlay_hint;
+pub use references::references;
 
 pub(crate) use dependency::{
     DependencyRequirement, UV_DEPENDENCY_KEYS,
@@ -25,6 +27,9 @@ pub(crate) use dependency::{
     collect_dependency_requirements_from_document_tree, find_dependency_group_key,
     get_dependency_accessors, include_group_locations, parse_dependency_requirement,
     parse_requirement,
+};
+pub(crate) use goto_definition::{
+    collect_workspace_project_dependency_definitions, get_workspace_member_dependency_definitions,
 };
 pub(crate) use manifest::{
     PackageLocation, find_workspace_pyproject_toml, get_project_name,

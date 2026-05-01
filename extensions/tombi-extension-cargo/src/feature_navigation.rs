@@ -30,9 +30,9 @@ pub(crate) struct CargoTargetLocation {
 }
 
 impl CargoTargetLocation {
-    pub(crate) fn definition_location(&self) -> Option<tombi_extension::DefinitionLocation> {
+    pub(crate) fn get_location(&self) -> Option<tombi_extension::Location> {
         let uri = tombi_uri::Uri::from_file_path(&self.cargo_toml_path).ok()?;
-        Some(tombi_extension::DefinitionLocation {
+        Some(tombi_extension::Location {
             uri,
             range: self.range,
         })

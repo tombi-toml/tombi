@@ -3,16 +3,20 @@ use crate::extensions::EnabledOnly;
 mod code_action;
 mod completion;
 mod document_link;
+mod goto_declaration;
+mod goto_definition;
 mod hover;
 mod inlay_hint;
-mod navigation;
+mod references;
 
 pub use code_action::*;
 pub use completion::*;
 pub use document_link::*;
+pub use goto_declaration::*;
+pub use goto_definition::*;
 pub use hover::*;
 pub use inlay_hint::*;
-pub use navigation::*;
+pub use references::*;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -38,39 +42,44 @@ extension_features! {
         ))
     )]
     pub struct PyprojectLspFeatureTree {
+        /// # Code action feature options
+        ///
+        /// Configure pyproject code action features.
+        pub code_action: Option<PyprojectCodeActionFeatures>,
+
         /// # Completion feature options
         ///
         /// Configure pyproject completion features.
         pub completion: Option<PyprojectCompletionFeatures>,
-
-        /// # Inlay hint feature options
-        ///
-        /// Configure pyproject inlay hint features.
-        pub inlay_hint: Option<PyprojectInlayHintFeatures>,
-
-        /// # Goto definition feature options
-        ///
-        /// Configure pyproject go-to-definition features.
-        pub goto_definition: Option<PyprojectNavigationFeatures>,
-
-        /// # Goto declaration feature options
-        ///
-        /// Configure pyproject go-to-declaration features.
-        pub goto_declaration: Option<PyprojectNavigationFeatures>,
 
         /// # Document link feature options
         ///
         /// Configure pyproject document link features.
         pub document_link: Option<PyprojectDocumentLinkFeatures>,
 
+        /// # Goto declaration feature options
+        ///
+        /// Configure pyproject go-to-declaration features.
+        pub goto_declaration: Option<PyprojectGotoDeclarationFeatures>,
+
+        /// # Goto definition feature options
+        ///
+        /// Configure pyproject go-to-definition features.
+        pub goto_definition: Option<PyprojectGotoDefinitionFeatures>,
+
         /// # Hover feature options
         ///
         /// Configure pyproject hover features.
         pub hover: Option<PyprojectHoverFeatures>,
 
-        /// # Code action feature options
+        /// # Inlay hint feature options
         ///
-        /// Configure pyproject code action features.
-        pub code_action: Option<PyprojectCodeActionFeatures>,
+        /// Configure pyproject inlay hint features.
+        pub inlay_hint: Option<PyprojectInlayHintFeatures>,
+
+        /// # References feature options
+        ///
+        /// Configure pyproject references features.
+        pub references: Option<PyprojectReferencesFeatures>,
     }
 }

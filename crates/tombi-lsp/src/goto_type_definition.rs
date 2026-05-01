@@ -14,7 +14,7 @@ use tombi_schema_store::{
 };
 use tower_lsp::lsp_types::GotoDefinitionResponse;
 
-use crate::{Backend, goto_definition::open_remote_file};
+use crate::{Backend, remote_file::open_remote_file};
 
 use self::type_definition_source::TypeDefinitionSource;
 
@@ -78,40 +78,40 @@ pub async fn get_type_definition(
     }
 }
 
-pub async fn into_type_definition_locations(
+pub async fn try_get_type_definition_response(
     backend: &Backend,
-    definitions: Option<Vec<tombi_extension::DefinitionLocation>>,
+    locations: Option<Vec<tombi_extension::Location>>,
 ) -> Result<Option<GotoDefinitionResponse>, tower_lsp::jsonrpc::Error> {
-    let Some(definitions) = definitions else {
+    let Some(locations) = locations else {
         return Ok(None);
     };
 
     let mut uri_set = tombi_hashmap::HashMap::new();
-    for definition in &definitions {
-        if let Ok(Some(remote_uri)) = open_remote_file(backend, &definition.uri).await {
-            uri_set.insert(definition.uri.clone(), remote_uri);
+    for location in &locations {
+        if let Ok(Some(remote_uri)) = open_remote_file(backend, &location.uri).await {
+            uri_set.insert(location.uri.clone(), remote_uri);
         }
     }
 
-    let definitions = definitions
+    let locations = locations
         .into_iter()
-        .map(|mut definition| {
-            if let Some(remote_uri) = uri_set.get(&definition.uri) {
-                definition.uri = remote_uri.clone();
+        .map(|mut location| {
+            if let Some(remote_uri) = uri_set.get(&location.uri) {
+                location.uri = remote_uri.clone();
             }
             tower_lsp::lsp_types::Location::new(
-                definition.uri.into(),
-                tombi_text::convert_range_to_lsp(definition.range),
+                location.uri.into(),
+                tombi_text::convert_range_to_lsp(location.range),
             )
         })
         .collect_vec();
 
-    match definitions.len() {
+    match locations.len() {
         0 => Ok(None),
         1 => Ok(Some(GotoDefinitionResponse::Scalar(
-            definitions.into_iter().next().unwrap(),
+            locations.into_iter().next().unwrap(),
         ))),
-        _ => Ok(Some(GotoDefinitionResponse::Array(definitions))),
+        _ => Ok(Some(GotoDefinitionResponse::Array(locations))),
     }
 }
 

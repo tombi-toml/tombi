@@ -237,10 +237,7 @@ mod goto_definition_tests {
                 tombi-ast-editor█ = { path = "crates/tombi-ast-editor" }
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
-            ) -> Ok([
-                project_root_path().join("crates/tombi-ast-editor/Cargo.toml"),
-                project_root_path().join("crates/tombi-formatter/Cargo.toml"),
-            ]);
+            ) -> Ok([project_root_path().join("crates/tombi-ast-editor/Cargo.toml")]);
         );
 
         test_goto_definition!(
@@ -255,9 +252,7 @@ mod goto_definition_tests {
                 semver█ = { version = "1.0.23" }
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
-            ) -> Ok([
-                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
-            ]);
+            ) -> Ok([]);
         );
 
         test_goto_definition!(
@@ -422,6 +417,29 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
+            async fn feature_default_entry_reference_with_workspace_optional_dependency(
+                r#"
+                [package]
+                name = "nagi-config"
+                version = "0.1.0"
+                edition = "2024"
+
+                [dependencies]
+                nagi_uri = { workspace = true, optional = true }
+
+                [features]
+                default = ["postgres█", "serde"]
+                postgres = []
+                serde = ["dep:nagi_uri"]
+                "#,
+                SourcePath(cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")),
+            ) -> Ok([
+                cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")
+            ]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
             async fn feature_key_collects_same_file_and_workspace_usages(
                 r#"
                 [package]
@@ -519,6 +537,27 @@ mod goto_definition_tests {
                 [features]
                 local = []
                 bundle = ["local", "schemars", "dep:schemars"]
+                "#,
+                SourcePath(cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")),
+            ) -> Ok([
+                cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")
+            ]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn optional_dependency_definition_collects_dep_syntax_usages_for_workspace_dependency(
+                r#"
+                [package]
+                name = "nagi-config"
+                version = "0.1.0"
+                edition = "2024"
+
+                [dependencies]
+                nagi_uri = { workspace = true, optional█ = true }
+
+                [features]
+                serde = ["dep:nagi_uri"]
                 "#,
                 SourcePath(cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")),
             ) -> Ok([
