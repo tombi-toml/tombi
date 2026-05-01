@@ -245,9 +245,7 @@ fn get_current_workspace_dependency_definition(
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
 ) -> Option<tombi_extension::Location> {
-    if dig_keys(workspace_document_tree, &["tool", "uv", "workspace"]).is_none() {
-        return None;
-    }
+    dig_keys(workspace_document_tree, &["tool", "uv", "workspace"])?;
 
     let (member_pyproject_toml_path, _) = find_member_project_toml(
         package_name,
