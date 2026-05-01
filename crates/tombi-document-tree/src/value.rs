@@ -109,6 +109,21 @@ impl Value {
         }
     }
 
+    pub fn is_scalar(&self) -> bool {
+        matches!(
+            self,
+            Value::Boolean(_)
+                | Value::Integer(_)
+                | Value::Float(_)
+                | Value::String(_)
+                | Value::OffsetDateTime(_)
+                | Value::LocalDateTime(_)
+                | Value::LocalDate(_)
+                | Value::LocalTime(_)
+                | Value::Incomplete { .. }
+        )
+    }
+
     pub(crate) fn set_comment_directives(
         &mut self,
         comment_directives: Vec<TombiValueCommentDirective>,

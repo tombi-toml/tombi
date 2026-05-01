@@ -246,6 +246,12 @@
           "additionalProperties": false
         }
       }
+    },
+    "configurationDefaults": {
+      "[toml]": {
+        "editor.suggest.showKeywords": false,
+        "editor.wordBasedSuggestions": "off"
+      }
     }
   }
 }
