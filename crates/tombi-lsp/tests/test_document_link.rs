@@ -961,6 +961,27 @@ mod document_link_tests {
                     ),
                     range: 4:12..4:18,
                     tooltip: "Open pyproject.toml",
+                },
+                {
+                    path: project_root_path().join(
+                        "crates/tombi-lsp/tests/fixtures/extensions/pyproject-document-link-pypi-disabled/member/pyproject.toml"
+                    ),
+                    range: 7:0..7:6,
+                    tooltip: "Open pyproject.toml",
+                },
+                {
+                    path: project_root_path().join(
+                        "crates/tombi-lsp/tests/fixtures/extensions/pyproject-document-link-pypi-disabled/pyproject.toml"
+                    ),
+                    range: 7:11..7:27,
+                    tooltip: "Open Workspace pyproject.toml",
+                },
+                {
+                    path: project_root_path().join(
+                        "crates/tombi-lsp/tests/fixtures/extensions/pyproject-document-link-pypi-disabled/member/pyproject.toml"
+                    ),
+                    range: 1:17..1:23,
+                    tooltip: "Open pyproject.toml",
                 }
             ]));
         );
