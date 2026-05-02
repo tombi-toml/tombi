@@ -32,11 +32,11 @@ pub async fn goto_definition(
     }
 
     let locations = if is_package_name_accessor(accessors) {
-        goto_definition_for_package_name(document_tree, accessors, &text_document_uri)
+        goto_definition_for_package_name(document_tree, accessors, text_document_uri)
     } else if is_feature_key_accessor(accessors) {
-        goto_definition_for_feature_key(document_tree, accessors, &text_document_uri)
+        goto_definition_for_feature_key(document_tree, accessors, text_document_uri)
     } else if is_optional_dependency_accessor(accessors) {
-        goto_definition_for_optional_dependency(document_tree, accessors, &text_document_uri)
+        goto_definition_for_optional_dependency(document_tree, accessors, text_document_uri)
     } else if let Some(feature_string) = feature_table_string_at_accessors(document_tree, accessors)
         && let Some(location) = resolve_feature_table_string(
             document_tree,
@@ -51,7 +51,7 @@ pub async fn goto_definition(
         goto_workspace_definition_locations(
             document_tree,
             accessors,
-            &text_document_uri,
+            text_document_uri,
             &cargo_toml_path,
             toml_version,
         )?

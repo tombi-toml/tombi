@@ -40,9 +40,9 @@ pub async fn goto_definition(
     }
 
     let locations = if is_project_name_accessors(accessors) {
-        goto_definition_for_project_name(document_tree, &text_document_uri)
+        goto_definition_for_project_name(document_tree, text_document_uri)
     } else if is_dependency_group_name_accessors(accessors) {
-        goto_definition_for_dependency_group_name(document_tree, accessors, &text_document_uri)
+        goto_definition_for_dependency_group_name(document_tree, accessors, text_document_uri)
     } else if is_uv_source_path_accessors(accessors) {
         goto_definition_for_relative_package(
             document_tree,
@@ -75,7 +75,7 @@ pub async fn goto_definition(
         goto_definition_for_dependency_package(
             document_tree,
             accessors,
-            &text_document_uri,
+            text_document_uri,
             &pyproject_toml_path,
             toml_version,
         )?
