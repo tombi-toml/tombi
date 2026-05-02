@@ -1,6 +1,11 @@
 @import "https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.5.0/prism-vsc-dark-plus.min.css";
 @import "./styles/code-block.css";
 
+:root {
+  --docs-fixed-header-height: 80px;
+  --docs-sticky-table-offset: 12px;
+}
+
 html {
   overflow-x: hidden;
   max-width: 100vw;
@@ -173,12 +178,64 @@ main {
 }
 
 /* Table Styles */
-.mdx-content table {
-  border-collapse: collapse;
-  margin: 1rem 0rem;
+.mdx-content .mdx-table-shell {
+  position: relative;
+}
+
+.mdx-content .mdx-table-sticky-head {
+  display: none;
+}
+
+.mdx-content .mdx-table-shell[data-sticky-active="true"] .mdx-table-sticky-head {
   display: block;
+  position: fixed;
+  z-index: 50;
+  overflow: hidden;
+  pointer-events: none;
+  background-color: rgb(201, 217, 240);
+}
+
+.mdx-content .mdx-table-cloned-head {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.mdx-content .mdx-table-cloned-head th {
+  padding: 0.5rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  background-color: rgb(201, 217, 240);
+}
+
+.mdx-content .mdx-table-cloned-head thead tr:first-child th:first-child {
+  border-top-left-radius: 8px;
+}
+
+.mdx-content .mdx-table-cloned-head thead tr:first-child th:last-child {
+  border-top-right-radius: 8px;
+}
+
+.mdx-content .mdx-table-shell[data-sticky-active="true"] .mdx-table-cloned-head thead tr:first-child th:first-child {
+  border-top-left-radius: 0;
+}
+
+.mdx-content .mdx-table-shell[data-sticky-active="true"] .mdx-table-cloned-head thead tr:first-child th:last-child {
+  border-top-right-radius: 0;
+}
+
+.mdx-content .mdx-table-scroll {
+  margin: 1rem 0rem;
   overflow-x: auto;
+  overflow-y: hidden;
   max-width: 100%;
+}
+
+.mdx-content .mdx-table-scroll table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: max-content;
+  min-width: 100%;
 }
 
 .mdx-content th,
@@ -224,6 +281,14 @@ main {
   background-color: transparent;
 }
 
+:root.dark .mdx-content .mdx-table-shell[data-sticky-active="true"] .mdx-table-sticky-head {
+  background-color: rgb(46, 60, 78);
+}
+
+:root.dark .mdx-content .mdx-table-cloned-head th {
+  background-color: rgb(46, 60, 78);
+}
+
 :root.dark .mdx-content th {
   background-color: rgba(119, 170, 221, 0.2);
 }
@@ -237,26 +302,26 @@ main {
 }
 
 /* Table scrollbar styles for better UX */
-.mdx-content table::-webkit-scrollbar {
+.mdx-content .mdx-table-scroll::-webkit-scrollbar {
   height: 6px;
 }
 
-.mdx-content table::-webkit-scrollbar-track {
+.mdx-content .mdx-table-scroll::-webkit-scrollbar-track {
   background: rgba(119, 170, 221, 0.1);
   border-radius: 3px;
 }
 
-.mdx-content table::-webkit-scrollbar-thumb {
+.mdx-content .mdx-table-scroll::-webkit-scrollbar-thumb {
   background: rgba(119, 170, 221, 0.3);
   border-radius: 3px;
 }
 
-.mdx-content table::-webkit-scrollbar-thumb:hover {
+.mdx-content .mdx-table-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(119, 170, 221, 0.5);
 }
 
 /* Firefox */
-.mdx-content table {
+.mdx-content .mdx-table-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgba(119, 170, 221, 0.3) rgba(119, 170, 221, 0.1);
 }

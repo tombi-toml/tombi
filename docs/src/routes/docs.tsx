@@ -23,12 +23,12 @@ export default function DocumentationLayout(props: RouteSectionProps) {
   });
 
   return (
-    <div class="flex w-full max-w-[100vw] overflow-x-hidden">
+    <div class="flex w-full max-w-[100vw]">
       <Sidebar />
       <main
         ref={mainRef}
         tabindex="-1"
-        class="flex-1 p-4 mdx-content min-h-screen max-w-full overflow-x-hidden outline-none"
+        class="flex-1 min-w-0 p-4 mdx-content min-h-screen max-w-full outline-none"
       >
         <div class="max-w-full">
           {props.children}
