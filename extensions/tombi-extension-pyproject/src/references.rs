@@ -5,8 +5,8 @@ use tombi_schema_store::{Accessor, matches_accessors};
 use crate::{
     collect_workspace_project_dependency_definitions, extract_exclude_patterns,
     extract_member_patterns, find_pyproject_toml_paths, find_workspace_pyproject_toml,
-    get_workspace_member_dependency_definitions, load_pyproject_toml_document_tree,
-    parse_requirement,
+    get_workspace_member_dependency_definitions, is_dependency_name_accessors,
+    is_project_name_accessors, load_pyproject_toml_document_tree, parse_requirement,
 };
 
 pub async fn references(
@@ -27,7 +27,7 @@ pub async fn references(
         return Ok(None);
     }
 
-    if matches_accessors!(accessors, ["project", "name"]) {
+    if is_project_name_accessors(accessors) {
         let locations = project_name_reference_locations(
             document_tree,
             accessors,
@@ -41,10 +41,7 @@ pub async fn references(
         return Ok((!locations.is_empty()).then_some(locations));
     }
 
-    if matches_accessors!(accessors, ["project", "dependencies", _])
-        || matches_accessors!(accessors, ["project", "optional-dependencies", _, _])
-        || matches_accessors!(accessors, ["dependency-groups", _, _])
-    {
+    if is_dependency_name_accessors(accessors) {
         let Some((_, Value::String(dep_str))) = dig_accessors(document_tree, accessors) else {
             return Ok(None);
         };
@@ -83,7 +80,7 @@ pub(crate) fn project_name_reference_locations(
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
-    debug_assert!(matches_accessors!(accessors, ["project", "name"]));
+    debug_assert!(is_project_name_accessors(accessors));
 
     let Some((_, Value::String(project_name))) = dig_accessors(document_tree, accessors) else {
         return Ok(Vec::new());

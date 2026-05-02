@@ -14,7 +14,7 @@ dev = [
 
 [tool.uv.workspace]
 members = [
-  "members/app",
+  "members/app1",
   "members/app2",
   "members/app3",
 ]

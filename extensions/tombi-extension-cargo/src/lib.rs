@@ -1,3 +1,4 @@
+mod accessors;
 mod cargo_lock;
 mod cargo_toml;
 mod code_action;
@@ -21,25 +22,29 @@ pub use goto_declaration::goto_declaration;
 pub use goto_definition::goto_definition;
 pub use hover::hover;
 pub use inlay_hint::inlay_hint;
-pub(crate) use references::package_name_reference_locations;
 pub use references::references;
 
+pub(crate) use accessors::{
+    dependency_parent_accessors, is_any_dependency_accessor, is_any_dependency_path_accessor,
+    is_dependency_accessor, is_dependency_path_accessor, is_feature_key_accessor,
+    is_optional_dependency_accessor, is_package_name_accessor, is_workspace_definition_accessor,
+    is_workspace_dependency_accessor, is_workspace_flag_accessor, is_workspace_key_accessor,
+    is_workspace_managed_dependency_accessor,
+};
 pub(crate) use cargo_toml::{
     CrateLocation, dependency_package_name, find_cargo_toml, get_uri_relative_to_cargo_toml,
     load_cargo_toml,
 };
 pub(crate) use feature_navigation::{
-    CargoTargetLocation, collect_feature_usage_locations,
-    collect_feature_usage_locations_in_manifest, dependency_feature_string_context,
+    CargoTargetLocation, collect_feature_usage_locations, dependency_feature_string_context,
     feature_key_at_accessors, feature_table_string_at_accessors,
     feature_usage_target_for_feature_key, feature_usage_target_for_optional_dependency,
-    optional_dependency_value_at_accessors, resolve_dependency_feature_string,
-    resolve_feature_table_string,
+    is_optional_dependency, resolve_dependency_feature_string, resolve_feature_table_string,
 };
 pub(crate) use workspace::{
     canonicalize_or_original, find_package_cargo_toml_paths, find_workspace_cargo_toml,
-    get_workspace_cargo_toml_path, goto_declaration_for_crate_cargo_toml,
-    goto_definition_for_workspace_cargo_toml, goto_workspace_member_crates,
+    get_workspace_cargo_toml_path, goto_definition_for_workspace_cargo_toml,
+    goto_workspace_managed_dependency_locations, goto_workspace_member_crates,
     load_cargo_toml_document_tree, load_workspace_cargo_toml, sanitize_dependency_key,
     workspace_dependency_usage_locations,
 };

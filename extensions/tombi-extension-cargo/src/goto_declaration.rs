@@ -1,6 +1,6 @@
 use crate::{
-    CargoNavigationFeature, classify_cargo_navigation_feature, feature_key_at_accessors,
-    goto_declaration_for_crate_cargo_toml, optional_dependency_value_at_accessors,
+    CargoNavigationFeature, classify_cargo_navigation_feature, dependency_parent_accessors,
+    feature_key_at_accessors, goto_workspace_managed_dependency_locations, is_optional_dependency,
 };
 use tombi_config::TomlVersion;
 use tombi_document_tree::dig_keys;
@@ -25,7 +25,7 @@ pub async fn goto_declaration(
         return Ok(None);
     }
 
-    let locations = goto_declaration_for_crate_cargo_toml(
+    let locations = goto_workspace_managed_dependency_locations(
         document_tree,
         accessors,
         &cargo_toml_path,
@@ -76,39 +76,16 @@ pub fn get_current_declaration(
         });
     }
 
-    let (dependency_key, _) = if matches_accessors!(accessors, ["dependencies", _, "optional"])
-        || matches_accessors!(accessors, ["dev-dependencies", _, "optional"])
-        || matches_accessors!(accessors, ["build-dependencies", _, "optional"])
-    {
-        if !optional_dependency_value_at_accessors(document_tree, accessors).unwrap_or_default() {
-            return None;
-        }
-        dig_keys(
-            document_tree,
-            &[accessors.first()?.as_key()?, accessors.get(1)?.as_key()?],
-        )?
-    } else if matches_accessors!(accessors, ["target", _, "dependencies", _, "optional"])
-        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _, "optional"])
-        || matches_accessors!(
-            accessors,
-            ["target", _, "build-dependencies", _, "optional"]
-        )
-    {
-        if !optional_dependency_value_at_accessors(document_tree, accessors).unwrap_or_default() {
-            return None;
-        }
-        dig_keys(
-            document_tree,
-            &[
-                "target",
-                accessors.get(1)?.as_key()?,
-                accessors.get(2)?.as_key()?,
-                accessors.get(3)?.as_key()?,
-            ],
-        )?
-    } else {
+    if !is_optional_dependency(document_tree, accessors) {
         return None;
-    };
+    }
+
+    let parent_keys = dependency_parent_accessors(accessors)
+        .iter()
+        .map(Accessor::as_key)
+        .collect::<Option<Vec<_>>>()?;
+
+    let (dependency_key, _) = dig_keys(document_tree, &parent_keys)?;
 
     Some(tombi_extension::Location {
         uri: cargo_toml_uri.clone(),

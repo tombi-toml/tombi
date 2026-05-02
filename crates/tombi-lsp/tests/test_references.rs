@@ -316,6 +316,28 @@ mod references_tests {
 
         test_references!(
             #[tokio::test]
+            async fn target_optional_dependency_include_declaration_adds_dependency_key(
+                r#"
+                [package]
+                name = "example"
+                version = "0.1.0"
+
+                [target.'cfg(unix)'.dependencies]
+                schemars = { version = "1.0", optional█ = true }
+
+                [features]
+                bundle = ["dep:schemars"]
+                "#,
+                SourcePath(project_root_path().join("crates/example/Cargo.toml")),
+                IncludeDeclaration(true),
+            ) -> Ok([
+                project_root_path().join("crates/example/Cargo.toml"),
+                project_root_path().join("crates/example/Cargo.toml"),
+            ]);
+        );
+
+        test_references!(
+            #[tokio::test]
             async fn workspace_dependency_key_lists_member_usages(
                 r#"
                 [workspace]
@@ -407,13 +429,13 @@ mod references_tests {
             async fn project_dependencies_workspace_usage_locations(
                 r#"
                 [project]
-                name = "app"
+                name = "app1"
                 version = "0.1.0"
                 dependencies = [
                     "pydantic█"
                 ]
                 "#,
-                SourcePath(pyproject_workspace_fixtures_path().join("members/app/pyproject.toml")),
+                SourcePath(pyproject_workspace_fixtures_path().join("members/app1/pyproject.toml")),
             ) -> Ok([
                 pyproject_workspace_fixtures_path().join("pyproject.toml"),
             ]);
@@ -442,13 +464,13 @@ mod references_tests {
             async fn pyproject_references_use_references_setting_not_goto_definition(
                 r#"
                 [project]
-                name = "app"
+                name = "app1"
                 version = "0.1.0"
                 dependencies = [
                     "pydantic█"
                 ]
                 "#,
-                SourcePath(pyproject_workspace_fixtures_path().join("members/app/pyproject.toml")),
+                SourcePath(pyproject_workspace_fixtures_path().join("members/app1/pyproject.toml")),
                 ConfigPath(fixture_config_path("pyproject-references-only-enabled")),
             ) -> Ok([
                 pyproject_workspace_fixtures_path().join("pyproject.toml"),

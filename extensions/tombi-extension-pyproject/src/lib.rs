@@ -1,3 +1,4 @@
+mod accessors;
 mod code_action;
 mod completion;
 mod dependency;
@@ -22,6 +23,10 @@ pub use hover::hover;
 pub use inlay_hint::inlay_hint;
 pub use references::references;
 
+pub(crate) use accessors::{
+    has_uv_sources_accessors, is_dependency_name_accessors, is_project_name_accessors,
+    is_uv_source_path_accessors, is_uv_source_workspace_accessors, is_uv_workspace_accessors,
+};
 pub(crate) use dependency::{
     DependencyRequirement, UV_DEPENDENCY_KEYS,
     collect_all_dependency_requirements_from_document_tree,
@@ -37,7 +42,6 @@ pub(crate) use manifest::{
     load_pyproject_toml_document_tree, resolve_member_pyproject_toml_path,
     resolve_relative_path_uri,
 };
-pub(crate) use references::project_name_reference_locations;
 use tombi_schema_store::matches_accessors;
 pub(crate) use workspace::{
     extract_exclude_patterns, extract_member_patterns, find_member_project_toml,
@@ -51,6 +55,7 @@ pub(crate) enum PyprojectNavigationFeature {
     Path,
 }
 
+#[inline]
 pub(crate) fn classify_pyproject_navigation_feature(
     accessors: &[tombi_schema_store::Accessor],
 ) -> PyprojectNavigationFeature {
@@ -69,6 +74,7 @@ pub(crate) fn classify_pyproject_navigation_feature(
     }
 }
 
+#[inline]
 pub(crate) fn is_pyproject_path_accessors(accessors: &[tombi_schema_store::Accessor]) -> bool {
     matches!(
         accessors.last(),

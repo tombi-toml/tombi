@@ -11,7 +11,11 @@ use tombi_extension::file_cache_version;
 use tombi_hashmap::HashMap;
 use tombi_schema_store::matches_accessors;
 
-use crate::{CrateLocation, find_cargo_toml, get_uri_relative_to_cargo_toml, load_cargo_toml};
+use crate::{
+    CrateLocation, find_cargo_toml, get_uri_relative_to_cargo_toml, is_dependency_accessor,
+    is_dependency_path_accessor, is_workspace_dependency_accessor, is_workspace_key_accessor,
+    load_cargo_toml,
+};
 
 const MAX_DID_OPEN_CARGO_TOML_CACHE_ENTRIES: usize = 128;
 
@@ -309,15 +313,7 @@ pub(crate) fn goto_dependency_crates(
     toml_version: TomlVersion,
     jump_to_subcrate: bool,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
-    debug_assert!(
-        matches_accessors!(accessors, ["workspace", "dependencies", _])
-            || matches_accessors!(accessors, ["dependencies", _])
-            || matches_accessors!(accessors, ["dev-dependencies", _])
-            || matches_accessors!(accessors, ["build-dependencies", _])
-            || matches_accessors!(accessors, ["target", _, "dependencies", _])
-            || matches_accessors!(accessors, ["target", _, "dev-dependencies", _])
-            || matches_accessors!(accessors, ["target", _, "build-dependencies", _])
-    );
+    debug_assert!(is_workspace_dependency_accessor(accessors) || is_dependency_accessor(accessors));
 
     let Some((tombi_schema_store::Accessor::Key(_crate_name), crate_value)) =
         dig_accessors(workspace_document_tree, accessors)
@@ -359,7 +355,7 @@ pub(crate) fn goto_dependency_crates(
                     jump_to_subcrate,
                 )?);
             } else {
-                locations.extend(goto_declaration_for_crate_cargo_toml(
+                locations.extend(goto_workspace_managed_dependency_locations(
                     workspace_document_tree,
                     &accessors,
                     workspace_cargo_toml_path,
@@ -455,12 +451,7 @@ pub(crate) fn goto_crate_package(
 ) -> Result<Option<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     debug_assert!(
         matches_accessors!(accessors, ["workspace", "dependencies", _, "path"])
-            || matches_accessors!(accessors, ["dependencies", _, "path"])
-            || matches_accessors!(accessors, ["dev-dependencies", _, "path"])
-            || matches_accessors!(accessors, ["build-dependencies", _, "path"])
-            || matches_accessors!(accessors, ["target", _, "dependencies", _, "path"])
-            || matches_accessors!(accessors, ["target", _, "dev-dependencies", _, "path"])
-            || matches_accessors!(accessors, ["target", _, "build-dependencies", _, "path"])
+            || is_dependency_path_accessor(accessors)
     );
 
     let Some((_, value)) = dig_accessors(workspace_document_tree, accessors) else {
@@ -671,20 +662,14 @@ pub(crate) fn goto_definition_for_workspace_cargo_toml(
     }
 }
 
-pub(crate) fn goto_declaration_for_crate_cargo_toml(
+pub(crate) fn goto_workspace_managed_dependency_locations(
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     jump_to_subcrate: bool,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
-    let location = if matches_accessors!(accessors, ["dependencies", _])
-        || matches_accessors!(accessors, ["dev-dependencies", _])
-        || matches_accessors!(accessors, ["build-dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "build-dependencies", _])
-    {
+    let location = if is_dependency_accessor(accessors) {
         return goto_dependency_crates(
             document_tree,
             accessors,
@@ -692,8 +677,7 @@ pub(crate) fn goto_declaration_for_crate_cargo_toml(
             toml_version,
             jump_to_subcrate,
         );
-    } else if accessors.last() == Some(&tombi_schema_store::Accessor::Key("workspace".to_string()))
-    {
+    } else if is_workspace_key_accessor(accessors) {
         goto_workspace(
             accessors,
             cargo_toml_path,
@@ -701,13 +685,7 @@ pub(crate) fn goto_declaration_for_crate_cargo_toml(
             toml_version,
             jump_to_subcrate,
         )
-    } else if matches_accessors!(accessors, ["dependencies", _, "path"])
-        || matches_accessors!(accessors, ["dev-dependencies", _, "path"])
-        || matches_accessors!(accessors, ["build-dependencies", _, "path"])
-        || matches_accessors!(accessors, ["target", _, "dependencies", _, "path"])
-        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _, "path"])
-        || matches_accessors!(accessors, ["target", _, "build-dependencies", _, "path"])
-    {
+    } else if is_dependency_path_accessor(accessors) {
         goto_crate_package(document_tree, accessors, cargo_toml_path, toml_version)
     } else if matches_accessors!(accessors, ["bin", _, "path"]) {
         goto_bin_path_target(document_tree, accessors, cargo_toml_path)

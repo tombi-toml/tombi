@@ -9,7 +9,8 @@ use tombi_schema_store::{Accessor, matches_accessors};
 use crate::{
     collect_feature_usage_locations, dependency_package_name, feature_key_at_accessors,
     feature_usage_target_for_feature_key, find_cargo_toml, find_workspace_cargo_toml,
-    get_workspace_cargo_toml_path, load_cargo_toml, sanitize_dependency_key,
+    get_workspace_cargo_toml_path, is_any_dependency_accessor, load_cargo_toml,
+    sanitize_dependency_key,
 };
 
 #[derive(Debug, Deserialize)]
@@ -188,14 +189,7 @@ fn format_feature_usage_label(project_root: &Path, cargo_toml_path: &Path, line:
 }
 
 fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
-    if matches_accessors!(accessors, ["workspace", "dependencies", _])
-        || matches_accessors!(accessors, ["dependencies", _])
-        || matches_accessors!(accessors, ["dev-dependencies", _])
-        || matches_accessors!(accessors, ["build-dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "build-dependencies", _])
-    {
+    if is_any_dependency_accessor(accessors) {
         Some(accessors)
     } else {
         None

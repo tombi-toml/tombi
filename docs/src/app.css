@@ -186,12 +186,19 @@ main {
   padding: 0.5rem 1rem;
   text-align: left;
   min-width: 100px;
-  background-color: rgba(119, 170, 221, 0.1);
 }
 
 .mdx-content th {
   font-weight: 600;
-  background-color: rgba(119, 170, 221, 0.2);
+  background-color: rgba(119, 170, 221, 0.32);
+}
+
+.mdx-content tbody tr:nth-child(odd) td {
+  background-color: rgba(119, 170, 221, 0.1);
+}
+
+.mdx-content tbody tr:nth-child(even) td {
+  background-color: rgba(119, 170, 221, 0.16);
 }
 
 /* First row corners */
@@ -214,11 +221,19 @@ main {
 
 :root.dark .mdx-content th,
 :root.dark .mdx-content td {
-  background-color: rgba(119, 170, 221, 0.05);
+  background-color: transparent;
 }
 
 :root.dark .mdx-content th {
-  background-color: rgba(119, 170, 221, 0.1);
+  background-color: rgba(119, 170, 221, 0.2);
+}
+
+:root.dark .mdx-content tbody tr:nth-child(odd) td {
+  background-color: rgba(119, 170, 221, 0.05);
+}
+
+:root.dark .mdx-content tbody tr:nth-child(even) td {
+  background-color: rgba(119, 170, 221, 0.09);
 }
 
 /* Table scrollbar styles for better UX */

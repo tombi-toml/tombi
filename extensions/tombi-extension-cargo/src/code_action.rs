@@ -569,13 +569,7 @@ fn convert_dependency_to_table_format_code_action(
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
 ) -> Option<CodeAction> {
-    if (matches_accessors!(accessors, ["dependencies", _])
-        || matches_accessors!(accessors, ["dev-dependencies", _])
-        || matches_accessors!(accessors, ["build-dependencies", _])
-        || matches_accessors!(accessors, ["workspace", "dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "build-dependencies", _]))
+    if (crate::is_any_dependency_accessor(accessors))
         && let Some((_, tombi_document_tree::Value::String(version))) =
             dig_accessors(document_tree, accessors)
     {
