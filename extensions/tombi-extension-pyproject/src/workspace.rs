@@ -181,7 +181,7 @@ pub(crate) fn goto_workspace_member(
         return Ok(None);
     }
 
-    let Some((package_toml_path, member_range)) = find_member_project_toml(
+    let Some((package_location, member_range)) = find_member_project_toml(
         package_name,
         &workspace_pyproject_toml_document_tree,
         &workspace_pyproject_toml_path,
@@ -191,22 +191,15 @@ pub(crate) fn goto_workspace_member(
     };
 
     if jump_to_package {
-        let Ok(package_pyproject_toml_uri) = tombi_uri::Uri::from_file_path(&package_toml_path)
+        let Ok(package_pyproject_toml_uri) =
+            tombi_uri::Uri::from_file_path(&package_location.pyproject_toml_path)
         else {
-            return Ok(None);
-        };
-        let Some(member_document_tree) =
-            load_pyproject_toml_document_tree(&package_toml_path, toml_version)
-        else {
-            return Ok(None);
-        };
-        let Some(package_name) = get_project_name(&member_document_tree) else {
             return Ok(None);
         };
 
         Ok(Some(tombi_extension::Location {
             uri: package_pyproject_toml_uri,
-            range: package_name.unquoted_range(),
+            range: package_location.package_name_key_range,
         }))
     } else {
         let Ok(workspace_pyproject_toml_uri) =
@@ -267,7 +260,7 @@ pub(crate) fn find_member_project_toml(
     workspace_pyproject_toml_document_tree: &tombi_document_tree::DocumentTree,
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Option<(std::path::PathBuf, tombi_text::Range)> {
+) -> Option<(PackageLocation, tombi_text::Range)> {
     let workspace_dir_path = workspace_pyproject_toml_path.parent()?;
 
     let member_patterns = extract_member_patterns(workspace_pyproject_toml_document_tree, &[]);
@@ -285,7 +278,13 @@ pub(crate) fn find_member_project_toml(
         if let Some(name) = get_project_name(&package_project_toml_document_tree)
             && name.value() == package_name
         {
-            return Some((package_project_toml_path, member_item.unquoted_range()));
+            return Some((
+                PackageLocation {
+                    pyproject_toml_path: package_project_toml_path,
+                    package_name_key_range: name.unquoted_range(),
+                },
+                member_item.unquoted_range(),
+            ));
         }
     }
 

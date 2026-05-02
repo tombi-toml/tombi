@@ -174,23 +174,23 @@ fn resolve_workspace_member_metadata(
 ) -> Option<HoverMetadata> {
     let member_pyproject_toml_path =
         if dig_keys(current_document_tree, &["tool", "uv", "workspace"]).is_some() {
-            let (member_pyproject_toml_path, _) = find_member_project_toml(
+            let (package_location, _) = find_member_project_toml(
                 package_name,
                 current_document_tree,
                 pyproject_toml_path,
                 toml_version,
             )?;
-            member_pyproject_toml_path
+            package_location.pyproject_toml_path
         } else {
             let (workspace_pyproject_toml_path, _, workspace_document_tree) =
                 find_workspace_pyproject_toml(pyproject_toml_path, toml_version)?;
-            let (member_pyproject_toml_path, _) = find_member_project_toml(
+            let (package_location, _) = find_member_project_toml(
                 package_name,
                 &workspace_document_tree,
                 &workspace_pyproject_toml_path,
                 toml_version,
             )?;
-            member_pyproject_toml_path
+            package_location.pyproject_toml_path
         };
 
     load_project_metadata(&member_pyproject_toml_path, toml_version)

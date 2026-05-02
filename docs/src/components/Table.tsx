@@ -14,42 +14,65 @@ export function Table(props: JSX.TableHTMLAttributes<HTMLTableElement>) {
     }
 
     let rafId = 0;
+    let needsLayoutSync = true;
     let resizeObserver: ResizeObserver | undefined;
+    let clonedTable: HTMLTableElement | undefined;
+    let clonedHead: HTMLTableSectionElement | undefined;
 
-    const renderStickyHeader = () => {
+    const readCssLength = (name: string) =>
+      Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue(name),
+      ) || 0;
+
+    const clearStickyHeader = () => {
+      shellRef?.setAttribute("data-sticky-active", "false");
+      stickyRef?.replaceChildren();
+      clonedTable = undefined;
+      clonedHead = undefined;
+    };
+
+    const ensureStickyHeader = () => {
       if (!shellRef || !scrollRef || !tableRef || !stickyRef) {
-        return;
+        return null;
       }
-
-      const stickyTop = Number.parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue(
-          "--docs-fixed-header-height",
-        ),
-      );
 
       const thead = tableRef.querySelector("thead");
       if (!thead) {
-        shellRef.dataset.stickyActive = "false";
-        stickyRef.replaceChildren();
-        return;
+        clearStickyHeader();
+        return null;
       }
 
-      const shellRect = shellRef.getBoundingClientRect();
-      const tableRect = tableRef.getBoundingClientRect();
       const originalCells = Array.from(thead.querySelectorAll("th"));
       if (originalCells.length === 0) {
-        shellRef.dataset.stickyActive = "false";
+        clearStickyHeader();
+        return null;
+      }
+
+      if (!clonedTable || !clonedHead || !stickyRef.contains(clonedTable)) {
         stickyRef.replaceChildren();
+
+        clonedTable = document.createElement("table");
+        clonedTable.className = "mdx-table-cloned-head";
+        clonedHead = thead.cloneNode(true) as HTMLTableSectionElement;
+        clonedTable.appendChild(clonedHead);
+        stickyRef.appendChild(clonedTable);
+      }
+
+      return { originalCells, clonedHead, clonedTable };
+    };
+
+    const updateStickyHeaderLayout = () => {
+      if (!shellRef || !tableRef) {
         return;
       }
 
-      stickyRef.replaceChildren();
+      const stickyHeader = ensureStickyHeader();
+      if (!stickyHeader) {
+        return;
+      }
 
-      const clonedTable = document.createElement("table");
-      clonedTable.className = "mdx-table-cloned-head";
-      const clonedHead = thead.cloneNode(true) as HTMLTableSectionElement;
-      clonedTable.appendChild(clonedHead);
-      stickyRef.appendChild(clonedTable);
+      const { originalCells, clonedHead, clonedTable } = stickyHeader;
+      const tableRect = tableRef.getBoundingClientRect();
 
       const clonedCells = Array.from(clonedHead.querySelectorAll("th"));
       originalCells.forEach((cell, index) => {
@@ -64,7 +87,24 @@ export function Table(props: JSX.TableHTMLAttributes<HTMLTableElement>) {
       });
 
       clonedTable.style.width = `${tableRect.width}px`;
+    };
 
+    const updateStickyHeaderPosition = () => {
+      if (!shellRef || !scrollRef) {
+        return;
+      }
+
+      const stickyHeader = ensureStickyHeader();
+      if (!stickyHeader) {
+        return;
+      }
+
+      const { clonedHead, clonedTable } = stickyHeader;
+      const stickyTop =
+        readCssLength("--docs-fixed-header-height") +
+        readCssLength("--docs-sticky-table-offset");
+
+      const shellRect = shellRef.getBoundingClientRect();
       const stickyHeight = clonedHead.getBoundingClientRect().height;
       const shouldStick =
         shellRect.top <= stickyTop && shellRect.bottom > stickyTop + stickyHeight;
@@ -80,26 +120,41 @@ export function Table(props: JSX.TableHTMLAttributes<HTMLTableElement>) {
       clonedTable.style.transform = `translateX(${-scrollRef.scrollLeft}px)`;
     };
 
-    const requestRender = () => {
+    const renderStickyHeader = () => {
+      if (needsLayoutSync) {
+        updateStickyHeaderLayout();
+        needsLayoutSync = false;
+      }
+
+      updateStickyHeaderPosition();
+    };
+
+    const requestRender = (syncLayout = false) => {
+      needsLayoutSync = needsLayoutSync || syncLayout;
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(renderStickyHeader);
     };
 
-    resizeObserver = new ResizeObserver(requestRender);
+    resizeObserver = new ResizeObserver(() => requestRender(true));
     resizeObserver.observe(shellRef);
     resizeObserver.observe(tableRef);
 
-    window.addEventListener("scroll", requestRender, { passive: true });
-    window.addEventListener("resize", requestRender);
-    scrollRef.addEventListener("scroll", requestRender, { passive: true });
-    requestRender();
+    const handleWindowScroll = () => requestRender();
+    const handleWindowResize = () => requestRender(true);
+    const handleTableScroll = () => requestRender();
+
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    window.addEventListener("resize", handleWindowResize);
+    scrollRef.addEventListener("scroll", handleTableScroll, { passive: true });
+    requestRender(true);
 
     onCleanup(() => {
       cancelAnimationFrame(rafId);
       resizeObserver?.disconnect();
-      window.removeEventListener("scroll", requestRender);
-      window.removeEventListener("resize", requestRender);
-      scrollRef?.removeEventListener("scroll", requestRender);
+      window.removeEventListener("scroll", handleWindowScroll);
+      window.removeEventListener("resize", handleWindowResize);
+      scrollRef?.removeEventListener("scroll", handleTableScroll);
+      clearStickyHeader();
     });
   });
 

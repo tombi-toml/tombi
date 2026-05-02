@@ -430,21 +430,17 @@ pub(crate) fn get_workspace_member_package_definition(
 ) -> Option<tombi_extension::Location> {
     let (workspace_pyproject_toml_path, _, workspace_document_tree) =
         find_workspace_pyproject_toml(pyproject_toml_path, toml_version)?;
-    let (member_pyproject_toml_path, _) = find_member_project_toml(
+    let (package_location, _) = find_member_project_toml(
         package_name,
         &workspace_document_tree,
         &workspace_pyproject_toml_path,
         toml_version,
     )?;
-
-    let member_document_tree =
-        load_pyproject_toml_document_tree(&member_pyproject_toml_path, toml_version)?;
-    let package_name = get_project_name(&member_document_tree)?;
-    let member_uri = tombi_uri::Uri::from_file_path(&member_pyproject_toml_path).ok()?;
+    let member_uri = tombi_uri::Uri::from_file_path(&package_location.pyproject_toml_path).ok()?;
 
     Some(tombi_extension::Location {
         uri: member_uri,
-        range: package_name.unquoted_range(),
+        range: package_location.package_name_key_range,
     })
 }
 
