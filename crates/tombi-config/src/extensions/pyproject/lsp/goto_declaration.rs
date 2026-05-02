@@ -34,9 +34,10 @@ toggle_features! {
         /// Whether declaration navigation resolves workspace member declarations.
         pub member: Option<ToggleFeatureDefaultTrue>,
 
-        /// # Path declaration navigation feature
+        /// # Deprecated path declaration navigation feature
         ///
-        /// Whether declaration navigation resolves local filesystem path declarations.
+        /// Deprecated. This setting is accepted for backward compatibility but ignored.
+        #[cfg_attr(feature = "jsonschema", schemars(extend("deprecated" = true)))]
         pub path: Option<ToggleFeatureDefaultTrue>,
     }
 }

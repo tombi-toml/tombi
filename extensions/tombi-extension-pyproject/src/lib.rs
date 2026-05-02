@@ -35,6 +35,7 @@ pub(crate) use goto_definition::{
 pub(crate) use manifest::{
     PackageLocation, find_workspace_pyproject_toml, get_project_name,
     load_pyproject_toml_document_tree, resolve_member_pyproject_toml_path,
+    resolve_relative_path_uri,
 };
 pub(crate) use references::project_name_reference_locations;
 use tombi_schema_store::matches_accessors;
@@ -53,10 +54,7 @@ pub(crate) enum PyprojectNavigationFeature {
 pub(crate) fn classify_pyproject_navigation_feature(
     accessors: &[tombi_schema_store::Accessor],
 ) -> PyprojectNavigationFeature {
-    if matches!(
-        accessors.last(),
-        Some(tombi_schema_store::Accessor::Key(key)) if key == "path"
-    ) {
+    if is_pyproject_path_accessors(accessors) {
         PyprojectNavigationFeature::Path
     } else if matches_accessors!(
         accessors[..accessors.len().min(3)],
@@ -69,4 +67,15 @@ pub(crate) fn classify_pyproject_navigation_feature(
     } else {
         PyprojectNavigationFeature::Dependency
     }
+}
+
+pub(crate) fn is_pyproject_path_accessors(accessors: &[tombi_schema_store::Accessor]) -> bool {
+    matches!(
+        accessors.last(),
+        Some(tombi_schema_store::Accessor::Key(key)) if key == "path"
+    ) || matches_accessors!(accessors, ["project", "readme"])
+        || matches_accessors!(accessors, ["project", "readme", "file"])
+        || matches_accessors!(accessors, ["project", "license", "file"])
+        || matches_accessors!(accessors, ["project", "license-files", _])
+        || matches_accessors!(accessors, ["build-system", "backend-path", _])
 }

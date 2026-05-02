@@ -25,7 +25,7 @@ pub async fn goto_definition(
         return Ok(Default::default());
     };
 
-    if !cargo_navigation_enabled(features, accessors) {
+    if !cargo_goto_definition_enabled(features, accessors) {
         return Ok(None);
     }
 
@@ -122,7 +122,7 @@ pub async fn goto_definition(
     Ok(Some(locations))
 }
 
-fn cargo_navigation_enabled(
+fn cargo_goto_definition_enabled(
     features: Option<&tombi_config::CargoExtensionFeatures>,
     accessors: &[tombi_schema_store::Accessor],
 ) -> bool {
