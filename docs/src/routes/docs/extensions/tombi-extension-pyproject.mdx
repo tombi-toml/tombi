@@ -84,10 +84,12 @@ dependencies = ["bird-feeder", "tqdm>=4,<5"]
 bird-feeder = { workspace = true }
 ```
 
-In this case, when your cursor is on `workspace`, executing "Go to Definition" will navigate you to the **package** definition managed by the workspace.
+In this case, when your cursor is on `workspace`, executing "Go to Definition" will navigate you to the corresponding workspace-member entry in the workspace's `pyproject.toml`.
+
+When your cursor is on the source key itself, such as `bird-feeder`, "Go to Definition" navigates to the member package's `pyproject.toml` and lands on its `project.name` value.
 
 <Note>
-If you consistently want to navigate to the workspace manifest that defines the source, use "Go to Declaration".
+The same entry in the workspace `pyproject.toml` is used for "Go to Declaration".
 </Note>
 
 ### Go to Declaration
@@ -106,6 +108,33 @@ In this case, when your cursor is on `workspace`, executing "Go to Declaration" 
 
 `Go to Declaration` also works when the cursor is placed on the dependency string itself (for example `"bird-feeder"`).
 If the package comes from `tool.uv.sources` with `workspace = true`, the command jumps to the member entry in the workspace `pyproject.toml`, letting you inspect which pattern pulled the project into the workspace.
+
+### Navigation List
+
+The table below describes the intended accessor-by-accessor split between `Go to Definition`, `Go to Declaration`, and `Find References`.
+
+For dependency strings, `Go to Definition` follows a compact rule:
+- stay on the current string when this file itself is the source of truth for the PyPI dependency
+- jump to the workspace dependency entry when the version is inherited from the workspace
+- jump to the target package's `project.name` when the dependency resolves to a workspace member or local source
+
+| type | Accessors | Go to Definition | Go to Declaration | Find References |
+| --- | --- | --- | --- | --- |
+| `dependency` | `project.name` | Current `pyproject.toml` at `project.name` | - | Usages of this package from dependency strings and `tool.uv.sources.*` entries |
+| `dependency` | `project.dependencies.*`<br />`project.optional-dependencies.*.*`<br />`dependency-groups.*.*` | Current dependency string,<br />or the workspace `pyproject.toml` dependency entry that provides its version,<br /> or the target package's `pyproject.toml` at `project.name` when it resolves to a workspace member<br />or local source | The entry that defines the dependency, such as `tool.uv.sources.*` in the current `pyproject.toml`<br />or a workspace dependency entry in the workspace `pyproject.toml` | Other dependency-string usages of the same package |
+| `dependency` | `dependency-groups.*` | Current `dependency-groups.*` key | - | `include-group` entries that reference this dependency group |
+| `dependency` | `dependency-groups.*.*.include-group` | Referenced `dependency-groups.*` key in the same `pyproject.toml` | - | - |
+| `member` | `tool.uv.workspace.members`<br />`tool.uv.workspace.members.*` | Member package's `pyproject.toml` at `project.name` | Member package's `pyproject.toml` at `project.name` | - |
+| `member` | `tool.uv.sources.*` | Member package's `pyproject.toml` at `project.name`,<br />or the referenced local project's `pyproject.toml` at `project.name` | Workspace `pyproject.toml` at the matching `tool.uv.workspace.members.*` entry when the source is workspace-managed | Dependency strings and source entries that use this package |
+| `member` | `tool.uv.sources.*.workspace` | Workspace `pyproject.toml` at the matching `tool.uv.workspace.members.*` entry | Workspace `pyproject.toml` at the matching `tool.uv.workspace.members.*` entry | Dependency strings and source entries that use this package |
+| `path` | `tool.uv.sources.*.path` | Referenced local project's `pyproject.toml` at `project.name` | - | Dependency strings and source entries that use this package |
+| `path` | `project.readme`<br />`project.readme.file` | Referenced file | - | - |
+| `path` | `project.license.file` | Referenced file | - | - |
+| `path` | `project.license-files.*` | Referenced file, or each file matched by the glob | - | - |
+| `path` | `build-system.backend-path.*` | Referenced backend file or directory | - | - |
+
+When `Go to Definition` returns the current location for a definition-site accessor, Tombi is intentionally signaling that there is no more specific definition target.
+In editors such as VS Code, this allows `editor.gotoLocation.alternativeDefinitionCommand` to take over and open the configured fallback, typically `References`.
 
 ### Code Actions
 
@@ -161,5 +190,5 @@ When the workspace has not registered the dependency yet, this action adds the c
 
 The extension annotates key project metadata with document links so you can jump to the right file or website in one click:
 - entries in `[tool.uv.workspace.members]` and matches found via globs open the associated member project's `pyproject.toml`
-- sources declared under `[tool.uv.sources]` with `workspace = true` expose links to both the member manifest and the workspace root configuration
+- sources declared under `[tool.uv.sources]` with `workspace = true` expose links to both the member `pyproject.toml` and the workspace root `pyproject.toml`
 - dependency arrays in `[project.dependencies]`, `[project.optional-dependencies.*]`, and `[dependency-groups.*]` link to local workspace packages when available, or fall back to the package page on PyPI

@@ -1,9 +1,10 @@
 use crate::{
     collect_feature_usage_locations, dependency_package_name, feature_usage_target_for_feature_key,
     feature_usage_target_for_optional_dependency, get_workspace_cargo_toml_path,
-    goto_workspace_member_crates, load_cargo_toml, load_workspace_cargo_toml,
-    optional_dependency_value_at_accessors, workspace_dependency_usage_locations,
+    goto_workspace_member_crates, is_optional_dependency, is_workspace_dependency_accessor,
+    load_cargo_toml, load_workspace_cargo_toml, workspace_dependency_usage_locations,
 };
+use itertools::Itertools;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{LikeString, Value, dig_accessors, dig_keys};
 use tombi_schema_store::{Accessor, matches_accessors};
@@ -26,53 +27,36 @@ pub async fn references(
         return Ok(None);
     }
 
-    if matches_accessors!(accessors, ["package", "name"]) {
-        let locations = package_name_reference_locations(
-            document_tree,
-            accessors,
-            &cargo_toml_path,
-            toml_version,
-        )
-        .await?;
-        return Ok((!locations.is_empty()).then_some(locations));
-    }
-
-    if let Some(target) = feature_usage_target_for_feature_key(&cargo_toml_path, accessors) {
-        let locations =
-            collect_feature_usage_locations(document_tree, &cargo_toml_path, &target, toml_version)
-                .await
-                .into_iter()
-                .filter_map(|location| location.get_location())
-                .collect::<Vec<_>>();
-
-        return Ok((!locations.is_empty()).then_some(locations));
-    }
-
-    if optional_dependency_value_at_accessors(document_tree, accessors).unwrap_or_default()
+    let locations = if matches_accessors!(accessors, ["package", "name"]) {
+        package_name_reference_locations(document_tree, accessors, &cargo_toml_path, toml_version)
+            .await?
+    } else if let Some(target) = feature_usage_target_for_feature_key(&cargo_toml_path, accessors) {
+        collect_feature_usage_locations(document_tree, &cargo_toml_path, &target, toml_version)
+            .await
+            .into_iter()
+            .filter_map(|location| location.get_location())
+            .collect_vec()
+    } else if is_optional_dependency(document_tree, accessors)
         && let Some(target) =
             feature_usage_target_for_optional_dependency(&cargo_toml_path, accessors)
     {
-        let locations =
-            collect_feature_usage_locations(document_tree, &cargo_toml_path, &target, toml_version)
-                .await
-                .into_iter()
-                .filter_map(|location| location.get_location())
-                .collect::<Vec<_>>();
-
-        return Ok((!locations.is_empty()).then_some(locations));
-    }
-
-    if matches_accessors!(accessors, ["workspace", "dependencies", _]) {
-        let locations = workspace_dependency_usage_locations(
+        collect_feature_usage_locations(document_tree, &cargo_toml_path, &target, toml_version)
+            .await
+            .into_iter()
+            .filter_map(|location| location.get_location())
+            .collect_vec()
+    } else if is_workspace_dependency_accessor(accessors) {
+        workspace_dependency_usage_locations(
             document_tree,
             accessors,
             &cargo_toml_path,
             toml_version,
-        )?;
-        return Ok((!locations.is_empty()).then_some(locations));
-    }
+        )?
+    } else {
+        Vec::with_capacity(0)
+    };
 
-    Ok(None)
+    Ok((!locations.is_empty()).then_some(locations))
 }
 
 pub(crate) async fn package_name_reference_locations(
@@ -84,7 +68,7 @@ pub(crate) async fn package_name_reference_locations(
     debug_assert!(matches_accessors!(accessors, ["package", "name"]));
 
     let Some((_, Value::String(package_name))) = dig_accessors(document_tree, accessors) else {
-        return Ok(Vec::new());
+        return Ok(Vec::with_capacity(0));
     };
 
     let Some((workspace_cargo_toml_path, workspace_document_tree)) = load_workspace_cargo_toml(
@@ -94,7 +78,7 @@ pub(crate) async fn package_name_reference_locations(
     )
     .await
     else {
-        return Ok(Vec::new());
+        return Ok(Vec::with_capacity(0));
     };
 
     let mut locations = Vec::new();

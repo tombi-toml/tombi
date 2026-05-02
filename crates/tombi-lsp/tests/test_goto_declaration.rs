@@ -162,14 +162,14 @@ mod goto_declaration_tests {
             async fn project_dependencies_workspace_jump(
                 r#"
                 [project]
-                name = "app"
+                name = "app1"
                 version = "0.1.0"
                 dependencies = [
                     "pydantic█"
                 ]
                 "#,
-                SourcePath(pyproject_workspace_fixtures_path().join("members/app/pyproject.toml")),
-            ) -> Ok([]);
+                SourcePath(pyproject_workspace_fixtures_path().join("members/app1/pyproject.toml")),
+            ) -> Ok([pyproject_workspace_fixtures_path().join("pyproject.toml")]);
         );
 
         test_goto_declaration!(
@@ -183,7 +183,7 @@ mod goto_declaration_tests {
 
                 [tool.uv.workspace]
                 members = [
-                    "members/app",
+                    "members/app1",
                     "members/app2",
                     "members/app3",
                 ]
@@ -200,11 +200,11 @@ mod goto_declaration_tests {
             async fn tool_pyproject_workspace_members_jump_to_member_project(
                 r#"
                 [tool.uv.workspace]
-                members = ["members/app█"]
+                members = ["members/app1█"]
                 "#,
                 SourcePath(pyproject_workspace_fixtures_path().join("pyproject.toml")),
             ) -> Ok([
-                pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
+                pyproject_workspace_fixtures_path().join("members/app1/pyproject.toml"),
             ]);
         );
 
@@ -217,7 +217,7 @@ mod goto_declaration_tests {
                 "#,
                 SourcePath(pyproject_workspace_fixtures_path().join("pyproject.toml")),
             ) -> Ok([
-                pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
+                pyproject_workspace_fixtures_path().join("members/app1/pyproject.toml"),
                 pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml"),
                 pyproject_workspace_fixtures_path().join("members/app3/pyproject.toml"),
             ]);

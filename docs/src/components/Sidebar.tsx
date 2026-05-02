@@ -69,7 +69,7 @@ const TreeItem = (props: { item: DocIndex; level: number }) => {
 
 export function Sidebar() {
   return (
-    <nav class="w-[250px] h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden">
+    <nav class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden">
       <For each={docIndexs}>{(item) => <TreeItem item={item} level={0} />}</For>
     </nav>
   );

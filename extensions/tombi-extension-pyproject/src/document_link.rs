@@ -289,7 +289,7 @@ fn document_link_for_member_pyproject_toml(
     if let Some((workspace_key, tombi_document_tree::Value::Boolean(is_workspace))) =
         source.get_key_value("workspace")
         && is_workspace.value()
-        && let Some((member_project_toml_path, _)) = find_member_project_toml(
+        && let Some((package_location, _)) = find_member_project_toml(
             &package_name_key.value,
             &workspace_pyproject_toml_document_tree,
             &workspace_pyproject_toml_path,
@@ -297,7 +297,7 @@ fn document_link_for_member_pyproject_toml(
         )
     {
         if let Ok(member_project_toml_uri) =
-            tombi_uri::Uri::from_file_path(&member_project_toml_path)
+            tombi_uri::Uri::from_file_path(&package_location.pyproject_toml_path)
         {
             document_links.push(tombi_extension::DocumentLink {
                 target: member_project_toml_uri,

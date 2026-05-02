@@ -93,7 +93,7 @@ Behavior:
 
 The extension can show inline hints for workspace-aware dependency values in `Cargo.toml`.
 
-Current hints cover resolved dependency versions, `default-features`, and workspace-inherited values so you can inspect the effective dependency state without leaving the manifest.
+Current hints cover resolved dependency versions, `default-features`, and workspace-inherited values so you can inspect the effective dependency state without leaving the current `Cargo.toml`.
 
 ### Go to Definition
 For example, suppose you have a `Cargo.toml` like the one below:
@@ -105,12 +105,15 @@ serde = { workspace = true }
 tombi-ast = { workspace = true }
 ```
 
-In this case, when your cursor is on `workspace`, executing "Go to Definition" will navigate you to the **workspace** definition or to the **crate** definition managed by the workspace.
+In this case, when your cursor is on `workspace`, executing "Go to Definition" will navigate you to the corresponding entry in the workspace's `Cargo.toml`.
 
-In the example above, for `serde` (an external crate), you'll be navigated to the **workspace** definition, while for `tombi-ast` (a crate managed by the workspace), you'll be navigated to the **crate** definition.
+When your cursor is on the dependency key itself, Tombi first checks whether the workspace-managed dependency resolves to a local crate:
+
+- `serde` has no local `Cargo.toml`, so "Go to Definition" jumps to `workspace.dependencies.serde` in the workspace `Cargo.toml`.
+- `tombi-ast` resolves to a local workspace crate, so "Go to Definition" jumps to that crate's `Cargo.toml` and lands on the `package.name` value.
 
 <Note>
-If you consistently want to navigate to the **workspace**'s `Cargo.toml`, use "Go to Declaration".
+"Go to Declaration" always uses the matching entry in the workspace `Cargo.toml` for `workspace = true`.
 </Note>
 
 #### Go to crate definition from `workspace.dependencies`
@@ -119,7 +122,8 @@ If you consistently want to navigate to the **workspace**'s `Cargo.toml`, use "G
 tombi-ast = { path = "crates/tombi-ast" }
 ```
 
-In this case, when your cursor is on `path`, executing "Go to Definition" will navigate you to the crate definition.
+In this case, when your cursor is on the dependency key, executing "Go to Definition" navigates to the target crate's `Cargo.toml` and lands on its `package.name` value when the workspace dependency resolves to a member or local path.
+When your cursor is on `path`, executing "Go to Definition" will navigate you to the crate definition.
 
 ### Go to Declaration
 ```toml
@@ -128,7 +132,29 @@ serde = { workspace = true }
 tombi-ast = { workspace = true }
 ```
 
-In this case, when your cursor is on `workspace`, executing "Go to Declaration" will navigate you to the crate definition.
+In this case, when your cursor is on `workspace`, executing "Go to Declaration" will navigate you to the corresponding entry in the workspace's `Cargo.toml`.
+
+### Navigation List
+
+The table below describes the intended accessor-by-accessor split between `Go to Definition`, `Go to Declaration`, and `Find References`.
+
+| type | Accessors | Go to Definition | Go to Declaration | Find References |
+| --- | --- | --- | --- | --- |
+| `dependency` | `package.name` | Current `Cargo.toml` at `package.name` | - | Usages of this package from member `Cargo.toml` files and workspace dependency entries |
+| `dependency` | `features.*` | Current `Cargo.toml` at `features.*` | - | Usages of that feature from local features and dependency feature strings |
+| `dependency` | `features.*.*` | Referenced feature definition in the same crate, or in the dependency crate's `Cargo.toml` | - | - |
+| `dependency` | `dependencies.*`<br />`dev-dependencies.*`<br />`build-dependencies.*`<br />`target.*.dependencies.*`<br />`target.*.dev-dependencies.*`<br />`target.*.build-dependencies.*` | Dependency crate's `Cargo.toml` at `package.name`,<br />or the workspace `Cargo.toml` at `workspace.dependencies.*` when `workspace = true`,<br />or the current dependency entry when no more specific target exists | Workspace `Cargo.toml` at `workspace.dependencies.*` when `workspace = true` | - |
+| `dependency` | `workspace.dependencies.*` | Target crate's `Cargo.toml` at `package.name` when the workspace dependency resolves to a local crate,<br />or the current `workspace.dependencies.*` entry when it does not | - | Dependency entries in member `Cargo.toml` files that use this workspace dependency |
+| `dependency` | `dependencies.*.workspace`<br />`dev-dependencies.*.workspace`<br />`build-dependencies.*.workspace`<br />`target.*.dependencies.*.workspace`<br />`target.*.dev-dependencies.*.workspace`<br />`target.*.build-dependencies.*.workspace` | Workspace `Cargo.toml` at the matching `workspace.dependencies.*` entry | Workspace `Cargo.toml` at the matching `workspace.dependencies.*` entry | - |
+| `dependency` | `dependencies.*.features.*`<br />`dev-dependencies.*.features.*`<br />`build-dependencies.*.features.*`<br />`target.*.dependencies.*.features.*`<br />`target.*.dev-dependencies.*.features.*`<br />`target.*.build-dependencies.*.features.*` | Referenced dependency crate's `Cargo.toml` at `features.*` | - | - |
+| `dependency` | `dependencies.*.optional`<br />`dev-dependencies.*.optional`<br />`build-dependencies.*.optional`<br />`target.*.dependencies.*.optional`<br />`target.*.dev-dependencies.*.optional`<br />`target.*.build-dependencies.*.optional` | Current dependency entry's `optional` field | - | Implicit feature usages generated from this optional dependency |
+| `member` | `workspace.members`<br />`workspace.members.*` | Member crate's `Cargo.toml` at `package.name` | - | - |
+| `member` | `workspace.default-members`<br />`workspace.default-members.*` | Default member crate's `Cargo.toml` at `package.name` | - | - |
+| `path` | `workspace.dependencies.*.path`<br />`dependencies.*.path`<br />`dev-dependencies.*.path`<br />`build-dependencies.*.path`<br />`target.*.dependencies.*.path`<br />`target.*.dev-dependencies.*.path`<br />`target.*.build-dependencies.*.path` | Referenced local crate's `Cargo.toml` at `package.name` | - | - |
+| `path` | `bin.*.path` | Referenced source file | - | - |
+
+When `Go to Definition` returns the current location for a definition-site accessor, Tombi is intentionally signaling that there is no more specific definition target.
+In editors such as VS Code, this allows `editor.gotoLocation.alternativeDefinitionCommand` to take over and open the configured fallback, typically `References`.
 
 ### Code Actions
 
@@ -228,6 +254,6 @@ The workspace entry keeps the original requirement, and the member now follows t
 
 The extension enriches `Cargo.toml` with contextual document links so you can jump directly to related resources:
 - Entries in `[workspace.members]` and `[workspace.default-members]` open the corresponding member crate's `Cargo.toml`.
-- Dependencies in member manifests surface links to the workspace definition (when `workspace = true`), local path manifests, git repositories, custom registries, or crates.io when applicable.
+- Dependencies in member `Cargo.toml` files surface links to the workspace definition (when `workspace = true`), local path `Cargo.toml` files, git repositories, custom registries, or crates.io when applicable.
 - `[workspace.dependencies]` entries provide quick access both to the workspace declaration and the external source (registry/git/crates.io).
 - Fields such as `package.workspace`, `lints.workspace`, and `[bin]` targets link back to their workspace counterparts or the referenced source file for faster navigation.

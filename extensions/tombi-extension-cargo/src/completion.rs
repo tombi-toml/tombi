@@ -19,7 +19,10 @@ use tombi_version_sort::version_sort;
 use tower_lsp::lsp_types::InsertTextFormat;
 
 use crate::cargo_lock::{exact_crates_io_version, load_cached_cargo_lock};
-use crate::{find_cargo_toml, find_workspace_cargo_toml, get_workspace_cargo_toml_path};
+use crate::{
+    find_cargo_toml, find_workspace_cargo_toml, get_workspace_cargo_toml_path,
+    is_any_dependency_path_accessor, is_dependency_accessor,
+};
 
 enum CargoCompletionFeature {
     DependencyVersion,
@@ -153,13 +156,7 @@ fn completion_cargo_file_path(
         return Some(completions);
     }
 
-    if (matches_accessors!(accessors, ["dependencies", _, "path"])
-        || matches_accessors!(accessors, ["dev-dependencies", _, "path"])
-        || matches_accessors!(accessors, ["build-dependencies", _, "path"])
-        || matches_accessors!(accessors, ["target", _, "dependencies", _, "path"])
-        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _, "path"])
-        || matches_accessors!(accessors, ["target", _, "build-dependencies", _, "path"])
-        || matches_accessors!(accessors, ["workspace", "dependencies", _, "path"])
+    if (is_any_dependency_path_accessor(accessors)
         || matches_accessors!(accessors, ["patch", _, _, "path"])
         || matches_accessors!(accessors, ["replace", _, "path"])
         || matches_accessors!(accessors, ["package", "readme"])
@@ -334,13 +331,7 @@ async fn completion_member(
             )
             .await;
         }
-    } else if matches_accessors!(accessors, ["dependencies", _])
-        || matches_accessors!(accessors, ["dev-dependencies", _])
-        || matches_accessors!(accessors, ["build-dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "build-dependencies", _])
-    {
+    } else if is_dependency_accessor(accessors) {
         if !cargo_completion_enabled(features, CargoCompletionFeature::DependencyVersion) {
             return Ok(None);
         }

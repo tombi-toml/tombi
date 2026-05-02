@@ -1543,10 +1543,10 @@ test_inlay_hint!(
     #[tokio::test]
     async fn pyproject_inlay_hint_finds_uv_lock_from_ancestor_directory(
         SourceFile {
-            path = "members/app/pyproject.toml",
+            path = "members/app1/pyproject.toml",
             content = r#"
             [project]
-            name = "app"
+            name = "app1"
             version = "0.1.0"
             dependencies = ["pytest>=8.0"]
             "#,
@@ -1557,7 +1557,7 @@ test_inlay_hint!(
             version = 1
 
             [[package]]
-            name = "app"
+            name = "app1"
             version = "0.1.0"
             dependencies = [{ name = "pytest" }]
 
