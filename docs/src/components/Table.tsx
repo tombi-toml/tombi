@@ -13,7 +13,6 @@ export function Table(props: JSX.TableHTMLAttributes<HTMLTableElement>) {
       return;
     }
 
-    const stickyTop = 80;
     let rafId = 0;
     let resizeObserver: ResizeObserver | undefined;
 
@@ -21,6 +20,12 @@ export function Table(props: JSX.TableHTMLAttributes<HTMLTableElement>) {
       if (!shellRef || !scrollRef || !tableRef || !stickyRef) {
         return;
       }
+
+      const stickyTop = Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue(
+          "--docs-fixed-header-height",
+        ),
+      );
 
       const thead = tableRef.querySelector("thead");
       if (!thead) {
