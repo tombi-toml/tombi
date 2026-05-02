@@ -961,6 +961,23 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
+            async fn member_workspace_dependency_with_version_jumps_to_member_definition(
+                r#"
+                [project]
+                name = "app2"
+                version = "0.1.0"
+                dependencies = [
+                  "app3>=0.1.0█",
+                ]
+                "#,
+                SourcePath(pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml")),
+            ) -> Ok([
+                pyproject_workspace_fixtures_path().join("members/app3/pyproject.toml")
+            ]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
             async fn workspace_dependencies_list_member_usages(
                 r#"
                 [project]

@@ -318,12 +318,12 @@ fn goto_definition_for_dependency_package(
         if !workspace_dependency_definitions.is_empty() {
             return Ok(workspace_dependency_definitions);
         }
+    }
 
-        if let Some(location) =
-            get_workspace_member_package_definition(package_name, pyproject_toml_path, toml_version)
-        {
-            return Ok(vec![location]);
-        }
+    if let Some(location) =
+        get_workspace_member_package_definition(package_name, pyproject_toml_path, toml_version)
+    {
+        return Ok(vec![location]);
     }
 
     Ok(goto_definition_for_dependency_string(

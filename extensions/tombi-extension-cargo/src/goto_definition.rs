@@ -1,10 +1,10 @@
 use crate::{
     CargoNavigationFeature, classify_cargo_navigation_feature, dependency_feature_string_context,
     dependency_parent_accessors, feature_table_string_at_accessors, find_workspace_cargo_toml,
-    get_workspace_cargo_toml_path, goto_workspace_managed_dependency_locations,
-    goto_definition_for_workspace_cargo_toml, is_feature_key_accessor,
-    is_dependency_accessor, is_optional_dependency_accessor, is_package_name_accessor,
-    is_workspace_definition_accessor, is_workspace_dependency_accessor, is_workspace_flag_accessor,
+    get_workspace_cargo_toml_path, goto_definition_for_workspace_cargo_toml,
+    goto_workspace_managed_dependency_locations, is_dependency_accessor, is_feature_key_accessor,
+    is_optional_dependency_accessor, is_package_name_accessor, is_workspace_definition_accessor,
+    is_workspace_dependency_accessor, is_workspace_flag_accessor,
     is_workspace_managed_dependency_accessor, resolve_dependency_feature_string,
     resolve_feature_table_string,
 };
