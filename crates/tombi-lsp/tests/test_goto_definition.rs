@@ -775,6 +775,17 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
+            async fn tool_pyproject_sources_path_dependency(
+                r#"
+                [tool.uv.sources]
+                app = { path = "members/app█" }
+                "#,
+                SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml")),
+            ) -> Ok([project_root_path().join("crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app/pyproject.toml")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
             async fn tool_pyproject_workspace_members(
                 r#"
                 [tool.uv.workspace]
@@ -793,6 +804,61 @@ mod goto_definition_tests {
                 "#,
                 SourcePath(project_root_path().join("pyproject.toml")),
             ) -> Ok([project_root_path().join("python/tombi-beta/pyproject.toml")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn project_readme_relative_file(
+                r#"
+                [project]
+                readme = "python/tombi/README.md█"
+                "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok([project_root_path().join("python/tombi/README.md")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn project_readme_file_object_relative_file(
+                r#"
+                [project]
+                readme = { file = "python/tombi/README.md█" }
+                "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok([project_root_path().join("python/tombi/README.md")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn project_license_file_relative_file(
+                r#"
+                [project]
+                license = { file = "python/tombi/README.md█" }
+                "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok([project_root_path().join("python/tombi/README.md")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn project_license_files_relative_file(
+                r#"
+                [project]
+                license-files = ["python/tombi/README.md█"]
+                "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok([project_root_path().join("python/tombi/README.md")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn build_system_backend_path_relative_directory(
+                r#"
+                [build-system]
+                backend-path = ["python█"]
+                "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok([project_root_path().join("python")]);
         );
     }
 

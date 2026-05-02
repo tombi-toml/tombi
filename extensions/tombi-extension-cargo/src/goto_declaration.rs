@@ -1,6 +1,6 @@
 use crate::{
-    feature_key_at_accessors, goto_declaration_for_crate_cargo_toml,
-    optional_dependency_value_at_accessors,
+    CargoNavigationFeature, classify_cargo_navigation_feature, feature_key_at_accessors,
+    goto_declaration_for_crate_cargo_toml, optional_dependency_value_at_accessors,
 };
 use tombi_config::TomlVersion;
 use tombi_document_tree::dig_keys;
@@ -21,7 +21,7 @@ pub async fn goto_declaration(
         return Ok(Default::default());
     };
 
-    if !cargo_navigation_enabled(features, accessors) {
+    if !cargo_goto_declaration_enabled(features, accessors) {
         return Ok(None);
     }
 
@@ -40,23 +40,20 @@ pub async fn goto_declaration(
     Ok(Some(locations))
 }
 
-fn cargo_navigation_enabled(
+fn cargo_goto_declaration_enabled(
     features: Option<&tombi_config::CargoExtensionFeatures>,
     accessors: &[tombi_schema_store::Accessor],
 ) -> bool {
     features
         .and_then(|features| features.lsp())
         .and_then(|lsp| lsp.goto_declaration())
-        .and_then(|goto_declaration| {
-            if matches!(
-                accessors.last(),
-                Some(tombi_schema_store::Accessor::Key(key)) if key == "path"
-            ) {
-                goto_declaration.path()
-            } else {
-                goto_declaration.dependency()
-            }
-        })
+        .and_then(
+            |goto_declaration| match classify_cargo_navigation_feature(accessors) {
+                CargoNavigationFeature::Dependency => goto_declaration.dependency(),
+                CargoNavigationFeature::Member => goto_declaration.member(),
+                CargoNavigationFeature::Path => None,
+            },
+        )
         .map(|feature| feature.enabled())
         .unwrap_or_default()
         .value()

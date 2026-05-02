@@ -148,17 +148,6 @@ mod goto_declaration_tests {
 
         test_goto_declaration!(
             #[tokio::test]
-            async fn tool_pyproject_sources_tombi_beta(
-                r#"
-                [tool.uv.sources]
-                tombi-beta█ = { workspace = true }
-                "#,
-                SourcePath(project_root_path().join("python/tombi-beta/pyproject.toml")),
-            ) -> Ok([project_root_path().join("pyproject.toml")]);
-        );
-
-        test_goto_declaration!(
-            #[tokio::test]
             async fn tool_pyproject_sources_tombi_beta_workspace(
                 r#"
                 [tool.uv.sources]
@@ -166,17 +155,6 @@ mod goto_declaration_tests {
                 "#,
                 SourcePath(project_root_path().join("python/tombi-beta/pyproject.toml")),
             ) -> Ok([project_root_path().join("pyproject.toml")]);
-        );
-
-        test_goto_declaration!(
-            #[tokio::test]
-            async fn tool_pyproject_sources_path_dependency(
-                r#"
-                [tool.uv.sources]
-                tombi-beta = { path = "members/app█" }
-                "#,
-                SourcePath(project_root_path().join("python/tombi-beta/pyproject.toml")),
-            ) -> Ok([project_root_path().join("python/tombi-beta/pyproject.toml")]);
         );
 
         test_goto_declaration!(
