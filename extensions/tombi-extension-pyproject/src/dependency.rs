@@ -79,9 +79,8 @@ pub(crate) fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Acces
         || matches_accessors!(accessors, ["build-system", "requires", _])
         || matches_accessors!(accessors, ["dependency-groups", _, _])
         || matches_accessors!(accessors, ["project", "optional-dependencies", _, _])
+        || is_uv_dependency_accessor(accessors)
     {
-        Some(accessors)
-    } else if is_uv_dependency_accessor(accessors) {
         Some(accessors)
     } else {
         None
