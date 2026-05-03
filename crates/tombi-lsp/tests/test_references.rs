@@ -247,6 +247,44 @@ mod references_tests {
 
         test_references!(
             #[tokio::test]
+            async fn cargo_references_dependency_subfeature_can_be_disabled(
+                r#"
+                [package]
+                name = "provider"
+                version = "0.1.0"
+                edition = "2024"
+
+                [features]
+                jsonschema█ = []
+                "#,
+                SourcePath(
+                    cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml")
+                ),
+                ConfigPath(fixture_config_path("cargo-references-dependency-disabled")),
+            ) -> Ok([]);
+        );
+
+        test_references!(
+            #[tokio::test]
+            async fn cargo_references_parent_disable_overrides_dependency_enable(
+                r#"
+                [package]
+                name = "provider"
+                version = "0.1.0"
+                edition = "2024"
+
+                [features]
+                jsonschema█ = []
+                "#,
+                SourcePath(
+                    cargo_feature_navigation_fixture_path().join("workspace/provider/Cargo.toml")
+                ),
+                ConfigPath(fixture_config_path("cargo-references-parent-disabled")),
+            ) -> Ok([]);
+        );
+
+        test_references!(
+            #[tokio::test]
             async fn include_declaration_appends_definition_location(
                 r#"
                 [package]
@@ -475,6 +513,38 @@ mod references_tests {
             ) -> Ok([
                 pyproject_workspace_fixtures_path().join("pyproject.toml"),
             ]);
+        );
+
+        test_references!(
+            #[tokio::test]
+            async fn pyproject_references_dependency_subfeature_can_be_disabled(
+                r#"
+                [project]
+                name = "app1"
+                version = "0.1.0"
+                dependencies = [
+                    "pydantic█"
+                ]
+                "#,
+                SourcePath(pyproject_workspace_fixtures_path().join("members/app1/pyproject.toml")),
+                ConfigPath(fixture_config_path("pyproject-references-dependency-disabled")),
+            ) -> Ok([]);
+        );
+
+        test_references!(
+            #[tokio::test]
+            async fn pyproject_references_parent_disable_overrides_dependency_enable(
+                r#"
+                [project]
+                name = "app1"
+                version = "0.1.0"
+                dependencies = [
+                    "pydantic█"
+                ]
+                "#,
+                SourcePath(pyproject_workspace_fixtures_path().join("members/app1/pyproject.toml")),
+                ConfigPath(fixture_config_path("pyproject-references-parent-disabled")),
+            ) -> Ok([]);
         );
 
         test_references!(
