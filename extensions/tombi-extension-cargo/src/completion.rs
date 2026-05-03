@@ -569,7 +569,7 @@ async fn complete_crate_version(
     if let Some(versions) = fetch_crate_versions(crate_name, offline, cache_options).await {
         let items = versions
             .into_iter()
-            .sorted_by(|a, b| tombi_version_sort::version_sort(a, b))
+            .sorted_by(|a, b| tombi_version_sort::version_sort_with_semver(a, b))
             .rev()
             .take(100)
             .enumerate()

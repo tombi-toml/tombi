@@ -1,3 +1,7 @@
+use std::{
+    ffi::OsString,
+    sync::{LazyLock, Mutex, MutexGuard},
+};
 use tombi_config::{JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHEMASTORE_CATALOG_URL};
 use tombi_test_lib::{
     adjacent_applicators_test_schema_path, adjacent_one_of_additional_properties_test_schema_path,
@@ -6,6 +10,53 @@ use tombi_test_lib::{
     string_format_test_schema_path, today_local_date, today_local_date_time, today_local_time,
     today_offset_date_time,
 };
+
+static COMPLETION_LABEL_CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
+struct CompletionLabelTestCacheHome {
+    _guard: MutexGuard<'static, ()>,
+    previous_tombi: Option<OsString>,
+    previous_xdg: Option<OsString>,
+    _temp_dir: tempfile::TempDir,
+}
+
+impl CompletionLabelTestCacheHome {
+    fn new() -> Self {
+        let guard = COMPLETION_LABEL_CACHE_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|err| err.into_inner());
+        let temp_dir = tempfile::tempdir().unwrap();
+        let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
+        let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
+        unsafe {
+            std::env::remove_var("TOMBI_CACHE_HOME");
+            std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
+        }
+        Self {
+            _guard: guard,
+            previous_tombi,
+            previous_xdg,
+            _temp_dir: temp_dir,
+        }
+    }
+}
+
+impl Drop for CompletionLabelTestCacheHome {
+    fn drop(&mut self) {
+        unsafe {
+            if let Some(previous) = &self.previous_tombi {
+                std::env::set_var("TOMBI_CACHE_HOME", previous);
+            } else {
+                std::env::remove_var("TOMBI_CACHE_HOME");
+            }
+            if let Some(previous) = &self.previous_xdg {
+                std::env::set_var("XDG_CACHE_HOME", previous);
+            } else {
+                std::env::remove_var("XDG_CACHE_HOME");
+            }
+        }
+    }
+}
 
 mod completion_labels {
     use super::*;
@@ -2061,6 +2112,7 @@ mod completion_labels {
                     offline: Some(true),
                     no_cache: None,
                 },
+                PreselectedLabels(&["\"0.3.0-pre.2\""]),
                 CachedResponse::new(
                     "https://crates.io/api/v1/crates/tombi-semver-order-test/versions",
                     r#"{"versions":[
@@ -2780,6 +2832,7 @@ mod completion_labels {
                     schema_file_path: Option<std::path::PathBuf>,
                     subschemas: Vec<SubSchema>,
                     cached_responses: Vec<CachedResponse>,
+                    preselected_labels: Option<Vec<String>>,
                     backend_options: tombi_lsp::backend::Options,
                 }
 
@@ -2837,6 +2890,16 @@ mod completion_labels {
                     }
                 }
 
+                #[allow(unused)]
+                struct PreselectedLabels(&'static [&'static str]);
+
+                impl ApplyTestArg for PreselectedLabels {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.preselected_labels =
+                            Some(self.0.iter().map(ToString::to_string).collect());
+                    }
+                }
+
                 impl ApplyTestArg for tombi_lsp::backend::Options {
                     fn apply(self, args: &mut TestArgs) {
                         args.backend_options = self;
@@ -2850,57 +2913,7 @@ mod completion_labels {
                 let _cache_home = if args.cached_responses.is_empty() {
                     None
                 } else {
-                    use std::{
-                        ffi::OsString,
-                        sync::{LazyLock, Mutex, MutexGuard},
-                    };
-
-                    static CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
-
-                    struct TestCacheHome {
-                        _guard: MutexGuard<'static, ()>,
-                        previous_tombi: Option<OsString>,
-                        previous_xdg: Option<OsString>,
-                        _temp_dir: tempfile::TempDir,
-                    }
-
-                    impl TestCacheHome {
-                        fn new() -> Self {
-                            let guard = CACHE_ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
-                            let temp_dir = tempfile::tempdir().unwrap();
-                            let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
-                            let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
-                            unsafe {
-                                std::env::remove_var("TOMBI_CACHE_HOME");
-                                std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
-                            }
-                            Self {
-                                _guard: guard,
-                                previous_tombi,
-                                previous_xdg,
-                                _temp_dir: temp_dir,
-                            }
-                        }
-                    }
-
-                    impl Drop for TestCacheHome {
-                        fn drop(&mut self) {
-                            unsafe {
-                                if let Some(previous) = &self.previous_tombi {
-                                    std::env::set_var("TOMBI_CACHE_HOME", previous);
-                                } else {
-                                    std::env::remove_var("TOMBI_CACHE_HOME");
-                                }
-                                if let Some(previous) = &self.previous_xdg {
-                                    std::env::set_var("XDG_CACHE_HOME", previous);
-                                } else {
-                                    std::env::remove_var("XDG_CACHE_HOME");
-                                }
-                            }
-                        }
-                    }
-
-                    Some(TestCacheHome::new())
+                    Some($crate::CompletionLabelTestCacheHome::new())
                 };
 
                 let (service, _) =
@@ -3060,7 +3073,7 @@ mod completion_labels {
                     return Err("failed to handle completion".into());
                 };
 
-                let labels = completions
+                let completion_items = completions
                     .into_iter()
                     .map(|content| IntoLsp::<CompletionItem>::into_lsp(content, &line_index))
                     .sorted_by(|a, b| {
@@ -3069,13 +3082,30 @@ mod completion_labels {
                             .unwrap_or(&a.label)
                             .cmp(&b.sort_text.as_ref().unwrap_or(&b.label))
                     })
-                    .map(|item| item.label)
+                    .collect_vec();
+
+                let labels = completion_items
+                    .iter()
+                    .map(|item| item.label.clone())
                     .collect_vec();
 
                 pretty_assertions::assert_eq!(
                     labels,
                     vec![$($label.to_string()),*] as Vec<String>,
                 );
+
+                if let Some(expected_preselected_labels) = args.preselected_labels {
+                    let preselected_labels = completion_items
+                        .iter()
+                        .filter(|item| item.preselect == Some(true))
+                        .map(|item| item.label.clone())
+                        .collect_vec();
+
+                    pretty_assertions::assert_eq!(
+                        preselected_labels,
+                        expected_preselected_labels
+                    );
+                }
 
                 Ok(())
             }
