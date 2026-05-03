@@ -32,7 +32,7 @@ pub async fn root_table_keys_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    let order = comment_directive
+    let comment_directive_order = comment_directive
         .as_ref()
         .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
 
@@ -67,6 +67,17 @@ pub async fn root_table_keys_order<'a>(
         return changes;
     }
 
+    let schema_override = schema_context.table_order_override(current_schema, &[]);
+    let root_order = schema_override
+        .and_then(|override_item| override_item.order)
+        .or(comment_directive_order);
+    let schema_order_enabled = schema_override.is_some_and(|override_item| !override_item.disabled)
+        || schema_context.schema_table_keys_order_enabled(current_schema);
+
+    if !schema_order_enabled {
+        return changes;
+    }
+
     let old = std::ops::RangeInclusive::new(
         SyntaxElement::Node(table_or_array_of_tables.first().unwrap().syntax().clone()),
         SyntaxElement::Node(table_or_array_of_tables.last().unwrap().syntax().clone()),
@@ -93,7 +104,7 @@ pub async fn root_table_keys_order<'a>(
             .collect_vec(),
         current_schema,
         schema_context,
-        order,
+        root_order,
         table_order_overrides,
     )
     .await

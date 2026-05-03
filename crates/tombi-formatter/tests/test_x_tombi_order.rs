@@ -833,6 +833,46 @@ mod table_keys_order {
                 "#
             )
         }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_cargo_root_tables_not_sorted_when_schema_table_keys_order_disabled(
+                r#"
+                [workspace]
+
+                [workspace.package]
+
+                [profile.release]
+
+                [workspace.dependencies]
+
+                [workspace.lints.rust]
+                "#,
+                ConfigText(
+                    r#"
+                    [[schemas]]
+                    path = "tombi://www.schemastore.org/cargo.json"
+                    include = ["Cargo.toml"]
+                    [schemas.format.rules.array-values-order]
+                    enabled = false
+                    [schemas.format.rules.table-keys-order]
+                    enabled = false
+                    "#
+                ),
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
+            ) -> Ok(
+                r#"
+                [workspace]
+                [workspace.package]
+
+                [profile.release]
+
+                [workspace.dependencies]
+
+                [workspace.lints.rust]
+                "#
+            )
+        }
     }
 
     mod tombi {
