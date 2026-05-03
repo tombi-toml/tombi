@@ -515,6 +515,7 @@ mod completion_labels {
                 "goto-definition",
                 "goto-type-definition",
                 "hover",
+                "references",
                 "workspace-diagnostic",
             ]);
         }
@@ -537,6 +538,7 @@ mod completion_labels {
                 "goto-definition",
                 "goto-type-definition",
                 "hover",
+                "references",
                 "workspace-diagnostic",
             ]);
         }
@@ -560,6 +562,7 @@ mod completion_labels {
                 "goto-definition",
                 "goto-type-definition",
                 "hover",
+                "references",
                 "workspace-diagnostic",
             ]);
         }
