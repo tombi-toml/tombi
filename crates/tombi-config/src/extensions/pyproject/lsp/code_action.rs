@@ -33,5 +33,10 @@ toggle_features! {
         ///
         /// Whether code actions can add a dependency to the workspace and reuse it.
         pub add_to_workspace_and_use_workspace_dependency: Option<ToggleFeatureDefaultTrue>,
+
+        /// # Update-dependency-to-latest-version code action feature
+        ///
+        /// Whether code actions can rewrite dependency versions to the latest published version.
+        pub update_dependency_to_latest_version: Option<ToggleFeatureDefaultTrue>,
     }
 }

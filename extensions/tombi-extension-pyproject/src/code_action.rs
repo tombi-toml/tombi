@@ -1,7 +1,11 @@
-use pep508_rs::{Requirement, VerbatimUrl};
+use pep508_rs::{
+    Requirement, VerbatimUrl, VersionOrUrl,
+    pep440_rs::{Version, VersionSpecifier},
+};
 use tombi_ast::AstNode;
+use tombi_document_tree::dig_keys;
 use tombi_extension::CodeActionOrCommand;
-use tombi_schema_store::{Accessor, matches_accessors};
+use tombi_schema_store::Accessor;
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
@@ -9,8 +13,9 @@ use tower_lsp::lsp_types::{
 };
 
 use crate::{
-    DependencyRequirement, collect_dependency_requirements_from_document_tree,
-    find_workspace_pyproject_toml, parse_dependency_requirement, parse_requirement,
+    DependencyRequirement, collect_dependency_requirements_from_document_tree, fetch_pypi_project,
+    find_workspace_pyproject_toml, get_dependency_accessors, parse_dependency_requirement,
+    parse_requirement,
 };
 
 pub enum CodeActionRefactorRewriteName {
@@ -60,6 +65,21 @@ pub enum CodeActionRefactorRewriteName {
     /// dependencies = ["pydantic"]
     /// ```
     AddToWorkspaceAndUseWorkspaceDependency,
+
+    /// Update Dependency to Latest Version
+    ///
+    /// Before:
+    /// ```toml
+    /// [project]
+    /// dependencies = ["requests>=2.0"]
+    /// ```
+    ///
+    /// After applying "Update Dependency to Latest Version":
+    /// ```toml
+    /// [project]
+    /// dependencies = ["requests==2.33.1"]
+    /// ```
+    UpdateDependencyToLatestVersion,
 }
 
 impl CodeActionRefactorRewriteName {
@@ -69,6 +89,7 @@ impl CodeActionRefactorRewriteName {
             Self::AddToWorkspaceAndUseWorkspaceDependency => {
                 "Add to Workspace and Use Workspace Dependency"
             }
+            Self::UpdateDependencyToLatestVersion => "Update Dependency to Latest Version",
         }
     }
 }
@@ -79,7 +100,7 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
     }
 }
 
-pub fn code_action(
+pub async fn code_action(
     text_document_uri: &tombi_uri::Uri,
     _root: &tombi_ast::Root,
     document_tree: &tombi_document_tree::DocumentTree,
@@ -87,6 +108,8 @@ pub fn code_action(
     toml_version: tombi_config::TomlVersion,
     line_index: &tombi_text::LineIndex,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
 ) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
     // Check if the file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
@@ -103,125 +126,182 @@ pub fn code_action(
         return Ok(None);
     }
 
-    // Check if this is a workspace root (has [tool.uv.workspace] section)
-    if document_tree.contains_key("tool")
-        && let Some((_, tool_value)) = tombi_document_tree::dig_keys(document_tree, &["tool"])
-        && let tombi_document_tree::Value::Table(tool_table) = tool_value
-        && let Some((_, pyproject_value)) = tool_table.get_key_value("uv")
-        && let tombi_document_tree::Value::Table(pyproject_table) = pyproject_value
-        && pyproject_table.contains_key("workspace")
-    {
-        // This is a workspace root, don't provide code actions
+    let Some(dependency_accessors) = get_dependency_accessors(accessors) else {
         return Ok(None);
-    }
+    };
 
-    if matches_accessors!(accessors, ["project", "dependencies", _])
-        || matches_accessors!(accessors, ["project", "optional-dependencies", _, _])
-        || matches_accessors!(accessors, ["dependency-groups", _, _])
-    {
-        Ok(code_action_for_dependency_package(
-            text_document_uri,
-            document_tree,
-            accessors,
-            toml_version,
-            line_index,
-            features,
-        ))
-    } else {
-        Ok(None)
-    }
-}
+    let mut actions = Vec::new();
 
-fn code_action_for_dependency_package(
-    text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
-    accessors: &[Accessor],
-    toml_version: tombi_config::TomlVersion,
-    line_index: &tombi_text::LineIndex,
-    features: Option<&tombi_config::PyprojectExtensionFeatures>,
-) -> Option<Vec<CodeActionOrCommand>> {
     // Try to find workspace pyproject.toml
     let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
         log::warn!(
             "Failed to convert URI to file path: {:?}",
             text_document_uri
         );
-        return None;
+        return Ok(None);
     };
 
-    let Some((workspace_path, workspace_root, workspace_document_tree)) =
-        find_workspace_pyproject_toml(&pyproject_toml_path, toml_version)
+    if features
+        .and_then(|features| features.lsp())
+        .and_then(|lsp| lsp.code_action())
+        .and_then(|code_action| code_action.update_dependency_to_latest_version())
+        .map(|feature| feature.enabled())
+        .unwrap_or_default()
+        .value()
+        && let Some(action) = update_dependency_to_latest_version_code_action(
+            text_document_uri,
+            line_index,
+            document_tree,
+            dependency_accessors,
+            offline,
+            cache_options,
+        )
+        .await?
+    {
+        actions.push(CodeActionOrCommand::CodeAction(action));
+    }
+
+    if !dig_keys(document_tree, &["tool", "uv", "workspace"]).is_some() {
+        let Some((workspace_path, workspace_root, workspace_document_tree)) =
+            find_workspace_pyproject_toml(&pyproject_toml_path, toml_version)
+        else {
+            log::debug!(
+                "No workspace pyproject.toml found: {:?}",
+                pyproject_toml_path.display()
+            );
+            return Ok(None);
+        };
+
+        // Load workspace text and create line index for workspace document
+        let Ok(workspace_text) = std::fs::read_to_string(&workspace_path) else {
+            log::warn!(
+                "Failed to read workspace pyproject.toml: {:?}",
+                workspace_path.display()
+            );
+            return Ok(None);
+        };
+        let workspace_line_index =
+            tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
+
+        // Try "Use Workspace Dependency" (when dependency exists in workspace)
+        if features
+            .and_then(|features| features.lsp())
+            .and_then(|lsp| lsp.code_action())
+            .and_then(|code_action| code_action.use_workspace_dependency())
+            .map(|use_workspace_dependency| use_workspace_dependency.enabled())
+            .unwrap_or_default()
+            .value()
+            && let Some(action) = use_workspace_dependency_code_action(
+                text_document_uri,
+                line_index,
+                document_tree,
+                dependency_accessors,
+                &workspace_document_tree,
+            )
+        {
+            actions.push(CodeActionOrCommand::CodeAction(action));
+        }
+
+        // Try "Add to Workspace and Use Workspace Dependency" (when dependency doesn't exist in workspace)
+        if features
+            .and_then(|features| features.lsp())
+            .and_then(|lsp| lsp.code_action())
+            .and_then(|code_action| code_action.add_to_workspace_and_use_workspace_dependency())
+            .map(|add_to_workspace_and_use_workspace_dependency| {
+                add_to_workspace_and_use_workspace_dependency.enabled()
+            })
+            .unwrap_or_default()
+            .value()
+            && let Some(action) = add_workspace_dependency_code_action(
+                text_document_uri,
+                line_index,
+                document_tree,
+                dependency_accessors,
+                &workspace_path,
+                &workspace_line_index,
+                &workspace_root,
+                &workspace_document_tree,
+            )
+        {
+            log::debug!(
+                "Providing 'Add to Workspace and Use Workspace Dependency' code action: action={:?}, uri={:?}",
+                action.title,
+                text_document_uri
+            );
+            actions.push(CodeActionOrCommand::CodeAction(action));
+        }
+    }
+
+    Ok((!actions.is_empty()).then_some(actions))
+}
+
+async fn update_dependency_to_latest_version_code_action(
+    text_document_uri: &tombi_uri::Uri,
+    line_index: &tombi_text::LineIndex,
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[Accessor],
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
+) -> Result<Option<CodeAction>, tower_lsp::jsonrpc::Error> {
+    let Some((_, dependency_value)) = tombi_document_tree::dig_accessors(document_tree, accessors)
     else {
-        log::debug!(
-            "No workspace pyproject.toml found: {:?}",
-            pyproject_toml_path.display()
-        );
-        return None;
+        return Ok(None);
     };
 
-    // Load workspace text and create line index for workspace document
-    let Ok(workspace_text) = std::fs::read_to_string(&workspace_path) else {
-        log::warn!(
-            "Failed to read workspace pyproject.toml: {:?}",
-            workspace_path.display()
-        );
-        return None;
+    let tombi_document_tree::Value::String(dep_str) = dependency_value else {
+        return Ok(None);
     };
-    let workspace_line_index =
-        tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
 
-    // Try to provide code actions
-    let mut actions = Vec::new();
+    let Some(dependency_requirement) = parse_dependency_requirement(dep_str) else {
+        return Ok(None);
+    };
 
-    // Try "Use Workspace Dependency" (when dependency exists in workspace)
-    if features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.code_action())
-        .and_then(|code_action| code_action.use_workspace_dependency())
-        .map(|use_workspace_dependency| use_workspace_dependency.enabled())
-        .unwrap_or_default()
-        .value()
-        && let Some(action) = use_workspace_dependency_code_action(
-            text_document_uri,
-            line_index,
-            document_tree,
-            accessors,
-            &workspace_document_tree,
-        )
-    {
-        actions.push(CodeActionOrCommand::CodeAction(action));
+    let Some(VersionOrUrl::VersionSpecifier(_)) = dependency_requirement.version_or_url() else {
+        return Ok(None);
+    };
+
+    let Some(latest_version) = fetch_pypi_project(
+        dependency_requirement.requirement.name.as_ref(),
+        offline,
+        cache_options,
+    )
+    .await?
+    .and_then(|response| response.info.version) else {
+        return Ok(None);
+    };
+
+    let Some(version_range) = find_version_specifier_range(dep_str.value()) else {
+        return Ok(None);
+    };
+    let new_version_specifier = format_exact_pinned_dependency(&latest_version);
+    let current_version_specifier =
+        &dep_str.value()[version_range.start.column as usize..version_range.end.column as usize];
+
+    if current_version_specifier.trim() == new_version_specifier {
+        return Ok(None);
     }
 
-    // Try "Add to Workspace and Use Workspace Dependency" (when dependency doesn't exist in workspace)
-    if features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.code_action())
-        .and_then(|code_action| code_action.add_to_workspace_and_use_workspace_dependency())
-        .map(|add_to_workspace_and_use_workspace_dependency| {
-            add_to_workspace_and_use_workspace_dependency.enabled()
-        })
-        .unwrap_or_default()
-        .value()
-        && let Some(action) = add_workspace_dependency_code_action(
-            text_document_uri,
-            line_index,
-            document_tree,
-            accessors,
-            &workspace_path,
-            &workspace_line_index,
-            &workspace_root,
-            &workspace_document_tree,
-        )
-    {
-        log::debug!(
-            "Providing 'Add to Workspace and Use Workspace Dependency' code action: action={:?}, uri={:?}",
-            action.title,
-            text_document_uri
-        );
-        actions.push(CodeActionOrCommand::CodeAction(action));
-    }
-
-    (!actions.is_empty()).then_some(actions)
+    Ok(Some(CodeAction {
+        title: CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion.to_string(),
+        kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
+        diagnostics: None,
+        edit: Some(WorkspaceEdit {
+            changes: None,
+            document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
+                text_document: OptionalVersionedTextDocumentIdentifier {
+                    uri: text_document_uri.to_owned().into(),
+                    version: None,
+                },
+                edits: vec![OneOf::Left(TextEdit {
+                    range: offset_range(dep_str.unquoted_range(), version_range)
+                        .into_lsp(line_index),
+                    new_text: new_version_specifier,
+                })],
+            }])),
+            change_annotations: None,
+        }),
+        ..Default::default()
+    }))
 }
 
 fn format_dependency_without_version(requirement: &Requirement<VerbatimUrl>) -> String {
@@ -232,6 +312,83 @@ fn format_dependency_without_version(requirement: &Requirement<VerbatimUrl>) -> 
         let extras: Vec<String> = requirement.extras.iter().map(|e| e.to_string()).collect();
         format!("{}[{}]", name, extras.join(","))
     }
+}
+
+fn format_exact_pinned_dependency(latest_version: &str) -> String {
+    let Ok(version) = latest_version.parse::<Version>() else {
+        return format!("=={latest_version}");
+    };
+
+    VersionOrUrl::<VerbatimUrl>::VersionSpecifier(VersionSpecifier::equals_version(version).into())
+        .to_string()
+}
+
+fn find_version_specifier_range(dependency: &str) -> Option<tombi_text::Range> {
+    let marker_start = dependency.find(';').unwrap_or(dependency.len());
+    let dependency_without_marker = &dependency[..marker_start];
+    let mut cursor = 0;
+
+    while let Some(ch) = dependency_without_marker[cursor..].chars().next() {
+        if ch.is_whitespace() || matches!(ch, '[' | '@' | '<' | '>' | '=' | '!' | '~') {
+            break;
+        }
+        cursor += ch.len_utf8();
+    }
+
+    if cursor == 0 {
+        return None;
+    }
+
+    while let Some(ch) = dependency_without_marker[cursor..].chars().next() {
+        if !ch.is_whitespace() {
+            break;
+        }
+        cursor += ch.len_utf8();
+    }
+
+    if dependency_without_marker[cursor..].starts_with('[') {
+        let extras_relative_end = dependency_without_marker[cursor..].find(']')?;
+        cursor += extras_relative_end + 1;
+    }
+
+    while let Some(ch) = dependency_without_marker[cursor..].chars().next() {
+        if !ch.is_whitespace() {
+            break;
+        }
+        cursor += ch.len_utf8();
+    }
+
+    if dependency_without_marker[cursor..].starts_with('@') {
+        return None;
+    }
+
+    if !matches!(
+        dependency_without_marker[cursor..].chars().next(),
+        Some('<' | '>' | '=' | '!' | '~')
+    ) {
+        return None;
+    }
+
+    let version_start = cursor;
+    let version_end = dependency_without_marker
+        .trim_end_matches(char::is_whitespace)
+        .len();
+
+    if version_start >= version_end {
+        return None;
+    }
+
+    Some(tombi_text::Range::new(
+        tombi_text::Position::new(0, version_start as u32),
+        tombi_text::Position::new(0, version_end as u32),
+    ))
+}
+
+fn offset_range(base: tombi_text::Range, relative: tombi_text::Range) -> tombi_text::Range {
+    tombi_text::Range::new(
+        base.start + tombi_text::RelativePosition::from(relative.start),
+        base.start + tombi_text::RelativePosition::from(relative.end),
+    )
 }
 
 fn calculate_insertion_index(existing_package_names: &[&str], new_package_name: &str) -> usize {
@@ -648,7 +805,33 @@ mod tests {
     }
 
     #[test]
-    fn test_code_action_non_pyproject_toml_returns_none() {
+    fn test_find_version_specifier_range_with_marker() {
+        let dependency = "requests>=2.0; python_version < '3.13'";
+        let range = find_version_specifier_range(dependency).unwrap();
+        assert_eq!(
+            &dependency[range.start.column as usize..range.end.column as usize],
+            ">=2.0"
+        );
+    }
+
+    #[test]
+    fn test_find_version_specifier_range_with_extras() {
+        let dependency = "requests[security] >= 2.0, < 3";
+        let range = find_version_specifier_range(dependency).unwrap();
+        assert_eq!(
+            &dependency[range.start.column as usize..range.end.column as usize],
+            ">= 2.0, < 3"
+        );
+    }
+
+    #[test]
+    fn test_find_version_specifier_range_returns_none_for_url() {
+        let dependency = "requests @ https://example.com/requests.whl";
+        assert!(find_version_specifier_range(dependency).is_none());
+    }
+
+    #[tokio::test]
+    async fn test_code_action_non_pyproject_toml_returns_none() {
         let uri = tombi_uri::Uri::from_file_path("/path/to/Cargo.toml").unwrap();
         let toml_text = r#"
 [package]
@@ -670,14 +853,17 @@ name = "test"
             tombi_config::TomlVersion::default(),
             &line_index,
             None,
-        );
+            true,
+            None,
+        )
+        .await;
 
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
     }
 
-    #[test]
-    fn test_code_action_workspace_root_returns_none() {
+    #[tokio::test]
+    async fn test_code_action_workspace_root_skips_workspace_actions() {
         let uri = tombi_uri::Uri::from_file_path("/path/to/pyproject.toml").unwrap();
         let toml_text = r#"
 [tool.uv.workspace]
@@ -701,18 +887,36 @@ dependencies = ["pydantic>=2.10"]
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
+                Accessor::Index(0),
             ],
             tombi_config::TomlVersion::default(),
             &line_index,
             None,
-        );
+            true,
+            None,
+        )
+        .await;
 
         assert!(result.is_ok());
-        assert!(result.unwrap().is_none());
+        let titles = result
+            .unwrap()
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|action| match action {
+                CodeActionOrCommand::CodeAction(action) => Some(action.title),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert!(!titles.iter().any(|title| title == "Use Workspace Dependency"));
+        assert!(
+            !titles
+                .iter()
+                .any(|title| title == "Add to Workspace and Use Workspace Dependency")
+        );
     }
 
-    #[test]
-    fn test_code_action_invalid_accessor_returns_none() {
+    #[tokio::test]
+    async fn test_code_action_invalid_accessor_returns_none() {
         let uri = tombi_uri::Uri::from_file_path("/path/to/pyproject.toml").unwrap();
         let toml_text = r#"
 [project]
@@ -738,7 +942,10 @@ name = "test"
             tombi_config::TomlVersion::default(),
             &line_index,
             None,
-        );
+            true,
+            None,
+        )
+        .await;
 
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());

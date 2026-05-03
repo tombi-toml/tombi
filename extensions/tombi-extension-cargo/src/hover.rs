@@ -1,30 +1,16 @@
 use std::path::Path;
 
-use serde::Deserialize;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_accessors, dig_keys};
-use tombi_extension::{HoverMetadata, append_latest_version, fetch_cached_remote_json};
+use tombi_extension::{HoverMetadata, append_latest_version};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
     collect_feature_usage_locations, dependency_package_name, feature_key_at_accessors,
-    feature_usage_target_for_feature_key, find_cargo_toml, find_workspace_cargo_toml,
-    get_workspace_cargo_toml_path, is_any_dependency_accessor, load_cargo_toml,
-    sanitize_dependency_key,
+    feature_usage_target_for_feature_key, fetch_crates_io_crate, find_cargo_toml,
+    find_workspace_cargo_toml, get_workspace_cargo_toml_path, is_any_dependency_accessor,
+    load_cargo_toml, sanitize_dependency_key,
 };
-
-#[derive(Debug, Deserialize)]
-struct CratesIoCrateResponse {
-    #[serde(rename = "crate")]
-    crate_info: CratesIoCrate,
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoCrate {
-    name: Option<String>,
-    description: Option<String>,
-    max_version: Option<String>,
-}
 
 pub async fn hover(
     text_document_uri: &tombi_uri::Uri,
@@ -338,10 +324,7 @@ async fn fetch_crates_io_metadata(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
 ) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
-    let url = format!("https://crates.io/api/v1/crates/{package_name}");
-    let Some(response) =
-        fetch_cached_remote_json::<CratesIoCrateResponse>(&url, offline, cache_options).await
-    else {
+    let Some(response) = fetch_crates_io_crate(package_name, offline, cache_options).await? else {
         return Ok(None);
     };
 
@@ -367,6 +350,7 @@ mod tests {
     use tombi_document_tree::TryIntoDocumentTree;
 
     use super::*;
+    use crate::crates_io::CratesIoCrateResponse;
 
     #[test]
     fn parses_crates_io_metadata_response() {

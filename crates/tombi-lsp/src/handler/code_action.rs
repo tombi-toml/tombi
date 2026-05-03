@@ -24,7 +24,11 @@ pub async fn handle_code_action(
 
     let text_document_uri = text_document.uri.into();
 
-    let ConfigSchemaStore { config, .. } = backend
+    let ConfigSchemaStore {
+        config,
+        schema_store,
+        ..
+    } = backend
         .config_manager
         .config_schema_store_for_uri(&text_document_uri)
         .await;
@@ -99,7 +103,10 @@ pub async fn handle_code_action(
             &accessor_contexts,
             document_source.toml_version,
             config.cargo_extension_features(),
-        )?
+            schema_store.offline(),
+            schema_store.cache_options(),
+        )
+        .await?
     {
         code_actions.extend(extension_code_actions);
     }
@@ -113,7 +120,10 @@ pub async fn handle_code_action(
             document_source.toml_version,
             line_index,
             config.pyproject_extension_features(),
-        )?
+            schema_store.offline(),
+            schema_store.cache_options(),
+        )
+        .await?
     {
         code_actions.extend(extension_code_actions);
     }
