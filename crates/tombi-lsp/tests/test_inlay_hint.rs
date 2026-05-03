@@ -1,16 +1,15 @@
 #![allow(clippy::await_holding_lock)]
 
 use std::{
-    ffi::OsString,
     fs,
     path::{Path, PathBuf},
     str::FromStr,
-    sync::{Mutex, MutexGuard, OnceLock},
+    sync::{Mutex, OnceLock},
     time::Duration,
 };
 
-use tempfile::TempDir;
 use tombi_extension::InlayHint;
+use tombi_test_lib::TestCacheHome;
 use tower_lsp::{
     LspService,
     lsp_types::{
@@ -34,52 +33,6 @@ fn test_lock() -> &'static Mutex<()> {
     LOCK.get_or_init(|| Mutex::new(()))
 }
 
-struct TestCacheHome {
-    _guard: MutexGuard<'static, ()>,
-    previous_tombi: Option<OsString>,
-    previous_xdg: Option<OsString>,
-    _temp_dir: TempDir,
-}
-
-impl TestCacheHome {
-    fn new() -> Self {
-        let guard = test_lock()
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        let temp_dir = tempfile::tempdir().unwrap();
-        let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
-        let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
-        unsafe {
-            std::env::remove_var("TOMBI_CACHE_HOME");
-            std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
-        }
-        Self {
-            _guard: guard,
-            previous_tombi,
-            previous_xdg,
-            _temp_dir: temp_dir,
-        }
-    }
-}
-
-impl Drop for TestCacheHome {
-    fn drop(&mut self) {
-        unsafe {
-            if let Some(previous) = &self.previous_tombi {
-                std::env::set_var("TOMBI_CACHE_HOME", previous);
-            } else {
-                std::env::remove_var("TOMBI_CACHE_HOME");
-            }
-
-            if let Some(previous) = &self.previous_xdg {
-                std::env::set_var("XDG_CACHE_HOME", previous);
-            } else {
-                std::env::remove_var("XDG_CACHE_HOME");
-            }
-        }
-    }
-}
-
 async fn cached_remote_json_file_path(url: &str) -> PathBuf {
     let uri = tombi_uri::Uri::from_str(url).unwrap();
     tombi_cache::get_cache_file_path(&uri).await.unwrap()
@@ -94,13 +47,13 @@ async fn write_cached_response(url: &str, body: &str) {
 }
 
 struct InlayHintFixture {
-    _temp_dir: Option<TempDir>,
+    _temp_dir: Option<tempfile::TempDir>,
     source: String,
     source_path: PathBuf,
 }
 
 impl InlayHintFixture {
-    fn new(temp_dir: Option<TempDir>, source: &str, source_path: PathBuf) -> Self {
+    fn new(temp_dir: Option<tempfile::TempDir>, source: &str, source_path: PathBuf) -> Self {
         Self {
             _temp_dir: temp_dir,
             source: textwrap::dedent(source).trim().to_string(),

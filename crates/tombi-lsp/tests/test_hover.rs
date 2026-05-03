@@ -1,16 +1,13 @@
 #![allow(clippy::await_holding_lock)]
 
 use std::{
-    ffi::OsString,
     fs,
     path::{Path, PathBuf},
     str::FromStr,
-    sync::{Mutex, MutexGuard, OnceLock},
 };
 
-use tempfile::TempDir;
 use tombi_test_lib::{
-    adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
+    TestCacheHome, adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
     cargo_feature_navigation_fixture_path, cargo_schema_path, exact_index_string_test_schema_path,
     lsp_consistency_test_schema_path, one_of_hover_discriminator_test_schema_path,
     pyproject_schema_path, ref_sibling_annotations_test_schema_path,
@@ -59,57 +56,6 @@ fn cargo_feature_usage_hover_description(
     }
 
     lines.join("\n")
-}
-
-fn test_lock() -> &'static Mutex<()> {
-    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-    LOCK.get_or_init(|| Mutex::new(()))
-}
-
-struct TestCacheHome {
-    _guard: MutexGuard<'static, ()>,
-    previous_tombi: Option<OsString>,
-    previous_xdg: Option<OsString>,
-    _temp_dir: TempDir,
-}
-
-impl TestCacheHome {
-    fn new() -> Self {
-        let guard = test_lock()
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        let temp_dir = tempfile::tempdir().unwrap();
-        let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
-        let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
-        unsafe {
-            std::env::remove_var("TOMBI_CACHE_HOME");
-            std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
-        }
-        Self {
-            _guard: guard,
-            previous_tombi,
-            previous_xdg,
-            _temp_dir: temp_dir,
-        }
-    }
-}
-
-impl Drop for TestCacheHome {
-    fn drop(&mut self) {
-        unsafe {
-            if let Some(previous) = &self.previous_tombi {
-                std::env::set_var("TOMBI_CACHE_HOME", previous);
-            } else {
-                std::env::remove_var("TOMBI_CACHE_HOME");
-            }
-
-            if let Some(previous) = &self.previous_xdg {
-                std::env::set_var("XDG_CACHE_HOME", previous);
-            } else {
-                std::env::remove_var("XDG_CACHE_HOME");
-            }
-        }
-    }
 }
 
 async fn cached_remote_json_file_path(url: &str) -> PathBuf {
