@@ -2049,6 +2049,39 @@ mod completion_labels {
         }
 
         test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_semver_versions_are_sorted_descending(
+                r#"
+                [dependencies]
+                tombi-semver-order-test = "█"
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: None,
+                },
+                CachedResponse::new(
+                    "https://crates.io/api/v1/crates/tombi-semver-order-test/versions",
+                    r#"{"versions":[
+                        {"num":"0.2.7","features":{}},
+                        {"num":"0.2.6","features":{}},
+                        {"num":"0.2.0-pre.1","features":{}},
+                        {"num":"0.3.0-pre.2","features":{}},
+                        {"num":"0.1.12","features":{}}
+                    ]}"#,
+                ),
+            ) -> Ok([
+                "\"0.3.0-pre.2\"",
+                "\"0.2.7\"",
+                "\"0.2.6\"",
+                "\"0.2.0-pre.1\"",
+                "\"0.1.12\"",
+                "\"*\"",
+            ]);
+        }
+
+        test_completion_labels! {
          #[tokio::test]
             async fn cargo_dependencies_tombi_date_time_features_with_workspace_eq_true_comma(
                 r#"
@@ -2746,6 +2779,7 @@ mod completion_labels {
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
                     subschemas: Vec<SubSchema>,
+                    cached_responses: Vec<CachedResponse>,
                     backend_options: tombi_lsp::backend::Options,
                 }
 
@@ -2784,6 +2818,25 @@ mod completion_labels {
                     }
                 }
 
+                #[allow(unused)]
+                struct CachedResponse {
+                    url: &'static str,
+                    body: &'static str,
+                }
+
+                #[allow(unused)]
+                impl CachedResponse {
+                    fn new(url: &'static str, body: &'static str) -> Self {
+                        Self { url, body }
+                    }
+                }
+
+                impl ApplyTestArg for CachedResponse {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.cached_responses.push(self);
+                    }
+                }
+
                 impl ApplyTestArg for tombi_lsp::backend::Options {
                     fn apply(self, args: &mut TestArgs) {
                         args.backend_options = self;
@@ -2793,6 +2846,62 @@ mod completion_labels {
                 #[allow(unused_mut)]
                 let mut args = TestArgs::default();
                 $(ApplyTestArg::apply($arg, &mut args);)*
+
+                let _cache_home = if args.cached_responses.is_empty() {
+                    None
+                } else {
+                    use std::{
+                        ffi::OsString,
+                        sync::{LazyLock, Mutex, MutexGuard},
+                    };
+
+                    static CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
+                    struct TestCacheHome {
+                        _guard: MutexGuard<'static, ()>,
+                        previous_tombi: Option<OsString>,
+                        previous_xdg: Option<OsString>,
+                        _temp_dir: tempfile::TempDir,
+                    }
+
+                    impl TestCacheHome {
+                        fn new() -> Self {
+                            let guard = CACHE_ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+                            let temp_dir = tempfile::tempdir().unwrap();
+                            let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
+                            let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
+                            unsafe {
+                                std::env::remove_var("TOMBI_CACHE_HOME");
+                                std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
+                            }
+                            Self {
+                                _guard: guard,
+                                previous_tombi,
+                                previous_xdg,
+                                _temp_dir: temp_dir,
+                            }
+                        }
+                    }
+
+                    impl Drop for TestCacheHome {
+                        fn drop(&mut self) {
+                            unsafe {
+                                if let Some(previous) = &self.previous_tombi {
+                                    std::env::set_var("TOMBI_CACHE_HOME", previous);
+                                } else {
+                                    std::env::remove_var("TOMBI_CACHE_HOME");
+                                }
+                                if let Some(previous) = &self.previous_xdg {
+                                    std::env::set_var("XDG_CACHE_HOME", previous);
+                                } else {
+                                    std::env::remove_var("XDG_CACHE_HOME");
+                                }
+                            }
+                        }
+                    }
+
+                    Some(TestCacheHome::new())
+                };
 
                 let (service, _) =
                     LspService::new(|client| Backend::new(client, &args.backend_options));
@@ -2839,6 +2948,25 @@ mod completion_labels {
                         format: None,
                         overrides: None,
                     }));
+                }
+
+                for cached_response in &args.cached_responses {
+                    let uri = cached_response
+                        .url
+                        .parse::<tombi_uri::Uri>()
+                        .map_err(|err| format!("failed to parse cache URL {}: {err}", cached_response.url))?;
+                    let cache_path = tombi_cache::get_cache_file_path(&uri)
+                        .await
+                        .ok_or_else(|| {
+                            format!(
+                                "failed to derive cache path for {}",
+                                cached_response.url
+                            )
+                        })?;
+                    if let Some(parent) = cache_path.parent() {
+                        std::fs::create_dir_all(parent)?;
+                    }
+                    std::fs::write(&cache_path, cached_response.body)?;
                 }
 
                 let Ok(temp_file) = tempfile::NamedTempFile::with_suffix_in(

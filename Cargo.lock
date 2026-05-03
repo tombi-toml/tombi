@@ -4224,6 +4224,7 @@ version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
  "pretty_assertions",
+ "semver 1.0.26",
 ]
 
 [[package]]

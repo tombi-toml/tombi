@@ -613,7 +613,7 @@ async fn complete_crate_version(
                     }
                     _ => None,
                 },
-                preselect: None,
+                preselect: (i == 0).then_some(true),
                 in_comment: false,
             })
             .collect();

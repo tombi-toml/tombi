@@ -1505,8 +1505,80 @@ mod completion_edit {
 
                         }
                     }
-                    _ => {
-                        return Err("failed to get the text edit of the selected completion item".into());
+                    CompletionTextEdit::InsertAndReplace(insert_replace_edit) => {
+                        let pre_cursor_text = {
+                            let start_line = insert_replace_edit.insert.start.line as usize;
+                            let start_col = insert_replace_edit.insert.start.column as usize;
+                            let cursor_line = cursor_position.line as usize;
+                            let cursor_col = cursor_position.column as usize;
+                            if (start_line, start_col) >= (cursor_line, cursor_col) {
+                                None
+                            } else {
+                                let before_cursor = &toml_text[..index];
+                                let line_start = std::iter::once(0)
+                                    .chain(
+                                        before_cursor
+                                            .char_indices()
+                                            .filter_map(|(i, c)| (c == '\n').then_some(i + 1)),
+                                    )
+                                    .nth(start_line)
+                                    .unwrap_or(before_cursor.len());
+                                let byte_offset_in_line: usize = before_cursor[line_start..]
+                                    .graphemes(true)
+                                    .take(start_col)
+                                    .map(str::len)
+                                    .sum();
+                                let byte_start =
+                                    (line_start + byte_offset_in_line).min(before_cursor.len());
+                                Some(&before_cursor[byte_start..])
+                            }
+                        };
+                        if let Some(pre_cursor_text) = pre_cursor_text {
+                            let filter_text = completion_content
+                                .filter_text
+                                .as_deref()
+                                .unwrap_or(completion_content.label.as_str());
+                            assert!(
+                                filter_text.starts_with(pre_cursor_text),
+                                "insert range covers text {:?} before the cursor that is not a \
+                                 prefix of the completion's filter_text/label ({:?}).",
+                                pre_cursor_text,
+                                filter_text,
+                            );
+                        }
+
+                        let text_edit = tombi_extension::TextEdit {
+                            range: insert_replace_edit.replace,
+                            new_text: insert_replace_edit.new_text,
+                        };
+
+                        let mut cursor = toml_text.split('\n').enumerate();
+                        let start_line = text_edit.range.start.line as usize;
+                        let end_line = text_edit.range.end.line as usize;
+
+                        while let Some((index, line)) = cursor.next() {
+                            if index != 0 {
+                                new_text.push('\n');
+                            }
+
+                            if start_line == index {
+                                new_text.push_str(&line[..text_edit.range.start.column as usize]);
+                                new_text.push_str(&text_edit.new_text);
+                                if index == end_line {
+                                    new_text.push_str(&line[text_edit.range.end.column as usize..]);
+                                    continue;
+                                }
+                                while let Some((index, line)) = cursor.next() {
+                                    if index == end_line {
+                                        new_text.push_str(&line[text_edit.range.end.column as usize..]);
+                                        break;
+                                    }
+                                }
+                            } else {
+                                new_text.push_str(line);
+                            }
+
+                        }
                     }
                 }
 

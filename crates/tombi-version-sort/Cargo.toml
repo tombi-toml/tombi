@@ -8,6 +8,7 @@ license.workspace = true
 
 [dependencies]
 itertools.workspace = true
+semver.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true
