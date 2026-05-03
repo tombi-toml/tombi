@@ -147,7 +147,7 @@ stub = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "maturin" },
+    { name = "maturin", specifier = ">=1.5,<2.0" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-stub", specifier = ">=1.1.0" },
     { name = "ruff", specifier = ">=0.7.4" },
