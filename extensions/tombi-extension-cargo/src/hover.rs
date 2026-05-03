@@ -95,9 +95,13 @@ pub async fn hover(
     }
 
     if version_accessor {
+        let Some(max_version) = response.crate_info.max_version else {
+            return Ok(None);
+        };
+
         return Ok(Some(HoverMetadata {
             title: None,
-            description: append_latest_version(None, response.crate_info.max_version)
+            description: append_latest_version(None, Some(max_version))
                 .map(HoverTextChange::Append),
         }));
     }
