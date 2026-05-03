@@ -909,6 +909,48 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_cargo_root_tables_sorted_by_comment_directive_when_schema_table_keys_order_disabled(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+
+                [workspace]
+
+                [workspace.package]
+
+                [profile.release]
+
+                [workspace.lints.rust]
+
+                [workspace.dependencies]
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
+                ConfigText(
+                    r#"
+                    [[schemas]]
+                    path = "tombi://www.schemastore.org/cargo.json"
+                    include = ["Cargo.toml"]
+                    [schemas.format.rules.table-keys-order]
+                    enabled = false
+                    "#
+                ),
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+
+                [profile.release]
+
+                [workspace]
+                [workspace.dependencies]
+
+                [workspace.lints.rust]
+
+                [workspace.package]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_cargo_root_tables_not_sorted_when_schema_overrides_table_keys_order_disabled(
                 r#"
                 [workspace]
