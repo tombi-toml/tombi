@@ -557,6 +557,40 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn cargo_dependency_version_hover_appends_latest_version(
+                r#"
+                [dependencies]
+                serde = { version = "█1.0", features = ["derive"] }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
+                UseTestCacheHome,
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                SchemaPath(cargo_schema_path()),
+                CachedRemoteJson {
+                    url: "https://crates.io/api/v1/crates/serde",
+                    body: r#"{
+                        "crate": {
+                            "name": "serde",
+                            "description": "A generic serialization/deserialization framework",
+                            "max_version": "1.0.228"
+                        }
+                    }"#,
+                },
+            ) -> Ok({
+                "Keys": "dependencies.serde.version",
+                "Value": "String?",
+                "Title": Some("Semantic Version Requirement"),
+                "Description": Some(
+                    "The [version requirement](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html) of the target dependency.\n\nLatest Version: `1.0.228`"
+                ),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn cargo_feature_key_hover_lists_project_references(
                 r#"
                 [package]
@@ -1723,6 +1757,8 @@ mod hover_keys_value {
                     schema_file_path: Option<std::path::PathBuf>,
                     schema_items: Vec<tombi_config::SchemaItem>,
                     subschemas: Vec<SubSchemaPath>,
+                    use_test_cache_home: bool,
+                    cached_remote_json: Vec<CachedRemoteJson>,
                     backend_options: tombi_lsp::backend::Options,
                 }
 
@@ -1770,6 +1806,27 @@ mod hover_keys_value {
                     }
                 }
 
+                #[allow(unused)]
+                struct UseTestCacheHome;
+
+                impl ApplyTestArg for UseTestCacheHome {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.use_test_cache_home = true;
+                    }
+                }
+
+                #[allow(unused)]
+                struct CachedRemoteJson {
+                    url: &'static str,
+                    body: &'static str,
+                }
+
+                impl ApplyTestArg for CachedRemoteJson {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.cached_remote_json.push(self);
+                    }
+                }
+
                 impl ApplyTestArg for tombi_lsp::backend::Options {
                     fn apply(self, args: &mut TestArgs) {
                         args.backend_options = self;
@@ -1779,6 +1836,13 @@ mod hover_keys_value {
                 #[allow(unused_mut)]
                 let mut args = TestArgs::default();
                 $(ApplyTestArg::apply($arg, &mut args);)*
+
+                let _cache_home = args
+                    .use_test_cache_home
+                    .then(TestCacheHome::new);
+                for cached_remote_json in &args.cached_remote_json {
+                    write_cached_response(cached_remote_json.url, cached_remote_json.body).await;
+                }
 
                 let (service, _) = LspService::new(|client| {
                     Backend::new(client, &args.backend_options)

@@ -1,7 +1,13 @@
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct HoverMetadata {
-    pub title: Option<String>,
-    pub description: Option<String>,
+    pub title: Option<HoverTextChange>,
+    pub description: Option<HoverTextChange>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HoverTextChange {
+    Replace(String),
+    Append(String),
 }
 
 pub fn append_latest_version(

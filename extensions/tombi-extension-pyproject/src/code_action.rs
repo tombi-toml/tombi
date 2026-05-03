@@ -161,7 +161,7 @@ pub async fn code_action(
         actions.push(CodeActionOrCommand::CodeAction(action));
     }
 
-    if !dig_keys(document_tree, &["tool", "uv", "workspace"]).is_some() {
+    if dig_keys(document_tree, &["tool", "uv", "workspace"]).is_none() {
         let Some((workspace_path, workspace_root, workspace_document_tree)) =
             find_workspace_pyproject_toml(&pyproject_toml_path, toml_version)
         else {
@@ -907,7 +907,11 @@ dependencies = ["pydantic>=2.10"]
                 _ => None,
             })
             .collect::<Vec<_>>();
-        assert!(!titles.iter().any(|title| title == "Use Workspace Dependency"));
+        assert!(
+            !titles
+                .iter()
+                .any(|title| title == "Use Workspace Dependency")
+        );
         assert!(
             !titles
                 .iter()
