@@ -5,6 +5,7 @@ use tombi_document_tree::{dig_accessors, dig_keys};
 use tombi_extension::CommentContext;
 use tombi_extension::CompletionContent;
 use tombi_extension::CompletionContentPriority;
+use tombi_extension::CompletionEdit;
 use tombi_extension::CompletionHint;
 use tombi_extension::CompletionKind;
 use tombi_extension::CompletionTextEdit;
@@ -268,7 +269,6 @@ async fn completion_workspace(
             document_tree,
             cargo_toml_path,
             &accessors[..4],
-            position,
             toml_version,
             offline,
             cache_options,
@@ -387,7 +387,6 @@ async fn completion_member(
                 document_tree,
                 cargo_toml_path,
                 &accessors[..3 + offset],
-                position,
                 toml_version,
                 offline,
                 cache_options,
@@ -630,7 +629,6 @@ fn complete_crate_feature<'a: 'b, 'b>(
     document_tree: &'a tombi_document_tree::DocumentTree,
     cargo_toml_path: &'a std::path::Path,
     features_accessors: &'a [Accessor],
-    position: tombi_text::Position,
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&'a tombi_cache::Options>,
@@ -700,7 +698,6 @@ fn complete_crate_feature<'a: 'b, 'b>(
                         Accessor::Key(crate_name.to_string()),
                         Accessor::Key("features".to_string()),
                     ],
-                    position,
                     toml_version,
                     offline,
                     cache_options,
@@ -738,45 +735,41 @@ fn complete_crate_feature<'a: 'b, 'b>(
             .filter(|(feature, _)| !already_features.contains(feature))
             .sorted_by(|(a, _), (b, _)| version_sort(a, b))
             .enumerate()
-            .map(|(i, (feature, feature_dependencies))| CompletionContent {
-                label: format!("\"{feature}\""),
-                kind: CompletionKind::Enum,
-                emoji_icon: Some('🦀'),
-                priority: tombi_extension::CompletionContentPriority::Custom(format!(
-                    "10__cargo_feature_{:>03}__",
-                    if feature == "default" {
-                        0 // default feature should be the first
-                    } else if feature.starts_with('_') {
-                        900 + i // features starting with `_` are considered private
-                    } else {
-                        i + 1
-                    }
-                )),
-                detail: Some("Crate feature".to_string()),
-                documentation: (!feature_dependencies.is_empty()).then(|| {
-                    "Feature dependencies:\n".to_string()
-                        + &feature_dependencies
-                            .into_iter()
-                            .map(|dep| format!("- `{dep}`"))
-                            .collect_vec()
-                            .join("\n")
-                }),
-                filter_text: None,
-                schema_uri: None,
-                deprecated: None,
-                edit: editing_feature_string.map(|value| tombi_extension::CompletionEdit {
-                    text_edit: CompletionTextEdit::Edit(TextEdit {
-                        range: tombi_text::Range::at(position),
-                        new_text: format!("\"{feature}\""),
+            .map(|(i, (feature, feature_dependencies))| {
+                let label = format!("\"{feature}\"");
+
+                CompletionContent {
+                    label: label.clone(),
+                    kind: CompletionKind::Enum,
+                    emoji_icon: Some('🦀'),
+                    priority: tombi_extension::CompletionContentPriority::Custom(format!(
+                        "10__cargo_feature_{:>03}__",
+                        if feature == "default" {
+                            0 // default feature should be the first
+                        } else if feature.starts_with('_') {
+                            900 + i // features starting with `_` are considered private
+                        } else {
+                            i + 1
+                        }
+                    )),
+                    detail: Some("Crate feature".to_string()),
+                    documentation: (!feature_dependencies.is_empty()).then(|| {
+                        "Feature dependencies:\n".to_string()
+                            + &feature_dependencies
+                                .into_iter()
+                                .map(|dep| format!("- `{dep}`"))
+                                .collect_vec()
+                                .join("\n")
                     }),
-                    insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
-                    additional_text_edits: Some(vec![TextEdit {
-                        range: value.range(),
-                        new_text: "".to_string(),
-                    }]),
-                }),
-                preselect: None,
-                in_comment: false,
+                    filter_text: None,
+                    schema_uri: None,
+                    deprecated: None,
+                    edit: editing_feature_string.and_then(|value| {
+                        CompletionEdit::new_string_literal_while_editing(&label, value.range())
+                    }),
+                    preselect: None,
+                    in_comment: false,
+                }
             })
             .collect();
         Ok(Some(items))
