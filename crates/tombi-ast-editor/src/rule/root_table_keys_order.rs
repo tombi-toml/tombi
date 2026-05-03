@@ -67,9 +67,8 @@ pub async fn root_table_keys_order<'a>(
     }
 
     let schema_override = schema_context.table_order_override(current_schema, &[]);
-    let root_order = schema_override
-        .and_then(|override_item| override_item.order)
-        .or(comment_directive_order);
+    let root_order =
+        comment_directive_order.or(schema_override.and_then(|override_item| override_item.order));
     let schema_order_enabled = schema_override.is_some_and(|override_item| !override_item.disabled)
         || schema_context.schema_table_keys_order_enabled(current_schema);
 
