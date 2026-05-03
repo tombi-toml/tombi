@@ -1001,6 +1001,25 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn pyproject_build_system_requires_hover_metadata(
+                r#"
+                [build-system]
+                requires = [
+                    "maturin█>=1.5,<2.0",
+                ]
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("pyproject.toml")),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok({
+                "Keys": "build-system.requires[0]",
+                "Value": "String",
+                "Title": Some("maturin"),
+                "Description": Some("Build and publish crates with pyo3, cffi and uniffi bindings as well as rust binaries as python packages"),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn pyproject_tool_poetry_exclude_tests(
                 r#"
                 [tool.poetry]
