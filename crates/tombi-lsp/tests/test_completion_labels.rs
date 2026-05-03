@@ -1,62 +1,11 @@
-use std::{
-    ffi::OsString,
-    sync::{LazyLock, Mutex, MutexGuard},
-};
 use tombi_config::{JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHEMASTORE_CATALOG_URL};
 use tombi_test_lib::{
-    adjacent_applicators_test_schema_path, adjacent_one_of_additional_properties_test_schema_path,
-    adjacent_one_of_hover_test_schema_path, dot_config_project_root_fixture_path,
-    exact_index_string_test_schema_path, lsp_consistency_test_schema_path, project_root_path,
-    string_format_test_schema_path, today_local_date, today_local_date_time, today_local_time,
-    today_offset_date_time,
+    TestCacheHome, adjacent_applicators_test_schema_path,
+    adjacent_one_of_additional_properties_test_schema_path, adjacent_one_of_hover_test_schema_path,
+    dot_config_project_root_fixture_path, exact_index_string_test_schema_path,
+    lsp_consistency_test_schema_path, project_root_path, string_format_test_schema_path,
+    today_local_date, today_local_date_time, today_local_time, today_offset_date_time,
 };
-
-static COMPLETION_LABEL_CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
-
-struct CompletionLabelTestCacheHome {
-    _guard: MutexGuard<'static, ()>,
-    previous_tombi: Option<OsString>,
-    previous_xdg: Option<OsString>,
-    _temp_dir: tempfile::TempDir,
-}
-
-impl CompletionLabelTestCacheHome {
-    fn new() -> Self {
-        let guard = COMPLETION_LABEL_CACHE_ENV_LOCK
-            .lock()
-            .unwrap_or_else(|err| err.into_inner());
-        let temp_dir = tempfile::tempdir().unwrap();
-        let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
-        let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
-        unsafe {
-            std::env::remove_var("TOMBI_CACHE_HOME");
-            std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
-        }
-        Self {
-            _guard: guard,
-            previous_tombi,
-            previous_xdg,
-            _temp_dir: temp_dir,
-        }
-    }
-}
-
-impl Drop for CompletionLabelTestCacheHome {
-    fn drop(&mut self) {
-        unsafe {
-            if let Some(previous) = &self.previous_tombi {
-                std::env::set_var("TOMBI_CACHE_HOME", previous);
-            } else {
-                std::env::remove_var("TOMBI_CACHE_HOME");
-            }
-            if let Some(previous) = &self.previous_xdg {
-                std::env::set_var("XDG_CACHE_HOME", previous);
-            } else {
-                std::env::remove_var("XDG_CACHE_HOME");
-            }
-        }
-    }
-}
 
 mod completion_labels {
     use super::*;
@@ -2112,7 +2061,7 @@ mod completion_labels {
                     offline: Some(true),
                     no_cache: None,
                 },
-                PreselectedLabels(&["\"0.3.0-pre.2\""]),
+                PreselectedLabels(&["\"0.2.7\""]),
                 CachedResponse::new(
                     "https://crates.io/api/v1/crates/tombi-semver-order-test/versions",
                     r#"{"versions":[
@@ -2124,8 +2073,8 @@ mod completion_labels {
                     ]}"#,
                 ),
             ) -> Ok([
-                "\"0.3.0-pre.2\"",
                 "\"0.2.7\"",
+                "\"0.3.0-pre.2\"",
                 "\"0.2.6\"",
                 "\"0.2.0-pre.1\"",
                 "\"0.1.12\"",
@@ -2913,7 +2862,7 @@ mod completion_labels {
                 let _cache_home = if args.cached_responses.is_empty() {
                     None
                 } else {
-                    Some($crate::CompletionLabelTestCacheHome::new())
+                    Some(TestCacheHome::new())
                 };
 
                 let (service, _) =

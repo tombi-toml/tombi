@@ -1,6 +1,5 @@
 use itertools::EitherOrBoth;
 use itertools::Itertools;
-use semver::Version;
 
 /// Iterator which breaks an identifier into various [VersionChunk]s.
 struct VersionChunkIter<'a> {
@@ -250,19 +249,6 @@ pub fn version_sort(a: &str, b: &str) -> std::cmp::Ordering {
         MoreLeadingZeros::Equal => std::cmp::Ordering::Equal,
         MoreLeadingZeros::Left => std::cmp::Ordering::Less,
         MoreLeadingZeros::Right => std::cmp::Ordering::Greater,
-    }
-}
-
-/// Compare version strings using SemVer precedence when both inputs parse as SemVer.
-///
-/// Falls back to [`version_sort`] for non-SemVer identifiers so callers can keep the
-/// existing Rust-style ordering for crate names, keys, and mixed inputs.
-pub fn version_sort_with_semver(a: &str, b: &str) -> std::cmp::Ordering {
-    match (Version::parse(a), Version::parse(b)) {
-        (Ok(a_version), Ok(b_version)) => {
-            a_version.cmp(&b_version).then_with(|| version_sort(a, b))
-        }
-        _ => version_sort(a, b),
     }
 }
 
@@ -561,7 +547,7 @@ mod test {
     }
 
     #[test]
-    fn test_semver_precedence_sorting() {
+    fn test_version_sorting_with_prerelease_identifiers() {
         let mut input = vec![
             "1.0.0-alpha.beta",
             "1.0.0-alpha1",
@@ -576,11 +562,11 @@ mod test {
             "0.2.0-pre.1",
             "0.2.7",
             "0.3.0-pre.2",
+            "1.0.0-alpha1",
             "1.0.0-alpha.1",
             "1.0.0-alpha.beta",
-            "1.0.0-alpha1",
         ];
-        input.sort_by(|a, b| version_sort_with_semver(a, b));
+        input.sort_by(|a, b| version_sort(a, b));
         pretty_assertions::assert_eq!(input, expected);
     }
 }
