@@ -75,14 +75,14 @@ pub(crate) fn collect_all_dependency_requirements_from_document_tree<'a>(
 }
 
 pub(crate) fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
-    if matches_accessors!(accessors, ["project", "dependencies", _]) {
-        Some(&accessors[..3])
-    } else if matches_accessors!(accessors, ["project", "optional-dependencies", _, _]) {
-        Some(&accessors[..4])
-    } else if matches_accessors!(accessors, ["dependency-groups", _, _]) {
-        Some(&accessors[..3])
+    if matches_accessors!(accessors, ["project", "dependencies", _])
+        || matches_accessors!(accessors, ["build-system", "requires", _])
+        || matches_accessors!(accessors, ["dependency-groups", _, _])
+        || matches_accessors!(accessors, ["project", "optional-dependencies", _, _])
+    {
+        Some(accessors)
     } else if is_uv_dependency_accessor(accessors) {
-        Some(&accessors[..4])
+        Some(accessors)
     } else {
         None
     }
@@ -93,12 +93,9 @@ fn is_uv_dependency_accessor(accessors: &[Accessor]) -> bool {
         return false;
     }
     matches!(
-        (&accessors[0], &accessors[1], &accessors[3]),
-        (Accessor::Key(a), Accessor::Key(b), Accessor::Index(_))
-        if a == "tool" && b == "uv"
-    ) && matches!(
-        &accessors[2],
-        Accessor::Key(key) if UV_DEPENDENCY_KEYS.contains(&key.as_str())
+        (&accessors[0], &accessors[1], &accessors[2], &accessors[3]),
+        (Accessor::Key(tool), Accessor::Key(uv), Accessor::Key(key), Accessor::Index(_))
+        if tool == "tool" && uv == "uv" && UV_DEPENDENCY_KEYS.contains(&key.as_str())
     )
 }
 
@@ -283,6 +280,20 @@ mod tests {
             Accessor::Key("tool".to_string()),
             Accessor::Key("uv".to_string()),
             Accessor::Key("override-dependencies".to_string()),
+            Accessor::Index(0),
+        ];
+
+        assert_eq!(
+            get_dependency_accessors(&accessors),
+            Some(accessors.as_slice())
+        );
+    }
+
+    #[test]
+    fn recognizes_build_system_requires_accessors() {
+        let accessors = vec![
+            Accessor::Key("build-system".to_string()),
+            Accessor::Key("requires".to_string()),
             Accessor::Index(0),
         ];
 

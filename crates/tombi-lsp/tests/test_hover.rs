@@ -1,5 +1,14 @@
-use std::path::{Path, PathBuf};
+#![allow(clippy::await_holding_lock)]
 
+use std::{
+    ffi::OsString,
+    fs,
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::{Mutex, MutexGuard, OnceLock},
+};
+
+use tempfile::TempDir;
 use tombi_test_lib::{
     adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
     cargo_feature_navigation_fixture_path, cargo_schema_path, exact_index_string_test_schema_path,
@@ -50,6 +59,70 @@ fn cargo_feature_usage_hover_description(
     }
 
     lines.join("\n")
+}
+
+fn test_lock() -> &'static Mutex<()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
+}
+
+struct TestCacheHome {
+    _guard: MutexGuard<'static, ()>,
+    previous_tombi: Option<OsString>,
+    previous_xdg: Option<OsString>,
+    _temp_dir: TempDir,
+}
+
+impl TestCacheHome {
+    fn new() -> Self {
+        let guard = test_lock()
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let temp_dir = tempfile::tempdir().unwrap();
+        let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
+        let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
+        unsafe {
+            std::env::remove_var("TOMBI_CACHE_HOME");
+            std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
+        }
+        Self {
+            _guard: guard,
+            previous_tombi,
+            previous_xdg,
+            _temp_dir: temp_dir,
+        }
+    }
+}
+
+impl Drop for TestCacheHome {
+    fn drop(&mut self) {
+        unsafe {
+            if let Some(previous) = &self.previous_tombi {
+                std::env::set_var("TOMBI_CACHE_HOME", previous);
+            } else {
+                std::env::remove_var("TOMBI_CACHE_HOME");
+            }
+
+            if let Some(previous) = &self.previous_xdg {
+                std::env::set_var("XDG_CACHE_HOME", previous);
+            } else {
+                std::env::remove_var("XDG_CACHE_HOME");
+            }
+        }
+    }
+}
+
+async fn cached_remote_json_file_path(url: &str) -> PathBuf {
+    let uri = tombi_uri::Uri::from_str(url).unwrap();
+    tombi_cache::get_cache_file_path(&uri).await.unwrap()
+}
+
+async fn write_cached_response(url: &str, body: &str) {
+    let cache_path = cached_remote_json_file_path(url).await;
+    if let Some(parent) = cache_path.parent() {
+        fs::create_dir_all(parent).unwrap();
+    }
+    fs::write(&cache_path, body).unwrap();
 }
 
 mod hover_keys_value {
@@ -998,6 +1071,158 @@ mod hover_keys_value {
                 "Description": Some("Add your description here"),
             });
         );
+
+        #[tokio::test]
+        async fn pyproject_build_system_requires_hover_metadata()
+        -> Result<(), Box<dyn std::error::Error>> {
+            use std::io::Write;
+
+            use tombi_lsp::{Backend, HoverContent, backend::Options, handler::handle_did_open};
+            use tombi_text::IntoLsp;
+            use tower_lsp::{
+                LspService,
+                lsp_types::{
+                    DidOpenTextDocumentParams, TextDocumentIdentifier, TextDocumentItem,
+                    TextDocumentPositionParams, Url, WorkDoneProgressParams,
+                },
+            };
+
+            tombi_test_lib::init_log();
+
+            let _cache_home = TestCacheHome::new();
+            write_cached_response(
+                "https://pypi.org/pypi/maturin/json",
+                r#"{
+                    "info": {
+                        "name": "maturin",
+                        "summary": "Build and publish crates with pyo3, cffi and uniffi bindings as well as rust binaries as python packages"
+                    }
+                }"#,
+            )
+            .await;
+
+            let source = r#"
+                [build-system]
+                requires = [
+                    "maturin█>=1.5,<2.0",
+                ]
+            "#;
+            let mut toml_text = textwrap::dedent(source).trim().to_string();
+            let index = toml_text
+                .find("█")
+                .ok_or("failed to find hover position marker")?;
+            toml_text.remove(index);
+
+            let source_path = tombi_test_lib::project_root_path().join("pyproject.toml");
+            let temp_dir = source_path
+                .parent()
+                .ok_or("failed to get source parent directory")?;
+            let temp_file = tempfile::NamedTempFile::with_suffix_in(".toml", temp_dir)?;
+            temp_file.as_file().write_all(toml_text.as_bytes())?;
+
+            let (service, _) = LspService::new(|client| {
+                Backend::new(
+                    client,
+                    &Options {
+                        offline: Some(true),
+                        no_cache: Some(false),
+                    },
+                )
+            });
+            let backend = service.inner();
+
+            let schema_uri = tombi_schema_store::SchemaUri::from_file_path(pyproject_schema_path())
+                .map_err(|_| "failed to convert schema path to URI")?;
+            let config_schema_store = backend
+                .config_manager
+                .config_schema_store_for_file(&source_path)
+                .await;
+            let mut test_config = config_schema_store.config;
+            let mut existing_schemas = test_config.schemas.take().unwrap_or_default();
+            existing_schemas.push(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                toml_version: None,
+                path: schema_uri.to_string(),
+                include: vec!["*.toml".into()],
+                exclude: None,
+                lint: None,
+                format: None,
+                overrides: None,
+            }));
+            test_config.schemas = Some(existing_schemas);
+
+            if let Some(config_path) = config_schema_store.config_path {
+                backend
+                    .config_manager
+                    .update_config_with_path(test_config, &config_path)
+                    .await
+                    .map_err(|error| {
+                        format!(
+                            "failed to update config {}: {}",
+                            config_path.display(),
+                            error
+                        )
+                    })?;
+            } else {
+                backend
+                    .config_manager
+                    .update_editor_config(test_config)
+                    .await;
+            }
+
+            let line_index =
+                tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
+            let toml_file_url = Url::from_file_path(&source_path)
+                .map_err(|_| "failed to convert source file path to URL")?;
+
+            handle_did_open(
+                backend,
+                DidOpenTextDocumentParams {
+                    text_document: TextDocumentItem {
+                        uri: toml_file_url.clone(),
+                        language_id: "toml".to_string(),
+                        version: 0,
+                        text: toml_text.clone(),
+                    },
+                },
+            )
+            .await;
+
+            let hover_content = tombi_lsp::handler::handle_hover(
+                backend,
+                tower_lsp::lsp_types::HoverParams {
+                    text_document_position_params: TextDocumentPositionParams {
+                        text_document: TextDocumentIdentifier { uri: toml_file_url },
+                        position: (tombi_text::Position::default()
+                            + tombi_text::RelativePosition::of(&toml_text[..index]))
+                        .into_lsp(&line_index),
+                    },
+                    work_done_progress_params: WorkDoneProgressParams::default(),
+                },
+            )
+            .await?;
+
+            let Some(
+                HoverContent::Value(hover_content) | HoverContent::DirectiveContent(hover_content),
+            ) = hover_content
+            else {
+                return Err("failed to handle hover content".into());
+            };
+
+            pretty_assertions::assert_eq!(
+                hover_content.accessors.to_string(),
+                "build-system.requires[0]"
+            );
+            pretty_assertions::assert_eq!(hover_content.value_type.to_string(), "String");
+            pretty_assertions::assert_eq!(hover_content.title.as_deref(), Some("maturin"));
+            pretty_assertions::assert_eq!(
+                hover_content.description.as_deref(),
+                Some(
+                    "Build and publish crates with pyo3, cffi and uniffi bindings as well as rust binaries as python packages"
+                )
+            );
+
+            Ok(())
+        }
 
         test_hover_keys_value!(
             #[tokio::test]
