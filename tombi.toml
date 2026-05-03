@@ -68,8 +68,6 @@ overrides = [
     document-link.enabled = true,
     goto-declaration = {
       dependency.enabled = true,
-      member.enabled = true,
-      path.enabled = true,
     },
     goto-definition = {
       dependency.enabled = true,
@@ -102,7 +100,6 @@ overrides = [
     goto-declaration = {
       dependency.enabled = true,
       member.enabled = true,
-      path.enabled = true,
     },
     goto-definition = {
       dependency.enabled = true,
