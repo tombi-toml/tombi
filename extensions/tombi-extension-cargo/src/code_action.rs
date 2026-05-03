@@ -1,4 +1,4 @@
-use tombi_document_tree::{TableKind, dig_accessors, dig_keys};
+use tombi_document_tree::{TableKind, Value, dig_accessors, dig_keys};
 use tombi_extension::CodeActionOrCommand;
 use tombi_schema_store::{Accessor, AccessorContext, matches_accessors};
 use tombi_text::IntoLsp;
@@ -7,7 +7,10 @@ use tower_lsp::lsp_types::{
     TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
 
-use crate::{find_workspace_cargo_toml, get_workspace_cargo_toml_path};
+use crate::{
+    dependency_parent_accessors, fetch_latest_crates_io_version, find_workspace_cargo_toml,
+    get_workspace_cargo_toml_path, is_any_dependency_accessor,
+};
 
 pub enum CodeActionRefactorRewriteName {
     /// Inherit from Workspace
@@ -98,6 +101,23 @@ pub enum CodeActionRefactorRewriteName {
     /// serde.workspace = true
     /// ```
     AddToWorkspaceAndInheritDependency,
+
+    /// Update Dependency to Latest Version
+    ///
+    /// Before
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// serde = "1.0"
+    /// ```
+    ///
+    /// After applying "Update Dependency to Latest Version"
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// serde = "1.0.228"
+    /// ```
+    UpdateDependencyToLatestVersion,
 }
 
 impl std::fmt::Display for CodeActionRefactorRewriteName {
@@ -115,11 +135,14 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
             CodeActionRefactorRewriteName::AddToWorkspaceAndInheritDependency => {
                 write!(f, "Add to Workspace and Inherit Dependency")
             }
+            CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion => {
+                write!(f, "Update Dependency to Latest Version")
+            }
         }
     }
 }
 
-pub fn code_action(
+pub async fn code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
     root: &tombi_ast::Root,
@@ -128,6 +151,8 @@ pub fn code_action(
     contexts: &[AccessorContext],
     toml_version: tombi_config::TomlVersion,
     features: Option<&tombi_config::CargoExtensionFeatures>,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
 ) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
@@ -149,37 +174,49 @@ pub fn code_action(
     let mut code_actions = Vec::new();
 
     if document_tree.contains_key("workspace") {
-        code_actions.extend(code_actions_for_workspace_cargo_toml(
-            text_document_uri,
-            line_index,
-            document_tree,
-            accessors,
-            features,
-        ))
+        code_actions.extend(
+            code_actions_for_workspace_cargo_toml(
+                text_document_uri,
+                line_index,
+                document_tree,
+                accessors,
+                offline,
+                cache_options,
+                features,
+            )
+            .await?,
+        )
     } else {
-        code_actions.extend(code_actions_for_crate_cargo_toml(
-            text_document_uri,
-            line_index,
-            root,
-            document_tree,
-            &cargo_toml_path,
-            accessors,
-            contexts,
-            toml_version,
-            features,
-        ));
+        code_actions.extend(
+            code_actions_for_crate_cargo_toml(
+                text_document_uri,
+                line_index,
+                root,
+                document_tree,
+                &cargo_toml_path,
+                accessors,
+                contexts,
+                toml_version,
+                offline,
+                cache_options,
+                features,
+            )
+            .await?,
+        );
     }
 
     Ok((!code_actions.is_empty()).then_some(code_actions))
 }
 
-fn code_actions_for_workspace_cargo_toml(
+async fn code_actions_for_workspace_cargo_toml(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Vec<CodeActionOrCommand> {
+) -> Result<Vec<CodeActionOrCommand>, tower_lsp::jsonrpc::Error> {
     let mut code_actions = Vec::new();
 
     let code_action_features = features
@@ -187,6 +224,7 @@ fn code_actions_for_workspace_cargo_toml(
         .and_then(|lsp| lsp.code_action());
 
     if code_action_features
+        .as_ref()
         .and_then(|code_action| code_action.convert_dependency_to_table_format())
         .map(|feature| feature.enabled())
         .unwrap_or_default()
@@ -201,10 +239,29 @@ fn code_actions_for_workspace_cargo_toml(
         code_actions.push(CodeActionOrCommand::CodeAction(action));
     }
 
-    code_actions
+    if code_action_features
+        .as_ref()
+        .and_then(|code_action| code_action.update_dependency_to_latest_version())
+        .map(|feature| feature.enabled())
+        .unwrap_or_default()
+        .value()
+        && let Some(action) = update_dependency_to_latest_version_code_action(
+            text_document_uri,
+            line_index,
+            document_tree,
+            accessors,
+            offline,
+            cache_options,
+        )
+        .await?
+    {
+        code_actions.push(CodeActionOrCommand::CodeAction(action));
+    }
+
+    Ok(code_actions)
 }
 
-fn code_actions_for_crate_cargo_toml(
+async fn code_actions_for_crate_cargo_toml(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
     _root: &tombi_ast::Root,
@@ -213,8 +270,10 @@ fn code_actions_for_crate_cargo_toml(
     accessors: &[Accessor],
     contexts: &[AccessorContext],
     toml_version: tombi_config::TomlVersion,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Vec<CodeActionOrCommand> {
+) -> Result<Vec<CodeActionOrCommand>, tower_lsp::jsonrpc::Error> {
     let mut code_actions = Vec::new();
 
     let code_action_features = features
@@ -230,7 +289,7 @@ fn code_actions_for_crate_cargo_toml(
     {
         // Load workspace text and create line index for workspace document
         let Ok(workspace_text) = std::fs::read_to_string(&workspace_cargo_toml_path) else {
-            return code_actions;
+            return Ok(code_actions);
         };
         let workspace_line_index =
             tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
@@ -314,7 +373,107 @@ fn code_actions_for_crate_cargo_toml(
         code_actions.push(CodeActionOrCommand::CodeAction(action));
     }
 
-    code_actions
+    if code_action_features
+        .as_ref()
+        .and_then(|code_action| code_action.update_dependency_to_latest_version())
+        .map(|feature| feature.enabled())
+        .unwrap_or_default()
+        .value()
+        && let Some(action) = update_dependency_to_latest_version_code_action(
+            text_document_uri,
+            line_index,
+            document_tree,
+            accessors,
+            offline,
+            cache_options,
+        )
+        .await?
+    {
+        code_actions.push(CodeActionOrCommand::CodeAction(action));
+    }
+
+    Ok(code_actions)
+}
+
+async fn update_dependency_to_latest_version_code_action(
+    text_document_uri: &tombi_uri::Uri,
+    line_index: &tombi_text::LineIndex,
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[Accessor],
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
+) -> Result<Option<CodeAction>, tower_lsp::jsonrpc::Error> {
+    let dependency_accessors = if is_any_dependency_accessor(accessors) {
+        accessors
+    } else if matches!(accessors.last(), Some(Accessor::Key(key)) if key == "version")
+        && let parent_accessors = dependency_parent_accessors(accessors)
+        && is_any_dependency_accessor(parent_accessors)
+    {
+        parent_accessors
+    } else {
+        return Ok(None);
+    };
+
+    let Some((Accessor::Key(dependency_key), dependency_value)) =
+        dig_accessors(document_tree, dependency_accessors)
+    else {
+        return Ok(None);
+    };
+
+    let (crate_name, version) = match dependency_value {
+        tombi_document_tree::Value::String(version) => (dependency_key.as_str(), version),
+        tombi_document_tree::Value::Table(table)
+            if !(table.get("path").is_some()
+                || table.get("git").is_some()
+                || matches!(
+                    table.get("workspace"),
+                    Some(Value::Boolean(workspace)) if workspace.value()
+                )) =>
+        {
+            match table.get("version") {
+                Some(tombi_document_tree::Value::String(version)) => {
+                    let crate_name = match table.get("package") {
+                        Some(tombi_document_tree::Value::String(package)) => package.value(),
+                        _ => dependency_key.as_str(),
+                    };
+                    (crate_name, version)
+                }
+                _ => return Ok(None),
+            }
+        }
+        _ => return Ok(None),
+    };
+
+    let Some(latest_version) =
+        fetch_latest_crates_io_version(crate_name, offline, cache_options).await?
+    else {
+        return Ok(None);
+    };
+
+    if latest_version == version.value() {
+        return Ok(None); // Already at latest version
+    }
+
+    Ok(Some(CodeAction {
+        title: CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion.to_string(),
+        kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
+        diagnostics: None,
+        edit: Some(WorkspaceEdit {
+            changes: None,
+            document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
+                text_document: OptionalVersionedTextDocumentIdentifier {
+                    uri: text_document_uri.to_owned().into(),
+                    version: None,
+                },
+                edits: vec![OneOf::Left(TextEdit {
+                    range: version.range().into_lsp(line_index),
+                    new_text: format!("\"{latest_version}\""),
+                })],
+            }])),
+            change_annotations: None,
+        }),
+        ..Default::default()
+    }))
 }
 
 /// Convert a package field to inherit from workspace configuration.

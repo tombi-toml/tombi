@@ -1,16 +1,13 @@
 #![allow(clippy::await_holding_lock)]
 
 use std::{
-    ffi::OsString,
     fs,
     path::{Path, PathBuf},
     str::FromStr,
-    sync::{Mutex, MutexGuard, OnceLock},
 };
 
-use tempfile::TempDir;
 use tombi_test_lib::{
-    adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
+    TestCacheHome, adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
     cargo_feature_navigation_fixture_path, cargo_schema_path, exact_index_string_test_schema_path,
     lsp_consistency_test_schema_path, one_of_hover_discriminator_test_schema_path,
     pyproject_schema_path, ref_sibling_annotations_test_schema_path,
@@ -59,57 +56,6 @@ fn cargo_feature_usage_hover_description(
     }
 
     lines.join("\n")
-}
-
-fn test_lock() -> &'static Mutex<()> {
-    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-    LOCK.get_or_init(|| Mutex::new(()))
-}
-
-struct TestCacheHome {
-    _guard: MutexGuard<'static, ()>,
-    previous_tombi: Option<OsString>,
-    previous_xdg: Option<OsString>,
-    _temp_dir: TempDir,
-}
-
-impl TestCacheHome {
-    fn new() -> Self {
-        let guard = test_lock()
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        let temp_dir = tempfile::tempdir().unwrap();
-        let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
-        let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
-        unsafe {
-            std::env::remove_var("TOMBI_CACHE_HOME");
-            std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
-        }
-        Self {
-            _guard: guard,
-            previous_tombi,
-            previous_xdg,
-            _temp_dir: temp_dir,
-        }
-    }
-}
-
-impl Drop for TestCacheHome {
-    fn drop(&mut self) {
-        unsafe {
-            if let Some(previous) = &self.previous_tombi {
-                std::env::set_var("TOMBI_CACHE_HOME", previous);
-            } else {
-                std::env::remove_var("TOMBI_CACHE_HOME");
-            }
-
-            if let Some(previous) = &self.previous_xdg {
-                std::env::set_var("XDG_CACHE_HOME", previous);
-            } else {
-                std::env::remove_var("XDG_CACHE_HOME");
-            }
-        }
-    }
 }
 
 async fn cached_remote_json_file_path(url: &str) -> PathBuf {
@@ -606,6 +552,40 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "workspace.dependencies.serde",
                 "Value": "(String | Table)?"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_dependency_version_hover_appends_latest_version(
+                r#"
+                [dependencies]
+                serde = { version = "█1.0", features = ["derive"] }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
+                UseTestCacheHome,
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                SchemaPath(cargo_schema_path()),
+                CachedRemoteJson {
+                    url: "https://crates.io/api/v1/crates/serde",
+                    body: r#"{
+                        "crate": {
+                            "name": "serde",
+                            "description": "A generic serialization/deserialization framework",
+                            "max_version": "1.0.228"
+                        }
+                    }"#,
+                },
+            ) -> Ok({
+                "Keys": "dependencies.serde.version",
+                "Value": "String?",
+                "Title": Some("Semantic Version Requirement"),
+                "Description": Some(
+                    "The [version requirement](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html) of the target dependency.\n\nLatest Version: `1.0.228`"
+                ),
             });
         );
 
@@ -1777,6 +1757,8 @@ mod hover_keys_value {
                     schema_file_path: Option<std::path::PathBuf>,
                     schema_items: Vec<tombi_config::SchemaItem>,
                     subschemas: Vec<SubSchemaPath>,
+                    use_test_cache_home: bool,
+                    cached_remote_json: Vec<CachedRemoteJson>,
                     backend_options: tombi_lsp::backend::Options,
                 }
 
@@ -1824,6 +1806,27 @@ mod hover_keys_value {
                     }
                 }
 
+                #[allow(unused)]
+                struct UseTestCacheHome;
+
+                impl ApplyTestArg for UseTestCacheHome {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.use_test_cache_home = true;
+                    }
+                }
+
+                #[allow(unused)]
+                struct CachedRemoteJson {
+                    url: &'static str,
+                    body: &'static str,
+                }
+
+                impl ApplyTestArg for CachedRemoteJson {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.cached_remote_json.push(self);
+                    }
+                }
+
                 impl ApplyTestArg for tombi_lsp::backend::Options {
                     fn apply(self, args: &mut TestArgs) {
                         args.backend_options = self;
@@ -1833,6 +1836,13 @@ mod hover_keys_value {
                 #[allow(unused_mut)]
                 let mut args = TestArgs::default();
                 $(ApplyTestArg::apply($arg, &mut args);)*
+
+                let _cache_home = args
+                    .use_test_cache_home
+                    .then(TestCacheHome::new);
+                for cached_remote_json in &args.cached_remote_json {
+                    write_cached_response(cached_remote_json.url, cached_remote_json.body).await;
+                }
 
                 let (service, _) = LspService::new(|client| {
                     Backend::new(client, &args.backend_options)

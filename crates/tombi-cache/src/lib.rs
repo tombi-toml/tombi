@@ -153,77 +153,10 @@ async fn ensure_cache_dir(cache_dir_path: std::path::PathBuf) -> Option<std::pat
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        ffi::OsString,
-        str::FromStr,
-        sync::{LazyLock, Mutex, MutexGuard},
-    };
+    use std::str::FromStr;
 
     use super::*;
-
-    static CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
-
-    struct TestCacheHome {
-        _guard: MutexGuard<'static, ()>,
-        previous_tombi: Option<OsString>,
-        previous_xdg: Option<OsString>,
-        temp_dir: std::path::PathBuf,
-    }
-
-    impl TestCacheHome {
-        fn new() -> Self {
-            Self::with_env(None)
-        }
-
-        fn with_env(tombi_cache_home: Option<&std::path::Path>) -> Self {
-            let guard = CACHE_ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
-            let unique = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let temp_dir = std::env::temp_dir().join(format!("tombi-cache-test-{unique}"));
-            std::fs::create_dir_all(&temp_dir).unwrap();
-            let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
-            let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
-            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
-            // remains scoped to one test at a time.
-            unsafe {
-                if let Some(tombi_cache_home) = tombi_cache_home {
-                    std::env::set_var("TOMBI_CACHE_HOME", tombi_cache_home);
-                } else {
-                    std::env::remove_var("TOMBI_CACHE_HOME");
-                }
-                std::env::set_var("XDG_CACHE_HOME", &temp_dir);
-            }
-            Self {
-                _guard: guard,
-                previous_tombi,
-                previous_xdg,
-                temp_dir,
-            }
-        }
-    }
-
-    impl Drop for TestCacheHome {
-        fn drop(&mut self) {
-            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
-            // remains scoped to one test at a time.
-            unsafe {
-                if let Some(previous) = &self.previous_tombi {
-                    std::env::set_var("TOMBI_CACHE_HOME", previous);
-                } else {
-                    std::env::remove_var("TOMBI_CACHE_HOME");
-                }
-
-                if let Some(previous) = &self.previous_xdg {
-                    std::env::set_var("XDG_CACHE_HOME", previous);
-                } else {
-                    std::env::remove_var("XDG_CACHE_HOME");
-                }
-            }
-            let _ = std::fs::remove_dir_all(&self.temp_dir);
-        }
-    }
+    use tombi_test_lib::TestCacheHome;
 
     #[tokio::test(flavor = "current_thread")]
     async fn appends_index_file_to_non_json_http_paths() {
@@ -260,7 +193,7 @@ mod tests {
     #[tokio::test(flavor = "current_thread")]
     async fn prefers_tombi_cache_home_over_xdg_cache_home() {
         let tombi_cache_home = tempfile::tempdir().unwrap();
-        let _cache_home = TestCacheHome::with_env(Some(tombi_cache_home.path()));
+        let _cache_home = TestCacheHome::with_tombi_cache_home(Some(tombi_cache_home.path()));
 
         let cache_path = get_tombi_cache_dir_path().await.unwrap();
 
@@ -273,6 +206,6 @@ mod tests {
 
         let cache_path = get_tombi_cache_dir_path().await.unwrap();
 
-        assert_eq!(cache_path, cache_home.temp_dir.join("tombi"));
+        assert_eq!(cache_path, cache_home.tombi_cache_dir_path());
     }
 }

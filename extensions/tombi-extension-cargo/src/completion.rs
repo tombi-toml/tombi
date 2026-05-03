@@ -874,65 +874,10 @@ async fn fetch_local_crate_features(
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        ffi::OsString,
-        fs,
-        str::FromStr,
-        sync::{LazyLock, Mutex, MutexGuard},
-        time::Duration,
-    };
+    use std::{fs, str::FromStr, time::Duration};
 
     use super::*;
-
-    static CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
-
-    struct TestCacheHome {
-        _guard: MutexGuard<'static, ()>,
-        previous_tombi: Option<OsString>,
-        previous_xdg: Option<OsString>,
-        _temp_dir: tempfile::TempDir,
-    }
-
-    impl TestCacheHome {
-        fn new() -> Self {
-            let guard = CACHE_ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
-            let temp_dir = tempfile::tempdir().unwrap();
-            let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
-            let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
-            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
-            // remains scoped to one test at a time.
-            unsafe {
-                std::env::remove_var("TOMBI_CACHE_HOME");
-                std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
-            }
-            Self {
-                _guard: guard,
-                previous_tombi,
-                previous_xdg,
-                _temp_dir: temp_dir,
-            }
-        }
-    }
-
-    impl Drop for TestCacheHome {
-        fn drop(&mut self) {
-            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
-            // remains scoped to one test at a time.
-            unsafe {
-                if let Some(previous) = &self.previous_tombi {
-                    std::env::set_var("TOMBI_CACHE_HOME", previous);
-                } else {
-                    std::env::remove_var("TOMBI_CACHE_HOME");
-                }
-
-                if let Some(previous) = &self.previous_xdg {
-                    std::env::set_var("XDG_CACHE_HOME", previous);
-                } else {
-                    std::env::remove_var("XDG_CACHE_HOME");
-                }
-            }
-        }
-    }
+    use tombi_test_lib::TestCacheHome;
 
     fn cache_options() -> tombi_cache::Options {
         tombi_cache::Options {

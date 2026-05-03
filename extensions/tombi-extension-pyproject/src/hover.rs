@@ -1,29 +1,16 @@
 use std::path::Path;
 
 use pep508_rs::VersionOrUrl;
-use serde::Deserialize;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_accessors, dig_keys};
-use tombi_extension::{HoverMetadata, append_latest_version, fetch_cached_remote_json};
+use tombi_extension::{HoverMetadata, HoverTextChange, append_latest_version};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
-    find_member_project_toml, find_workspace_pyproject_toml, get_dependency_accessors,
-    get_project_name, load_pyproject_toml_document_tree, parse_requirement,
-    resolve_member_pyproject_toml_path,
+    fetch_pypi_project, find_member_project_toml, find_workspace_pyproject_toml,
+    get_dependency_accessors, get_project_name, load_pyproject_toml_document_tree,
+    parse_requirement, resolve_member_pyproject_toml_path,
 };
-
-#[derive(Debug, Deserialize)]
-struct PypiProjectResponse {
-    info: PypiProjectInfo,
-}
-
-#[derive(Debug, Deserialize)]
-struct PypiProjectInfo {
-    name: Option<String>,
-    summary: Option<String>,
-    version: Option<String>,
-}
 
 pub async fn hover(
     text_document_uri: &tombi_uri::Uri,
@@ -213,8 +200,8 @@ fn load_project_metadata(
     }
 
     Some(HoverMetadata {
-        title: project_name,
-        description,
+        title: project_name.map(HoverTextChange::Replace),
+        description: description.map(HoverTextChange::Replace),
     })
 }
 
@@ -223,10 +210,7 @@ async fn fetch_pypi_metadata(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
 ) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
-    let url = format!("https://pypi.org/pypi/{package_name}/json");
-    let Some(response) =
-        fetch_cached_remote_json::<PypiProjectResponse>(&url, offline, cache_options).await
-    else {
+    let Some(response) = fetch_pypi_project(package_name, offline, cache_options).await? else {
         return Ok(None);
     };
 
@@ -238,8 +222,9 @@ async fn fetch_pypi_metadata(
     }
 
     Ok(Some(HoverMetadata {
-        title: response.info.name,
-        description: append_latest_version(response.info.summary, response.info.version),
+        title: response.info.name.map(HoverTextChange::Replace),
+        description: append_latest_version(response.info.summary, response.info.version)
+            .map(HoverTextChange::Replace),
     }))
 }
 
@@ -248,6 +233,7 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
+    use crate::pypi_org::PypiProjectResponse;
     use pep508_rs::{Requirement, VerbatimUrl};
 
     #[test]

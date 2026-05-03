@@ -1,30 +1,16 @@
 use std::path::Path;
 
-use serde::Deserialize;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_accessors, dig_keys};
-use tombi_extension::{HoverMetadata, append_latest_version, fetch_cached_remote_json};
+use tombi_extension::{HoverMetadata, HoverTextChange, append_latest_version};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
     collect_feature_usage_locations, dependency_package_name, feature_key_at_accessors,
-    feature_usage_target_for_feature_key, find_cargo_toml, find_workspace_cargo_toml,
-    get_workspace_cargo_toml_path, is_any_dependency_accessor, load_cargo_toml,
-    sanitize_dependency_key,
+    feature_usage_target_for_feature_key, fetch_crates_io_crate, find_cargo_toml,
+    find_workspace_cargo_toml, get_workspace_cargo_toml_path, is_any_dependency_accessor,
+    load_cargo_toml, sanitize_dependency_key,
 };
-
-#[derive(Debug, Deserialize)]
-struct CratesIoCrateResponse {
-    #[serde(rename = "crate")]
-    crate_info: CratesIoCrate,
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoCrate {
-    name: Option<String>,
-    description: Option<String>,
-    max_version: Option<String>,
-}
 
 pub async fn hover(
     text_document_uri: &tombi_uri::Uri,
@@ -55,13 +41,20 @@ pub async fn hover(
         return Ok(Some(metadata));
     }
 
-    let Some(dependency_accessors) = get_dependency_accessors(accessors) else {
-        return Ok(None);
-    };
-
-    if !is_hovering_dependency_key(document_tree, dependency_accessors, position) {
-        return Ok(None);
-    }
+    let (dependency_accessors, version_accessor) =
+        if let Some(dependency_accessors) = get_dependency_accessors(accessors) {
+            if !is_hovering_dependency_key(document_tree, dependency_accessors, position) {
+                return Ok(None);
+            }
+            (dependency_accessors, false)
+        } else if is_dependency_version_accessor(accessors) {
+            if !is_hovering_dependency_version(document_tree, accessors, position) {
+                return Ok(None);
+            }
+            (&accessors[..accessors.len().saturating_sub(1)], true)
+        } else {
+            return Ok(None);
+        };
 
     let Some(Accessor::Key(dependency_key)) = dependency_accessors.last() else {
         return Ok(None);
@@ -71,14 +64,16 @@ pub async fn hover(
         return Ok(None);
     };
 
-    if let Some(metadata) = resolve_local_dependency_metadata(
-        document_tree,
-        dependency_accessors,
-        dependency_key,
-        dependency_value,
-        &cargo_toml_path,
-        toml_version,
-    ) {
+    if !version_accessor
+        && let Some(metadata) = resolve_local_dependency_metadata(
+            document_tree,
+            dependency_accessors,
+            dependency_key,
+            dependency_value,
+            &cargo_toml_path,
+            toml_version,
+        )
+    {
         return Ok(Some(metadata));
     }
 
@@ -87,7 +82,38 @@ pub async fn hover(
     }
 
     let package_name = dependency_package_name(dependency_key, dependency_value);
-    fetch_crates_io_metadata(package_name, offline, cache_options).await
+
+    let Some(response) = fetch_crates_io_crate(package_name, offline, cache_options).await? else {
+        return Ok(None);
+    };
+
+    if response.crate_info.name.is_none()
+        && response.crate_info.description.is_none()
+        && response.crate_info.max_version.is_none()
+    {
+        return Ok(None);
+    }
+
+    if version_accessor {
+        let Some(max_version) = response.crate_info.max_version else {
+            return Ok(None);
+        };
+
+        return Ok(Some(HoverMetadata {
+            title: None,
+            description: append_latest_version(None, Some(max_version))
+                .map(HoverTextChange::Append),
+        }));
+    }
+
+    Ok(Some(HoverMetadata {
+        title: response.crate_info.name.map(HoverTextChange::Replace),
+        description: append_latest_version(
+            response.crate_info.description,
+            response.crate_info.max_version,
+        )
+        .map(HoverTextChange::Replace),
+    }))
 }
 
 async fn feature_key_hover_metadata(
@@ -112,12 +138,12 @@ async fn feature_key_hover_metadata(
 
     Some(HoverMetadata {
         title: None,
-        description: Some(render_feature_usage_links(
+        description: Some(HoverTextChange::Replace(render_feature_usage_links(
             document_tree,
             cargo_toml_path,
             usage_locations.as_slice(),
             toml_version,
-        )),
+        ))),
     })
 }
 
@@ -197,16 +223,21 @@ fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
     }
 }
 
+fn is_dependency_version_accessor(accessors: &[Accessor]) -> bool {
+    matches!(accessors.last(), Some(Accessor::Key(key)) if key == "version")
+        && is_any_dependency_accessor(&accessors[..accessors.len().saturating_sub(1)])
+}
+
 fn is_hovering_dependency_key(
     document_tree: &tombi_document_tree::DocumentTree,
     dependency_accessors: &[Accessor],
     position: tombi_text::Position,
 ) -> bool {
-    let dependency_keys = dependency_accessors
+    let Some(dependency_keys) = dependency_accessors
         .iter()
         .map(Accessor::as_key)
-        .collect::<Option<Vec<_>>>();
-    let Some(dependency_keys) = dependency_keys else {
+        .collect::<Option<Vec<_>>>()
+    else {
         return false;
     };
     let Some((dependency_key, _)) = dig_keys(document_tree, &dependency_keys) else {
@@ -214,6 +245,25 @@ fn is_hovering_dependency_key(
     };
 
     dependency_key.range().contains(position)
+}
+
+fn is_hovering_dependency_version(
+    document_tree: &tombi_document_tree::DocumentTree,
+    version_accessors: &[Accessor],
+    position: tombi_text::Position,
+) -> bool {
+    let Some(version_keys) = version_accessors
+        .iter()
+        .map(Accessor::as_key)
+        .collect::<Option<Vec<_>>>()
+    else {
+        return false;
+    };
+    let Some((version_key, version_value)) = dig_keys(document_tree, &version_keys) else {
+        return false;
+    };
+
+    version_key.range().contains(position) || version_value.range().contains(position)
 }
 
 fn resolve_local_dependency_metadata(
@@ -328,37 +378,9 @@ fn load_package_metadata(
     }
 
     Some(HoverMetadata {
-        title: package_name,
-        description,
+        title: package_name.map(HoverTextChange::Replace),
+        description: description.map(HoverTextChange::Replace),
     })
-}
-
-async fn fetch_crates_io_metadata(
-    package_name: &str,
-    offline: bool,
-    cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
-    let url = format!("https://crates.io/api/v1/crates/{package_name}");
-    let Some(response) =
-        fetch_cached_remote_json::<CratesIoCrateResponse>(&url, offline, cache_options).await
-    else {
-        return Ok(None);
-    };
-
-    if response.crate_info.name.is_none()
-        && response.crate_info.description.is_none()
-        && response.crate_info.max_version.is_none()
-    {
-        return Ok(None);
-    }
-
-    Ok(Some(HoverMetadata {
-        title: response.crate_info.name,
-        description: append_latest_version(
-            response.crate_info.description,
-            response.crate_info.max_version,
-        ),
-    }))
 }
 
 #[cfg(test)]
@@ -367,6 +389,7 @@ mod tests {
     use tombi_document_tree::TryIntoDocumentTree;
 
     use super::*;
+    use crate::crates_io::CratesIoCrateResponse;
 
     #[test]
     fn parses_crates_io_metadata_response() {
@@ -390,22 +413,30 @@ mod tests {
     }
 
     #[test]
-    fn only_matches_exact_dependency_paths() {
+    fn dependency_accessors_match_only_exact_dependency_paths() {
         let dependency_accessors = [
             Accessor::Key("dependencies".into()),
             Accessor::Key("serde".into()),
         ];
-        let nested_accessors = [
+        let version_accessors = [
             Accessor::Key("dependencies".into()),
             Accessor::Key("serde".into()),
             Accessor::Key("version".into()),
+        ];
+        let feature_accessors = [
+            Accessor::Key("dependencies".into()),
+            Accessor::Key("serde".into()),
+            Accessor::Key("features".into()),
         ];
 
         assert_eq!(
             get_dependency_accessors(&dependency_accessors),
             Some(&dependency_accessors[..])
         );
-        assert_eq!(get_dependency_accessors(&nested_accessors), None);
+        assert_eq!(get_dependency_accessors(&version_accessors), None);
+        assert_eq!(get_dependency_accessors(&feature_accessors), None);
+        assert!(is_dependency_version_accessor(&version_accessors));
+        assert!(!is_dependency_version_accessor(&feature_accessors));
     }
 
     #[test]
@@ -432,6 +463,27 @@ mod tests {
             &document_tree,
             &dependency_accessors,
             value_position,
+        ));
+    }
+
+    #[test]
+    fn hovering_dependency_version_value_counts_as_hover_target() {
+        let source = "[dependencies]\nserde = { version = \"1.0\" }\n";
+        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node()).unwrap();
+        let document_tree = root.try_into_document_tree(TomlVersion::V1_0_0).unwrap();
+        let version_accessors = [
+            Accessor::Key("dependencies".into()),
+            Accessor::Key("serde".into()),
+            Accessor::Key("version".into()),
+        ];
+
+        let version_value_position = tombi_text::Position::default()
+            + tombi_text::RelativePosition::of("[dependencies]\nserde = { version = \"1");
+
+        assert!(is_hovering_dependency_version(
+            &document_tree,
+            &version_accessors,
+            version_value_position,
         ));
     }
 }
