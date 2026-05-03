@@ -3,7 +3,7 @@ use std::path::Path;
 use pep508_rs::VersionOrUrl;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_accessors, dig_keys};
-use tombi_extension::{HoverMetadata, append_latest_version};
+use tombi_extension::{HoverMetadata, HoverTextChange, append_latest_version};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
@@ -200,8 +200,8 @@ fn load_project_metadata(
     }
 
     Some(HoverMetadata {
-        title: project_name,
-        description,
+        title: project_name.map(HoverTextChange::Replace),
+        description: description.map(HoverTextChange::Replace),
     })
 }
 
@@ -222,8 +222,9 @@ async fn fetch_pypi_metadata(
     }
 
     Ok(Some(HoverMetadata {
-        title: response.info.name,
-        description: append_latest_version(response.info.summary, response.info.version),
+        title: response.info.name.map(HoverTextChange::Replace),
+        description: append_latest_version(response.info.summary, response.info.version)
+            .map(HoverTextChange::Replace),
     }))
 }
 
