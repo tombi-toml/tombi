@@ -26,10 +26,7 @@ impl crate::Edit for tombi_ast::Root {
             let mut changes = vec![];
             let mut key_value_groups = vec![];
             let mut table_or_array_of_tables = vec![];
-            let mut table_order_overrides = schema_context
-                .root_table_order_overrides()
-                .cloned()
-                .unwrap_or_default();
+            let mut table_order_overrides = tombi_schema_store::TableOrderOverrides::default();
 
             // Detect document comment directives.
             // If dangling comments exist, directives should already be there.
