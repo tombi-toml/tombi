@@ -1,8 +1,0 @@
-[lsp.references]
-enabled = true
-
-[extensions."tombi-toml/cargo".lsp.references]
-enabled = true
-
-[extensions."tombi-toml/cargo".lsp.references.dependency]
-enabled = false

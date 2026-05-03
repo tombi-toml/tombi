@@ -2204,46 +2204,12 @@
         },
         {
           "$ref": "#/definitions/CargoReferencesFeatureTree"
-        },
-        {
-          "$ref": "#/definitions/CargoReferencesCombinedFeatureTree"
         }
       ]
     },
     "CargoReferencesFeatureTree": {
       "type": "object",
       "properties": {
-        "dependency": {
-          "title": "Dependency references feature",
-          "description": "Whether references list dependency-related usages.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false,
-      "x-tombi-table-keys-order": "ascending"
-    },
-    "CargoReferencesCombinedFeatureTree": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "title": "Enable references feature",
-          "description": "Whether to enable all Cargo references features.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/BoolDefaultTrue"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "dependency": {
           "title": "Dependency references feature",
           "description": "Whether references list dependency-related usages.",
@@ -2686,46 +2652,12 @@
         },
         {
           "$ref": "#/definitions/PyprojectReferencesFeatureTree"
-        },
-        {
-          "$ref": "#/definitions/PyprojectReferencesCombinedFeatureTree"
         }
       ]
     },
     "PyprojectReferencesFeatureTree": {
       "type": "object",
       "properties": {
-        "dependency": {
-          "title": "Dependency references feature",
-          "description": "Whether references list dependency-related usages.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false,
-      "x-tombi-table-keys-order": "ascending"
-    },
-    "PyprojectReferencesCombinedFeatureTree": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "title": "Enable references feature",
-          "description": "Whether to enable all `pyproject.toml` references features.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/BoolDefaultTrue"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "dependency": {
           "title": "Dependency references feature",
           "description": "Whether references list dependency-related usages.",
