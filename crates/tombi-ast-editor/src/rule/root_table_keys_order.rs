@@ -31,7 +31,6 @@ pub async fn root_table_keys_order<'a>(
     {
         return Vec::with_capacity(0);
     }
-
     let comment_directive_order = comment_directive
         .as_ref()
         .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
@@ -74,7 +73,7 @@ pub async fn root_table_keys_order<'a>(
     let schema_order_enabled = schema_override.is_some_and(|override_item| !override_item.disabled)
         || schema_context.schema_table_keys_order_enabled(current_schema);
 
-    if !schema_order_enabled {
+    if root_order.is_none() && !schema_order_enabled {
         return changes;
     }
 
