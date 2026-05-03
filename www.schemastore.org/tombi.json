@@ -689,7 +689,7 @@
           "title": "References Feature options",
           "anyOf": [
             {
-              "$ref": "#/definitions/LspGotoDefinition"
+              "$ref": "#/definitions/LspReferences"
             },
             {
               "type": "null"
@@ -833,6 +833,24 @@
         "enabled": {
           "title": "Enable goto definition feature",
           "description": "Whether to enable goto definition.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "LspReferences": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "title": "Enable references feature",
+          "description": "Whether to enable references.",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
