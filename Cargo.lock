@@ -3767,7 +3767,6 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
- "tempfile",
  "tokio",
  "tombi-ast",
  "tombi-cache",
