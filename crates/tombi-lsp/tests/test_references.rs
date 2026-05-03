@@ -354,9 +354,9 @@ mod references_tests {
         );
 
         test_references!(
-            #[tokio::test]
-            async fn workspace_registry_dependency_key_lists_member_usages(
-                r#"
+                #[tokio::test]
+                async fn workspace_registry_dependency_key_lists_member_usages(
+                    r#"
                 [workspace]
                 resolver = "2"
                 members = ["crates/*"]
@@ -364,12 +364,12 @@ mod references_tests {
                 [workspace.dependencies]
                 semver█ = { version = "1.0.23" }
                 "#,
-            SourcePath(project_root_path().join("Cargo.toml")),
-        ) -> Ok([
-            project_root_path().join("crates/tombi-lsp/Cargo.toml"),
-            project_root_path().join("crates/tombi-version-sort/Cargo.toml"),
-        ]);
-    );
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok([
+                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
+                project_root_path().join("crates/tombi-version-sort/Cargo.toml"),
+            ]);
+        );
 
         test_references!(
             #[tokio::test]
