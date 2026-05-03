@@ -658,6 +658,65 @@ mod refactor_rewrite {
                 "#
             ));
         }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn pyproject_dependencies_update_to_latest_version_noop(
+                r#"
+                [project]
+                dependencies = ["requests█==2.33.1; python_version < '3.13'"]
+                "#,
+                Select(CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion),
+                project_root_path().join("pyproject.toml"),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                UseCacheResponses(vec![CachedResponseSpec::new(
+                    "https://pypi.org/pypi/requests/json",
+                    r#"{
+                        "info": {
+                            "version": "2.33.1"
+                        }
+                    }"#,
+                )]),
+            ) -> Ok(None);
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn pyproject_workspace_root_updates_dependency_to_latest_version(
+                r#"
+                [tool.uv.workspace]
+                members = ["member1"]
+
+                [project]
+                dependencies = ["requests█>=2.0"]
+                "#,
+                Select(CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion),
+                project_root_path().join("pyproject.toml"),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                UseCacheResponses(vec![CachedResponseSpec::new(
+                    "https://pypi.org/pypi/requests/json",
+                    r#"{
+                        "info": {
+                            "version": "2.33.1"
+                        }
+                    }"#,
+                )]),
+            ) -> Ok(Some(
+                r#"
+                [tool.uv.workspace]
+                members = ["member1"]
+
+                [project]
+                dependencies = ["requests==2.33.1"]
+                "#
+            ));
+        }
     }
 
     #[macro_export]

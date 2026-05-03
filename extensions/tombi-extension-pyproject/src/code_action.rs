@@ -3,6 +3,7 @@ use pep508_rs::{
     pep440_rs::{Version, VersionSpecifier},
 };
 use tombi_ast::AstNode;
+use tombi_document_tree::dig_keys;
 use tombi_extension::CodeActionOrCommand;
 use tombi_schema_store::Accessor;
 use tombi_text::IntoLsp;
@@ -129,6 +130,8 @@ pub async fn code_action(
         return Ok(None);
     };
 
+    let mut actions = Vec::new();
+
     // Try to find workspace pyproject.toml
     let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
         log::warn!(
@@ -155,80 +158,81 @@ pub async fn code_action(
         )
         .await?
     {
-        return Ok(Some(vec![CodeActionOrCommand::CodeAction(action)]));
+        actions.push(CodeActionOrCommand::CodeAction(action));
     }
 
-    let Some((workspace_path, workspace_root, workspace_document_tree)) =
-        find_workspace_pyproject_toml(&pyproject_toml_path, toml_version)
-    else {
-        log::debug!(
-            "No workspace pyproject.toml found: {:?}",
-            pyproject_toml_path.display()
-        );
-        return Ok(None);
-    };
+    if !dig_keys(document_tree, &["tool", "uv", "workspace"]).is_some() {
+        let Some((workspace_path, workspace_root, workspace_document_tree)) =
+            find_workspace_pyproject_toml(&pyproject_toml_path, toml_version)
+        else {
+            log::debug!(
+                "No workspace pyproject.toml found: {:?}",
+                pyproject_toml_path.display()
+            );
+            return Ok(None);
+        };
 
-    // Load workspace text and create line index for workspace document
-    let Ok(workspace_text) = std::fs::read_to_string(&workspace_path) else {
-        log::warn!(
-            "Failed to read workspace pyproject.toml: {:?}",
-            workspace_path.display()
-        );
-        return Ok(None);
-    };
-    let workspace_line_index =
-        tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
+        // Load workspace text and create line index for workspace document
+        let Ok(workspace_text) = std::fs::read_to_string(&workspace_path) else {
+            log::warn!(
+                "Failed to read workspace pyproject.toml: {:?}",
+                workspace_path.display()
+            );
+            return Ok(None);
+        };
+        let workspace_line_index =
+            tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
 
-    // Try to provide code actions
-    // Try "Use Workspace Dependency" (when dependency exists in workspace)
-    if features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.code_action())
-        .and_then(|code_action| code_action.use_workspace_dependency())
-        .map(|use_workspace_dependency| use_workspace_dependency.enabled())
-        .unwrap_or_default()
-        .value()
-        && let Some(action) = use_workspace_dependency_code_action(
-            text_document_uri,
-            line_index,
-            document_tree,
-            dependency_accessors,
-            &workspace_document_tree,
-        )
-    {
-        return Ok(Some(vec![CodeActionOrCommand::CodeAction(action)]));
+        // Try "Use Workspace Dependency" (when dependency exists in workspace)
+        if features
+            .and_then(|features| features.lsp())
+            .and_then(|lsp| lsp.code_action())
+            .and_then(|code_action| code_action.use_workspace_dependency())
+            .map(|use_workspace_dependency| use_workspace_dependency.enabled())
+            .unwrap_or_default()
+            .value()
+            && let Some(action) = use_workspace_dependency_code_action(
+                text_document_uri,
+                line_index,
+                document_tree,
+                dependency_accessors,
+                &workspace_document_tree,
+            )
+        {
+            actions.push(CodeActionOrCommand::CodeAction(action));
+        }
+
+        // Try "Add to Workspace and Use Workspace Dependency" (when dependency doesn't exist in workspace)
+        if features
+            .and_then(|features| features.lsp())
+            .and_then(|lsp| lsp.code_action())
+            .and_then(|code_action| code_action.add_to_workspace_and_use_workspace_dependency())
+            .map(|add_to_workspace_and_use_workspace_dependency| {
+                add_to_workspace_and_use_workspace_dependency.enabled()
+            })
+            .unwrap_or_default()
+            .value()
+            && let Some(action) = add_workspace_dependency_code_action(
+                text_document_uri,
+                line_index,
+                document_tree,
+                dependency_accessors,
+                &workspace_path,
+                &workspace_line_index,
+                &workspace_root,
+                &workspace_document_tree,
+            )
+        {
+            log::debug!(
+                "Providing 'Add to Workspace and Use Workspace Dependency' code action: action={:?}, uri={:?}",
+                action.title,
+                text_document_uri
+            );
+            actions.push(CodeActionOrCommand::CodeAction(action));
+        }
     }
 
-    // Try "Add to Workspace and Use Workspace Dependency" (when dependency doesn't exist in workspace)
-    if features
-        .and_then(|features| features.lsp())
-        .and_then(|lsp| lsp.code_action())
-        .and_then(|code_action| code_action.add_to_workspace_and_use_workspace_dependency())
-        .map(|add_to_workspace_and_use_workspace_dependency| {
-            add_to_workspace_and_use_workspace_dependency.enabled()
-        })
-        .unwrap_or_default()
-        .value()
-        && let Some(action) = add_workspace_dependency_code_action(
-            text_document_uri,
-            line_index,
-            document_tree,
-            dependency_accessors,
-            &workspace_path,
-            &workspace_line_index,
-            &workspace_root,
-            &workspace_document_tree,
-        )
-    {
-        log::debug!(
-            "Providing 'Add to Workspace and Use Workspace Dependency' code action: action={:?}, uri={:?}",
-            action.title,
-            text_document_uri
-        );
-        return Ok(Some(vec![CodeActionOrCommand::CodeAction(action)]));
-    }
-
-    Ok(None)
+    Ok((!actions.is_empty()).then_some(actions))
 }
 
 async fn update_dependency_to_latest_version_code_action(
@@ -270,6 +274,12 @@ async fn update_dependency_to_latest_version_code_action(
         return Ok(None);
     };
     let new_version_specifier = format_exact_pinned_dependency(&latest_version);
+    let current_version_specifier =
+        &dep_str.value()[version_range.start.column as usize..version_range.end.column as usize];
+
+    if current_version_specifier.trim() == new_version_specifier {
+        return Ok(None);
+    }
 
     Ok(Some(CodeAction {
         title: CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion.to_string(),
@@ -352,7 +362,10 @@ fn find_version_specifier_range(dependency: &str) -> Option<tombi_text::Range> {
         return None;
     }
 
-    if !dependency_without_marker[cursor..].starts_with(['<', '>', '=', '!', '~']) {
+    if !matches!(
+        dependency_without_marker[cursor..].chars().next(),
+        Some('<' | '>' | '=' | '!' | '~')
+    ) {
         return None;
     }
 
@@ -850,7 +863,7 @@ name = "test"
     }
 
     #[tokio::test]
-    async fn test_code_action_workspace_root_returns_none() {
+    async fn test_code_action_workspace_root_skips_workspace_actions() {
         let uri = tombi_uri::Uri::from_file_path("/path/to/pyproject.toml").unwrap();
         let toml_text = r#"
 [tool.uv.workspace]
@@ -874,6 +887,7 @@ dependencies = ["pydantic>=2.10"]
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
+                Accessor::Index(0),
             ],
             tombi_config::TomlVersion::default(),
             &line_index,
@@ -884,7 +898,21 @@ dependencies = ["pydantic>=2.10"]
         .await;
 
         assert!(result.is_ok());
-        assert!(result.unwrap().is_none());
+        let titles = result
+            .unwrap()
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|action| match action {
+                CodeActionOrCommand::CodeAction(action) => Some(action.title),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert!(!titles.iter().any(|title| title == "Use Workspace Dependency"));
+        assert!(
+            !titles
+                .iter()
+                .any(|title| title == "Add to Workspace and Use Workspace Dependency")
+        );
     }
 
     #[tokio::test]
