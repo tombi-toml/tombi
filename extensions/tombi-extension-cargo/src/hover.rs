@@ -3,7 +3,7 @@ use std::path::Path;
 use serde::Deserialize;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_accessors, dig_keys};
-use tombi_extension::{HoverMetadata, fetch_cached_remote_json};
+use tombi_extension::{HoverMetadata, append_latest_version, fetch_cached_remote_json};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
@@ -23,6 +23,7 @@ struct CratesIoCrateResponse {
 struct CratesIoCrate {
     name: Option<String>,
     description: Option<String>,
+    max_version: Option<String>,
 }
 
 pub async fn hover(
@@ -344,13 +345,19 @@ async fn fetch_crates_io_metadata(
         return Ok(None);
     };
 
-    if response.crate_info.name.is_none() && response.crate_info.description.is_none() {
+    if response.crate_info.name.is_none()
+        && response.crate_info.description.is_none()
+        && response.crate_info.max_version.is_none()
+    {
         return Ok(None);
     }
 
     Ok(Some(HoverMetadata {
         title: response.crate_info.name,
-        description: response.crate_info.description,
+        description: append_latest_version(
+            response.crate_info.description,
+            response.crate_info.max_version,
+        ),
     }))
 }
 
@@ -367,7 +374,8 @@ mod tests {
             r#"{
                 "crate": {
                     "name": "serde",
-                    "description": "A generic serialization/deserialization framework"
+                    "description": "A generic serialization/deserialization framework",
+                    "max_version": "1.0.228"
                 }
             }"#,
         )
@@ -378,6 +386,7 @@ mod tests {
             response.crate_info.description.as_deref(),
             Some("A generic serialization/deserialization framework")
         );
+        assert_eq!(response.crate_info.max_version.as_deref(), Some("1.0.228"));
     }
 
     #[test]

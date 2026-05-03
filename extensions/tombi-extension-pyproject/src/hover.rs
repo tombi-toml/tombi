@@ -4,7 +4,7 @@ use pep508_rs::VersionOrUrl;
 use serde::Deserialize;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_accessors, dig_keys};
-use tombi_extension::{HoverMetadata, fetch_cached_remote_json};
+use tombi_extension::{HoverMetadata, append_latest_version, fetch_cached_remote_json};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
@@ -22,6 +22,7 @@ struct PypiProjectResponse {
 struct PypiProjectInfo {
     name: Option<String>,
     summary: Option<String>,
+    version: Option<String>,
 }
 
 pub async fn hover(
@@ -229,13 +230,16 @@ async fn fetch_pypi_metadata(
         return Ok(None);
     };
 
-    if response.info.name.is_none() && response.info.summary.is_none() {
+    if response.info.name.is_none()
+        && response.info.summary.is_none()
+        && response.info.version.is_none()
+    {
         return Ok(None);
     }
 
     Ok(Some(HoverMetadata {
         title: response.info.name,
-        description: response.info.summary,
+        description: append_latest_version(response.info.summary, response.info.version),
     }))
 }
 
@@ -252,7 +256,8 @@ mod tests {
             r#"{
                 "info": {
                     "name": "requests",
-                    "summary": "Python HTTP for Humans."
+                    "summary": "Python HTTP for Humans.",
+                    "version": "2.33.1"
                 }
             }"#,
         )
@@ -263,6 +268,7 @@ mod tests {
             response.info.summary.as_deref(),
             Some("Python HTTP for Humans.")
         );
+        assert_eq!(response.info.version.as_deref(), Some("2.33.1"));
     }
 
     #[test]
