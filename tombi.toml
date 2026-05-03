@@ -82,6 +82,9 @@ overrides = [
       dependency-version.enabled = true,
       workspace-value.enabled = true,
     },
+    references = {
+      dependency.enabled = true,
+    },
   }
 }
 "tombi-toml/pyproject" = {
@@ -112,6 +115,9 @@ overrides = [
     inlay-hint = {
       dependency-version.enabled = true,
     },
+    references = {
+      dependency.enabled = true,
+    }
   }
 }
 "tombi-toml/tombi" = {
