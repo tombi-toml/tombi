@@ -30,7 +30,7 @@ pub struct LspOptions {
     pub goto_definition: Option<LspGotoDefinition>,
 
     /// # References Feature options
-    pub references: Option<LspGotoDefinition>,
+    pub references: Option<LspReferences>,
 
     /// # Goto Type Definition Feature options
     pub goto_type_definition: Option<LspGotoDefinition>,
@@ -141,6 +141,18 @@ pub struct LspGotoDefinition {
     /// # Enable goto definition feature
     ///
     /// Whether to enable goto definition.
+    pub enabled: Option<BoolDefaultTrue>,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct LspReferences {
+    /// # Enable references feature
+    ///
+    /// Whether to enable references.
     pub enabled: Option<BoolDefaultTrue>,
 }
 
