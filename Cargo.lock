@@ -3609,6 +3609,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.12",
  "tokio",
+ "tombi-test-lib",
  "tombi-uri",
 ]
 
@@ -3766,13 +3767,13 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
- "tempfile",
  "tokio",
  "tombi-ast",
  "tombi-cache",
  "tombi-document-tree",
  "tombi-hashmap",
  "tombi-schema-store",
+ "tombi-test-lib",
  "tombi-text",
  "tombi-toml-text",
  "tombi-uri",
@@ -3801,6 +3802,7 @@ dependencies = [
  "tombi-hashmap",
  "tombi-parser",
  "tombi-schema-store",
+ "tombi-test-lib",
  "tombi-text",
  "tombi-uri",
  "tombi-version-sort",
@@ -4145,6 +4147,7 @@ version = "0.0.0-dev"
 dependencies = [
  "chrono",
  "env_logger",
+ "tempfile",
  "tombi-uri",
 ]
 
