@@ -230,7 +230,10 @@ async fn fetch_pypi_metadata(
         return Ok(None);
     };
 
-    if response.info.name.is_none() && response.info.summary.is_none() {
+    if response.info.name.is_none()
+        && response.info.summary.is_none()
+        && response.info.version.is_none()
+    {
         return Ok(None);
     }
 

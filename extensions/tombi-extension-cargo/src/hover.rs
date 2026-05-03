@@ -345,7 +345,10 @@ async fn fetch_crates_io_metadata(
         return Ok(None);
     };
 
-    if response.crate_info.name.is_none() && response.crate_info.description.is_none() {
+    if response.crate_info.name.is_none()
+        && response.crate_info.description.is_none()
+        && response.crate_info.max_version.is_none()
+    {
         return Ok(None);
     }
 
