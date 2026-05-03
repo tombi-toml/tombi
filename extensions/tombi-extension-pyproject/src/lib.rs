@@ -9,10 +9,11 @@ mod goto_definition;
 mod hover;
 mod inlay_hint;
 mod manifest;
+mod pypi_org;
 mod references;
 mod workspace;
 
-pub use code_action::code_action;
+pub use code_action::{CodeActionRefactorRewriteName, code_action};
 pub use completion::completion;
 pub use did_open::did_open;
 pub use document_link::document_link;
@@ -42,6 +43,7 @@ pub(crate) use manifest::{
     load_pyproject_toml_document_tree, resolve_member_pyproject_toml_path,
     resolve_relative_path_uri,
 };
+pub(crate) use pypi_org::fetch_pypi_project;
 use tombi_schema_store::matches_accessors;
 pub(crate) use workspace::{
     extract_exclude_patterns, extract_member_patterns, find_member_project_toml,
