@@ -313,10 +313,10 @@
             "boolean",
             "null"
           ],
+          "default": false,
           "enum": [
             true
-          ],
-          "default": false
+          ]
         }
       },
       "additionalProperties": false
@@ -331,10 +331,10 @@
             "boolean",
             "null"
           ],
+          "default": false,
           "enum": [
             true
-          ],
-          "default": false
+          ]
         }
       },
       "additionalProperties": false
