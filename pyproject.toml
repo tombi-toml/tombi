@@ -57,5 +57,8 @@ manifest-path = "rust/tombi-cli/Cargo.toml"
 module-name = "tombi"
 python-source = "python/tombi/src"
 
+[tool.pytest]
+addopts = ["-v"]
+
 [tool.uv.workspace]
 members = ["python/tombi-beta"]
