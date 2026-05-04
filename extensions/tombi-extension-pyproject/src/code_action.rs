@@ -759,18 +759,15 @@ mod tests {
             #[tokio::test]
             async fn $name() {
                 let uri = tombi_uri::Uri::from_file_path("/path/to/pyproject.toml").unwrap();
-                let root = tombi_ast::Root::cast(
-                    tombi_parser::parse($toml_text).into_syntax_node(),
-                )
-                .unwrap();
+                let root =
+                    tombi_ast::Root::cast(tombi_parser::parse($toml_text).into_syntax_node())
+                        .unwrap();
                 let document_tree = root
                     .clone()
                     .try_into_document_tree(tombi_config::TomlVersion::default())
                     .unwrap();
-                let line_index = tombi_text::LineIndex::new(
-                    $toml_text,
-                    tombi_text::EncodingKind::default(),
-                );
+                let line_index =
+                    tombi_text::LineIndex::new($toml_text, tombi_text::EncodingKind::default());
 
                 let _cache_home = TestCacheHome::new();
                 let cache_options = tombi_cache::Options {
