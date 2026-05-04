@@ -41,17 +41,27 @@ pub async fn hover(
         return Ok(Some(metadata));
     }
 
-    let (dependency_accessors, version_accessor) =
+    let (dependency_accessors, hover_target) =
         if let Some(dependency_accessors) = get_dependency_accessors(accessors) {
-            if !is_hovering_dependency_key(document_tree, dependency_accessors, position) {
+            if is_hovering_dependency_key(document_tree, dependency_accessors, position) {
+                (dependency_accessors, DependencyHoverTarget::Key)
+            } else if is_hovering_string_dependency_version(
+                document_tree,
+                dependency_accessors,
+                position,
+            ) {
+                (dependency_accessors, DependencyHoverTarget::Version)
+            } else {
                 return Ok(None);
             }
-            (dependency_accessors, false)
         } else if is_dependency_version_accessor(accessors) {
             if !is_hovering_dependency_version(document_tree, accessors, position) {
                 return Ok(None);
             }
-            (&accessors[..accessors.len().saturating_sub(1)], true)
+            (
+                &accessors[..accessors.len().saturating_sub(1)],
+                DependencyHoverTarget::Version,
+            )
         } else {
             return Ok(None);
         };
@@ -64,7 +74,7 @@ pub async fn hover(
         return Ok(None);
     };
 
-    if !version_accessor
+    if hover_target == DependencyHoverTarget::Key
         && let Some(metadata) = resolve_local_dependency_metadata(
             document_tree,
             dependency_accessors,
@@ -94,26 +104,33 @@ pub async fn hover(
         return Ok(None);
     }
 
-    if version_accessor {
-        let Some(max_version) = response.crate_info.max_version else {
-            return Ok(None);
-        };
+    match hover_target {
+        DependencyHoverTarget::Version => {
+            let Some(max_version) = response.crate_info.max_version else {
+                return Ok(None);
+            };
 
-        return Ok(Some(HoverMetadata {
-            title: None,
-            description: append_latest_version(None, Some(max_version))
-                .map(HoverTextChange::Append),
-        }));
+            Ok(Some(HoverMetadata {
+                title: None,
+                description: append_latest_version(None, Some(max_version))
+                    .map(HoverTextChange::Append),
+            }))
+        }
+        DependencyHoverTarget::Key => Ok(Some(HoverMetadata {
+            title: response.crate_info.name.map(HoverTextChange::Replace),
+            description: append_latest_version(
+                response.crate_info.description,
+                response.crate_info.max_version,
+            )
+            .map(HoverTextChange::Replace),
+        })),
     }
+}
 
-    Ok(Some(HoverMetadata {
-        title: response.crate_info.name.map(HoverTextChange::Replace),
-        description: append_latest_version(
-            response.crate_info.description,
-            response.crate_info.max_version,
-        )
-        .map(HoverTextChange::Replace),
-    }))
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DependencyHoverTarget {
+    Key,
+    Version,
 }
 
 async fn feature_key_hover_metadata(
@@ -264,6 +281,17 @@ fn is_hovering_dependency_version(
     };
 
     version_key.range().contains(position) || version_value.range().contains(position)
+}
+
+fn is_hovering_string_dependency_version(
+    document_tree: &tombi_document_tree::DocumentTree,
+    dependency_accessors: &[Accessor],
+    position: tombi_text::Position,
+) -> bool {
+    matches!(
+        dig_accessors(document_tree, dependency_accessors),
+        Some((_, Value::String(version))) if version.range().contains(position)
+    )
 }
 
 fn resolve_local_dependency_metadata(
