@@ -3,7 +3,7 @@ use crate::{
     feature_key_at_accessors, goto_workspace_managed_dependency_locations, is_optional_dependency,
 };
 use tombi_config::TomlVersion;
-use tombi_document_tree::dig_keys;
+use tombi_document_tree::{Value, dig_accessors};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn goto_declaration(
@@ -80,15 +80,17 @@ pub fn get_current_declaration(
         return None;
     }
 
-    let parent_keys = dependency_parent_accessors(accessors)
-        .iter()
-        .map(Accessor::as_key)
-        .collect::<Option<Vec<_>>>()?;
-
-    let (dependency_key, _) = dig_keys(document_tree, &parent_keys)?;
+    let (_, Value::Table(table)) =
+        dig_accessors(document_tree, dependency_parent_accessors(accessors))?
+    else {
+        return None;
+    };
+    let Value::Boolean(optional) = table.get("optional")? else {
+        return None;
+    };
 
     Some(tombi_extension::Location {
         uri: cargo_toml_uri.clone(),
-        range: dependency_key.unquoted_range(),
+        range: optional.range(),
     })
 }

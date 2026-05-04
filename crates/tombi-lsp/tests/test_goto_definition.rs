@@ -616,6 +616,49 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
+            async fn optional_dependency_definition_returns_optional_field_range(
+                r#"
+                [package]
+                name = "explicit-feature"
+                version = "0.1.0"
+
+                [dependencies]
+                schemars = { version = "1.0", optional█ = true }
+
+                [features]
+                local = []
+                bundle = ["local", "schemars", "dep:schemars"]
+                "#,
+                SourcePath(cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")),
+            ) -> Ok([
+                (
+                    cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml"),
+                    ((5, 41), (5, 45))
+                )
+            ]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn optional_false_dependency_definition_returns_none(
+                r#"
+                [package]
+                name = "explicit-feature"
+                version = "0.1.0"
+
+                [dependencies]
+                schemars = { version = "1.0", optional█ = false }
+
+                [features]
+                local = []
+                bundle = ["local", "schemars", "dep:schemars"]
+                "#,
+                SourcePath(cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml")),
+            ) -> Ok([]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
             async fn optional_dependency_definition_collects_dep_syntax_usages_for_workspace_dependency(
                 r#"
                 [package]
@@ -1081,246 +1124,299 @@ mod goto_definition_tests {
         );
     }
 
+    #[derive(Default)]
+    struct TestArgs {
+        source_file_path: Option<std::path::PathBuf>,
+        schema_file_path: Option<std::path::PathBuf>,
+        subschemas: Vec<SubSchemaPath>,
+        backend_options: tombi_lsp::backend::Options,
+    }
+
+    trait ApplyTestArg {
+        fn apply(self, args: &mut TestArgs);
+    }
+
+    struct SourcePath(std::path::PathBuf);
+
+    impl ApplyTestArg for SourcePath {
+        fn apply(self, args: &mut TestArgs) {
+            args.source_file_path = Some(self.0);
+        }
+    }
+
+    #[allow(unused)]
+    struct SchemaPath(std::path::PathBuf);
+
+    impl ApplyTestArg for SchemaPath {
+        fn apply(self, args: &mut TestArgs) {
+            args.schema_file_path = Some(self.0);
+        }
+    }
+
+    #[allow(unused)]
+    struct SubSchemaPath {
+        pub root: String,
+        pub path: std::path::PathBuf,
+    }
+
+    impl ApplyTestArg for SubSchemaPath {
+        fn apply(self, args: &mut TestArgs) {
+            args.subschemas.push(self);
+        }
+    }
+
+    impl ApplyTestArg for tombi_lsp::backend::Options {
+        fn apply(self, args: &mut TestArgs) {
+            args.backend_options = self;
+        }
+    }
+
+    trait ToUri {
+        fn to_uri(&self) -> tombi_uri::Uri;
+    }
+
+    impl ToUri for tombi_uri::Uri {
+        fn to_uri(&self) -> tombi_uri::Uri {
+            self.clone()
+        }
+    }
+
+    impl ToUri for std::path::PathBuf {
+        fn to_uri(&self) -> tombi_uri::Uri {
+            tombi_uri::Uri::from_file_path(self).unwrap()
+        }
+    }
+
+    impl ToUri for &str {
+        fn to_uri(&self) -> tombi_uri::Uri {
+            use std::str::FromStr;
+
+            tombi_uri::Uri::from_str(self).unwrap()
+        }
+    }
+
+    enum ExpectedGotoDefinition {
+        Paths(Vec<tombi_uri::Uri>),
+        Locations(Vec<(tombi_uri::Uri, tombi_text::Range)>),
+    }
+
+    async fn run_goto_definition_test(
+        source: &str,
+        args: TestArgs,
+        expected: ExpectedGotoDefinition,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        use itertools::Itertools;
+        use tombi_lsp::Backend;
+        use tombi_lsp::handler::{handle_did_open, handle_goto_definition};
+        use tombi_text::IntoLsp;
+        use tower_lsp::{
+            LspService,
+            lsp_types::{
+                DidOpenTextDocumentParams, GotoDefinitionParams, PartialResultParams,
+                TextDocumentIdentifier, TextDocumentItem, TextDocumentPositionParams, Url,
+                WorkDoneProgressParams,
+            },
+        };
+
+        tombi_test_lib::init_log();
+
+        let (service, _) = LspService::new(|client| Backend::new(client, &args.backend_options));
+        let backend = service.inner();
+        let mut schema_items = Vec::new();
+
+        if let Some(schema_file_path) = args.schema_file_path.as_ref() {
+            let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
+                .unwrap_or_else(|_| {
+                    panic!(
+                        "failed to convert schema path to URL: {}",
+                        schema_file_path.display()
+                    )
+                });
+
+            schema_items.push(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                toml_version: None,
+                path: schema_uri.to_string(),
+                include: vec!["*.toml".into()],
+                exclude: None,
+                lint: None,
+                format: None,
+                overrides: None,
+            }));
+        }
+
+        for subschema in &args.subschemas {
+            let subschema_uri = tombi_schema_store::SchemaUri::from_file_path(&subschema.path)
+                .unwrap_or_else(|_| {
+                    panic!(
+                        "failed to convert subschema path to URL: {}",
+                        subschema.path.display()
+                    )
+                });
+
+            schema_items.push(tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
+                path: subschema_uri.to_string(),
+                include: vec!["*.toml".into()],
+                exclude: None,
+                root: subschema.root.clone(),
+                lint: None,
+                format: None,
+                overrides: None,
+            }));
+        }
+
+        let source_path = args
+            .source_file_path
+            .as_ref()
+            .ok_or("SourcePath must be provided for goto_definition tests")?;
+
+        if !schema_items.is_empty() {
+            let config_schema_store = backend
+                .config_manager
+                .config_schema_store_for_file(source_path)
+                .await;
+
+            let mut test_config = config_schema_store.config;
+            let mut existing_schemas = test_config.schemas.take().unwrap_or_default();
+            existing_schemas.extend(schema_items);
+            test_config.schemas = Some(existing_schemas);
+
+            if let Some(config_path) = config_schema_store.config_path {
+                backend
+                    .config_manager
+                    .update_config_with_path(test_config, &config_path)
+                    .await
+                    .map_err(|e| {
+                        format!("failed to update config {}: {}", config_path.display(), e)
+                    })?;
+            } else {
+                backend
+                    .config_manager
+                    .update_editor_config(test_config)
+                    .await;
+            }
+        }
+
+        let toml_file_url =
+            Url::from_file_path(source_path).expect("failed to convert source file path to URL");
+
+        let mut toml_text = textwrap::dedent(source).trim().to_string();
+        let Some(index) = toml_text.as_str().find("█") else {
+            return Err("failed to find position marker (█) in the test data".into());
+        };
+        toml_text.remove(index);
+        let line_index = tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
+
+        handle_did_open(
+            backend,
+            DidOpenTextDocumentParams {
+                text_document: TextDocumentItem {
+                    uri: toml_file_url.clone(),
+                    language_id: "toml".to_string(),
+                    version: 0,
+                    text: toml_text.clone(),
+                },
+            },
+        )
+        .await;
+
+        let params = GotoDefinitionParams {
+            text_document_position_params: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier { uri: toml_file_url },
+                position: (tombi_text::Position::default()
+                    + tombi_text::RelativePosition::of(&toml_text[..index]))
+                .into_lsp(&line_index),
+            },
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+        };
+
+        let Ok(result) = handle_goto_definition(backend, params).await else {
+            return Err("failed to handle goto_definition".into());
+        };
+
+        log::debug!("goto_definition result: {:#?}", result);
+
+        match expected {
+            ExpectedGotoDefinition::Paths(expected_paths) => match result {
+                Some(definition_links) => {
+                    pretty_assertions::assert_eq!(
+                        definition_links
+                            .into_iter()
+                            .map(|link| link.uri.to_uri())
+                            .collect_vec(),
+                        expected_paths,
+                    );
+                }
+                None => {
+                    if !expected_paths.is_empty() {
+                        panic!(
+                            "No definition link was returned, but expected paths: {:?}",
+                            expected_paths
+                        );
+                    }
+                }
+            },
+            ExpectedGotoDefinition::Locations(expected_locations) => match result {
+                Some(definition_links) => {
+                    pretty_assertions::assert_eq!(
+                        definition_links
+                            .into_iter()
+                            .map(|link| (link.uri.to_uri(), link.range))
+                            .collect_vec(),
+                        expected_locations,
+                    );
+                }
+                None => {
+                    if !expected_locations.is_empty() {
+                        panic!(
+                            "No definition link was returned, but expected locations: {:?}",
+                            expected_locations
+                        );
+                    }
+                }
+            },
+        }
+
+        Ok(())
+    }
+
     #[macro_export]
     macro_rules! test_goto_definition {
+        (#[tokio::test] async fn $name:ident(
+            $source:expr $(, $arg:expr )* $(,)?
+        ) -> Ok([$(($expected_file_path:expr, (($start_line:literal, $start_char:literal), ($end_line:literal, $end_char:literal)))),*$(,)?]);) => {
+            #[tokio::test]
+            async fn $name() -> Result<(), Box<dyn std::error::Error>> {
+                let mut args = TestArgs::default();
+                $(ApplyTestArg::apply($arg, &mut args);)*
+                run_goto_definition_test(
+                    $source,
+                    args,
+                    ExpectedGotoDefinition::Locations(vec![
+                        $(
+                            (
+                                $expected_file_path.to_uri(),
+                                tombi_text::Range::from((($start_line, $start_char), ($end_line, $end_char))),
+                            )
+                        ),*
+                    ]),
+                )
+                .await
+            }
+        };
         (#[tokio::test] async fn $name:ident(
             $source:expr $(, $arg:expr )* $(,)?
         ) -> Ok([$($expected_file_path:expr),*$(,)?]);) => {
             #[tokio::test]
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
-                use std::str::FromStr;
-
-                use itertools::Itertools;
-                use tombi_lsp::handler::{handle_did_open, handle_goto_definition};
-                use tombi_lsp::Backend;
-                use tower_lsp::{
-                    lsp_types::{
-                        DidOpenTextDocumentParams, GotoDefinitionParams,
-                        PartialResultParams, TextDocumentIdentifier, TextDocumentItem,
-                        TextDocumentPositionParams, Url, WorkDoneProgressParams,
-                    },
-                    LspService,
-                };
-                use tombi_text::IntoLsp;
-
-                tombi_test_lib::init_log();
-
-                #[allow(unused)]
-                #[derive(Default)]
-                struct TestArgs {
-                    source_file_path: Option<std::path::PathBuf>,
-                    schema_file_path: Option<std::path::PathBuf>,
-                    subschemas: Vec<SubSchemaPath>,
-                    backend_options: tombi_lsp::backend::Options,
-                }
-
-                #[allow(unused)]
-                trait ApplyTestArg {
-                    fn apply(self, args: &mut TestArgs);
-                }
-
-                #[allow(unused)]
-                struct SourcePath(std::path::PathBuf);
-
-                impl ApplyTestArg for SourcePath {
-                    fn apply(self, args: &mut TestArgs) {
-                        args.source_file_path = Some(self.0);
-                    }
-                }
-
-                #[allow(unused)]
-                struct SchemaPath(std::path::PathBuf);
-
-                impl ApplyTestArg for SchemaPath {
-                    fn apply(self, args: &mut TestArgs) {
-                        args.schema_file_path = Some(self.0);
-                    }
-                }
-
-                #[allow(unused)]
-                struct SubSchemaPath {
-                    pub root: String,
-                    pub path: std::path::PathBuf,
-                }
-
-                impl ApplyTestArg for SubSchemaPath {
-                    fn apply(self, args: &mut TestArgs) {
-                        args.subschemas.push(self);
-                    }
-                }
-
-                impl ApplyTestArg for tombi_lsp::backend::Options {
-                    fn apply(self, args: &mut TestArgs) {
-                        args.backend_options = self;
-                    }
-                }
-
-                #[allow(unused_mut)]
                 let mut args = TestArgs::default();
                 $(ApplyTestArg::apply($arg, &mut args);)*
-
-                let (service, _) = LspService::new(|client| {
-                    Backend::new(client, &args.backend_options)
-                });
-
-                let backend = service.inner();
-                let mut schema_items = Vec::new();
-
-                if let Some(schema_file_path) = args.schema_file_path.as_ref() {
-                    let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
-                        .expect(
-                            format!(
-                                "failed to convert schema path to URL: {}",
-                                schema_file_path.display()
-                            )
-                            .as_str(),
-                        );
-
-                    schema_items.push(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
-                        toml_version: None,
-                        path: schema_uri.to_string(),
-                        include: vec!["*.toml".into()],
-                        exclude: None,
-                        lint: None,
-                        format: None,
-                        overrides: None,
-                    }));
-                }
-
-                for subschema in &args.subschemas {
-                    let subschema_uri = tombi_schema_store::SchemaUri::from_file_path(&subschema.path)
-                        .expect(
-                            format!(
-                                "failed to convert subschema path to URL: {}",
-                                subschema.path.display()
-                            )
-                            .as_str(),
-                        );
-
-                    schema_items.push(tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
-                        path: subschema_uri.to_string(),
-                        include: vec!["*.toml".into()],
-                        exclude: None,
-                        root: subschema.root.clone(),
-                        lint: None,
-                        format: None,
-                        overrides: None,
-                    }));
-                }
-
-                let source_path = args
-                    .source_file_path
-                    .as_ref()
-                    .ok_or("SourcePath must be provided for goto_definition tests")?;
-
-                if !schema_items.is_empty() {
-                    let config_schema_store = backend
-                        .config_manager
-                        .config_schema_store_for_file(source_path)
-                        .await;
-
-                    let mut test_config = config_schema_store.config;
-                    let mut existing_schemas = test_config.schemas.take().unwrap_or_default();
-                    existing_schemas.extend(schema_items);
-                    test_config.schemas = Some(existing_schemas);
-
-                    if let Some(config_path) = config_schema_store.config_path {
-                        backend
-                            .config_manager
-                            .update_config_with_path(test_config, &config_path)
-                            .await
-                            .map_err(|e| {
-                                format!(
-                                    "failed to update config {}: {}",
-                                    config_path.display(),
-                                    e
-                                )
-                            })?;
-                    } else {
-                        backend.config_manager.update_editor_config(test_config).await;
-                    }
-                }
-
-                let toml_file_url = Url::from_file_path(source_path)
-                    .expect("failed to convert source file path to URL");
-
-                let mut toml_text = textwrap::dedent($source).trim().to_string();
-                let Some(index) = toml_text.as_str().find("█") else {
-                    return Err("failed to find position marker (█) in the test data".into());
-                };
-                toml_text.remove(index);
-                let line_index =
-                tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
-
-                handle_did_open(
-                    backend,
-                    DidOpenTextDocumentParams {
-                        text_document: TextDocumentItem {
-                            uri: toml_file_url.clone(),
-                            language_id: "toml".to_string(),
-                            version: 0,
-                            text: toml_text.clone(),
-                        },
-                    },
+                run_goto_definition_test(
+                    $source,
+                    args,
+                    ExpectedGotoDefinition::Paths(vec![$($expected_file_path.to_uri()),*]),
                 )
-                .await;
-
-                let params = GotoDefinitionParams {
-                    text_document_position_params: TextDocumentPositionParams {
-                        text_document: TextDocumentIdentifier { uri: toml_file_url },
-                        position: (tombi_text::Position::default()
-                            + tombi_text::RelativePosition::of(&toml_text[..index]))
-                        .into_lsp(&line_index),
-                    },
-                    work_done_progress_params: WorkDoneProgressParams::default(),
-                    partial_result_params: PartialResultParams::default(),
-                };
-
-                let Ok(result) = handle_goto_definition(&backend, params).await else {
-                    return Err("failed to handle goto_definition".into());
-                };
-
-                log::debug!("goto_definition result: {:#?}", result);
-
-                trait ToUri {
-                    fn to_uri(&self) -> tombi_uri::Uri;
-                }
-
-                impl ToUri for tombi_uri::Uri {
-                    fn to_uri(&self) -> tombi_uri::Uri {
-                        self.clone()
-                    }
-                }
-
-                impl ToUri for std::path::PathBuf {
-                    fn to_uri(&self) -> tombi_uri::Uri {
-                        tombi_uri::Uri::from_file_path(self).unwrap()
-                    }
-                }
-
-                impl ToUri for &str {
-                    fn to_uri(&self) -> tombi_uri::Uri {
-                        tombi_uri::Uri::from_str(self).unwrap()
-                    }
-                }
-
-                let expected_paths: Vec<tombi_uri::Uri> = vec![$($expected_file_path.to_uri()),*];
-
-                match result {
-                    Some(definition_links) => {
-                        pretty_assertions::assert_eq!(
-                            definition_links.into_iter().map(|link| link.uri.to_uri()).collect_vec(),
-                            expected_paths,
-                        );
-                    },
-                    None => {
-                        if !expected_paths.is_empty() {
-                            panic!("No definition link was returned, but expected paths: {:?}", expected_paths);
-                        }
-                    }
-                }
-
-                Ok(())
+                .await
             }
         };
     }
