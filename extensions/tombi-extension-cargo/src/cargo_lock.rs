@@ -137,9 +137,82 @@ pub(crate) fn exact_crates_io_version(version_requirement: &str) -> Option<Strin
         .map(str::trim)
         .unwrap_or(version_requirement);
 
-    semver::Version::parse(version_requirement)
-        .ok()
-        .map(|version| version.to_string())
+    is_exact_crates_io_version(version_requirement).then(|| version_requirement.to_string())
+}
+
+fn is_exact_crates_io_version(version: &str) -> bool {
+    if version.is_empty() {
+        return false;
+    }
+
+    let (version, build) = match version.split_once('+') {
+        Some((version, build)) => (version, Some(build)),
+        None => (version, None),
+    };
+    let (core, prerelease) = match version.split_once('-') {
+        Some((core, prerelease)) => (core, Some(prerelease)),
+        None => (version, None),
+    };
+
+    if !is_dot_separated_numeric_triplet(core) {
+        return false;
+    }
+
+    prerelease.is_none_or(is_prerelease_identifier_list)
+        && build.is_none_or(is_build_identifier_list)
+}
+
+fn is_dot_separated_numeric_triplet(value: &str) -> bool {
+    let mut parts = value.split('.');
+    let Some(major) = parts.next() else {
+        return false;
+    };
+    let Some(minor) = parts.next() else {
+        return false;
+    };
+    let Some(patch) = parts.next() else {
+        return false;
+    };
+
+    parts.next().is_none()
+        && is_numeric_identifier(major)
+        && is_numeric_identifier(minor)
+        && is_numeric_identifier(patch)
+}
+
+fn is_prerelease_identifier_list(value: &str) -> bool {
+    !value.is_empty()
+        && value
+            .split('.')
+            .all(|identifier| !identifier.is_empty() && is_prerelease_identifier(identifier))
+}
+
+fn is_build_identifier_list(value: &str) -> bool {
+    !value.is_empty()
+        && value
+            .split('.')
+            .all(|identifier| !identifier.is_empty() && is_build_identifier(identifier))
+}
+
+fn is_prerelease_identifier(value: &str) -> bool {
+    is_ascii_alphanumeric_hyphen(value)
+        && (!value.bytes().all(|byte| byte.is_ascii_digit()) || is_numeric_identifier(value))
+}
+
+fn is_build_identifier(value: &str) -> bool {
+    is_ascii_alphanumeric_hyphen(value)
+}
+
+fn is_numeric_identifier(value: &str) -> bool {
+    !value.is_empty()
+        && value.bytes().all(|byte| byte.is_ascii_digit())
+        && (value == "0" || !value.starts_with('0'))
+}
+
+fn is_ascii_alphanumeric_hyphen(value: &str) -> bool {
+    value
+        .bytes()
+        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
 }
 
 async fn load_cached_cargo_lock_json(

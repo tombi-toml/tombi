@@ -987,7 +987,13 @@ mod tests {
             exact_crates_io_version("=0.9.12+spec-1.1.0"),
             Some("0.9.12+spec-1.1.0".to_string())
         );
+        assert_eq!(
+            exact_crates_io_version("1.2.3-alpha.1+build-5"),
+            Some("1.2.3-alpha.1+build-5".to_string())
+        );
         assert_eq!(exact_crates_io_version("^1.2"), None);
+        assert_eq!(exact_crates_io_version("01.2.3"), None);
+        assert_eq!(exact_crates_io_version("1.2"), None);
     }
 
     #[tokio::test(flavor = "current_thread")]
