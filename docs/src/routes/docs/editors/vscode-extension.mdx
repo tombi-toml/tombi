@@ -34,6 +34,18 @@ You can set offline mode in the VSCode settings file.
 }
 ```
 
+## Verbose Logging
+You can enable verbose logging in the VSCode settings file.
+
+- Debug: `-v`
+- Trace: `-vv`
+
+```json
+{
+  "tombi.args": ["lsp", "-vv"]
+}
+```
+
 ## JSON Schema Association
 As with [Taplo](https://taplo.tamasfe.dev/configuration/developing-schemas.html#visual-studio-code-extensions), extensions can associate their own schemas using `tomlValidation`.
 
