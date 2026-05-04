@@ -9,7 +9,7 @@ use crate::{
     resolve_feature_table_string,
 };
 use tombi_config::TomlVersion;
-use tombi_document_tree::{Value, dig_keys};
+use tombi_document_tree::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn goto_definition(
@@ -142,22 +142,18 @@ fn goto_definition_for_optional_dependency(
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
 ) -> Vec<tombi_extension::Location> {
-    let dependency_accessors = dependency_parent_accessors(accessors);
-    let Some(dependency_names) = dependency_accessors
-        .iter()
-        .map(Accessor::as_key)
-        .collect::<Option<Vec<_>>>()
+    let Some((_, Value::Table(table))) =
+        dig_accessors(document_tree, dependency_parent_accessors(accessors))
     else {
         return Vec::with_capacity(0);
     };
-
-    let Some((dependency_key, _)) = dig_keys(document_tree, &dependency_names) else {
+    let Some(Value::Boolean(optional)) = table.get("optional") else {
         return Vec::with_capacity(0);
     };
 
     vec![tombi_extension::Location {
         uri: text_document_uri.clone(),
-        range: dependency_key.unquoted_range(),
+        range: optional.range(),
     }]
 }
 
