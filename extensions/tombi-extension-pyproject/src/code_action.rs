@@ -274,8 +274,11 @@ async fn update_dependency_to_latest_version_code_action(
         return Ok(None);
     };
     let new_version_specifier = format_exact_pinned_dependency(&latest_version);
-    let current_version_specifier =
-        &dep_str.value()[version_range.start.column as usize..version_range.end.column as usize];
+    let already_latest = matches!(
+        dependency_requirement.version_or_url(),
+        Some(VersionOrUrl::VersionSpecifier(version_specifier))
+            if version_specifier.to_string() == new_version_specifier
+    );
 
     Ok(Some(CodeAction {
         title: CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion.to_string(),
@@ -296,7 +299,7 @@ async fn update_dependency_to_latest_version_code_action(
             }])),
             change_annotations: None,
         }),
-        disabled: (latest_version == current_version_specifier).then(|| CodeActionDisabled {
+        disabled: already_latest.then(|| CodeActionDisabled {
             reason: "Already at latest version".to_string(),
         }),
         ..Default::default()
@@ -726,9 +729,73 @@ fn use_workspace_dependency_code_action(
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        ffi::OsString,
+        path::Path,
+        str::FromStr,
+        sync::{Mutex, MutexGuard, OnceLock},
+    };
+
     use super::*;
     use tombi_ast::AstNode;
     use tombi_document_tree::TryIntoDocumentTree;
+
+    fn cache_env_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
+
+    struct TestCacheHome {
+        _guard: MutexGuard<'static, ()>,
+        previous_tombi: Option<OsString>,
+        previous_xdg: Option<OsString>,
+        temp_dir: tempfile::TempDir,
+    }
+
+    impl TestCacheHome {
+        fn new() -> Self {
+            let guard = cache_env_lock()
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            let temp_dir = tempfile::tempdir().unwrap();
+            let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
+            let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
+            // SAFETY: Tests serialize env mutation with a process-wide mutex.
+            unsafe {
+                std::env::remove_var("TOMBI_CACHE_HOME");
+                std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
+            }
+            Self {
+                _guard: guard,
+                previous_tombi,
+                previous_xdg,
+                temp_dir,
+            }
+        }
+
+        #[allow(dead_code)]
+        fn xdg_cache_home_path(&self) -> &Path {
+            self.temp_dir.path()
+        }
+    }
+
+    impl Drop for TestCacheHome {
+        fn drop(&mut self) {
+            // SAFETY: Tests serialize env mutation with a process-wide mutex.
+            unsafe {
+                if let Some(previous) = &self.previous_tombi {
+                    std::env::set_var("TOMBI_CACHE_HOME", previous);
+                } else {
+                    std::env::remove_var("TOMBI_CACHE_HOME");
+                }
+                if let Some(previous) = &self.previous_xdg {
+                    std::env::set_var("XDG_CACHE_HOME", previous);
+                } else {
+                    std::env::remove_var("XDG_CACHE_HOME");
+                }
+            }
+        }
+    }
 
     #[test]
     fn test_code_action_refactor_rewrite_name_display() {
@@ -952,6 +1019,57 @@ name = "test"
 
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn test_update_dependency_to_latest_version_disables_when_already_pinned() {
+        let uri = tombi_uri::Uri::from_file_path("/path/to/pyproject.toml").unwrap();
+        let toml_text = r#"
+[project]
+dependencies = ["requests==2.33.1"]
+"#;
+        let root =
+            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
+        let document_tree = root
+            .clone()
+            .try_into_document_tree(tombi_config::TomlVersion::default())
+            .unwrap();
+        let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
+
+        let _cache_home = TestCacheHome::new();
+        let cache_options = tombi_cache::Options {
+            no_cache: None,
+            cache_ttl: None,
+        };
+        let cache_uri = tombi_uri::Uri::from_str("https://pypi.org/pypi/requests/json").unwrap();
+        let cache_file = tombi_cache::get_cache_file_path(&cache_uri)
+            .await
+            .expect("cache path should be constructed");
+        std::fs::create_dir_all(cache_file.parent().unwrap()).unwrap();
+        std::fs::write(
+            &cache_file,
+            r#"{"info":{"version":"2.33.1"},"urls":[],"vulnerabilities":[]}"#,
+        )
+        .unwrap();
+
+        let action = update_dependency_to_latest_version_code_action(
+            &uri,
+            &line_index,
+            &document_tree,
+            &[
+                Accessor::Key("project".to_string()),
+                Accessor::Key("dependencies".to_string()),
+                Accessor::Index(0),
+            ],
+            true,
+            Some(&cache_options),
+        )
+        .await
+        .unwrap()
+        .expect("code action should be available");
+
+        let disabled = action.disabled.expect("action should be disabled");
+        assert_eq!(disabled.reason, "Already at latest version");
     }
 
     // Tests for use_workspace_dependency_code_action
