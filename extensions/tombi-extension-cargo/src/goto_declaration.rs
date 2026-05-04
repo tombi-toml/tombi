@@ -85,12 +85,12 @@ pub fn get_current_declaration(
     else {
         return None;
     };
-    let Value::Boolean(optional) = table.get("optional")? else {
+    let (optional_key, Value::Boolean(optional)) = table.get_key_value("optional")? else {
         return None;
     };
 
     Some(tombi_extension::Location {
         uri: cargo_toml_uri.clone(),
-        range: optional.range(),
+        range: optional_key.range() + optional.range(),
     })
 }
