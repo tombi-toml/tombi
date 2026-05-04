@@ -591,6 +591,39 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn cargo_workspace_dependency_version_hover_appends_latest_version(
+                r#"
+                [workspace.dependencies]
+                typed-builder = "█0.21.0"
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
+                UseTestCacheHome,
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                SchemaPath(cargo_schema_path()),
+                CachedRemoteJson {
+                    url: "https://crates.io/api/v1/crates/typed-builder",
+                    body: r#"{
+                        "crate": {
+                            "name": "typed-builder",
+                            "description": "Compile-time type-checked builder derive",
+                            "max_version": "0.23.0"
+                        }
+                    }"#,
+                },
+            ) -> Ok({
+                "Keys": "workspace.dependencies.typed-builder",
+                "Value": "(String | Table)?",
+                "Description": Some(
+                    "The [version requirement](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html) of the target dependency.\n\nLatest Version: `0.23.0`"
+                ),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn cargo_feature_key_hover_lists_project_references(
                 r#"
                 [package]
