@@ -1830,6 +1830,18 @@
               "type": "null"
             }
           ]
+        },
+        "update-dependency-to-latest-version": {
+          "title": "Update-dependency-to-latest-version code action feature",
+          "description": "Whether code actions can rewrite dependency versions to the latest published version.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -2395,6 +2407,18 @@
         "add-to-workspace-and-use-workspace-dependency": {
           "title": "Add-to-workspace-and-use-workspace-dependency code action feature",
           "description": "Whether code actions can add a dependency to the workspace and reuse it.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "update-dependency-to-latest-version": {
+          "title": "Update-dependency-to-latest-version code action feature",
+          "description": "Whether code actions can rewrite dependency versions to the latest published version.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultTrue"
