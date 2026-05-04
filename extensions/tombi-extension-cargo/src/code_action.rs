@@ -3,12 +3,12 @@ use tombi_extension::CodeActionOrCommand;
 use tombi_schema_store::{Accessor, AccessorContext, matches_accessors};
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
-    CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
-    TextDocumentEdit, TextEdit, WorkspaceEdit,
+    CodeAction, CodeActionDisabled, CodeActionKind, DocumentChanges, OneOf,
+    OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
 
 use crate::{
-    dependency_parent_accessors, fetch_latest_crates_io_version, find_workspace_cargo_toml,
+    dependency_parent_accessors, fetch_crates_io_crate, find_workspace_cargo_toml,
     get_workspace_cargo_toml_path, is_any_dependency_accessor,
 };
 
@@ -444,15 +444,12 @@ async fn update_dependency_to_latest_version_code_action(
         _ => return Ok(None),
     };
 
-    let Some(latest_version) =
-        fetch_latest_crates_io_version(crate_name, offline, cache_options).await?
+    let Some(latest_version) = fetch_crates_io_crate(crate_name, offline, cache_options)
+        .await?
+        .and_then(|response| response.crate_info.max_version)
     else {
         return Ok(None);
     };
-
-    if latest_version == version.value() {
-        return Ok(None); // Already at latest version
-    }
 
     Ok(Some(CodeAction {
         title: CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion.to_string(),
@@ -471,6 +468,9 @@ async fn update_dependency_to_latest_version_code_action(
                 })],
             }])),
             change_annotations: None,
+        }),
+        disabled: (latest_version == version.value()).then(|| CodeActionDisabled {
+            reason: "Already at latest version".to_string(),
         }),
         ..Default::default()
     }))

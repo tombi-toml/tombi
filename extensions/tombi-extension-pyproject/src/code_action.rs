@@ -8,8 +8,8 @@ use tombi_extension::CodeActionOrCommand;
 use tombi_schema_store::Accessor;
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
-    CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
-    TextDocumentEdit, TextEdit, WorkspaceEdit,
+    CodeAction, CodeActionDisabled, CodeActionKind, DocumentChanges, OneOf,
+    OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
 
 use crate::{
@@ -277,10 +277,6 @@ async fn update_dependency_to_latest_version_code_action(
     let current_version_specifier =
         &dep_str.value()[version_range.start.column as usize..version_range.end.column as usize];
 
-    if current_version_specifier.trim() == new_version_specifier {
-        return Ok(None);
-    }
-
     Ok(Some(CodeAction {
         title: CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion.to_string(),
         kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
@@ -299,6 +295,9 @@ async fn update_dependency_to_latest_version_code_action(
                 })],
             }])),
             change_annotations: None,
+        }),
+        disabled: (latest_version == current_version_specifier).then(|| CodeActionDisabled {
+            reason: "Already at latest version".to_string(),
         }),
         ..Default::default()
     }))
