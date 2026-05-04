@@ -4013,7 +4013,6 @@ dependencies = [
  "pretty_assertions",
  "reqwest",
  "rstest",
- "semver 1.0.26",
  "serde",
  "serde_json",
  "serde_tombi",

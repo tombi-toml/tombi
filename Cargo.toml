@@ -63,7 +63,7 @@ reqwest = { version = "0.12.15", default-features = false, features = [
 rstest = { version = "0.25.0" }
 rustc-hash = { version = "2.1.1" }
 schemars = { version = "1.0.2", features = ["preserve_order", "url2"] }
-semver = { version = "1.0.26" }
+semver = "1.0.17"
 serde = { version = "1.0.219", features = [
   "derive",
 ] }
@@ -138,7 +138,6 @@ deprecated = "warn"
 
 [workspace.metadata.cargo-shear]
 ignored = [
-  "semver",
   "wasi",
   "wasm-bindgen",
   "wasm-bindgen-futures",

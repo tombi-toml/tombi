@@ -545,4 +545,28 @@ mod test {
         input.sort_by(|a, b| version_sort(a, b));
         pretty_assertions::assert_eq!(input, expected);
     }
+
+    #[test]
+    fn test_version_sorting_with_prerelease_identifiers() {
+        let mut input = vec![
+            "1.0.0-alpha.beta",
+            "1.0.0-alpha1",
+            "1.0.0-alpha.1",
+            "0.2.7",
+            "0.3.0-pre.2",
+            "0.2.0-pre.1",
+            "0.1.12",
+        ];
+        let expected = vec![
+            "0.1.12",
+            "0.2.0-pre.1",
+            "0.2.7",
+            "0.3.0-pre.2",
+            "1.0.0-alpha1",
+            "1.0.0-alpha.1",
+            "1.0.0-alpha.beta",
+        ];
+        input.sort_by(|a, b| version_sort(a, b));
+        pretty_assertions::assert_eq!(input, expected);
+    }
 }

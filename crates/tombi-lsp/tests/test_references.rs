@@ -354,19 +354,21 @@ mod references_tests {
         );
 
         test_references!(
-            #[tokio::test]
+                #[tokio::test]
             async fn workspace_registry_dependency_key_lists_member_usages(
-                r#"
+                    r#"
                 [workspace]
                 resolver = "2"
                 members = ["crates/*"]
 
                 [workspace.dependencies]
-                semver█ = { version = "1.0.23" }
+                reqwest█ = { version = "0.12.15", default-features = false, features = ["json", "rustls-tls-native-roots"] }
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([
                 project_root_path().join("crates/tombi-lsp/Cargo.toml"),
+                project_root_path().join("crates/tombi-schema-store/Cargo.toml"),
+                project_root_path().join("crates/tombi-schema-store/Cargo.toml"),
             ]);
         );
 

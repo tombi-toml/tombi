@@ -1,10 +1,10 @@
 use tombi_config::{JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHEMASTORE_CATALOG_URL};
 use tombi_test_lib::{
-    adjacent_applicators_test_schema_path, adjacent_one_of_additional_properties_test_schema_path,
-    adjacent_one_of_hover_test_schema_path, dot_config_project_root_fixture_path,
-    exact_index_string_test_schema_path, lsp_consistency_test_schema_path, project_root_path,
-    string_format_test_schema_path, today_local_date, today_local_date_time, today_local_time,
-    today_offset_date_time,
+    TestCacheHome, adjacent_applicators_test_schema_path,
+    adjacent_one_of_additional_properties_test_schema_path, adjacent_one_of_hover_test_schema_path,
+    dot_config_project_root_fixture_path, exact_index_string_test_schema_path,
+    lsp_consistency_test_schema_path, project_root_path, string_format_test_schema_path,
+    today_local_date, today_local_date_time, today_local_time, today_offset_date_time,
 };
 
 mod completion_labels {
@@ -2049,6 +2049,40 @@ mod completion_labels {
         }
 
         test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_semver_versions_are_sorted_descending(
+                r#"
+                [dependencies]
+                tombi-semver-order-test = "█"
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: None,
+                },
+                PreselectedLabels(&["\"0.3.0-pre.2\""]),
+                CachedResponse::new(
+                    "https://crates.io/api/v1/crates/tombi-semver-order-test/versions",
+                    r#"{"versions":[
+                        {"num":"0.2.7","features":{}},
+                        {"num":"0.2.6","features":{}},
+                        {"num":"0.2.0-pre.1","features":{}},
+                        {"num":"0.3.0-pre.2","features":{}},
+                        {"num":"0.1.12","features":{}}
+                    ]}"#,
+                ),
+            ) -> Ok([
+                "\"0.3.0-pre.2\"",
+                "\"0.2.7\"",
+                "\"0.2.6\"",
+                "\"0.2.0-pre.1\"",
+                "\"0.1.12\"",
+                "\"*\"",
+            ]);
+        }
+
+        test_completion_labels! {
          #[tokio::test]
             async fn cargo_dependencies_tombi_date_time_features_with_workspace_eq_true_comma(
                 r#"
@@ -2746,6 +2780,8 @@ mod completion_labels {
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
                     subschemas: Vec<SubSchema>,
+                    cached_responses: Vec<CachedResponse>,
+                    preselected_labels: Option<Vec<String>>,
                     backend_options: tombi_lsp::backend::Options,
                 }
 
@@ -2784,6 +2820,35 @@ mod completion_labels {
                     }
                 }
 
+                #[allow(unused)]
+                struct CachedResponse {
+                    url: &'static str,
+                    body: &'static str,
+                }
+
+                #[allow(unused)]
+                impl CachedResponse {
+                    fn new(url: &'static str, body: &'static str) -> Self {
+                        Self { url, body }
+                    }
+                }
+
+                impl ApplyTestArg for CachedResponse {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.cached_responses.push(self);
+                    }
+                }
+
+                #[allow(unused)]
+                struct PreselectedLabels(&'static [&'static str]);
+
+                impl ApplyTestArg for PreselectedLabels {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.preselected_labels =
+                            Some(self.0.iter().map(ToString::to_string).collect());
+                    }
+                }
+
                 impl ApplyTestArg for tombi_lsp::backend::Options {
                     fn apply(self, args: &mut TestArgs) {
                         args.backend_options = self;
@@ -2793,6 +2858,12 @@ mod completion_labels {
                 #[allow(unused_mut)]
                 let mut args = TestArgs::default();
                 $(ApplyTestArg::apply($arg, &mut args);)*
+
+                let _cache_home = if args.cached_responses.is_empty() {
+                    None
+                } else {
+                    Some(TestCacheHome::new())
+                };
 
                 let (service, _) =
                     LspService::new(|client| Backend::new(client, &args.backend_options));
@@ -2839,6 +2910,25 @@ mod completion_labels {
                         format: None,
                         overrides: None,
                     }));
+                }
+
+                for cached_response in &args.cached_responses {
+                    let uri = cached_response
+                        .url
+                        .parse::<tombi_uri::Uri>()
+                        .map_err(|err| format!("failed to parse cache URL {}: {err}", cached_response.url))?;
+                    let cache_path = tombi_cache::get_cache_file_path(&uri)
+                        .await
+                        .ok_or_else(|| {
+                            format!(
+                                "failed to derive cache path for {}",
+                                cached_response.url
+                            )
+                        })?;
+                    if let Some(parent) = cache_path.parent() {
+                        std::fs::create_dir_all(parent)?;
+                    }
+                    std::fs::write(&cache_path, cached_response.body)?;
                 }
 
                 let Ok(temp_file) = tempfile::NamedTempFile::with_suffix_in(
@@ -2932,7 +3022,7 @@ mod completion_labels {
                     return Err("failed to handle completion".into());
                 };
 
-                let labels = completions
+                let completion_items = completions
                     .into_iter()
                     .map(|content| IntoLsp::<CompletionItem>::into_lsp(content, &line_index))
                     .sorted_by(|a, b| {
@@ -2941,13 +3031,30 @@ mod completion_labels {
                             .unwrap_or(&a.label)
                             .cmp(&b.sort_text.as_ref().unwrap_or(&b.label))
                     })
-                    .map(|item| item.label)
+                    .collect_vec();
+
+                let labels = completion_items
+                    .iter()
+                    .map(|item| item.label.clone())
                     .collect_vec();
 
                 pretty_assertions::assert_eq!(
                     labels,
                     vec![$($label.to_string()),*] as Vec<String>,
                 );
+
+                if let Some(expected_preselected_labels) = args.preselected_labels {
+                    let preselected_labels = completion_items
+                        .iter()
+                        .filter(|item| item.preselect == Some(true))
+                        .map(|item| item.label.clone())
+                        .collect_vec();
+
+                    pretty_assertions::assert_eq!(
+                        preselected_labels,
+                        expected_preselected_labels
+                    );
+                }
 
                 Ok(())
             }
