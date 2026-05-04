@@ -347,7 +347,7 @@ mod references_tests {
 
         test_references!(
             #[tokio::test]
-            async fn optional_dependency_lists_workspace_usages(
+            async fn optional_dependency_lists_same_manifest_usages(
                 r#"
                 [package]
                 name = "nagi-config"
