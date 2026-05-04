@@ -3,8 +3,8 @@ use crate::{
     dependency_parent_accessors, feature_table_string_at_accessors, find_workspace_cargo_toml,
     get_workspace_cargo_toml_path, goto_definition_for_workspace_cargo_toml,
     goto_workspace_managed_dependency_locations, is_dependency_accessor, is_feature_key_accessor,
-    is_optional_dependency_accessor, is_package_name_accessor, is_workspace_definition_accessor,
-    is_workspace_dependency_accessor, is_workspace_flag_accessor,
+    is_optional_dependency, is_optional_dependency_accessor, is_package_name_accessor,
+    is_workspace_definition_accessor, is_workspace_dependency_accessor, is_workspace_flag_accessor,
     is_workspace_managed_dependency_accessor, resolve_dependency_feature_string,
     resolve_feature_table_string,
 };
@@ -142,6 +142,10 @@ fn goto_definition_for_optional_dependency(
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
 ) -> Vec<tombi_extension::Location> {
+    if !is_optional_dependency(document_tree, accessors) {
+        return Vec::with_capacity(0);
+    }
+
     let Some((_, Value::Table(table))) =
         dig_accessors(document_tree, dependency_parent_accessors(accessors))
     else {
