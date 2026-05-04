@@ -727,7 +727,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
                     }
                 })
                 .collect(),
-            _ => Vec::with_capacity(0),
+            _ => Vec::new(),
         };
 
         let items = features
@@ -858,7 +858,7 @@ async fn fetch_local_crate_features(
                             }
                         })
                         .collect(),
-                    _ => Vec::with_capacity(0),
+                    _ => Vec::new(),
                 };
                 (feature_name.value.clone(), deps)
             })

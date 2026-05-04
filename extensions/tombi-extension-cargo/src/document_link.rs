@@ -183,7 +183,7 @@ fn create_member_document_links(
     let Some((_, tombi_document_tree::Value::Array(members))) =
         dig_keys(workspace_document_tree, &["workspace", members_key])
     else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     let mut document_links = Vec::new();
@@ -196,7 +196,7 @@ fn create_member_document_links(
                     _ => None,
                 })
                 .collect(),
-            _ => Vec::with_capacity(0),
+            _ => Vec::new(),
         };
 
     for member in members.iter() {
@@ -903,7 +903,7 @@ fn document_link_for_bin_targets(
     let Some((_, tombi_document_tree::Value::Array(bin_items))) =
         dig_keys(crate_document_tree, &["bin"])
     else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     bin_items

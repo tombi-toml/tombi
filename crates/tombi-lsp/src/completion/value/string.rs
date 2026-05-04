@@ -44,7 +44,7 @@ impl FindCompletionContents for tombi_document_tree::String {
             }
 
             if !self.range().contains(position) {
-                return Vec::with_capacity(0);
+                return Vec::new();
             }
 
             let current_string_value = self.value();
@@ -90,7 +90,7 @@ impl FindCompletionContents for tombi_document_tree::String {
                     })
                     .collect()
             } else {
-                Vec::with_capacity(0)
+                Vec::new()
             }
         }
         .boxed()

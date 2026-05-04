@@ -49,6 +49,6 @@ pub fn inline_table_comma_trailing_comment(
                 }]
             }
         }
-        _ => Vec::with_capacity(0),
+        _ => Vec::new(),
     }
 }

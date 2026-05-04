@@ -80,7 +80,7 @@ pub async fn goto_definition(
             toml_version,
         )?
     } else {
-        Vec::with_capacity(0)
+        Vec::new()
     };
 
     if locations.is_empty() {
@@ -96,7 +96,7 @@ fn goto_definition_for_project_name(
 ) -> Vec<tombi_extension::Location> {
     let Some((_, Value::String(project_name))) = dig_keys(document_tree, &["project", "name"])
     else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     vec![tombi_extension::Location {
@@ -111,10 +111,10 @@ fn goto_definition_for_dependency_group_name(
     text_document_uri: &tombi_uri::Uri,
 ) -> Vec<tombi_extension::Location> {
     let Some(group_name) = accessors.get(1).and_then(Accessor::as_key) else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
     let Some((key, _)) = dig_keys(document_tree, &["dependency-groups", group_name]) else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     vec![tombi_extension::Location {
@@ -202,7 +202,7 @@ fn goto_definition_for_relative_package(
     toml_version: TomlVersion,
 ) -> Vec<tombi_extension::Location> {
     let Some((_, Value::String(path_value))) = dig_accessors(document_tree, accessors) else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     get_path_dependency_definition(pyproject_toml_path, path_value.value(), toml_version)
@@ -216,12 +216,12 @@ fn goto_definition_for_relative_file(
     pyproject_toml_path: &Path,
 ) -> Vec<tombi_extension::Location> {
     let Some((_, Value::String(path_value))) = dig_accessors(document_tree, accessors) else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     let Some(uri) = resolve_relative_path_uri(pyproject_toml_path, Path::new(path_value.value()))
     else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     vec![tombi_extension::Location {
@@ -259,12 +259,12 @@ fn goto_definition_for_dependency_package(
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     // Get the dependency string from the current position
     let Some((_, Value::String(dep_str))) = dig_accessors(document_tree, accessors) else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     // Parse the PEP 508 requirement to extract package name
     let Some(requirement) = parse_requirement(dep_str.value()) else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
     let package_name = requirement.name.as_ref();
 
@@ -274,7 +274,7 @@ fn goto_definition_for_dependency_package(
     {
         if let Some((_, Value::Boolean(is_workspace))) = source_table.get_key_value("workspace") {
             if !is_workspace.value() {
-                return Ok(Vec::with_capacity(0));
+                return Ok(Vec::new());
             }
             let definition_accessors = [
                 Accessor::Key("tool".to_string()),
@@ -295,7 +295,7 @@ fn goto_definition_for_dependency_package(
             {
                 return Ok(vec![location]);
             } else {
-                return Ok(Vec::with_capacity(0));
+                return Ok(Vec::new());
             }
         }
         if let Some((_, Value::String(path))) = source_table.get_key_value("path") {
@@ -304,7 +304,7 @@ fn goto_definition_for_dependency_package(
             {
                 return Ok(vec![location]);
             } else {
-                return Ok(Vec::with_capacity(0));
+                return Ok(Vec::new());
             }
         }
     }
@@ -348,11 +348,11 @@ fn goto_definition_for_dependency_string(
         pyproject_toml_path,
         toml_version,
     ) {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     let Some((_, Value::String(dependency))) = dig_accessors(document_tree, accessors) else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     vec![tombi_extension::Location {
@@ -367,15 +367,15 @@ fn goto_definition_for_include_group(
     pyproject_toml_path: &std::path::Path,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     let Some((_, Value::String(include_group))) = dig_accessors(document_tree, accessors) else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     let Some(group_key) = find_dependency_group_key(document_tree, include_group.value()) else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     let Ok(uri) = tombi_uri::Uri::from_file_path(pyproject_toml_path) else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     Ok(vec![tombi_extension::Location {
@@ -392,15 +392,15 @@ pub(crate) fn collect_workspace_project_dependency_definitions(
     let Some((workspace_pyproject_toml_path, _, workspace_document_tree)) =
         find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
     else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     if workspace_pyproject_toml_path == pyproject_toml_path {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     let Ok(workspace_uri) = tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path) else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     collect_dependency_requirements_from_document_tree(&workspace_document_tree)
@@ -452,11 +452,11 @@ pub(crate) fn get_workspace_member_dependency_definitions(
 ) -> Vec<tombi_extension::Location> {
     let member_patterns = crate::extract_member_patterns(workspace_document_tree, &[]);
     if member_patterns.is_empty() {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     let Some(workspace_dir_path) = workspace_pyproject_toml_path.parent() else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     let exclude_patterns = crate::extract_exclude_patterns(workspace_document_tree);

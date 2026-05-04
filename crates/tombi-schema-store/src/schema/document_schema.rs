@@ -242,7 +242,7 @@ impl FindSchemaCandidates for DocumentSchema {
                     .find_schema_candidates(accessors, schema_uri, definitions, schema_store)
                     .await
             } else {
-                (Vec::with_capacity(0), Vec::with_capacity(0))
+                (Vec::new(), Vec::new())
             }
         }
         .boxed()

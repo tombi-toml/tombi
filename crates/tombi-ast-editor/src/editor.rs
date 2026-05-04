@@ -73,7 +73,7 @@ impl<'a> Editor<'a> {
                 Change::Remove { target } => {
                     let index = target.index();
                     if let Some(node) = target.parent().as_ref().or_else(|| target.as_node()) {
-                        node.splice_children(index..index + 1, Vec::with_capacity(0));
+                        node.splice_children(index..index + 1, Vec::new());
                     }
                 }
                 Change::ReplaceRange { old, new } => {

@@ -44,7 +44,7 @@ pub async fn array_values_order<'a>(
     array_order_overrides: Option<&'a ArrayOrderOverrides>,
 ) -> Vec<crate::Change> {
     if values_with_comma.is_empty() {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     if comment_directive
@@ -52,7 +52,7 @@ pub async fn array_values_order<'a>(
         .and_then(|content| content.array_values_order_disabled())
         .unwrap_or_default()
     {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     let comment_directive_order: Option<ArrayValuesOrder> = comment_directive
@@ -65,7 +65,7 @@ pub async fn array_values_order<'a>(
     if comment_directive_override.is_some_and(|override_item| override_item.disabled)
         || schema_override.is_some_and(|override_item| override_item.disabled)
     {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     let override_order = comment_directive_override
@@ -85,7 +85,7 @@ pub async fn array_values_order<'a>(
     };
 
     let Some(values_order) = values_order else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     let mut changes = vec![];
@@ -125,7 +125,7 @@ pub async fn array_values_order<'a>(
     };
 
     let Some(mut sorted_values_with_comma) = sorted_values_with_comma else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     if let Some((_, comma)) = sorted_values_with_comma.last_mut()

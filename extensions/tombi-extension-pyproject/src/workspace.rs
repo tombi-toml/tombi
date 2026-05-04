@@ -50,7 +50,7 @@ pub(crate) fn extract_exclude_patterns(
                 _ => None,
             })
             .collect_vec(),
-        _ => Vec::with_capacity(0),
+        _ => Vec::new(),
     }
 }
 
@@ -122,10 +122,10 @@ pub(crate) fn goto_definition_for_member_pyproject_toml(
             jump_to_package,
         )? {
             Some(location) => Ok(vec![location]),
-            None => Ok(Vec::with_capacity(0)),
+            None => Ok(Vec::new()),
         }
     } else {
-        Ok(Vec::with_capacity(0))
+        Ok(Vec::new())
     }
 }
 
@@ -146,7 +146,7 @@ pub(crate) fn goto_definition_for_workspace_pyproject_toml(
         )
         .map(|locations| locations.into_iter().filter_map(Into::into).collect_vec())
     } else {
-        Ok(Vec::with_capacity(0))
+        Ok(Vec::new())
     }
 }
 
@@ -223,11 +223,11 @@ pub(crate) fn goto_member_pyprojects(
 ) -> Result<Vec<PackageLocation>, tower_lsp::jsonrpc::Error> {
     let member_patterns = extract_member_patterns(workspace_document_tree, accessors);
     if member_patterns.is_empty() {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     }
 
     let Some(workspace_dir_path) = workspace_pyproject_toml_path.parent() else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     let exclude_patterns = extract_exclude_patterns(workspace_document_tree);

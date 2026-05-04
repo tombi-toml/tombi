@@ -20,7 +20,7 @@ impl crate::Edit for tombi_ast::KeyValue {
             log::trace!("current_schema = {:?}", current_schema);
 
             let Some(key_accessors) = self.get_accessors(schema_context.toml_version) else {
-                return Vec::with_capacity(0);
+                return Vec::new();
             };
 
             edit_recursive(
@@ -42,7 +42,7 @@ impl crate::Edit for tombi_ast::KeyValue {
                                 )
                                 .await
                         } else {
-                            Vec::with_capacity(0)
+                            Vec::new()
                         }
                     }
                     .boxed()

@@ -14,7 +14,7 @@ impl crate::Root {
         } else if let Some(first_table_or_aot) = self.table_or_array_of_tables().next() {
             first_table_or_aot.leading_comments().collect()
         } else {
-            Vec::with_capacity(0)
+            Vec::new()
         }
         .into_iter()
     }
