@@ -5,6 +5,7 @@ TOML toolkit (parser / formatter / linter / LSP) の polyglot repository。Rust 
 ## 必須ルール
 
 - Think in English, but generate responses in Japanese
+- `TestCacheHome` が必要なテストでは `tombi-test-lib` の `tombi_test_lib::TestCacheHome` を利用し、同等のローカル実装を持ち込まない
 - 自動テストには既存の宣言的テストマクロ（例: `test_format!`）を必ず再利用する
 
 ## 補助設定
