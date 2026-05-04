@@ -1,3 +1,4 @@
+use crate::feature_navigation::collect_feature_usage_locations_in_manifest;
 use crate::{
     collect_feature_usage_locations, dependency_package_name, feature_usage_target_for_feature_key,
     feature_usage_target_for_optional_dependency, get_workspace_cargo_toml_path,
@@ -40,11 +41,15 @@ pub async fn references(
         && let Some(target) =
             feature_usage_target_for_optional_dependency(&cargo_toml_path, accessors)
     {
-        collect_feature_usage_locations(document_tree, &cargo_toml_path, &target, toml_version)
-            .await
-            .into_iter()
-            .filter_map(|location| location.get_location())
-            .collect_vec()
+        collect_feature_usage_locations_in_manifest(
+            document_tree,
+            &cargo_toml_path,
+            &target,
+            toml_version,
+        )
+        .into_iter()
+        .filter_map(|location| location.get_location())
+        .collect_vec()
     } else if is_workspace_dependency_accessor(accessors) {
         workspace_dependency_usage_locations(
             document_tree,
