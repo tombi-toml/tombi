@@ -7,5 +7,6 @@ paths: "**/*"
 - 自動テストを追加・拡張するときは、その領域で既に使われている宣言的テストマクロを必ず再利用する
 - formatter 系では `test_format!`、lexer 系では既存の `test_...!` マクロ群、LSP 系でも同様に既存パターンへ合わせる
 - 同種テストが複数あるのに専用 helper や手書き harness を新設しない
+- `TestCacheHome` が必要な場合は `tombi-test-lib::TestCacheHome` を使い、各テストファイルで同等の struct / cleanup 実装を再定義しない
 - 新しいテストマクロが本当に必要な場合は、同じ crate の既存テストから再利用できる位置に定義し、以後のケースもそこへ寄せる
 - 比較系テストでは、repo の既存慣習に従って可読性の高い assertion を選ぶ
