@@ -8,8 +8,8 @@ use tombi_extension::CodeActionOrCommand;
 use tombi_schema_store::Accessor;
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
-    CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
-    TextDocumentEdit, TextEdit, WorkspaceEdit,
+    CodeAction, CodeActionDisabled, CodeActionKind, DocumentChanges, OneOf,
+    OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
 
 use crate::{
@@ -274,12 +274,11 @@ async fn update_dependency_to_latest_version_code_action(
         return Ok(None);
     };
     let new_version_specifier = format_exact_pinned_dependency(&latest_version);
-    let current_version_specifier =
-        &dep_str.value()[version_range.start.column as usize..version_range.end.column as usize];
-
-    if current_version_specifier.trim() == new_version_specifier {
-        return Ok(None);
-    }
+    let already_latest = matches!(
+        dependency_requirement.version_or_url(),
+        Some(VersionOrUrl::VersionSpecifier(version_specifier))
+            if version_specifier.to_string() == new_version_specifier
+    );
 
     Ok(Some(CodeAction {
         title: CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion.to_string(),
@@ -299,6 +298,9 @@ async fn update_dependency_to_latest_version_code_action(
                 })],
             }])),
             change_annotations: None,
+        }),
+        disabled: already_latest.then(|| CodeActionDisabled {
+            reason: "Already at latest version".to_string(),
         }),
         ..Default::default()
     }))
@@ -727,9 +729,81 @@ fn use_workspace_dependency_code_action(
 
 #[cfg(test)]
 mod tests {
+    use std::{fs, str::FromStr};
+
     use super::*;
     use tombi_ast::AstNode;
     use tombi_document_tree::TryIntoDocumentTree;
+    use tombi_test_lib::TestCacheHome;
+
+    async fn write_cached_response(url: &str, body: &str) {
+        let cache_uri = tombi_uri::Uri::from_str(url).unwrap();
+        let cache_file = tombi_cache::get_cache_file_path(&cache_uri)
+            .await
+            .expect("cache path should be constructed");
+        if let Some(parent) = cache_file.parent() {
+            fs::create_dir_all(parent).unwrap();
+        }
+        fs::write(cache_file, body).unwrap();
+    }
+
+    macro_rules! test_update_dependency_to_latest_version_disabled {
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $toml_text:expr,
+                $package_name:expr,
+                $cached_response:expr,
+            ) -> $expected_reason:expr;
+        ) => {
+            #[tokio::test]
+            async fn $name() {
+                let uri = tombi_uri::Uri::from_file_path("/path/to/pyproject.toml").unwrap();
+                let root = tombi_ast::Root::cast(
+                    tombi_parser::parse($toml_text).into_syntax_node(),
+                )
+                .unwrap();
+                let document_tree = root
+                    .clone()
+                    .try_into_document_tree(tombi_config::TomlVersion::default())
+                    .unwrap();
+                let line_index = tombi_text::LineIndex::new(
+                    $toml_text,
+                    tombi_text::EncodingKind::default(),
+                );
+
+                let _cache_home = TestCacheHome::new();
+                let cache_options = tombi_cache::Options {
+                    no_cache: None,
+                    cache_ttl: None,
+                };
+                write_cached_response(
+                    &format!("https://pypi.org/pypi/{}/json", $package_name),
+                    $cached_response,
+                )
+                .await;
+
+                let action = update_dependency_to_latest_version_code_action(
+                    &uri,
+                    &line_index,
+                    &document_tree,
+                    &[
+                        Accessor::Key("project".to_string()),
+                        Accessor::Key("dependencies".to_string()),
+                        Accessor::Index(0),
+                    ],
+                    true,
+                    Some(&cache_options),
+                )
+                .await
+                .unwrap()
+                .expect("code action should be available");
+
+                let disabled = action.disabled.expect("action should be disabled");
+                assert_eq!(disabled.reason, $expected_reason);
+            }
+        };
+    }
 
     #[test]
     fn test_code_action_refactor_rewrite_name_display() {
@@ -953,6 +1027,18 @@ name = "test"
 
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
+    }
+
+    test_update_dependency_to_latest_version_disabled! {
+        #[tokio::test]
+        async fn test_update_dependency_to_latest_version_disables_when_already_pinned(
+            r#"
+[project]
+dependencies = ["requests==2.33.1"]
+"#,
+            "requests",
+            r#"{"info":{"version":"2.33.1"},"urls":[],"vulnerabilities":[]}"#,
+        ) -> "Already at latest version";
     }
 
     // Tests for use_workspace_dependency_code_action

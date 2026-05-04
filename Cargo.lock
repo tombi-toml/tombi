@@ -3838,6 +3838,7 @@ dependencies = [
  "tombi-hashmap",
  "tombi-parser",
  "tombi-schema-store",
+ "tombi-test-lib",
  "tombi-text",
  "tombi-uri",
  "tombi-version-sort",

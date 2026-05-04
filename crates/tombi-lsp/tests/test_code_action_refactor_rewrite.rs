@@ -680,7 +680,12 @@ mod refactor_rewrite {
                         }
                     }"#,
                 )]),
-            ) -> Ok(None);
+            ) -> Ok(Some(
+                r#"
+                [project]
+                dependencies = ["requests==2.33.1; python_version < '3.13'"]
+                "#
+            ));
         }
 
         test_code_action_refactor_rewrite! {

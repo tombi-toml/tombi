@@ -22,15 +22,3 @@ pub(crate) async fn fetch_crates_io_crate(
     let url = format!("https://crates.io/api/v1/crates/{crate_name}");
     Ok(fetch_cached_remote_json::<CratesIoCrateResponse>(&url, offline, cache_options).await)
 }
-
-pub(crate) async fn fetch_latest_crates_io_version(
-    crate_name: &str,
-    offline: bool,
-    cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<String>, tower_lsp::jsonrpc::Error> {
-    let Some(response) = fetch_crates_io_crate(crate_name, offline, cache_options).await? else {
-        return Ok(None);
-    };
-
-    Ok(response.crate_info.max_version)
-}
