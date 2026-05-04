@@ -2061,7 +2061,7 @@ mod completion_labels {
                     offline: Some(true),
                     no_cache: None,
                 },
-                PreselectedLabels(&["\"0.2.7\""]),
+                PreselectedLabels(&["\"0.3.0-pre.2\""]),
                 CachedResponse::new(
                     "https://crates.io/api/v1/crates/tombi-semver-order-test/versions",
                     r#"{"versions":[
@@ -2073,8 +2073,8 @@ mod completion_labels {
                     ]}"#,
                 ),
             ) -> Ok([
-                "\"0.2.7\"",
                 "\"0.3.0-pre.2\"",
+                "\"0.2.7\"",
                 "\"0.2.6\"",
                 "\"0.2.0-pre.1\"",
                 "\"0.1.12\"",

@@ -304,7 +304,7 @@ mod goto_definition_tests {
                 members = ["crates/*"]
 
                 [workspace.dependencies]
-                semver█ = { version = "1.0.23" }
+                reqwest█ = { version = "0.12.15", default-features = false, features = ["json", "rustls-tls-native-roots"] }
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
