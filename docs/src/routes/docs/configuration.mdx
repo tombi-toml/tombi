@@ -131,6 +131,7 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
   - [extensions."tombi-toml/cargo"](#extensions-tombi-toml-cargo)
     - [extensions."tombi-toml/cargo".lsp](#extensions-tombi-toml-cargo-lsp)
       - [extensions."tombi-toml/cargo".lsp.code-action](#extensions-tombi-toml-cargo-lsp-code-action)
+      - [extensions."tombi-toml/cargo".lsp.code-action.update-dependency-to-latest-version](#extensions-tombi-toml-cargo-lsp-code-action-update-dependency-to-latest-version)
       - [extensions."tombi-toml/cargo".lsp.completion](#extensions-tombi-toml-cargo-lsp-completion)
       - [extensions."tombi-toml/cargo".lsp.document-link](#extensions-tombi-toml-cargo-lsp-document-link)
       - [extensions."tombi-toml/cargo".lsp.goto-declaration](#extensions-tombi-toml-cargo-lsp-goto-declaration)
@@ -141,6 +142,7 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
   - [extensions."tombi-toml/pyproject"](#extensions-tombi-toml-pyproject)
     - [extensions."tombi-toml/pyproject".lsp](#extensions-tombi-toml-pyproject-lsp)
       - [extensions."tombi-toml/pyproject".lsp.code-action](#extensions-tombi-toml-pyproject-lsp-code-action)
+      - [extensions."tombi-toml/pyproject".lsp.code-action.update-dependency-to-latest-version](#extensions-tombi-toml-pyproject-lsp-code-action-update-dependency-to-latest-version)
       - [extensions."tombi-toml/pyproject".lsp.completion](#extensions-tombi-toml-pyproject-lsp-completion)
       - [extensions."tombi-toml/pyproject".lsp.document-link](#extensions-tombi-toml-pyproject-lsp-document-link)
       - [extensions."tombi-toml/pyproject".lsp.goto-declaration](#extensions-tombi-toml-pyproject-lsp-goto-declaration)
@@ -289,6 +291,7 @@ tables-out-of-order = "error"
       convert-dependency-to-table-format.enabled = true,
       inherit-dependency-from-workspace.enabled = true,
       inherit-from-workspace.enabled = true,
+      update-dependency-to-latest-version.enabled = true,
     },
     completion = {
       dependency-feature.enabled = true,
@@ -325,6 +328,7 @@ tables-out-of-order = "error"
   lsp = {
     code-action = {
       add-to-workspace-and-use-workspace-dependency.enabled = true,
+      update-dependency-to-latest-version.enabled = true,
       use-workspace-dependency.enabled = true,
     },
     completion = {
@@ -1561,25 +1565,18 @@ See [Cargo Extension > Code Actions](/docs/extensions/tombi-extension-cargo#code
 
 - Type: `Table`
 
-### extensions."tombi-toml/cargo".lsp.code-action.inherit-from-workspace.enabled
+### extensions."tombi-toml/cargo".lsp.code-action.add-to-workspace-and-inherit-dependency
 
-Enable or disable the "Inherit from Workspace" code action for Cargo manifests.
-
-- Type: `Boolean`
-- Default: `true`
-
-### extensions."tombi-toml/cargo".lsp.code-action.inherit-dependency-from-workspace
-
-Configure the "Inherit Dependency from Workspace" code action for Cargo manifests.
-This refactor rewrites dependencies to use workspace-managed versions.
+Configure the "Add to Workspace and Inherit Dependency" code action for Cargo manifests.
+This refactor promotes a member dependency into `[workspace.dependencies]` and rewrites the member entry to inherit it.
 
 See [Cargo Extension > Code Actions](/docs/extensions/tombi-extension-cargo#code-actions).
 
 - Type: `Table`
 
-### extensions."tombi-toml/cargo".lsp.code-action.inherit-dependency-from-workspace.enabled
+### extensions."tombi-toml/cargo".lsp.code-action.add-to-workspace-and-inherit-dependency.enabled
 
-Enable or disable the "Inherit Dependency from Workspace" code action for Cargo manifests.
+Enable or disable the "Add to Workspace and Inherit Dependency" code action for Cargo manifests.
 
 - Type: `Boolean`
 - Default: `true`
@@ -1600,18 +1597,49 @@ Enable or disable the "Convert Dependency to Table Format" code action for Cargo
 - Type: `Boolean`
 - Default: `true`
 
-### extensions."tombi-toml/cargo".lsp.code-action.add-to-workspace-and-inherit-dependency
+### extensions."tombi-toml/cargo".lsp.code-action.inherit-dependency-from-workspace
 
-Configure the "Add to Workspace and Inherit Dependency" code action for Cargo manifests.
-This refactor promotes a member dependency into `[workspace.dependencies]` and rewrites the member entry to inherit it.
+Configure the "Inherit Dependency from Workspace" code action for Cargo manifests.
+This refactor rewrites dependencies to use workspace-managed versions.
 
 See [Cargo Extension > Code Actions](/docs/extensions/tombi-extension-cargo#code-actions).
 
 - Type: `Table`
 
-### extensions."tombi-toml/cargo".lsp.code-action.add-to-workspace-and-inherit-dependency.enabled
+### extensions."tombi-toml/cargo".lsp.code-action.inherit-dependency-from-workspace.enabled
 
-Enable or disable the "Add to Workspace and Inherit Dependency" code action for Cargo manifests.
+Enable or disable the "Inherit Dependency from Workspace" code action for Cargo manifests.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.code-action.inherit-from-workspace
+
+Configure the "Inherit from Workspace" code action for Cargo manifests.
+
+See [Cargo Extension > Code Actions](/docs/extensions/tombi-extension-cargo#code-actions).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.code-action.inherit-from-workspace.enabled
+
+Enable or disable the "Inherit from Workspace" code action for Cargo manifests.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.code-action.update-dependency-to-latest-version
+
+Configure the "Update Dependency to Latest Version" code action for Cargo manifests.
+This refactor rewrites dependency versions to the latest published version.
+
+See [Cargo Extension > Code Actions](/docs/extensions/tombi-extension-cargo#code-actions).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.code-action.update-dependency-to-latest-version.enabled
+
+Enable or disable the "Update Dependency to Latest Version" code action for Cargo manifests.
 
 - Type: `Boolean`
 - Default: `true`
@@ -1986,22 +2014,6 @@ Enable or disable all `pyproject.toml` code actions.
 - Type: `Boolean`
 - Default: `true`
 
-### extensions."tombi-toml/pyproject".lsp.code-action.use-workspace-dependency
-
-Configure the "Use Workspace Dependency" code action for `pyproject.toml`.
-This refactor rewrites a member dependency so it follows the workspace-managed dependency definition.
-
-See [Pyproject Extension > Code Actions](/docs/extensions/tombi-extension-pyproject#code-actions).
-
-- Type: `Table`
-
-### extensions."tombi-toml/pyproject".lsp.code-action.use-workspace-dependency.enabled
-
-Enable or disable the "Use Workspace Dependency" code action for `pyproject.toml`.
-
-- Type: `Boolean`
-- Default: `true`
-
 ### extensions."tombi-toml/pyproject".lsp.code-action.add-to-workspace-and-use-workspace-dependency
 
 Configure the "Add to Workspace and Use Workspace Dependency" code action for `pyproject.toml`.
@@ -2014,6 +2026,38 @@ See [Pyproject Extension > Code Actions](/docs/extensions/tombi-extension-pyproj
 ### extensions."tombi-toml/pyproject".lsp.code-action.add-to-workspace-and-use-workspace-dependency.enabled
 
 Enable or disable the "Add to Workspace and Use Workspace Dependency" code action for `pyproject.toml`.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.code-action.update-dependency-to-latest-version
+
+Configure the "Update Dependency to Latest Version" code action for `pyproject.toml`.
+This refactor rewrites dependency versions to the latest published version.
+
+See [Pyproject Extension > Code Actions](/docs/extensions/tombi-extension-pyproject#code-actions).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.code-action.update-dependency-to-latest-version.enabled
+
+Enable or disable the "Update Dependency to Latest Version" code action for `pyproject.toml`.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pyproject".lsp.code-action.use-workspace-dependency
+
+Configure the "Use Workspace Dependency" code action for `pyproject.toml`.
+This refactor rewrites a member dependency so it follows the workspace-managed dependency definition.
+
+See [Pyproject Extension > Code Actions](/docs/extensions/tombi-extension-pyproject#code-actions).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lsp.code-action.use-workspace-dependency.enabled
+
+Enable or disable the "Use Workspace Dependency" code action for `pyproject.toml`.
 
 - Type: `Boolean`
 - Default: `true`
