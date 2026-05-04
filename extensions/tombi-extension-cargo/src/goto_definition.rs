@@ -151,13 +151,13 @@ fn goto_definition_for_optional_dependency(
     else {
         return Vec::with_capacity(0);
     };
-    let Some(Value::Boolean(optional)) = table.get("optional") else {
+    let Some((optional_key, Value::Boolean(optional))) = table.get_key_value("optional") else {
         return Vec::with_capacity(0);
     };
 
     vec![tombi_extension::Location {
         uri: text_document_uri.clone(),
-        range: optional.range(),
+        range: optional_key.range() + optional.range(),
     }]
 }
 

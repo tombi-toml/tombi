@@ -370,7 +370,7 @@ mod references_tests {
 
         test_references!(
             #[tokio::test]
-            async fn target_optional_dependency_include_declaration_adds_optional_value(
+            async fn target_optional_dependency_include_declaration_adds_optional_key_value(
                 r#"
                 [package]
                 name = "example"
@@ -391,7 +391,7 @@ mod references_tests {
                 ),
                 (
                     project_root_path().join("crates/example/Cargo.toml"),
-                    ((5, 41), (5, 45))
+                    ((5, 30), (5, 45))
                 ),
             ]);
         );

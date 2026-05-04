@@ -616,7 +616,7 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn optional_dependency_definition_returns_optional_field_range(
+            async fn optional_dependency_definition_returns_optional_key_value_range(
                 r#"
                 [package]
                 name = "explicit-feature"
@@ -633,7 +633,7 @@ mod goto_definition_tests {
             ) -> Ok([
                 (
                     cargo_feature_navigation_fixture_path().join("explicit/Cargo.toml"),
-                    ((5, 41), (5, 45))
+                    ((5, 30), (5, 45))
                 )
             ]);
         );
