@@ -536,12 +536,11 @@ impl CompletionEdit {
             }
         };
 
-        self.additional_text_edits = self.additional_text_edits.map(|mut edits| {
-            edits.iter_mut().for_each(|edit| {
+        if let Some(edits) = &mut self.additional_text_edits {
+            for edit in edits {
                 edit.range = offset(edit.range, position);
-            });
-            edits
-        });
+            }
+        }
 
         self
     }
