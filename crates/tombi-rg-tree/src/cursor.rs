@@ -1011,10 +1011,8 @@ impl SyntaxNode {
                 child.detach();
             }
         }
-        let mut index = to_delete.start;
-        for child in to_insert {
+        for (index, child) in (to_delete.start..).zip(to_insert) {
             self.attach_child(index, child);
-            index += 1;
         }
     }
 
