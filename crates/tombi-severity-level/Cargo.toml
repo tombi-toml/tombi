@@ -16,3 +16,6 @@ serde = { workspace = true }
 [features]
 jsonschema = ["dep:schemars"]
 serde = ["dep:serde"]
+
+[lints]
+workspace = true

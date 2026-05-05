@@ -46,3 +46,6 @@ native = ["reqwest01", "tombi-future/native"]
 reqwest01 = ["dep:reqwest"]
 surf2 = ["dep:surf"]
 wasm = ["gloo-net06", "tombi-future/wasm"]
+
+[lints]
+workspace = true

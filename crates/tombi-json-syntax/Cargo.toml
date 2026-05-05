@@ -8,3 +8,6 @@ license.workspace = true
 
 [dependencies]
 tombi-rg-tree.workspace = true
+
+[lints]
+workspace = true

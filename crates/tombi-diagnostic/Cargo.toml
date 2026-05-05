@@ -20,3 +20,6 @@ env_logger.workspace = true
 default = ["lsp"]
 lsp = ["dep:tower-lsp", "tombi-text/lsp"]
 wasm = ["dep:wasm-bindgen", "tombi-text/wasm"]
+
+[lints]
+workspace = true
