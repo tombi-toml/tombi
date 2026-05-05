@@ -43,3 +43,6 @@ tombi-test-lib.workspace = true
 default = ["native"]
 native = ["tokio/rt-multi-thread"]
 wasm = []
+
+[lints]
+workspace = true

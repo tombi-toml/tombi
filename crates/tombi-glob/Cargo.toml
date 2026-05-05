@@ -24,3 +24,6 @@ tokio = { workspace = true, features = ["macros", "rt"] }
 [features]
 default = []
 profile = ["dep:serde_tombi"]
+
+[lints]
+workspace = true

@@ -21,3 +21,6 @@ default = ["lsp", "serde"]
 lsp = ["dep:tower-lsp"]
 serde = ["dep:serde"]
 wasm = ["dep:wasm-bindgen", "serde"]
+
+[lints]
+workspace = true

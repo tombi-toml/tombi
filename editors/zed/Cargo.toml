@@ -13,3 +13,6 @@ path = "src/lib.rs"
 
 [dependencies]
 zed_extension_api.workspace = true
+
+[lints]
+workspace = true

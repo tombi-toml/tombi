@@ -13,3 +13,6 @@ tombi-comment-directive.workspace = true
 tombi-document.workspace = true
 tombi-document-tree.workspace = true
 tombi-parser.workspace = true
+
+[lints]
+workspace = true

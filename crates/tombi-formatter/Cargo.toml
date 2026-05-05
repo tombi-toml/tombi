@@ -34,3 +34,6 @@ tombi-test-lib.workspace = true
 [features]
 jsonschema = ["dep:schemars", "serde"]
 serde = ["dep:serde"]
+
+[lints]
+workspace = true
