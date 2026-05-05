@@ -11,3 +11,6 @@ chrono.workspace = true
 env_logger.workspace = true
 tempfile.workspace = true
 tombi-uri.workspace = true
+
+[lints]
+workspace = true

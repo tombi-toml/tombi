@@ -28,3 +28,6 @@ tombi-toml-version.workspace = true
 [dev-dependencies]
 pretty_assertions.workspace = true
 textwrap.workspace = true
+
+[lints]
+workspace = true

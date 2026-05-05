@@ -14,3 +14,6 @@ regex = { version = "1.12.2", optional = true }
 default = ["fancy-regex"]
 fancy-regex = ["dep:fancy-regex"]
 regex = ["dep:regex"]
+
+[lints]
+workspace = true

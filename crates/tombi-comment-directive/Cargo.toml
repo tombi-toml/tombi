@@ -23,3 +23,6 @@ jsonschema = [
   "tombi-toml-version/jsonschema",
 ]
 serde = ["tombi-severity-level/serde"]
+
+[lints]
+workspace = true

@@ -9,3 +9,6 @@ repository = "https://github.com/tombi-toml/tombi"
 license.workspace = true
 
 [dependencies]
+
+[lints]
+workspace = true

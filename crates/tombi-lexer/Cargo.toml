@@ -15,3 +15,6 @@ itertools.workspace = true
 pretty_assertions.workspace = true
 textwrap.workspace = true
 tombi-test-lib.workspace = true
+
+[lints]
+workspace = true

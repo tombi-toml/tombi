@@ -27,3 +27,6 @@ tombi-uri = { workspace = true }
 ungrammar = { workspace = true }
 xshell = { workspace = true }
 zip = { workspace = true, features = ["deflate", "time"] }
+
+[lints]
+workspace = true

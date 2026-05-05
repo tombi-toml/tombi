@@ -62,3 +62,6 @@ default = ["clap", "native"]
 clap = ["dep:clap"]
 native = ["tombi-schema-store/native"]
 wasm = ["tombi-schema-store/wasm"]
+
+[lints]
+workspace = true
