@@ -13,6 +13,7 @@ use tower_lsp::lsp_types::{
     GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
     InitializeResult, InitializedParams, InlayHint, InlayHintParams, ReferenceParams,
     SemanticTokensParams, SemanticTokensResult, TextDocumentIdentifier, Url,
+    WorkspaceDiagnosticParams, WorkspaceDiagnosticReportResult,
     request::{
         GotoDeclarationParams, GotoDeclarationResponse, GotoTypeDefinitionParams,
         GotoTypeDefinitionResponse,
@@ -34,7 +35,7 @@ use crate::{
         handle_goto_declaration, handle_goto_definition, handle_goto_type_definition, handle_hover,
         handle_initialize, handle_initialized, handle_inlay_hint, handle_list_schemas,
         handle_references, handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown,
-        handle_update_config, handle_update_schema, push_diagnostics,
+        handle_update_config, handle_update_schema, handle_workspace_diagnostic, push_diagnostics,
     },
     references::try_get_reference_locations,
 };
@@ -56,6 +57,7 @@ pub struct Backend {
 pub struct BackendCapabilities {
     pub encoding_kind: EncodingKind,
     pub diagnostic_mode: DiagnosticMode,
+    pub workspace_diagnostic_refresh_support: bool,
 }
 
 /// Diagnostic Type
@@ -89,6 +91,7 @@ impl Backend {
             capabilities: Arc::new(tokio::sync::RwLock::new(BackendCapabilities {
                 encoding_kind: EncodingKind::default(),
                 diagnostic_mode: DiagnosticMode::Push,
+                workspace_diagnostic_refresh_support: false,
             })),
             background_tasks: Default::default(),
             document_sources: Default::default(),
@@ -119,6 +122,23 @@ impl Backend {
     #[inline]
     pub async fn is_diagnostic_mode_push(&self) -> bool {
         self.capabilities.read().await.diagnostic_mode == DiagnosticMode::Push
+    }
+
+    pub async fn refresh_pull_diagnostics(&self) {
+        let capabilities = self.capabilities.read().await;
+        if capabilities.diagnostic_mode != DiagnosticMode::Pull {
+            return;
+        }
+
+        if !capabilities.workspace_diagnostic_refresh_support {
+            log::debug!("Client does not support workspace/diagnostic/refresh");
+            return;
+        }
+        drop(capabilities);
+
+        if let Err(error) = self.client.workspace_diagnostic_refresh().await {
+            log::debug!("Failed to request diagnostic refresh: {error}");
+        }
     }
 
     #[inline]
@@ -467,5 +487,12 @@ impl tower_lsp::LanguageServer for Backend {
         params: DocumentDiagnosticParams,
     ) -> Result<DocumentDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
         handle_diagnostic(self, params).await
+    }
+
+    async fn workspace_diagnostic(
+        &self,
+        params: WorkspaceDiagnosticParams,
+    ) -> Result<WorkspaceDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
+        handle_workspace_diagnostic(self, params).await
     }
 }

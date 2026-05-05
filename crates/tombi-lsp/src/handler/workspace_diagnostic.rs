@@ -1,4 +1,9 @@
 use tombi_glob::search_pattern_matched_paths;
+use tower_lsp::lsp_types::{
+    FullDocumentDiagnosticReport, WorkspaceDiagnosticParams, WorkspaceDiagnosticReport,
+    WorkspaceDiagnosticReportResult, WorkspaceDocumentDiagnosticReport,
+    WorkspaceFullDocumentDiagnosticReport,
+};
 
 use crate::{
     backend::Backend,
@@ -25,6 +30,43 @@ pub async fn push_workspace_diagnostics(
     }
 
     Ok(())
+}
+
+pub async fn handle_workspace_diagnostic(
+    backend: &Backend,
+    params: WorkspaceDiagnosticParams,
+) -> Result<WorkspaceDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
+    log::info!("handle_workspace_diagnostic");
+    log::trace!("{:?}", params);
+
+    let mut items = Vec::new();
+
+    for text_document_uri in collect_workspace_diagnostic_targets(backend).await {
+        let Some(diagnostics_result) = get_diagnostics_result(backend, &text_document_uri).await
+        else {
+            continue;
+        };
+
+        let DiagnosticsResult {
+            diagnostics,
+            version,
+        } = diagnostics_result;
+
+        items.push(WorkspaceDocumentDiagnosticReport::Full(
+            WorkspaceFullDocumentDiagnosticReport {
+                uri: text_document_uri.into(),
+                version: version.map(i64::from),
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    result_id: None,
+                    items: diagnostics,
+                },
+            },
+        ));
+    }
+
+    Ok(WorkspaceDiagnosticReportResult::Report(
+        WorkspaceDiagnosticReport { items },
+    ))
 }
 
 async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_uri::Uri> {

@@ -23,14 +23,19 @@ pub async fn handle_did_change_watched_files(
                     document_sources.remove(&uri);
                 }
 
-                backend
-                    .client
-                    .publish_diagnostics(change.uri, Vec::new(), None)
-                    .await;
+                if backend.is_diagnostic_mode_push().await {
+                    backend
+                        .client
+                        .publish_diagnostics(change.uri, Vec::new(), None)
+                        .await;
+                } else {
+                    backend.refresh_pull_diagnostics().await;
+                }
             }
             FileChangeType::CREATED | FileChangeType::CHANGED => {
                 if upsert_document_source(backend, uri.clone()).await {
                     push_diagnostics(backend, uri).await;
+                    backend.refresh_pull_diagnostics().await;
                 }
             }
             _ => {
