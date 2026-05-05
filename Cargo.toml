@@ -134,6 +134,7 @@ zip = { version = "2.3.0" }
 
 [workspace.lints.clippy]
 explicit_counter_loop = "warn"
+needless_for_each = "warn"
 
 [workspace.lints.rust]
 aarch64_softfloat_neon = "warn"
