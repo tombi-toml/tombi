@@ -5,7 +5,7 @@ use tower_lsp::lsp_types::{
 };
 
 use crate::{
-    backend::Backend,
+    backend::{Backend, DiagnosticMode},
     handler::{push_workspace_diagnostics, workspace_diagnostic::WorkspaceDiagnosticOptions},
 };
 
@@ -13,11 +13,19 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
     log::info!("handle_initialized");
     log::trace!("{:?}", params);
 
-    log::info!("Pushing workspace diagnostics...");
-    if let Err(error) =
-        push_workspace_diagnostics(backend, &WorkspaceDiagnosticOptions::default()).await
-    {
-        log::warn!("Failed to push workspace diagnostics: {error}");
+    let diagnostic_mode = backend.capabilities.read().await.diagnostic_mode;
+    match diagnostic_mode {
+        DiagnosticMode::Pull => {
+            log::info!("Skip pushing workspace diagnostics in Pull mode");
+        }
+        DiagnosticMode::Push => {
+            log::info!("Pushing workspace diagnostics...");
+            if let Err(error) =
+                push_workspace_diagnostics(backend, &WorkspaceDiagnosticOptions::default()).await
+            {
+                log::warn!("Failed to push workspace diagnostics: {error}");
+            }
+        }
     }
 
     log::info!("Registering workspace TOML watchers...");

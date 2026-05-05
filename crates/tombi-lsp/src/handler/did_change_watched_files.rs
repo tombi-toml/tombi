@@ -11,6 +11,8 @@ pub async fn handle_did_change_watched_files(
     log::info!("handle_did_change_watched_files");
     log::trace!("{:?}", params);
 
+    let mut should_refresh_pull_diagnostics = false;
+
     for change in params.changes {
         let uri: tombi_uri::Uri = change.uri.clone().into();
 
@@ -23,19 +25,28 @@ pub async fn handle_did_change_watched_files(
                     document_sources.remove(&uri);
                 }
 
-                backend
-                    .client
-                    .publish_diagnostics(change.uri, Vec::new(), None)
-                    .await;
+                if backend.is_diagnostic_mode_push().await {
+                    backend
+                        .client
+                        .publish_diagnostics(change.uri, Vec::new(), None)
+                        .await;
+                } else {
+                    should_refresh_pull_diagnostics = true;
+                }
             }
             FileChangeType::CREATED | FileChangeType::CHANGED => {
                 if upsert_document_source(backend, uri.clone()).await {
                     push_diagnostics(backend, uri).await;
+                    should_refresh_pull_diagnostics = true;
                 }
             }
             _ => {
                 log::debug!("Ignored file change type {:?} for URI: {}", change.typ, uri);
             }
         }
+    }
+
+    if should_refresh_pull_diagnostics {
+        backend.refresh_pull_diagnostics().await;
     }
 }

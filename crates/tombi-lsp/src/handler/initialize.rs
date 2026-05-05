@@ -51,6 +51,12 @@ pub async fn handle_initialize(
 
     let mut backend_capabilities = backend.capabilities.write().await;
     backend_capabilities.encoding_kind = negotiated_wide_encoding(&client_capabilities);
+    backend_capabilities.workspace_diagnostic_refresh_support = client_capabilities
+        .workspace
+        .as_ref()
+        .and_then(|workspace| workspace.diagnostic.as_ref())
+        .and_then(|diagnostic| diagnostic.refresh_support)
+        .unwrap_or_default();
     if let Some(text_document_capabilities) = client_capabilities.text_document.as_ref()
         && let Some(diagnostic_capabilities) = text_document_capabilities.diagnostic.as_ref()
         && diagnostic_capabilities.dynamic_registration == Some(true)
@@ -178,7 +184,7 @@ pub fn server_capabilities(
         diagnostic_provider: if backend_capabilities.diagnostic_mode == DiagnosticMode::Pull {
             Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
                 inter_file_dependencies: false,
-                workspace_diagnostics: false,
+                workspace_diagnostics: true,
                 ..Default::default()
             }))
         } else {
