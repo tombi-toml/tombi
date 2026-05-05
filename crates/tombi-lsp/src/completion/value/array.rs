@@ -39,7 +39,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
             // `range.end` points to the cursor position right after `]`.
             // At that point, completion should not behave as "inside array".
             if self.kind() == ArrayKind::Array && position >= self.range().end {
-                return Vec::with_capacity(0);
+                return Vec::new();
             }
 
             if keys.is_empty()
@@ -311,7 +311,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                             }
                         }
 
-                        Vec::with_capacity(0)
+                        Vec::new()
                     }
                     ValueSchema::OneOf(one_of_schema) => {
                         find_one_of_completion_items(
@@ -352,7 +352,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                         )
                         .await
                     }
-                    _ => Vec::with_capacity(0),
+                    _ => Vec::new(),
                 }
             } else {
                 let mut new_item_index = 0;
@@ -522,7 +522,7 @@ impl FindCompletionContents for ArraySchema {
 
         async move {
             match completion_hint {
-                Some(CompletionHint::InTableHeader) => Vec::with_capacity(0),
+                Some(CompletionHint::InTableHeader) => Vec::new(),
                 _ => {
                     let schema_uri = current_schema.map(|schema| schema.schema_uri.as_ref());
 

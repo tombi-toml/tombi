@@ -103,7 +103,7 @@ pub async fn get_diagnostics_result(
     .lint(text.as_ref())
     .await
     {
-        Ok(_) => Vec::with_capacity(0),
+        Ok(_) => Vec::new(),
         Err(diagnostics) => {
             let line_index = LineIndex::new(text.as_ref(), encoding_kind);
             diagnostics

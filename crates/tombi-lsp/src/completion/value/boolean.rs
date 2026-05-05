@@ -43,7 +43,7 @@ impl FindCompletionContents for tombi_document_tree::Boolean {
                 return completions;
             }
 
-            Vec::with_capacity(0)
+            Vec::new()
         }
         .boxed()
     }

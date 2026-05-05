@@ -29,7 +29,7 @@ pub async fn push_workspace_diagnostics(
 
 async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_uri::Uri> {
     let Some(configs) = get_workspace_configs(backend).await else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     let mut targets = tombi_hashmap::HashSet::new();

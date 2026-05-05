@@ -47,7 +47,7 @@ impl FindCompletionContents for tombi_document_tree::LocalDateTime {
                 return completions;
             }
 
-            Vec::with_capacity(0)
+            Vec::new()
         }
         .boxed()
     }

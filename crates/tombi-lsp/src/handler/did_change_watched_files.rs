@@ -25,7 +25,7 @@ pub async fn handle_did_change_watched_files(
 
                 backend
                     .client
-                    .publish_diagnostics(change.uri, Vec::with_capacity(0), None)
+                    .publish_diagnostics(change.uri, Vec::new(), None)
                     .await;
             }
             FileChangeType::CREATED | FileChangeType::CHANGED => {

@@ -121,7 +121,7 @@ impl IntoDocumentTreeAndErrors<Option<Key>> for tombi_ast::Key {
 
         // Convert ParseError to crate::Error directly, not via error::Error
         let (value, errors) = match self.try_to_raw_text(toml_version) {
-            Ok(value) => (value, Vec::with_capacity(0)),
+            Ok(value) => (value, Vec::new()),
             Err(error) => (
                 token.text().to_string(),
                 vec![crate::Error::ParseStringError {

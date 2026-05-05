@@ -77,7 +77,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                 tombi_document_tree::TableKind::InlineTable { .. }
             ) && position >= self.range().end
             {
-                return Vec::with_capacity(0);
+                return Vec::new();
             }
 
             if let Some(Ok(document_schema)) = schema_context
@@ -835,7 +835,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    _ => Vec::with_capacity(0),
+                    _ => Vec::new(),
                 }
             } else if let Some(key) = keys.first() {
                 if let Some(value) = self.get(key) {
@@ -851,7 +851,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                     )
                     .await
                 } else {
-                    Vec::with_capacity(0)
+                    Vec::new()
                 }
             } else {
                 vec![CompletionContent::new_type_hint_empty_key(
@@ -1070,7 +1070,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                         && count_table_or_array_schema(current_schema, schema_context.store).await
                             == 0
                     {
-                        return Vec::with_capacity(0);
+                        return Vec::new();
                     }
                 }
                 Some(CompletionHint::InArray { .. } | CompletionHint::Comma { .. }) | None => {

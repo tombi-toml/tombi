@@ -58,7 +58,7 @@ pub async fn references(
             toml_version,
         )?
     } else {
-        Vec::with_capacity(0)
+        Vec::new()
     };
 
     Ok((!locations.is_empty()).then_some(locations))
@@ -73,7 +73,7 @@ pub(crate) async fn package_name_reference_locations(
     debug_assert!(matches_accessors!(accessors, ["package", "name"]));
 
     let Some((_, Value::String(package_name))) = dig_accessors(document_tree, accessors) else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     let Some((workspace_cargo_toml_path, workspace_document_tree)) = load_workspace_cargo_toml(
@@ -83,7 +83,7 @@ pub(crate) async fn package_name_reference_locations(
     )
     .await
     else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     let mut locations = Vec::new();

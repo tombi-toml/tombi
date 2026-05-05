@@ -21,7 +21,7 @@ pub async fn root_table_keys_order<'a>(
     table_order_overrides: Option<&TableOrderOverrides>,
 ) -> Vec<crate::Change> {
     if key_value_groups.is_empty() && table_or_array_of_tables.is_empty() {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     if comment_directive
@@ -29,7 +29,7 @@ pub async fn root_table_keys_order<'a>(
         .and_then(|c| c.table_keys_order_disabled())
         .unwrap_or_default()
     {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
     let comment_directive_order = comment_directive
         .as_ref()

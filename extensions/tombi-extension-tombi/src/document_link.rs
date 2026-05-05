@@ -85,7 +85,7 @@ pub async fn document_link(
                         }
                     })
                     .collect(),
-                _ => Vec::with_capacity(0),
+                _ => Vec::new(),
             };
             for path in paths {
                 // Convert the path to a URL

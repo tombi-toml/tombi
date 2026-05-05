@@ -107,7 +107,7 @@ fn goto_definition_for_package_name(
 
     let Some((_, Value::String(package_name))) = dig_keys(document_tree, &["package", "name"])
     else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     vec![tombi_extension::Location {
@@ -124,11 +124,11 @@ fn goto_definition_for_feature_key(
     debug_assert!(matches_accessors!(accessors, ["features", _]));
 
     let Some(feature_name) = accessors.get(1).and_then(Accessor::as_key) else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     let Some((key, _)) = dig_keys(document_tree, &["features", feature_name]) else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     vec![tombi_extension::Location {
@@ -143,16 +143,16 @@ fn goto_definition_for_optional_dependency(
     text_document_uri: &tombi_uri::Uri,
 ) -> Vec<tombi_extension::Location> {
     if !is_optional_dependency(document_tree, accessors) {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     let Some((_, Value::Table(table))) =
         dig_accessors(document_tree, dependency_parent_accessors(accessors))
     else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
     let Some((optional_key, Value::Boolean(optional))) = table.get_key_value("optional") else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     vec![tombi_extension::Location {

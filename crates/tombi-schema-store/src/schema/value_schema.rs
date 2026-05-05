@@ -1131,8 +1131,8 @@ impl ValueSchema {
 
                     (candidates, errors)
                 }
-                ValueSchema::Null => (Vec::with_capacity(0), Vec::with_capacity(0)),
-                _ => (vec![self.clone()], Vec::with_capacity(0)),
+                ValueSchema::Null => (Vec::new(), Vec::new()),
+                _ => (vec![self.clone()], Vec::new()),
             }
         }
         .boxed()
