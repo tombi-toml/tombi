@@ -2,15 +2,24 @@
  * Utility functions for handling anchor link scrolling with header offset
  */
 
-const HEADER_HEIGHT = 80; // h-20 = 5rem = 80px
-const SCROLL_OFFSET = 20; // Additional offset for better visual spacing
+const FALLBACK_HEADER_HEIGHT = 80; // h-20 = 5rem = 80px
+const readCssLength = (name: string, fallback = 0) => {
+  const value = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue(name),
+  );
+  return Number.isFinite(value) ? value : fallback;
+};
+
+const getScrollOffset = () =>
+  readCssLength("--docs-fixed-header-height", FALLBACK_HEADER_HEIGHT) +
+  readCssLength("--docs-sticky-table-offset");
 
 /**
  * Scrolls to an element with proper header offset
  */
 export function scrollToElement(element: HTMLElement, smooth = true) {
   const elementTop = element.getBoundingClientRect().top + window.scrollY;
-  const scrollTop = elementTop - HEADER_HEIGHT - SCROLL_OFFSET;
+  const scrollTop = elementTop - getScrollOffset();
 
   window.scrollTo({
     top: Math.max(0, scrollTop),
