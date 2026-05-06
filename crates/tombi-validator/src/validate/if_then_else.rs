@@ -18,7 +18,7 @@ pub async fn validate_if_then_else<T>(
 where
     T: Validate + ValueImpl + Sync + Send,
 {
-    #[expect(clippy::result_large_err)]
+    #[allow(clippy::result_large_err)]
     let merge_if_result =
         |branch_result: Result<crate::EvaluatedLocations, crate::Error>,
          if_result: Result<crate::EvaluatedLocations, crate::Error>| match if_result {
