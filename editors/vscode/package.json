@@ -249,7 +249,7 @@
     },
     "configurationDefaults": {
       "[toml]": {
-        "editor.suggest.showKeywords": false,
+        "editor.suggest.showKeywords": true,
         "editor.wordBasedSuggestions": "off"
       }
     }
