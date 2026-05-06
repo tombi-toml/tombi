@@ -61,6 +61,9 @@
   "[toml]": {
     "editor.tabSize": 2,
     "editor.defaultFormatter": "tombi-toml.tombi",
+    "editor.quickSuggestions": {
+      "comments": true
+    },
     "files.trimTrailingWhitespace": false,
     "files.trimFinalNewlines": false,
     "files.insertFinalNewline": false
