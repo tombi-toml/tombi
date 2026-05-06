@@ -55,8 +55,23 @@ impl From<CompletionKind> for tower_lsp::lsp_types::CompletionItemKind {
             CompletionKind::Key => tower_lsp::lsp_types::CompletionItemKind::FIELD,
             // NOTE: To give a writing taste close to method chaining
             CompletionKind::MagicTrigger => tower_lsp::lsp_types::CompletionItemKind::METHOD,
-            CompletionKind::CommentDirective => tower_lsp::lsp_types::CompletionItemKind::KEYWORD,
+            // Document directives such as `schema` / `tombi` should stay visible
+            // even when editors hide keyword suggestions for TOML.
+            CompletionKind::CommentDirective => tower_lsp::lsp_types::CompletionItemKind::FIELD,
             CompletionKind::File => tower_lsp::lsp_types::CompletionItemKind::FILE,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CompletionKind;
+
+    #[test]
+    fn comment_directive_is_not_keyword() {
+        assert_eq!(
+            tower_lsp::lsp_types::CompletionItemKind::from(CompletionKind::CommentDirective),
+            tower_lsp::lsp_types::CompletionItemKind::FIELD
+        );
     }
 }
