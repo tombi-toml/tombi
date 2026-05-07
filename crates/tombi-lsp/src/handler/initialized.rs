@@ -1,7 +1,7 @@
 use serde_json::json;
 use tower_lsp::lsp_types::{
     DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern, InitializedParams,
-    Registration, WatchKind,
+    MessageType, Registration, WatchKind,
 };
 
 use crate::{
@@ -18,6 +18,10 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
         log::info!("Loading config in background...");
         if let Err(error) = startup_backend.config_manager.load().await {
             log::warn!("Failed to load config: {error}");
+            startup_backend
+                .client
+                .show_message(MessageType::WARNING, error.to_string())
+                .await;
             return;
         }
 
@@ -28,6 +32,18 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
                 startup_backend.refresh_pull_diagnostics().await;
             }
             DiagnosticMode::Push => {
+                let open_document_uris = startup_backend
+                    .document_sources
+                    .read()
+                    .await
+                    .iter()
+                    .filter_map(|(uri, source)| source.version.is_some().then_some(uri.clone()))
+                    .collect::<Vec<_>>();
+
+                for text_document_uri in open_document_uris {
+                    startup_backend.push_diagnostics(text_document_uri).await;
+                }
+
                 log::info!("Pushing workspace diagnostics after config load...");
                 if let Err(error) = push_workspace_diagnostics(
                     &startup_backend,
