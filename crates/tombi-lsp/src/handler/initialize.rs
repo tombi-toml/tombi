@@ -5,10 +5,10 @@ use tower_lsp::lsp_types::{
     DiagnosticServerCapabilities, DocumentLinkOptions, FileOperationFilter, FileOperationPattern,
     FileOperationPatternKind, FileOperationRegistrationOptions, FoldingRangeProviderCapability,
     HoverProviderCapability, InitializeParams, InitializeResult, InlayHintOptions,
-    InlayHintServerCapabilities, MessageType, OneOf, SemanticTokensFullOptions,
-    SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities, ServerInfo,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-    TextDocumentSyncSaveOptions, TypeDefinitionProviderCapability, WorkDoneProgressOptions,
+    InlayHintServerCapabilities, OneOf, SemanticTokensFullOptions, SemanticTokensLegend,
+    SemanticTokensOptions, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
+    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
+    TypeDefinitionProviderCapability, WorkDoneProgressOptions,
     WorkspaceFileOperationsServerCapabilities, WorkspaceFoldersServerCapabilities,
     WorkspaceServerCapabilities,
 };
@@ -35,18 +35,6 @@ pub async fn handle_initialize(
     if let Some(ClientInfo { name, version }) = client_info {
         let version = version.unwrap_or_default();
         log::info!("{name} version: {version}",);
-    }
-
-    log::info!("Loading config...");
-    if let Err(error) = backend.config_manager.load().await {
-        let error_message = error.to_string();
-
-        log::error!("{error_message}");
-
-        backend
-            .client
-            .show_message(MessageType::ERROR, error_message)
-            .await;
     }
 
     let mut backend_capabilities = backend.capabilities.write().await;

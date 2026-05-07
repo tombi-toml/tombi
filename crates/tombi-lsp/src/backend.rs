@@ -42,7 +42,7 @@ use crate::{
 
 use tombi_text::EncodingKind;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Backend {
     #[allow(dead_code)]
     pub client: tower_lsp::Client,
