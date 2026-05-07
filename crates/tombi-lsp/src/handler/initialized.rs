@@ -1,7 +1,7 @@
 use serde_json::json;
 use tower_lsp::lsp_types::{
     DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern, InitializedParams,
-    MessageType, Registration, WatchKind,
+    Registration, WatchKind,
 };
 
 use crate::{
@@ -18,10 +18,6 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
         log::info!("Loading config in background...");
         if let Err(error) = startup_backend.config_manager.load().await {
             log::warn!("Failed to load config: {error}");
-            startup_backend
-                .client
-                .show_message(MessageType::WARNING, error.to_string())
-                .await;
             return;
         }
 
