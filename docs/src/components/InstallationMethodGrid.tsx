@@ -21,6 +21,12 @@ const installationMethods: InstallationMethod[] = [
     image: "/terminal.svg",
   },
   {
+    id: "windows-package-manager",
+    name: "winget",
+    image: "/terminal.svg",
+    category: "package-manager",
+  },
+  {
     id: "homebrew",
     name: "Homebrew",
     image: "/homebrew.svg",
