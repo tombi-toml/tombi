@@ -54,9 +54,10 @@ pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
     let show_trace_location = log_level == log::LevelFilter::Trace;
 
     let use_ansi_color = use_ansi_color();
-    env_logger::Builder::from_default_env()
-        .filter_level(log_level)
+    env_logger::Builder::new()
+        .filter_level(log::LevelFilter::Warn)
         .filter_module("tombi", log_level)
+        .filter_module("tombi_", log_level)
         .filter_module("serde_tombi", log_level)
         .format(tombi_log::format(use_ansi_color, show_trace_location))
         .target(env_logger::Target::Stderr)
