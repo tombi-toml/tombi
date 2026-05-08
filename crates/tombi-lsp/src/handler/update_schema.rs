@@ -5,7 +5,7 @@ use tower_lsp::lsp_types::{
 
 use crate::{
     backend::Backend,
-    handler::workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
+    workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
 };
 
 pub async fn handle_update_schema(

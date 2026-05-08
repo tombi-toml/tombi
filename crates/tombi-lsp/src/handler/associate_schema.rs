@@ -4,7 +4,7 @@ use tombi_config::TomlVersion;
 
 use crate::{
     Backend,
-    handler::workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
+    workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
 };
 
 #[derive(Debug, serde::Deserialize)]

@@ -1,6 +1,6 @@
 use tower_lsp::lsp_types::{DidChangeWatchedFilesParams, FileChangeType};
 
-use crate::{backend::Backend, handler::workspace_diagnostic::upsert_document_source};
+use crate::{backend::Backend, workspace_diagnostic::upsert_document_source};
 
 use super::diagnostic::push_diagnostics;
 
