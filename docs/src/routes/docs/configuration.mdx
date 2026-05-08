@@ -42,6 +42,7 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
 - [files](#files)
   - [files.include](#files-include)
   - [files.exclude](#files-exclude)
+  - [files.respect-ignore-files](#files-respect-ignore-files)
 - [format](#format)
   - [format.rules](#format-rules)
     - [format.rules.array-bracket-space-width](#format-rules-array-bracket-space-width)
@@ -163,6 +164,7 @@ toml-version = "v1.0.0"
 [files]
 include = ["**/*.toml"]
 exclude = [".cache/**/*.toml"]
+respect-ignore-files = true
 
 [format]
 [format.rules]
@@ -393,6 +395,13 @@ The file match pattern to include in formatting and linting. Supports glob patte
 The file match pattern to exclude from formatting and linting. Supports glob pattern.
 
 - Type: `String[]`
+
+### files.respect-ignore-files
+
+Whether to respect `.ignore`, `.gitignore`, and `.git/info/exclude` while discovering files.
+
+- Type: `Boolean`
+- Default: `true`
 
 ### format
 
