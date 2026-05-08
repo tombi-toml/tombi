@@ -82,7 +82,6 @@ pub async fn handle_workspace_diagnostic(
                     },
                 },
             ));
-            continue;
         } else {
             items.push(WorkspaceDocumentDiagnosticReport::Full(
                 WorkspaceFullDocumentDiagnosticReport {
