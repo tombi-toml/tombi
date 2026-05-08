@@ -136,6 +136,7 @@ zip = { version = "2.3.0" }
 collapsible_match = "warn"
 explicit_counter_loop = "warn"
 needless_for_each = "warn"
+ptr_cast_constness = "warn"
 
 [workspace.lints.rust]
 aarch64_softfloat_neon = "warn"
