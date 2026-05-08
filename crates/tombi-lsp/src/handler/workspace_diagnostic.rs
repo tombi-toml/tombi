@@ -83,18 +83,18 @@ pub async fn handle_workspace_diagnostic(
                 },
             ));
             continue;
-        }
-
-        items.push(WorkspaceDocumentDiagnosticReport::Full(
-            WorkspaceFullDocumentDiagnosticReport {
-                uri: text_document_uri.into(),
-                version: version.map(i64::from),
-                full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                    result_id: Some(result_id),
-                    items: diagnostics,
+        } else {
+            items.push(WorkspaceDocumentDiagnosticReport::Full(
+                WorkspaceFullDocumentDiagnosticReport {
+                    uri: text_document_uri.into(),
+                    version: version.map(i64::from),
+                    full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                        result_id: Some(result_id),
+                        items: diagnostics,
+                    },
                 },
-            },
-        ));
+            ));
+        }
     }
 
     for previous_text_document_uri in previous_result_ids.keys() {
