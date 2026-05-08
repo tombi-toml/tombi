@@ -12,6 +12,19 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
     } = params;
 
     let text_document_uri = text_document.uri.into();
+    let mut latest_content_change = None;
+
+    for content_change in content_changes {
+        if let Some(range) = content_change.range {
+            log::warn!("Range change is not supported: {:?}", range);
+        } else {
+            let toml_version = backend
+                .text_document_toml_version(&text_document_uri, &content_change.text)
+                .await;
+
+            latest_content_change = Some((content_change.text, toml_version));
+        }
+    }
 
     let need_publish_diagnostics = {
         let mut document_sources = backend.document_sources.write().await;
@@ -23,16 +36,8 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
             .version
             .is_none_or(|version| version < text_document.version);
 
-        for content_change in content_changes {
-            if let Some(range) = content_change.range {
-                log::warn!("Range change is not supported: {:?}", range);
-            } else {
-                let toml_version = backend
-                    .text_document_toml_version(&text_document_uri, &content_change.text)
-                    .await;
-
-                document.set_text(content_change.text, toml_version);
-            }
+        if let Some((text, toml_version)) = latest_content_change {
+            document.set_text(text, toml_version);
         }
         document.version = Some(text_document.version);
 
