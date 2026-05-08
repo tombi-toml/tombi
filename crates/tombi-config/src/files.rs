@@ -24,7 +24,7 @@ pub struct FilesOptions {
 
     /// # Respect repository ignore files
     ///
-    /// Whether to respect `.ignore` and `.gitignore` and `.git/info/exclude` while discovering files.
+    /// Whether to respect `.ignore`, `.gitignore`, and `.git/info/exclude` while discovering files.
     #[cfg_attr(feature = "serde", serde(default))]
     pub respect_ignore_files: BoolDefaultTrue,
 }

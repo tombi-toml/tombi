@@ -152,7 +152,7 @@
         },
         "respect-ignore-files": {
           "title": "Respect repository ignore files",
-          "description": "Whether to respect `.ignore` and `.gitignore` and `.git/info/exclude` while discovering files.",
+          "description": "Whether to respect `.ignore`, `.gitignore`, and `.git/info/exclude` while discovering files.",
           "default": true,
           "allOf": [
             {
