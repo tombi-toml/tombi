@@ -243,19 +243,21 @@ pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_
         .await;
     let encoding_kind = backend.capabilities.read().await.encoding_kind;
 
-    let mut document_sources = backend.document_sources.write().await;
-    if let Some(source) = document_sources.get_mut(&text_document_uri) {
-        if source.version.is_some() {
-            log::debug!("Skip diagnostics for open document: {text_document_uri}");
-            return false;
-        }
+    {
+        let mut document_sources = backend.document_sources.write().await;
+        if let Some(source) = document_sources.get_mut(&text_document_uri) {
+            if source.version.is_some() {
+                log::debug!("Skip diagnostics for open document: {text_document_uri}");
+                return false;
+            }
 
-        source.set_text(content, toml_version);
-    } else {
-        document_sources.insert(
-            text_document_uri.clone(),
-            DocumentSource::new(content, None, toml_version, encoding_kind),
-        );
+            source.set_text(content, toml_version);
+        } else {
+            document_sources.insert(
+                text_document_uri.clone(),
+                DocumentSource::new(content, None, toml_version, encoding_kind),
+            );
+        }
     }
 
     true
