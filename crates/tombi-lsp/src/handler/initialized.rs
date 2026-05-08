@@ -6,7 +6,7 @@ use tower_lsp::lsp_types::{
 
 use crate::{
     backend::{Backend, DiagnosticMode},
-    handler::{push_workspace_diagnostics, workspace_diagnostic::WorkspaceDiagnosticOptions},
+    workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
 };
 
 pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
