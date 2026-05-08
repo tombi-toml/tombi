@@ -12,7 +12,7 @@ use tower_lsp::lsp_types::{
 use crate::{
     backend::Backend,
     diagnostic::{DiagnosticsResult, get_diagnostics_result},
-    workspace_diagnostic::collect_workspace_diagnostic_targets,
+    workspace_diagnostic as crate_workspace_diagnostic,
 };
 
 pub async fn handle_workspace_diagnostic(
@@ -28,7 +28,7 @@ pub async fn handle_workspace_diagnostic(
         .map(|result| (tombi_uri::Uri::from(result.uri), result.value))
         .collect::<tombi_hashmap::HashMap<_, _>>();
 
-    let targets = collect_workspace_diagnostic_targets(backend).await;
+    let targets = crate_workspace_diagnostic::collect_workspace_diagnostic_targets(backend).await;
     let target_set = targets
         .iter()
         .cloned()
