@@ -149,6 +149,16 @@
           "items": {
             "$ref": "#/definitions/GlobPattern"
           }
+        },
+        "respect-ignore-files": {
+          "title": "Respect repository ignore files",
+          "description": "Whether to respect `.ignore`, `.gitignore`, and `.git/info/exclude` while discovering files.",
+          "default": true,
+          "allOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -158,6 +168,10 @@
       "description": "Glob pattern used by config include/exclude lists.",
       "type": "string",
       "minLength": 1
+    },
+    "BoolDefaultTrue": {
+      "type": "boolean",
+      "default": true
     },
     "FormatOptions": {
       "title": "Formatter options",
@@ -750,10 +764,6 @@
         }
       },
       "additionalProperties": false
-    },
-    "BoolDefaultTrue": {
-      "type": "boolean",
-      "default": true
     },
     "LspCompletion": {
       "type": "object",

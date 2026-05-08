@@ -76,6 +76,7 @@ impl FileSearch {
                                 FilesOptions {
                                     include: Some(vec![file_path.into()]),
                                     exclude: files_options.exclude.clone(),
+                                    respect_ignore_files: files_options.respect_ignore_files,
                                 },
                             )
                             .await,

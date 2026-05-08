@@ -1,4 +1,4 @@
-use crate::GlobPattern;
+use crate::{BoolDefaultTrue, GlobPattern};
 
 /// # Files options
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -21,6 +21,12 @@ pub struct FilesOptions {
     /// The file match pattern to exclude from formatting and linting.
     /// Supports glob pattern.
     pub exclude: Option<Vec<GlobPattern>>,
+
+    /// # Respect repository ignore files
+    ///
+    /// Whether to respect `.ignore`, `.gitignore`, and `.git/info/exclude` while discovering files.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub respect_ignore_files: BoolDefaultTrue,
 }
 
 fn default_include_patterns() -> Option<Vec<GlobPattern>> {
@@ -32,6 +38,7 @@ impl Default for FilesOptions {
         Self {
             include: default_include_patterns(),
             exclude: None,
+            respect_ignore_files: BoolDefaultTrue::default(),
         }
     }
 }
