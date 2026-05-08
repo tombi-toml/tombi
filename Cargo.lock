@@ -3901,6 +3901,7 @@ dependencies = [
  "log",
  "rayon",
  "serde_tombi",
+ "tempfile",
  "thiserror 2.0.12",
  "tokio",
  "tombi-config",
