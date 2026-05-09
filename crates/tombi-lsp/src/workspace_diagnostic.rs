@@ -1,3 +1,5 @@
+mod cache;
+
 use tombi_glob::search_pattern_matched_paths;
 
 use crate::{
@@ -6,6 +8,7 @@ use crate::{
     document::DocumentSource,
     workspace_config::{WorkspaceConfig, get_workspace_configs},
 };
+pub use cache::WorkspaceDiagnosticsCache;
 
 #[derive(Debug, Default)]
 pub struct WorkspaceDiagnosticOptions {
@@ -27,11 +30,15 @@ pub async fn push_workspace_diagnostics(
 }
 
 pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_uri::Uri> {
+    if let Some(targets) = backend.workspace_diagnostics_cache.read().await.tracked() {
+        return targets;
+    }
+
     let Some(configs) = get_workspace_configs(backend).await else {
         return Vec::new();
     };
 
-    let mut targets = tombi_hashmap::HashSet::new();
+    let mut candidates = tombi_hashmap::HashSet::new();
     let home_dir = dirs::home_dir();
 
     for workspace_config in configs.into_values() {
@@ -64,14 +71,23 @@ pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tomb
             };
 
             if let Ok(uri) = tombi_uri::Uri::from_file_path(path) {
-                upsert_document_source(backend, uri.clone()).await;
-
-                targets.insert(uri);
+                candidates.insert(uri);
             }
         }
     }
 
-    targets.into_iter().collect()
+    let mut targets = Vec::with_capacity(candidates.len());
+    {
+        let mut workspace_diagnostics_cache = backend.workspace_diagnostics_cache.write().await;
+
+        for target in &candidates {
+            if upsert_document_source(backend, target.clone()).await {
+                workspace_diagnostics_cache.track(target.clone());
+                targets.push(target.clone());
+            }
+        }
+    }
+    targets
 }
 
 async fn publish_workspace_diagnostics(

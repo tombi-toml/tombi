@@ -25,6 +25,12 @@ pub async fn handle_did_change_watched_files(
                     document_sources.remove(&uri);
                 }
 
+                backend
+                    .workspace_diagnostics_cache
+                    .write()
+                    .await
+                    .untrack(&uri);
+
                 if backend.is_diagnostic_mode_push().await {
                     backend
                         .client
@@ -36,6 +42,12 @@ pub async fn handle_did_change_watched_files(
             }
             FileChangeType::CREATED | FileChangeType::CHANGED => {
                 if upsert_document_source(backend, uri.clone()).await {
+                    backend
+                        .workspace_diagnostics_cache
+                        .write()
+                        .await
+                        .clear(&uri);
+
                     push_diagnostics(backend, uri).await;
                     should_refresh_pull_diagnostics = true;
                 }
