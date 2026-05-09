@@ -4,25 +4,7 @@ use tombi_text::{IntoLsp, LineIndex};
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 
-pub async fn publish_diagnostics(backend: &Backend, text_document_uri: tombi_uri::Uri) {
-    let Some(diagnostics_result) = get_diagnostics_result(backend, &text_document_uri).await else {
-        return;
-    };
-
-    log::trace!("{:?}", diagnostics_result);
-
-    let DiagnosticsResult {
-        diagnostics,
-        version,
-    } = diagnostics_result;
-
-    backend
-        .client
-        .publish_diagnostics(text_document_uri.into(), diagnostics, version)
-        .await
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DiagnosticsResult {
     pub diagnostics: Vec<tower_lsp::lsp_types::Diagnostic>,
     pub version: Option<i32>,
@@ -32,6 +14,13 @@ pub async fn get_diagnostics_result(
     backend: &Backend,
     text_document_uri: &tombi_uri::Uri,
 ) -> Option<DiagnosticsResult> {
+    {
+        let workspace_diagnostics_cache = backend.workspace_diagnostics_cache.read().await;
+        if let Some(diagnostics_result) = workspace_diagnostics_cache.get(text_document_uri) {
+            return Some(diagnostics_result.clone());
+        }
+    }
+
     let ConfigSchemaStore {
         config,
         schema_store,
@@ -111,8 +100,23 @@ pub async fn get_diagnostics_result(
         }
     };
 
-    Some(DiagnosticsResult {
+    let diagnostics_result = DiagnosticsResult {
         diagnostics,
         version,
-    })
+    };
+
+    {
+        let mut workspace_diagnostics_cache = backend.workspace_diagnostics_cache.write().await;
+        if let Ok(document_sources) = backend.document_sources.try_read() {
+            let current_version = document_sources
+                .get(text_document_uri)
+                .and_then(|document_source| document_source.version);
+            if current_version == diagnostics_result.version {
+                workspace_diagnostics_cache
+                    .set(text_document_uri.clone(), diagnostics_result.clone());
+            }
+        }
+    }
+
+    Some(diagnostics_result)
 }

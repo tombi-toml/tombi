@@ -38,6 +38,7 @@ use crate::{
         handle_update_config, handle_update_schema, handle_workspace_diagnostic, push_diagnostics,
     },
     references::try_get_reference_locations,
+    workspace_diagnostic::WorkspaceDiagnosticsCache,
 };
 
 use tombi_text::EncodingKind;
@@ -51,6 +52,7 @@ pub struct Backend {
     pub document_sources:
         Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<tombi_uri::Uri, DocumentSource>>>,
     pub config_manager: Arc<ConfigManager>,
+    pub workspace_diagnostics_cache: Arc<tokio::sync::RwLock<WorkspaceDiagnosticsCache>>,
 }
 
 #[derive(Debug)]
@@ -96,6 +98,7 @@ impl Backend {
             background_tasks: Default::default(),
             document_sources: Default::default(),
             config_manager: Arc::new(ConfigManager::new(options)),
+            workspace_diagnostics_cache: Default::default(),
         }
     }
 
@@ -125,16 +128,17 @@ impl Backend {
     }
 
     pub async fn refresh_pull_diagnostics(&self) {
-        let capabilities = self.capabilities.read().await;
-        if capabilities.diagnostic_mode != DiagnosticMode::Pull {
-            return;
-        }
+        {
+            let capabilities = self.capabilities.read().await;
+            if capabilities.diagnostic_mode != DiagnosticMode::Pull {
+                return;
+            }
 
-        if !capabilities.workspace_diagnostic_refresh_support {
-            log::debug!("Client does not support workspace/diagnostic/refresh");
-            return;
+            if !capabilities.workspace_diagnostic_refresh_support {
+                log::debug!("Client does not support workspace/diagnostic/refresh");
+                return;
+            }
         }
-        drop(capabilities);
 
         if let Err(error) = self.client.workspace_diagnostic_refresh().await {
             log::debug!("Failed to request diagnostic refresh: {error}");
