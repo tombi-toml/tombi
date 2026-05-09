@@ -154,7 +154,7 @@ pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_
         if let Some(source) = document_sources.get_mut(&text_document_uri) {
             if source.version.is_some() {
                 log::debug!("Skip diagnostics for open document: {text_document_uri}");
-                return false;
+                return true;
             }
 
             source.set_text(content, toml_version);

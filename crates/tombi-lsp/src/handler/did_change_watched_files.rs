@@ -17,7 +17,7 @@ pub async fn handle_did_change_watched_files(
 
     let mut should_refresh_pull_diagnostics = false;
     let home_dir = dirs::home_dir();
-    let workspace_configs = get_workspace_configs(backend).await.unwrap_or_default();
+    let mut workspace_configs: Option<Vec<WorkspaceConfig>> = None;
 
     for change in params.changes {
         let uri: tombi_uri::Uri = change.uri.clone().into();
@@ -48,8 +48,16 @@ pub async fn handle_did_change_watched_files(
             }
             FileChangeType::CREATED => {
                 if upsert_document_source(backend, uri.clone()).await {
-                    let is_workspace_target =
-                        is_workspace_target(&uri, &workspace_configs, home_dir.as_deref());
+                    if workspace_configs.is_none() {
+                        workspace_configs =
+                            Some(get_workspace_configs(backend).await.unwrap_or_default());
+                    }
+
+                    let is_workspace_target = is_workspace_target(
+                        &uri,
+                        workspace_configs.as_deref().unwrap_or(&[]),
+                        home_dir.as_deref(),
+                    );
 
                     backend
                         .workspace_diagnostics_cache
