@@ -46,7 +46,7 @@ pub async fn handle_did_change_watched_files(
                         .workspace_diagnostics_cache
                         .write()
                         .await
-                        .clear(&uri);
+                        .untrack(&uri);
 
                     push_diagnostics(backend, uri).await;
                     should_refresh_pull_diagnostics = true;

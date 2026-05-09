@@ -49,6 +49,18 @@ impl WorkspaceDiagnosticsCache {
         }
     }
 
+    pub fn close(&mut self, text_document_uri: &tombi_uri::Uri) {
+        let Some(diagnostics_cache) = self.0.as_mut() else {
+            return;
+        };
+
+        let Some(Some(diagnostics_result)) = diagnostics_cache.get_mut(text_document_uri) else {
+            return;
+        };
+
+        diagnostics_result.version = None;
+    }
+
     pub fn clear_all(&mut self) {
         let Some(diagnostics_cache) = self.0.as_mut() else {
             return;

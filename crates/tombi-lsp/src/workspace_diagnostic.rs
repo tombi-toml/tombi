@@ -77,16 +77,18 @@ pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tomb
     }
 
     let mut targets = Vec::with_capacity(candidates.len());
-    {
-        let mut workspace_diagnostics_cache = backend.workspace_diagnostics_cache.write().await;
 
-        for target in &candidates {
-            if upsert_document_source(backend, target.clone()).await {
-                workspace_diagnostics_cache.track(target.clone());
-                targets.push(target.clone());
-            }
+    for target in candidates {
+        if upsert_document_source(backend, target.clone()).await {
+            targets.push(target);
         }
     }
+
+    let mut workspace_diagnostics_cache = backend.workspace_diagnostics_cache.write().await;
+    for target in &targets {
+        workspace_diagnostics_cache.track(target.clone());
+    }
+
     targets
 }
 
