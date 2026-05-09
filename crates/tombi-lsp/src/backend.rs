@@ -128,16 +128,17 @@ impl Backend {
     }
 
     pub async fn refresh_pull_diagnostics(&self) {
-        let capabilities = self.capabilities.read().await;
-        if capabilities.diagnostic_mode != DiagnosticMode::Pull {
-            return;
-        }
+        {
+            let capabilities = self.capabilities.read().await;
+            if capabilities.diagnostic_mode != DiagnosticMode::Pull {
+                return;
+            }
 
-        if !capabilities.workspace_diagnostic_refresh_support {
-            log::debug!("Client does not support workspace/diagnostic/refresh");
-            return;
+            if !capabilities.workspace_diagnostic_refresh_support {
+                log::debug!("Client does not support workspace/diagnostic/refresh");
+                return;
+            }
         }
-        drop(capabilities);
 
         if let Err(error) = self.client.workspace_diagnostic_refresh().await {
             log::debug!("Failed to request diagnostic refresh: {error}");

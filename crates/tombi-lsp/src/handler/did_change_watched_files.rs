@@ -1,6 +1,10 @@
 use tower_lsp::lsp_types::{DidChangeWatchedFilesParams, FileChangeType};
 
-use crate::{backend::Backend, workspace_diagnostic::upsert_document_source};
+use crate::{
+    backend::Backend,
+    workspace_config::{WorkspaceConfig, get_workspace_configs},
+    workspace_diagnostic::upsert_document_source,
+};
 
 use super::diagnostic::push_diagnostics;
 
@@ -12,6 +16,8 @@ pub async fn handle_did_change_watched_files(
     log::trace!("{:?}", params);
 
     let mut should_refresh_pull_diagnostics = false;
+    let home_dir = dirs::home_dir();
+    let workspace_configs = get_workspace_configs(backend).await.unwrap_or_default();
 
     for change in params.changes {
         let uri: tombi_uri::Uri = change.uri.clone().into();
@@ -25,12 +31,6 @@ pub async fn handle_did_change_watched_files(
                     document_sources.remove(&uri);
                 }
 
-                backend
-                    .workspace_diagnostics_cache
-                    .write()
-                    .await
-                    .untrack(&uri);
-
                 if backend.is_diagnostic_mode_push().await {
                     backend
                         .client
@@ -39,14 +39,35 @@ pub async fn handle_did_change_watched_files(
                 } else {
                     should_refresh_pull_diagnostics = true;
                 }
+
+                backend
+                    .workspace_diagnostics_cache
+                    .write()
+                    .await
+                    .untrack(&uri);
             }
-            FileChangeType::CREATED | FileChangeType::CHANGED => {
+            FileChangeType::CREATED => {
+                if upsert_document_source(backend, uri.clone()).await {
+                    let is_workspace_target =
+                        is_workspace_target(&uri, &workspace_configs, home_dir.as_deref());
+
+                    backend
+                        .workspace_diagnostics_cache
+                        .write()
+                        .await
+                        .track(uri.clone(), is_workspace_target);
+
+                    push_diagnostics(backend, uri).await;
+                    should_refresh_pull_diagnostics = true;
+                }
+            }
+            FileChangeType::CHANGED => {
                 if upsert_document_source(backend, uri.clone()).await {
                     backend
                         .workspace_diagnostics_cache
                         .write()
                         .await
-                        .untrack(&uri);
+                        .clear(&uri);
 
                     push_diagnostics(backend, uri).await;
                     should_refresh_pull_diagnostics = true;
@@ -61,4 +82,18 @@ pub async fn handle_did_change_watched_files(
     if should_refresh_pull_diagnostics {
         backend.refresh_pull_diagnostics().await;
     }
+}
+
+fn is_workspace_target(
+    text_document_uri: &tombi_uri::Uri,
+    workspace_configs: &[WorkspaceConfig],
+    home_dir: Option<&std::path::Path>,
+) -> bool {
+    let Ok(text_document_path) = tombi_uri::Uri::to_file_path(text_document_uri) else {
+        return false;
+    };
+
+    workspace_configs
+        .iter()
+        .any(|workspace_config| workspace_config.is_workspace_target(&text_document_path, home_dir))
 }

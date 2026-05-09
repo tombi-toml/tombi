@@ -107,7 +107,15 @@ pub async fn get_diagnostics_result(
 
     {
         let mut workspace_diagnostics_cache = backend.workspace_diagnostics_cache.write().await;
-        workspace_diagnostics_cache.set(text_document_uri.clone(), diagnostics_result.clone());
+        if let Ok(document_sources) = backend.document_sources.try_read() {
+            let current_version = document_sources
+                .get(text_document_uri)
+                .and_then(|document_source| document_source.version);
+            if current_version == diagnostics_result.version {
+                workspace_diagnostics_cache
+                    .set(text_document_uri.clone(), diagnostics_result.clone());
+            }
+        }
     }
 
     Some(diagnostics_result)

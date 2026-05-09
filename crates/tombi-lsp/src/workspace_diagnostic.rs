@@ -6,7 +6,7 @@ use crate::{
     Backend,
     diagnostic::{DiagnosticsResult, get_diagnostics_result},
     document::DocumentSource,
-    workspace_config::{WorkspaceConfig, get_workspace_configs},
+    workspace_config::get_workspace_configs,
 };
 pub use cache::WorkspaceDiagnosticsCache;
 
@@ -30,7 +30,12 @@ pub async fn push_workspace_diagnostics(
 }
 
 pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_uri::Uri> {
-    if let Some(targets) = backend.workspace_diagnostics_cache.read().await.tracked() {
+    if let Some(targets) = backend
+        .workspace_diagnostics_cache
+        .read()
+        .await
+        .workspace_targets()
+    {
         return targets;
     }
 
@@ -41,8 +46,8 @@ pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tomb
     let mut candidates = tombi_hashmap::HashSet::new();
     let home_dir = dirs::home_dir();
 
-    for workspace_config in configs.into_values() {
-        if !is_workspace_diagnostic_enabled(&workspace_config) {
+    for workspace_config in configs {
+        if !workspace_config.is_workspace_diagnostic_enabled() {
             log::debug!(
                 "`lsp.workspace-diagnostic.enabled` is false in {}",
                 workspace_config.workspace_folder_path.display()
@@ -84,10 +89,11 @@ pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tomb
         }
     }
 
-    let mut workspace_diagnostics_cache = backend.workspace_diagnostics_cache.write().await;
-    for target in &targets {
-        workspace_diagnostics_cache.track(target.clone());
-    }
+    backend
+        .workspace_diagnostics_cache
+        .write()
+        .await
+        .set_workspace_targets(targets.clone().into_iter().collect());
 
     targets
 }
@@ -119,19 +125,6 @@ async fn publish_workspace_diagnostics(
         .client
         .publish_diagnostics(text_document_uri.into(), diagnostics, version)
         .await
-}
-
-/// Check if workspace diagnostic is enabled for the given workspace config
-#[inline]
-fn is_workspace_diagnostic_enabled(workspace_config: &WorkspaceConfig) -> bool {
-    workspace_config
-        .config
-        .lsp
-        .as_ref()
-        .and_then(|lsp| lsp.workspace_diagnostic.as_ref())
-        .and_then(|workspace_diagnostic| workspace_diagnostic.enabled)
-        .unwrap_or_default()
-        .value()
 }
 
 pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_uri::Uri) -> bool {
