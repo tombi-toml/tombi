@@ -17,4 +17,10 @@ pub async fn handle_did_close(backend: &Backend, params: DidCloseTextDocumentPar
             document.version = None;
         }
     }
+
+    backend
+        .workspace_diagnostics_cache
+        .write()
+        .await
+        .close(&text_document_uri);
 }

@@ -31,6 +31,12 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
         };
     };
 
+    backend
+        .workspace_diagnostics_cache
+        .write()
+        .await
+        .clear(&text_document_uri);
+
     // Publish diagnostics for the saved document
     if need_publish_diagnostics {
         backend.push_diagnostics(text_document_uri).await

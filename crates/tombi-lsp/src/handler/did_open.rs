@@ -27,6 +27,12 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         document_sources.insert(text_document_uri.clone(), document_source);
     }
 
+    backend
+        .workspace_diagnostics_cache
+        .write()
+        .await
+        .clear(&text_document_uri);
+
     let config_schema_store = backend
         .config_manager
         .config_schema_store_for_uri(&text_document_uri)

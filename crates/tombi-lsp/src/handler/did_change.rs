@@ -44,6 +44,12 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
         need_publish_diagnostics
     };
 
+    backend
+        .workspace_diagnostics_cache
+        .write()
+        .await
+        .clear(&text_document_uri);
+
     if need_publish_diagnostics {
         // Publish diagnostics for the changed document
         backend.push_diagnostics(text_document_uri).await;
