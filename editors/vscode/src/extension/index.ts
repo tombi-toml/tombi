@@ -180,7 +180,7 @@ export class Extension {
         }
 
         let text = `TOML: ${tomlVersion} (${source})`;
-        let tooltip = `Tombi: ${this.lspVersion}\nTOML: ${tomlVersion} (${source})\nConfig: ${configPath ?? "default"}`;
+        let tooltip = `Tombi: ${this.lspVersion} (${this.server.tombiBin.source})\nTOML: ${tomlVersion} (${source})\nConfig: ${configPath ?? "default"}`;
         let color: string | vscode.ThemeColor | undefined;
 
         if (schema) {
@@ -201,7 +201,7 @@ export class Extension {
         this.statusBarItem.show();
       } catch (error) {
         this.statusBarItem.text = "TOML: <unknown>";
-        this.statusBarItem.tooltip = `Tombi: ${this.lspVersion}\nTOML: <unknown>\nError: ${error}`;
+        this.statusBarItem.tooltip = `Tombi: ${this.lspVersion} (${this.server.tombiBin.source})\nTOML: <unknown>\nError: ${error}`;
         this.statusBarItem.color = new vscode.ThemeColor(
           "statusBarItem.errorForeground",
         );
