@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import type * as node from "vscode-languageclient/node";
-import { getBuildInSchema } from "@/lsp/client";
+import { getBuiltInSchema } from "@/lsp/client";
 
 export async function openTooltipLink(
   target: string,
@@ -21,10 +21,10 @@ export async function openTooltipLink(
   }
 
   if (uri.scheme === "tombi") {
-    const content = await client.sendRequest(getBuildInSchema, {
+    const content = await client.sendRequest(getBuiltInSchema, {
       uri: target,
     });
-    if (!content) {
+    if (content == null) {
       vscode.window.showWarningMessage(`Schema not found: ${target}`);
       return;
     }

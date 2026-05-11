@@ -1375,6 +1375,33 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn schema_include_matches_absolute_posix_path() {
+        let absolute_path = Path::new("/Users/test/project/selected-schema.toml");
+        let include = [absolute_path.to_string_lossy().into_owned()];
+
+        assert!(matches_schema_patterns(
+            &include,
+            None,
+            absolute_path,
+            absolute_path,
+        ));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn schema_include_matches_absolute_windows_path() {
+        let absolute_path = Path::new(r"C:\Users\test\project\selected-schema.toml");
+        let include = [absolute_path.to_string_lossy().into_owned()];
+
+        assert!(matches_schema_patterns(
+            &include,
+            None,
+            absolute_path,
+            absolute_path,
+        ));
+    }
+
     #[tokio::test]
     async fn fragment_pointer_resolves_boolean_schema() {
         let schema_path = std::env::temp_dir().join(format!(

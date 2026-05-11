@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("vscode", () => ({}));
 vi.mock("vscode-languageclient/node", () => ({}));
 vi.mock("@/lsp/client", () => ({
-  getBuildInSchema: {},
+  getBuiltInSchema: {},
 }));
 
 import { isLocalFilePath } from "@/command/open-tooltip-link";

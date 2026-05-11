@@ -1,5 +1,5 @@
-mod get_build_in_schema {
-    use tombi_lsp::{Backend, handler::GetBuildInSchemaParams};
+mod get_built_in_schema {
+    use tombi_lsp::{Backend, handler::GetBuiltInSchemaParams};
     use tower_lsp::LspService;
 
     #[tokio::test]
@@ -11,7 +11,7 @@ mod get_build_in_schema {
         let backend = service.inner();
 
         let response = backend
-            .get_build_in_schema(GetBuildInSchemaParams {
+            .get_built_in_schema(GetBuiltInSchemaParams {
                 uri: "tombi://www.schemastore.org/tombi.json".to_string(),
             })
             .await?;
@@ -30,7 +30,7 @@ mod get_build_in_schema {
         let backend = service.inner();
 
         let response = backend
-            .get_build_in_schema(GetBuildInSchemaParams {
+            .get_built_in_schema(GetBuiltInSchemaParams {
                 uri: "tombi://www.schemastore.org/unknown.json".to_string(),
             })
             .await?;

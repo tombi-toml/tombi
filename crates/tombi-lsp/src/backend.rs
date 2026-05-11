@@ -26,13 +26,13 @@ use crate::{
     goto_definition::try_get_goto_definition_response,
     goto_type_definition::try_get_type_definition_response,
     handler::{
-        AssociateSchemaParams, GetBuildInSchemaParams, GetStatusResponse, GetTomlVersionResponse,
+        AssociateSchemaParams, GetBuiltInSchemaParams, GetStatusResponse, GetTomlVersionResponse,
         ListSchemasParams, ListSchemasResponse, RefreshCacheParams, TomlVersionSource,
         handle_associate_schema, handle_code_action, handle_completion, handle_diagnostic,
         handle_did_change, handle_did_change_configuration, handle_did_change_watched_files,
         handle_did_close, handle_did_open, handle_did_save, handle_document_link,
         handle_document_symbol, handle_folding_range, handle_formatting,
-        handle_get_build_in_schema, handle_get_status, handle_get_toml_version,
+        handle_get_built_in_schema, handle_get_status, handle_get_toml_version,
         handle_goto_declaration, handle_goto_definition, handle_goto_type_definition, handle_hover,
         handle_initialize, handle_initialized, handle_inlay_hint, handle_list_schemas,
         handle_references, handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown,
@@ -243,11 +243,11 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn get_build_in_schema(
+    pub async fn get_built_in_schema(
         &self,
-        params: GetBuildInSchemaParams,
+        params: GetBuiltInSchemaParams,
     ) -> Result<Option<String>, tower_lsp::jsonrpc::Error> {
-        handle_get_build_in_schema(self, params).await
+        handle_get_built_in_schema(self, params).await
     }
 
     #[inline]

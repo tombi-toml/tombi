@@ -5,11 +5,11 @@ use tombi_uri::SchemaUri;
 
 use crate::Backend;
 
-pub async fn handle_get_build_in_schema(
+pub async fn handle_get_built_in_schema(
     _backend: &Backend,
-    params: GetBuildInSchemaParams,
+    params: GetBuiltInSchemaParams,
 ) -> Result<Option<String>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_get_build_in_schema");
+    log::debug!("handle_get_built_in_schema");
     log::trace!("{:?}", params);
 
     let Ok(schema_uri) = SchemaUri::from_str(&params.uri) else {
@@ -21,6 +21,6 @@ pub async fn handle_get_build_in_schema(
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GetBuildInSchemaParams {
+pub struct GetBuiltInSchemaParams {
     pub uri: String,
 }

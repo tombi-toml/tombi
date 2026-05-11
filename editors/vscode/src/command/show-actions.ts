@@ -1,31 +1,30 @@
 import * as vscode from "vscode";
-import { EXTENSION_ID } from "@/extension";
 
 type ActionItem = vscode.QuickPickItem & {
   command: string;
 };
 
-export async function showActions(): Promise<void> {
+export async function showActions(commandPrefix: string): Promise<void> {
   const items: ActionItem[] = [
     {
       label: "Select Schema",
-      command: "selectSchema",
+      command: `${commandPrefix}.selectSchema`,
     },
     {
       label: "Refresh Cache",
-      command: "refreshCache",
+      command: `${commandPrefix}.refreshCache`,
     },
     {
       label: "Restart Language Server",
-      command: "restartLanguageServer",
+      command: `${commandPrefix}.restartLanguageServer`,
     },
     {
       label: "Show Language Server Version",
-      command: "showLanguageServerVersion",
+      command: `${commandPrefix}.showLanguageServerVersion`,
     },
     {
       label: "Open Server Logs",
-      command: "openServerLogs",
+      command: `${commandPrefix}.openServerLogs`,
     },
   ];
 
@@ -37,5 +36,5 @@ export async function showActions(): Promise<void> {
     return;
   }
 
-  await vscode.commands.executeCommand(`${EXTENSION_ID}.${selected.command}`);
+  await vscode.commands.executeCommand(selected.command);
 }

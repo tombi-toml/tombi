@@ -6,7 +6,6 @@ import * as command from "@/command";
 import { isLocalFilePath } from "@/command/open-tooltip-link";
 import { log } from "@/logging";
 import {
-  getBuildInSchema,
   getStatus,
   getTomlVersion,
   type IgnoreReason,
@@ -107,7 +106,7 @@ export class Extension {
   private registerCommands(): void {
     this.context.subscriptions.push(
       vscode.commands.registerCommand(`${EXTENSION_ID}.showActions`, async () =>
-        command.showActions(),
+        command.showActions(EXTENSION_ID),
       ),
     );
     this.context.subscriptions.push(
@@ -342,10 +341,7 @@ export class Extension {
         return undefined;
       }
 
-      const content = await this.client.sendRequest(getBuildInSchema, {
-        uri: value,
-      });
-      return content ? value : undefined;
+      return value;
     }
 
     if (isLocalFilePath(value)) {
