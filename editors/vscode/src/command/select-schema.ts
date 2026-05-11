@@ -83,14 +83,14 @@ export async function selectSchema(
       return;
     }
 
-    const filePattern = documentUri.path;
+    const filePattern = documentUri.fsPath;
 
     // Send associateSchema notification to LSP
     await client.sendNotification("tombi/associateSchema", {
       title: selected.schema.title,
       description: selected.schema.description,
       uri: selected.schema.uri,
-      fileMatch: [documentUri.path],
+      fileMatch: [filePattern],
       tomlVersion: selected.schema.tomlVersion,
       force: true, // Force user-selected schema to take precedence over catalog schemas
     });

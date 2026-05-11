@@ -75,3 +75,12 @@ export const getStatus = new RequestType<
   },
   void
 >("tombi/getStatus");
+
+export type GetBuildInSchemaParams = {
+  uri: string;
+};
+export const getBuildInSchema = new RequestType<
+  GetBuildInSchemaParams,
+  string | null,
+  void
+>("tombi/getBuildInSchema");
