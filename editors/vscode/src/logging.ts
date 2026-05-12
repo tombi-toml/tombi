@@ -1,5 +1,5 @@
-import * as vscode from "vscode";
 import { inspect } from "node:util";
+import * as vscode from "vscode";
 
 class Log {
   readonly output = vscode.window.createOutputChannel("Tombi", {

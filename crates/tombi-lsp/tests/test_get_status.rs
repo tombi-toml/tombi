@@ -58,6 +58,76 @@ mod get_status {
             });
         );
     }
+
+    mod associate_schema_updates_status {
+        use std::str::FromStr;
+
+        use tombi_schema_store::{AssociateSchemaOptions, SchemaUri};
+        use tower_lsp::{
+            LspService,
+            lsp_types::{DidOpenTextDocumentParams, TextDocumentIdentifier, TextDocumentItem, Url},
+        };
+
+        #[tokio::test]
+        async fn returns_associated_schema_after_selection()
+        -> Result<(), Box<dyn std::error::Error>> {
+            use tombi_lsp::{
+                Backend,
+                handler::{handle_did_open, handle_get_status},
+            };
+
+            tombi_test_lib::init_log();
+
+            let temp_dir = tempfile::tempdir()?;
+            let source_path = temp_dir.path().join("selected-schema.toml");
+            std::fs::write(&source_path, "answer = 42\n")?;
+
+            let (service, _) = LspService::new(|client| Backend::new(client, &Default::default()));
+            let backend = service.inner();
+
+            let uri = Url::from_file_path(&source_path)
+                .map_err(|_| format!("Failed to convert path to URL: {}", source_path.display()))?;
+
+            handle_did_open(
+                backend,
+                DidOpenTextDocumentParams {
+                    text_document: TextDocumentItem {
+                        uri: uri.clone(),
+                        language_id: "toml".to_string(),
+                        version: 0,
+                        text: "answer = 42\n".to_string(),
+                    },
+                },
+            )
+            .await;
+
+            let schema_uri = SchemaUri::from_str("tombi://www.schemastore.org/tombi.json")?;
+
+            backend
+                .config_manager
+                .associate_schema(
+                    &schema_uri,
+                    &[source_path.to_string_lossy().into_owned()],
+                    &AssociateSchemaOptions {
+                        title: Some("Tombi".to_string()),
+                        description: None,
+                        toml_version: None,
+                        force: true,
+                    },
+                )
+                .await;
+
+            let status =
+                handle_get_status(backend, TextDocumentIdentifier { uri: uri.clone() }).await?;
+
+            assert_eq!(
+                status.schema.as_ref().map(|schema| schema.uri.clone()),
+                Some(schema_uri)
+            );
+
+            Ok(())
+        }
+    }
 }
 
 #[macro_export]

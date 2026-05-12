@@ -208,6 +208,16 @@
         "command": "tombi.selectSchema",
         "title": "Select Schema",
         "category": "Tombi"
+      },
+      {
+        "command": "tombi.showActions",
+        "title": "Show Actions",
+        "category": "Tombi"
+      },
+      {
+        "command": "tombi.openServerLogs",
+        "title": "Open Server Logs",
+        "category": "Tombi"
       }
     ],
     "configuration": {

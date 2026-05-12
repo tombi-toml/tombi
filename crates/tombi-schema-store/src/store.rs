@@ -1036,6 +1036,11 @@ impl SchemaStore {
         include: Vec<String>,
         options: &AssociateSchemaOptions,
     ) {
+        let include = include
+            .into_iter()
+            .map(|pattern| canonicalize_file_match_pattern(&pattern))
+            .collect();
+
         let new_schema = crate::Schema {
             title: options.title.clone(),
             description: options.description.clone(),
@@ -1093,11 +1098,7 @@ fn matches_schema_patterns(
     absolute_source_path: &std::path::Path,
 ) -> bool {
     let included = include.iter().any(|pat| {
-        let pattern = if !pat.contains('*') {
-            format!("**/{pat}")
-        } else {
-            pat.to_string()
-        };
+        let pattern = glob_pattern_for_file_match(pat);
 
         glob::Pattern::new(&pattern)
             .ok()
@@ -1112,11 +1113,7 @@ fn matches_schema_patterns(
     included
         && !exclude.is_some_and(|exclude| {
             exclude.iter().any(|pat| {
-                let pattern = if !pat.contains('*') {
-                    format!("**/{pat}")
-                } else {
-                    pat.to_string()
-                };
+                let pattern = glob_pattern_for_file_match(pat);
 
                 glob::Pattern::new(&pattern)
                     .ok()
@@ -1128,6 +1125,25 @@ fn matches_schema_patterns(
                     .unwrap_or_default()
             })
         })
+}
+
+fn glob_pattern_for_file_match(pattern: &str) -> String {
+    if pattern.contains('*') || std::path::Path::new(pattern).is_absolute() {
+        pattern.to_string()
+    } else {
+        format!("**/{pattern}")
+    }
+}
+
+fn canonicalize_file_match_pattern(pattern: &str) -> String {
+    let path = std::path::Path::new(pattern);
+    if pattern.contains('*') || !path.is_absolute() {
+        pattern.to_string()
+    } else {
+        canonicalize_path_for_matching(path)
+            .to_string_lossy()
+            .into_owned()
+    }
 }
 
 async fn load_catalog_from_cache_ignoring_ttl(
@@ -1356,6 +1372,33 @@ mod tests {
             Some(&[String::from("vendor/**/*.toml")]),
             Path::new("vendor/blocked.toml"),
             Path::new("/Users/test/project/vendor/blocked.toml"),
+        ));
+    }
+
+    #[test]
+    fn schema_include_matches_absolute_posix_path() {
+        let absolute_path = Path::new("/Users/test/project/selected-schema.toml");
+        let include = [absolute_path.to_string_lossy().into_owned()];
+
+        assert!(matches_schema_patterns(
+            &include,
+            None,
+            absolute_path,
+            absolute_path,
+        ));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn schema_include_matches_absolute_windows_path() {
+        let absolute_path = Path::new(r"C:\Users\test\project\selected-schema.toml");
+        let include = [absolute_path.to_string_lossy().into_owned()];
+
+        assert!(matches_schema_patterns(
+            &include,
+            None,
+            absolute_path,
+            absolute_path,
         ));
     }
 
