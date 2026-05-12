@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import * as node from "vscode-languageclient/node";
 import { bootstrap } from "@/bootstrap";
 import * as command from "@/command";
+import { isLocalFilePath } from "@/command/open-tooltip-link";
 import { log } from "@/logging";
 import {
   getStatus,
@@ -30,6 +31,8 @@ export const SUPPORT_TOMBI_CONFIG_FILENAMES = [
 ];
 export const SUPPORT_JSON_LANGUAGES = ["json"];
 export const TOMBI_DEV_VERSION = "0.0.0-dev";
+const OPEN_TOOLTIP_LINK_COMMAND = `${EXTENSION_ID}.openTooltipLink`;
+const MIN_VERSION_FOR_TOMBI_TOOLTIP_LINK = "0.11.2";
 
 export class Extension {
   private statusBarItem: vscode.StatusBarItem;
@@ -102,6 +105,23 @@ export class Extension {
 
   private registerCommands(): void {
     this.context.subscriptions.push(
+      vscode.commands.registerCommand(`${EXTENSION_ID}.showActions`, async () =>
+        command.showActions(EXTENSION_ID),
+      ),
+    );
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand(
+        OPEN_TOOLTIP_LINK_COMMAND,
+        async (target: string) => command.openTooltipLink(target, this.client),
+      ),
+    );
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand(
+        `${EXTENSION_ID}.openServerLogs`,
+        async () => this.client.outputChannel.show(true),
+      ),
+    );
+    this.context.subscriptions.push(
       vscode.commands.registerCommand(
         `${EXTENSION_ID}.showLanguageServerVersion`,
         async () => command.showLanguageServerVersion(this.server),
@@ -122,7 +142,10 @@ export class Extension {
     this.context.subscriptions.push(
       vscode.commands.registerCommand(
         `${EXTENSION_ID}.selectSchema`,
-        async () => command.selectSchema(this.client, this.lspVersion),
+        async () => {
+          await command.selectSchema(this.client, this.lspVersion);
+          await this.updateStatusBarItem();
+        },
       ),
     );
   }
@@ -180,28 +203,29 @@ export class Extension {
         }
 
         let text = `TOML: ${tomlVersion} (${source})`;
-        let tooltip = `Tombi: ${this.lspVersion}\nTOML: ${tomlVersion} (${source})\nConfig: ${configPath ?? "default"}`;
+        const tooltip = await this.createStatusBarTooltip(
+          tomlVersion,
+          source,
+          configPath,
+          schema,
+          ignore,
+        );
         let color: string | vscode.ThemeColor | undefined;
-
-        if (schema) {
-          tooltip += `\nSchema: ${schema.uri}`;
-        }
 
         if (ignore) {
           text = `$(extensions-warning-message) ${text}`;
-          tooltip += `\nIgnore: ${ignore.replaceAll("-", " ")}`;
           color = "#D0D0D0";
         }
 
         this.statusBarItem.text = text;
         this.statusBarItem.color = color;
         this.statusBarItem.backgroundColor = undefined;
-        this.statusBarItem.command = `${EXTENSION_ID}.showLanguageServerVersion`;
+        this.statusBarItem.command = `${EXTENSION_ID}.showActions`;
         this.statusBarItem.tooltip = tooltip;
         this.statusBarItem.show();
       } catch (error) {
         this.statusBarItem.text = "TOML: <unknown>";
-        this.statusBarItem.tooltip = `Tombi: ${this.lspVersion}\nTOML: <unknown>\nError: ${error}`;
+        this.statusBarItem.tooltip = `Tombi: ${this.lspVersion} (${this.server.tombiBin.source})\nTOML: <unknown>\nError: ${error}`;
         this.statusBarItem.color = new vscode.ThemeColor(
           "statusBarItem.errorForeground",
         );
@@ -254,4 +278,80 @@ export class Extension {
       });
     }
   }
+
+  private async createStatusBarTooltip(
+    tomlVersion: string,
+    source: string,
+    configPath: string | undefined,
+    schema: SchemaStatus | undefined,
+    ignore: IgnoreReason | undefined,
+  ): Promise<vscode.MarkdownString> {
+    const tooltip = new vscode.MarkdownString("", true);
+    tooltip.isTrusted = {
+      enabledCommands: [OPEN_TOOLTIP_LINK_COMMAND],
+    };
+    tooltip.supportThemeIcons = true;
+
+    tooltip.appendMarkdown(
+      `Tombi: ${this.lspVersion} (${this.server.tombiBin.source})\n\n`,
+    );
+    tooltip.appendMarkdown(`TOML: ${tomlVersion} (${source})\n\n`);
+    tooltip.appendMarkdown(
+      `Config: ${await this.toTooltipLink(configPath ?? "default")}\n\n`,
+    );
+
+    if (schema) {
+      tooltip.appendMarkdown(
+        `Schema: ${await this.toTooltipLink(schema.uri)}\n\n`,
+      );
+    }
+
+    if (ignore) {
+      tooltip.appendMarkdown(`Ignore: ${ignore.replaceAll("-", " ")}\n`);
+    }
+
+    return tooltip;
+  }
+
+  private async toTooltipLink(value: string): Promise<string> {
+    const target = await this.toTooltipTarget(value);
+    if (!target) {
+      return escapeMarkdownText(value);
+    }
+
+    const args = encodeURIComponent(JSON.stringify([target]));
+    const href = `command:${OPEN_TOOLTIP_LINK_COMMAND}?${args}`;
+    return `[${escapeMarkdownText(value)}](${href})`;
+  }
+
+  private async toTooltipTarget(value: string): Promise<string | undefined> {
+    if (
+      value.startsWith("file://") ||
+      value.startsWith("https://") ||
+      value.startsWith("http://")
+    ) {
+      return value;
+    }
+
+    if (value.startsWith("tombi://")) {
+      if (
+        this.lspVersion !== TOMBI_DEV_VERSION &&
+        !gte(this.lspVersion ?? "0.0.0", MIN_VERSION_FOR_TOMBI_TOOLTIP_LINK)
+      ) {
+        return undefined;
+      }
+
+      return value;
+    }
+
+    if (isLocalFilePath(value)) {
+      return vscode.Uri.file(value).toString();
+    }
+
+    return undefined;
+  }
 }
+
+const escapeMarkdownText = (value: string): string => {
+  return value.replaceAll("\\", "\\\\").replace(/([[\]()])/g, "\\$1");
+};
