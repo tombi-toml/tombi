@@ -281,7 +281,7 @@ impl NodeData {
                         }
 
                         ManuallyDrop::into_inner(parent);
-                        let res = node as *mut NodeData;
+                        let res = node.cast_mut();
                         (*res).inc_rc();
                         return ptr::NonNull::new_unchecked(res);
                     }
