@@ -19,10 +19,6 @@ export async function showActions(commandPrefix: string): Promise<void> {
       command: `${commandPrefix}.restartLanguageServer`,
     },
     {
-      label: "Show Language Server Version",
-      command: `${commandPrefix}.showLanguageServerVersion`,
-    },
-    {
       label: "Open Language Server Logs",
       command: `${commandPrefix}.openServerLogs`,
     },
