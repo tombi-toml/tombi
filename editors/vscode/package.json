@@ -208,11 +208,6 @@
         "command": "tombi.selectSchema",
         "title": "Select Schema",
         "category": "Tombi"
-      },
-      {
-        "command": "tombi.showActions",
-        "title": "Show Actions",
-        "category": "Tombi"
       }
     ],
     "configuration": {
