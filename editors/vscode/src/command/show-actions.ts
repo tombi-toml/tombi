@@ -23,7 +23,7 @@ export async function showActions(commandPrefix: string): Promise<void> {
       command: `${commandPrefix}.showLanguageServerVersion`,
     },
     {
-      label: "Open Server Logs",
+      label: "Open Language Server Logs",
       command: `${commandPrefix}.openServerLogs`,
     },
   ];
