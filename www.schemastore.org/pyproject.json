@@ -1,6 +1,6 @@
 {
-  "$id": "tombi://www.schemastore.org/pyproject.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "tombi://www.schemastore.org/pyproject.json",
   "$comment": "there are multiple resources describing `pyproject.toml`. The canonical reference is at https://packaging.python.org/en/latest/specifications/declaring-project-metadata/, which refers to multiple proposals such as PEP 517, PEP 518 and PEP 621",
   "x-tombi-toml-version": "v1.0.0",
   "x-tombi-table-keys-order": "schema",
@@ -974,6 +974,11 @@
           "title": "Web Framework",
           "description": "FastAPI web framework configuration."
         },
+        "scheduled": {
+          "$ref": "https://www.schemastore.org/partial-scheduled.json",
+          "title": "Scheduled Jobs",
+          "description": "Scheduled jobs in Python's `pyproject.toml`.\n\nThis is a specification for declaring recurring scheduled jobs in Python projects, in `pyproject.toml`.\n\nIt defines how jobs are declared and how providers would run them.\n\nIt does not provide a specific implementation for running scheduled jobs, because that is provider specific.\n\nFor example, a file at `app/jobs.py` could define:\n\n```python\ndef clean_files():\n    print(\"Running cleanup...\")\n```\n\nYou could define a scheduled job to run that function once per day with:\n\n```toml\n[tool.scheduled.clean-files]\nevery = \"day\"\nentrypoint = \"app.jobs:clean_files\"\n```"
+        },
         "mypy": {
           "$ref": "https://www.schemastore.org/partial-mypy.json",
           "title": "Static Type Checker",
@@ -1013,6 +1018,11 @@
           "$ref": "https://www.schemastore.org/partial-setuptools-scm.json",
           "title": "Version Manager",
           "description": "Manage Python package versions using SCM (e.g. Git)."
+        },
+        "pixi": {
+          "$ref": "https://www.schemastore.org/partial-pixi.json",
+          "title": "Package Manager and Task Runner",
+          "description": "A package manager and task runner."
         },
         "poe": {
           "$ref": "https://www.schemastore.org/partial-poe.json",
@@ -1063,6 +1073,16 @@
           "$ref": "https://www.schemastore.org/uv.json",
           "title": "Package Manager",
           "description": "An extremely fast Python package installer and resolver, written in Rust."
+        },
+        "dfc": {
+          "$ref": "https://www.schemastore.org/partial-dfc.json",
+          "title": "docstring-format-checker",
+          "description": "A CLI tool to check and validate Python docstring formatting and completeness"
+        },
+        "docstring-format-checker": {
+          "$ref": "https://www.schemastore.org/partial-dfc.json",
+          "title": "docstring-format-checker",
+          "description": "A CLI tool to check and validate Python docstring formatting and completeness"
         }
       },
       "examples": [
