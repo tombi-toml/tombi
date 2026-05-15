@@ -161,7 +161,7 @@ fn use_editor_formatting_options(
         let override_options = OverrideFormatOptions {
             rules: Some(FormatRules {
                 indent_width: Some(IndentWidth::from(
-                    editor_formatting_options.tab_size.clamp(1, u8::MAX as u32) as u8,
+                    editor_formatting_options.tab_size.clamp(0, u8::MAX as u32) as u8,
                 )),
                 indent_style: if editor_formatting_options.insert_spaces {
                     Some(IndentStyle::Space)
@@ -308,7 +308,7 @@ mod tests {
     }
 
     #[test]
-    fn use_editor_formatting_options_clamps_zero_tab_size_to_one() {
+    fn use_editor_formatting_options_keeps_zero_tab_size() {
         let mut config = Config::default();
         let editor_formatting_options = FormattingOptions {
             tab_size: 0,
@@ -323,7 +323,7 @@ mod tests {
             .as_ref()
             .and_then(|format| format.rules.as_ref())
             .expect("format rules should be set");
-        pretty_assertions::assert_eq!(rules.indent_width, Some(IndentWidth::from(1)));
+        pretty_assertions::assert_eq!(rules.indent_width, Some(IndentWidth::from(0)));
         pretty_assertions::assert_eq!(rules.indent_style, Some(IndentStyle::Space));
     }
 
