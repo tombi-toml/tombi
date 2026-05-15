@@ -21,13 +21,13 @@ pub async fn handle_formatting(
 
     let DocumentFormattingParams {
         text_document,
-        options: _editor_formatting_options,
+        options: editor_formatting_options,
         ..
     } = params;
     let text_document_uri = text_document.uri.into();
 
     let ConfigSchemaStore {
-        config,
+        mut config,
         schema_store,
         config_path,
     } = backend
@@ -47,15 +47,11 @@ pub async fn handle_formatting(
         return Ok(None);
     }
 
-    // NOTE: It is not desirable to use `editor_formatting_options`
-    //       because it causes inconsistent behavior
-    //       between the Editor side and the CLI side.
-    //
-    // use_editor_formatting_options(
-    //     &mut config,
-    //     config_path.as_deref(),
-    //     &editor_formatting_options,
-    // );
+    use_editor_formatting_options(
+        &mut config,
+        config_path.as_deref(),
+        &editor_formatting_options,
+    );
 
     if let Ok(text_document_path) = text_document_uri.to_file_path() {
         match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
