@@ -161,7 +161,7 @@ fn use_editor_formatting_options(
         let override_options = OverrideFormatOptions {
             rules: Some(FormatRules {
                 indent_width: Some(IndentWidth::from(
-                    editor_formatting_options.tab_size.clamp(0, u8::MAX as u32) as u8,
+                    editor_formatting_options.tab_size.clamp(1, u8::MAX as u32) as u8,
                 )),
                 indent_style: if editor_formatting_options.insert_spaces {
                     Some(IndentStyle::Space)
@@ -265,7 +265,67 @@ fn position_at_offset(line_index: &tombi_text::LineIndex, offset: usize) -> Posi
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tombi_config::Config;
     use tombi_text::{EncodingKind, LineIndex, Range};
+    use tower_lsp::lsp_types::FormattingOptions;
+
+    #[test]
+    fn use_editor_formatting_options_uses_lsp_values_when_config_is_absent() {
+        let mut config = Config::default();
+        let editor_formatting_options = FormattingOptions {
+            tab_size: 4,
+            insert_spaces: false,
+            ..Default::default()
+        };
+
+        use_editor_formatting_options(&mut config, None, &editor_formatting_options);
+
+        let rules = config
+            .format
+            .as_ref()
+            .and_then(|format| format.rules.as_ref())
+            .expect("format rules should be set");
+        pretty_assertions::assert_eq!(rules.indent_width, Some(IndentWidth::from(4)));
+        pretty_assertions::assert_eq!(rules.indent_style, Some(IndentStyle::Tab));
+    }
+
+    #[test]
+    fn use_editor_formatting_options_ignores_lsp_values_when_config_exists() {
+        let mut config = Config::default();
+        let editor_formatting_options = FormattingOptions {
+            tab_size: 4,
+            insert_spaces: false,
+            ..Default::default()
+        };
+
+        use_editor_formatting_options(
+            &mut config,
+            Some(std::path::Path::new("/tmp/tombi.toml")),
+            &editor_formatting_options,
+        );
+
+        pretty_assertions::assert_eq!(config.format, None);
+    }
+
+    #[test]
+    fn use_editor_formatting_options_clamps_zero_tab_size_to_one() {
+        let mut config = Config::default();
+        let editor_formatting_options = FormattingOptions {
+            tab_size: 0,
+            insert_spaces: true,
+            ..Default::default()
+        };
+
+        use_editor_formatting_options(&mut config, None, &editor_formatting_options);
+
+        let rules = config
+            .format
+            .as_ref()
+            .and_then(|format| format.rules.as_ref())
+            .expect("format rules should be set");
+        pretty_assertions::assert_eq!(rules.indent_width, Some(IndentWidth::from(1)));
+        pretty_assertions::assert_eq!(rules.indent_style, Some(IndentStyle::Space));
+    }
 
     #[test]
     fn test_compute_text_edits_no_changes() {
