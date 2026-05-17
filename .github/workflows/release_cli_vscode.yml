@@ -7,6 +7,12 @@ on:
     tags:
       - v*
   workflow_dispatch:
+    inputs:
+      skip_winget:
+        description: "Skip submitting the Windows Package Manager manifest update"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -245,6 +251,44 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') && needs.check-release-notes.outputs.exists == 'false'
         run: |
           gh release create ${{ github.ref_name }} --generate-notes ${{ env.ASSETS }}
+
+  publish-winget:
+    needs: [release-notes]
+    if: startsWith(github.ref, 'refs/tags/v') && inputs.skip_winget != true
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Detect stable release tag
+        id: stable-version
+        shell: pwsh
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if ($env:REF_NAME -match '^v(\d+\.\d+\.\d+)$') {
+            "stable_version=$($Matches[1])" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          } else {
+            Write-Host "Skipping winget submission for non-stable tag: $env:REF_NAME"
+            "stable_version=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
+
+      - name: Submit winget manifest update
+        if: steps.stable-version.outputs.stable_version != ''
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          REF_NAME: ${{ github.ref_name }}
+          VERSION: ${{ steps.stable-version.outputs.stable_version }}
+        run: |
+          if (-not $env:WINGET_TOKEN) {
+            Write-Host "WINGET_TOKEN is not configured; skipping winget manifest submission."
+            exit 0
+          }
+
+          $installerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-x86_64-pc-windows-msvc.zip"
+
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          .\wingetcreate.exe update tombi-toml.tombi -u $installerUrl -v $env:VERSION -t $env:WINGET_TOKEN --submit
 
   update-install-script-version:
     needs: [release-notes]
