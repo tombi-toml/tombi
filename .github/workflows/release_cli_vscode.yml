@@ -254,7 +254,7 @@ jobs:
 
   publish-winget:
     needs: [release-notes]
-    if: startsWith(github.ref, 'refs/tags/v') && inputs.skip_winget != true
+    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name != 'workflow_dispatch' || inputs.skip_winget != true)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -279,6 +279,7 @@ jobs:
           WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
           REF_NAME: ${{ github.ref_name }}
           VERSION: ${{ steps.stable-version.outputs.stable_version }}
+          WINGETCREATE_VERSION: 1.12.8.0
         run: |
           if (-not $env:WINGET_TOKEN) {
             Write-Host "WINGET_TOKEN is not configured; skipping winget manifest submission."
@@ -286,8 +287,18 @@ jobs:
           }
 
           $installerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-x86_64-pc-windows-msvc.zip"
+          $wingetCreateUrl = "https://github.com/microsoft/winget-create/releases/download/v$env:WINGETCREATE_VERSION/wingetcreate.exe"
+          $wingetCreateChecksumUrl = "$wingetCreateUrl.txt"
 
-          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          Invoke-WebRequest $wingetCreateUrl -OutFile wingetcreate.exe
+          Invoke-WebRequest $wingetCreateChecksumUrl -OutFile wingetcreate.exe.sha256.txt
+
+          $expectedHash = (Get-Content wingetcreate.exe.sha256.txt -Raw).Trim().ToUpperInvariant()
+          $actualHash = (Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash.ToUpperInvariant()
+          if ($actualHash -ne $expectedHash) {
+            throw "wingetcreate.exe checksum mismatch. Expected $expectedHash but got $actualHash."
+          }
+
           .\wingetcreate.exe update tombi-toml.tombi -u $installerUrl -v $env:VERSION -t $env:WINGET_TOKEN --submit
 
   update-install-script-version:
