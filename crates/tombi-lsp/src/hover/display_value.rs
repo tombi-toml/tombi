@@ -95,12 +95,17 @@ impl TryFrom<&tombi_json::Value> for DisplayValue {
             },
             tombi_json::Value::String(string) => Ok(DisplayValue::String(string.clone())),
             tombi_json::Value::Array(array) => Ok(DisplayValue::Array(
-                array.iter().map(|item| item.try_into().unwrap()).collect(),
+                array
+                    .iter()
+                    .filter_map(|item| item.try_into().ok())
+                    .collect(),
             )),
             tombi_json::Value::Object(object) => Ok(DisplayValue::Table(
                 object
                     .iter()
-                    .map(|(key, value)| (key.clone(), value.try_into().unwrap()))
+                    .filter_map(|(key, value)| {
+                        value.try_into().ok().map(|value| (key.clone(), value))
+                    })
                     .collect(),
             )),
             tombi_json::Value::Null => Err(()),
