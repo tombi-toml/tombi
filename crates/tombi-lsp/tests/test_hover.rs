@@ -38,6 +38,11 @@ fn exact_index_array_values_order_schema_path() -> PathBuf {
         .join("crates/tombi-lsp/tests/fixtures/exact-index-array-values-order.schema.json")
 }
 
+fn history_hover_null_default_schema_path() -> PathBuf {
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/history-hover-null-default.schema.json")
+}
+
 fn cargo_feature_usage_hover_description(
     project_root: &Path,
     locations: &[(PathBuf, u32)],
@@ -777,6 +782,36 @@ mod hover_keys_value {
                 "Keys": "boolean_all",
                 "Value": "Boolean?",
                 "Enum": ["true"]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn all_of_table_hover_ignores_null_in_default_object(
+                r#"
+                [hist█ory]
+                persistence = "save-all"
+                "#,
+                SchemaPath(history_hover_null_default_schema_path()),
+            ) -> Ok({
+                "Keys": "history",
+                "Value": "Table?",
+                "Default": r#"{ persistence = "save-all" }"#
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn all_of_nested_property_hover_survives_parent_default_with_null(
+                r#"
+                [history]
+                persis█tence = "save-all"
+                "#,
+                SchemaPath(history_hover_null_default_schema_path()),
+            ) -> Ok({
+                "Keys": "history.persistence",
+                "Value": "String?",
+                "Default": "\"save-all\""
             });
         );
     }
