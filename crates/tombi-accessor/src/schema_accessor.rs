@@ -160,6 +160,16 @@ impl SchemaAccessors {
     pub fn last(&self) -> Option<&SchemaAccessor> {
         self.0.last()
     }
+
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
 }
 
 impl AsRef<[SchemaAccessor]> for SchemaAccessors {
@@ -205,6 +215,37 @@ impl std::fmt::Display for SchemaAccessors {
             }
         }
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+pub struct MarkdownSchemaAccessors(SchemaAccessors);
+
+impl From<&[Accessor]> for MarkdownSchemaAccessors {
+    fn from(accessors: &[Accessor]) -> Self {
+        Self(SchemaAccessors::from(accessors))
+    }
+}
+
+impl From<Vec<SchemaAccessor>> for MarkdownSchemaAccessors {
+    fn from(accessors: Vec<SchemaAccessor>) -> Self {
+        Self(SchemaAccessors::from(accessors))
+    }
+}
+
+impl From<&[SchemaAccessor]> for MarkdownSchemaAccessors {
+    fn from(accessors: &[SchemaAccessor]) -> Self {
+        Self(SchemaAccessors::from(accessors))
+    }
+}
+
+impl std::fmt::Display for MarkdownSchemaAccessors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.0.is_empty() {
+            write!(f, "root table")
+        } else {
+            write!(f, "`{}`", self.0)
+        }
     }
 }
 
