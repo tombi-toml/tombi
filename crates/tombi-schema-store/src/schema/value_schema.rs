@@ -189,7 +189,11 @@ impl ValueSchema {
             )));
         }
 
-        None
+        if Self::has_supported_annotation_keywords(object, dialect) {
+            Some(ValueSchema::Anything(object.range))
+        } else {
+            None
+        }
     }
 
     /// Infer the JSON Schema type from type-specific keywords.
@@ -262,6 +266,26 @@ impl ValueSchema {
         }
 
         None
+    }
+
+    fn has_supported_annotation_keywords(
+        object: &tombi_json::ObjectNode,
+        dialect: Option<crate::JsonSchemaDialect>,
+    ) -> bool {
+        let dialect = dialect.unwrap_or_default();
+        object.properties.iter().any(|(key, _)| {
+            matches!(
+                key.value.as_str(),
+                "title"
+                    | "description"
+                    | "default"
+                    | "deprecated"
+                    | "readOnly"
+                    | "writeOnly"
+                    | "examples"
+                    | "$comment"
+            ) && crate::supports_keyword(dialect, key.value.as_str())
+        })
     }
 
     fn new_single(
@@ -1734,13 +1758,14 @@ mod tests {
     }
 
     #[test]
-    fn test_no_inference_without_type_specific_keywords() {
-        // Only common keywords like title/description should not trigger inference
+    fn test_annotation_only_object_schema_defaults_to_anything() {
+        // Annotation-only object schemas are still valid JSON Schema and must not
+        // disappear from property registration.
         let schema = parse_schema_with_dialect(
             r#"{ "title": "Something", "description": "A thing" }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(schema.is_none());
+        assert!(matches!(schema, Some(ValueSchema::Anything(_))));
     }
 
     #[test]
