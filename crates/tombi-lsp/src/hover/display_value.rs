@@ -106,11 +106,9 @@ impl TryFrom<&tombi_json::Value> for DisplayValue {
     }
 }
 
-impl TryFrom<&tombi_json_value::Map<String, tombi_json_value::Value>> for DisplayValue {
+impl TryFrom<&tombi_json::Object> for DisplayValue {
     type Error = ();
-    fn try_from(
-        value: &tombi_json_value::Map<String, tombi_json_value::Value>,
-    ) -> Result<Self, Self::Error> {
+    fn try_from(value: &tombi_json::Object) -> Result<Self, Self::Error> {
         Ok(DisplayValue::Table(
             value
                 .iter()

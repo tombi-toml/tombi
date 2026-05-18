@@ -35,7 +35,6 @@ tombi-future.workspace = true
 tombi-glob.workspace = true
 tombi-hashmap.workspace = true
 tombi-json.workspace = true
-tombi-json-value.workspace = true
 tombi-linter.workspace = true
 tombi-parser.workspace = true
 tombi-regex.workspace = true

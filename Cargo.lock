@@ -4039,7 +4039,6 @@ dependencies = [
  "tombi-glob",
  "tombi-hashmap",
  "tombi-json",
- "tombi-json-value",
  "tombi-linter",
  "tombi-parser",
  "tombi-regex",
