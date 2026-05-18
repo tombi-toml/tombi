@@ -736,6 +736,7 @@ mod completion_labels {
                 "format-annotation-test.schema.json",
                 "format-assertion-vocab-test.schema.json",
                 "if-then-else-test.schema.json",
+                "issue-1895-rustfmt-like.schema.json",
                 "lsp-consistency-test.schema.json",
                 "min-max-contains-test.schema.json",
                 "one-of-hover-discriminator-test.schema.json",
