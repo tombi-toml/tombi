@@ -97,42 +97,30 @@ impl TryFrom<&tombi_json::Value> for DisplayValue {
             tombi_json::Value::Array(array) => Ok(DisplayValue::Array(
                 array
                     .iter()
-                    .filter_map(|item| item.try_into().ok())
-                    .collect(),
+                    .map(DisplayValue::try_from)
+                    .collect::<Result<Vec<_>, _>>()?,
             )),
-            tombi_json::Value::Object(object) => Ok(DisplayValue::Table(
-                object
-                    .iter()
-                    .filter_map(|(key, value)| {
-                        value.try_into().ok().map(|value| (key.clone(), value))
-                    })
-                    .collect(),
-            )),
+            tombi_json::Value::Object(object) => DisplayValue::try_from(object),
             tombi_json::Value::Null => Err(()),
         }
     }
 }
 
-impl From<tombi_json::Object> for DisplayValue {
-    fn from(object: tombi_json::Object) -> Self {
-        DisplayValue::Table(
-            object
-                .into_inner()
+impl TryFrom<&tombi_json_value::Map<String, tombi_json_value::Value>> for DisplayValue {
+    type Error = ();
+    fn try_from(
+        value: &tombi_json_value::Map<String, tombi_json_value::Value>,
+    ) -> Result<Self, Self::Error> {
+        Ok(DisplayValue::Table(
+            value
                 .iter()
-                .filter_map(|(key, value)| value.try_into().map(|v| (key.clone(), v)).ok())
+                .filter_map(|(key, value)| {
+                    DisplayValue::try_from(value)
+                        .ok()
+                        .map(|display_value| (key.clone(), display_value))
+                })
                 .collect(),
-        )
-    }
-}
-
-impl From<&tombi_json::Object> for DisplayValue {
-    fn from(object: &tombi_json::Object) -> Self {
-        DisplayValue::Table(
-            object
-                .iter()
-                .filter_map(|(key, value)| value.try_into().map(|v| (key.clone(), v)).ok())
-                .collect(),
-        )
+        ))
     }
 }
 

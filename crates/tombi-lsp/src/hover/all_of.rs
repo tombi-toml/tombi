@@ -124,10 +124,11 @@ where
             tombi_schema_store::ValueType::AllOf(value_type_set.into_iter().collect())
         };
 
-        if let Some(default) = all_of_schema
-            .default
-            .as_ref()
-            .and_then(|default| DisplayValue::try_from(default).ok())
+        if result_accessors.as_ref().len() == accessors.len()
+            && let Some(default) = all_of_schema
+                .default
+                .as_ref()
+                .and_then(|default| DisplayValue::try_from(default).ok())
         {
             if let Some(constraints) = constraints.as_mut() {
                 if constraints.default.is_none() {

@@ -814,6 +814,21 @@ mod hover_keys_value {
                 "Default": "\"save-all\""
             });
         );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn all_of_array_hover_omits_default_when_array_contains_null(
+                r#"
+                [history]
+                modes = █["save-all"]
+                "#,
+                SchemaPath(history_hover_null_default_schema_path()),
+            ) -> Ok({
+                "Keys": "history.modes",
+                "Value": "Array?",
+                "No Default": true
+            });
+        );
     }
 
     mod consistency_schema {
@@ -1799,6 +1814,7 @@ mod hover_keys_value {
             $(, "Description": $description:expr)?
             $(, "Enum": [$($enum_values:expr),* $(,)?])?
             $(, "Default": $default:expr)?
+            $(, "No Default": $no_default:expr)?
             $(, "Examples": [$($examples:expr),* $(,)?])?
             $(,)?
         });) => {
@@ -2252,6 +2268,19 @@ mod hover_keys_value {
                         Some(expected_default),
                         "Default is not equal"
                     );
+                )?
+                $(
+                    if $no_default {
+                        pretty_assertions::assert_eq!(
+                            hover_content
+                                .constraints
+                                .as_ref()
+                                .and_then(|constraints| constraints.default.as_ref())
+                                .map(ToString::to_string),
+                            None,
+                            "Default is not empty"
+                        );
+                    }
                 )?
                 $(
                     let expected_examples = vec![$($examples),*];

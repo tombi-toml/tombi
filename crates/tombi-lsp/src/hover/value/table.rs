@@ -18,6 +18,7 @@ use crate::{
         any_of::get_any_of_hover_content,
         comment::get_value_comment_directive_hover_content,
         constraints::{ValueConstraints, build_enum_values},
+        display_value::DisplayValue,
         one_of::get_one_of_hover_content,
     },
     schema_resolver::resolve_table_unevaluated_property_schema,
@@ -724,13 +725,18 @@ impl GetHoverContent for TableSchema {
                 value_type: ValueType::Table,
                 constraints: Some(ValueConstraints {
                     r#enum: build_enum_values(&self.const_value, &self.r#enum, |value| {
-                        Some(value.into())
+                        DisplayValue::try_from(value).ok()
                     }),
-                    default: self.default.as_ref().map(|default| default.into()),
-                    examples: self
-                        .examples
+                    default: self
+                        .default
                         .as_ref()
-                        .map(|examples| examples.iter().map(|example| example.into()).collect()),
+                        .and_then(|default| DisplayValue::try_from(default).ok()),
+                    examples: self.examples.as_ref().map(|examples| {
+                        examples
+                            .iter()
+                            .filter_map(|example| DisplayValue::try_from(example).ok())
+                            .collect()
+                    }),
                     required_keys: self.required.clone(),
                     max_keys: self.max_properties,
                     min_keys: self.min_properties,

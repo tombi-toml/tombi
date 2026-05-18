@@ -29,6 +29,17 @@
           "type": "string",
           "default": "save-all",
           "description": "Whether history entries are written to disk."
+        },
+        "modes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "save-all",
+            null
+          ],
+          "description": "History persistence modes."
         }
       }
     }
