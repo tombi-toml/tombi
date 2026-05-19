@@ -112,15 +112,52 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         )
                                         .await
                                     {
+                                        let property_accessors = accessors
+                                            .iter()
+                                            .cloned()
+                                            .chain(std::iter::once(accessor.clone()))
+                                            .collect_vec();
+
+                                        if keys.len() == 1
+                                            && !value.contains(position)
+                                            && matches!(
+                                                current_schema.value_schema.as_ref(),
+                                                ValueSchema::Anything(_)
+                                            )
+                                        {
+                                            let mut value_type =
+                                                current_schema.value_schema.value_type().await;
+                                            if !required {
+                                                value_type.set_nullable();
+                                            }
+
+                                            return Some(HoverContent::Value(HoverValueContent {
+                                                title: current_schema
+                                                    .value_schema
+                                                    .title()
+                                                    .map(ToString::to_string),
+                                                description: current_schema
+                                                    .value_schema
+                                                    .description()
+                                                    .map(ToString::to_string),
+                                                accessors: Accessors::from(property_accessors),
+                                                value_type,
+                                                constraints: Some(ValueConstraints {
+                                                    key_patterns,
+                                                    ..Default::default()
+                                                }),
+                                                schema_uri: Some(
+                                                    current_schema.schema_uri.as_ref().clone(),
+                                                ),
+                                                range: None,
+                                            }));
+                                        }
+
                                         let mut hover_content = value
                                             .get_hover_content(
                                                 position,
                                                 &keys[1..],
-                                                &accessors
-                                                    .iter()
-                                                    .cloned()
-                                                    .chain(std::iter::once(accessor))
-                                                    .collect_vec(),
+                                                &property_accessors,
                                                 Some(&current_schema),
                                                 schema_context,
                                             )

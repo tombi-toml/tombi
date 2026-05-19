@@ -223,3 +223,9 @@ pub fn lsp_consistency_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("lsp-consistency-test.schema.json")
 }
+
+pub fn issue_1895_rustfmt_like_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("issue-1895-rustfmt-like.schema.json")
+}

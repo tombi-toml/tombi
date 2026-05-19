@@ -283,7 +283,11 @@ pub(crate) fn schema_item_from_schema_value(
 
 pub(crate) fn bool_value_schema(allow: bool, range: tombi_text::Range) -> ValueSchema {
     if allow {
-        ValueSchema::Anything(range)
+        ValueSchema::Anything(AnythingSchema {
+            title: None,
+            description: None,
+            range,
+        })
     } else {
         ValueSchema::Nothing(range)
     }

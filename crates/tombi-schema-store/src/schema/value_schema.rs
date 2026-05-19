@@ -32,8 +32,15 @@ pub enum ValueSchema {
     AnyOf(AnyOfSchema),
     AllOf(AllOfSchema),
     Null,
-    Anything(tombi_text::Range),
+    Anything(AnythingSchema),
     Nothing(tombi_text::Range),
+}
+
+#[derive(Debug, Clone)]
+pub struct AnythingSchema {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub range: tombi_text::Range,
 }
 
 impl ValueSchema {
@@ -190,7 +197,17 @@ impl ValueSchema {
         }
 
         if Self::has_supported_annotation_keywords(object, dialect) {
-            Some(ValueSchema::Anything(object.range))
+            Some(ValueSchema::Anything(AnythingSchema {
+                title: object
+                    .get("title")
+                    .and_then(|value| value.as_str())
+                    .map(ToString::to_string),
+                description: object
+                    .get("description")
+                    .and_then(|value| value.as_str())
+                    .map(ToString::to_string),
+                range: object.range,
+            }))
         } else {
             None
         }
@@ -620,7 +637,8 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.title.as_deref(),
             ValueSchema::AnyOf(schema) => schema.title.as_deref(),
             ValueSchema::AllOf(schema) => schema.title.as_deref(),
-            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => None,
+            ValueSchema::Null | ValueSchema::Nothing(_) => None,
+            ValueSchema::Anything(schema) => schema.title.as_deref(),
         }
     }
 
@@ -639,7 +657,8 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.title = title,
             ValueSchema::AnyOf(schema) => schema.title = title,
             ValueSchema::AllOf(schema) => schema.title = title,
-            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => {}
+            ValueSchema::Null | ValueSchema::Nothing(_) => {}
+            ValueSchema::Anything(schema) => schema.title = title,
         }
     }
 
@@ -658,7 +677,8 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.description.as_deref(),
             ValueSchema::AnyOf(schema) => schema.description.as_deref(),
             ValueSchema::AllOf(schema) => schema.description.as_deref(),
-            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => None,
+            ValueSchema::Null | ValueSchema::Nothing(_) => None,
+            ValueSchema::Anything(schema) => schema.description.as_deref(),
         }
     }
 
@@ -677,7 +697,8 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.description = description,
             ValueSchema::AnyOf(schema) => schema.description = description,
             ValueSchema::AllOf(schema) => schema.description = description,
-            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => {}
+            ValueSchema::Null | ValueSchema::Nothing(_) => {}
+            ValueSchema::Anything(schema) => schema.description = description,
         }
     }
 
@@ -905,7 +926,8 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.range,
             ValueSchema::AnyOf(schema) => schema.range,
             ValueSchema::AllOf(schema) => schema.range,
-            ValueSchema::Anything(range) | ValueSchema::Nothing(range) => *range,
+            ValueSchema::Anything(schema) => schema.range,
+            ValueSchema::Nothing(range) => *range,
         }
     }
 

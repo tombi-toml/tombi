@@ -9,9 +9,9 @@ use std::{
 use tombi_test_lib::{
     TestCacheHome, adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
     cargo_feature_navigation_fixture_path, cargo_schema_path, exact_index_string_test_schema_path,
-    lsp_consistency_test_schema_path, one_of_hover_discriminator_test_schema_path,
-    pyproject_schema_path, ref_sibling_annotations_test_schema_path,
-    string_format_test_schema_path, tombi_schema_path,
+    issue_1895_rustfmt_like_schema_path, lsp_consistency_test_schema_path,
+    one_of_hover_discriminator_test_schema_path, pyproject_schema_path,
+    ref_sibling_annotations_test_schema_path, string_format_test_schema_path, tombi_schema_path,
 };
 
 fn nested_table_keys_order_schema_path() -> PathBuf {
@@ -943,6 +943,25 @@ mod hover_keys_value {
                 "Schema": true,
                 "Title": Some("ScopedString".to_string()),
                 "Description": Some("String schema applied only to the targeted array item".to_string())
+            });
+        );
+    }
+
+    mod issue_1895_schema {
+        use super::*;
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn annotation_only_property_hover_keeps_description(
+                r#"
+                max_width = 120
+                igno█re = ["*_capnp.rs"]
+                "#,
+                SchemaPath(issue_1895_rustfmt_like_schema_path()),
+            ) -> Ok({
+                "Keys": "ignore",
+                "Value": "(Boolean | Integer | Float | String | LocalDate | LocalDateTime | LocalTime | OffsetDateTime | Array | Table)?",
+                "Description": Some("Annotation-only property schema that should still allow the key.")
             });
         );
     }

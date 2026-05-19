@@ -3,8 +3,9 @@ use tombi_test_lib::{
     TestCacheHome, adjacent_applicators_test_schema_path,
     adjacent_one_of_additional_properties_test_schema_path, adjacent_one_of_hover_test_schema_path,
     dot_config_project_root_fixture_path, exact_index_string_test_schema_path,
-    lsp_consistency_test_schema_path, project_root_path, string_format_test_schema_path,
-    today_local_date, today_local_date_time, today_local_time, today_offset_date_time,
+    issue_1895_rustfmt_like_schema_path, lsp_consistency_test_schema_path, project_root_path,
+    string_format_test_schema_path, today_local_date, today_local_date_time, today_local_time,
+    today_offset_date_time,
 };
 
 mod completion_labels {
@@ -1127,6 +1128,16 @@ mod completion_labels {
                 "#,
                 SchemaPath(lsp_consistency_test_schema_path()),
             ) -> Ok(["id"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn issue_1895_root_table_completion_includes_annotation_only_property(
+                r#"
+                █
+                "#,
+                SchemaPath(issue_1895_rustfmt_like_schema_path()),
+            ) -> Ok(["ignore", "max_width"]);
         }
 
         test_completion_labels! {
