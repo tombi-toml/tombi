@@ -24,7 +24,7 @@ test_lint! {
         "#,
         SchemaPath(cargo_schema_path()),
     ) -> Err([tombi_validator::DiagnosticKind::TableStrictAdditionalKeys {
-        accessors: tombi_schema_store::SchemaAccessors::from(vec![
+        accessors: tombi_accessor::MarkdownSchemaAccessors::from(vec![
             tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
         ]),
         schema_uri: tombi_schema_store::SchemaUri::from_file_path(cargo_schema_path()).unwrap(),
