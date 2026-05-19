@@ -291,11 +291,13 @@ impl ValueSchema {
     ) -> bool {
         let dialect = dialect.unwrap_or_default();
         let mut has_metadata_keyword = false;
+        let is_reference_keyword =
+            |keyword: &str| matches!(keyword, "$ref" | "$dynamicRef" | "$recursiveRef");
 
         for (key, _) in &object.properties {
             let keyword = key.value.as_str();
 
-            if !crate::supports_keyword(dialect, keyword) {
+            if !crate::supports_keyword(dialect, keyword) || is_reference_keyword(keyword) {
                 return false;
             }
 
@@ -1800,6 +1802,15 @@ mod tests {
     fn test_annotation_only_object_schema_rejects_unsupported_keywords() {
         let schema = parse_schema_with_dialect(
             r#"{ "description": "A thing", "unevaluatedProperties": false }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        assert!(schema.is_none());
+    }
+
+    #[test]
+    fn test_annotation_only_object_schema_rejects_reference_keywords() {
+        let schema = parse_schema_with_dialect(
+            r##"{ "$ref": "#/$defs/value", "description": "A thing" }"##,
             Some(crate::JsonSchemaDialect::Draft07),
         );
         assert!(schema.is_none());
