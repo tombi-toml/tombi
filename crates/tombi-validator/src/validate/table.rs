@@ -1,12 +1,11 @@
 use itertools::Itertools;
 use std::borrow::Cow;
+use tombi_accessor::MarkdownSchemaAccessors;
 use tombi_comment_directive::value::TableCommonLintRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_hashmap::HashSet;
-use tombi_schema_store::{
-    Accessor, CompositeSchema, CurrentSchema, SchemaAccessor, SchemaAccessors, ValueSchema,
-};
+use tombi_schema_store::{Accessor, CompositeSchema, CurrentSchema, SchemaAccessor, ValueSchema};
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError};
 
 use crate::{
@@ -365,7 +364,7 @@ async fn validate_table(
             if table_schema.check_strict_additional_properties_violation(schema_context.strict()) {
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::TableStrictAdditionalKeys {
-                        accessors: SchemaAccessors::from(accessors),
+                        accessors: MarkdownSchemaAccessors::from(accessors),
                         schema_uri: current_schema.schema_uri.as_ref().clone(),
                         key: key.to_string(),
                     }),

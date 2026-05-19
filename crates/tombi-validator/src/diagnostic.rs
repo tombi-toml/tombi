@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use tombi_accessor::MarkdownSchemaAccessors;
 use tombi_schema_store::SchemaAccessors;
 use tombi_severity_level::SeverityLevel;
 use tombi_uri::SchemaUri;
@@ -21,13 +22,13 @@ pub enum DiagnosticKind {
     DeprecatedValue(SchemaAccessors, String),
 
     #[error(
-        "In strict mode, `{accessors}` does not allow \"{key}\" key. \
-         Please add `\"additionalProperties\": true` to the location where `{accessors}` is defined in \
+        "In strict mode, {accessors} does not allow \"{key}\" key. \
+         Please add `\"additionalProperties\": true` to the location where {accessors} is defined in \
          {schema_uri}, or add `#:tombi schema.strict = false` as a document comment directive at the \
          top of your document, or set `schema.strict = false` in your `tombi.toml`."
     )]
     TableStrictAdditionalKeys {
-        accessors: SchemaAccessors,
+        accessors: MarkdownSchemaAccessors,
         key: String,
         schema_uri: SchemaUri,
     },
