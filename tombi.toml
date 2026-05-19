@@ -96,10 +96,7 @@ overrides = [
     completion = {
       path.enabled = true,
     },
-    document-link = {
-      pypi-org.enabled = true,
-      pyproject-toml.enabled = true,
-    },
+    document-link.enabled = true,
     goto-declaration = {
       dependency.enabled = true,
       member.enabled = true,
