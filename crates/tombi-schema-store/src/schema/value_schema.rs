@@ -273,19 +273,25 @@ impl ValueSchema {
         dialect: Option<crate::JsonSchemaDialect>,
     ) -> bool {
         let dialect = dialect.unwrap_or_default();
-        object.properties.iter().any(|(key, _)| {
-            matches!(
-                key.value.as_str(),
-                "title"
-                    | "description"
-                    | "default"
-                    | "deprecated"
-                    | "readOnly"
-                    | "writeOnly"
-                    | "examples"
-                    | "$comment"
-            ) && crate::supports_keyword(dialect, key.value.as_str())
-        })
+        let mut has_metadata_keyword = false;
+
+        for (key, _) in &object.properties {
+            let keyword = key.value.as_str();
+
+            if !crate::supports_keyword(dialect, keyword) {
+                return false;
+            }
+
+            match crate::keyword_vocabulary(keyword) {
+                Some(crate::JsonSchemaVocabulary::MetaData) => {
+                    has_metadata_keyword = true;
+                }
+                Some(crate::JsonSchemaVocabulary::Core) => {}
+                _ => return false,
+            }
+        }
+
+        has_metadata_keyword
     }
 
     fn new_single(
@@ -1766,6 +1772,15 @@ mod tests {
             Some(crate::JsonSchemaDialect::Draft07),
         );
         assert!(matches!(schema, Some(ValueSchema::Anything(_))));
+    }
+
+    #[test]
+    fn test_annotation_only_object_schema_rejects_unsupported_keywords() {
+        let schema = parse_schema_with_dialect(
+            r#"{ "description": "A thing", "unevaluatedProperties": false }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        assert!(schema.is_none());
     }
 
     #[test]
