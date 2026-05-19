@@ -244,7 +244,16 @@ impl std::fmt::Display for MarkdownSchemaAccessors {
         if self.0.is_empty() {
             write!(f, "root table")
         } else {
-            write!(f, "`{}`", self.0)
+            let rendered = self.0.to_string();
+            let fence_len = rendered
+                .split(|ch| ch != '`')
+                .map(str::len)
+                .max()
+                .unwrap_or(0)
+                + 1;
+            let fence = "`".repeat(fence_len);
+
+            write!(f, "{fence}{rendered}{fence}")
         }
     }
 }
@@ -312,5 +321,29 @@ mod tests {
         assert_eq!(SchemaAccessor::Index(1), Accessor::Index(1));
         assert_ne!(SchemaAccessor::Index(1), Accessor::Index(0));
         assert_eq!(SchemaAccessor::AnyIndex, Accessor::Index(7));
+    }
+
+    #[test]
+    fn test_markdown_schema_accessors_display_root_table() {
+        let accessors = MarkdownSchemaAccessors::default();
+        assert_eq!(format!("{accessors}"), "root table");
+    }
+
+    #[test]
+    fn test_markdown_schema_accessors_display_non_empty() {
+        let accessors = MarkdownSchemaAccessors::from(vec![
+            SchemaAccessor::Key("items".to_string()),
+            SchemaAccessor::Index(1),
+            SchemaAccessor::Key("name".to_string()),
+        ]);
+        assert_eq!(format!("{accessors}"), "`items[1].name`");
+    }
+
+    #[test]
+    fn test_markdown_schema_accessors_display_key_containing_backtick() {
+        let accessors = MarkdownSchemaAccessors::from(vec![
+            SchemaAccessor::Key("key`name".to_string()),
+        ]);
+        assert_eq!(format!("{accessors}"), "``\"key`name\"``");
     }
 }
