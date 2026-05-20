@@ -297,16 +297,26 @@ impl ValueSchema {
         for (key, _) in &object.properties {
             let keyword = key.value.as_str();
 
-            if !crate::supports_keyword(dialect, keyword) || is_reference_keyword(keyword) {
+            if is_reference_keyword(keyword) {
                 return false;
             }
 
-            match crate::keyword_vocabulary(keyword) {
+            let vocabulary = crate::keyword_vocabulary(keyword);
+            if vocabulary.is_some() && !crate::supports_keyword(dialect, keyword) {
+                return false;
+            }
+
+            match vocabulary {
                 Some(crate::JsonSchemaVocabulary::MetaData) => {
                     has_metadata_keyword = true;
                 }
                 Some(crate::JsonSchemaVocabulary::Core) => {}
-                _ => return false,
+                Some(_) => return false,
+                None => {
+                    // Unknown keywords are treated as annotations by JSON Schema and
+                    // must not cause annotation-only property schemas to disappear.
+                    has_metadata_keyword = true;
+                }
             }
         }
 
@@ -1793,6 +1803,19 @@ mod tests {
         // disappear from property registration.
         let schema = parse_schema_with_dialect(
             r#"{ "title": "Something", "description": "A thing" }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        assert!(matches!(schema, Some(ValueSchema::Anything(_))));
+    }
+
+    #[test]
+    fn test_annotation_only_object_schema_with_extension_keywords_defaults_to_anything() {
+        let schema = parse_schema_with_dialect(
+            r#"{
+                "description": "A thing",
+                "markdownDescription": "**A** thing",
+                "x-intellij-html-description": "<b>A</b> thing"
+            }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
         assert!(matches!(schema, Some(ValueSchema::Anything(_))));

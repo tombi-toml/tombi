@@ -321,7 +321,8 @@ impl CompletionCandidate for ValueSchema {
                         .title(schema_uri, definitions, schema_store, completion_hint)
                         .await
                 }
-                Self::Anything(_) | Self::Nothing(_) | Self::Null => None,
+                Self::Anything(schema) => schema.title.as_deref().map(ToString::to_string),
+                Self::Nothing(_) | Self::Null => None,
             }
         }
         .boxed()
@@ -363,7 +364,10 @@ impl CompletionCandidate for ValueSchema {
                         .description(schema_uri, definitions, schema_store, completion_hint)
                         .await
                 }
-                Self::Anything(_) | Self::Nothing(_) | Self::Null => None,
+                Self::Anything(schema) => {
+                    schema.description.as_deref().map(ToString::to_string)
+                }
+                Self::Nothing(_) | Self::Null => None,
             }
         }
         .boxed()

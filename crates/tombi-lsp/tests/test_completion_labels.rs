@@ -1140,6 +1140,145 @@ mod completion_labels {
             ) -> Ok(["ignore", "max_width"]);
         }
 
+        #[tokio::test]
+        async fn issue_1895_annotation_only_property_completion_keeps_description()
+        -> Result<(), Box<dyn std::error::Error>> {
+            use std::io::Write;
+
+            use itertools::Itertools;
+            use tombi_lsp::Backend;
+            use tower_lsp::{
+                LspService,
+                lsp_types::{
+                    CompletionItem, CompletionParams, DidOpenTextDocumentParams,
+                    PartialResultParams, TextDocumentIdentifier, TextDocumentItem,
+                    TextDocumentPositionParams, Url, WorkDoneProgressParams,
+                },
+            };
+            use tombi_lsp::handler::handle_did_open;
+            use tombi_text::IntoLsp;
+
+            tombi_test_lib::init_log();
+
+            let (service, _) = LspService::new(|client| Backend::new(client, &Default::default()));
+            let backend = service.inner();
+
+            let schema_uri = tombi_schema_store::SchemaUri::from_file_path(
+                issue_1895_rustfmt_like_schema_path(),
+            )
+            .expect("failed to convert test schema path to schema uri");
+
+            let temp_file = tempfile::NamedTempFile::with_suffix_in(
+                ".toml",
+                std::env::current_dir().expect("failed to get current directory"),
+            )?;
+            let mut toml_text = "█".to_string();
+            let index = toml_text.find("█").ok_or("failed to find completion marker")?;
+            toml_text.remove(index);
+            temp_file.as_file().write_all(toml_text.as_bytes())?;
+
+            let source_path = temp_file.path();
+            let toml_file_url =
+                Url::from_file_path(source_path).map_err(|_| "failed to convert file path to URL")?;
+            let line_index =
+                tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
+
+            let config_schema_store = backend
+                .config_manager
+                .config_schema_store_for_file(source_path)
+                .await;
+            let mut test_config = config_schema_store.config;
+            let mut existing_schemas = test_config.schemas.take().unwrap_or_default();
+            existing_schemas.push(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                toml_version: None,
+                path: schema_uri.to_string(),
+                include: vec!["*.toml".into()],
+                exclude: None,
+                lint: None,
+                format: None,
+                overrides: None,
+            }));
+            test_config.schemas = Some(existing_schemas);
+
+            if let Some(config_path) = config_schema_store.config_path {
+                backend
+                    .config_manager
+                    .update_config_with_path(test_config, &config_path)
+                    .await
+                    .map_err(|e| {
+                        format!(
+                            "failed to update config {}: {}",
+                            config_path.display(),
+                            e
+                        )
+                    })?;
+            } else {
+                backend.config_manager.update_editor_config(test_config).await;
+            }
+
+            handle_did_open(
+                backend,
+                DidOpenTextDocumentParams {
+                    text_document: TextDocumentItem {
+                        uri: toml_file_url.clone(),
+                        language_id: "toml".to_string(),
+                        version: 0,
+                        text: toml_text.clone(),
+                    },
+                },
+            )
+            .await;
+
+            let Some(completions) = tombi_lsp::handler::handle_completion(
+                &backend,
+                CompletionParams {
+                    text_document_position: TextDocumentPositionParams {
+                        text_document: TextDocumentIdentifier {
+                            uri: toml_file_url,
+                        },
+                        position: tombi_text::Position::default().into_lsp(&line_index),
+                    },
+                    work_done_progress_params: WorkDoneProgressParams::default(),
+                    partial_result_params: PartialResultParams {
+                        partial_result_token: None,
+                    },
+                    context: None,
+                },
+            )
+            .await?
+            else {
+                return Err("failed to handle completion".into());
+            };
+
+            let completion_items = completions
+                .into_iter()
+                .map(|content| IntoLsp::<CompletionItem>::into_lsp(content, &line_index))
+                .collect_vec();
+            let labels = completion_items
+                .iter()
+                .map(|item| item.label.clone())
+                .collect_vec();
+
+            let ignore_item = completion_items
+                .into_iter()
+                .find(|item| item.label == "ignore")
+                .ok_or_else(|| format!("failed to find ignore completion item: {labels:?}"))?;
+
+            let documentation = match ignore_item.documentation {
+                Some(tower_lsp::lsp_types::Documentation::MarkupContent(content)) => content.value,
+                _ => return Err("ignore completion item has no markdown documentation".into()),
+            };
+
+            assert!(
+                documentation.contains(
+                    "Annotation-only property schema that should still allow the key."
+                ),
+                "completion documentation did not include schema description: {documentation}"
+            );
+
+            Ok(())
+        }
+
         test_completion_labels! {
             #[tokio::test]
             async fn exact_index_string_subschema_does_not_apply_to_first_item_completion(
