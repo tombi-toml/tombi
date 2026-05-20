@@ -206,7 +206,7 @@ where
                                 continue;
                             };
 
-                            match FormatFile::from_file(&source_path).await {
+                            match FormatFile::from_file(&source_path, !args.check).await {
                                 Ok(file) => {
                                     let printer = printer.clone();
                                     let schema_store = schema_store.clone();
@@ -467,14 +467,16 @@ impl FormatFile {
         }
     }
 
-    async fn from_file(path: &std::path::Path) -> std::io::Result<Self> {
+    async fn from_file(path: &std::path::Path, write: bool) -> std::io::Result<Self> {
+        let mut options = tokio::fs::OpenOptions::new();
+        options.read(true);
+        if write {
+            options.write(true);
+        }
+
         Ok(Self::File {
             path: path.to_owned(),
-            file: tokio::fs::OpenOptions::new()
-                .read(true)
-                .write(true)
-                .open(path)
-                .await?,
+            file: options.open(path).await?,
         })
     }
 
