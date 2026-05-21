@@ -12,7 +12,7 @@ use super::{
 };
 use crate::{
     Accessor, Referable, SchemaDefinitions, SchemaStore,
-    schema::if_then_else_schema::IfThenElseSchema,
+    schema::{any_schema::AnythingSchema, if_then_else_schema::IfThenElseSchema},
 };
 
 #[allow(clippy::large_enum_variant)]
@@ -34,13 +34,6 @@ pub enum ValueSchema {
     Null,
     Anything(AnythingSchema),
     Nothing(tombi_text::Range),
-}
-
-#[derive(Debug, Clone)]
-pub struct AnythingSchema {
-    pub title: Option<String>,
-    pub description: Option<String>,
-    pub range: tombi_text::Range,
 }
 
 impl ValueSchema {

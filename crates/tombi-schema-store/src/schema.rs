@@ -1,5 +1,6 @@
 mod all_of_schema;
 mod any_of_schema;
+mod any_schema;
 mod array_schema;
 mod boolean_schema;
 mod document_schema;
@@ -25,6 +26,7 @@ use std::sync::Arc;
 use crate::{Accessor, SchemaStore};
 pub use all_of_schema::AllOfSchema;
 pub use any_of_schema::AnyOfSchema;
+pub use any_schema::AnythingSchema;
 pub use array_schema::{ArraySchema, XTombiArrayValuesOrder};
 pub use boolean_schema::BooleanSchema;
 pub use document_schema::DocumentSchema;
