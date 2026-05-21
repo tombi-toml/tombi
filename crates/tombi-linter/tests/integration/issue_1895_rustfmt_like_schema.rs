@@ -1,13 +1,5 @@
-use std::path::PathBuf;
-
 use tombi_linter::test_lint;
-use tombi_test_lib::project_root_path;
-
-fn schema_path() -> PathBuf {
-    project_root_path()
-        .join("schemas")
-        .join("issue-1895-rustfmt-like.schema.json")
-}
+use tombi_test_lib::issue_1895_rustfmt_like_schema_path;
 
 test_lint! {
     #[test]
@@ -16,6 +8,6 @@ test_lint! {
         max_width = 120
         ignore = ["*_capnp.rs"]
         "#,
-        SchemaPath(schema_path()),
+        SchemaPath(issue_1895_rustfmt_like_schema_path()),
     ) -> Ok(_)
 }
