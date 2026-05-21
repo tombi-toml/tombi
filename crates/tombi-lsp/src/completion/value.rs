@@ -27,9 +27,9 @@ pub use one_of::find_one_of_completion_items;
 use string::type_hint_string;
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, ArraySchema, BooleanSchema, CurrentSchema, FloatSchema, IntegerSchema,
-    LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema, SchemaDefinitions,
-    SchemaStore, SchemaUri, StringSchema, TableSchema, ValueSchema,
+    Accessor, AnythingSchema, ArraySchema, BooleanSchema, CurrentSchema, FloatSchema,
+    IntegerSchema, LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema,
+    SchemaDefinitions, SchemaStore, SchemaUri, StringSchema, TableSchema, ValueSchema,
 };
 
 use super::{
@@ -303,7 +303,8 @@ impl CompletionCandidate for ValueSchema {
                 | Self::LocalDate(LocalDateSchema { title, .. })
                 | Self::LocalTime(LocalTimeSchema { title, .. })
                 | Self::Array(ArraySchema { title, .. })
-                | Self::Table(TableSchema { title, .. }) => {
+                | Self::Table(TableSchema { title, .. })
+                | Self::Anything(AnythingSchema { title, .. }) => {
                     title.as_deref().map(ToString::to_string)
                 }
                 Self::OneOf(one_of) => {
@@ -321,7 +322,6 @@ impl CompletionCandidate for ValueSchema {
                         .title(schema_uri, definitions, schema_store, completion_hint)
                         .await
                 }
-                Self::Anything(schema) => schema.title.as_deref().map(ToString::to_string),
                 Self::Nothing(_) | Self::Null => None,
             }
         }
@@ -346,7 +346,8 @@ impl CompletionCandidate for ValueSchema {
                 | Self::LocalDate(LocalDateSchema { description, .. })
                 | Self::LocalTime(LocalTimeSchema { description, .. })
                 | Self::Array(ArraySchema { description, .. })
-                | Self::Table(TableSchema { description, .. }) => {
+                | Self::Table(TableSchema { description, .. })
+                | Self::Anything(AnythingSchema { description, .. }) => {
                     description.as_deref().map(ToString::to_string)
                 }
                 Self::OneOf(one_of) => {
@@ -363,9 +364,6 @@ impl CompletionCandidate for ValueSchema {
                     all_of
                         .description(schema_uri, definitions, schema_store, completion_hint)
                         .await
-                }
-                Self::Anything(schema) => {
-                    schema.description.as_deref().map(ToString::to_string)
                 }
                 Self::Nothing(_) | Self::Null => None,
             }
