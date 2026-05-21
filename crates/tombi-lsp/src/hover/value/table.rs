@@ -115,7 +115,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         let property_accessors = accessors
                                             .iter()
                                             .cloned()
-                                            .chain(std::iter::once(accessor.clone()))
+                                            .chain(std::iter::once(accessor))
                                             .collect_vec();
 
                                         if keys.len() == 1
