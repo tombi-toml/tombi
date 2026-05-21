@@ -213,16 +213,19 @@ impl ValueSchema {
         for (key, _) in &object.properties {
             let keyword = key.value.as_str();
 
-            if !crate::supports_keyword(dialect, keyword) {
+            let Some(vocabulary) = crate::keyword_vocabulary(keyword) else {
                 continue;
+            };
+
+            if !crate::supports_keyword(dialect, keyword) {
+                return false;
             }
 
-            match crate::keyword_vocabulary(keyword) {
-                Some(JsonSchemaVocabulary::MetaData) => {
+            match vocabulary {
+                JsonSchemaVocabulary::MetaData => {
                     has_metadata_keyword = true;
                 }
-                Some(_) => return false,
-                None => continue,
+                _ => return false,
             }
         }
 
