@@ -2836,7 +2836,7 @@ mod completion_labels {
             test_completion_labels! {
                 @run_documented
                 #[tokio::test]
-                async fn $name($source $(, $arg)*) -> labels [] docs [$(($doc_label, $documentation)),*];
+                async fn $name($source $(, $arg)*) -> labels [] skip_label_assertion true docs [$(($doc_label, $documentation)),*];
             }
         };
 
@@ -2844,6 +2844,20 @@ mod completion_labels {
             @run_documented
             #[tokio::test]
             async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> labels [$($label:expr),*$(,)?] docs [$(
+                ($doc_label:expr, $documentation:expr)
+            ),*$(,)?];
+        ) => {
+            test_completion_labels! {
+                @run_documented
+                #[tokio::test]
+                async fn $name($source $(, $arg)*) -> labels [$($label),*] skip_label_assertion false docs [$(($doc_label, $documentation)),*];
+            }
+        };
+
+        (
+            @run_documented
+            #[tokio::test]
+            async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> labels [$($label:expr),*$(,)?] skip_label_assertion $skip_label_assertion:tt docs [$(
                 ($doc_label:expr, $documentation:expr)
             ),*$(,)?];
         ) => {
@@ -3131,7 +3145,7 @@ mod completion_labels {
 
                 let expected_labels = vec![$($label.to_string()),*] as Vec<String>;
 
-                if !expected_labels.is_empty() {
+                if !$skip_label_assertion {
                     pretty_assertions::assert_eq!(labels, expected_labels);
                 }
 

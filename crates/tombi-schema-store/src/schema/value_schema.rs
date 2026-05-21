@@ -11,7 +11,7 @@ use super::{
     LocalTimeSchema, OffsetDateTimeSchema, OneOfSchema, SchemaUri, StringSchema, TableSchema,
 };
 use crate::{
-    Accessor, Referable, SchemaDefinitions, SchemaStore,
+    Accessor, JsonSchemaVocabulary, Referable, SchemaDefinitions, SchemaStore,
     schema::{any_schema::AnythingSchema, if_then_else_schema::IfThenElseSchema},
 };
 
@@ -189,17 +189,42 @@ impl ValueSchema {
             )));
         }
 
-        Some(ValueSchema::Anything(AnythingSchema {
-            title: object
-                .get("title")
-                .and_then(|value| value.as_str())
-                .map(ToString::to_string),
-            description: object
-                .get("description")
-                .and_then(|value| value.as_str())
-                .map(ToString::to_string),
-            range: object.range,
-        }))
+        let dialect = dialect.unwrap_or_default();
+        let mut has_metadata_keyword = false;
+
+        for (key, _) in &object.properties {
+            let keyword = key.value.as_str();
+
+            if matches!(keyword, "markdownDescription" | "x-intellij-html-description") {
+                has_metadata_keyword = true;
+                continue;
+            }
+
+            if !crate::supports_keyword(dialect, keyword) {
+                return None;
+            }
+
+            match crate::keyword_vocabulary(keyword) {
+                Some(JsonSchemaVocabulary::MetaData) => {
+                    has_metadata_keyword = true;
+                }
+                _ => return None,
+            }
+        }
+
+        has_metadata_keyword.then(|| {
+            ValueSchema::Anything(AnythingSchema {
+                title: object
+                    .get("title")
+                    .and_then(|value| value.as_str())
+                    .map(ToString::to_string),
+                description: object
+                    .get("description")
+                    .and_then(|value| value.as_str())
+                    .map(ToString::to_string),
+                range: object.range,
+            })
+        })
     }
 
     /// Infer the JSON Schema type from type-specific keywords.
