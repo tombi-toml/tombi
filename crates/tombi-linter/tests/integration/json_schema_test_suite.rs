@@ -591,7 +591,8 @@ mod draft7_dependencies {
         );
 
         suite_test!(
-            #[tokio::test] async fn matches_both(
+            #[tokio::test]
+            async fn matches_both(
                 r#"
                 foo = 1
                 bar = 2
@@ -603,12 +604,6 @@ mod draft7_dependencies {
                         key: "foo".to_string()
                     },
                     ((0, 0), (0, 7))
-                ),
-                tombi_validator::Diagnostic::new(
-                    tombi_validator::DiagnosticKind::KeyNotAllowed {
-                        key: "bar".to_string()
-                    },
-                    ((1, 0), (1, 7))
                 ),
             ]);
         );
@@ -1740,7 +1735,8 @@ mod draft2020_12_dependent_schemas {
         );
 
         suite_test!(
-            #[tokio::test] async fn matches_both(
+            #[tokio::test]
+            async fn matches_both(
                 r#"
                 foo = 1
                 bar = 2
@@ -1752,12 +1748,6 @@ mod draft2020_12_dependent_schemas {
                         key: "foo".to_string()
                     },
                     ((0, 0), (0, 7))
-                ),
-                tombi_validator::Diagnostic::new(
-                    tombi_validator::DiagnosticKind::KeyNotAllowed {
-                        key: "bar".to_string()
-                    },
-                    ((1, 0), (1, 7))
                 ),
             ]);
         );

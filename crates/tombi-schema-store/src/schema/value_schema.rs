@@ -189,21 +189,17 @@ impl ValueSchema {
             )));
         }
 
-        if Self::has_supported_annotation_keywords(object, dialect) {
-            Some(ValueSchema::Anything(AnythingSchema {
-                title: object
-                    .get("title")
-                    .and_then(|value| value.as_str())
-                    .map(ToString::to_string),
-                description: object
-                    .get("description")
-                    .and_then(|value| value.as_str())
-                    .map(ToString::to_string),
-                range: object.range,
-            }))
-        } else {
-            None
-        }
+        Some(ValueSchema::Anything(AnythingSchema {
+            title: object
+                .get("title")
+                .and_then(|value| value.as_str())
+                .map(ToString::to_string),
+            description: object
+                .get("description")
+                .and_then(|value| value.as_str())
+                .map(ToString::to_string),
+            range: object.range,
+        }))
     }
 
     /// Infer the JSON Schema type from type-specific keywords.
@@ -276,44 +272,6 @@ impl ValueSchema {
         }
 
         None
-    }
-
-    fn has_supported_annotation_keywords(
-        object: &tombi_json::ObjectNode,
-        dialect: Option<crate::JsonSchemaDialect>,
-    ) -> bool {
-        let dialect = dialect.unwrap_or_default();
-        let mut has_metadata_keyword = false;
-        let is_reference_keyword =
-            |keyword: &str| matches!(keyword, "$ref" | "$dynamicRef" | "$recursiveRef");
-
-        for (key, _) in &object.properties {
-            let keyword = key.value.as_str();
-
-            if is_reference_keyword(keyword) {
-                return false;
-            }
-
-            let vocabulary = crate::keyword_vocabulary(keyword);
-            if vocabulary.is_some() && !crate::supports_keyword(dialect, keyword) {
-                return false;
-            }
-
-            match vocabulary {
-                Some(crate::JsonSchemaVocabulary::MetaData) => {
-                    has_metadata_keyword = true;
-                }
-                Some(crate::JsonSchemaVocabulary::Core) => {}
-                Some(_) => return false,
-                None => {
-                    // Unknown keywords are treated as annotations by JSON Schema and
-                    // must not cause annotation-only property schemas to disappear.
-                    has_metadata_keyword = true;
-                }
-            }
-        }
-
-        has_metadata_keyword
     }
 
     fn new_single(
