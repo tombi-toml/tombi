@@ -6,9 +6,7 @@
       "type": "integer"
     },
     "ignore": {
-      "description": "Annotation-only property schema that should still allow the key.",
-      "markdownDescription": "Annotation-only property schema that should still allow the key.",
-      "x-intellij-html-description": "<p>Annotation-only property schema that should still allow the key.</p>"
+      "description": "Annotation-only property schema that should still allow the key."
     }
   }
 }
