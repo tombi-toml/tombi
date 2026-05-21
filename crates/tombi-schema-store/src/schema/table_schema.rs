@@ -131,8 +131,7 @@ impl TableSchema {
             }
             _ => (None, None),
         };
-        let supports_unevaluated = dialect
-            .is_some_and(|dialect| crate::supports_keyword(dialect, "unevaluatedProperties"));
+        let supports_unevaluated = crate::supports_keyword(dialect, "unevaluatedProperties");
         let (unevaluated_properties, unevaluated_property_schema) = if supports_unevaluated {
             match object_node.get("unevaluatedProperties") {
                 Some(tombi_json::ValueNode::Bool(allow)) => (Some(allow.value), None),

@@ -367,10 +367,6 @@ pub(crate) fn update_named_anchors(
     anchor_collector: Option<&mut AnchorCollector>,
     mut dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
 ) {
-    let Some(dialect) = dialect else {
-        return;
-    };
-
     if crate::supports_keyword(dialect, "$anchor")
         && let Some(anchor) = object
             .get("$anchor")

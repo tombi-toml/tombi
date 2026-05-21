@@ -189,30 +189,7 @@ impl ValueSchema {
             )));
         }
 
-        let dialect = dialect.unwrap_or_default();
-        let mut has_metadata_keyword = false;
-
-        for (key, _) in &object.properties {
-            let keyword = key.value.as_str();
-
-            if matches!(keyword, "markdownDescription" | "x-intellij-html-description") {
-                has_metadata_keyword = true;
-                continue;
-            }
-
-            if !crate::supports_keyword(dialect, keyword) {
-                return None;
-            }
-
-            match crate::keyword_vocabulary(keyword) {
-                Some(JsonSchemaVocabulary::MetaData) => {
-                    has_metadata_keyword = true;
-                }
-                _ => return None,
-            }
-        }
-
-        has_metadata_keyword.then(|| {
+        Self::has_only_metadata_keywords(object, dialect).then(|| {
             ValueSchema::Anything(AnythingSchema {
                 title: object
                     .get("title")
@@ -225,6 +202,31 @@ impl ValueSchema {
                 range: object.range,
             })
         })
+    }
+
+    fn has_only_metadata_keywords(
+        object: &tombi_json::ObjectNode,
+        dialect: Option<crate::JsonSchemaDialect>,
+    ) -> bool {
+        let mut has_metadata_keyword = false;
+
+        for (key, _) in &object.properties {
+            let keyword = key.value.as_str();
+
+            if !crate::supports_keyword(dialect, keyword) {
+                continue;
+            }
+
+            match crate::keyword_vocabulary(keyword) {
+                Some(JsonSchemaVocabulary::MetaData) => {
+                    has_metadata_keyword = true;
+                }
+                Some(_) => return false,
+                None => continue,
+            }
+        }
+
+        has_metadata_keyword
     }
 
     /// Infer the JSON Schema type from type-specific keywords.
@@ -241,7 +243,6 @@ impl ValueSchema {
         object: &tombi_json::ObjectNode,
         dialect: Option<crate::JsonSchemaDialect>,
     ) -> Option<&'static str> {
-        let dialect = dialect.unwrap_or_default();
         let supports_keyword = |keyword: &str| crate::supports_keyword(dialect, keyword);
 
         // String-specific keywords
