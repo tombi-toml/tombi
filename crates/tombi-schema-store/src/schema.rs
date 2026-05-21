@@ -1,5 +1,6 @@
 mod all_of_schema;
 mod any_of_schema;
+mod any_schema;
 mod array_schema;
 mod boolean_schema;
 mod document_schema;
@@ -25,6 +26,7 @@ use std::sync::Arc;
 use crate::{Accessor, SchemaStore};
 pub use all_of_schema::AllOfSchema;
 pub use any_of_schema::AnyOfSchema;
+pub use any_schema::AnythingSchema;
 pub use array_schema::{ArraySchema, XTombiArrayValuesOrder};
 pub use boolean_schema::BooleanSchema;
 pub use document_schema::DocumentSchema;
@@ -283,7 +285,11 @@ pub(crate) fn schema_item_from_schema_value(
 
 pub(crate) fn bool_value_schema(allow: bool, range: tombi_text::Range) -> ValueSchema {
     if allow {
-        ValueSchema::Anything(range)
+        ValueSchema::Anything(AnythingSchema {
+            title: None,
+            description: None,
+            range,
+        })
     } else {
         ValueSchema::Nothing(range)
     }
@@ -361,10 +367,6 @@ pub(crate) fn update_named_anchors(
     anchor_collector: Option<&mut AnchorCollector>,
     mut dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
 ) {
-    let Some(dialect) = dialect else {
-        return;
-    };
-
     if crate::supports_keyword(dialect, "$anchor")
         && let Some(anchor) = object
             .get("$anchor")

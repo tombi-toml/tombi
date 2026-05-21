@@ -60,15 +60,21 @@ pub fn dialect_supports_vocabulary(
     }
 }
 
-pub fn supports_keyword(dialect: JsonSchemaDialect, keyword: &str) -> bool {
+pub fn supports_keyword(dialect: Option<JsonSchemaDialect>, keyword: &str) -> bool {
     match keyword {
         // Added in 2020-12
         "prefixItems" | "$dynamicRef" | "$dynamicAnchor" => {
-            dialect >= JsonSchemaDialect::Draft2020_12
+            dialect.is_none()
+                || dialect.is_some_and(|dialect| dialect >= JsonSchemaDialect::Draft2020_12)
         }
         // Deprecated/removed in 2020-12
-        "additionalItems" | "dependencies" => dialect < JsonSchemaDialect::Draft2020_12,
-        "$recursiveRef" | "$recursiveAnchor" => dialect == JsonSchemaDialect::Draft2019_09,
+        "additionalItems" | "dependencies" => {
+            dialect.is_none()
+                || dialect.is_some_and(|dialect| dialect < JsonSchemaDialect::Draft2020_12)
+        }
+        "$recursiveRef" | "$recursiveAnchor" => {
+            dialect.is_none() || dialect == Some(JsonSchemaDialect::Draft2019_09)
+        }
         // Available since 2019-09
         "dependentRequired"
         | "dependentSchemas"
@@ -77,10 +83,15 @@ pub fn supports_keyword(dialect: JsonSchemaDialect, keyword: &str) -> bool {
         | "minContains"
         | "maxContains"
         | "$vocabulary"
-        | "$anchor" => dialect > JsonSchemaDialect::Draft07,
-        _ => keyword_vocabulary(keyword)
-            .map(|v| dialect_supports_vocabulary(dialect, v))
-            .unwrap_or(true),
+        | "$anchor" => {
+            dialect.is_none() || dialect.is_some_and(|dialect| dialect > JsonSchemaDialect::Draft07)
+        }
+        _ => match keyword_vocabulary(keyword) {
+            Some(v) => dialect
+                .map(|dialect| dialect_supports_vocabulary(dialect, v))
+                .unwrap_or(true),
+            None => false,
+        },
     }
 }
 
@@ -88,7 +99,9 @@ pub fn log_keyword_dialect_notes(
     object: &tombi_json::ObjectNode,
     dialect: Option<JsonSchemaDialect>,
 ) {
-    let dialect = dialect.unwrap_or_default();
+    let Some(dialect) = dialect else {
+        return;
+    };
     for (key, value) in &object.properties {
         let keyword = key.value.as_str();
 
@@ -120,7 +133,7 @@ pub fn log_keyword_dialect_notes(
             );
         }
 
-        if keyword_vocabulary(keyword).is_some() && !supports_keyword(dialect, keyword) {
+        if keyword_vocabulary(keyword).is_some() && !supports_keyword(Some(dialect), keyword) {
             log::debug!(
                 "unsupported-json-schema-keyword: dialect={} keyword={}",
                 dialect,
@@ -263,22 +276,28 @@ mod tests {
 
     #[test]
     fn draft_07_rejects_2020_12_only_keywords() {
-        assert!(!supports_keyword(JsonSchemaDialect::Draft07, "prefixItems"));
-        assert!(!supports_keyword(JsonSchemaDialect::Draft07, "$dynamicRef"));
+        assert!(!supports_keyword(
+            Some(JsonSchemaDialect::Draft07),
+            "prefixItems"
+        ));
+        assert!(!supports_keyword(
+            Some(JsonSchemaDialect::Draft07),
+            "$dynamicRef"
+        ));
     }
 
     #[test]
     fn draft_2020_12_rejects_deprecated_keywords() {
         assert!(!supports_keyword(
-            JsonSchemaDialect::Draft2020_12,
+            Some(JsonSchemaDialect::Draft2020_12),
             "dependencies"
         ));
         assert!(!supports_keyword(
-            JsonSchemaDialect::Draft2020_12,
+            Some(JsonSchemaDialect::Draft2020_12),
             "additionalItems"
         ));
         assert!(!supports_keyword(
-            JsonSchemaDialect::Draft2020_12,
+            Some(JsonSchemaDialect::Draft2020_12),
             "$recursiveRef"
         ));
     }
@@ -286,15 +305,15 @@ mod tests {
     #[test]
     fn draft_2019_09_accepts_dependent_keywords() {
         assert!(supports_keyword(
-            JsonSchemaDialect::Draft2019_09,
+            Some(JsonSchemaDialect::Draft2019_09),
             "dependentRequired"
         ));
         assert!(supports_keyword(
-            JsonSchemaDialect::Draft2019_09,
+            Some(JsonSchemaDialect::Draft2019_09),
             "dependentSchemas"
         ));
         assert!(supports_keyword(
-            JsonSchemaDialect::Draft2019_09,
+            Some(JsonSchemaDialect::Draft2019_09),
             "$recursiveAnchor"
         ));
     }
@@ -302,9 +321,17 @@ mod tests {
     #[test]
     fn draft_07_rejects_recursive_keywords() {
         assert!(!supports_keyword(
-            JsonSchemaDialect::Draft07,
+            Some(JsonSchemaDialect::Draft07),
             "$recursiveRef"
         ));
+    }
+
+    #[test]
+    fn none_dialect_allows_version_gated_keywords() {
+        assert!(supports_keyword(None, "prefixItems"));
+        assert!(supports_keyword(None, "unevaluatedProperties"));
+        assert!(supports_keyword(None, "dependencies"));
+        assert!(supports_keyword(None, "$recursiveRef"));
     }
 
     #[test]

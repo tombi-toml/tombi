@@ -88,10 +88,10 @@ impl Referable<ValueSchema> {
         let (reference_kind, reference_value) = match (
             object.get("$ref").and_then(|v| v.as_str()),
             dialect
-                .filter(|dialect| crate::supports_keyword(*dialect, "$dynamicRef"))
+                .filter(|dialect| crate::supports_keyword(Some(*dialect), "$dynamicRef"))
                 .and_then(|_| object.get("$dynamicRef").and_then(|v| v.as_str())),
             dialect
-                .filter(|dialect| crate::supports_keyword(*dialect, "$recursiveRef"))
+                .filter(|dialect| crate::supports_keyword(Some(*dialect), "$recursiveRef"))
                 .and_then(|_| object.get("$recursiveRef").and_then(|v| v.as_str())),
         ) {
             (Some(reference), _, _) => (Some(ReferenceKind::Ref), Some(reference)),
