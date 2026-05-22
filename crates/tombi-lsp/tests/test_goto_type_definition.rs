@@ -2,7 +2,8 @@ mod goto_type_definition_tests {
     use super::*;
     use tombi_test_lib::{
         adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
-        exact_index_string_test_schema_path, lsp_consistency_test_schema_path,
+        exact_index_string_test_schema_path, issue_1895_rustfmt_like_schema_path,
+        lsp_consistency_test_schema_path,
     };
 
     mod tombi_schema {
@@ -264,6 +265,21 @@ mod goto_type_definition_tests {
                     path: exact_index_string_test_schema_path(),
                 },
             ) -> Ok(exact_index_string_test_schema_path());
+        );
+    }
+
+    mod issue_1895_schema {
+        use super::*;
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn annotation_only_property_key_goto_type_definition(
+                r#"
+                max_width = 120
+                igno█re = ["*_capnp.rs"]
+                "#,
+                SchemaPath(issue_1895_rustfmt_like_schema_path()),
+            ) -> Ok(issue_1895_rustfmt_like_schema_path());
         );
     }
 

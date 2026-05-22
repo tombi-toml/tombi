@@ -9,7 +9,7 @@ mod offset_date_time;
 mod string;
 mod table;
 
-use super::GetTypeDefinition;
+use super::{GetTypeDefinition, schema_type_definition};
 use tombi_future::Boxable;
 
 impl GetTypeDefinition for tombi_document_tree::Value {
@@ -38,7 +38,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                     .await;
             }
 
-            match self {
+            let type_definition = match self {
                 Self::Boolean(boolean) => {
                     boolean
                         .get_type_definition(
@@ -164,7 +164,31 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                     }
                     None => None,
                 },
+            };
+
+            if type_definition.is_some() {
+                return type_definition;
             }
+
+            if let Some(current_schema) = current_schema
+                && matches!(
+                    current_schema.value_schema.as_ref(),
+                    tombi_schema_store::ValueSchema::Anything(_)
+                )
+            {
+                return current_schema
+                    .value_schema
+                    .get_type_definition(
+                        position,
+                        keys,
+                        accessors,
+                        Some(current_schema),
+                        schema_context,
+                    )
+                    .await;
+            }
+
+            None
         }
         .boxed()
     }
@@ -324,7 +348,10 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                         )
                         .await
                 }
-                Self::Anything(_) | Self::Nothing(_) | Self::Null => None,
+                Self::Anything(schema) => current_schema.map(|current_schema| {
+                    schema_type_definition(&current_schema.schema_uri, accessors, schema.range)
+                }),
+                Self::Nothing(_) | Self::Null => None,
             }
         }
         .boxed()
