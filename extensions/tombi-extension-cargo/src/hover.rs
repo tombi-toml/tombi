@@ -2,14 +2,18 @@ use std::path::Path;
 
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_accessors, dig_keys};
+use tombi_extension::fetch_cached_remote_json;
 use tombi_extension::{HoverMetadata, HoverTextChange, append_latest_version};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
-    collect_feature_usage_locations, dependency_package_name, feature_key_at_accessors,
-    feature_usage_target_for_feature_key, fetch_crates_io_crate, find_cargo_toml,
-    find_workspace_cargo_toml, get_workspace_cargo_toml_path, is_any_dependency_accessor,
-    load_cargo_toml, sanitize_dependency_key,
+    cargo_lock::{exact_crates_io_version, load_cached_cargo_lock},
+    collect_feature_usage_locations,
+    crates_io::CratesIoVersionDetailResponse,
+    dependency_package_name, feature_key_at_accessors, feature_usage_target_for_feature_key,
+    fetch_crates_io_crate, find_cargo_toml, find_workspace_cargo_toml,
+    get_workspace_cargo_toml_path, is_any_dependency_accessor, load_cargo_toml,
+    sanitize_dependency_key,
 };
 
 pub async fn hover(
@@ -37,6 +41,20 @@ pub async fn hover(
         toml_version,
     )
     .await
+    {
+        return Ok(Some(metadata));
+    }
+
+    if let Some(metadata) = dependency_features_hover_metadata(
+        document_tree,
+        accessors,
+        position,
+        &cargo_toml_path,
+        toml_version,
+        offline,
+        cache_options,
+    )
+    .await?
     {
         return Ok(Some(metadata));
     }
@@ -230,6 +248,264 @@ fn format_feature_usage_label(project_root: &Path, cargo_toml_path: &Path, line:
         .replace('\\', "/");
 
     format!("{relative_path}:{line}")
+}
+
+async fn dependency_features_hover_metadata(
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[Accessor],
+    _position: tombi_text::Position,
+    cargo_toml_path: &Path,
+    toml_version: TomlVersion,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
+) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
+    let Some(dependency_accessors) = dependency_features_parent_accessors(accessors) else {
+        return Ok(None);
+    };
+    let Some((_, dependency_value)) = dig_accessors(document_tree, dependency_accessors) else {
+        return Ok(None);
+    };
+    let Value::Table(table) = dependency_value else {
+        return Ok(None);
+    };
+    let Some((_, _)) = table.get_key_value("features") else {
+        return Ok(None);
+    };
+
+    if dependency_table_default_features_disabled(table) {
+        return Ok(None);
+    }
+
+    let Some(Accessor::Key(dependency_key)) = dependency_accessors.last() else {
+        return Ok(None);
+    };
+
+    let Some(default_features) = dependency_default_features(
+        document_tree,
+        dependency_key,
+        dependency_value,
+        cargo_toml_path,
+        toml_version,
+        offline,
+        cache_options,
+    )
+    .await?
+    else {
+        return Ok(None);
+    };
+
+    Ok(Some(HoverMetadata {
+        title: None,
+        description: Some(HoverTextChange::Append(format_default_features_tooltip(
+            &default_features,
+        ))),
+    }))
+}
+
+fn dependency_features_parent_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
+    if matches_accessors!(accessors, ["workspace", "dependencies", _, "features"])
+        || matches_accessors!(accessors, ["dependencies", _, "features"])
+        || matches_accessors!(accessors, ["dev-dependencies", _, "features"])
+        || matches_accessors!(accessors, ["build-dependencies", _, "features"])
+        || matches_accessors!(accessors, ["target", _, "dependencies", _, "features"])
+        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _, "features"])
+        || matches_accessors!(
+            accessors,
+            ["target", _, "build-dependencies", _, "features"]
+        )
+    {
+        return Some(&accessors[..accessors.len().saturating_sub(1)]);
+    }
+
+    if matches_accessors!(accessors, ["workspace", "dependencies", _, "features", _])
+        || matches_accessors!(accessors, ["dependencies", _, "features", _])
+        || matches_accessors!(accessors, ["dev-dependencies", _, "features", _])
+        || matches_accessors!(accessors, ["build-dependencies", _, "features", _])
+        || matches_accessors!(accessors, ["target", _, "dependencies", _, "features", _])
+        || matches_accessors!(
+            accessors,
+            ["target", _, "dev-dependencies", _, "features", _]
+        )
+        || matches_accessors!(
+            accessors,
+            ["target", _, "build-dependencies", _, "features", _]
+        )
+    {
+        return Some(&accessors[..accessors.len().saturating_sub(2)]);
+    }
+
+    None
+}
+
+async fn dependency_default_features(
+    document_tree: &tombi_document_tree::DocumentTree,
+    dependency_key: &str,
+    dependency_value: &Value,
+    cargo_toml_path: &Path,
+    toml_version: TomlVersion,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
+) -> Result<Option<Vec<String>>, tower_lsp::jsonrpc::Error> {
+    let Value::Table(table) = dependency_value else {
+        return Ok(None);
+    };
+
+    if let Some(Value::String(path)) = table.get("path") {
+        let Some((_, _, dependency_document_tree)) =
+            find_cargo_toml(cargo_toml_path, Path::new(path.value()), toml_version)
+        else {
+            return Ok(None);
+        };
+        return Ok(package_default_features(&dependency_document_tree));
+    }
+
+    if table.contains_key("git") || table.contains_key("registry") {
+        return Ok(None);
+    }
+
+    if let Some(Value::String(version)) = table.get("version") {
+        return registry_dependency_default_features(
+            dependency_package_name(dependency_key, dependency_value),
+            version.value(),
+            cargo_toml_path,
+            toml_version,
+            offline,
+            cache_options,
+        )
+        .await;
+    }
+
+    let Some(Value::Boolean(workspace)) = table.get("workspace") else {
+        return Ok(None);
+    };
+    if !workspace.value() {
+        return Ok(None);
+    }
+
+    let Some((workspace_cargo_toml_path, _, workspace_document_tree)) = find_workspace_cargo_toml(
+        cargo_toml_path,
+        get_workspace_cargo_toml_path(document_tree),
+        toml_version,
+    ) else {
+        return Ok(None);
+    };
+    let Some((_, workspace_dependency_value)) = dig_keys(
+        &workspace_document_tree,
+        &["workspace", "dependencies", dependency_key],
+    ) else {
+        return Ok(None);
+    };
+    let Value::Table(workspace_dependency_table) = workspace_dependency_value else {
+        return Ok(None);
+    };
+
+    if dependency_table_default_features_disabled(workspace_dependency_table) {
+        return Ok(None);
+    }
+
+    if let Some(Value::String(path)) = workspace_dependency_table.get("path") {
+        let Some((_, _, dependency_document_tree)) = find_cargo_toml(
+            &workspace_cargo_toml_path,
+            Path::new(path.value()),
+            toml_version,
+        ) else {
+            return Ok(None);
+        };
+        return Ok(package_default_features(&dependency_document_tree));
+    }
+
+    if workspace_dependency_table.contains_key("git")
+        || workspace_dependency_table.contains_key("registry")
+    {
+        return Ok(None);
+    }
+
+    let Some(Value::String(version)) = workspace_dependency_table.get("version") else {
+        return Ok(None);
+    };
+
+    registry_dependency_default_features(
+        dependency_package_name(dependency_key, workspace_dependency_value),
+        version.value(),
+        cargo_toml_path,
+        toml_version,
+        offline,
+        cache_options,
+    )
+    .await
+}
+
+async fn registry_dependency_default_features(
+    crate_name: &str,
+    version_requirement: &str,
+    cargo_toml_path: &Path,
+    toml_version: TomlVersion,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
+) -> Result<Option<Vec<String>>, tower_lsp::jsonrpc::Error> {
+    let Some(version) = (if let Some(version) = exact_crates_io_version(version_requirement) {
+        Some(version)
+    } else {
+        load_cached_cargo_lock(cargo_toml_path, toml_version)
+            .await
+            .and_then(|lock| lock.resolve_dependency_version(crate_name, version_requirement))
+    }) else {
+        return Ok(None);
+    };
+
+    let url = format!("https://crates.io/api/v1/crates/{crate_name}/{version}");
+    let Some(mut resp) =
+        fetch_cached_remote_json::<CratesIoVersionDetailResponse>(&url, offline, cache_options)
+            .await
+    else {
+        return Ok(None);
+    };
+
+    Ok(resp.version.features.remove("default"))
+}
+
+fn dependency_table_default_features_disabled(table: &tombi_document_tree::Table) -> bool {
+    table
+        .get("default-features")
+        .is_some_and(|value| match value {
+            Value::Boolean(boolean) => !boolean.value(),
+            _ => false,
+        })
+}
+
+fn format_default_features_tooltip(default_features: &[String]) -> String {
+    let mut default_features = default_features.to_vec();
+    default_features.sort();
+
+    format!(
+        "Default Features:\n{}",
+        default_features
+            .iter()
+            .map(|feature| format!("  - {feature}"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    )
+}
+
+fn package_default_features(
+    dependency_document_tree: &tombi_document_tree::DocumentTree,
+) -> Option<Vec<String>> {
+    let (_, Value::Array(default_features)) =
+        dig_keys(dependency_document_tree, &["features", "default"])?
+    else {
+        return None;
+    };
+
+    let default_features = default_features
+        .values()
+        .iter()
+        .filter_map(|value| match value {
+            Value::String(feature) => Some(feature.value().to_string()),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    (!default_features.is_empty()).then_some(default_features)
 }
 
 fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
@@ -513,5 +789,44 @@ mod tests {
             &version_accessors,
             version_value_position,
         ));
+    }
+
+    #[tokio::test]
+    async fn dependency_features_hover_metadata_skips_disabled_default_features() {
+        let source = "[dependencies]\nserde = { version = \"1.0\", default-features = false, features = [\"derive\"] }\n";
+        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node()).unwrap();
+        let document_tree = root.try_into_document_tree(TomlVersion::V1_0_0).unwrap();
+        let accessors = [
+            Accessor::Key("dependencies".into()),
+            Accessor::Key("serde".into()),
+            Accessor::Key("features".into()),
+        ];
+        let position = tombi_text::Position::default()
+            + tombi_text::RelativePosition::of(
+                "[dependencies]\nserde = { version = \"1.0\", default-features = false, fe",
+            );
+
+        assert_eq!(
+            dependency_features_hover_metadata(
+                &document_tree,
+                &accessors,
+                position,
+                Path::new("Cargo.toml"),
+                TomlVersion::V1_0_0,
+                true,
+                None,
+            )
+            .await
+            .unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn format_default_features_tooltip_renders_sorted_feature_list() {
+        assert_eq!(
+            format_default_features_tooltip(&["bbb".to_string(), "aaa".to_string()]),
+            "Default Features:\n  - aaa\n  - bbb"
+        );
     }
 }

@@ -127,6 +127,7 @@ async fn collect_prefetch_urls(
     let lsp = features.and_then(|features| features.lsp());
     let (
         dependency_detail_hover_enabled,
+        default_features_hover_enabled,
         dependency_version_completion_enabled,
         dependency_feature_completion_enabled,
         dependency_version_inlay_hint_enabled,
@@ -141,6 +142,11 @@ async fn collect_prefetch_urls(
                     hover
                         .dependency_detail()
                         .map(|dependency_detail| dependency_detail.enabled())
+                }),
+                hover.as_ref().and_then(|hover| {
+                    hover
+                        .default_features()
+                        .map(|default_features| default_features.enabled())
                 }),
                 completion
                     .as_ref()
@@ -163,6 +169,7 @@ async fn collect_prefetch_urls(
         .unwrap_or_default();
 
     let warm_hover = dependency_detail_hover_enabled.unwrap_or_default().value();
+    let warm_default_features_hover = default_features_hover_enabled.unwrap_or_default().value();
     let warm_versions = dependency_version_completion_enabled
         .unwrap_or_default()
         .value();
@@ -176,13 +183,18 @@ async fn collect_prefetch_urls(
         .unwrap_or_default()
         .value();
 
-    if !warm_hover && !warm_versions && !warm_feature_details && !prioritize_inlay_hint {
+    if !warm_hover
+        && !warm_default_features_hover
+        && !warm_versions
+        && !warm_feature_details
+        && !prioritize_inlay_hint
+    {
         return PrefetchUrls::default();
     }
 
     let workspace_path = get_workspace_cargo_toml_path(document_tree);
     let cargo_lock_fut = async {
-        if warm_feature_details || prioritize_inlay_hint {
+        if warm_feature_details || warm_default_features_hover || prioritize_inlay_hint {
             load_cached_cargo_lock(cargo_toml_path, toml_version).await
         } else {
             None
@@ -486,6 +498,7 @@ mod tests {
                 )),
                 hover: Some(CargoHoverFeatures::Features(CargoHoverFeatureTree {
                     dependency_detail: Some(disabled_toggle()),
+                    default_features: None,
                 })),
                 ..Default::default()
             })),

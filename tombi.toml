@@ -75,6 +75,7 @@ overrides = [
       path.enabled = true,
     },
     hover = {
+      default-features.enabled = true,
       dependency-detail.enabled = true,
     },
     inlay-hint = {

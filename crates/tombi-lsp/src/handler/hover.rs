@@ -118,6 +118,14 @@ pub async fn handle_hover(
             .map(|dependency_detail| dependency_detail.enabled())
             .unwrap_or_default()
             .value();
+        let cargo_default_features_hover_enabled = config
+            .cargo_extension_features()
+            .and_then(|features| features.lsp())
+            .and_then(|lsp| lsp.hover())
+            .and_then(|hover| hover.default_features())
+            .map(|default_features| default_features.enabled())
+            .unwrap_or_default()
+            .value();
         let pyproject_dependency_detail_hover_enabled = config
             .pyproject_extension_features()
             .and_then(|features| features.lsp())
@@ -142,7 +150,9 @@ pub async fn handle_hover(
         };
         let extension_hover = match extension_hover {
             some @ Some(_) => some,
-            None if cargo_dependency_detail_hover_enabled => {
+            None if cargo_dependency_detail_hover_enabled
+                || cargo_default_features_hover_enabled =>
+            {
                 tombi_extension_cargo::hover(
                     &text_document_uri,
                     &document_tree,

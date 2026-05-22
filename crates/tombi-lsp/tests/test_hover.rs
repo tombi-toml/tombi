@@ -411,8 +411,9 @@ mod hover_keys_value {
             async fn cargo_dependencies_features(
                 r#"
                 [dependencies]
-                serde = { version = "^1.0.0", features█ = ["derive"] }
+                serde = { version = "^1.0.0", default-features = false, features█ = ["derive"] }
                 "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "dependencies.serde.features",
@@ -425,8 +426,9 @@ mod hover_keys_value {
             async fn cargo_dependencies_features_item(
                 r#"
                 [dependencies]
-                serde = { version = "^1.0.0", features = ["derive█"] }
+                serde = { version = "^1.0.0", default-features = false, features = ["derive█"] }
                 "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "dependencies.serde.features[0]",
@@ -444,6 +446,65 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "dependencies.serde.features[0]",
                 "Value": "String"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_path_dependency_features_append_default_feature_list(
+                r#"
+                [dependencies]
+                local-path-crate = { path = "local-path-crate", default-features = true, features█ = ["default"] }
+                "#,
+                SourcePath(
+                    tombi_test_lib::project_root_path()
+                        .join("crates/tombi-lsp/tests/fixtures/cargo/path-dependency-with-features/Cargo.toml")
+                ),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok({
+                "Keys": "dependencies.local-path-crate.features",
+                "Value": "Array?",
+                "Description": Some(
+                    "List of features to activate in the dependency.\n\nDefault Features:\n  - extras"
+                ),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_registry_dependency_feature_item_appends_default_feature_list(
+                r#"
+                [dependencies]
+                serde = { version = "=1.0.228", features = ["derive█"] }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
+                UseTestCacheHome,
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                SchemaPath(cargo_schema_path()),
+                    CachedRemoteJson {
+                        url: "https://crates.io/api/v1/crates/serde/1.0.228",
+                        body: r#"{
+	                        "version": {
+                                "num": "1.0.228",
+	                            "features": {
+	                                "alloc": [],
+	                                "default": ["std"],
+                                "derive": ["serde_derive"],
+                                "rc": [],
+                                "std": ["serde_core/std"]
+                            }
+                        }
+                    }"#,
+                },
+            ) -> Ok({
+                "Keys": "dependencies.serde.features[0]",
+                "Value": "String",
+                "Description": Some(
+                    "List of features to activate in the dependency.\n\nDefault Features:\n  - std"
+                ),
             });
         );
 

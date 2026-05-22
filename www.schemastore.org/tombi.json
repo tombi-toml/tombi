@@ -2160,6 +2160,18 @@
               "type": "null"
             }
           ]
+        },
+        "default-features": {
+          "title": "Default features hover feature",
+          "description": "Whether hover shows default Cargo dependency features.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
