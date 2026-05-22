@@ -433,7 +433,8 @@ jobs:
             exit 0
           }
 
-          $installerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-x86_64-pc-windows-msvc.zip"
+          $x64InstallerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-x86_64-pc-windows-msvc.zip"
+          $arm64InstallerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-aarch64-pc-windows-msvc.zip"
           $wingetCreateUrl = "https://github.com/microsoft/winget-create/releases/download/v$env:WINGETCREATE_VERSION/wingetcreate.exe"
           $wingetCreateChecksumUrl = "$wingetCreateUrl.txt"
 
@@ -446,4 +447,4 @@ jobs:
             throw "wingetcreate.exe checksum mismatch. Expected $expectedHash but got $actualHash."
           }
 
-          .\wingetcreate.exe update tombi-toml.tombi -u $installerUrl -v $env:VERSION -t $env:WINGET_TOKEN --submit
+          .\wingetcreate.exe update tombi-toml.tombi --urls "$x64InstallerUrl|x64" "$arm64InstallerUrl|arm64" -v $env:VERSION -t $env:WINGET_TOKEN --submit
