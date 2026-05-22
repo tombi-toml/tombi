@@ -349,7 +349,11 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                         .await
                 }
                 Self::Anything(schema) => current_schema.map(|current_schema| {
-                    schema_type_definition(&current_schema.schema_uri, accessors, schema.range)
+                    schema_type_definition(
+                        current_schema.schema_uri.as_ref(),
+                        accessors,
+                        schema.range,
+                    )
                 }),
                 Self::Nothing(_) | Self::Null => None,
             }
