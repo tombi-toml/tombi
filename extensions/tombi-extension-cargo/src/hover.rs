@@ -24,6 +24,8 @@ pub async fn hover(
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
+    dependency_detail_hover_enabled: bool,
+    default_features_hover_enabled: bool,
 ) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
@@ -33,30 +35,36 @@ pub async fn hover(
         return Ok(None);
     };
 
-    if let Some(metadata) = feature_key_hover_metadata(
-        document_tree,
-        accessors,
-        position,
-        &cargo_toml_path,
-        toml_version,
-    )
-    .await
+    if dependency_detail_hover_enabled
+        && let Some(metadata) = feature_key_hover_metadata(
+            document_tree,
+            accessors,
+            position,
+            &cargo_toml_path,
+            toml_version,
+        )
+        .await
     {
         return Ok(Some(metadata));
     }
 
-    if let Some(metadata) = dependency_features_hover_metadata(
-        document_tree,
-        accessors,
-        position,
-        &cargo_toml_path,
-        toml_version,
-        offline,
-        cache_options,
-    )
-    .await?
+    if default_features_hover_enabled
+        && let Some(metadata) = dependency_features_hover_metadata(
+            document_tree,
+            accessors,
+            position,
+            &cargo_toml_path,
+            toml_version,
+            offline,
+            cache_options,
+        )
+        .await?
     {
         return Ok(Some(metadata));
+    }
+
+    if !dependency_detail_hover_enabled {
+        return Ok(None);
     }
 
     let (dependency_accessors, hover_target) =

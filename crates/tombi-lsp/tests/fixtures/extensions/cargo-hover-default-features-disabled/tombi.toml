@@ -1,0 +1,2 @@
+[extensions]
+"tombi-toml/cargo" = { lsp.hover.default-features.enabled = false, lsp.hover.dependency-detail.enabled = true }

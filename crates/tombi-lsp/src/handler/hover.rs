@@ -161,6 +161,8 @@ pub async fn handle_hover(
                     toml_version,
                     offline,
                     cache_options,
+                    cargo_dependency_detail_hover_enabled,
+                    cargo_default_features_hover_enabled,
                 )
                 .await?
             }

@@ -510,6 +510,44 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn cargo_registry_dependency_feature_item_skips_default_feature_list_when_disabled_by_extensions(
+                r#"
+                [dependencies]
+                serde = { version = "=1.0.228", features = ["derive█"] }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/cargo-hover-default-features-disabled/Cargo.toml"
+                )),
+                UseTestCacheHome,
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                SchemaPath(cargo_schema_path()),
+                CachedRemoteJson {
+                    url: "https://crates.io/api/v1/crates/serde/1.0.228",
+                    body: r#"{
+                        "version": {
+                            "num": "1.0.228",
+                            "features": {
+                                "alloc": [],
+                                "default": ["std"],
+                                "derive": ["serde_derive"],
+                                "rc": [],
+                                "std": ["serde_core/std"]
+                            }
+                        }
+                    }"#,
+                },
+            ) -> Ok({
+                "Keys": "dependencies.serde.features[0]",
+                "Value": "String",
+                "Description": Some("List of features to activate in the dependency."),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn cargo_profile_release_strip_debuginfo(
                 r#"
                 [profile.release]
@@ -593,6 +631,24 @@ mod hover_keys_value {
                 "#,
                 SourcePath(tombi_test_lib::project_root_path().join(
                     "crates/tombi-lsp/tests/fixtures/extensions/cargo-hover-disabled/member/Cargo.toml"
+                )),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok({
+                "Keys": "dependencies.member",
+                "Value": "(String | Table)?",
+                "Title": Some("Dependency"),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_workspace_dependency_hover_metadata_skips_dependency_detail_when_disabled_by_extensions(
+                r#"
+                [dependencies]
+                member█ = { workspace = true }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/cargo-hover-dependency-detail-disabled/member/Cargo.toml"
                 )),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok({
