@@ -86,6 +86,8 @@
 //! }
 //! ```
 //!
+extern crate self as serde_tombi;
+
 pub mod config;
 mod de;
 mod document;
@@ -98,8 +100,33 @@ pub use document::{
 };
 
 pub use ser::{Serializer, to_document, to_string_async};
+pub use serde_tombi_macros::tombi;
 use std::fmt;
 use thiserror::Error;
+
+#[doc(hidden)]
+pub mod private {
+    pub const INLINE_NEWTYPE_NAME: &str = "serde_tombi::Inline";
+
+    pub struct Inline<'a, T: ?Sized>(pub &'a T);
+
+    impl<T: ?Sized + serde::Serialize> serde::Serialize for Inline<'_, T> {
+        fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            serializer.serialize_newtype_struct(INLINE_NEWTYPE_NAME, self.0)
+        }
+    }
+
+    pub fn serialize_inline<T, S>(value: &T, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        T: ?Sized + serde::Serialize,
+        S: serde::Serializer,
+    {
+        serde::Serialize::serialize(&Inline(value), serializer)
+    }
+}
 
 /// Error that can occur when processing TOML.
 #[derive(Debug, Error)]

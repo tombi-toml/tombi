@@ -138,14 +138,8 @@ impl ToTomlString for tombi_document::Table {
                     if i != 0 {
                         result.push_str(", ");
                     }
-                    result.push_str(&format!(
-                        "{} = ",
-                        parent_keys.iter().chain(&[key]).copied().join(".")
-                    ));
-                    value.to_toml_string(
-                        result,
-                        &parent_keys.iter().chain(&[key]).copied().collect_vec(),
-                    );
+                    result.push_str(&format!("{key} = "));
+                    value.to_toml_string(result, &[]);
                 }
                 result.push('}');
             }
