@@ -14,7 +14,11 @@ console_error_panic_hook.workspace = true
 itertools.workspace = true
 js-sys.workspace = true
 serde.workspace = true
-serde_tombi = { workspace = true, default-features = false, features = ["wasm"] }
+serde_tombi = {
+  workspace = true,
+  default-features = false,
+  features = ["wasm"]
+}
 serde-wasm-bindgen = "0.6.5"
 tombi-config.workspace = true
 tombi-diagnostic = { workspace = true, features = ["wasm"] }
