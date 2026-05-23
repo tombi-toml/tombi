@@ -34,5 +34,10 @@ toggle_features! {
         ///
         /// Whether hover shows detailed dependency metadata.
         pub dependency_detail: Option<ToggleFeatureDefaultTrue>,
+
+        /// # Default features hover feature
+        ///
+        /// Whether hover shows default Cargo dependency features.
+        pub default_features: Option<ToggleFeatureDefaultTrue>,
     }
 }

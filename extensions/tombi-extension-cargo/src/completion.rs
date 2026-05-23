@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use serde::Deserialize;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{dig_accessors, dig_keys};
 use tombi_extension::CommentContext;
@@ -21,6 +20,9 @@ use tower_lsp::lsp_types::InsertTextFormat;
 
 use crate::cargo_lock::{exact_crates_io_version, load_cached_cargo_lock};
 use crate::{
+    crates_io::{
+        CratesIoCrateVersionsResponse, CratesIoVersionDetailResponse, CratesIoVersionsResponse,
+    },
     find_cargo_toml, find_workspace_cargo_toml, get_workspace_cargo_toml_path,
     is_any_dependency_path_accessor, is_dependency_accessor,
 };
@@ -29,28 +31,6 @@ enum CargoCompletionFeature {
     DependencyVersion,
     DependencyFeature,
     Path,
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoVersionsResponse {
-    versions: Vec<CratesIoVersion>,
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoVersion {
-    num: String,
-    features: tombi_hashmap::HashMap<String, Vec<String>>,
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoCrateResponse {
-    #[serde(default)]
-    versions: Vec<CratesIoVersion>,
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoVersionDetailResponse {
-    version: CratesIoVersion,
 }
 
 pub async fn completion(
@@ -807,7 +787,8 @@ async fn fetch_crate_features(
         // so we can read them directly from the latest version without a second fetch.
         let url = format!("https://crates.io/api/v1/crates/{crate_name}");
         let resp =
-            fetch_cached_remote_json::<CratesIoCrateResponse>(&url, offline, cache_options).await?;
+            fetch_cached_remote_json::<CratesIoCrateVersionsResponse>(&url, offline, cache_options)
+                .await?;
         resp.versions.into_iter().next().map(|v| v.features)
     }
 }

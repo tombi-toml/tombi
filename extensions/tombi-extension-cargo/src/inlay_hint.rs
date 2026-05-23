@@ -16,6 +16,7 @@ use crate::{
         CARGO_EXTENSION_ID, CargoLock, CargoLockPackage, find_cargo_lock_path,
         load_cached_cargo_lock, load_cargo_lock_from_path,
     },
+    crates_io::CratesIoVersionDetailResponse,
     dependency_package_name, find_workspace_cargo_toml, get_workspace_cargo_toml_path,
     load_cargo_toml,
     workspace::{extract_exclude_patterns, find_package_cargo_toml_paths},
@@ -142,16 +143,6 @@ impl WorkspaceDocumentTree<'_> {
             Self::External(document_tree) => document_tree,
         }
     }
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoVersionDetailResponse {
-    version: CratesIoVersion,
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoVersion {
-    features: HashMap<String, Vec<String>>,
 }
 
 pub async fn inlay_hint(

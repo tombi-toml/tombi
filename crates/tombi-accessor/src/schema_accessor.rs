@@ -341,9 +341,8 @@ mod tests {
 
     #[test]
     fn test_markdown_schema_accessors_display_key_containing_backtick() {
-        let accessors = MarkdownSchemaAccessors::from(vec![
-            SchemaAccessor::Key("key`name".to_string()),
-        ]);
+        let accessors =
+            MarkdownSchemaAccessors::from(vec![SchemaAccessor::Key("key`name".to_string())]);
         assert_eq!(format!("{accessors}"), "``\"key`name\"``");
     }
 }

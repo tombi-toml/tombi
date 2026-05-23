@@ -308,7 +308,7 @@ async fn inlay_hint_for_registry_default_features_is_rendered()
 
     write_cached_response(
         "https://crates.io/api/v1/crates/serde_json/1.0.142",
-        r#"{"version":{"features":{"default":["std","alloc"],"preserve_order":["indexmap","std"],"std":["memchr/std","serde/std"]}}}"#,
+        r#"{"version":{"num":"1.0.142","features":{"default":["std","alloc"],"preserve_order":["indexmap","std"],"std":["memchr/std","serde/std"]}}}"#,
     )
     .await;
 
@@ -377,7 +377,7 @@ async fn inlay_hint_for_registry_default_features_is_not_rendered_when_disabled_
 
     write_cached_response(
         "https://crates.io/api/v1/crates/serde_json/1.0.140",
-        r#"{"version":{"features":{"default":["std"],"preserve_order":["indexmap","std"],"std":["memchr/std","serde/std"]}}}"#,
+        r#"{"version":{"num":"1.0.140","features":{"default":["std"],"preserve_order":["indexmap","std"],"std":["memchr/std","serde/std"]}}}"#,
     )
     .await;
 

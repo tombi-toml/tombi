@@ -78,6 +78,41 @@ mod tests {
     }
 
     #[test]
+    fn cargo_hover_feature_tree_deserializes_default_features_key() {
+        let features: super::CargoHoverFeatureTree = serde_json::from_value(serde_json::json!({
+            "default-features": {
+                "enabled": false
+            }
+        }))
+        .expect("default-features should deserialize");
+
+        assert_eq!(
+            features.default_features,
+            Some(ToggleFeatureDefaultTrue {
+                enabled: Some(false.into()),
+            })
+        );
+    }
+
+    #[test]
+    fn cargo_hover_feature_tree_serializes_default_features_key() {
+        let value = serde_json::to_value(super::CargoHoverFeatureTree {
+            dependency_detail: None,
+            default_features: Some(ToggleFeatureDefaultTrue {
+                enabled: Some(false.into()),
+            }),
+        })
+        .expect("default-features should serialize");
+
+        assert_eq!(
+            value.get("default-features"),
+            Some(&serde_json::json!({
+                "enabled": false
+            }))
+        );
+    }
+
+    #[test]
     fn cargo_document_link_feature_tree_deserializes_workspace_key() {
         let features: CargoDocumentLinkFeatureTree = serde_json::from_value(serde_json::json!({
             "workspace": {
