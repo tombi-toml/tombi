@@ -54,6 +54,7 @@ nu-ansi-term = "0.50.1"
 pep508_rs = "0.9"
 pretty_assertions = "1.4.1"
 proc-macro2 = "1.0.95"
+proc-macro-crate = "3.4.0"
 quote = "1.0.40"
 rayon = "1.10.0"
 reqwest = { version = "0.12.15", default-features = false, features = [
@@ -69,8 +70,10 @@ serde = { version = "1.0.219", features = [
 ] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
 serde_tombi = { path = "rust/serde_tombi", default-features = false }
+serde_tombi_macros = { path = "rust/serde_tombi_macros" }
 similar = { version = "2.7.0" }
 surf = "2.3.2"
+syn = { version = "2.0.110", features = ["full", "extra-traits"] }
 tar = { version = "0.4.44" }
 tempfile = { version = "3.15.0" }
 textwrap = { version = "0.16.2" }
