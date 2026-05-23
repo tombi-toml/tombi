@@ -138,8 +138,7 @@ impl ToTomlString for tombi_document::Table {
                     if i != 0 {
                         result.push_str(", ");
                     }
-                    result.push_str(&format!("{key} = "));
-                    value.to_toml_string(result, &[]);
+                    inline_table_entry_to_toml_string(result, key, value);
                 }
                 result.push('}');
             }
@@ -149,6 +148,29 @@ impl ToTomlString for tombi_document::Table {
                 }
             }
         }
+    }
+}
+
+fn inline_table_entry_to_toml_string(
+    result: &mut std::string::String,
+    key: &tombi_document::Key,
+    value: &tombi_document::Value,
+) {
+    result.push_str(&format!("{key} = "));
+    match value {
+        tombi_document::Value::Table(table)
+            if table.kind() == tombi_document::TableKind::KeyValue =>
+        {
+            result.push('{');
+            for (i, (nested_key, nested_value)) in table.key_values().iter().enumerate() {
+                if i != 0 {
+                    result.push_str(", ");
+                }
+                inline_table_entry_to_toml_string(result, nested_key, nested_value);
+            }
+            result.push('}');
+        }
+        _ => value.to_toml_string(result, &[]),
     }
 }
 
@@ -552,6 +574,39 @@ id = 1
 [[aaa.bbb.ccc.items]]
 id = 2
 "#;
+        toml_text_assert_eq!(toml_string, expected);
+    }
+
+    #[tokio::test]
+    async fn test_inline_table_serialization_with_dotted_keys() {
+        let mut document = Document::new();
+
+        let mut inline_table = Table::new(TableKind::InlineTable);
+        let mut key_value_table = Table::new(TableKind::KeyValue);
+        let mut nested_key_value_table = Table::new(TableKind::KeyValue);
+
+        nested_key_value_table.insert(
+            Key::new(KeyKind::BareKey, "workspace".to_string()),
+            Value::Boolean(Boolean::new(true)),
+        );
+        key_value_table.insert(
+            Key::new(KeyKind::BareKey, "version".to_string()),
+            Value::Table(nested_key_value_table),
+        );
+        inline_table.insert(
+            Key::new(KeyKind::BareKey, "dependency".to_string()),
+            Value::Table(key_value_table),
+        );
+
+        document.insert(
+            Key::new(KeyKind::BareKey, "package".to_string()),
+            Value::Table(inline_table),
+        );
+
+        let mut toml_string = std::string::String::new();
+        document.to_toml_string(&mut toml_string, &[]);
+        let expected = r#"package = {dependency = {version = {workspace = true}}}"#;
+
         toml_text_assert_eq!(toml_string, expected);
     }
 

@@ -1,4 +1,5 @@
 use proc_macro::TokenStream;
+use proc_macro_crate::{FoundCrate, crate_name};
 use proc_macro2::Span;
 use quote::quote;
 
@@ -12,6 +13,7 @@ pub fn tombi(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
 fn expand(item: TokenStream) -> syn::Result<TokenStream> {
     let mut item = syn::parse::<syn::Item>(item)?;
+    let serde_tombi_path = serde_tombi_path()?;
 
     let struct_item = match &mut item {
         syn::Item::Struct(struct_item) => struct_item,
@@ -22,6 +24,12 @@ fn expand(item: TokenStream) -> syn::Result<TokenStream> {
             ));
         }
     };
+    let struct_ident = struct_item.ident.clone();
+    let helper_mod_ident = syn::Ident::new(
+        &format!("__serde_tombi_{}_helpers", struct_ident),
+        Span::call_site(),
+    );
+    let helper_path = format!("{helper_mod_ident}::serialize_inline");
 
     for field in &mut struct_item.fields {
         let inline = take_tombi_inline_attr(field)?;
@@ -42,14 +50,28 @@ fn expand(item: TokenStream) -> syn::Result<TokenStream> {
                 "#[tombi(inline)] cannot be combined with #[serde(serialize_with = ...)]",
             ));
         }
+        let path = syn::LitStr::new(&helper_path, Span::call_site());
 
-        let path = syn::LitStr::new("serde_tombi::private::serialize_inline", Span::call_site());
         field
             .attrs
             .push(syn::parse_quote!(#[serde(serialize_with = #path)]));
     }
 
-    Ok(quote!(#item).into())
+    Ok(quote!(
+        #[doc(hidden)]
+        mod #helper_mod_ident {
+            pub fn serialize_inline<T, S>(value: &T, serializer: S) -> std::result::Result<S::Ok, S::Error>
+            where
+                T: ?Sized + serde::Serialize,
+                S: serde::Serializer,
+            {
+                #serde_tombi_path::private::serialize_inline(value, serializer)
+            }
+        }
+
+        #item
+    )
+    .into())
 }
 
 fn take_tombi_inline_attr(field: &mut syn::Field) -> syn::Result<bool> {
@@ -101,4 +123,18 @@ fn parse_serde_attrs(field: &syn::Field) -> syn::Result<SerdeAttrs> {
     }
 
     Ok(attrs)
+}
+
+fn serde_tombi_path() -> syn::Result<syn::Path> {
+    match crate_name("serde_tombi") {
+        Ok(FoundCrate::Itself) => Ok(syn::parse_quote!(crate)),
+        Ok(FoundCrate::Name(name)) => {
+            let ident = syn::Ident::new(&name, Span::call_site());
+            Ok(syn::parse_quote!(#ident))
+        }
+        Err(error) => Err(syn::Error::new(
+            Span::call_site(),
+            format!("failed to resolve serde_tombi crate name: {error}"),
+        )),
+    }
 }

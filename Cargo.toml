@@ -54,6 +54,7 @@ nu-ansi-term = "0.50.1"
 pep508_rs = "0.9"
 pretty_assertions = "1.4.1"
 proc-macro2 = "1.0.95"
+proc-macro-crate = "3.4.0"
 quote = "1.0.40"
 rayon = "1.10.0"
 reqwest = { version = "0.12.15", default-features = false, features = [
