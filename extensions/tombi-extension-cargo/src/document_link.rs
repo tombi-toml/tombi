@@ -312,16 +312,19 @@ fn document_link_for_crate_cargo_toml(
 
     let mut total_document_links = vec![];
     let workspace_cargo_toml = if crate_document_tree.contains_key("workspace") {
-        crate::load_cargo_toml(crate_cargo_toml_path, toml_version)
-            .map(|(root, document_tree)| (crate_cargo_toml_path.to_path_buf(), root, document_tree))
+        Some((
+            crate_cargo_toml_path.to_path_buf(),
+            crate_document_tree.clone(),
+        ))
     } else {
         find_workspace_cargo_toml(
             crate_cargo_toml_path,
             get_workspace_cargo_toml_path(crate_document_tree),
             toml_version,
         )
+        .map(|(path, _, document_tree)| (path, document_tree))
     };
-    if let Some((workspace_cargo_toml_path, _, workspace_document_tree)) = workspace_cargo_toml {
+    if let Some((workspace_cargo_toml_path, workspace_document_tree)) = workspace_cargo_toml {
         let registries =
             get_registries(&workspace_cargo_toml_path, toml_version).unwrap_or_default();
 
@@ -446,7 +449,7 @@ fn document_link_for_crate_cargo_toml(
                 features,
             ) {
                 if document_links.is_empty()
-                    && !dependency_uses_local_path(crate_value)
+                    && dependency_uses_default_registry(crate_value)
                     && let Some(document_link) = crates_io_document_link_enabled(features)
                         .then(|| get_crate_io_crate_link(crate_key, crate_value))
                         .flatten()
@@ -697,6 +700,19 @@ fn dependency_uses_local_path(crate_value: &tombi_document_tree::Value) -> bool 
         crate_value,
         tombi_document_tree::Value::Table(table) if table.contains_key("path")
     )
+}
+
+fn dependency_uses_default_registry(crate_value: &tombi_document_tree::Value) -> bool {
+    match crate_value {
+        tombi_document_tree::Value::String(_) => true,
+        tombi_document_tree::Value::Table(table) => {
+            !table.contains_key("path")
+                && !table.contains_key("git")
+                && !table.contains_key("registry")
+                && !table.contains_key("workspace")
+        }
+        _ => false,
+    }
 }
 
 fn workspace_dependency_target(
