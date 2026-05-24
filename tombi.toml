@@ -34,6 +34,12 @@ path = "schemas/type-test.schema.json"
 include = ["type-test.toml"]
 
 [[schemas]]
+# Keep Cargo.toml on TOML v1.0.0 for Nix builtins.fromTOML compatibility.
+toml-version = "v1.0.0"
+path = "tombi://www.schemastore.org/cargo.json"
+include = ["Cargo.toml"]
+
+[[schemas]]
 path = "tombi://www.schemastore.org/tombi.json"
 include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
 format.rules = {
