@@ -57,24 +57,15 @@ proc-macro-crate = "3.4.0"
 proc-macro2 = "1.0.95"
 quote = "1.0.40"
 rayon = "1.10.0"
-reqwest = {
-  version = "0.12.15",
-  default-features = false,
-  features = [
-    "json",
-    "rustls-tls-native-roots",
-  ]
-}
+reqwest = { version = "0.12.15", default-features = false, features = [
+  "json",
+  "rustls-tls-native-roots",
+] }
 rstest = { version = "0.25.0" }
 rustc-hash = { version = "2.1.1" }
 schemars = { version = "1.2.1", features = ["preserve_order", "url2"] }
 semver = "1.0.17"
-serde = {
-  version = "1.0.219",
-  features = [
-    "derive",
-  ]
-}
+serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
 serde_tombi = { path = "rust/serde_tombi", default-features = false }
 serde_tombi_macros = { path = "rust/serde_tombi_macros" }
@@ -93,12 +84,8 @@ tombi-ast-editor = { path = "crates/tombi-ast-editor" }
 tombi-cache = { path = "crates/tombi-cache" }
 tombi-cli-options = { path = "crates/tombi-cli-options" }
 tombi-comment-directive = { path = "crates/tombi-comment-directive" }
-tombi-comment-directive-serde = {
-  path = "crates/tombi-comment-directive-serde"
-}
-tombi-comment-directive-store = {
-  path = "crates/tombi-comment-directive-store"
-}
+tombi-comment-directive-serde = { path = "crates/tombi-comment-directive-serde" }
+tombi-comment-directive-store = { path = "crates/tombi-comment-directive-store" }
 tombi-config = { path = "crates/tombi-config" }
 tombi-date-time = { path = "crates/tombi-date-time" }
 tombi-diagnostic = { path = "crates/tombi-diagnostic" }
@@ -123,10 +110,7 @@ tombi-lsp = { path = "crates/tombi-lsp", default-features = false }
 tombi-parser = { path = "crates/tombi-parser" }
 tombi-regex = { path = "crates/tombi-regex" }
 tombi-rg-tree = { path = "crates/tombi-rg-tree" }
-tombi-schema-store = {
-  path = "crates/tombi-schema-store",
-  default-features = false
-}
+tombi-schema-store = { path = "crates/tombi-schema-store", default-features = false }
 tombi-severity-level = { path = "crates/tombi-severity-level" }
 tombi-syntax = { path = "crates/tombi-syntax" }
 tombi-test-lib = { path = "crates/tombi-test-lib" }
