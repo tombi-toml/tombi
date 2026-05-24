@@ -311,11 +311,17 @@ fn document_link_for_crate_cargo_toml(
     }
 
     let mut total_document_links = vec![];
-    if let Some((workspace_cargo_toml_path, _, workspace_document_tree)) = find_workspace_cargo_toml(
-        crate_cargo_toml_path,
-        get_workspace_cargo_toml_path(crate_document_tree),
-        toml_version,
-    ) {
+    let workspace_cargo_toml = if crate_document_tree.contains_key("workspace") {
+        crate::load_cargo_toml(crate_cargo_toml_path, toml_version)
+            .map(|(root, document_tree)| (crate_cargo_toml_path.to_path_buf(), root, document_tree))
+    } else {
+        find_workspace_cargo_toml(
+            crate_cargo_toml_path,
+            get_workspace_cargo_toml_path(crate_document_tree),
+            toml_version,
+        )
+    };
+    if let Some((workspace_cargo_toml_path, _, workspace_document_tree)) = workspace_cargo_toml {
         let registries =
             get_registries(&workspace_cargo_toml_path, toml_version).unwrap_or_default();
 
@@ -431,7 +437,7 @@ fn document_link_for_crate_cargo_toml(
         let registries = get_registries(crate_cargo_toml_path, toml_version).unwrap_or_default();
 
         for (crate_key, crate_value) in total_dependencies {
-            if let Ok(document_links) = document_link_for_dependency(
+            if let Ok(mut document_links) = document_link_for_dependency(
                 crate_key,
                 crate_value,
                 crate_cargo_toml_path,
@@ -439,6 +445,14 @@ fn document_link_for_crate_cargo_toml(
                 toml_version,
                 features,
             ) {
+                if document_links.is_empty()
+                    && !dependency_uses_local_path(crate_value)
+                    && let Some(document_link) = crates_io_document_link_enabled(features)
+                        .then(|| get_crate_io_crate_link(crate_key, crate_value))
+                        .flatten()
+                {
+                    document_links.push(document_link);
+                }
                 total_document_links.extend(document_links);
             }
         }
