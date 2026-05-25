@@ -63,9 +63,10 @@ mod completion_edit {
             new_text: "completion".to_string(),
         };
 
-        let actual = apply_text_edit(text, &text_edit);
-
-        pretty_assertions::assert_eq!(actual, r#"lsp = { "日本語" = "値", completion }"#);
+        pretty_assertions::assert_eq!(
+            apply_text_edit(text, &text_edit),
+            r#"lsp = { "日本語" = "値", completion }"#
+        );
     }
 
     mod tombi_schema {
