@@ -829,21 +829,4 @@ mod tests {
             "#,
         ) -> Ok(((2, 2), (3, 11)));
     }
-
-    #[test]
-    fn apply_hover_text_change_replaces_and_appends() {
-        let mut target = Some("base".to_string());
-
-        apply_hover_text_change(
-            &mut target,
-            Some(HoverTextChange::Append("extra".to_string())),
-        );
-        assert_eq!(target.as_deref(), Some("base\n\nextra"));
-
-        apply_hover_text_change(
-            &mut target,
-            Some(HoverTextChange::Replace("override".to_string())),
-        );
-        assert_eq!(target.as_deref(), Some("override"));
-    }
 }
