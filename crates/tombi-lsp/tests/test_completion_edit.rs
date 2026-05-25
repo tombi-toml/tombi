@@ -50,6 +50,25 @@ mod completion_edit {
         new_text
     }
 
+    #[test]
+    fn apply_text_edit_uses_grapheme_columns_for_unicode() {
+        let text = r#"lsp = { "日本語" = "値", comp }"#;
+        let start = text.find("comp").unwrap();
+        let end = start + "comp".len();
+        let text_edit = tombi_extension::TextEdit {
+            range: tombi_text::Range::new(
+                tombi_text::Position::default() + tombi_text::RelativePosition::of(&text[..start]),
+                tombi_text::Position::default() + tombi_text::RelativePosition::of(&text[..end]),
+            ),
+            new_text: "completion".to_string(),
+        };
+
+        pretty_assertions::assert_eq!(
+            apply_text_edit(text, &text_edit),
+            r#"lsp = { "日本語" = "値", completion }"#
+        );
+    }
+
     mod tombi_schema {
         use tombi_test_lib::tombi_schema_path;
 

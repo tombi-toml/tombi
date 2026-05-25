@@ -139,3 +139,26 @@ impl DocumentSource {
         &self.document_tree_errors
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use tombi_config::TomlVersion;
+    use tombi_text::EncodingKind;
+
+    use super::DocumentSource;
+
+    #[test]
+    fn line_index_arc_keeps_original_text_alive() {
+        let mut document_source = DocumentSource::new(
+            "name = \"before\"\nversion = \"1.0.0\"",
+            Some(1),
+            TomlVersion::default(),
+            EncodingKind::Utf16,
+        );
+        let line_index = document_source.line_index_arc();
+
+        document_source.set_text("name = \"after\"", TomlVersion::default());
+
+        assert_eq!(line_index.line_text(1), Some("version = \"1.0.0\""));
+    }
+}
