@@ -399,8 +399,143 @@ jobs:
             fi
           done
 
+  update-setup-tombi:
+    needs: [release-notes]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Detect stable release tag
+        id: stable-version
+        shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ "${REF_NAME}" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "stable_tag=${REF_NAME}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "Skipping setup-tombi update for non-stable tag: ${REF_NAME}"
+            echo "stable_tag=" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Create GitHub App token for setup-tombi
+        id: app-token
+        if: steps.stable-version.outputs.stable_tag != ''
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.VERSION_UPDATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.VERSION_UPDATE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            setup-tombi
+          permission-contents: write
+          permission-actions: write
+
+      - name: Update setup-tombi before tagging
+        if: steps.stable-version.outputs.stable_tag != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = "setup-tombi";
+            const tag = "${{ steps.stable-version.outputs.stable_tag }}";
+
+            try {
+              await github.rest.git.getRef({
+                owner,
+                repo,
+                ref: `tags/${tag}`,
+              });
+              core.info(`setup-tombi already has tag ${tag}. Skipping update and tagging.`);
+              return;
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+            }
+
+            const dispatchedAfter = new Date().toISOString();
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: "update-version.yml",
+              ref: "main",
+              inputs: {
+                version: tag,
+              },
+            });
+
+            core.info("Triggered setup-tombi update-version.yml on main.");
+
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+            const maxAttempts = 60;
+            let workflowRun;
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id: "update-version.yml",
+                branch: "main",
+                event: "workflow_dispatch",
+                per_page: 10,
+              });
+
+              workflowRun = data.workflow_runs.find(
+                (run) => run.created_at >= dispatchedAfter,
+              );
+
+              if (workflowRun) {
+                core.info(
+                  `Found setup-tombi update-version run ${workflowRun.id} with status ${workflowRun.status}.`,
+                );
+                if (workflowRun.status === "completed") {
+                  break;
+                }
+              } else {
+                core.info("Waiting for setup-tombi update-version run to appear.");
+              }
+
+              if (attempt === maxAttempts) {
+                core.setFailed("Timed out waiting for setup-tombi update-version workflow to complete.");
+                return;
+              }
+
+              await sleep(10000);
+            }
+
+            if (!workflowRun) {
+              core.setFailed("setup-tombi update-version workflow run was not found.");
+              return;
+            }
+
+            if (workflowRun.conclusion !== "success") {
+              core.setFailed(
+                `setup-tombi update-version workflow concluded with ${workflowRun.conclusion}.`,
+              );
+              return;
+            }
+
+            const runSha = workflowRun.head_sha;
+            if (!runSha) {
+              core.setFailed("setup-tombi update-version workflow did not report a head SHA.");
+              return;
+            }
+
+            await github.rest.git.createRef({
+              owner,
+              repo,
+              ref: `refs/tags/${tag}`,
+              sha: runSha,
+            });
+
+            core.info(`Created ${repo}@${tag} on ${runSha} after update-version completed.`);
+
   publish-winget:
-    needs: [release-notes, update-install-script-version]
+    needs: [release-notes]
     if: startsWith(github.ref, 'refs/tags/v') && (github.event_name != 'workflow_dispatch' || inputs.skip_winget != true)
     runs-on: windows-latest
     permissions:

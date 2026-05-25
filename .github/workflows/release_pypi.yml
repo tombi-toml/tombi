@@ -274,14 +274,3 @@ jobs:
               workflow_id: 'main.yml',
               ref: 'main',
             })
-      - name: "Update tombi-setup readme"
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.TOMBI_PRE_COMMIT_PAT }}
-          script: |
-            github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: 'setup-tombi',
-              workflow_id: 'update-readme-version.yml',
-              ref: 'main',
-            })
