@@ -415,7 +415,6 @@ jobs:
           set -euo pipefail
           if [[ "${REF_NAME}" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
             echo "stable_tag=${REF_NAME}" >> "${GITHUB_OUTPUT}"
-            echo "stable_version=${REF_NAME#v}" >> "${GITHUB_OUTPUT}"
           else
             echo "Skipping setup-tombi update for non-stable tag: ${REF_NAME}"
             echo "stable_tag=" >> "${GITHUB_OUTPUT}"
