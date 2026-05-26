@@ -6,7 +6,7 @@
   },
   {
     "title": "Installation",
-    "description": "Install via CLI, Homebrew, pip, npm, or IDE extensions.",
+    "description": "Install via CLI, winget, Homebrew, pip, npm, or IDE extensions.",
     "path": "/docs/installation"
   },
   {
