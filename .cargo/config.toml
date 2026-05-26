@@ -6,5 +6,11 @@ tombi-flamegraph = "flamegraph --output .tmp/flamegraph.svg --package tombi-cli 
 xtask = "run --package xtask --bin xtask --"
 parse-jsonschema = "run --package tombi-schema-store --example parse_jsonschema --"
 
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.aarch64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
 [target.wasm32-unknown-unknown]
 rustflags = ["--cfg", 'getrandom_backend="wasm_js"']
