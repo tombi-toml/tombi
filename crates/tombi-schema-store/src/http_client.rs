@@ -20,7 +20,7 @@ pub use reqwest_client::HttpClient;
 #[cfg(feature = "gloo-net06")]
 #[allow(dead_code)]
 mod gloo_net_client;
-#[cfg(all(feature = "gloo-net06", not(feature = "wasm")))]
+#[cfg(all(feature = "gloo-net06", not(feature = "reqwest01")))]
 pub use gloo_net_client::HttpClient;
 
 // Provide a stub when no features are enabled
