@@ -15,6 +15,7 @@ overrides:
   minimatch: ^5.1.9
   nitropack: 2.13.4
   qs: 6.15.2
+  tmp: 0.2.6
   vitest>vite: ^7.3.2
   ws: 8.20.1
 
@@ -4476,8 +4477,8 @@ packages:
     resolution: {integrity: sha512-WMi/OQ2axVTf/ykqCQgXiIct+mSQDFdH2fkwhPwgEwvJ1kSzZRiinb0zF2Xb8u4+OqPChmyI6MEu4EezNJz+FQ==}
     hasBin: true
 
-  tmp@0.2.5:
-    resolution: {integrity: sha512-voyz6MApa1rQGUxT3E+BK7/ROe8itEx7vD8/HEvt4xwXucvQ5G5oeEiHkmHZJuBO21RpOf+YYm9MOivj709jow==}
+  tmp@0.2.6:
+    resolution: {integrity: sha512-5sJPdPjfI5Kx+qbrDesxkglRBxW//g7hCsqspEjwkewGvBMGIKMOTKzLt1hFVJzyadba3lDUN20O9qhvbQUSTA==}
     engines: {node: '>=14.14'}
 
   to-regex-range@5.0.1:
@@ -6751,7 +6752,7 @@ snapshots:
       read: 1.0.7
       secretlint: 10.2.2
       semver: 7.7.3
-      tmp: 0.2.5
+      tmp: 0.2.6
       typed-rest-client: 1.8.11
       url-join: 4.0.1
       xml2js: 0.5.0
@@ -9114,7 +9115,7 @@ snapshots:
       is-ci: 2.0.0
       leven: 3.1.0
       semver: 7.7.3
-      tmp: 0.2.5
+      tmp: 0.2.6
       yauzl-promise: 4.0.0
     transitivePeerDependencies:
       - debug
@@ -10010,7 +10011,7 @@ snapshots:
     dependencies:
       tldts-core: 6.1.86
 
-  tmp@0.2.5: {}
+  tmp@0.2.6: {}
 
   to-regex-range@5.0.1:
     dependencies:
