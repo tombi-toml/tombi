@@ -11,6 +11,6 @@
     },
     "devDependencies": {
         "serve": "^14.2.6",
-        "wasm-pack": "^0.14.0"
+        "wasm-pack": "^0.15.0"
     }
 }
