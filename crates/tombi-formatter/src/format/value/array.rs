@@ -89,13 +89,14 @@ fn format_multiline_array(
 
     f.write_indent()?;
     write!(f, "[")?;
-
     if let Some(trailing_comment) = array.bracket_start_trailing_comment() {
+        if let Some(trailing_comment_alignment_width) = trailing_comment_alignment_width {
+            write_trailing_comment_alignment_space(f, *trailing_comment_alignment_width)?;
+        }
         trailing_comment.format(f)?;
     }
 
     write!(f, "{}", f.line_ending())?;
-
     f.inc_indent();
 
     let groups = array
