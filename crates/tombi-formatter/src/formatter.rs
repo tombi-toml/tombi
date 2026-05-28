@@ -193,9 +193,10 @@ impl<'a> Formatter<'a> {
         &mut self,
         node: &T,
     ) -> Result<String, std::fmt::Error> {
+        let old_skip_comment = self.skip_comment;
         self.skip_comment = true;
         let result = self.format_to_string(node)?;
-        self.skip_comment = false;
+        self.skip_comment = old_skip_comment;
         Ok(result)
     }
 
