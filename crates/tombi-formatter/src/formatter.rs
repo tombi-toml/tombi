@@ -294,6 +294,11 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
+    pub(crate) const fn trailing_comment_alignment(&self) -> bool {
+        self.definitions.trailing_comment_alignment
+    }
+
+    #[inline]
     pub(crate) fn trailing_comment_space(&self) -> &'static str {
         // SAFETY: The lifetime of `trailing_comment_space` is `'static`.
         //         It is guaranteed by the `FormatDefinitions` struct.

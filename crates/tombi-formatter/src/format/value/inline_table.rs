@@ -5,7 +5,11 @@ use tombi_ast::{AstNode, DanglingCommentGroupOr};
 use tombi_config::TomlVersion;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
+use crate::{
+    Format,
+    format::write_trailing_comment_alignment_space,
+    types::{AlignmentWidth, WithAlignmentHint},
+};
 
 impl Format for tombi_ast::InlineTable {
     #[inline]
@@ -107,6 +111,8 @@ fn format_multiline_inline_table(
 
     let key_values = table.key_values().collect_vec();
     let equal_alignment_width = f.key_value_equal_alignment_width(key_values.iter());
+    let local_trailing_comment_alignment_width =
+        inline_table_trailing_comment_alignment_width(table, equal_alignment_width, f)?;
 
     let groups = table
         .dangling_comment_groups()
@@ -115,7 +121,7 @@ fn format_multiline_inline_table(
             WithAlignmentHint::new_with_dangling_comment_group_or(
                 group,
                 equal_alignment_width,
-                *trailing_comment_alignment_width,
+                local_trailing_comment_alignment_width,
             )
         }))
         .collect_vec();
@@ -137,6 +143,31 @@ fn format_multiline_inline_table(
     }
 
     Ok(())
+}
+
+fn inline_table_trailing_comment_alignment_width(
+    table: &tombi_ast::InlineTable,
+    equal_alignment_width: Option<AlignmentWidth>,
+    f: &mut crate::Formatter,
+) -> Result<Option<AlignmentWidth>, std::fmt::Error> {
+    if !f.trailing_comment_alignment() || table.key_values().next().is_none() {
+        return Ok(None);
+    }
+
+    let groups = table
+        .dangling_comment_groups()
+        .map(DanglingCommentGroupOr::DanglingCommentGroup)
+        .chain(table.key_value_with_comma_groups().map(|group| {
+            WithAlignmentHint::new_with_dangling_comment_group_or(
+                group,
+                equal_alignment_width,
+                None,
+            )
+        }))
+        .collect_vec();
+
+    let formatted = f.format_to_string_without_comment(&groups)?;
+    Ok(Some(AlignmentWidth::new(&formatted)))
 }
 
 fn format_singleline_inline_table(
