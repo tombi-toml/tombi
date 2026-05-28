@@ -1611,13 +1611,13 @@ mod format_options {
                 }
             ) -> Ok(
                 r#"
-                key = "value"    # comment 1
-                key2 = "value2"  # comment 2
+                key = "value"        # comment 1
+                key2 = "value2"      # comment 2
                 key3.key4 = [
-                  1,             # comment 3-1
-                  2,             # comment 3-2
-                  3              # comment 3-3
-                ]                # comment 4
+                  1,  # comment 3-1
+                  2,  # comment 3-2
+                  3   # comment 3-3
+                ]                    # comment 4
                 "#
             )
         }
@@ -1642,13 +1642,44 @@ mod format_options {
                 }
             ) -> Ok(
                 r#"
-                key = "value"    # comment 1
-                key2 = "value2"  # comment 2
+                key = "value"        # comment 1
+                key2 = "value2"      # comment 2
                 key3.key4 = [
-                  1,             # comment 3-1
-                  2,             # comment 3-2
-                  3,             # comment 3-3
-                ]                # comment 4
+                  1,  # comment 3-1
+                  2,  # comment 3-2
+                  3,  # comment 3-3
+                ]                    # comment 4
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_true_in_array_is_scoped_locally(
+                r#"
+                [group]
+                a_very_long_long_long_long_long_table_key = 42
+                list = [
+                  "A", # comment 1
+                  "BB", # comment 2
+                  "CCC", # comment 3
+                ]
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                [group]
+                a_very_long_long_long_long_long_table_key = 42
+                list = [
+                  "A",    # comment 1
+                  "BB",   # comment 2
+                  "CCC",  # comment 3
+                ]
                 "#
             )
         }
@@ -1674,13 +1705,13 @@ mod format_options {
                 }
             ) -> Ok(
                 r#"
-                key = "value"    # comment 1
-                key2 = "value2"  # comment 2
+                key = "value"            # comment 1
+                key2 = "value2"          # comment 2
                 key3.key4 = {
-                  a = 1,         # comment 3-1
-                  b = 2,         # comment 3-2
-                  c = 3          # comment 3-3
-                }                # comment 4
+                  a = 1,  # comment 3-1
+                  b = 2,  # comment 3-2
+                  c = 3   # comment 3-3
+                }                        # comment 4
                 "#
             )
         }
@@ -1706,13 +1737,45 @@ mod format_options {
                 }
             ) -> Ok(
                 r#"
-                key = "value"    # comment 1
-                key2 = "value2"  # comment 2
+                key = "value"            # comment 1
+                key2 = "value2"          # comment 2
                 key3.key4 = {
-                  a = 1,         # comment 3-1
-                  b = 2,         # comment 3-2
-                  c = 3,         # comment 3-3
-                }                # comment 4
+                  a = 1,  # comment 3-1
+                  b = 2,  # comment 3-2
+                  c = 3,  # comment 3-3
+                }                        # comment 4
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_true_in_inline_table_is_scoped_locally(
+                r#"
+                [group]
+                a_very_long_long_long_long_long_table_key = 42
+                value = {
+                    a = 1, # comment 1
+                    bb = 2, # comment 2
+                    ccc = 3, # comment 3
+                }
+                "#,
+                TomlVersion::V1_1_0,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                [group]
+                a_very_long_long_long_long_long_table_key = 42
+                value = {
+                  a = 1,    # comment 1
+                  bb = 2,   # comment 2
+                  ccc = 3,  # comment 3
+                }
                 "#
             )
         }
@@ -1811,13 +1874,13 @@ mod format_options {
             ) -> Ok(
                 r#"
                 [table]
-                  key = "value"    # comment 1
-                  key2 = "value2"  # comment 2
+                  key = "value"            # comment 1
+                  key2 = "value2"          # comment 2
                   key3.key4 = {
-                    a = 1,         # comment 3-1
-                    b = 2,         # comment 3-2
-                    c = 3,         # comment 3-3
-                  }                # comment 4
+                    a = 1,  # comment 3-1
+                    b = 2,  # comment 3-2
+                    c = 3,  # comment 3-3
+                  }                        # comment 4
                 "#
             )
         }

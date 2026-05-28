@@ -4,7 +4,11 @@ use itertools::Itertools;
 use tombi_ast::{AstNode, DanglingCommentGroupOr};
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
+use crate::{
+    Format,
+    format::write_trailing_comment_alignment_space,
+    types::{AlignmentWidth, WithAlignmentHint},
+};
 
 impl Format for tombi_ast::Array {
     #[inline]
@@ -99,6 +103,8 @@ fn format_multiline_array(
     write!(f, "{}", f.line_ending())?;
     f.inc_indent();
 
+    let local_trailing_comment_alignment_width = array_trailing_comment_alignment_width(array, f)?;
+
     let groups = array
         .dangling_comment_groups()
         .map(DanglingCommentGroupOr::DanglingCommentGroup)
@@ -106,7 +112,7 @@ fn format_multiline_array(
             WithAlignmentHint::new_with_dangling_comment_group_or(
                 group,
                 None,
-                *trailing_comment_alignment_width,
+                local_trailing_comment_alignment_width,
             )
         }))
         .collect_vec();
@@ -128,6 +134,27 @@ fn format_multiline_array(
     }
 
     Ok(())
+}
+
+fn array_trailing_comment_alignment_width(
+    array: &tombi_ast::Array,
+    f: &mut crate::Formatter,
+) -> Result<Option<AlignmentWidth>, std::fmt::Error> {
+    if !f.trailing_comment_alignment() || array.values().next().is_none() {
+        return Ok(None);
+    }
+
+    let groups =
+        array
+            .dangling_comment_groups()
+            .map(DanglingCommentGroupOr::DanglingCommentGroup)
+            .chain(array.value_with_comma_groups().map(|group| {
+                WithAlignmentHint::new_with_dangling_comment_group_or(group, None, None)
+            }))
+            .collect_vec();
+
+    let formatted = f.format_to_string_without_comment(&groups)?;
+    Ok(Some(AlignmentWidth::new(&formatted)))
 }
 
 fn format_singleline_array(
