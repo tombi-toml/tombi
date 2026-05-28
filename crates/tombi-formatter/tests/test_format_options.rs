@@ -1719,6 +1719,76 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
+            async fn test_trailing_comment_alignment_true_uses_local_groups_for_array_and_inline_table(
+                r#"
+                #:tombi toml-version = "v1.1.0"
+
+                [root]  # table
+                short = 1  # table group 1
+                very.long.long.long.key = 2  # table group 1
+
+                items = [  # array
+                  "A",  # array group 1
+                  "BB",  # array group 1
+
+                  "CCC",  # array group 2
+                  "DDDD",  # array group 2
+                ]  # array end
+
+                config = {  # inline table
+                  x = 1,  # inline group 1
+                  long_key = [  # inline nested array
+                    1,  # nested array group 1
+                    22,  # nested array group 1
+                  ],  # inline group 1
+
+                  nested = {  # inline group 2
+                    a = "x",  # nested inline group 2
+                    bb = "y",  # nested inline group 2
+                  },  # inline group 2
+                }  # inline table
+                "#,
+                TomlVersion::V1_1_0,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                #:tombi toml-version = "v1.1.0"
+
+                [root]  # table
+                short = 1                    # table group 1
+                very.long.long.long.key = 2  # table group 1
+
+                items = [  # array
+                  "A",     # array group 1
+                  "BB",    # array group 1
+
+                  "CCC",   # array group 2
+                  "DDDD",  # array group 2
+                ]          # array end
+
+                config = {      # inline table
+                  x = 1,        # inline group 1
+                  long_key = [  # inline nested array
+                    1,          # nested array group 1
+                    22,         # nested array group 1
+                  ],            # inline group 1
+
+                  nested = {    # inline group 2
+                    a = "x",    # nested inline group 2
+                    bb = "y",   # nested inline group 2
+                  },            # inline group 2
+                }               # inline table
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_trailing_comment_alignment_and_indent_table_key_value_pairs_true_in_inline_table(
                 r#"
                 [table]
