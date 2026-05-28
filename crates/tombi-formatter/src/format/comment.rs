@@ -190,11 +190,13 @@ fn format_comment(
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write;
+
     use itertools::Itertools;
     use tombi_ast::AstNode;
     use tombi_config::FormatRules;
 
-    use crate::{Formatter, test_format};
+    use crate::{Format, Formatter, test_format};
 
     test_format! {
         #[tokio::test]
@@ -346,6 +348,57 @@ mod tests {
             formatted.contains("key2"),
             "item group content should be formatted even when comments are skipped"
         );
+    }
+
+    #[test]
+    fn format_to_string_without_comment_restores_nested_skip_comment_state() {
+        struct NestedSkipCommentProbe;
+
+        impl Format for NestedSkipCommentProbe {
+            fn format(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+                write!(f, "value")?;
+                let nested_root = tombi_ast::Root::cast(
+                    tombi_parser::parse("key = 1 # nested").into_syntax_node(),
+                )
+                .unwrap();
+                let nested_comment = nested_root
+                    .key_values()
+                    .next()
+                    .and_then(|key_value| key_value.trailing_comment())
+                    .unwrap();
+                let nested = f.format_to_string_without_comment(&nested_comment)?;
+                assert!(
+                    nested.is_empty(),
+                    "nested trailing comment should stay skipped during measurement"
+                );
+                let outer_root = tombi_ast::Root::cast(
+                    tombi_parser::parse("key = 1 # outer").into_syntax_node(),
+                )
+                .unwrap();
+                let outer_comment = outer_root
+                    .key_values()
+                    .next()
+                    .and_then(|key_value| key_value.trailing_comment())
+                    .unwrap();
+                outer_comment.format(f)
+            }
+        }
+
+        let schema_store = tombi_schema_store::SchemaStore::new();
+        let options = tombi_config::FormatOptions::default();
+        let source_path = tombi_test_lib::project_root_path().join("test.toml");
+        let mut formatter = Formatter::new(
+            tombi_config::TomlVersion::V1_0_0,
+            &options,
+            Some(itertools::Either::Right(source_path.as_path())),
+            &schema_store,
+        );
+
+        let formatted = formatter
+            .format_to_string_without_comment(&NestedSkipCommentProbe)
+            .unwrap();
+
+        assert_eq!(formatted, "value");
     }
 
     test_format! {

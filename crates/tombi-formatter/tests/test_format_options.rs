@@ -1611,13 +1611,13 @@ mod format_options {
                 }
             ) -> Ok(
                 r#"
-                key = "value"        # comment 1
-                key2 = "value2"      # comment 2
+                key = "value"    # comment 1
+                key2 = "value2"  # comment 2
                 key3.key4 = [
                   1,  # comment 3-1
                   2,  # comment 3-2
                   3   # comment 3-3
-                ]                    # comment 4
+                ]                # comment 4
                 "#
             )
         }
@@ -1642,13 +1642,13 @@ mod format_options {
                 }
             ) -> Ok(
                 r#"
-                key = "value"        # comment 1
-                key2 = "value2"      # comment 2
+                key = "value"    # comment 1
+                key2 = "value2"  # comment 2
                 key3.key4 = [
                   1,  # comment 3-1
                   2,  # comment 3-2
                   3,  # comment 3-3
-                ]                    # comment 4
+                ]                # comment 4
                 "#
             )
         }
@@ -1705,13 +1705,13 @@ mod format_options {
                 }
             ) -> Ok(
                 r#"
-                key = "value"            # comment 1
-                key2 = "value2"          # comment 2
+                key = "value"    # comment 1
+                key2 = "value2"  # comment 2
                 key3.key4 = {
                   a = 1,  # comment 3-1
                   b = 2,  # comment 3-2
                   c = 3   # comment 3-3
-                }                        # comment 4
+                }                # comment 4
                 "#
             )
         }
@@ -1737,13 +1737,13 @@ mod format_options {
                 }
             ) -> Ok(
                 r#"
-                key = "value"            # comment 1
-                key2 = "value2"          # comment 2
+                key = "value"    # comment 1
+                key2 = "value2"  # comment 2
                 key3.key4 = {
                   a = 1,  # comment 3-1
                   b = 2,  # comment 3-2
                   c = 3,  # comment 3-3
-                }                        # comment 4
+                }                # comment 4
                 "#
             )
         }
@@ -1804,13 +1804,13 @@ mod format_options {
             ) -> Ok(
                 r#"
                 [table]
-                  key = "value"            # comment 1
-                  key2 = "value2"          # comment 2
+                  key = "value"    # comment 1
+                  key2 = "value2"  # comment 2
                   key3.key4 = {
                     a = 1,  # comment 3-1
                     b = 2,  # comment 3-2
                     c = 3,  # comment 3-3
-                  }                        # comment 4
+                  }                # comment 4
                 "#
             )
         }
