@@ -433,7 +433,7 @@ jobs:
           permission-contents: write
           permission-actions: write
 
-      - name: Update setup-tombi before tagging
+      - name: Trigger setup-tombi release workflow
         if: steps.stable-version.outputs.stable_tag != ''
         uses: actions/github-script@v7
         with:
@@ -449,7 +449,7 @@ jobs:
                 repo,
                 ref: `tags/${tag}`,
               });
-              core.info(`setup-tombi already has tag ${tag}. Skipping update and tagging.`);
+              core.info(`setup-tombi already has tag ${tag}. Skipping release dispatch.`);
               return;
             } catch (error) {
               if (error.status !== 404) {
@@ -461,14 +461,14 @@ jobs:
             await github.rest.actions.createWorkflowDispatch({
               owner,
               repo,
-              workflow_id: "update-version.yml",
+              workflow_id: "release.yml",
               ref: "main",
               inputs: {
                 version: tag,
               },
             });
 
-            core.info("Triggered setup-tombi update-version.yml on main.");
+            core.info("Triggered setup-tombi release.yml on main.");
 
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             const maxAttempts = 60;
@@ -478,7 +478,7 @@ jobs:
               const { data } = await github.rest.actions.listWorkflowRuns({
                 owner,
                 repo,
-                workflow_id: "update-version.yml",
+                workflow_id: "release.yml",
                 branch: "main",
                 event: "workflow_dispatch",
                 per_page: 10,
@@ -490,17 +490,17 @@ jobs:
 
               if (workflowRun) {
                 core.info(
-                  `Found setup-tombi update-version run ${workflowRun.id} with status ${workflowRun.status}.`,
+                  `Found setup-tombi release run ${workflowRun.id} with status ${workflowRun.status}.`,
                 );
                 if (workflowRun.status === "completed") {
                   break;
                 }
               } else {
-                core.info("Waiting for setup-tombi update-version run to appear.");
+                core.info("Waiting for setup-tombi release run to appear.");
               }
 
               if (attempt === maxAttempts) {
-                core.setFailed("Timed out waiting for setup-tombi update-version workflow to complete.");
+                core.setFailed("Timed out waiting for setup-tombi release workflow to complete.");
                 return;
               }
 
@@ -508,31 +508,24 @@ jobs:
             }
 
             if (!workflowRun) {
-              core.setFailed("setup-tombi update-version workflow run was not found.");
+              core.setFailed("setup-tombi release workflow run was not found.");
               return;
             }
 
             if (workflowRun.conclusion !== "success") {
               core.setFailed(
-                `setup-tombi update-version workflow concluded with ${workflowRun.conclusion}.`,
+                `setup-tombi release workflow concluded with ${workflowRun.conclusion}.`,
               );
               return;
             }
 
-            const runSha = workflowRun.head_sha;
-            if (!runSha) {
-              core.setFailed("setup-tombi update-version workflow did not report a head SHA.");
-              return;
-            }
-
-            await github.rest.git.createRef({
+            const { data: tagRef } = await github.rest.git.getRef({
               owner,
               repo,
-              ref: `refs/tags/${tag}`,
-              sha: runSha,
+              ref: `tags/${tag}`,
             });
 
-            core.info(`Created ${repo}@${tag} on ${runSha} after update-version completed.`);
+            core.info(`setup-tombi release workflow completed and created ${repo}@${tag} (${tagRef.object.sha}).`);
 
   publish-winget:
     needs: [release-notes]
