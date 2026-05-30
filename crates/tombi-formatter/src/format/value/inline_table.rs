@@ -114,9 +114,6 @@ fn format_multiline_inline_table(
 
     let key_values = table.key_values().collect_vec();
     let equal_alignment_width = f.key_value_equal_alignment_width(key_values.iter());
-    let local_trailing_comment_alignment_width =
-        inline_table_trailing_comment_alignment_width(table, equal_alignment_width, f)?;
-
     let groups = table
         .dangling_comment_groups()
         .map(DanglingCommentGroupOr::DanglingCommentGroup)
@@ -124,10 +121,21 @@ fn format_multiline_inline_table(
             WithAlignmentHint::new_with_dangling_comment_group_or(
                 group,
                 equal_alignment_width,
-                local_trailing_comment_alignment_width,
+                None,
             )
         }))
         .collect_vec();
+    let mut groups = groups;
+    for group in groups.iter_mut() {
+        if let DanglingCommentGroupOr::ItemGroup(group) = group {
+            group.trailing_comment_alignment_width =
+                inline_table_key_value_group_trailing_comment_alignment_width(
+                    &group.value,
+                    equal_alignment_width,
+                    f,
+                )?;
+        }
+    }
     if !groups.is_empty() {
         groups.format(f)?;
     }
@@ -148,28 +156,20 @@ fn format_multiline_inline_table(
     Ok(())
 }
 
-fn inline_table_trailing_comment_alignment_width(
-    table: &tombi_ast::InlineTable,
+fn inline_table_key_value_group_trailing_comment_alignment_width(
+    group: &tombi_ast::KeyValueWithCommaGroup,
     equal_alignment_width: Option<AlignmentWidth>,
     f: &mut crate::Formatter,
 ) -> Result<Option<AlignmentWidth>, std::fmt::Error> {
-    if !f.trailing_comment_alignment() || table.key_values().next().is_none() {
+    if !f.trailing_comment_alignment() || group.key_values().next().is_none() {
         return Ok(None);
     }
 
-    let groups = table
-        .dangling_comment_groups()
-        .map(DanglingCommentGroupOr::DanglingCommentGroup)
-        .chain(table.key_value_with_comma_groups().map(|group| {
-            WithAlignmentHint::new_with_dangling_comment_group_or(
-                group,
-                equal_alignment_width,
-                None,
-            )
-        }))
-        .collect_vec();
-
-    let formatted = f.format_to_string_without_comment(&groups)?;
+    let formatted = f.format_to_string_without_comment(&WithAlignmentHint {
+        value: group,
+        equal_alignment_width,
+        trailing_comment_alignment_width: None,
+    })?;
     Ok(Some(AlignmentWidth::new(&formatted)))
 }
 

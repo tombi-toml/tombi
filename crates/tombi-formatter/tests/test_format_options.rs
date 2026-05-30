@@ -1827,8 +1827,8 @@ mod format_options {
                 very.long.long.long.key = 2  # table group 1
 
                 items = [  # array
-                  "A",     # array group 1
-                  "BB",    # array group 1
+                  "A",   # array group 1
+                  "BB",  # array group 1
 
                   "CCC",   # array group 2
                   "DDDD",  # array group 2
@@ -1837,14 +1837,14 @@ mod format_options {
                 config = {      # inline table
                   x = 1,        # inline group 1
                   long_key = [  # inline nested array
-                    1,          # nested array group 1
-                    22,         # nested array group 1
+                    1,   # nested array group 1
+                    22,  # nested array group 1
                   ],            # inline group 1
 
-                  nested = {    # inline group 2
-                    a = "x",    # nested inline group 2
-                    bb = "y",   # nested inline group 2
-                  },            # inline group 2
+                  nested = {   # inline group 2
+                    a = "x",   # nested inline group 2
+                    bb = "y",  # nested inline group 2
+                  },           # inline group 2
                 }               # inline table
                 "#
             )
