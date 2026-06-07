@@ -41,6 +41,12 @@ Install to a specific directory:
 curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --install-dir /custom/path
 ```
 
+Verify the downloaded archive checksum before extraction:
+
+```sh
+curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --checksum sha256:<sha256>
+```
+
 ## Windows Package Manager
 
 ```powershell
