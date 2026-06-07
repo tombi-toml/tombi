@@ -55,10 +55,139 @@ jobs:
       - name: Add install directory to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Run install script
+      - name: Resolve release artifact metadata
+        id: artifact
+        run: |
+          version="$(sed -n 's/^LATEST_STABLE_VERSION=\"\([0-9]\+\.[0-9]\+\.[0-9]\+\)\"$/\1/p' ./docs/public/install.sh)"
+          if [ -z "$version" ]; then
+            echo "Failed to resolve LATEST_STABLE_VERSION" >&2
+            exit 1
+          fi
+
+          version_prefix="${version%%[-+]*}"
+          IFS=. read -r major minor patch <<<"$version_prefix"
+          case "$(uname -s)" in
+            Linux)
+              case "$(uname -m)" in
+                aarch64) target="aarch64-unknown-linux-musl" ;;
+                armv7l) target="arm-unknown-linux-gnueabihf" ;;
+                *) target="x86_64-unknown-linux-musl" ;;
+              esac
+              if [ "$major" -eq 0 ] && { [ "$minor" -lt 9 ] || { [ "$minor" -eq 9 ] && [ "$patch" -lt 23 ]; }; }; then
+                extension=".gz"
+              else
+                extension=".tar.gz"
+              fi
+              ;;
+            Darwin)
+              case "$(uname -m)" in
+                arm64) arch="aarch64" ;;
+                *) arch="x86_64" ;;
+              esac
+              target="${arch}-apple-darwin"
+              if [ "$major" -eq 0 ] && { [ "$minor" -lt 9 ] || { [ "$minor" -eq 9 ] && [ "$patch" -lt 23 ]; }; }; then
+                extension=".gz"
+              else
+                extension=".tar.gz"
+              fi
+              ;;
+            MINGW*|MSYS*|CYGWIN*|Windows_NT)
+              case "$(uname -m)" in
+                aarch64) arch="aarch64" ;;
+                *) arch="x86_64" ;;
+              esac
+              target="${arch}-pc-windows-msvc"
+              extension=".zip"
+              ;;
+            *)
+              echo "Unsupported OS" >&2
+              exit 1
+              ;;
+          esac
+
+          url="https://github.com/tombi-toml/tombi/releases/download/v${version}/tombi-cli-${version}-${target}${extension}"
+          archive="${RUNNER_TEMP}/tombi-${version}${extension}"
+          curl -fsSL "$url" -o "$archive"
+          if command -v sha256sum >/dev/null 2>&1; then
+            checksum="$(sha256sum "$archive" | awk '{print $1}')"
+          else
+            checksum="$(shasum -a 256 "$archive" | awk '{print $1}')"
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+          echo "extension=$extension" >> "$GITHUB_OUTPUT"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "checksum=$checksum" >> "$GITHUB_OUTPUT"
+
+      - name: Run install script without checksum
         run: |
           chmod +x ./docs/public/install.sh
-          ./docs/public/install.sh
+          ./docs/public/install.sh --version "${{ steps.artifact.outputs.version }}"
+
+      - name: Run install script with plain checksum
+        run: |
+          install_dir="${RUNNER_TEMP}/install-with-checksum"
+          mkdir -p "$install_dir"
+          ./docs/public/install.sh \
+            --version "${{ steps.artifact.outputs.version }}" \
+            --install-dir "$install_dir" \
+            --checksum "${{ steps.artifact.outputs.checksum }}"
+          test -f "$install_dir/${{ matrix.exe_name }}"
+
+      - name: Run install script with sha256: checksum
+        run: |
+          install_dir="${RUNNER_TEMP}/install-with-prefixed-checksum"
+          mkdir -p "$install_dir"
+          ./docs/public/install.sh \
+            --version "${{ steps.artifact.outputs.version }}" \
+            --install-dir "$install_dir" \
+            --checksum "sha256:${{ steps.artifact.outputs.checksum }}"
+          test -f "$install_dir/${{ matrix.exe_name }}"
+
+      - name: Reject wrong checksum before install
+        run: |
+          install_dir="${RUNNER_TEMP}/install-with-bad-checksum"
+          mkdir -p "$install_dir"
+          log_file="${RUNNER_TEMP}/bad-checksum.log"
+          set +e
+          ./docs/public/install.sh \
+            --version "${{ steps.artifact.outputs.version }}" \
+            --install-dir "$install_dir" \
+            --checksum "0000000000000000000000000000000000000000000000000000000000000000" \
+            >"$log_file" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          test ! -f "$install_dir/${{ matrix.exe_name }}"
+          grep -q "Checksum verification failed" "$log_file"
+          grep -q "Expected:" "$log_file"
+          grep -q "Actual:" "$log_file"
+
+      - name: Reject invalid checksum formats
+        run: |
+          invalid_cases=(
+            "sha1:0123456789abcdef0123456789abcdef01234567"
+            "1234"
+            "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+          )
+          for checksum in "${invalid_cases[@]}"; do
+            log_file="${RUNNER_TEMP}/invalid-checksum-$(printf '%s' "$checksum" | tr ':/' '__').log"
+            set +e
+            ./docs/public/install.sh --checksum "$checksum" >"$log_file" 2>&1
+            status=$?
+            set -e
+            test "$status" -ne 0
+            grep -Eq "Unsupported checksum format|Invalid checksum" "$log_file"
+          done
+
+          log_file="${RUNNER_TEMP}/invalid-checksum-empty.log"
+          set +e
+          ./docs/public/install.sh --checksum "" >"$log_file" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -q "Invalid checksum" "$log_file"
 
       - name: Verify tombi binary exists
         run: |
