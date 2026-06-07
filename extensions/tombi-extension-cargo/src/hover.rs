@@ -421,6 +421,10 @@ async fn try_get_dependency_feature_metadata(
         return Ok(None);
     };
 
+    if dependency_table_default_features_disabled(workspace_dependency_table) {
+        return Ok(None);
+    }
+
     if let Some(Value::String(path)) = workspace_dependency_table.get("path") {
         let Some((_, _, dependency_document_tree)) = find_cargo_toml(
             &workspace_cargo_toml_path,
