@@ -175,7 +175,7 @@ test_lint! {
         r#"
         [extensions]
         "tombi-toml/tombi" = { lsp.document-link.path.enabled = false, lsp.hover.enabled = false }
-        "tombi-toml/cargo" = { lsp.hover.default-features.enabled = false, lsp.hover.dependency-detail.enabled = false }
+        "tombi-toml/cargo" = { lsp.hover.default-features.enabled = false, lsp.hover.feature-dependencies.enabled = false, lsp.hover.dependency-detail.enabled = false }
         "tombi-toml/pyproject" = { lsp.hover.dependency-detail.enabled = false }
         "#,
         SchemaPath(tombi_schema_path()),

@@ -95,12 +95,49 @@ mod tests {
     }
 
     #[test]
+    fn cargo_hover_feature_tree_deserializes_feature_dependencies_key() {
+        let features: super::CargoHoverFeatureTree = serde_json::from_value(serde_json::json!({
+            "feature-dependencies": {
+                "enabled": false
+            }
+        }))
+        .expect("feature-dependencies should deserialize");
+
+        assert_eq!(
+            features.feature_dependencies,
+            Some(ToggleFeatureDefaultTrue {
+                enabled: Some(false.into()),
+            })
+        );
+    }
+
+    #[test]
+    fn cargo_hover_feature_tree_serializes_feature_dependencies_key() {
+        let value = serde_json::to_value(super::CargoHoverFeatureTree {
+            dependency_detail: None,
+            default_features: None,
+            feature_dependencies: Some(ToggleFeatureDefaultTrue {
+                enabled: Some(false.into()),
+            }),
+        })
+        .expect("feature-dependencies should serialize");
+
+        assert_eq!(
+            value.get("feature-dependencies"),
+            Some(&serde_json::json!({
+                "enabled": false
+            }))
+        );
+    }
+
+    #[test]
     fn cargo_hover_feature_tree_serializes_default_features_key() {
         let value = serde_json::to_value(super::CargoHoverFeatureTree {
             dependency_detail: None,
             default_features: Some(ToggleFeatureDefaultTrue {
                 enabled: Some(false.into()),
             }),
+            feature_dependencies: None,
         })
         .expect("default-features should serialize");
 

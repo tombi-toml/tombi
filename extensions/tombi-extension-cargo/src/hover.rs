@@ -27,6 +27,7 @@ pub async fn hover(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     dependency_detail_hover_enabled: bool,
+    feature_dependencies_hover_enabled: bool,
     default_features_hover_enabled: bool,
 ) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
@@ -50,7 +51,7 @@ pub async fn hover(
         return Ok(Some(metadata));
     }
 
-    if default_features_hover_enabled
+    if (feature_dependencies_hover_enabled || default_features_hover_enabled)
         && let Some(metadata) = dependency_features_hover_metadata(
             document_tree,
             accessors,
@@ -59,6 +60,8 @@ pub async fn hover(
             toml_version,
             offline,
             cache_options,
+            feature_dependencies_hover_enabled,
+            default_features_hover_enabled,
         )
         .await?
     {
@@ -274,7 +277,13 @@ async fn dependency_features_hover_metadata(
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
+    feature_dependencies_hover_enabled: bool,
+    default_features_hover_enabled: bool,
 ) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
+    if !feature_dependencies_hover_enabled && !default_features_hover_enabled {
+        return Ok(None);
+    }
+
     let Some(dependency_accessors) = dependency_features_parent_accessors(accessors) else {
         return Ok(None);
     };
@@ -309,14 +318,22 @@ async fn dependency_features_hover_metadata(
     .await?;
 
     Ok(format_dependency_features_hover_tooltip(
-        dependency_feature_metadata.as_ref().and_then(|metadata| {
-            feature_name
-                .as_deref()
-                .and_then(|name| metadata.feature_dependencies(name))
-        }),
-        dependency_feature_metadata
-            .as_ref()
-            .and_then(|metadata| metadata.default_features()),
+        if feature_dependencies_hover_enabled {
+            dependency_feature_metadata.as_ref().and_then(|metadata| {
+                feature_name
+                    .as_deref()
+                    .and_then(|name| metadata.feature_dependencies(name))
+            })
+        } else {
+            None
+        },
+        if default_features_hover_enabled {
+            dependency_feature_metadata
+                .as_ref()
+                .and_then(|metadata| metadata.default_features())
+        } else {
+            None
+        },
     )
     .map(|description| HoverMetadata {
         title: None,
@@ -923,6 +940,8 @@ mod tests {
                 TomlVersion::V1_0_0,
                 true,
                 None,
+                true,
+                true,
             )
             .await
             .unwrap(),

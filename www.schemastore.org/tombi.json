@@ -2172,6 +2172,18 @@
               "type": "null"
             }
           ]
+        },
+        "feature-dependencies": {
+          "title": "Feature dependencies hover feature",
+          "description": "Whether hover shows dependencies of the selected Cargo feature.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
