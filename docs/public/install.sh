@@ -23,7 +23,7 @@ print_success() {
 
 print_usage() {
 	cat >&2 <<EOF
-Usage: ${0##*/} [--version <version>|latest] [--install-dir <dir>] [--checksum <sha256>]
+Usage: ${0##*/} [--version <version|latest>] [--install-dir <dir>] [--checksum <sha256>]
 
 Options:
   --version <version>     Install a specific version (default: embedded latest stable)
@@ -116,17 +116,50 @@ normalize_sha256_checksum() {
 
 calculate_sha256() {
 	FILE_PATH="$1"
+	CHECKSUM_OUTPUT_FILE="${TEMP_DIR}/checksum-output.txt"
 
 	if command -v sha256sum >/dev/null 2>&1; then
-		sha256sum "${FILE_PATH}" | awk '{print $1}'
+		if ! sha256sum "${FILE_PATH}" >"${CHECKSUM_OUTPUT_FILE}"; then
+			print_error "Failed to calculate SHA256 with sha256sum for ${FILE_PATH}."
+			exit 1
+		fi
+		if ! ACTUAL_CHECKSUM=$(awk 'NR==1 {print $1; exit}' "${CHECKSUM_OUTPUT_FILE}" | tr 'A-F' 'a-f'); then
+			print_error "Failed to parse calculated SHA256 for ${FILE_PATH}."
+			exit 1
+		fi
 	elif command -v shasum >/dev/null 2>&1; then
-		shasum -a 256 "${FILE_PATH}" | awk '{print $1}'
+		if ! shasum -a 256 "${FILE_PATH}" >"${CHECKSUM_OUTPUT_FILE}"; then
+			print_error "Failed to calculate SHA256 with shasum for ${FILE_PATH}."
+			exit 1
+		fi
+		if ! ACTUAL_CHECKSUM=$(awk 'NR==1 {print $1; exit}' "${CHECKSUM_OUTPUT_FILE}" | tr 'A-F' 'a-f'); then
+			print_error "Failed to parse calculated SHA256 for ${FILE_PATH}."
+			exit 1
+		fi
 	elif command -v certutil.exe >/dev/null 2>&1; then
-		certutil.exe -hashfile "$(cygpath -w "${FILE_PATH}")" SHA256 | awk 'NR==2 {print $1}' | tr 'A-F' 'a-f'
+		if ! command -v cygpath >/dev/null 2>&1; then
+			print_error "Unable to verify checksum with certutil.exe: cygpath is required."
+			exit 1
+		fi
+		if ! certutil.exe -hashfile "$(cygpath -w "${FILE_PATH}")" SHA256 >"${CHECKSUM_OUTPUT_FILE}"; then
+			print_error "Failed to calculate SHA256 with certutil.exe for ${FILE_PATH}."
+			exit 1
+		fi
+		if ! ACTUAL_CHECKSUM=$(awk 'NR==2 {print $1; exit}' "${CHECKSUM_OUTPUT_FILE}" | tr 'A-F' 'a-f'); then
+			print_error "Failed to parse calculated SHA256 for ${FILE_PATH}."
+			exit 1
+		fi
 	else
 		print_error "Unable to verify checksum: sha256sum, shasum, or certutil.exe is required."
 		exit 1
 	fi
+
+	if ! printf '%s' "${ACTUAL_CHECKSUM}" | grep -Eq '^[0-9a-f]{64}$'; then
+		print_error "Failed to parse calculated SHA256 for ${FILE_PATH}."
+		exit 1
+	fi
+
+	printf '%s\n' "${ACTUAL_CHECKSUM}"
 }
 
 verify_archive_checksum() {

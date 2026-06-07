@@ -58,10 +58,24 @@ jobs:
       - name: Resolve release artifact metadata
         id: artifact
         run: |
-          version="$(sed -n 's/^LATEST_STABLE_VERSION=\"\([0-9]\+\.[0-9]\+\.[0-9]\+\)\"$/\1/p' ./docs/public/install.sh)"
-          if [ -z "$version" ]; then
+          requested_version="$(sed -n 's/^LATEST_STABLE_VERSION=\"\([0-9]\+\.[0-9]\+\.[0-9]\+\)\"$/\1/p' ./docs/public/install.sh)"
+          if [ -z "$requested_version" ]; then
             echo "Failed to resolve LATEST_STABLE_VERSION" >&2
             exit 1
+          fi
+
+          latest_version="$(curl -fsSL https://api.github.com/repos/tombi-toml/tombi/releases/latest | jq -r '.tag_name | sub("^v"; "")')"
+          if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
+            echo "Failed to resolve the latest published release tag" >&2
+            exit 1
+          fi
+
+          release_check_url="https://github.com/tombi-toml/tombi/releases/tag/v${requested_version}"
+          if curl -fsSLI "$release_check_url" >/dev/null 2>&1; then
+            version="$requested_version"
+          else
+            echo "Release v${requested_version} is not published yet; falling back to v${latest_version} for installer CI." >&2
+            version="$latest_version"
           fi
 
           version_prefix="${version%%[-+]*}"
