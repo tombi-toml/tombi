@@ -465,7 +465,7 @@ mod hover_keys_value {
                 "Keys": "dependencies.local-path-crate.features",
                 "Value": "Array?",
                 "Description": Some(
-                    "List of features to activate in the dependency.\n\nDefault Features:\n  - extras"
+                    "List of features to activate in the dependency.\n\nDefault Features:\n  - `extras`"
                 ),
             });
         );
@@ -503,7 +503,7 @@ mod hover_keys_value {
                 "Keys": "dependencies.serde.features[0]",
                 "Value": "String",
                 "Description": Some(
-                    "List of features to activate in the dependency.\n\nDefault Features:\n  - std"
+                    "List of features to activate in the dependency.\n\nFeature Dependencies:\n  - `serde_derive`\n\nDefault Features:\n  - `std`"
                 ),
             });
         );
