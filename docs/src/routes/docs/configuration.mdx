@@ -316,6 +316,8 @@ tables-out-of-order = "error"
     },
     hover = {
       dependency-detail.enabled = true,
+      feature-dependencies.enabled = true,
+      default-features.enabled = true,
     },
     inlay-hint = {
       default-features.enabled = true,
@@ -350,6 +352,7 @@ tables-out-of-order = "error"
     },
     hover = {
       dependency-detail.enabled = true,
+      feature-dependencies.enabled = true,
     },
     inlay-hint = {
       dependency-version.enabled = true,
@@ -1669,6 +1672,21 @@ See [Cargo Extension > Hover](/docs/extensions/tombi-extension-cargo#hover).
 ### extensions."tombi-toml/cargo".lsp.hover.dependency-detail.enabled
 
 Enable or disable dependency detail hover for Cargo dependencies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lsp.hover.feature-dependencies
+
+Configure feature dependency hover for Cargo dependencies.
+
+See [Cargo Extension > Hover](/docs/extensions/tombi-extension-cargo#hover).
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lsp.hover.feature-dependencies.enabled
+
+Enable or disable feature dependency hover for Cargo dependencies.
 
 - Type: `Boolean`
 - Default: `true`
