@@ -149,7 +149,7 @@ jobs:
             --checksum "${{ steps.artifact.outputs.checksum }}"
           test -f "$install_dir/${{ matrix.exe_name }}"
 
-      - name: Run install script with sha256: checksum
+      - name: "Run install script with sha256: checksum"
         run: |
           install_dir="${RUNNER_TEMP}/install-with-prefixed-checksum"
           mkdir -p "$install_dir"
