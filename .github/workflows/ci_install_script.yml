@@ -58,7 +58,9 @@ jobs:
       - name: Resolve release artifact metadata
         id: artifact
         run: |
-          requested_version="$(grep -E '^LATEST_STABLE_VERSION=\"[0-9]+\.[0-9]+\.[0-9]+\"$' ./docs/public/install.sh | cut -d'\"' -f2)"
+          requested_version="$(grep -E '^LATEST_STABLE_VERSION=\"[0-9]+\.[0-9]+\.[0-9]+\"$' ./docs/public/install.sh)"
+          requested_version="${requested_version#LATEST_STABLE_VERSION=\"}"
+          requested_version="${requested_version%\"}"
           if [ -z "$requested_version" ]; then
             echo "Failed to resolve LATEST_STABLE_VERSION" >&2
             exit 1
