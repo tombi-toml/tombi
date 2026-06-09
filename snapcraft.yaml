@@ -10,7 +10,9 @@ confinement: classic
 platforms:
   amd64:
   arm64:
+    build-on: [amd64]
   armhf:
+    build-on: [amd64]
 
 parts:
   tombi:
