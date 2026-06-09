@@ -488,7 +488,7 @@ mod references_tests {
 
         test_references!(
             #[tokio::test]
-            async fn project_dependencies_workspace_usage_locations(
+            async fn project_dependencies_without_workspace_root_usage_return_no_references(
                 r#"
                 [project]
                 name = "app1"
@@ -498,9 +498,7 @@ mod references_tests {
                 ]
                 "#,
                 SourcePath(pyproject_workspace_fixtures_path().join("members/app1/pyproject.toml")),
-            ) -> Ok([
-                pyproject_workspace_fixtures_path().join("pyproject.toml"),
-            ]);
+            ) -> Ok([]);
         );
 
         test_references!(
@@ -523,7 +521,30 @@ mod references_tests {
 
         test_references!(
             #[tokio::test]
-            async fn pyproject_references_use_references_setting_not_goto_definition(
+            async fn workspace_dependency_string_lists_member_usages(
+                r#"
+                [project]
+                name = "workspace"
+                version = "0.1.0"
+                dependencies = ["pydantic>=2.10█"]
+
+                [tool.uv.workspace]
+                members = [
+                    "members/app1",
+                    "members/app2",
+                    "members/app3",
+                ]
+                "#,
+                SourcePath(pyproject_workspace_fixtures_path().join("pyproject.toml")),
+            ) -> Ok([
+                pyproject_workspace_fixtures_path().join("members/app1/pyproject.toml"),
+                pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml"),
+            ]);
+        );
+
+        test_references!(
+            #[tokio::test]
+            async fn include_declaration_adds_workspace_dependency_declaration_for_member_dependency(
                 r#"
                 [project]
                 name = "app1"
@@ -533,9 +554,33 @@ mod references_tests {
                 ]
                 "#,
                 SourcePath(pyproject_workspace_fixtures_path().join("members/app1/pyproject.toml")),
-                ConfigPath(fixture_config_path("pyproject-references-only-enabled")),
+                IncludeDeclaration(true),
             ) -> Ok([
                 pyproject_workspace_fixtures_path().join("pyproject.toml"),
+            ]);
+        );
+
+        test_references!(
+            #[tokio::test]
+            async fn pyproject_references_use_references_setting_not_goto_definition(
+                r#"
+                [project]
+                name = "workspace"
+                version = "0.1.0"
+                dependencies = ["pydantic>=2.10█"]
+
+                [tool.uv.workspace]
+                members = [
+                    "members/app1",
+                    "members/app2",
+                    "members/app3",
+                ]
+                "#,
+                SourcePath(pyproject_workspace_fixtures_path().join("pyproject.toml")),
+                ConfigPath(fixture_config_path("pyproject-references-only-enabled")),
+            ) -> Ok([
+                pyproject_workspace_fixtures_path().join("members/app1/pyproject.toml"),
+                pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml"),
             ]);
         );
 
