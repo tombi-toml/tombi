@@ -9,8 +9,11 @@ grade: stable
 confinement: classic
 platforms:
   amd64:
+    build-on: [amd64, arm64]
   arm64:
+    build-on: [amd64, arm64]
   armhf:
+    build-on: [amd64, arm64]
 
 parts:
   tombi:
