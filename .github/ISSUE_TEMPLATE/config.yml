@@ -1,3 +1,4 @@
+blank_issues_enabled: false
 contact_links:
   - name: 🛤️ JSON Schema addition
     url: https://github.com/SchemaStore/schemastore/issues/new/choose
