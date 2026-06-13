@@ -1,6 +1,6 @@
-name: Issue
+name: 🐛 Issue
 description: Report a bug or unexpected behavior in Tombi.
-title: "Issue: "
+title: "🐛 Issue: "
 body:
   - type: markdown
     attributes:
