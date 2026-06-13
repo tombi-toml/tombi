@@ -1,7 +1,8 @@
+blank_issues_enabled: false
 contact_links:
-  - name: 🛤️ JSON Schema addition
-    url: https://github.com/SchemaStore/schemastore/issues/new/choose
-    about: Request the target project to generate or maintain its JSON Schema first, then ask SchemaStore to register it. Do not open a Tombi issue only to add a third-party project schema.
   - name: 👥 Discussions
     url: https://github.com/tombi-toml/tombi/discussions
     about: Ask questions, share ideas, or discuss behavior before opening an issue.
+  - name: 🛤️ JSON Schema addition
+    url: https://github.com/SchemaStore/schemastore/issues/new/choose
+    about: Request the target project to generate or maintain its JSON Schema first, then ask SchemaStore to register it. Do not open a Tombi issue only to add a third-party project schema.
