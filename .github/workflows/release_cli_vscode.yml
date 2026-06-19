@@ -45,6 +45,7 @@ jobs:
           head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           paths: |
             .cargo/**
+            .github/actions/dispatch-versioned-release/**
             .github/actions/relevant-changes/**
             .github/actions/set-version/**
             .node-version
@@ -425,112 +426,20 @@ jobs:
             echo "stable_tag=" >> "${GITHUB_OUTPUT}"
           fi
 
-      - name: Create GitHub App token for setup-tombi
-        id: app-token
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         if: steps.stable-version.outputs.stable_tag != ''
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          persist-credentials: false
+
+      - name: Trigger setup-tombi release workflow
+        if: steps.stable-version.outputs.stable_tag != ''
+        uses: ./.github/actions/dispatch-versioned-release
         with:
           client-id: ${{ secrets.VERSION_UPDATE_APP_CLIENT_ID }}
           private-key: ${{ secrets.VERSION_UPDATE_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
-          repositories: |
-            setup-tombi
-          permission-contents: write
-          permission-actions: write
-
-      - name: Trigger setup-tombi release workflow
-        if: steps.stable-version.outputs.stable_tag != ''
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          script: |
-            const owner = context.repo.owner;
-            const repo = "setup-tombi";
-            const tag = "${{ steps.stable-version.outputs.stable_tag }}";
-
-            try {
-              await github.rest.git.getRef({
-                owner,
-                repo,
-                ref: `tags/${tag}`,
-              });
-              core.info(`setup-tombi already has tag ${tag}. Skipping release dispatch.`);
-              return;
-            } catch (error) {
-              if (error.status !== 404) {
-                throw error;
-              }
-            }
-
-            const dispatchedAfter = new Date().toISOString();
-            await github.rest.actions.createWorkflowDispatch({
-              owner,
-              repo,
-              workflow_id: "release.yml",
-              ref: "main",
-              inputs: {
-                version: tag,
-              },
-            });
-
-            core.info("Triggered setup-tombi release.yml on main.");
-
-            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-            const maxAttempts = 60;
-            let workflowRun;
-
-            for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-              const { data } = await github.rest.actions.listWorkflowRuns({
-                owner,
-                repo,
-                workflow_id: "release.yml",
-                branch: "main",
-                event: "workflow_dispatch",
-                per_page: 10,
-              });
-
-              workflowRun = data.workflow_runs.find(
-                (run) => run.created_at >= dispatchedAfter,
-              );
-
-              if (workflowRun) {
-                core.info(
-                  `Found setup-tombi release run ${workflowRun.id} with status ${workflowRun.status}.`,
-                );
-                if (workflowRun.status === "completed") {
-                  break;
-                }
-              } else {
-                core.info("Waiting for setup-tombi release run to appear.");
-              }
-
-              if (attempt === maxAttempts) {
-                core.setFailed("Timed out waiting for setup-tombi release workflow to complete.");
-                return;
-              }
-
-              await sleep(10000);
-            }
-
-            if (!workflowRun) {
-              core.setFailed("setup-tombi release workflow run was not found.");
-              return;
-            }
-
-            if (workflowRun.conclusion !== "success") {
-              core.setFailed(
-                `setup-tombi release workflow concluded with ${workflowRun.conclusion}.`,
-              );
-              return;
-            }
-
-            const { data: tagRef } = await github.rest.git.getRef({
-              owner,
-              repo,
-              ref: `tags/${tag}`,
-            });
-
-            core.info(`setup-tombi release workflow completed and created ${repo}@${tag} (${tagRef.object.sha}).`);
+          repository: setup-tombi
+          tag: ${{ steps.stable-version.outputs.stable_tag }}
 
   publish-winget:
     needs: [release-notes]
