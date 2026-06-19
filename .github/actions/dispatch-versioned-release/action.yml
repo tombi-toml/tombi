@@ -1,0 +1,157 @@
+name: Dispatch versioned release
+description: Dispatch a release workflow in another repository and wait for completion.
+
+inputs:
+  client-id:
+    description: GitHub App client ID.
+    required: true
+  private-key:
+    description: GitHub App private key.
+    required: true
+  owner:
+    description: Repository owner.
+    required: true
+  repository:
+    description: Repository name to dispatch.
+    required: true
+  tag:
+    description: Release tag to pass as the version input.
+    required: true
+  workflow:
+    description: Workflow file name to dispatch.
+    required: false
+    default: release.yml
+  ref:
+    description: Branch name or refs/heads/<branch> to dispatch the workflow on.
+    required: false
+    default: main
+  max-attempts:
+    description: Number of polling attempts.
+    required: false
+    default: "60"
+  poll-interval-ms:
+    description: Delay between polling attempts in milliseconds.
+    required: false
+    default: "10000"
+
+runs:
+  using: composite
+  steps:
+    - name: Create GitHub App token
+      id: app-token
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+      with:
+        client-id: ${{ inputs.client-id }}
+        private-key: ${{ inputs.private-key }}
+        owner: ${{ inputs.owner }}
+        repositories: |
+          ${{ inputs.repository }}
+        permission-actions: write
+        permission-contents: read
+
+    - name: Dispatch release workflow
+      uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+      with:
+        github-token: ${{ steps.app-token.outputs.token }}
+        script: |
+          const owner = "${{ inputs.owner }}";
+          const repo = "${{ inputs.repository }}";
+          const tag = "${{ inputs.tag }}";
+          const workflow = "${{ inputs.workflow }}";
+          const ref = "${{ inputs.ref }}";
+          const branch = ref.startsWith("refs/heads/") ? ref.slice("refs/heads/".length) : ref;
+          const maxAttempts = Number("${{ inputs.max-attempts }}");
+          const pollIntervalMs = Number("${{ inputs.poll-interval-ms }}");
+
+          if (!Number.isInteger(maxAttempts) || maxAttempts < 1) {
+            core.setFailed(`max-attempts must be a positive integer: ${maxAttempts}`);
+            return;
+          }
+
+          if (!Number.isInteger(pollIntervalMs) || pollIntervalMs < 1) {
+            core.setFailed(`poll-interval-ms must be a positive integer: ${pollIntervalMs}`);
+            return;
+          }
+
+          try {
+            await github.rest.git.getRef({
+              owner,
+              repo,
+              ref: `tags/${tag}`,
+            });
+            core.info(`${repo} already has tag ${tag}. Skipping release dispatch.`);
+            return;
+          } catch (error) {
+            if (error.status !== 404) {
+              throw error;
+            }
+          }
+
+          const dispatchedAfter = new Date(Date.now() - 5000).toISOString();
+          await github.rest.actions.createWorkflowDispatch({
+            owner,
+            repo,
+            workflow_id: workflow,
+            ref: branch,
+            inputs: {
+              version: tag,
+            },
+          });
+
+          core.info(`Triggered ${repo} ${workflow} on ${branch}.`);
+
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+          let workflowRun;
+
+          for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner,
+              repo,
+              workflow_id: workflow,
+              branch,
+              event: "workflow_dispatch",
+              per_page: 10,
+            });
+
+            workflowRun = data.workflow_runs.find(
+              (run) => run.created_at >= dispatchedAfter,
+            );
+
+            if (workflowRun) {
+              core.info(
+                `Found ${repo} release run ${workflowRun.id} with status ${workflowRun.status}.`,
+              );
+              if (workflowRun.status === "completed") {
+                break;
+              }
+            } else {
+              core.info(`Waiting for ${repo} release run to appear.`);
+            }
+
+            if (attempt === maxAttempts) {
+              core.setFailed(`Timed out waiting for ${repo} release workflow to complete.`);
+              return;
+            }
+
+            await sleep(pollIntervalMs);
+          }
+
+          if (!workflowRun) {
+            core.setFailed(`${repo} release workflow run was not found.`);
+            return;
+          }
+
+          if (workflowRun.conclusion !== "success") {
+            core.setFailed(
+              `${repo} release workflow concluded with ${workflowRun.conclusion}.`,
+            );
+            return;
+          }
+
+          const { data: tagRef } = await github.rest.git.getRef({
+            owner,
+            repo,
+            ref: `tags/${tag}`,
+          });
+
+          core.info(`${repo} release workflow completed and created ${repo}@${tag} (${tagRef.object.sha}).`);
