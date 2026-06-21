@@ -382,7 +382,7 @@ mod tests {
     #[test]
     fn test_error_handling() {
         let result = find_rust_files("/nonexistent/path");
-        assert!(matches!(result, Err(crate::Error::RootPathNotFound { .. })));
+        std::assert_matches!(result, Err(crate::Error::RootPathNotFound { .. }));
     }
 
     #[tokio::test]
