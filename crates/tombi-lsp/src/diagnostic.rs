@@ -14,10 +14,30 @@ pub async fn get_diagnostics_result(
     backend: &Backend,
     text_document_uri: &tombi_uri::Uri,
 ) -> Option<DiagnosticsResult> {
-    {
-        let workspace_diagnostics_cache = backend.workspace_diagnostics_cache.read().await;
-        if let Some(diagnostics_result) = workspace_diagnostics_cache.get(text_document_uri) {
-            return Some(diagnostics_result.clone());
+    if let Some(diagnostics_result) = {
+        backend
+            .workspace_diagnostics_cache
+            .read()
+            .await
+            .get(text_document_uri)
+            .cloned()
+    } {
+        // Reuse the cached result only when it was computed for the document
+        // version the editor is currently showing. `did_change` updates the
+        // document version and clears the cache in separate critical sections,
+        // and messages are processed concurrently, so a pull-diagnostics request
+        // can otherwise observe a cache entry left over from the previous version
+        // and report stale (false positive / false negative) diagnostics until
+        // the next edit.
+        let current_version = backend
+            .document_sources
+            .read()
+            .await
+            .get(text_document_uri)
+            .and_then(|document_source| document_source.version);
+
+        if diagnostics_result.version == current_version {
+            return Some(diagnostics_result);
         }
     }
 
