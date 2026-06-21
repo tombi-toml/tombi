@@ -996,7 +996,7 @@ mod test {
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
             // The schema should be resolved correctly
-            assert!(matches!(schema, ValueSchema::String(_)));
+            std::assert_matches!(schema, ValueSchema::String(_));
         }
 
         // Test case 2: Multiple percent-encoded characters
@@ -1015,7 +1015,7 @@ mod test {
         );
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
-            assert!(matches!(schema, ValueSchema::String(_)));
+            std::assert_matches!(schema, ValueSchema::String(_));
         }
 
         // Test case 3: Invalid percent encoding should be preserved
@@ -1064,7 +1064,7 @@ mod test {
         );
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
-            assert!(matches!(schema, ValueSchema::String(_)));
+            std::assert_matches!(schema, ValueSchema::String(_));
         }
 
         let result = resolve_json_pointer(
@@ -1075,7 +1075,7 @@ mod test {
         );
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
-            assert!(matches!(schema, ValueSchema::String(_)));
+            std::assert_matches!(schema, ValueSchema::String(_));
         }
     }
 
@@ -1092,7 +1092,7 @@ mod test {
         };
 
         let value_type = referable.value_type().await;
-        assert!(matches!(value_type, crate::ValueType::AnyOf(types) if types.is_empty()));
+        std::assert_matches!(value_type, crate::ValueType::AnyOf(types) if types.is_empty());
     }
 
     #[tokio::test]
@@ -1130,13 +1130,13 @@ mod test {
             let defs = definitions.read().await;
             defs.get("#/$defs/useDynamic").cloned().unwrap()
         };
-        assert!(matches!(
+        std::assert_matches!(
             referable,
             Referable::Ref {
                 kind: super::ReferenceKind::DynamicRef,
                 ..
             }
-        ));
+        );
 
         let resolved = referable
             .resolve(
@@ -1147,10 +1147,10 @@ mod test {
             .await
             .unwrap();
 
-        assert!(matches!(
+        std::assert_matches!(
             resolved.map(|s| s.value_schema),
             Some(schema) if matches!(&*schema, ValueSchema::String(_))
-        ));
+        );
         let _ = std::fs::remove_file(schema_path);
     }
 
@@ -1189,13 +1189,13 @@ mod test {
             let defs = definitions.read().await;
             defs.get("#/$defs/useRecursive").cloned().unwrap()
         };
-        assert!(matches!(
+        std::assert_matches!(
             referable,
             Referable::Ref {
                 kind: super::ReferenceKind::RecursiveRef,
                 ..
             }
-        ));
+        );
 
         let resolved = referable
             .resolve(
@@ -1206,10 +1206,10 @@ mod test {
             .await
             .unwrap();
 
-        assert!(matches!(
+        std::assert_matches!(
             resolved.map(|s| s.value_schema),
             Some(schema) if matches!(&*schema, ValueSchema::String(_))
-        ));
+        );
         let _ = std::fs::remove_file(schema_path);
     }
 
@@ -1274,10 +1274,10 @@ mod test {
             .await
             .unwrap();
 
-        assert!(matches!(
+        std::assert_matches!(
             resolved.map(|s| s.value_schema),
             Some(schema) if matches!(&*schema, ValueSchema::String(_))
-        ));
+        );
 
         let _ = std::fs::remove_dir_all(temp_dir);
     }
@@ -1288,7 +1288,7 @@ mod test {
         assert_eq!(local, Some((None, "#rootDyn".to_string())));
 
         let remote = parse_dynamic_anchor_reference("https://example.com/schema.json#rootDyn");
-        assert!(matches!(remote, Some((Some(_), anchor)) if anchor == "#rootDyn"));
+        std::assert_matches!(remote, Some((Some(_), anchor)) if anchor == "#rootDyn");
 
         assert!(parse_dynamic_anchor_reference("#/defs/x").is_none());
     }

@@ -51,6 +51,7 @@ pub(crate) use workspace::{
     workspace_dependency_usage_locations,
 };
 
+#[derive(Debug)]
 pub(crate) enum CargoNavigationFeature {
     Dependency,
     Member,
@@ -91,7 +92,7 @@ mod tests {
     fn classify_workspace_members_as_member_feature() {
         let feature = classify_cargo_navigation_feature(&[key("workspace"), key("members")]);
 
-        assert!(matches!(feature, CargoNavigationFeature::Member));
+        std::assert_matches!(feature, CargoNavigationFeature::Member);
     }
 
     #[test]
@@ -99,6 +100,6 @@ mod tests {
         let feature =
             classify_cargo_navigation_feature(&[key("workspace"), key("dependencies"), key("foo")]);
 
-        assert!(matches!(feature, CargoNavigationFeature::Dependency));
+        std::assert_matches!(feature, CargoNavigationFeature::Dependency);
     }
 }

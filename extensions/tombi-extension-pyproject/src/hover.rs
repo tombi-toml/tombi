@@ -263,9 +263,6 @@ mod tests {
             Requirement::<VerbatimUrl>::from_str("demo @ https://example.com/demo-0.1.0.tar.gz")
                 .unwrap();
 
-        assert!(matches!(
-            requirement.version_or_url,
-            Some(VersionOrUrl::Url(_))
-        ));
+        std::assert_matches!(requirement.version_or_url, Some(VersionOrUrl::Url(_)));
     }
 }

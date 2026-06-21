@@ -1435,10 +1435,10 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        assert!(matches!(
+        std::assert_matches!(
             document_schema.value_schema.as_deref(),
             Some(ValueSchema::Anything(_))
-        ));
+        );
 
         let _ = std::fs::remove_file(schema_path);
     }
@@ -1480,10 +1480,10 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        assert!(matches!(
+        std::assert_matches!(
             document_schema.value_schema.as_deref(),
             Some(ValueSchema::String(_))
-        ));
+        );
 
         let _ = std::fs::remove_file(schema_path);
     }
@@ -1509,10 +1509,10 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        assert!(matches!(
+        std::assert_matches!(
             document_schema.value_schema.as_deref(),
             Some(ValueSchema::String(_))
-        ));
+        );
 
         std::fs::write(&schema_path, r#"{"type":"integer"}"#).unwrap();
         bump_modified(&schema_path);
@@ -1523,10 +1523,10 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        assert!(matches!(
+        std::assert_matches!(
             document_schema.value_schema.as_deref(),
             Some(ValueSchema::Integer(_))
-        ));
+        );
 
         let _ = std::fs::remove_file(schema_path);
     }

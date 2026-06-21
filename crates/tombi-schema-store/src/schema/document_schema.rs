@@ -374,10 +374,7 @@ mod tests {
         let schema_value = tombi_json::ValueNode::from_str("true").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
         let doc = DocumentSchema::new(schema_value, uri);
-        assert!(matches!(
-            doc.value_schema.as_deref(),
-            Some(ValueSchema::Anything(_))
-        ));
+        std::assert_matches!(doc.value_schema.as_deref(), Some(ValueSchema::Anything(_)));
     }
 
     #[test]
@@ -385,10 +382,7 @@ mod tests {
         let schema_value = tombi_json::ValueNode::from_str("false").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
         let doc = DocumentSchema::new(schema_value, uri);
-        assert!(matches!(
-            doc.value_schema.as_deref(),
-            Some(ValueSchema::Nothing(_))
-        ));
+        std::assert_matches!(doc.value_schema.as_deref(), Some(ValueSchema::Nothing(_)));
     }
 
     #[test]
