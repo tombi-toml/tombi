@@ -376,7 +376,7 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::Comma { .. }) => Some(Self {
+            Some(CompletionHint::Comma { .. }) | None => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!("{key_name} = {value_label}"),
                     range: key_range,
@@ -384,7 +384,7 @@ impl CompletionEdit {
                 insert_text_format: None,
                 additional_text_edits: None,
             }),
-            Some(CompletionHint::InTableHeader) | None => None,
+            Some(CompletionHint::InTableHeader) => None,
         }
     }
 
