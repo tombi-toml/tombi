@@ -115,7 +115,8 @@
         {
           "required": ["bar"],
           "properties": {
-            "bar": { "type": "string" }
+            "bar": { "type": "string" },
+            "baz": { "type": "boolean" }
           }
         }
       ]
