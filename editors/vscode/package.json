@@ -171,16 +171,16 @@
             "constant.language.boolean.toml"
           ],
           "offsetDateTime": [
-            "constant.regexp.datetime.offset.toml"
+            "constant.other.datetime.offset.toml"
           ],
           "localDateTime": [
-            "constant.regexp.datetime.local.toml"
+            "constant.other.datetime.local.toml"
           ],
           "localDate": [
-            "constant.regexp.date.local.toml"
+            "constant.other.date.local.toml"
           ],
           "localTime": [
-            "constant.regexp.time.local.toml"
+            "constant.other.time.local.toml"
           ],
           "comment": [
             "comment.line.number-sign.toml"
