@@ -277,6 +277,23 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn cargo_dependencies_serde_table_bare_key(
+                r#"
+                [dependencies.serde]
+                work█
+                "#,
+                Select("workspace = true"),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies.serde]
+                workspace = true
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn cargo_dependencies_serde_dot_optional(
                 r#"
                 [dependencies]
