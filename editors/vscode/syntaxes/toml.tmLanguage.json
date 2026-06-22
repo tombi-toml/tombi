@@ -265,19 +265,19 @@
           "end": "'"
         },
         {
-          "name": "constant.other.datetime.offset.toml",
+          "name": "constant.regexp.datetime.offset.toml",
           "match": "(?<!\\w)(\\d{4}\\-\\d{2}\\-\\d{2}[T ]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[\\+\\-]\\d{2}:\\d{2}))(?!\\w)"
         },
         {
-          "name": "constant.other.datetime.local.toml",
+          "name": "constant.regexp.datetime.local.toml",
           "match": "(\\d{4}\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?)"
         },
         {
-          "name": "constant.other.date.local.toml",
+          "name": "constant.regexp.date.local.toml",
           "match": "\\d{4}\\-\\d{2}\\-\\d{2}"
         },
         {
-          "name": "constant.other.time.local.toml",
+          "name": "constant.regexp.time.local.toml",
           "match": "\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?"
         },
         {
