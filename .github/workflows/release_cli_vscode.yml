@@ -25,7 +25,7 @@ env:
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
   CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
   CARGO_PROFILE_RELEASE_LTO: "fat"
-  RUSTFLAGS: "-C strip=symbols"
+  CARGO_PROFILE_RELEASE_STRIP: "symbols"
 
 jobs:
   detect-changes:
