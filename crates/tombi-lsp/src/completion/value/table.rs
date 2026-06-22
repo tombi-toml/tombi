@@ -743,6 +743,13 @@ impl FindCompletionContents for tombi_document_tree::Table {
                             // `allOf` schemas always apply alongside the direct
                             // properties, so their key completions must be merged in
                             // even when direct properties already produced candidates.
+                            //
+                            // `oneOf`/`anyOf` are intentionally NOT merged here: their
+                            // branches are alternatives, and a key that is `required` in
+                            // only one branch would otherwise be promoted to a global
+                            // `required` key (mis-ordering it ahead of unconditionally
+                            // required keys, e.g. pyproject's `version`/`dynamic` vs
+                            // `name`). They are evaluated as a fallback only.
                             if let Some(all_of_schema) = table_schema.all_of.as_deref() {
                                 let completion_items = super::all_of::find_all_of_completion_items(
                                     self,
