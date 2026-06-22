@@ -16,7 +16,7 @@ env:
   CC_arm_unknown_linux_gnueabihf: arm-linux-gnueabihf-gcc
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
-  RUSTFLAGS: "-C strip=symbols"
+  CARGO_PROFILE_RELEASE_STRIP: "symbols"
   GITHUB_REF: ${{ (github.ref) }}
 
 jobs:
