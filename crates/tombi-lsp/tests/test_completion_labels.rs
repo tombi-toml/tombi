@@ -1094,6 +1094,17 @@ mod completion_labels {
                 SchemaPath(adjacent_applicators_test_schema_path()),
             ) -> Ok(["true"]);
         }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_all_of_table_merges_properties_and_all_of_keys(
+                r#"
+                [object_all]
+                █
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok(["bar", "baz", "foo"]);
+        }
     }
 
     mod consistency_schema {
