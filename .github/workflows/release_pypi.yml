@@ -240,7 +240,7 @@ jobs:
     needs: [linux, musllinux, windows, macos, sdist]
     if: startsWith(github.ref, 'refs/tags/')
     environment:
-      name: tombi-release
+      name: pypi
       url: https://pypi.org/p/tombi
     permissions:
       # Use to authenticate to PyPI and sign the release artifacts
