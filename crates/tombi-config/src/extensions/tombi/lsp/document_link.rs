@@ -24,9 +24,10 @@ toggle_features! {
         ))
     )]
     pub struct TombiDocumentLinkFeatureTree {
-        /// # Path document link feature
+        /// # Deprecated path document link feature
         ///
-        /// Whether document links are created for filesystem paths.
+        /// Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.
+        #[cfg_attr(feature = "jsonschema", schemars(extend("deprecated" = true)))]
         pub path: Option<ToggleFeatureDefaultFalse>,
     }
 }

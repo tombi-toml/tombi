@@ -174,7 +174,7 @@ test_lint! {
     fn test_tombi_schema_extensions_lsp_feature_tree(
         r#"
         [extensions]
-        "tombi-toml/tombi" = { lsp.document-link.path.enabled = false, lsp.hover.enabled = false }
+        "tombi-toml/tombi" = { lsp.hover.enabled = false }
         "tombi-toml/cargo" = { lsp.hover.default-features.enabled = false, lsp.hover.feature-dependencies.enabled = false, lsp.hover.dependency-detail.enabled = false }
         "tombi-toml/pyproject" = { lsp.hover.dependency-detail.enabled = false }
         "#,

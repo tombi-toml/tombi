@@ -129,9 +129,6 @@ overrides = [
     completion = {
       path.enabled = true,
     },
-    document-link = {
-      path.enabled = true,
-    },
     goto-definition = {
       path.enabled = true,
     },
