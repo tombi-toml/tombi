@@ -8,6 +8,12 @@ fn cargo_document_link_all_enabled_config_path() -> std::path::PathBuf {
     )
 }
 
+fn tombi_document_link_all_enabled_config_path() -> std::path::PathBuf {
+    project_root_path().join(
+        "crates/tombi-lsp/tests/fixtures/extensions/tombi-document-link-all-enabled/tombi.toml",
+    )
+}
+
 mod document_link_tests {
     use super::*;
 
@@ -860,6 +866,7 @@ mod document_link_tests {
                 catalog = { path = "https://www.schemastore.org/api/json/catalog.json" }
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
+                ConfigPath(tombi_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     url: "https://www.schemastore.org/api/json/catalog.json",
@@ -877,6 +884,7 @@ mod document_link_tests {
                 catalog = { paths = ["https://www.schemastore.org/api/json/catalog.json"] }
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
+                ConfigPath(tombi_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     url: "https://www.schemastore.org/api/json/catalog.json",
@@ -894,6 +902,7 @@ mod document_link_tests {
                 catalog = { paths = ["schemas/type-test.schema.json"] }
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
+                ConfigPath(tombi_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: project_root_path().join("schemas/type-test.schema.json"),
@@ -941,6 +950,7 @@ mod document_link_tests {
                 path = "www.schemastore.org/tombi.json"
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
+                ConfigPath(tombi_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: project_root_path().join("www.schemastore.org/tombi.json"),
@@ -958,6 +968,7 @@ mod document_link_tests {
                 path = "https://www.schemastore.org/cargo-make.json"
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
+                ConfigPath(tombi_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     url: "https://www.schemastore.org/cargo-make.json",

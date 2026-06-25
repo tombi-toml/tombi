@@ -27,9 +27,10 @@ toggle_features! {
         ))
     )]
     pub struct CargoDocumentLinkFeatureTree {
-        /// # Cargo.toml document link feature
+        /// # Deprecated Cargo.toml document link feature
         ///
-        /// Whether document links are created for `Cargo.toml` references.
+        /// Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.
+        #[cfg_attr(feature = "jsonschema", schemars(extend("deprecated" = true)))]
         pub cargo_toml: Option<ToggleFeatureDefaultFalse>,
 
         /// # crates.io document link feature
@@ -37,19 +38,22 @@ toggle_features! {
         /// Whether document links are created for crates.io package references.
         pub crates_io: Option<ToggleFeatureDefaultTrue>,
 
-        /// # Git document link feature
+        /// # Deprecated Git document link feature
         ///
-        /// Whether document links are created for Git references.
+        /// Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.
+        #[cfg_attr(feature = "jsonschema", schemars(extend("deprecated" = true)))]
         pub git: Option<ToggleFeatureDefaultFalse>,
 
-        /// # Path document link feature
+        /// # Deprecated path document link feature
         ///
-        /// Whether document links are created for filesystem paths.
+        /// Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.
+        #[cfg_attr(feature = "jsonschema", schemars(extend("deprecated" = true)))]
         pub path: Option<ToggleFeatureDefaultFalse>,
 
-        /// # Workspace document link feature
+        /// # Deprecated workspace document link feature
         ///
-        /// Whether document links are created for `workspace = true` references.
+        /// Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.
+        #[cfg_attr(feature = "jsonschema", schemars(extend("deprecated" = true)))]
         pub workspace: Option<ToggleFeatureDefaultFalse>,
     }
 }

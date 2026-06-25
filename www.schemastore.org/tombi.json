@@ -1942,8 +1942,8 @@
       "type": "object",
       "properties": {
         "cargo-toml": {
-          "title": "Cargo.toml document link feature",
-          "description": "Whether document links are created for `Cargo.toml` references.",
+          "title": "Deprecated Cargo.toml document link feature",
+          "description": "Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultFalse"
@@ -1951,7 +1951,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "deprecated": true
         },
         "crates-io": {
           "title": "crates.io document link feature",
@@ -1966,8 +1967,8 @@
           ]
         },
         "git": {
-          "title": "Git document link feature",
-          "description": "Whether document links are created for Git references.",
+          "title": "Deprecated Git document link feature",
+          "description": "Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultFalse"
@@ -1975,11 +1976,12 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "deprecated": true
         },
         "path": {
-          "title": "Path document link feature",
-          "description": "Whether document links are created for filesystem paths.",
+          "title": "Deprecated path document link feature",
+          "description": "Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultFalse"
@@ -1987,11 +1989,12 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "deprecated": true
         },
         "workspace": {
-          "title": "Workspace document link feature",
-          "description": "Whether document links are created for `workspace = true` references.",
+          "title": "Deprecated workspace document link feature",
+          "description": "Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultFalse"
@@ -1999,7 +2002,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "deprecated": true
         }
       },
       "additionalProperties": false,
@@ -2509,8 +2513,8 @@
       "type": "object",
       "properties": {
         "pyproject-toml": {
-          "title": "pyproject.toml document link feature",
-          "description": "Whether document links are created for `pyproject.toml` references.",
+          "title": "Deprecated pyproject.toml document link feature",
+          "description": "Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultFalse"
@@ -2518,7 +2522,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "deprecated": true
         },
         "pypi-org": {
           "title": "PyPI document link feature",
@@ -2870,8 +2875,8 @@
       "type": "object",
       "properties": {
         "path": {
-          "title": "Path document link feature",
-          "description": "Whether document links are created for filesystem paths.",
+          "title": "Deprecated path document link feature",
+          "description": "Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultFalse"
@@ -2879,7 +2884,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "deprecated": true
         }
       },
       "additionalProperties": false,
