@@ -57,7 +57,6 @@ jobs:
           node-version-file: '.node-version'
           cache: 'pnpm'
       - run: pnpm install
-        working-directory: ./editors/vscode
       - name: Check Biome schema version
         run: |
           node <<'NODE'
