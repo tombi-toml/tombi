@@ -56,7 +56,31 @@ jobs:
         with:
           node-version-file: '.node-version'
           cache: 'pnpm'
-      - run: pnpm install && pnpm run build
+      - run: pnpm install
+      - name: Check Biome schema version
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+
+          const config = JSON.parse(fs.readFileSync("biome.json", "utf8"));
+          const schema = config.$schema ?? "";
+          const match = schema.match(/^https:\/\/biomejs\.dev\/schemas\/([^/]+)\/schema\.json$/);
+          if (!match) {
+            console.error(`Invalid Biome schema URL: ${schema}`);
+            process.exit(1);
+          }
+
+          const biomePackage = JSON.parse(
+            fs.readFileSync("node_modules/@biomejs/biome/package.json", "utf8"),
+          );
+          if (match[1] !== biomePackage.version) {
+            console.error(
+              `Biome schema version mismatch: biome.json uses ${match[1]}, but @biomejs/biome is ${biomePackage.version}`,
+            );
+            process.exit(1);
+          }
+          NODE
+      - run: pnpm run build
         working-directory: ./editors/vscode
       - run: pnpm run format:check
         working-directory: ./editors/vscode
