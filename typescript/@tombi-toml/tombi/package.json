@@ -7,13 +7,9 @@
   },
   "files": [
     "bin/tombi",
-    "scripts/postinstall.js",
     "README.md",
     "LICENSE"
   ],
-  "scripts": {
-    "postinstall": "node ./scripts/postinstall.js"
-  },
   "keywords": [
     "toml",
     "cli",

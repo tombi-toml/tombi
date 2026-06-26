@@ -43,29 +43,43 @@ const binPath =
     : PLATFORMS?.[platform]?.[arch]);
 
 if (binPath) {
-  const packageManager = detectPackageManager();
-  const result = require("node:child_process").spawnSync(
-    require.resolve(binPath),
-    process.argv.slice(2),
-    {
-      shell: false,
-      stdio: "inherit",
-      env: {
-        ...env,
-        JS_RUNTIME_VERSION: version,
-        JS_RUNTIME_NAME: release.name,
-        ...(packageManager != null
-          ? { NODE_PACKAGE_MANAGER: packageManager }
-          : {}),
-      },
-    },
-  );
-
-  if (result.error) {
-    throw result.error;
+  let resolvedBinPath;
+  try {
+    resolvedBinPath = require.resolve(binPath);
+  } catch {
+    console.error(
+      `The Tombi CLI binary "${binPath}" could not be found. ` +
+        "The platform-specific optional package may not be installed. " +
+        "Please reinstall tombi with optional dependencies enabled.",
+    );
+    process.exitCode = 1;
   }
 
-  process.exitCode = result.status;
+  if (resolvedBinPath) {
+    const packageManager = detectPackageManager();
+    const result = require("node:child_process").spawnSync(
+      resolvedBinPath,
+      process.argv.slice(2),
+      {
+        shell: false,
+        stdio: "inherit",
+        env: {
+          ...env,
+          JS_RUNTIME_VERSION: version,
+          JS_RUNTIME_NAME: release.name,
+          ...(packageManager != null
+            ? { NODE_PACKAGE_MANAGER: packageManager }
+            : {}),
+        },
+      },
+    );
+
+    if (result.error) {
+      throw result.error;
+    }
+
+    process.exitCode = result.status;
+  }
 } else {
   console.error(
     "The Tombi CLI package doesn't ship with prebuilt binaries for your platform yet. " +
