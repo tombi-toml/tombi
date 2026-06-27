@@ -18,6 +18,8 @@ permissions:
 
 env:
   TOMBI_VERSION: ""
+  CARGO_PROFILE_RELEASE_LTO: "fat"
+  RUSTFLAGS: "-C strip=symbols"
 
 jobs:
   detect-changes:
@@ -66,15 +68,7 @@ jobs:
           - runner: ubuntu-latest
             target: x86_64
           - runner: ubuntu-latest
-            target: x86
-          - runner: ubuntu-latest
             target: aarch64
-          - runner: ubuntu-latest
-            target: armv7
-          - runner: ubuntu-latest
-            target: s390x
-          - runner: ubuntu-latest
-            target: ppc64le
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
@@ -112,11 +106,7 @@ jobs:
           - runner: ubuntu-latest
             target: x86_64
           - runner: ubuntu-latest
-            target: x86
-          - runner: ubuntu-latest
             target: aarch64
-          - runner: ubuntu-latest
-            target: armv7
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
@@ -148,7 +138,7 @@ jobs:
           - runner: windows-latest
             target: x64
           - runner: windows-latest
-            target: x86
+            target: aarch64
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
