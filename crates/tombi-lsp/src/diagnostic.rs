@@ -1,31 +1,10 @@
-use std::path::PathBuf;
-
 use itertools::{Either, Itertools};
-use tombi_config::Config;
 use tombi_glob::{MatchResult, matches_file_patterns};
 use tombi_text::{IntoLsp, LineIndex};
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 
-pub async fn publish_diagnostics(backend: &Backend, text_document_uri: tombi_uri::Uri) {
-    let Some(diagnostics_result) = get_diagnostics_result(backend, &text_document_uri).await else {
-        return;
-    };
-
-    log::trace!("{:?}", diagnostics_result);
-
-    let DiagnosticsResult {
-        diagnostics,
-        version,
-    } = diagnostics_result;
-
-    backend
-        .client
-        .publish_diagnostics(text_document_uri.into(), diagnostics, version)
-        .await
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DiagnosticsResult {
     pub diagnostics: Vec<tower_lsp::lsp_types::Diagnostic>,
     pub version: Option<i32>,
@@ -35,6 +14,33 @@ pub async fn get_diagnostics_result(
     backend: &Backend,
     text_document_uri: &tombi_uri::Uri,
 ) -> Option<DiagnosticsResult> {
+    if let Some(diagnostics_result) = {
+        backend
+            .workspace_diagnostics_cache
+            .read()
+            .await
+            .get(text_document_uri)
+            .cloned()
+    } {
+        // Reuse the cached result only when it was computed for the document
+        // version the editor is currently showing. `did_change` updates the
+        // document version and clears the cache in separate critical sections,
+        // and messages are processed concurrently, so a pull-diagnostics request
+        // can otherwise observe a cache entry left over from the previous version
+        // and report stale (false positive / false negative) diagnostics until
+        // the next edit.
+        let current_version = backend
+            .document_sources
+            .read()
+            .await
+            .get(text_document_uri)
+            .and_then(|document_source| document_source.version);
+
+        if diagnostics_result.version == current_version {
+            return Some(diagnostics_result);
+        }
+    }
+
     let ConfigSchemaStore {
         config,
         schema_store,
@@ -103,7 +109,7 @@ pub async fn get_diagnostics_result(
     .lint(text.as_ref())
     .await
     {
-        Ok(_) => Vec::with_capacity(0),
+        Ok(_) => Vec::new(),
         Err(diagnostics) => {
             let line_index = LineIndex::new(text.as_ref(), encoding_kind);
             diagnostics
@@ -114,55 +120,23 @@ pub async fn get_diagnostics_result(
         }
     };
 
-    Some(DiagnosticsResult {
+    let diagnostics_result = DiagnosticsResult {
         diagnostics,
         version,
-    })
-}
+    };
 
-#[derive(Debug)]
-pub struct WorkspaceConfig {
-    pub workspace_folder_path: PathBuf,
-    pub config: Config,
-}
-
-pub async fn get_workspace_configs(
-    backend: &Backend,
-) -> Option<tombi_hashmap::HashMap<Option<PathBuf>, WorkspaceConfig>> {
-    let workspace_folder_paths =
-        backend
-            .client
-            .workspace_folders()
-            .await
-            .ok()
-            .flatten()
-            .map(|workspace_folders| {
-                workspace_folders
-                    .into_iter()
-                    .filter_map(|workspace| {
-                        tombi_uri::Uri::to_file_path(&workspace.uri.into()).ok()
-                    })
-                    .collect_vec()
-            });
-
-    log::debug!("workspace_folder_paths: {:?}", workspace_folder_paths);
-
-    let workspace_folder_paths = workspace_folder_paths?;
-
-    let mut configs = tombi_hashmap::HashMap::new();
-
-    for workspace_folder_path in workspace_folder_paths {
-        if let Ok((config, config_path)) =
-            serde_tombi::config::load_with_path(Some(workspace_folder_path.clone()))
-        {
-            configs
-                .entry(config_path.clone())
-                .or_insert(WorkspaceConfig {
-                    workspace_folder_path,
-                    config,
-                });
-        };
+    {
+        let mut workspace_diagnostics_cache = backend.workspace_diagnostics_cache.write().await;
+        if let Ok(document_sources) = backend.document_sources.try_read() {
+            let current_version = document_sources
+                .get(text_document_uri)
+                .and_then(|document_source| document_source.version);
+            if current_version == diagnostics_result.version {
+                workspace_diagnostics_cache
+                    .set(text_document_uri.clone(), diagnostics_result.clone());
+            }
+        }
     }
 
-    Some(configs)
+    Some(diagnostics_result)
 }

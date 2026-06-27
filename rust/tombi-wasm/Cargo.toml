@@ -24,3 +24,6 @@ tombi-linter.workspace = true
 tombi-schema-store = { workspace = true, features = ["wasm"] }
 wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
+
+[lints]
+workspace = true

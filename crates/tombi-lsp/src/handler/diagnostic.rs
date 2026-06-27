@@ -3,10 +3,7 @@ use tower_lsp::lsp_types::{
     FullDocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport,
 };
 
-use crate::{
-    backend::Backend,
-    diagnostic::{get_diagnostics_result, publish_diagnostics},
-};
+use crate::{backend::Backend, diagnostic::get_diagnostics_result};
 
 /// Pull diagnostics
 pub async fn handle_diagnostic(
@@ -58,5 +55,20 @@ pub async fn push_diagnostics(backend: &Backend, text_document_uri: tombi_uri::U
     log::info!("push_diagnostics");
     log::trace!("{:?}", params);
 
-    publish_diagnostics(backend, params.text_document.uri).await;
+    let Some(diagnostics_result) = get_diagnostics_result(backend, &params.text_document.uri).await
+    else {
+        return;
+    };
+
+    log::trace!("{:?}", diagnostics_result);
+
+    let crate::diagnostic::DiagnosticsResult {
+        diagnostics,
+        version,
+    } = diagnostics_result;
+
+    backend
+        .client
+        .publish_diagnostics(params.text_document.uri.into(), diagnostics, version)
+        .await;
 }

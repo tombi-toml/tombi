@@ -149,6 +149,16 @@
           "items": {
             "$ref": "#/definitions/GlobPattern"
           }
+        },
+        "respect-ignore-files": {
+          "title": "Respect repository ignore files",
+          "description": "Whether to respect `.ignore`, `.gitignore`, and `.git/info/exclude` while discovering files.",
+          "default": true,
+          "allOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -158,6 +168,10 @@
       "description": "Glob pattern used by config include/exclude lists.",
       "type": "string",
       "minLength": 1
+    },
+    "BoolDefaultTrue": {
+      "type": "boolean",
+      "default": true
     },
     "FormatOptions": {
       "title": "Formatter options",
@@ -750,10 +764,6 @@
         }
       },
       "additionalProperties": false
-    },
-    "BoolDefaultTrue": {
-      "type": "boolean",
-      "default": true
     },
     "LspCompletion": {
       "type": "object",
@@ -1830,6 +1840,18 @@
               "type": "null"
             }
           ]
+        },
+        "update-dependency-to-latest-version": {
+          "title": "Update-dependency-to-latest-version code action feature",
+          "description": "Whether code actions can rewrite dependency versions to the latest published version.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -1920,8 +1942,8 @@
       "type": "object",
       "properties": {
         "cargo-toml": {
-          "title": "Cargo.toml document link feature",
-          "description": "Whether document links are created for `Cargo.toml` references.",
+          "title": "Deprecated Cargo.toml document link feature",
+          "description": "Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultFalse"
@@ -1929,7 +1951,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "deprecated": true
         },
         "crates-io": {
           "title": "crates.io document link feature",
@@ -1944,8 +1967,8 @@
           ]
         },
         "git": {
-          "title": "Git document link feature",
-          "description": "Whether document links are created for Git references.",
+          "title": "Deprecated Git document link feature",
+          "description": "Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultFalse"
@@ -1953,11 +1976,12 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "deprecated": true
         },
         "path": {
-          "title": "Path document link feature",
-          "description": "Whether document links are created for filesystem paths.",
+          "title": "Deprecated path document link feature",
+          "description": "Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultFalse"
@@ -1965,11 +1989,12 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "deprecated": true
         },
         "workspace": {
-          "title": "Workspace document link feature",
-          "description": "Whether document links are created for `workspace = true` references.",
+          "title": "Deprecated workspace document link feature",
+          "description": "Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultFalse"
@@ -1977,7 +2002,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "deprecated": true
         }
       },
       "additionalProperties": false,
@@ -2130,6 +2156,30 @@
         "dependency-detail": {
           "title": "Dependency detail hover feature",
           "description": "Whether hover shows detailed dependency metadata.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "default-features": {
+          "title": "Default features hover feature",
+          "description": "Whether hover shows default Cargo dependency features.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "feature-dependencies": {
+          "title": "Feature dependencies hover feature",
+          "description": "Whether hover shows dependencies of the selected Cargo feature.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultTrue"
@@ -2403,6 +2453,18 @@
               "type": "null"
             }
           ]
+        },
+        "update-dependency-to-latest-version": {
+          "title": "Update-dependency-to-latest-version code action feature",
+          "description": "Whether code actions can rewrite dependency versions to the latest published version.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -2451,8 +2513,8 @@
       "type": "object",
       "properties": {
         "pyproject-toml": {
-          "title": "pyproject.toml document link feature",
-          "description": "Whether document links are created for `pyproject.toml` references.",
+          "title": "Deprecated pyproject.toml document link feature",
+          "description": "Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultFalse"
@@ -2460,7 +2522,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "deprecated": true
         },
         "pypi-org": {
           "title": "PyPI document link feature",
@@ -2812,8 +2875,8 @@
       "type": "object",
       "properties": {
         "path": {
-          "title": "Path document link feature",
-          "description": "Whether document links are created for filesystem paths.",
+          "title": "Deprecated path document link feature",
+          "description": "Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultFalse"
@@ -2821,7 +2884,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "deprecated": true
         }
       },
       "additionalProperties": false,

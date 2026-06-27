@@ -142,7 +142,7 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
     let Some((keys, completion_hint)) =
         extract_keys_and_hint(&root, position_in_content, toml_version, None)
     else {
-        return Some(Vec::with_capacity(0));
+        return Some(Vec::new());
     };
 
     let document_tree = root.into_document_tree_and_errors(toml_version).tree;

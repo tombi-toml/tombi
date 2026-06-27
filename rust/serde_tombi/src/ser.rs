@@ -283,6 +283,17 @@ impl<'a> serde::Serializer for &'a mut ValueSerializer<'a> {
             tombi_date_time::LOCAL_TIME_NEWTYPE_NAME => value
                 .serialize(DateTimeSerializer::new(self.accessors))
                 .map(|dt| Some(tombi_document::Value::LocalTime(dt))),
+            crate::private::INLINE_NEWTYPE_NAME => {
+                let Some(mut value) = value.serialize(&mut ValueSerializer {
+                    accessors: self.accessors,
+                })?
+                else {
+                    return Ok(None);
+                };
+
+                force_inline(&mut value);
+                Ok(Some(value))
+            }
             _ => value.serialize(self),
         }
     }
@@ -494,6 +505,24 @@ impl serde::ser::SerializeTupleVariant for SerializeArray<'_> {
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
         serde::ser::SerializeSeq::end(self)
+    }
+}
+
+fn force_inline(value: &mut tombi_document::Value) {
+    match value {
+        tombi_document::Value::Table(table) => {
+            *table.kind_mut() = tombi_document::TableKind::InlineTable;
+            for child in table.key_values_mut().values_mut() {
+                force_inline(child);
+            }
+        }
+        tombi_document::Value::Array(array) => {
+            *array.kind_mut() = tombi_document::ArrayKind::Array;
+            for child in array.values_mut() {
+                force_inline(child);
+            }
+        }
+        _ => {}
     }
 }
 
@@ -1046,6 +1075,172 @@ aaa = "1.0"
 mmm = "1.0"
 zzz = "1.0"
 "#;
+
+        toml_text_assert_eq!(toml, expected);
+    }
+
+    #[tokio::test]
+    async fn test_serialize_inline_table_attribute() {
+        #[derive(Serialize)]
+        struct Package {
+            version: String,
+            edition: String,
+        }
+
+        #[crate::tombi]
+        #[derive(Serialize)]
+        struct Config {
+            #[tombi(inline)]
+            package: Package,
+        }
+
+        let test = Config {
+            package: Package {
+                version: "1.0.0".to_string(),
+                edition: "2024".to_string(),
+            },
+        };
+
+        let toml = to_string_async(&test)
+            .await
+            .expect("TOML serialization failed");
+        let expected = r#"package = { version = "1.0.0", edition = "2024" }"#;
+
+        toml_text_assert_eq!(toml, expected);
+    }
+
+    #[tokio::test]
+    async fn test_serialize_inline_array_of_tables_attribute() {
+        #[derive(Serialize)]
+        struct Dependency {
+            name: String,
+            version: String,
+        }
+
+        #[crate::tombi]
+        #[derive(Serialize)]
+        struct Config {
+            #[tombi(inline)]
+            dependencies: Vec<Dependency>,
+        }
+
+        let test = Config {
+            dependencies: vec![
+                Dependency {
+                    name: "serde".to_string(),
+                    version: "1".to_string(),
+                },
+                Dependency {
+                    name: "tokio".to_string(),
+                    version: "1".to_string(),
+                },
+            ],
+        };
+
+        let toml = to_string_async(&test)
+            .await
+            .expect("TOML serialization failed");
+        let expected = r#"
+dependencies = [
+  { name = "serde", version = "1" },
+  { name = "tokio", version = "1" }
+]
+"#
+        .strip_prefix("\n")
+        .unwrap();
+
+        toml_text_assert_eq!(toml, expected);
+    }
+
+    #[tokio::test]
+    async fn test_serialize_inline_primitive_array_attribute_is_noop() {
+        #[crate::tombi]
+        #[derive(Serialize)]
+        struct Config {
+            #[tombi(inline)]
+            numbers: Vec<u32>,
+        }
+
+        let test = Config {
+            numbers: vec![1, 2, 3],
+        };
+
+        let toml = to_string_async(&test)
+            .await
+            .expect("TOML serialization failed");
+        let expected = r#"numbers = [1, 2, 3]"#;
+
+        toml_text_assert_eq!(toml, expected);
+    }
+
+    #[tokio::test]
+    async fn test_serialize_inline_map_attribute() {
+        #[crate::tombi]
+        #[derive(Serialize)]
+        struct Config {
+            #[tombi(inline)]
+            map: tombi_hashmap::IndexMap<String, u32>,
+        }
+
+        let test = Config {
+            map: tombi_hashmap::indexmap! {
+                "a".to_string() => 1,
+                "b".to_string() => 2,
+            },
+        };
+
+        let toml = to_string_async(&test)
+            .await
+            .expect("TOML serialization failed");
+        let expected = r#"map = { a = 1, b = 2 }"#;
+
+        toml_text_assert_eq!(toml, expected);
+    }
+
+    #[tokio::test]
+    async fn test_serialize_inline_attribute_propagates_through_nested_arrays_and_tables() {
+        #[derive(Serialize)]
+        struct Leaf {
+            value: String,
+        }
+
+        #[derive(Serialize)]
+        struct Entry {
+            leaves: Vec<Leaf>,
+        }
+
+        #[derive(Serialize)]
+        struct Group {
+            entries: Vec<Entry>,
+        }
+
+        #[crate::tombi]
+        #[derive(Serialize)]
+        struct Config {
+            #[tombi(inline)]
+            groups: Vec<Group>,
+        }
+
+        let test = Config {
+            groups: vec![Group {
+                entries: vec![Entry {
+                    leaves: vec![
+                        Leaf {
+                            value: "a".to_string(),
+                        },
+                        Leaf {
+                            value: "b".to_string(),
+                        },
+                    ],
+                }],
+            }],
+        };
+
+        let toml = to_string_async(&test)
+            .await
+            .expect("TOML serialization failed");
+        let expected =
+            r#"groups = [{ entries = [{ leaves = [{ value = "a" }, { value = "b" }] }] }]"#;
 
         toml_text_assert_eq!(toml, expected);
     }

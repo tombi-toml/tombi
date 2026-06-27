@@ -98,6 +98,9 @@ fn format_multiline_inline_table(
     write!(f, "{{")?;
 
     if let Some(trailing_comment) = table.brace_start_trailing_comment() {
+        if let Some(trailing_comment_alignment_width) = trailing_comment_alignment_width {
+            write_trailing_comment_alignment_space(f, *trailing_comment_alignment_width)?;
+        }
         trailing_comment.format(f)?;
     }
 

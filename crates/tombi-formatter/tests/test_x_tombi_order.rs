@@ -677,10 +677,13 @@ mod table_keys_order {
             ) -> Ok(
                 r#"
                 [dependencies]
-                serde = { version = "^1.0.0", features = [
-                  "derive",
-                  "std",
-                ] }
+                serde = {
+                  version = "^1.0.0",
+                  features = [
+                    "derive",
+                    "std",
+                  ]
+                }
                 "#
             )
         }
@@ -700,12 +703,15 @@ mod table_keys_order {
             ) -> Ok(
                 r#"
                 [dependencies]
-                serde = { version = "^1.0.0", features = [
-                  # tombi: format.rules.array-values-order.disabled = true
+                serde = {
+                  version = "^1.0.0",
+                  features = [
+                    # tombi: format.rules.array-values-order.disabled = true
 
-                  "std",
-                  "derive",
-                ] }
+                    "std",
+                    "derive",
+                  ]
+                }
                 "#
             )
         }

@@ -18,6 +18,7 @@ use crate::{
         any_of::get_any_of_hover_content,
         comment::get_value_comment_directive_hover_content,
         constraints::{ValueConstraints, build_enum_values},
+        display_value::DisplayValue,
         one_of::get_one_of_hover_content,
     },
     schema_resolver::resolve_table_unevaluated_property_schema,
@@ -111,15 +112,52 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         )
                                         .await
                                     {
+                                        let property_accessors = accessors
+                                            .iter()
+                                            .cloned()
+                                            .chain(std::iter::once(accessor))
+                                            .collect_vec();
+
+                                        if keys.len() == 1
+                                            && !value.contains(position)
+                                            && matches!(
+                                                current_schema.value_schema.as_ref(),
+                                                ValueSchema::Anything(_)
+                                            )
+                                        {
+                                            let mut value_type =
+                                                current_schema.value_schema.value_type().await;
+                                            if !required {
+                                                value_type.set_nullable();
+                                            }
+
+                                            return Some(HoverContent::Value(HoverValueContent {
+                                                title: current_schema
+                                                    .value_schema
+                                                    .title()
+                                                    .map(ToString::to_string),
+                                                description: current_schema
+                                                    .value_schema
+                                                    .description()
+                                                    .map(ToString::to_string),
+                                                accessors: Accessors::from(property_accessors),
+                                                value_type,
+                                                constraints: Some(ValueConstraints {
+                                                    key_patterns,
+                                                    ..Default::default()
+                                                }),
+                                                schema_uri: Some(
+                                                    current_schema.schema_uri.as_ref().clone(),
+                                                ),
+                                                range: None,
+                                            }));
+                                        }
+
                                         let mut hover_content = value
                                             .get_hover_content(
                                                 position,
                                                 &keys[1..],
-                                                &accessors
-                                                    .iter()
-                                                    .cloned()
-                                                    .chain(std::iter::once(accessor))
-                                                    .collect_vec(),
+                                                &property_accessors,
                                                 Some(&current_schema),
                                                 schema_context,
                                             )
@@ -724,13 +762,18 @@ impl GetHoverContent for TableSchema {
                 value_type: ValueType::Table,
                 constraints: Some(ValueConstraints {
                     r#enum: build_enum_values(&self.const_value, &self.r#enum, |value| {
-                        Some(value.into())
+                        DisplayValue::try_from(value).ok()
                     }),
-                    default: self.default.as_ref().map(|default| default.into()),
-                    examples: self
-                        .examples
+                    default: self
+                        .default
                         .as_ref()
-                        .map(|examples| examples.iter().map(|example| example.into()).collect()),
+                        .and_then(|default| DisplayValue::try_from(default).ok()),
+                    examples: self.examples.as_ref().map(|examples| {
+                        examples
+                            .iter()
+                            .filter_map(|example| DisplayValue::try_from(example).ok())
+                            .collect()
+                    }),
                     required_keys: self.required.clone(),
                     max_keys: self.max_properties,
                     min_keys: self.min_properties,

@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use serde::Deserialize;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{dig_accessors, dig_keys};
 use tombi_extension::CommentContext;
@@ -21,6 +20,9 @@ use tower_lsp::lsp_types::InsertTextFormat;
 
 use crate::cargo_lock::{exact_crates_io_version, load_cached_cargo_lock};
 use crate::{
+    crates_io::{
+        CratesIoCrateVersionsResponse, CratesIoVersionDetailResponse, CratesIoVersionsResponse,
+    },
     find_cargo_toml, find_workspace_cargo_toml, get_workspace_cargo_toml_path,
     is_any_dependency_path_accessor, is_dependency_accessor,
 };
@@ -29,28 +31,6 @@ enum CargoCompletionFeature {
     DependencyVersion,
     DependencyFeature,
     Path,
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoVersionsResponse {
-    versions: Vec<CratesIoVersion>,
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoVersion {
-    num: String,
-    features: tombi_hashmap::HashMap<String, Vec<String>>,
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoCrateResponse {
-    #[serde(default)]
-    versions: Vec<CratesIoVersion>,
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoVersionDetailResponse {
-    version: CratesIoVersion,
 }
 
 pub async fn completion(
@@ -613,7 +593,7 @@ async fn complete_crate_version(
                     }
                     _ => None,
                 },
-                preselect: None,
+                preselect: (i == 0).then_some(true),
                 in_comment: false,
             })
             .collect();
@@ -727,7 +707,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
                     }
                 })
                 .collect(),
-            _ => Vec::with_capacity(0),
+            _ => Vec::new(),
         };
 
         let items = features
@@ -807,7 +787,8 @@ async fn fetch_crate_features(
         // so we can read them directly from the latest version without a second fetch.
         let url = format!("https://crates.io/api/v1/crates/{crate_name}");
         let resp =
-            fetch_cached_remote_json::<CratesIoCrateResponse>(&url, offline, cache_options).await?;
+            fetch_cached_remote_json::<CratesIoCrateVersionsResponse>(&url, offline, cache_options)
+                .await?;
         resp.versions.into_iter().next().map(|v| v.features)
     }
 }
@@ -858,7 +839,7 @@ async fn fetch_local_crate_features(
                             }
                         })
                         .collect(),
-                    _ => Vec::with_capacity(0),
+                    _ => Vec::new(),
                 };
                 (feature_name.value.clone(), deps)
             })
@@ -874,65 +855,10 @@ async fn fetch_local_crate_features(
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        ffi::OsString,
-        fs,
-        str::FromStr,
-        sync::{LazyLock, Mutex, MutexGuard},
-        time::Duration,
-    };
+    use std::{fs, str::FromStr, time::Duration};
 
     use super::*;
-
-    static CACHE_ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
-
-    struct TestCacheHome {
-        _guard: MutexGuard<'static, ()>,
-        previous_tombi: Option<OsString>,
-        previous_xdg: Option<OsString>,
-        _temp_dir: tempfile::TempDir,
-    }
-
-    impl TestCacheHome {
-        fn new() -> Self {
-            let guard = CACHE_ENV_LOCK.lock().unwrap_or_else(|err| err.into_inner());
-            let temp_dir = tempfile::tempdir().unwrap();
-            let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
-            let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
-            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
-            // remains scoped to one test at a time.
-            unsafe {
-                std::env::remove_var("TOMBI_CACHE_HOME");
-                std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
-            }
-            Self {
-                _guard: guard,
-                previous_tombi,
-                previous_xdg,
-                _temp_dir: temp_dir,
-            }
-        }
-    }
-
-    impl Drop for TestCacheHome {
-        fn drop(&mut self) {
-            // SAFETY: Tests serialize access with a process-wide mutex so env mutation
-            // remains scoped to one test at a time.
-            unsafe {
-                if let Some(previous) = &self.previous_tombi {
-                    std::env::set_var("TOMBI_CACHE_HOME", previous);
-                } else {
-                    std::env::remove_var("TOMBI_CACHE_HOME");
-                }
-
-                if let Some(previous) = &self.previous_xdg {
-                    std::env::set_var("XDG_CACHE_HOME", previous);
-                } else {
-                    std::env::remove_var("XDG_CACHE_HOME");
-                }
-            }
-        }
-    }
+    use tombi_test_lib::TestCacheHome;
 
     fn cache_options() -> tombi_cache::Options {
         tombi_cache::Options {
@@ -1042,7 +968,13 @@ mod tests {
             exact_crates_io_version("=0.9.12+spec-1.1.0"),
             Some("0.9.12+spec-1.1.0".to_string())
         );
+        assert_eq!(
+            exact_crates_io_version("1.2.3-alpha.1+build-5"),
+            Some("1.2.3-alpha.1+build-5".to_string())
+        );
         assert_eq!(exact_crates_io_version("^1.2"), None);
+        assert_eq!(exact_crates_io_version("01.2.3"), None);
+        assert_eq!(exact_crates_io_version("1.2"), None);
     }
 
     #[tokio::test(flavor = "current_thread")]

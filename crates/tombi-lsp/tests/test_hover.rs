@@ -1,20 +1,17 @@
 #![allow(clippy::await_holding_lock)]
 
 use std::{
-    ffi::OsString,
     fs,
     path::{Path, PathBuf},
     str::FromStr,
-    sync::{Mutex, MutexGuard, OnceLock},
 };
 
-use tempfile::TempDir;
 use tombi_test_lib::{
-    adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
+    TestCacheHome, adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
     cargo_feature_navigation_fixture_path, cargo_schema_path, exact_index_string_test_schema_path,
-    lsp_consistency_test_schema_path, one_of_hover_discriminator_test_schema_path,
-    pyproject_schema_path, ref_sibling_annotations_test_schema_path,
-    string_format_test_schema_path, tombi_schema_path,
+    issue_1895_rustfmt_like_schema_path, lsp_consistency_test_schema_path,
+    one_of_hover_discriminator_test_schema_path, pyproject_schema_path,
+    ref_sibling_annotations_test_schema_path, string_format_test_schema_path, tombi_schema_path,
 };
 
 fn nested_table_keys_order_schema_path() -> PathBuf {
@@ -41,6 +38,11 @@ fn exact_index_array_values_order_schema_path() -> PathBuf {
         .join("crates/tombi-lsp/tests/fixtures/exact-index-array-values-order.schema.json")
 }
 
+fn history_hover_null_default_schema_path() -> PathBuf {
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/history-hover-null-default.schema.json")
+}
+
 fn cargo_feature_usage_hover_description(
     project_root: &Path,
     locations: &[(PathBuf, u32)],
@@ -59,57 +61,6 @@ fn cargo_feature_usage_hover_description(
     }
 
     lines.join("\n")
-}
-
-fn test_lock() -> &'static Mutex<()> {
-    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-    LOCK.get_or_init(|| Mutex::new(()))
-}
-
-struct TestCacheHome {
-    _guard: MutexGuard<'static, ()>,
-    previous_tombi: Option<OsString>,
-    previous_xdg: Option<OsString>,
-    _temp_dir: TempDir,
-}
-
-impl TestCacheHome {
-    fn new() -> Self {
-        let guard = test_lock()
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        let temp_dir = tempfile::tempdir().unwrap();
-        let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
-        let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
-        unsafe {
-            std::env::remove_var("TOMBI_CACHE_HOME");
-            std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
-        }
-        Self {
-            _guard: guard,
-            previous_tombi,
-            previous_xdg,
-            _temp_dir: temp_dir,
-        }
-    }
-}
-
-impl Drop for TestCacheHome {
-    fn drop(&mut self) {
-        unsafe {
-            if let Some(previous) = &self.previous_tombi {
-                std::env::set_var("TOMBI_CACHE_HOME", previous);
-            } else {
-                std::env::remove_var("TOMBI_CACHE_HOME");
-            }
-
-            if let Some(previous) = &self.previous_xdg {
-                std::env::set_var("XDG_CACHE_HOME", previous);
-            } else {
-                std::env::remove_var("XDG_CACHE_HOME");
-            }
-        }
-    }
 }
 
 async fn cached_remote_json_file_path(url: &str) -> PathBuf {
@@ -460,8 +411,9 @@ mod hover_keys_value {
             async fn cargo_dependencies_features(
                 r#"
                 [dependencies]
-                serde = { version = "^1.0.0", features█ = ["derive"] }
+                serde = { version = "^1.0.0", default-features = false, features█ = ["derive"] }
                 "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "dependencies.serde.features",
@@ -474,8 +426,9 @@ mod hover_keys_value {
             async fn cargo_dependencies_features_item(
                 r#"
                 [dependencies]
-                serde = { version = "^1.0.0", features = ["derive█"] }
+                serde = { version = "^1.0.0", default-features = false, features = ["derive█"] }
                 "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "dependencies.serde.features[0]",
@@ -493,6 +446,145 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "dependencies.serde.features[0]",
                 "Value": "String"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_path_dependency_features_append_default_feature_list(
+                r#"
+                [dependencies]
+                local-path-crate = { path = "local-path-crate", default-features = true, features█ = ["default"] }
+                "#,
+                SourcePath(
+                    tombi_test_lib::project_root_path()
+                        .join("crates/tombi-lsp/tests/fixtures/cargo/path-dependency-with-features/Cargo.toml")
+                ),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok({
+                "Keys": "dependencies.local-path-crate.features",
+                "Value": "Array?",
+                "Description": Some(
+                    "List of features to activate in the dependency.\n\nDefault Features:\n  - `extras`"
+                ),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_registry_dependency_feature_item_appends_default_feature_list(
+                r#"
+                [dependencies]
+                serde = { version = "=1.0.228", features = ["derive█"] }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
+                UseTestCacheHome,
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                SchemaPath(cargo_schema_path()),
+                    CachedRemoteJson {
+                        url: "https://crates.io/api/v1/crates/serde/1.0.228",
+                        body: r#"{
+	                        "version": {
+                                "num": "1.0.228",
+	                            "features": {
+	                                "alloc": [],
+	                                "default": ["std"],
+                                "derive": ["serde_derive"],
+                                "rc": [],
+                                "std": ["serde_core/std"]
+                            }
+                        }
+                    }"#,
+                },
+            ) -> Ok({
+                "Keys": "dependencies.serde.features[0]",
+                "Value": "String",
+                "Description": Some(
+                    "List of features to activate in the dependency.\n\nFeature Dependencies:\n  - `serde_derive`\n\nDefault Features:\n  - `std`"
+                ),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_registry_dependency_feature_item_skips_default_feature_list_when_disabled_by_extensions(
+                r#"
+                [dependencies]
+                serde = { version = "=1.0.228", features = ["derive█"] }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/cargo-hover-default-features-disabled/Cargo.toml"
+                )),
+                UseTestCacheHome,
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                SchemaPath(cargo_schema_path()),
+                CachedRemoteJson {
+                    url: "https://crates.io/api/v1/crates/serde/1.0.228",
+                    body: r#"{
+                        "version": {
+                            "num": "1.0.228",
+                            "features": {
+                                "alloc": [],
+                                "default": ["std"],
+                                "derive": ["serde_derive"],
+                                "rc": [],
+                                "std": ["serde_core/std"]
+                            }
+                        }
+                    }"#,
+                },
+            ) -> Ok({
+                "Keys": "dependencies.serde.features[0]",
+                "Value": "String",
+                "Description": Some(
+                    "List of features to activate in the dependency.\n\nFeature Dependencies:\n  - `serde_derive`"
+                ),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_registry_dependency_feature_item_skips_feature_dependencies_when_disabled_by_extensions(
+                r#"
+                [dependencies]
+                serde = { version = "=1.0.228", features = ["derive█"] }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/cargo-hover-feature-dependencies-disabled/Cargo.toml"
+                )),
+                UseTestCacheHome,
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                SchemaPath(cargo_schema_path()),
+                CachedRemoteJson {
+                    url: "https://crates.io/api/v1/crates/serde/1.0.228",
+                    body: r#"{
+                        "version": {
+                            "num": "1.0.228",
+                            "features": {
+                                "alloc": [],
+                                "default": ["std"],
+                                "derive": ["serde_derive"],
+                                "rc": [],
+                                "std": ["serde_core/std"]
+                            }
+                        }
+                    }"#,
+                },
+            ) -> Ok({
+                "Keys": "dependencies.serde.features[0]",
+                "Value": "String",
+                "Description": Some(
+                    "List of features to activate in the dependency.\n\nDefault Features:\n  - `std`"
+                ),
             });
         );
 
@@ -592,6 +684,24 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn cargo_workspace_dependency_hover_metadata_skips_dependency_detail_when_disabled_by_extensions(
+                r#"
+                [dependencies]
+                member█ = { workspace = true }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extensions/cargo-hover-dependency-detail-disabled/member/Cargo.toml"
+                )),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok({
+                "Keys": "dependencies.member",
+                "Value": "(String | Table)?",
+                "Title": Some("Dependency"),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn cargo_remote_dependency_hover_offline(
                 r#"
                 [workspace.dependencies]
@@ -606,6 +716,73 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "workspace.dependencies.serde",
                 "Value": "(String | Table)?"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_dependency_version_hover_appends_latest_version(
+                r#"
+                [dependencies]
+                serde = { version = "█1.0", features = ["derive"] }
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
+                UseTestCacheHome,
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                SchemaPath(cargo_schema_path()),
+                CachedRemoteJson {
+                    url: "https://crates.io/api/v1/crates/serde",
+                    body: r#"{
+                        "crate": {
+                            "name": "serde",
+                            "description": "A generic serialization/deserialization framework",
+                            "max_version": "1.0.228"
+                        }
+                    }"#,
+                },
+            ) -> Ok({
+                "Keys": "dependencies.serde.version",
+                "Value": "String?",
+                "Title": Some("Semantic Version Requirement"),
+                "Description": Some(
+                    "The [version requirement](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html) of the target dependency.\n\nLatest Version: `1.0.228`"
+                ),
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn cargo_workspace_dependency_version_hover_appends_latest_version(
+                r#"
+                [workspace.dependencies]
+                typed-builder = "█0.21.0"
+                "#,
+                SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
+                UseTestCacheHome,
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                SchemaPath(cargo_schema_path()),
+                CachedRemoteJson {
+                    url: "https://crates.io/api/v1/crates/typed-builder",
+                    body: r#"{
+                        "crate": {
+                            "name": "typed-builder",
+                            "description": "Compile-time type-checked builder derive",
+                            "max_version": "0.23.0"
+                        }
+                    }"#,
+                },
+            ) -> Ok({
+                "Keys": "workspace.dependencies.typed-builder",
+                "Value": "(String | Table)?",
+                "Description": Some(
+                    "The [version requirement](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html) of the target dependency.\n\nLatest Version: `0.23.0`"
+                ),
             });
         );
 
@@ -766,6 +943,51 @@ mod hover_keys_value {
                 "Enum": ["true"]
             });
         );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn all_of_table_hover_ignores_null_in_default_object(
+                r#"
+                [hist█ory]
+                persistence = "save-all"
+                "#,
+                SchemaPath(history_hover_null_default_schema_path()),
+            ) -> Ok({
+                "Keys": "history",
+                "Value": "Table?",
+                "Default": r#"{ persistence = "save-all" }"#
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn all_of_nested_property_hover_survives_parent_default_with_null(
+                r#"
+                [history]
+                persis█tence = "save-all"
+                "#,
+                SchemaPath(history_hover_null_default_schema_path()),
+            ) -> Ok({
+                "Keys": "history.persistence",
+                "Value": "String?",
+                "Default": "\"save-all\""
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn all_of_array_hover_omits_default_when_array_contains_null(
+                r#"
+                [history]
+                modes = █["save-all"]
+                "#,
+                SchemaPath(history_hover_null_default_schema_path()),
+            ) -> Ok({
+                "Keys": "history.modes",
+                "Value": "Array?",
+                "No Default": true
+            });
+        );
     }
 
     mod consistency_schema {
@@ -880,6 +1102,25 @@ mod hover_keys_value {
                 "Schema": true,
                 "Title": Some("ScopedString".to_string()),
                 "Description": Some("String schema applied only to the targeted array item".to_string())
+            });
+        );
+    }
+
+    mod issue_1895_schema {
+        use super::*;
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn annotation_only_property_hover_keeps_description(
+                r#"
+                max_width = 120
+                igno█re = ["*_capnp.rs"]
+                "#,
+                SchemaPath(issue_1895_rustfmt_like_schema_path()),
+            ) -> Ok({
+                "Keys": "ignore",
+                "Value": "(Boolean | Integer | Float | String | LocalDate | LocalDateTime | LocalTime | OffsetDateTime | Array | Table)?",
+                "Description": Some("Annotation-only property schema that should still allow the key.")
             });
         );
     }
@@ -1751,6 +1992,7 @@ mod hover_keys_value {
             $(, "Description": $description:expr)?
             $(, "Enum": [$($enum_values:expr),* $(,)?])?
             $(, "Default": $default:expr)?
+            $(, "No Default": $no_default:expr)?
             $(, "Examples": [$($examples:expr),* $(,)?])?
             $(,)?
         });) => {
@@ -1777,6 +2019,8 @@ mod hover_keys_value {
                     schema_file_path: Option<std::path::PathBuf>,
                     schema_items: Vec<tombi_config::SchemaItem>,
                     subschemas: Vec<SubSchemaPath>,
+                    use_test_cache_home: bool,
+                    cached_remote_json: Vec<CachedRemoteJson>,
                     backend_options: tombi_lsp::backend::Options,
                 }
 
@@ -1824,6 +2068,27 @@ mod hover_keys_value {
                     }
                 }
 
+                #[allow(unused)]
+                struct UseTestCacheHome;
+
+                impl ApplyTestArg for UseTestCacheHome {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.use_test_cache_home = true;
+                    }
+                }
+
+                #[allow(unused)]
+                struct CachedRemoteJson {
+                    url: &'static str,
+                    body: &'static str,
+                }
+
+                impl ApplyTestArg for CachedRemoteJson {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.cached_remote_json.push(self);
+                    }
+                }
+
                 impl ApplyTestArg for tombi_lsp::backend::Options {
                     fn apply(self, args: &mut TestArgs) {
                         args.backend_options = self;
@@ -1833,6 +2098,13 @@ mod hover_keys_value {
                 #[allow(unused_mut)]
                 let mut args = TestArgs::default();
                 $(ApplyTestArg::apply($arg, &mut args);)*
+
+                let _cache_home = args
+                    .use_test_cache_home
+                    .then(TestCacheHome::new);
+                for cached_remote_json in &args.cached_remote_json {
+                    write_cached_response(cached_remote_json.url, cached_remote_json.body).await;
+                }
 
                 let (service, _) = LspService::new(|client| {
                     Backend::new(client, &args.backend_options)
@@ -2174,6 +2446,19 @@ mod hover_keys_value {
                         Some(expected_default),
                         "Default is not equal"
                     );
+                )?
+                $(
+                    if $no_default {
+                        pretty_assertions::assert_eq!(
+                            hover_content
+                                .constraints
+                                .as_ref()
+                                .and_then(|constraints| constraints.default.as_ref())
+                                .map(ToString::to_string),
+                            None,
+                            "Default is not empty"
+                        );
+                    }
                 )?
                 $(
                     let expected_examples = vec![$($examples),*];

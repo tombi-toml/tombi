@@ -247,6 +247,7 @@ fn markdown_code(value: impl std::fmt::Display, strike: bool) -> String {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use tombi_schema_store::{ResolvedFormatOrder, XTombiArrayValuesOrder, XTombiTableKeysOrder};
     use tombi_x_keyword::{ArrayValuesOrder, TableKeysOrder};
 
@@ -266,8 +267,16 @@ mod tests {
             ..Default::default()
         };
 
-        let rendered = constraints.to_string();
-        assert!(rendered.contains("Values Order: ~~`descending`~~"));
-        assert!(rendered.contains("Keys Order: ~~`ascending`~~"));
+        assert_eq!(
+            constraints.to_string().trim(),
+            textwrap::dedent(
+                r#"
+                Values Order: ~~`descending`~~
+
+                Keys Order: ~~`ascending`~~
+                "#
+            )
+            .trim()
+        );
     }
 }

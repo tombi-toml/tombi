@@ -30,7 +30,7 @@ impl crate::Edit for tombi_ast::Value {
                         .edit(node, accessors, source_path, current_schema, schema_context)
                         .await
                 }
-                _ => Vec::with_capacity(0),
+                _ => Vec::new(),
             }
         }
         .boxed()

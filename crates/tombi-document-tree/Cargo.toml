@@ -23,3 +23,6 @@ tombi-toml-version.workspace = true
 [features]
 default = ["diagnostic"]
 diagnostic = ["dep:tombi-diagnostic"]
+
+[lints]
+workspace = true

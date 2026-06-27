@@ -21,10 +21,17 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
     );
     let document_tree = document_source.document_tree();
 
-    let mut document_sources = backend.document_sources.write().await;
+    {
+        let mut document_sources = backend.document_sources.write().await;
 
-    document_sources.insert(text_document_uri.clone(), document_source);
-    drop(document_sources);
+        document_sources.insert(text_document_uri.clone(), document_source);
+    }
+
+    backend
+        .workspace_diagnostics_cache
+        .write()
+        .await
+        .clear(&text_document_uri);
 
     let config_schema_store = backend
         .config_manager

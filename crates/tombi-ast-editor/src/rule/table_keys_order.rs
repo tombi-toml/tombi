@@ -27,7 +27,7 @@ pub async fn table_keys_order<'a>(
     >,
 ) -> Vec<crate::Change> {
     if key_values_with_comma.is_empty() {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     if comment_directive
@@ -35,7 +35,7 @@ pub async fn table_keys_order<'a>(
         .and_then(|c| c.table_keys_order_disabled())
         .unwrap_or_default()
     {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     let comment_directive_order = comment_directive
@@ -44,7 +44,7 @@ pub async fn table_keys_order<'a>(
 
     let schema_override = schema_context.table_order_override(current_schema, accessors);
     if schema_override.is_some_and(|override_item| override_item.disabled) {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     let old = std::ops::RangeInclusive::new(
@@ -78,7 +78,7 @@ pub async fn table_keys_order<'a>(
     )
     .await
     else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     let new = sorted_key_values_with_comma

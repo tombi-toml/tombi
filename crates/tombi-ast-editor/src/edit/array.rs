@@ -27,7 +27,7 @@ impl crate::Edit for tombi_ast::Array {
 
         async move {
             let tombi_document_tree::Value::Array(array_node) = node else {
-                return Vec::with_capacity(0);
+                return Vec::new();
             };
             let current_item_schema = resolve_array_item_edit_context(
                 array_node,

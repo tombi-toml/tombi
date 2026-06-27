@@ -34,6 +34,12 @@ path = "schemas/type-test.schema.json"
 include = ["type-test.toml"]
 
 [[schemas]]
+# Keep Cargo.toml on TOML v1.0.0 for Nix builtins.fromTOML compatibility.
+toml-version = "v1.0.0"
+path = "tombi://www.schemastore.org/cargo.json"
+include = ["Cargo.toml"]
+
+[[schemas]]
 path = "tombi://www.schemastore.org/tombi.json"
 include = [".tombi.toml", "tombi.toml", "tombi/config.toml"]
 format.rules = {
@@ -75,6 +81,7 @@ overrides = [
       path.enabled = true,
     },
     hover = {
+      default-features.enabled = true,
       dependency-detail.enabled = true,
     },
     inlay-hint = {
@@ -96,10 +103,7 @@ overrides = [
     completion = {
       path.enabled = true,
     },
-    document-link = {
-      pypi-org.enabled = true,
-      pyproject-toml.enabled = true,
-    },
+    document-link.enabled = true,
     goto-declaration = {
       dependency.enabled = true,
       member.enabled = true,
@@ -123,9 +127,6 @@ overrides = [
 "tombi-toml/tombi" = {
   lsp = {
     completion = {
-      path.enabled = true,
-    },
-    document-link = {
       path.enabled = true,
     },
     goto-definition = {

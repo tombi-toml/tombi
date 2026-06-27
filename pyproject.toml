@@ -50,12 +50,16 @@ build-backend = "maturin"
 [tool.maturin]
 bindings = "bin"
 include = [
+  { format = "sdist", path = "LICENSE" },
   { format = "sdist", path = "www.schemastore.org/**/*.json" },
   { format = "sdist", path = "www.tombi.dev/**/*.json" },
 ]
 manifest-path = "rust/tombi-cli/Cargo.toml"
 module-name = "tombi"
 python-source = "python/tombi/src"
+
+[tool.pytest]
+addopts = ["-v"]
 
 [tool.uv.workspace]
 members = ["python/tombi-beta"]

@@ -24,7 +24,11 @@ pub async fn handle_code_action(
 
     let text_document_uri = text_document.uri.into();
 
-    let ConfigSchemaStore { config, .. } = backend
+    let ConfigSchemaStore {
+        config,
+        schema_store,
+        ..
+    } = backend
         .config_manager
         .config_schema_store_for_uri(&text_document_uri)
         .await;
@@ -99,7 +103,10 @@ pub async fn handle_code_action(
             &accessor_contexts,
             document_source.toml_version,
             config.cargo_extension_features(),
-        )?
+            schema_store.offline(),
+            schema_store.cache_options(),
+        )
+        .await?
     {
         code_actions.extend(extension_code_actions);
     }
@@ -113,7 +120,10 @@ pub async fn handle_code_action(
             document_source.toml_version,
             line_index,
             config.pyproject_extension_features(),
-        )?
+            schema_store.offline(),
+            schema_store.cache_options(),
+        )
+        .await?
     {
         code_actions.extend(extension_code_actions);
     }
@@ -134,76 +144,103 @@ mod tests {
     use tombi_schema_store::AccessorKeyKind;
     use tombi_text::Position;
 
-    #[tokio::test]
-    async fn test_get_completion_keys_with_context_simple_keyvalue() {
-        let src = r#"foo = 1\nbar = 2\n"#;
-        let root = tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
-        let pos = Position::new(0, 2); // somewhere in 'foo'
-        let toml_version = TomlVersion::V1_0_0;
-        let result = get_completion_keys_with_context(&root, pos, toml_version).await;
-        assert!(result.is_some());
-        let (keys, contexts) = result.unwrap();
-        assert_eq!(keys.len(), 1);
-        assert_eq!(contexts.len(), 1);
-        assert_eq!(contexts[0].kind, AccessorKeyKind::KeyValue);
+    macro_rules! test_get_completion_keys_with_context {
+        (#[tokio::test] async fn $name:ident($src:expr, $pos:expr) -> None;) => {
+            #[tokio::test]
+            async fn $name() {
+                let src = $src.trim();
+                let root = tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
+                let result =
+                    get_completion_keys_with_context(&root, $pos, TomlVersion::V1_0_0).await;
+
+                assert!(result.is_none());
+            }
+        };
+
+        (#[tokio::test] async fn $name:ident($src:expr, $pos:expr) -> Some(($keys:ident, $contexts:ident) $assertions:block);) => {
+            #[tokio::test]
+            async fn $name() {
+                let src = $src.trim();
+                let root = tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
+                let result =
+                    get_completion_keys_with_context(&root, $pos, TomlVersion::V1_0_0).await;
+
+                assert!(result.is_some());
+                let ($keys, $contexts) = result.unwrap();
+                $assertions
+            }
+        };
     }
 
-    #[tokio::test]
-    async fn test_get_completion_keys_with_context_table_header() {
-        let src = r#"[table]\nfoo = 1\n"#;
-        let root = tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
-        let pos = Position::new(0, 2); // somewhere in 'table'
-        let toml_version = TomlVersion::V1_0_0;
-        let result = get_completion_keys_with_context(&root, pos, toml_version).await;
-        assert!(result.is_some());
-        let (keys, contexts) = result.unwrap();
-        assert!(!keys.is_empty());
-
-        assert!(contexts.iter().any(|c| c.kind == AccessorKeyKind::Header));
+    test_get_completion_keys_with_context! {
+        #[tokio::test]
+        async fn test_get_completion_keys_with_context_simple_keyvalue(
+            r#"
+            foo = 1
+            bar = 2
+            "#,
+            Position::new(0, 2)
+        ) -> Some((keys, contexts) {
+            assert_eq!(keys.len(), 1);
+            assert_eq!(contexts.len(), 1);
+            assert_eq!(contexts[0].kind, AccessorKeyKind::KeyValue);
+        });
     }
 
-    #[tokio::test]
-    async fn test_get_completion_keys_with_context_empty() {
-        let src = r#"# just a comment\n"#;
-        let root = tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
-        let pos = Position::new(0, 0);
-        let toml_version = TomlVersion::V1_0_0;
-        let result = get_completion_keys_with_context(&root, pos, toml_version).await;
-
-        assert!(result.is_none());
+    test_get_completion_keys_with_context! {
+        #[tokio::test]
+        async fn test_get_completion_keys_with_context_table_header(
+            r#"
+            [table]
+            foo = 1
+            "#,
+            Position::new(0, 2)
+        ) -> Some((keys, contexts) {
+            assert!(!keys.is_empty());
+            assert!(contexts.iter().any(|c| c.kind == AccessorKeyKind::Header));
+        });
     }
 
-    #[tokio::test]
-    async fn test_get_completion_keys_with_context_simple_keyvalue_range() {
-        let src = "foo = 1\nbar = 2\n";
-        let root = tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
-        let pos = Position::new(0, 2); // somewhere in 'foo'
-        let toml_version = TomlVersion::V1_0_0;
-        let result = get_completion_keys_with_context(&root, pos, toml_version).await;
-        assert!(result.is_some());
-        let (keys, contexts) = result.unwrap();
-
-        pretty_assertions::assert_eq!(keys.len(), 1);
-        pretty_assertions::assert_eq!(keys.len(), contexts.len());
-
-        for (key, ctx) in keys.iter().zip(contexts.iter()) {
-            pretty_assertions::assert_eq!(ctx.range, key.range());
-        }
+    test_get_completion_keys_with_context! {
+        #[tokio::test]
+        async fn test_get_completion_keys_with_context_empty(
+            "# just a comment",
+            Position::new(0, 0)
+        ) -> None;
     }
 
-    #[tokio::test]
-    async fn test_get_completion_keys_with_context_table_header_range() {
-        let src = "[table]\nfoo = 1\n";
-        let root = tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
-        let pos = Position::new(0, 2); // somewhere in 'table'
-        let toml_version = TomlVersion::V1_0_0;
-        let result = get_completion_keys_with_context(&root, pos, toml_version).await;
-        assert!(result.is_some());
-        let (keys, contexts) = result.unwrap();
-        assert!(!keys.is_empty());
+    test_get_completion_keys_with_context! {
+        #[tokio::test]
+        async fn test_get_completion_keys_with_context_simple_keyvalue_range(
+            r#"
+            foo = 1
+            bar = 2
+            "#,
+            Position::new(0, 2)
+        ) -> Some((keys, contexts) {
+            pretty_assertions::assert_eq!(keys.len(), 1);
+            pretty_assertions::assert_eq!(keys.len(), contexts.len());
 
-        for (key, ctx) in keys.iter().zip(contexts.iter()) {
-            pretty_assertions::assert_eq!(ctx.range, key.range());
-        }
+            for (key, ctx) in keys.iter().zip(contexts.iter()) {
+                pretty_assertions::assert_eq!(ctx.range, key.range());
+            }
+        });
+    }
+
+    test_get_completion_keys_with_context! {
+        #[tokio::test]
+        async fn test_get_completion_keys_with_context_table_header_range(
+            r#"
+            [table]
+            foo = 1
+            "#,
+            Position::new(0, 2)
+        ) -> Some((keys, contexts) {
+            assert!(!keys.is_empty());
+
+            for (key, ctx) in keys.iter().zip(contexts.iter()) {
+                pretty_assertions::assert_eq!(ctx.range, key.range());
+            }
+        });
     }
 }

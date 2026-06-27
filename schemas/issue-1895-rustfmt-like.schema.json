@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "rustfmt-like",
+  "properties": {
+    "max_width": {
+      "type": "integer"
+    },
+    "ignore": {
+      "description": "Annotation-only property schema that should still allow the key."
+    }
+  }
+}

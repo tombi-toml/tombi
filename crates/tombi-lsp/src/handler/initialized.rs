@@ -5,20 +5,56 @@ use tower_lsp::lsp_types::{
 };
 
 use crate::{
-    backend::Backend,
-    handler::{push_workspace_diagnostics, workspace_diagnostic::WorkspaceDiagnosticOptions},
+    backend::{Backend, DiagnosticMode},
+    workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
 };
 
 pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
     log::info!("handle_initialized");
     log::trace!("{:?}", params);
 
-    log::info!("Pushing workspace diagnostics...");
-    if let Err(error) =
-        push_workspace_diagnostics(backend, &WorkspaceDiagnosticOptions::default()).await
-    {
-        log::warn!("Failed to push workspace diagnostics: {error}");
-    }
+    let startup_backend = backend.clone();
+    let startup_task = tokio::spawn(async move {
+        log::info!("Loading config in background...");
+        if let Err(error) = startup_backend.config_manager.load().await {
+            log::warn!("Failed to load config: {error}");
+            return;
+        }
+
+        let diagnostic_mode = startup_backend.capabilities.read().await.diagnostic_mode;
+        match diagnostic_mode {
+            DiagnosticMode::Pull => {
+                log::info!("Refreshing pull diagnostics after config load...");
+                startup_backend.refresh_pull_diagnostics().await;
+            }
+            DiagnosticMode::Push => {
+                let open_document_uris = startup_backend
+                    .document_sources
+                    .read()
+                    .await
+                    .iter()
+                    .filter_map(|(uri, source)| source.version.is_some().then_some(uri.clone()))
+                    .collect::<Vec<_>>();
+
+                for text_document_uri in open_document_uris {
+                    startup_backend.push_diagnostics(text_document_uri).await;
+                }
+
+                log::info!("Pushing workspace diagnostics after config load...");
+                if let Err(error) = push_workspace_diagnostics(
+                    &startup_backend,
+                    &WorkspaceDiagnosticOptions {
+                        include_open_files: true,
+                    },
+                )
+                .await
+                {
+                    log::warn!("Failed to push workspace diagnostics: {error}");
+                }
+            }
+        }
+    });
+    backend.register_background_task(&startup_task);
 
     log::info!("Registering workspace TOML watchers...");
     if let Err(error) = register_workspace_toml_watcher(backend).await {

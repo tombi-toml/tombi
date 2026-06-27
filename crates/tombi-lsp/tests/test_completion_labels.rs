@@ -1,8 +1,9 @@
 use tombi_config::{JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHEMASTORE_CATALOG_URL};
 use tombi_test_lib::{
-    adjacent_applicators_test_schema_path, adjacent_one_of_additional_properties_test_schema_path,
-    adjacent_one_of_hover_test_schema_path, dot_config_project_root_fixture_path,
-    exact_index_string_test_schema_path, lsp_consistency_test_schema_path, project_root_path,
+    TestCacheHome, adjacent_applicators_test_schema_path,
+    adjacent_one_of_additional_properties_test_schema_path, adjacent_one_of_hover_test_schema_path,
+    dot_config_project_root_fixture_path, exact_index_string_test_schema_path,
+    issue_1895_rustfmt_like_schema_path, lsp_consistency_test_schema_path, project_root_path,
     string_format_test_schema_path, today_local_date, today_local_date_time, today_local_time,
     today_offset_date_time,
 };
@@ -736,6 +737,7 @@ mod completion_labels {
                 "format-annotation-test.schema.json",
                 "format-assertion-vocab-test.schema.json",
                 "if-then-else-test.schema.json",
+                "issue-1895-rustfmt-like.schema.json",
                 "lsp-consistency-test.schema.json",
                 "min-max-contains-test.schema.json",
                 "one-of-hover-discriminator-test.schema.json",
@@ -1092,6 +1094,17 @@ mod completion_labels {
                 SchemaPath(adjacent_applicators_test_schema_path()),
             ) -> Ok(["true"]);
         }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_all_of_table_merges_properties_and_all_of_keys(
+                r#"
+                [object_all]
+                █
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok(["bar", "baz", "foo"]);
+        }
     }
 
     mod consistency_schema {
@@ -1126,6 +1139,31 @@ mod completion_labels {
                 "#,
                 SchemaPath(lsp_consistency_test_schema_path()),
             ) -> Ok(["id"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn issue_1895_root_table_completion_includes_annotation_only_property(
+                r#"
+                █
+                "#,
+                SchemaPath(issue_1895_rustfmt_like_schema_path()),
+            ) -> Ok(["ignore", "max_width"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn issue_1895_annotation_only_property_completion_keeps_description(
+                r#"
+                █
+                "#,
+                SchemaPath(issue_1895_rustfmt_like_schema_path()),
+            ) -> Ok([
+                {
+                    "label": "ignore",
+                    "documentation": "Annotation-only property schema that should still allow the key.",
+                },
+            ]);
         }
 
         test_completion_labels! {
@@ -1410,17 +1448,21 @@ mod completion_labels {
             ) -> Ok([
                 "black",
                 "cibuildwheel",
+                "dfc",
+                "docstring-format-checker",
                 "fastapi",
                 "hatch",
                 "maturin",
                 "mypy",
                 "pdm",
+                "pixi",
                 "poe",
                 "poetry",
                 "pyright",
                 "pytest",
                 "repo-review",
                 "ruff",
+                "scheduled",
                 "scikit-build",
                 "setuptools",
                 "setuptools_scm",
@@ -2044,6 +2086,40 @@ mod completion_labels {
                 SchemaPath(cargo_schema_path()),
             ) -> Ok([
                 "\"0.1.0\"",
+                "\"*\"",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_semver_versions_are_sorted_descending(
+                r#"
+                [dependencies]
+                tombi-semver-order-test = "█"
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: None,
+                },
+                PreselectedLabels(&["\"0.3.0-pre.2\""]),
+                CachedResponse::new(
+                    "https://crates.io/api/v1/crates/tombi-semver-order-test/versions",
+                    r#"{"versions":[
+                        {"num":"0.2.7","features":{}},
+                        {"num":"0.2.6","features":{}},
+                        {"num":"0.2.0-pre.1","features":{}},
+                        {"num":"0.3.0-pre.2","features":{}},
+                        {"num":"0.1.12","features":{}}
+                    ]}"#,
+                ),
+            ) -> Ok([
+                "\"0.3.0-pre.2\"",
+                "\"0.2.7\"",
+                "\"0.2.6\"",
+                "\"0.2.0-pre.1\"",
+                "\"0.1.12\"",
                 "\"*\"",
             ]);
         }
@@ -2720,7 +2796,81 @@ mod completion_labels {
 
         (
             #[tokio::test]
+            async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> Ok([
+                $({
+                    "label": $label:expr,
+                    "documentation": $documentation:expr $(,)?
+                }),* $(,)?
+            ]);
+        ) => {
+            test_completion_labels! {
+                @run_documented
+                #[tokio::test]
+                async fn $name($source $(, $arg)*) -> docs [$(
+                    ($label, $documentation)
+                ),*];
+            }
+        };
+
+        (
+            #[tokio::test]
             async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> Ok([$($label:expr),*$(,)?]);
+        ) => {
+            test_completion_labels! {
+                @run
+                #[tokio::test]
+                async fn $name($source $(, $arg)*) -> labels [$($label),*] docs [];
+            }
+        };
+
+        (
+            @run
+            #[tokio::test]
+            async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> labels [$($label:expr),*$(,)?] docs [$(
+                ($doc_label:expr, $documentation:expr)
+            ),*$(,)?];
+        ) => {
+            test_completion_labels! {
+                @run_documented
+                #[tokio::test]
+                async fn $name($source $(, $arg)*) -> labels [$($label),*] docs [$(($doc_label, $documentation)),*];
+            }
+        };
+
+        (
+            @run_documented
+            #[tokio::test]
+            async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> docs [$(
+                ($doc_label:expr, $documentation:expr)
+            ),*$(,)?];
+        ) => {
+            test_completion_labels! {
+                @run_documented
+                #[tokio::test]
+                async fn $name($source $(, $arg)*) -> labels [] skip_label_assertion true docs [$(($doc_label, $documentation)),*];
+            }
+        };
+
+        (
+            @run_documented
+            #[tokio::test]
+            async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> labels [$($label:expr),*$(,)?] docs [$(
+                ($doc_label:expr, $documentation:expr)
+            ),*$(,)?];
+        ) => {
+            test_completion_labels! {
+                @run_documented
+                #[tokio::test]
+                async fn $name($source $(, $arg)*) -> labels [$($label),*] skip_label_assertion false docs [$(($doc_label, $documentation)),*];
+            }
+        };
+
+        (
+            @run_documented
+            #[tokio::test]
+            async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> labels [$($label:expr),*$(,)?] skip_label_assertion $skip_label_assertion:tt docs [$(
+                ($doc_label:expr, $documentation:expr)
+            ),*$(,)?];
         ) => {
             #[tokio::test]
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
@@ -2746,6 +2896,8 @@ mod completion_labels {
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
                     subschemas: Vec<SubSchema>,
+                    cached_responses: Vec<CachedResponse>,
+                    preselected_labels: Option<Vec<String>>,
                     backend_options: tombi_lsp::backend::Options,
                 }
 
@@ -2784,6 +2936,35 @@ mod completion_labels {
                     }
                 }
 
+                #[allow(unused)]
+                struct CachedResponse {
+                    url: &'static str,
+                    body: &'static str,
+                }
+
+                #[allow(unused)]
+                impl CachedResponse {
+                    fn new(url: &'static str, body: &'static str) -> Self {
+                        Self { url, body }
+                    }
+                }
+
+                impl ApplyTestArg for CachedResponse {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.cached_responses.push(self);
+                    }
+                }
+
+                #[allow(unused)]
+                struct PreselectedLabels(&'static [&'static str]);
+
+                impl ApplyTestArg for PreselectedLabels {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.preselected_labels =
+                            Some(self.0.iter().map(ToString::to_string).collect());
+                    }
+                }
+
                 impl ApplyTestArg for tombi_lsp::backend::Options {
                     fn apply(self, args: &mut TestArgs) {
                         args.backend_options = self;
@@ -2793,6 +2974,12 @@ mod completion_labels {
                 #[allow(unused_mut)]
                 let mut args = TestArgs::default();
                 $(ApplyTestArg::apply($arg, &mut args);)*
+
+                let _cache_home = if args.cached_responses.is_empty() {
+                    None
+                } else {
+                    Some(TestCacheHome::new())
+                };
 
                 let (service, _) =
                     LspService::new(|client| Backend::new(client, &args.backend_options));
@@ -2839,6 +3026,25 @@ mod completion_labels {
                         format: None,
                         overrides: None,
                     }));
+                }
+
+                for cached_response in &args.cached_responses {
+                    let uri = cached_response
+                        .url
+                        .parse::<tombi_uri::Uri>()
+                        .map_err(|err| format!("failed to parse cache URL {}: {err}", cached_response.url))?;
+                    let cache_path = tombi_cache::get_cache_file_path(&uri)
+                        .await
+                        .ok_or_else(|| {
+                            format!(
+                                "failed to derive cache path for {}",
+                                cached_response.url
+                            )
+                        })?;
+                    if let Some(parent) = cache_path.parent() {
+                        std::fs::create_dir_all(parent)?;
+                    }
+                    std::fs::write(&cache_path, cached_response.body)?;
                 }
 
                 let Ok(temp_file) = tempfile::NamedTempFile::with_suffix_in(
@@ -2932,7 +3138,7 @@ mod completion_labels {
                     return Err("failed to handle completion".into());
                 };
 
-                let labels = completions
+                let completion_items = completions
                     .into_iter()
                     .map(|content| IntoLsp::<CompletionItem>::into_lsp(content, &line_index))
                     .sorted_by(|a, b| {
@@ -2941,13 +3147,62 @@ mod completion_labels {
                             .unwrap_or(&a.label)
                             .cmp(&b.sort_text.as_ref().unwrap_or(&b.label))
                     })
-                    .map(|item| item.label)
                     .collect_vec();
 
-                pretty_assertions::assert_eq!(
-                    labels,
-                    vec![$($label.to_string()),*] as Vec<String>,
-                );
+                let labels = completion_items
+                    .iter()
+                    .map(|item| item.label.clone())
+                    .collect_vec();
+
+                let expected_labels = vec![$($label.to_string()),*] as Vec<String>;
+
+                if !$skip_label_assertion {
+                    pretty_assertions::assert_eq!(labels, expected_labels);
+                }
+
+                if let Some(expected_preselected_labels) = args.preselected_labels {
+                    let preselected_labels = completion_items
+                        .iter()
+                        .filter(|item| item.preselect == Some(true))
+                        .map(|item| item.label.clone())
+                        .collect_vec();
+
+                    pretty_assertions::assert_eq!(
+                        preselected_labels,
+                        expected_preselected_labels
+                    );
+                }
+
+                let expected_documentation_pairs: Vec<(String, String)> =
+                    vec![$(($doc_label.to_string(), $documentation.to_string())),*];
+
+                for (expected_label, expected_documentation) in expected_documentation_pairs {
+                    let item = completion_items
+                        .iter()
+                        .find(|item| item.label == expected_label)
+                        .ok_or_else(|| {
+                            format!(
+                                "failed to find completion item {expected_label:?}: {labels:?}"
+                            )
+                        })?;
+
+                    let documentation = match &item.documentation {
+                        Some(tower_lsp::lsp_types::Documentation::String(value)) => {
+                            Some(value.clone())
+                        }
+                        Some(tower_lsp::lsp_types::Documentation::MarkupContent(content)) => {
+                            Some(content.value.clone())
+                        }
+                        None => None,
+                    };
+
+                    assert!(
+                        documentation
+                            .as_deref()
+                            .is_some_and(|documentation| documentation.contains(&expected_documentation)),
+                        "completion documentation for {expected_label:?} did not include expected text {expected_documentation:?}: {documentation:?}"
+                    );
+                }
 
                 Ok(())
             }

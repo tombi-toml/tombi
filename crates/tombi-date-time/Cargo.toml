@@ -20,3 +20,6 @@ serde_json.workspace = true
 default = ["chrono", "serde"]
 chrono = ["dep:chrono"]
 serde = ["dep:serde"]
+
+[lints]
+workspace = true

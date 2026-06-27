@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HistoryHoverNullDefault",
+  "type": "object",
+  "properties": {
+    "history": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/History"
+        }
+      ],
+      "default": {
+        "max_bytes": null,
+        "persistence": "save-all"
+      },
+      "description": "Settings that govern if and what will be written to history."
+    }
+  },
+  "definitions": {
+    "History": {
+      "type": "object",
+      "properties": {
+        "max_bytes": {
+          "type": "integer",
+          "default": null,
+          "description": "Maximum size of the history file."
+        },
+        "persistence": {
+          "type": "string",
+          "default": "save-all",
+          "description": "Whether history entries are written to disk."
+        },
+        "modes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "save-all",
+            null
+          ],
+          "description": "History persistence modes."
+        }
+      }
+    }
+  }
+}

@@ -103,12 +103,9 @@ impl DocumentSchema {
 
         let mut anchors = AnchorCollector::default();
         let mut dynamic_anchors = DynamicAnchorCollector::default();
-        let collect_anchor =
-            dialect.is_some_and(|dialect| crate::supports_keyword(dialect, "$anchor"));
-        let collect_dynamic_anchor = dialect.is_some_and(|dialect| {
-            crate::supports_keyword(dialect, "$dynamicAnchor")
-                || crate::supports_keyword(dialect, "$recursiveAnchor")
-        });
+        let collect_anchor = crate::supports_keyword(dialect, "$anchor");
+        let collect_dynamic_anchor = crate::supports_keyword(dialect, "$dynamicAnchor")
+            || crate::supports_keyword(dialect, "$recursiveAnchor");
         let value_schema = ValueSchema::new(
             &object,
             string_formats.as_deref(),
@@ -242,7 +239,7 @@ impl FindSchemaCandidates for DocumentSchema {
                     .find_schema_candidates(accessors, schema_uri, definitions, schema_store)
                     .await
             } else {
-                (Vec::with_capacity(0), Vec::with_capacity(0))
+                (Vec::new(), Vec::new())
             }
         }
         .boxed()
@@ -377,10 +374,7 @@ mod tests {
         let schema_value = tombi_json::ValueNode::from_str("true").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
         let doc = DocumentSchema::new(schema_value, uri);
-        assert!(matches!(
-            doc.value_schema.as_deref(),
-            Some(ValueSchema::Anything(_))
-        ));
+        std::assert_matches!(doc.value_schema.as_deref(), Some(ValueSchema::Anything(_)));
     }
 
     #[test]
@@ -388,10 +382,7 @@ mod tests {
         let schema_value = tombi_json::ValueNode::from_str("false").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
         let doc = DocumentSchema::new(schema_value, uri);
-        assert!(matches!(
-            doc.value_schema.as_deref(),
-            Some(ValueSchema::Nothing(_))
-        ));
+        std::assert_matches!(doc.value_schema.as_deref(), Some(ValueSchema::Nothing(_)));
     }
 
     #[test]

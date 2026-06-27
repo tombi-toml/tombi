@@ -204,7 +204,7 @@ fn document_link_for_workspace_pyproject_toml(
     toml_version: TomlVersion,
 ) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
     let Some(tombi_document_tree::Value::Array(members)) = workspace.get("members") else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     let mut total_document_links = vec![];
@@ -266,23 +266,23 @@ fn document_link_for_member_pyproject_toml(
     pyproject_toml_enabled: bool,
 ) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
     if !pyproject_toml_enabled {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     }
 
     let tombi_document_tree::Value::Table(source) = source else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     let Some((workspace_pyproject_toml_path, _, workspace_pyproject_toml_document_tree)) =
         find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
     else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     let Ok(workspace_pyproject_toml_uri) =
         tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path)
     else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     let mut document_links = vec![];

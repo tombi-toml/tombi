@@ -318,7 +318,7 @@ pub(crate) fn goto_dependency_crates(
     let Some((tombi_schema_store::Accessor::Key(_crate_name), crate_value)) =
         dig_accessors(workspace_document_tree, accessors)
     else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     let is_workspace_cargo_toml =
@@ -382,7 +382,7 @@ pub(crate) fn workspace_dependency_usage_locations(
     let Some((tombi_schema_store::Accessor::Key(crate_name), _)) =
         dig_accessors(workspace_document_tree, accessors)
     else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     let mut locations = Vec::new();
@@ -558,7 +558,7 @@ pub(crate) fn extract_exclude_patterns(
                 _ => None,
             })
             .collect_vec(),
-        _ => Vec::with_capacity(0),
+        _ => Vec::new(),
     }
 }
 
@@ -658,7 +658,7 @@ pub(crate) fn goto_definition_for_workspace_cargo_toml(
         )
         .map(|locations| locations.into_iter().filter_map(Into::into).collect_vec())
     } else {
-        Ok(Vec::with_capacity(0))
+        Ok(Vec::new())
     }
 }
 
@@ -695,7 +695,7 @@ pub(crate) fn goto_workspace_managed_dependency_locations(
 
     match location {
         Some(location) => Ok(vec![location]),
-        None => Ok(Vec::with_capacity(0)),
+        None => Ok(Vec::new()),
     }
 }
 
@@ -708,11 +708,11 @@ pub(crate) fn goto_workspace_member_crates(
 ) -> Result<Vec<CrateLocation>, tower_lsp::jsonrpc::Error> {
     let member_patterns = extract_member_patterns(workspace_document_tree, accessors, members_key);
     if member_patterns.is_empty() {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     }
 
     let Some(workspace_dir_path) = workspace_cargo_toml_path.parent() else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     let exclude_patterns = extract_exclude_patterns(workspace_document_tree);

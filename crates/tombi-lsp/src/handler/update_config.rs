@@ -20,6 +20,7 @@ pub async fn handle_update_config(
                     .await
                 {
                     Ok(_) => {
+                        backend.workspace_diagnostics_cache.write().await.reset();
                         log::info!("Updated config: {}", text_document_uri);
                         return Ok(true);
                     }

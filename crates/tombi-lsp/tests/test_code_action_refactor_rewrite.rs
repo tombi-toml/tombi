@@ -1,3 +1,91 @@
+use std::{
+    ffi::OsString,
+    fs,
+    path::PathBuf,
+    str::FromStr,
+    sync::{Mutex, MutexGuard, OnceLock},
+};
+
+use tempfile::TempDir;
+
+fn test_lock() -> &'static Mutex<()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
+}
+
+struct TestCacheHome {
+    _guard: MutexGuard<'static, ()>,
+    previous_tombi: Option<OsString>,
+    previous_xdg: Option<OsString>,
+    _temp_dir: TempDir,
+}
+
+impl TestCacheHome {
+    fn new() -> Self {
+        let guard = test_lock()
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let temp_dir = tempfile::tempdir().unwrap();
+        let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
+        let previous_xdg = std::env::var_os("XDG_CACHE_HOME");
+        unsafe {
+            std::env::remove_var("TOMBI_CACHE_HOME");
+            std::env::set_var("XDG_CACHE_HOME", temp_dir.path());
+        }
+        Self {
+            _guard: guard,
+            previous_tombi,
+            previous_xdg,
+            _temp_dir: temp_dir,
+        }
+    }
+}
+
+impl Drop for TestCacheHome {
+    fn drop(&mut self) {
+        unsafe {
+            if let Some(previous) = &self.previous_tombi {
+                std::env::set_var("TOMBI_CACHE_HOME", previous);
+            } else {
+                std::env::remove_var("TOMBI_CACHE_HOME");
+            }
+
+            if let Some(previous) = &self.previous_xdg {
+                std::env::set_var("XDG_CACHE_HOME", previous);
+            } else {
+                std::env::remove_var("XDG_CACHE_HOME");
+            }
+        }
+    }
+}
+
+async fn cached_remote_json_file_path(url: &str) -> PathBuf {
+    let uri = tombi_uri::Uri::from_str(url).unwrap();
+    tombi_cache::get_cache_file_path(&uri).await.unwrap()
+}
+
+async fn write_cached_response(url: &str, body: &str) {
+    let cache_path = cached_remote_json_file_path(url).await;
+    if let Some(parent) = cache_path.parent() {
+        fs::create_dir_all(parent).unwrap();
+    }
+    fs::write(&cache_path, body).unwrap();
+}
+
+#[derive(Clone)]
+pub struct CachedResponseSpec {
+    url: &'static str,
+    body: &'static str,
+}
+
+impl CachedResponseSpec {
+    pub const fn new(url: &'static str, body: &'static str) -> Self {
+        Self { url, body }
+    }
+}
+
+pub struct UseCacheResponses(pub Vec<CachedResponseSpec>);
+
 mod refactor_rewrite {
     mod common {
         use tombi_lsp::code_action::CodeActionRefactorRewriteName;
@@ -147,7 +235,7 @@ mod refactor_rewrite {
         use tombi_extension_cargo::CodeActionRefactorRewriteName;
         use tombi_test_lib::project_root_path;
 
-        use crate::test_code_action_refactor_rewrite;
+        use crate::{CachedResponseSpec, UseCacheResponses, test_code_action_refactor_rewrite};
 
         test_code_action_refactor_rewrite! {
             #[tokio::test]
@@ -476,6 +564,164 @@ mod refactor_rewrite {
                 "#
             ));
         }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_dependencies_update_to_latest_version(
+                r#"
+                [dependencies]
+                serde = "1.0█"
+                "#,
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+                Select(CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                UseCacheResponses(vec![CachedResponseSpec::new(
+                    "https://crates.io/api/v1/crates/serde",
+                    r#"{
+                        "crate": {
+                            "max_version": "1.0.228"
+                        }
+                    }"#,
+                )]),
+            ) -> Ok(Some(
+                r#"
+                [dependencies]
+                serde = "1.0.228"
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_dependencies_inline_table_update_to_latest_version(
+                r#"
+                [dependencies]
+                serde = { version = "1.0█", features = ["derive"] }
+                "#,
+                Select(CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion),
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                UseCacheResponses(vec![CachedResponseSpec::new(
+                    "https://crates.io/api/v1/crates/serde",
+                    r#"{
+                        "crate": {
+                            "max_version": "1.0.228"
+                        }
+                    }"#,
+                )]),
+            ) -> Ok(Some(
+                r#"
+                [dependencies]
+                serde = { version = "1.0.228", features = ["derive"] }
+                "#
+            ));
+        }
+    }
+
+    mod pyproject_toml {
+        use tombi_extension_pyproject::CodeActionRefactorRewriteName;
+        use tombi_test_lib::project_root_path;
+
+        use crate::{CachedResponseSpec, UseCacheResponses, test_code_action_refactor_rewrite};
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn pyproject_dependencies_update_to_latest_version(
+                r#"
+                [project]
+                dependencies = ["requests█>=2.0; python_version < '3.13'"]
+                "#,
+                Select(CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion),
+                project_root_path().join("pyproject.toml"),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                UseCacheResponses(vec![CachedResponseSpec::new(
+                    "https://pypi.org/pypi/requests/json",
+                    r#"{
+                        "info": {
+                            "version": "2.33.1"
+                        }
+                    }"#,
+                )]),
+            ) -> Ok(Some(
+                r#"
+                [project]
+                dependencies = ["requests==2.33.1; python_version < '3.13'"]
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn pyproject_dependencies_update_to_latest_version_noop(
+                r#"
+                [project]
+                dependencies = ["requests█==2.33.1; python_version < '3.13'"]
+                "#,
+                Select(CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion),
+                project_root_path().join("pyproject.toml"),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                UseCacheResponses(vec![CachedResponseSpec::new(
+                    "https://pypi.org/pypi/requests/json",
+                    r#"{
+                        "info": {
+                            "version": "2.33.1"
+                        }
+                    }"#,
+                )]),
+            ) -> Ok(Some(
+                r#"
+                [project]
+                dependencies = ["requests==2.33.1; python_version < '3.13'"]
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn pyproject_workspace_root_updates_dependency_to_latest_version(
+                r#"
+                [tool.uv.workspace]
+                members = ["member1"]
+
+                [project]
+                dependencies = ["requests█>=2.0"]
+                "#,
+                Select(CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion),
+                project_root_path().join("pyproject.toml"),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    no_cache: Some(false),
+                },
+                UseCacheResponses(vec![CachedResponseSpec::new(
+                    "https://pypi.org/pypi/requests/json",
+                    r#"{
+                        "info": {
+                            "version": "2.33.1"
+                        }
+                    }"#,
+                )]),
+            ) -> Ok(Some(
+                r#"
+                [tool.uv.workspace]
+                members = ["member1"]
+
+                [project]
+                dependencies = ["requests==2.33.1"]
+                "#
+            ));
+        }
     }
 
     #[macro_export]
@@ -513,6 +759,7 @@ mod refactor_rewrite {
                     select: Option<String>,
                     toml_file_path: Option<std::path::PathBuf>,
                     backend_options: tombi_lsp::backend::Options,
+                    cached_responses: Vec<$crate::CachedResponseSpec>,
                 }
 
                 #[allow(unused)]
@@ -542,6 +789,12 @@ mod refactor_rewrite {
                     }
                 }
 
+                impl ApplyTestArg for $crate::UseCacheResponses {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.cached_responses = self.0;
+                    }
+                }
+
                 #[allow(unused_mut)]
                 let mut args = TestArgs::default();
                 $(ApplyTestArg::apply($arg, &mut args);)*
@@ -550,6 +803,11 @@ mod refactor_rewrite {
                     Backend::new(client, &args.backend_options)
                 });
                 let backend = service.inner();
+                let _cache_home =
+                    (!args.cached_responses.is_empty()).then($crate::TestCacheHome::new);
+                for response in &args.cached_responses {
+                    $crate::write_cached_response(response.url, response.body).await;
+                }
                 let temp_file = tempfile::NamedTempFile::with_suffix_in(
                     ".toml",
                     std::env::current_dir().expect("failed to get current directory"),

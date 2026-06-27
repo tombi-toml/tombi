@@ -7,6 +7,12 @@ on:
     tags:
       - v*
   workflow_dispatch:
+    inputs:
+      skip_winget:
+        description: "Skip submitting the Windows Package Manager manifest update"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -19,7 +25,7 @@ env:
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
   CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
   CARGO_PROFILE_RELEASE_LTO: "fat"
-  RUSTFLAGS: "-C strip=symbols"
+  CARGO_PROFILE_RELEASE_STRIP: "symbols"
 
 jobs:
   detect-changes:
@@ -27,10 +33,11 @@ jobs:
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
+          persist-credentials: false
       - id: filter
         uses: ./.github/actions/relevant-changes
         with:
@@ -38,6 +45,7 @@ jobs:
           head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           paths: |
             .cargo/**
+            .github/actions/dispatch-versioned-release/**
             .github/actions/relevant-changes/**
             .github/actions/set-version/**
             .node-version
@@ -65,7 +73,7 @@ jobs:
     if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: geekyeggo/delete-artifact@v5
+      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5
         with:
           name: |
             tombi-cli-0.0.0-*
@@ -111,18 +119,20 @@ jobs:
       VSCODE_TARGET: ${{ matrix.vscode_target }}
       GITHUB_REF: ${{ (github.ref) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
       - name: Install Rust toolchain
         run: |
           rustup update --no-self-update stable
           rustup target add ${{ matrix.target }}
-      - uses: Swatinem/rust-cache@v2
-      - uses: pnpm/action-setup@v4
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           run_install: false
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: ".node-version"
           cache: "pnpm"
@@ -181,21 +191,21 @@ jobs:
         timeout-minutes: 5
 
       - name: Upload tombi-cli artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: matrix.os != 'windows-latest'
         with:
           name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.tar.gz
           path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.tar.gz
 
       - name: Upload tombi-cli artifacts (Windows)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: matrix.os == 'windows-latest'
         with:
           name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.zip
           path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.zip
 
       - name: Upload tombi-vscode artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: tombi-vscode-${{ env.TOMBI_VERSION }}-${{ matrix.vscode_target }}.vsix
           path: dist/tombi-vscode-${{ env.TOMBI_VERSION }}-${{ matrix.vscode_target }}.vsix
@@ -228,16 +238,18 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/set-version
       - name: Download tombi-cli artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: tombi-cli-${{ env.TOMBI_VERSION }}-*
           path: tombi-cli-artifacts
 
       - name: Download tombi-vscode artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: tombi-vscode-${{ env.TOMBI_VERSION }}-*
           path: tombi-vscode-artifacts
@@ -292,7 +304,7 @@ jobs:
       - name: Create GitHub App token for main update
         id: app-token
         if: steps.stable-version.outputs.stable_version != ''
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         with:
           client-id: ${{ secrets.VERSION_UPDATE_APP_CLIENT_ID }}
           private-key: ${{ secrets.VERSION_UPDATE_APP_PRIVATE_KEY }}
@@ -301,7 +313,7 @@ jobs:
             ${{ github.event.repository.name }}
           permission-contents: write
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         if: steps.stable-version.outputs.stable_version != ''
         with:
           ref: main
@@ -413,3 +425,89 @@ jobs:
               exit 1
             fi
           done
+
+  update-setup-tombi:
+    needs: [release-notes]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Detect stable release tag
+        id: stable-version
+        shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ "${REF_NAME}" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "stable_tag=${REF_NAME}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "Skipping setup-tombi update for non-stable tag: ${REF_NAME}"
+            echo "stable_tag=" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        if: steps.stable-version.outputs.stable_tag != ''
+        with:
+          persist-credentials: false
+
+      - name: Trigger setup-tombi release workflow
+        if: steps.stable-version.outputs.stable_tag != ''
+        uses: ./.github/actions/dispatch-versioned-release
+        with:
+          client-id: ${{ secrets.VERSION_UPDATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.VERSION_UPDATE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repository: setup-tombi
+          tag: ${{ steps.stable-version.outputs.stable_tag }}
+
+  publish-winget:
+    needs: [release-notes]
+    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name != 'workflow_dispatch' || inputs.skip_winget != true)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Detect stable release tag
+        id: stable-version
+        shell: pwsh
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if ($env:REF_NAME -match '^v(\d+\.\d+\.\d+)$') {
+            "stable_version=$($Matches[1])" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          } else {
+            Write-Host "Skipping winget submission for non-stable tag: $env:REF_NAME"
+            "stable_version=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
+
+      - name: Submit winget manifest update
+        if: steps.stable-version.outputs.stable_version != ''
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          REF_NAME: ${{ github.ref_name }}
+          VERSION: ${{ steps.stable-version.outputs.stable_version }}
+          WINGETCREATE_VERSION: 1.12.8.0
+        run: |
+          if (-not $env:WINGET_TOKEN) {
+            Write-Host "WINGET_TOKEN is not configured; skipping winget manifest submission."
+            exit 0
+          }
+
+          $x64InstallerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-x86_64-pc-windows-msvc.zip"
+          $arm64InstallerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-aarch64-pc-windows-msvc.zip"
+          $wingetCreateUrl = "https://github.com/microsoft/winget-create/releases/download/v$env:WINGETCREATE_VERSION/wingetcreate.exe"
+          $wingetCreateChecksumUrl = "$wingetCreateUrl.txt"
+
+          Invoke-WebRequest $wingetCreateUrl -OutFile wingetcreate.exe
+          Invoke-WebRequest $wingetCreateChecksumUrl -OutFile wingetcreate.exe.sha256.txt
+
+          $expectedHash = (Get-Content wingetcreate.exe.sha256.txt -Raw).Trim().ToUpperInvariant()
+          $actualHash = (Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash.ToUpperInvariant()
+          if ($actualHash -ne $expectedHash) {
+            throw "wingetcreate.exe checksum mismatch. Expected $expectedHash but got $actualHash."
+          }
+
+          .\wingetcreate.exe update tombi-toml.tombi --urls "$x64InstallerUrl|x64" "$arm64InstallerUrl|arm64" -v $env:VERSION -t $env:WINGET_TOKEN --submit

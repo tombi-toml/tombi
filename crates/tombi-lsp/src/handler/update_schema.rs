@@ -5,7 +5,7 @@ use tower_lsp::lsp_types::{
 
 use crate::{
     backend::Backend,
-    handler::workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
+    workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
 };
 
 pub async fn handle_update_schema(
@@ -24,6 +24,12 @@ pub async fn handle_update_schema(
     {
         Ok(is_updated) => {
             if is_updated {
+                backend
+                    .workspace_diagnostics_cache
+                    .write()
+                    .await
+                    .clear_all();
+
                 // Refresh workspace diagnostics after schema update
                 // Include open files to ensure diagnostics are updated for all files, including those open in the editor
                 if let Err(err) = push_workspace_diagnostics(

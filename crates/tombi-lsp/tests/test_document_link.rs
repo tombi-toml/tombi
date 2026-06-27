@@ -8,6 +8,12 @@ fn cargo_document_link_all_enabled_config_path() -> std::path::PathBuf {
     )
 }
 
+fn tombi_document_link_all_enabled_config_path() -> std::path::PathBuf {
+    project_root_path().join(
+        "crates/tombi-lsp/tests/fixtures/extensions/tombi-document-link-all-enabled/tombi.toml",
+    )
+}
+
 mod document_link_tests {
     use super::*;
 
@@ -215,6 +221,42 @@ mod document_link_tests {
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
                 }
             ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_dependencies_serde_standalone(
+                r#"
+                [package]
+                name = "standalone"
+                version = "0.1.0"
+
+                [dependencies]
+                serde = "1.0"
+                "#,
+                SourcePath(std::env::temp_dir().join("tombi-issue-1912/Cargo.toml")),
+            ) -> Ok(Some(vec![
+                {
+                    url: "https://crates.io/crates/serde",
+                    range: 5:0..5:5,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_dependencies_custom_registry_standalone_has_no_default_crates_io_fallback(
+                r#"
+                [package]
+                name = "standalone"
+                version = "0.1.0"
+
+                [dependencies]
+                serde = { version = "1.0", registry = "custom" }
+                "#,
+                SourcePath(std::env::temp_dir().join("tombi-issue-1912-custom/Cargo.toml")),
+            ) -> Ok(None);
         );
 
         test_document_link!(
@@ -431,6 +473,16 @@ mod document_link_tests {
                     path: project_root_path().join("crates/tombi-accessor/Cargo.toml"),
                     range: 8:12..8:20,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoTomlFirstMember,
+                },
+                {
+                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
+                    range: 5:0..5:9,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                },
+                {
+                    path: project_root_path().join("Cargo.toml"),
+                    range: 5:14..5:30,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::WorkspaceCargoToml,
                 },
             ]));
         );
@@ -814,6 +866,7 @@ mod document_link_tests {
                 catalog = { path = "https://www.schemastore.org/api/json/catalog.json" }
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
+                ConfigPath(tombi_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     url: "https://www.schemastore.org/api/json/catalog.json",
@@ -831,6 +884,7 @@ mod document_link_tests {
                 catalog = { paths = ["https://www.schemastore.org/api/json/catalog.json"] }
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
+                ConfigPath(tombi_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     url: "https://www.schemastore.org/api/json/catalog.json",
@@ -848,6 +902,7 @@ mod document_link_tests {
                 catalog = { paths = ["schemas/type-test.schema.json"] }
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
+                ConfigPath(tombi_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: project_root_path().join("schemas/type-test.schema.json"),
@@ -895,6 +950,7 @@ mod document_link_tests {
                 path = "www.schemastore.org/tombi.json"
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
+                ConfigPath(tombi_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     path: project_root_path().join("www.schemastore.org/tombi.json"),
@@ -912,6 +968,7 @@ mod document_link_tests {
                 path = "https://www.schemastore.org/cargo-make.json"
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
+                ConfigPath(tombi_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
                     url: "https://www.schemastore.org/cargo-make.json",

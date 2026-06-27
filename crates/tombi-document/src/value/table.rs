@@ -49,6 +49,11 @@ impl Table {
         &self.key_values
     }
 
+    #[inline]
+    pub fn key_values_mut(&mut self) -> &mut tombi_hashmap::IndexMap<Key, Value> {
+        &mut self.key_values
+    }
+
     pub fn entry(&mut self, key: Key) -> tombi_hashmap::map::Entry<'_, Key, Value> {
         self.key_values.entry(key)
     }

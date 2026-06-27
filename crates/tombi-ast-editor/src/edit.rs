@@ -76,7 +76,7 @@ fn edit_recursive<'a: 'b, 'b>(
                     )
                     .await
                     else {
-                        return Vec::with_capacity(0);
+                        return Vec::new();
                     };
 
                     for current_schema in resolved_schemas {
@@ -108,7 +108,7 @@ fn edit_recursive<'a: 'b, 'b>(
                 let accessors: Arc<[Accessor]> = Arc::from(accessors.into_boxed_slice());
 
                 let Some(value) = table.get(key_str) else {
-                    return Vec::with_capacity(0);
+                    return Vec::new();
                 };
 
                 (accessors, value)
@@ -119,13 +119,13 @@ fn edit_recursive<'a: 'b, 'b>(
                 let accessors = Arc::from(accessors.into_boxed_slice());
 
                 let Some(value) = array.get(*index) else {
-                    return Vec::with_capacity(0);
+                    return Vec::new();
                 };
 
                 (accessors, value)
             }
             (None, _) => return edit_fn(node, accessors, current_schema).await,
-            _ => return Vec::with_capacity(0),
+            _ => return Vec::new(),
         };
 
         let key_accessors = &key_accessors[1..];

@@ -11,8 +11,8 @@ use super::{
     LocalTimeSchema, OffsetDateTimeSchema, OneOfSchema, SchemaUri, StringSchema, TableSchema,
 };
 use crate::{
-    Accessor, Referable, SchemaDefinitions, SchemaStore,
-    schema::if_then_else_schema::IfThenElseSchema,
+    Accessor, JsonSchemaVocabulary, Referable, SchemaDefinitions, SchemaStore,
+    schema::{any_schema::AnythingSchema, if_then_else_schema::IfThenElseSchema},
 };
 
 #[allow(clippy::large_enum_variant)]
@@ -32,7 +32,7 @@ pub enum ValueSchema {
     AnyOf(AnyOfSchema),
     AllOf(AllOfSchema),
     Null,
-    Anything(tombi_text::Range),
+    Anything(AnythingSchema),
     Nothing(tombi_text::Range),
 }
 
@@ -189,7 +189,47 @@ impl ValueSchema {
             )));
         }
 
-        None
+        Self::has_only_metadata_keywords(object, dialect).then(|| {
+            ValueSchema::Anything(AnythingSchema {
+                title: object
+                    .get("title")
+                    .and_then(|value| value.as_str())
+                    .map(ToString::to_string),
+                description: object
+                    .get("description")
+                    .and_then(|value| value.as_str())
+                    .map(ToString::to_string),
+                range: object.range,
+            })
+        })
+    }
+
+    fn has_only_metadata_keywords(
+        object: &tombi_json::ObjectNode,
+        dialect: Option<crate::JsonSchemaDialect>,
+    ) -> bool {
+        let mut has_metadata_keyword = false;
+
+        for (key, _) in &object.properties {
+            let keyword = key.value.as_str();
+
+            let Some(vocabulary) = crate::keyword_vocabulary(keyword) else {
+                continue;
+            };
+
+            if !crate::supports_keyword(dialect, keyword) {
+                return false;
+            }
+
+            match vocabulary {
+                JsonSchemaVocabulary::MetaData => {
+                    has_metadata_keyword = true;
+                }
+                _ => return false,
+            }
+        }
+
+        has_metadata_keyword
     }
 
     /// Infer the JSON Schema type from type-specific keywords.
@@ -206,7 +246,6 @@ impl ValueSchema {
         object: &tombi_json::ObjectNode,
         dialect: Option<crate::JsonSchemaDialect>,
     ) -> Option<&'static str> {
-        let dialect = dialect.unwrap_or_default();
         let supports_keyword = |keyword: &str| crate::supports_keyword(dialect, keyword);
 
         // String-specific keywords
@@ -590,7 +629,8 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.title.as_deref(),
             ValueSchema::AnyOf(schema) => schema.title.as_deref(),
             ValueSchema::AllOf(schema) => schema.title.as_deref(),
-            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => None,
+            ValueSchema::Null | ValueSchema::Nothing(_) => None,
+            ValueSchema::Anything(schema) => schema.title.as_deref(),
         }
     }
 
@@ -609,7 +649,8 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.title = title,
             ValueSchema::AnyOf(schema) => schema.title = title,
             ValueSchema::AllOf(schema) => schema.title = title,
-            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => {}
+            ValueSchema::Null | ValueSchema::Nothing(_) => {}
+            ValueSchema::Anything(schema) => schema.title = title,
         }
     }
 
@@ -628,7 +669,8 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.description.as_deref(),
             ValueSchema::AnyOf(schema) => schema.description.as_deref(),
             ValueSchema::AllOf(schema) => schema.description.as_deref(),
-            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => None,
+            ValueSchema::Null | ValueSchema::Nothing(_) => None,
+            ValueSchema::Anything(schema) => schema.description.as_deref(),
         }
     }
 
@@ -647,7 +689,8 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.description = description,
             ValueSchema::AnyOf(schema) => schema.description = description,
             ValueSchema::AllOf(schema) => schema.description = description,
-            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => {}
+            ValueSchema::Null | ValueSchema::Nothing(_) => {}
+            ValueSchema::Anything(schema) => schema.description = description,
         }
     }
 
@@ -875,7 +918,8 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.range,
             ValueSchema::AnyOf(schema) => schema.range,
             ValueSchema::AllOf(schema) => schema.range,
-            ValueSchema::Anything(range) | ValueSchema::Nothing(range) => *range,
+            ValueSchema::Anything(schema) => schema.range,
+            ValueSchema::Nothing(range) => *range,
         }
     }
 
@@ -1131,8 +1175,8 @@ impl ValueSchema {
 
                     (candidates, errors)
                 }
-                ValueSchema::Null => (Vec::with_capacity(0), Vec::with_capacity(0)),
-                _ => (vec![self.clone()], Vec::with_capacity(0)),
+                ValueSchema::Null => (Vec::new(), Vec::new()),
+                _ => (vec![self.clone()], Vec::new()),
             }
         }
         .boxed()
@@ -1184,7 +1228,7 @@ mod tests {
             r#"{ "const": "dynamic" }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::String(_))));
+        std::assert_matches!(schema, Some(ValueSchema::String(_)));
 
         let Some(ValueSchema::String(s)) = schema else {
             panic!("schema is not a String schema");
@@ -1198,7 +1242,7 @@ mod tests {
             r#"{ "const": true }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Boolean(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Boolean(_)));
 
         let Some(ValueSchema::Boolean(b)) = schema else {
             panic!("schema is not a Boolean schema");
@@ -1212,7 +1256,7 @@ mod tests {
             r#"{ "const": 42 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Integer(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Integer(_)));
 
         let Some(ValueSchema::Integer(i)) = schema else {
             panic!("schema is not an Integer schema");
@@ -1227,7 +1271,7 @@ mod tests {
             r#"{ "const": 3.14 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Float(_)));
 
         if let Some(ValueSchema::Float(f)) = schema {
             assert_eq!(f.const_value, Some(3.14));
@@ -1240,7 +1284,7 @@ mod tests {
             r#"{ "const": null }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Null)));
+        std::assert_matches!(schema, Some(ValueSchema::Null));
     }
 
     #[tokio::test]
@@ -1255,21 +1299,21 @@ mod tests {
             }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::AnyOf(_))));
+        std::assert_matches!(schema, Some(ValueSchema::AnyOf(_)));
 
         let Some(ValueSchema::AnyOf(any_of)) = schema else {
             panic!("schema is not an AnyOf schema");
         };
 
         let schemas = any_of.schemas.read().await;
-        assert!(matches!(
+        std::assert_matches!(
             schemas.first().unwrap().value_type().await,
             ValueType::Integer
-        ));
-        assert!(matches!(
+        );
+        std::assert_matches!(
             schemas.get(1).unwrap().value_type().await,
             ValueType::String
-        ));
+        );
     }
 
     #[tokio::test]
@@ -1323,7 +1367,7 @@ mod tests {
             r#"{ "const": [1, 2, 3] }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Array(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Array(_)));
     }
 
     #[test]
@@ -1332,7 +1376,7 @@ mod tests {
             r#"{ "const": [] }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Array(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Array(_)));
     }
 
     #[test]
@@ -1341,7 +1385,7 @@ mod tests {
             r#"{ "const": {"key": "value"} }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Table(_)));
     }
 
     #[test]
@@ -1350,7 +1394,7 @@ mod tests {
             r#"{ "const": {} }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Table(_)));
     }
 
     #[test]
@@ -1359,7 +1403,7 @@ mod tests {
             r#"{ "const": [[1, 2], [3, 4]] }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Array(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Array(_)));
     }
 
     #[test]
@@ -1391,7 +1435,7 @@ mod tests {
             r#"{ "contentMediaType": "application/json" }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::String(_))));
+        std::assert_matches!(schema, Some(ValueSchema::String(_)));
     }
 
     #[test]
@@ -1400,7 +1444,7 @@ mod tests {
             r#"{ "const": {"nested": {"key": "value"}} }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Table(_)));
     }
 
     fn parse_schema_with_formats(json: &str, formats: &[StringFormat]) -> Option<ValueSchema> {
@@ -1424,7 +1468,7 @@ mod tests {
             Some(crate::JsonSchemaDialect::Draft07),
         );
         // Should create LocalDateSchema, not StringSchema
-        assert!(matches!(schema, Some(ValueSchema::LocalDate(_))));
+        std::assert_matches!(schema, Some(ValueSchema::LocalDate(_)));
     }
 
     #[test]
@@ -1433,7 +1477,7 @@ mod tests {
             r#"{ "const": "2024-01-10T12:00:00Z", "format": "date-time" }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::OffsetDateTime(_))));
+        std::assert_matches!(schema, Some(ValueSchema::OffsetDateTime(_)));
     }
 
     #[test]
@@ -1443,7 +1487,7 @@ mod tests {
             r#"{ "const": "test@example.com", "format": "email" }"#,
             &[StringFormat::Email],
         );
-        assert!(matches!(schema, Some(ValueSchema::String(_))));
+        std::assert_matches!(schema, Some(ValueSchema::String(_)));
 
         if let Some(ValueSchema::String(s)) = schema {
             assert_eq!(s.format, Some(StringFormat::Email));
@@ -1457,7 +1501,7 @@ mod tests {
             r#"{ "enum": [1, 2, 3] }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Integer(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Integer(_)));
     }
 
     #[test]
@@ -1467,7 +1511,7 @@ mod tests {
             r#"{ "enum": [1.5, 2.5, 3.5] }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Float(_)));
     }
 
     #[test]
@@ -1481,7 +1525,7 @@ mod tests {
             Some(crate::JsonSchemaDialect::Draft07),
         );
         // After removing integer, only number remains, so FloatSchema should be created
-        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Float(_)));
     }
 
     #[tokio::test]
@@ -1498,14 +1542,14 @@ mod tests {
             panic!("schema is not a OneOf schema");
         };
         let schemars = one_of.schemas.read().await;
-        assert!(matches!(
+        std::assert_matches!(
             schemars.first().unwrap().value_type().await,
             ValueType::Float
-        ));
-        assert!(matches!(
+        );
+        std::assert_matches!(
             schemars.get(1).unwrap().value_type().await,
             ValueType::String
-        ));
+        );
     }
 
     // --- Tests for type inference from type-specific keywords ---
@@ -1516,7 +1560,7 @@ mod tests {
             r#"{ "minLength": 1 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::String(_))));
+        std::assert_matches!(schema, Some(ValueSchema::String(_)));
     }
 
     #[test]
@@ -1525,7 +1569,7 @@ mod tests {
             r#"{ "maxLength": 100 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::String(_))));
+        std::assert_matches!(schema, Some(ValueSchema::String(_)));
     }
 
     #[test]
@@ -1534,7 +1578,7 @@ mod tests {
             r#"{ "pattern": "^[a-z]+$" }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::String(_))));
+        std::assert_matches!(schema, Some(ValueSchema::String(_)));
     }
 
     #[test]
@@ -1543,7 +1587,7 @@ mod tests {
             r#"{ "format": "date" }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::LocalDate(_))));
+        std::assert_matches!(schema, Some(ValueSchema::LocalDate(_)));
     }
 
     #[test]
@@ -1552,7 +1596,7 @@ mod tests {
             r#"{ "format": "date-time" }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::OffsetDateTime(_))));
+        std::assert_matches!(schema, Some(ValueSchema::OffsetDateTime(_)));
     }
 
     #[test]
@@ -1561,7 +1605,7 @@ mod tests {
             r#"{ "minimum": 0 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Float(_)));
     }
 
     #[test]
@@ -1570,7 +1614,7 @@ mod tests {
             r#"{ "maximum": 100 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Float(_)));
     }
 
     #[test]
@@ -1579,7 +1623,7 @@ mod tests {
             r#"{ "exclusiveMinimum": 0 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Float(_)));
     }
 
     #[test]
@@ -1588,7 +1632,7 @@ mod tests {
             r#"{ "exclusiveMaximum": 100 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Float(_)));
     }
 
     #[test]
@@ -1597,7 +1641,7 @@ mod tests {
             r#"{ "multipleOf": 5 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Float(_)));
     }
 
     #[test]
@@ -1606,7 +1650,7 @@ mod tests {
             r#"{ "items": { "type": "string" } }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Array(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Array(_)));
     }
 
     #[test]
@@ -1615,7 +1659,7 @@ mod tests {
             r#"{ "minItems": 1 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Array(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Array(_)));
     }
 
     #[test]
@@ -1624,7 +1668,7 @@ mod tests {
             r#"{ "maxItems": 10 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Array(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Array(_)));
     }
 
     #[test]
@@ -1633,7 +1677,7 @@ mod tests {
             r#"{ "uniqueItems": true }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Array(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Array(_)));
     }
 
     #[test]
@@ -1642,7 +1686,7 @@ mod tests {
             r#"{ "prefixItems": [ { "type": "string" } ] }"#,
             Some(crate::JsonSchemaDialect::Draft2020_12),
         );
-        assert!(matches!(schema_2020, Some(ValueSchema::Array(_))));
+        std::assert_matches!(schema_2020, Some(ValueSchema::Array(_)));
 
         let schema_07 = parse_schema_with_dialect(
             r#"{ "prefixItems": [ { "type": "string" } ] }"#,
@@ -1657,7 +1701,7 @@ mod tests {
             r#"{ "properties": { "name": { "type": "string" } } }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Table(_)));
     }
 
     #[test]
@@ -1666,7 +1710,7 @@ mod tests {
             r#"{ "required": ["name"] }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Table(_)));
     }
 
     #[test]
@@ -1675,7 +1719,7 @@ mod tests {
             r#"{ "additionalProperties": false }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Table(_)));
     }
 
     #[test]
@@ -1684,7 +1728,7 @@ mod tests {
             r#"{ "minProperties": 1 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Table(_)));
     }
 
     #[test]
@@ -1693,7 +1737,7 @@ mod tests {
             r#"{ "maxProperties": 10 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Table(_)));
     }
 
     #[test]
@@ -1702,7 +1746,7 @@ mod tests {
             r#"{ "propertyNames": { "pattern": "^[a-z]+$" } }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Table(_)));
     }
 
     #[test]
@@ -1711,7 +1755,7 @@ mod tests {
             r#"{ "minLength": 1, "maxLength": 50, "title": "Name", "description": "A name" }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::String(_))));
+        std::assert_matches!(schema, Some(ValueSchema::String(_)));
         if let Some(ValueSchema::String(s)) = schema {
             assert_eq!(s.min_length, Some(1));
             assert_eq!(s.max_length, Some(50));
@@ -1726,7 +1770,7 @@ mod tests {
             r#"{ "minimum": 0, "maximum": 100 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Float(_)));
         if let Some(ValueSchema::Float(f)) = schema {
             assert_eq!(f.minimum, Some(0.0));
             assert_eq!(f.maximum, Some(100.0));
@@ -1734,10 +1778,42 @@ mod tests {
     }
 
     #[test]
-    fn test_no_inference_without_type_specific_keywords() {
-        // Only common keywords like title/description should not trigger inference
+    fn test_annotation_only_object_schema_defaults_to_anything() {
+        // Annotation-only object schemas are still valid JSON Schema and must not
+        // disappear from property registration.
         let schema = parse_schema_with_dialect(
             r#"{ "title": "Something", "description": "A thing" }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        std::assert_matches!(schema, Some(ValueSchema::Anything(_)));
+    }
+
+    #[test]
+    fn test_annotation_only_object_schema_with_extension_keywords_defaults_to_anything() {
+        let schema = parse_schema_with_dialect(
+            r#"{
+                "description": "A thing",
+                "markdownDescription": "**A** thing",
+                "x-intellij-html-description": "<b>A</b> thing"
+            }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        std::assert_matches!(schema, Some(ValueSchema::Anything(_)));
+    }
+
+    #[test]
+    fn test_annotation_only_object_schema_rejects_unsupported_keywords() {
+        let schema = parse_schema_with_dialect(
+            r#"{ "description": "A thing", "unevaluatedProperties": false }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        assert!(schema.is_none());
+    }
+
+    #[test]
+    fn test_annotation_only_object_schema_rejects_reference_keywords() {
+        let schema = parse_schema_with_dialect(
+            r##"{ "$ref": "#/$defs/value", "description": "A thing" }"##,
             Some(crate::JsonSchemaDialect::Draft07),
         );
         assert!(schema.is_none());
@@ -1750,6 +1826,6 @@ mod tests {
             r#"{ "type": "integer", "minimum": 0 }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        assert!(matches!(schema, Some(ValueSchema::Integer(_))));
+        std::assert_matches!(schema, Some(ValueSchema::Integer(_)));
     }
 }

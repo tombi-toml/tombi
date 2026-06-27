@@ -4,7 +4,7 @@ use tombi_config::TomlVersion;
 
 use crate::{
     Backend,
-    handler::workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
+    workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
 };
 
 #[derive(Debug, serde::Deserialize)]
@@ -64,6 +64,12 @@ pub async fn handle_associate_schema(backend: &Backend, params: AssociateSchemaP
         .await;
 
     // Refresh workspace diagnostics after schema association
+    backend
+        .workspace_diagnostics_cache
+        .write()
+        .await
+        .clear_all();
+
     if let Err(err) = push_workspace_diagnostics(
         backend,
         &WorkspaceDiagnosticOptions {

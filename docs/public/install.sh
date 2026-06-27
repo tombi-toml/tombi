@@ -21,6 +21,18 @@ print_success() {
 	printf '\033[32mSuccess:\033[m %s\n' "$1" >&2
 }
 
+print_usage() {
+	cat >&2 <<EOF
+Usage: ${0##*/} [--version <version|latest>] [--install-dir <dir>] [--checksum <sha256>]
+
+Options:
+  --version <version>     Install a specific version (default: embedded latest stable)
+  --install-dir <dir>     Install into a specific directory
+  --checksum <sha256>     Verify downloaded archive SHA256 (<hex> or sha256:<hex>)
+  --help                  Show this help message
+EOF
+}
+
 # Keep the 0.9.23 cutoff in sync with
 # editors/zed/src/lib.rs (TombiExtension::uses_legacy_unix_artifact).
 version_uses_legacy_unix_artifact() {
@@ -63,23 +75,150 @@ download_to_file() {
 	fi
 }
 
+normalize_sha256_checksum() {
+	CHECKSUM_INPUT="$1"
+
+	if [ -z "${CHECKSUM_INPUT}" ]; then
+		print_error "Invalid checksum: value must not be empty."
+		exit 1
+	fi
+
+	case "${CHECKSUM_INPUT}" in
+	sha256:*)
+		CHECKSUM_VALUE=${CHECKSUM_INPUT#sha256:}
+		;;
+	*:*)
+		print_error "Unsupported checksum format '${CHECKSUM_INPUT}'. Only sha256:<hex> is supported."
+		exit 1
+		;;
+	*)
+		CHECKSUM_VALUE=${CHECKSUM_INPUT}
+		;;
+	esac
+
+	if [ -z "${CHECKSUM_VALUE}" ]; then
+		print_error "Invalid checksum: SHA256 value must not be empty."
+		exit 1
+	fi
+
+	if [ ${#CHECKSUM_VALUE} -ne 64 ]; then
+		print_error "Invalid checksum '${CHECKSUM_INPUT}': expected 64 hex characters for SHA256, got ${#CHECKSUM_VALUE}."
+		exit 1
+	fi
+
+	if ! printf '%s' "${CHECKSUM_VALUE}" | grep -Eq '^[0-9A-Fa-f]{64}$'; then
+		print_error "Invalid checksum '${CHECKSUM_INPUT}': SHA256 must contain only hexadecimal characters."
+		exit 1
+	fi
+
+	NORMALIZED_CHECKSUM=$(printf '%s' "${CHECKSUM_VALUE}" | tr 'A-F' 'a-f')
+}
+
+calculate_sha256() {
+	FILE_PATH="$1"
+	CHECKSUM_OUTPUT_FILE="${TEMP_DIR}/checksum-output.txt"
+
+	if command -v sha256sum >/dev/null 2>&1; then
+		if ! sha256sum "${FILE_PATH}" >"${CHECKSUM_OUTPUT_FILE}"; then
+			print_error "Failed to calculate SHA256 with sha256sum for ${FILE_PATH}."
+			exit 1
+		fi
+		if ! ACTUAL_CHECKSUM=$(awk 'NR==1 {print $1; exit}' "${CHECKSUM_OUTPUT_FILE}" | tr 'A-F' 'a-f'); then
+			print_error "Failed to parse calculated SHA256 for ${FILE_PATH}."
+			exit 1
+		fi
+	elif command -v shasum >/dev/null 2>&1; then
+		if ! shasum -a 256 "${FILE_PATH}" >"${CHECKSUM_OUTPUT_FILE}"; then
+			print_error "Failed to calculate SHA256 with shasum for ${FILE_PATH}."
+			exit 1
+		fi
+		if ! ACTUAL_CHECKSUM=$(awk 'NR==1 {print $1; exit}' "${CHECKSUM_OUTPUT_FILE}" | tr 'A-F' 'a-f'); then
+			print_error "Failed to parse calculated SHA256 for ${FILE_PATH}."
+			exit 1
+		fi
+	elif command -v certutil.exe >/dev/null 2>&1; then
+		if ! command -v cygpath >/dev/null 2>&1; then
+			print_error "Unable to verify checksum with certutil.exe: cygpath is required."
+			exit 1
+		fi
+		if ! certutil.exe -hashfile "$(cygpath -w "${FILE_PATH}")" SHA256 >"${CHECKSUM_OUTPUT_FILE}"; then
+			print_error "Failed to calculate SHA256 with certutil.exe for ${FILE_PATH}."
+			exit 1
+		fi
+		if ! ACTUAL_CHECKSUM=$(awk 'NR==2 {print $1; exit}' "${CHECKSUM_OUTPUT_FILE}" | tr 'A-F' 'a-f'); then
+			print_error "Failed to parse calculated SHA256 for ${FILE_PATH}."
+			exit 1
+		fi
+	else
+		print_error "Unable to verify checksum: sha256sum, shasum, or certutil.exe is required."
+		exit 1
+	fi
+
+	if ! printf '%s' "${ACTUAL_CHECKSUM}" | grep -Eq '^[0-9a-f]{64}$'; then
+		print_error "Failed to parse calculated SHA256 for ${FILE_PATH}."
+		exit 1
+	fi
+
+	printf '%s\n' "${ACTUAL_CHECKSUM}"
+}
+
+verify_archive_checksum() {
+	FILE_PATH="$1"
+	EXPECTED_CHECKSUM="$2"
+
+	ACTUAL_CHECKSUM=$(calculate_sha256 "${FILE_PATH}")
+	if [ "${ACTUAL_CHECKSUM}" != "${EXPECTED_CHECKSUM}" ]; then
+		print_error "Checksum verification failed for ${FILE_PATH}. Expected: ${EXPECTED_CHECKSUM} Actual: ${ACTUAL_CHECKSUM}"
+		exit 1
+	fi
+
+	print_step "Checksum verification passed."
+}
+
 # Parse command line options
 __SPECIFIED_VERSION=""
 __SPECIFIED_INSTALL_DIR=""
+__SPECIFIED_CHECKSUM=""
+__CHECKSUM_WAS_SET=0
 while [ $# -gt 0 ]; do
 	case $1 in
 	--version)
+		if [ $# -lt 2 ]; then
+			print_error "Missing value for --version"
+			print_usage
+			exit 1
+		fi
 		if [ "$2" != "latest" ]; then
 			__SPECIFIED_VERSION="${2#v}"
 		fi
 		shift 2
 		;;
 	--install-dir)
+		if [ $# -lt 2 ]; then
+			print_error "Missing value for --install-dir"
+			print_usage
+			exit 1
+		fi
 		__SPECIFIED_INSTALL_DIR="$2"
 		shift 2
 		;;
+	--checksum)
+		if [ $# -lt 2 ]; then
+			print_error "Missing value for --checksum"
+			print_usage
+			exit 1
+		fi
+		__CHECKSUM_WAS_SET=1
+		__SPECIFIED_CHECKSUM="$2"
+		shift 2
+		;;
+	--help)
+		print_usage
+		exit 0
+		;;
 	*)
 		print_error "Unknown option: $1"
+		print_usage
 		exit 1
 		;;
 	esac
@@ -176,6 +315,10 @@ download_and_install() {
 		exit 1
 	fi
 
+	if [ -n "${NORMALIZED_CHECKSUM:-}" ]; then
+		verify_archive_checksum "${TEMP_FILE}" "${NORMALIZED_CHECKSUM}"
+	fi
+
 	EXE_NAME=$(get_exe_name)
 	if [ "${ARTIFACT_EXTENSION}" = ".zip" ]; then
 		unzip -o "${TEMP_FILE}" -d "${TEMP_DIR}"
@@ -203,7 +346,7 @@ download_and_install() {
 }
 
 # Version
-LATEST_STABLE_VERSION="0.10.2"
+LATEST_STABLE_VERSION="1.1.5"
 if [ -n "${__SPECIFIED_VERSION}" ]; then
 	VERSION="${__SPECIFIED_VERSION}"
 	print_step "Using specified version: ${VERSION}"
@@ -216,6 +359,9 @@ else
 	print_step "Using latest version: ${VERSION}"
 fi
 RELEASE_BASE_URL="https://github.com/tombi-toml/tombi/releases/download"
+if [ "${__CHECKSUM_WAS_SET}" -eq 1 ]; then
+	normalize_sha256_checksum "${__SPECIFIED_CHECKSUM}"
+fi
 
 # Get the executable name based on OS
 get_exe_name() {

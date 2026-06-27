@@ -27,9 +27,10 @@ toggle_features! {
         ))
     )]
     pub struct PyprojectDocumentLinkFeatureTree {
-        /// # pyproject.toml document link feature
+        /// # Deprecated pyproject.toml document link feature
         ///
-        /// Whether document links are created for `pyproject.toml` references.
+        /// Deprecated. This setting is accepted for backward compatibility and will be removed in a future release.
+        #[cfg_attr(feature = "jsonschema", schemars(extend("deprecated" = true)))]
         pub pyproject_toml: Option<ToggleFeatureDefaultFalse>,
 
         /// # PyPI document link feature

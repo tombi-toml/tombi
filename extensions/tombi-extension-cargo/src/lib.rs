@@ -3,6 +3,7 @@ mod cargo_lock;
 mod cargo_toml;
 mod code_action;
 mod completion;
+mod crates_io;
 mod did_open;
 mod document_link;
 mod feature_navigation;
@@ -35,6 +36,7 @@ pub(crate) use cargo_toml::{
     CrateLocation, dependency_package_name, find_cargo_toml, get_uri_relative_to_cargo_toml,
     load_cargo_toml,
 };
+pub(crate) use crates_io::fetch_crates_io_crate;
 pub(crate) use feature_navigation::{
     CargoTargetLocation, collect_feature_usage_locations, dependency_feature_string_context,
     feature_key_at_accessors, feature_table_string_at_accessors,
@@ -49,6 +51,7 @@ pub(crate) use workspace::{
     workspace_dependency_usage_locations,
 };
 
+#[derive(Debug)]
 pub(crate) enum CargoNavigationFeature {
     Dependency,
     Member,
@@ -89,7 +92,7 @@ mod tests {
     fn classify_workspace_members_as_member_feature() {
         let feature = classify_cargo_navigation_feature(&[key("workspace"), key("members")]);
 
-        assert!(matches!(feature, CargoNavigationFeature::Member));
+        std::assert_matches!(feature, CargoNavigationFeature::Member);
     }
 
     #[test]
@@ -97,6 +100,6 @@ mod tests {
         let feature =
             classify_cargo_navigation_feature(&[key("workspace"), key("dependencies"), key("foo")]);
 
-        assert!(matches!(feature, CargoNavigationFeature::Dependency));
+        std::assert_matches!(feature, CargoNavigationFeature::Dependency);
     }
 }

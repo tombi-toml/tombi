@@ -1,6 +1,7 @@
 use itertools::{Either, Itertools};
 use tombi_ast::{AstNode, DanglingCommentGroupOr, algo::ancestors_at_position};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_extension::{HoverMetadata, HoverTextChange};
 use tombi_schema_store::SchemaContext;
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{HoverParams, TextDocumentPositionParams};
@@ -117,6 +118,22 @@ pub async fn handle_hover(
             .map(|dependency_detail| dependency_detail.enabled())
             .unwrap_or_default()
             .value();
+        let cargo_default_features_hover_enabled = config
+            .cargo_extension_features()
+            .and_then(|features| features.lsp())
+            .and_then(|lsp| lsp.hover())
+            .and_then(|hover| hover.default_features())
+            .map(|default_features| default_features.enabled())
+            .unwrap_or_default()
+            .value();
+        let cargo_feature_dependencies_hover_enabled = config
+            .cargo_extension_features()
+            .and_then(|features| features.lsp())
+            .and_then(|lsp| lsp.hover())
+            .and_then(|hover| hover.feature_dependencies())
+            .map(|feature_dependencies| feature_dependencies.enabled())
+            .unwrap_or_default()
+            .value();
         let pyproject_dependency_detail_hover_enabled = config
             .pyproject_extension_features()
             .and_then(|features| features.lsp())
@@ -141,7 +158,10 @@ pub async fn handle_hover(
         };
         let extension_hover = match extension_hover {
             some @ Some(_) => some,
-            None if cargo_dependency_detail_hover_enabled => {
+            None if cargo_dependency_detail_hover_enabled
+                || cargo_default_features_hover_enabled
+                || cargo_feature_dependencies_hover_enabled =>
+            {
                 tombi_extension_cargo::hover(
                     &text_document_uri,
                     &document_tree,
@@ -150,6 +170,9 @@ pub async fn handle_hover(
                     toml_version,
                     offline,
                     cache_options,
+                    cargo_dependency_detail_hover_enabled,
+                    cargo_feature_dependencies_hover_enabled,
+                    cargo_default_features_hover_enabled,
                 )
                 .await?
             }
@@ -173,15 +196,33 @@ pub async fn handle_hover(
         };
 
         if let Some(metadata) = extension_hover {
-            if metadata.title.is_some() {
-                hover_value_content.title = metadata.title;
-            }
-            if metadata.description.is_some() {
-                hover_value_content.description = metadata.description;
-            }
+            apply_hover_metadata(hover_value_content, metadata);
         }
     }
     Ok(hover_content)
+}
+
+fn apply_hover_metadata(
+    hover_value_content: &mut crate::hover::HoverValueContent,
+    metadata: HoverMetadata,
+) {
+    apply_hover_text_change(&mut hover_value_content.title, metadata.title);
+    apply_hover_text_change(&mut hover_value_content.description, metadata.description);
+}
+
+fn apply_hover_text_change(target: &mut Option<String>, change: Option<HoverTextChange>) {
+    match change {
+        Some(HoverTextChange::Replace(text)) => *target = Some(text),
+        Some(HoverTextChange::Append(text)) => match target {
+            Some(existing) if !existing.is_empty() => {
+                existing.push_str("\n\n");
+                existing.push_str(&text);
+            }
+            Some(existing) => existing.push_str(&text),
+            None => *target = Some(text),
+        },
+        None => {}
+    }
 }
 
 pub async fn get_hover_keys_with_range(

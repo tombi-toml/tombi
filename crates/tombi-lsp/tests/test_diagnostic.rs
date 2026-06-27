@@ -183,6 +183,53 @@ mod diagnostic {
             ) -> Ok([]);
         );
     }
+
+    /// Test for issue #1953: stale pull diagnostics after didChange
+    /// https://github.com/tombi-toml/tombi/issues/1953
+    mod issue_1953_stale_pull_diagnostics {
+        use tombi_test_lib::project_root_path;
+
+        use super::*;
+        use std::path::PathBuf;
+
+        fn fixture_path() -> PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-1953-stale-pull-diagnostics")
+        }
+
+        fn valid_text() -> String {
+            "#:schema schema.json\nid = \"Test1\"\n".to_string()
+        }
+
+        fn invalid_text() -> String {
+            "#:schema schema.json\nidx = \"Test1\"\n".to_string()
+        }
+
+        test_diagnostic_file!(
+            #[tokio::test]
+            async fn pull_diagnostics_clear_stale_error_after_fixing_key(
+                SourcePath(fixture_path().join("test.toml")),
+                SourceText(valid_text()),
+                LspDiagnosticMode(tombi_lsp::backend::DiagnosticMode::Pull),
+                SourceChanges(vec![(1, invalid_text()), (2, valid_text())]),
+            ) -> Ok([]);
+        );
+
+        test_diagnostic_file!(
+            #[tokio::test]
+            async fn pull_diagnostics_report_latest_error_after_reintroducing_key(
+                SourcePath(fixture_path().join("test.toml")),
+                SourceText(valid_text()),
+                LspDiagnosticMode(tombi_lsp::backend::DiagnosticMode::Pull),
+                SourceChanges(vec![(1, invalid_text()), (2, valid_text()), (3, invalid_text())]),
+            ) -> Ok([
+                Diagnostic {
+                    message: "\"idx\" is not allowed",
+                    range: ((1, 0), (1, 13)),
+                }
+            ]);
+        );
+    }
 }
 
 // Unified test macro
@@ -208,13 +255,13 @@ macro_rules! test_diagnostic {
         use tombi_lsp::Backend;
         use tower_lsp::{
             lsp_types::{
-                Url, DidOpenTextDocumentParams,
-                TextDocumentItem, DocumentDiagnosticParams,
-                TextDocumentIdentifier, WorkDoneProgressParams,
+                DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentDiagnosticParams,
+                TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Url,
+                VersionedTextDocumentIdentifier, WorkDoneProgressParams,
             },
             LspService,
         };
-        use tombi_lsp::handler::{handle_did_open, handle_diagnostic};
+        use tombi_lsp::handler::{handle_diagnostic, handle_did_change, handle_did_open};
 
         tombi_test_lib::init_log();
 
@@ -223,6 +270,7 @@ macro_rules! test_diagnostic {
         struct TestArgs {
             source_file_path: Option<std::path::PathBuf>,
             source_text: Option<String>,
+            source_changes: Vec<(i32, String)>,
             schema_file_path: Option<std::path::PathBuf>,
             config_file_path: Option<std::path::PathBuf>,
             diagnostic_mode: Option<tombi_lsp::backend::DiagnosticMode>,
@@ -527,6 +575,7 @@ macro_rules! test_diagnostic_file {
         struct TestArgs {
             source_file_path: Option<std::path::PathBuf>,
             source_text: Option<String>,
+            source_changes: Vec<(i32, String)>,
             schema_file_path: Option<std::path::PathBuf>,
             config_file_path: Option<std::path::PathBuf>,
             diagnostic_mode: Option<tombi_lsp::backend::DiagnosticMode>,
@@ -553,6 +602,15 @@ macro_rules! test_diagnostic_file {
         impl ApplyTestArg for SourceText {
             fn apply(self, config: &mut TestArgs) {
                 config.source_text = Some(self.0);
+            }
+        }
+
+        #[allow(unused)]
+        struct SourceChanges(Vec<(i32, String)>);
+
+        impl ApplyTestArg for SourceChanges {
+            fn apply(self, config: &mut TestArgs) {
+                config.source_changes = self.0;
             }
         }
 
@@ -673,6 +731,24 @@ macro_rules! test_diagnostic_file {
             },
         )
         .await;
+
+        for (version, text) in config.source_changes {
+            tombi_lsp::handler::handle_did_change(
+                backend,
+                tower_lsp::lsp_types::DidChangeTextDocumentParams {
+                    text_document: tower_lsp::lsp_types::VersionedTextDocumentIdentifier {
+                        uri: toml_file_url.clone(),
+                        version,
+                    },
+                    content_changes: vec![tower_lsp::lsp_types::TextDocumentContentChangeEvent {
+                        range: None,
+                        range_length: None,
+                        text,
+                    }],
+                },
+            )
+            .await;
+        }
 
         // Get diagnostics
         let diagnostic_result = handle_diagnostic(

@@ -1,0 +1,64 @@
+name: 🐛 Issue
+description: Report a bug or unexpected behavior in Tombi.
+title: "🐛 Issue: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting an issue.
+
+        If the problem is that a third-party TOML file has no JSON Schema in Tombi, please do not open a Tombi issue only for that. Ask the target project to generate or maintain its JSON Schema, then submit it to [SchemaStore](https://github.com/SchemaStore/schemastore/issues/new/choose).
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight
+      options:
+        - label: I have searched existing Issues and Discussions for related reports.
+          required: true
+        - label: This is not only a request to add a JSON Schema for a third-party project. For that case, I will ask the target project and SchemaStore instead.
+          required: true
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current behavior
+      description: What happened?
+      placeholder: Describe the unexpected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest TOML, schema, config, command, or editor steps that reproduce the issue.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the Tombi version, OS, editor or CLI, and installation method.
+      placeholder: |
+        - Tombi version:
+        - OS:
+        - Editor or CLI:
+        - Installation method:
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add logs, screenshots, links, or related issues.
+    validations:
+      required: false

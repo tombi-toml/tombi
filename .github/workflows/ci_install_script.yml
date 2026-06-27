@@ -9,16 +9,20 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
+          persist-credentials: false
       - id: filter
         uses: ./.github/actions/relevant-changes
         with:
@@ -50,15 +54,179 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
       - name: Add install directory to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Run install script
+      - name: Resolve release artifact metadata
         run: |
+          requested_version="$(grep -E '^LATEST_STABLE_VERSION=\"[0-9]+\.[0-9]+\.[0-9]+\"$' ./docs/public/install.sh)"
+          requested_version="${requested_version#LATEST_STABLE_VERSION=\"}"
+          requested_version="${requested_version%\"}"
+          if [ -z "$requested_version" ]; then
+            echo "Failed to resolve LATEST_STABLE_VERSION" >&2
+            exit 1
+          fi
+
+          latest_version="$(curl -fsSL https://api.github.com/repos/tombi-toml/tombi/releases/latest | jq -r '.tag_name | sub("^v"; "")')"
+          if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
+            echo "Failed to resolve the latest published release tag" >&2
+            exit 1
+          fi
+
+          release_check_url="https://github.com/tombi-toml/tombi/releases/tag/v${requested_version}"
+          if curl -fsSLI "$release_check_url" >/dev/null 2>&1; then
+            version="$requested_version"
+          else
+            echo "Release v${requested_version} is not published yet; falling back to v${latest_version} for installer CI." >&2
+            version="$latest_version"
+          fi
+
+          version_prefix="${version%%[-+]*}"
+          IFS=. read -r major minor patch <<<"$version_prefix"
+          case "$(uname -s)" in
+            Linux)
+              case "$(uname -m)" in
+                aarch64) target="aarch64-unknown-linux-musl" ;;
+                armv7l) target="arm-unknown-linux-gnueabihf" ;;
+                *) target="x86_64-unknown-linux-musl" ;;
+              esac
+              if [ "$major" -eq 0 ] && { [ "$minor" -lt 9 ] || { [ "$minor" -eq 9 ] && [ "$patch" -lt 23 ]; }; }; then
+                extension=".gz"
+              else
+                extension=".tar.gz"
+              fi
+              ;;
+            Darwin)
+              case "$(uname -m)" in
+                arm64) arch="aarch64" ;;
+                *) arch="x86_64" ;;
+              esac
+              target="${arch}-apple-darwin"
+              if [ "$major" -eq 0 ] && { [ "$minor" -lt 9 ] || { [ "$minor" -eq 9 ] && [ "$patch" -lt 23 ]; }; }; then
+                extension=".gz"
+              else
+                extension=".tar.gz"
+              fi
+              ;;
+            MINGW*|MSYS*|CYGWIN*|Windows_NT)
+              case "$(uname -m)" in
+                aarch64) arch="aarch64" ;;
+                *) arch="x86_64" ;;
+              esac
+              target="${arch}-pc-windows-msvc"
+              extension=".zip"
+              ;;
+            *)
+              echo "Unsupported OS" >&2
+              exit 1
+              ;;
+          esac
+
+          asset_name="tombi-cli-${version}-${target}${extension}"
+          release_json="$(curl -fsSL "https://api.github.com/repos/tombi-toml/tombi/releases/tags/v${version}")"
+          url="$(printf '%s' "$release_json" | jq -r --arg name "$asset_name" '.assets[] | select(.name == $name) | .browser_download_url' | head -n 1)"
+          checksum="$(printf '%s' "$release_json" | jq -r --arg name "$asset_name" '.assets[] | select(.name == $name) | .digest' | head -n 1)"
+
+          if [ -z "$url" ] || [ "$url" = "null" ]; then
+            echo "Failed to resolve release asset URL for ${asset_name}" >&2
+            exit 1
+          fi
+          if [ -z "$checksum" ] || [ "$checksum" = "null" ]; then
+            echo "Failed to resolve release asset digest for ${asset_name}" >&2
+            exit 1
+          fi
+
+          checksum="${checksum#sha256:}"
+          if ! printf '%s' "$checksum" | grep -Eq '^[0-9a-f]{64}$'; then
+            echo "Invalid release asset digest for ${asset_name}: ${checksum}" >&2
+            exit 1
+          fi
+
+          metadata_file="${RUNNER_TEMP}/install-metadata.env"
+          {
+            printf 'version=%s\n' "$version"
+            printf 'target=%s\n' "$target"
+            printf 'extension=%s\n' "$extension"
+            printf 'url=%s\n' "$url"
+            printf 'checksum=%s\n' "$checksum"
+          } > "$metadata_file"
+
+      - name: Run install script without checksum
+        run: |
+          . "${RUNNER_TEMP}/install-metadata.env"
           chmod +x ./docs/public/install.sh
-          ./docs/public/install.sh
+          ./docs/public/install.sh --version "$version"
+
+      - name: Run install script with plain checksum
+        run: |
+          . "${RUNNER_TEMP}/install-metadata.env"
+          install_dir="${RUNNER_TEMP}/install-with-checksum"
+          mkdir -p "$install_dir"
+          ./docs/public/install.sh \
+            --version "$version" \
+            --install-dir "$install_dir" \
+            --checksum "$checksum"
+          test -f "$install_dir/${{ matrix.exe_name }}"
+
+      - name: "Run install script with sha256: checksum"
+        run: |
+          . "${RUNNER_TEMP}/install-metadata.env"
+          install_dir="${RUNNER_TEMP}/install-with-prefixed-checksum"
+          mkdir -p "$install_dir"
+          ./docs/public/install.sh \
+            --version "$version" \
+            --install-dir "$install_dir" \
+            --checksum "sha256:${checksum}"
+          test -f "$install_dir/${{ matrix.exe_name }}"
+
+      - name: Reject wrong checksum before install
+        run: |
+          . "${RUNNER_TEMP}/install-metadata.env"
+          install_dir="${RUNNER_TEMP}/install-with-bad-checksum"
+          mkdir -p "$install_dir"
+          log_file="${RUNNER_TEMP}/bad-checksum.log"
+          set +e
+          ./docs/public/install.sh \
+            --version "$version" \
+            --install-dir "$install_dir" \
+            --checksum "0000000000000000000000000000000000000000000000000000000000000000" \
+            >"$log_file" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          test ! -f "$install_dir/${{ matrix.exe_name }}"
+          grep -q "Checksum verification failed" "$log_file"
+          grep -q "Expected:" "$log_file"
+          grep -q "Actual:" "$log_file"
+
+      - name: Reject invalid checksum formats
+        run: |
+          invalid_cases=(
+            "sha1:0123456789abcdef0123456789abcdef01234567"
+            "1234"
+            "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+          )
+          for checksum in "${invalid_cases[@]}"; do
+            log_file="${RUNNER_TEMP}/invalid-checksum-$(printf '%s' "$checksum" | tr ':/' '__').log"
+            set +e
+            ./docs/public/install.sh --checksum "$checksum" >"$log_file" 2>&1
+            status=$?
+            set -e
+            test "$status" -ne 0
+            grep -Eq "Unsupported checksum format|Invalid checksum" "$log_file"
+          done
+
+          log_file="${RUNNER_TEMP}/invalid-checksum-empty.log"
+          set +e
+          ./docs/public/install.sh --checksum "" >"$log_file" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -q "Invalid checksum" "$log_file"
 
       - name: Verify tombi binary exists
         run: |

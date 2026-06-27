@@ -20,13 +20,19 @@
   },
   "pnpm": {
     "overrides": {
+      "@azure/msal-node": "5.2.2",
       "@vinxi/plugin-mdx>esbuild": "^0.28.0",
-      "binary-install>axios": "0.31.0",
+      "binary-install>axios": "0.31.1",
       "binary-install>tar": "7.5.13",
       "brace-expansion": "^2.1.0",
+      "fast-uri": "3.1.2",
       "h3": "1.15.11",
       "minimatch": "^5.1.9",
-      "vitest>vite": "^7.3.2"
+      "nitropack": "2.13.4",
+      "qs": "6.15.2",
+      "tmp": "0.2.6",
+      "vitest>vite": "^7.3.2",
+      "ws": "8.20.1"
     }
   }
 }

@@ -25,3 +25,6 @@ tombi-test-lib.workspace = true
 [features]
 default = ["diagnostic"]
 diagnostic = ["dep:tombi-diagnostic"]
+
+[lints]
+workspace = true

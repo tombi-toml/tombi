@@ -129,7 +129,7 @@ pub async fn handle_formatting(
                     .client
                     .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {
                         uri: text_document_uri.into(),
-                        diagnostics: Vec::with_capacity(0),
+                        diagnostics: Vec::new(),
                         version,
                     })
                     .await;
@@ -189,7 +189,7 @@ fn compute_text_edits(
     line_index: &tombi_text::LineIndex,
 ) -> Vec<TextEdit> {
     if old_text == new_text {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     let common_prefix_bytes = old_text
@@ -223,7 +223,7 @@ fn compute_text_edits(
         .max(change_start);
 
     if change_start == old_change_end && change_start == new_change_end {
-        return Vec::with_capacity(0);
+        return Vec::new();
     }
 
     let start_position = position_at_offset(line_index, change_start);

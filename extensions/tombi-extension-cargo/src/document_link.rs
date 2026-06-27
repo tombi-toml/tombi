@@ -183,7 +183,7 @@ fn create_member_document_links(
     let Some((_, tombi_document_tree::Value::Array(members))) =
         dig_keys(workspace_document_tree, &["workspace", members_key])
     else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     let mut document_links = Vec::new();
@@ -196,7 +196,7 @@ fn create_member_document_links(
                     _ => None,
                 })
                 .collect(),
-            _ => Vec::with_capacity(0),
+            _ => Vec::new(),
         };
 
     for member in members.iter() {
@@ -311,11 +311,20 @@ fn document_link_for_crate_cargo_toml(
     }
 
     let mut total_document_links = vec![];
-    if let Some((workspace_cargo_toml_path, _, workspace_document_tree)) = find_workspace_cargo_toml(
-        crate_cargo_toml_path,
-        get_workspace_cargo_toml_path(crate_document_tree),
-        toml_version,
-    ) {
+    let workspace_cargo_toml = if crate_document_tree.contains_key("workspace") {
+        Some((
+            crate_cargo_toml_path.to_path_buf(),
+            crate_document_tree.clone(),
+        ))
+    } else {
+        find_workspace_cargo_toml(
+            crate_cargo_toml_path,
+            get_workspace_cargo_toml_path(crate_document_tree),
+            toml_version,
+        )
+        .map(|(path, _, document_tree)| (path, document_tree))
+    };
+    if let Some((workspace_cargo_toml_path, workspace_document_tree)) = workspace_cargo_toml {
         let registries =
             get_registries(&workspace_cargo_toml_path, toml_version).unwrap_or_default();
 
@@ -431,7 +440,7 @@ fn document_link_for_crate_cargo_toml(
         let registries = get_registries(crate_cargo_toml_path, toml_version).unwrap_or_default();
 
         for (crate_key, crate_value) in total_dependencies {
-            if let Ok(document_links) = document_link_for_dependency(
+            if let Ok(mut document_links) = document_link_for_dependency(
                 crate_key,
                 crate_value,
                 crate_cargo_toml_path,
@@ -439,6 +448,14 @@ fn document_link_for_crate_cargo_toml(
                 toml_version,
                 features,
             ) {
+                if document_links.is_empty()
+                    && dependency_uses_default_registry(crate_value)
+                    && let Some(document_link) = crates_io_document_link_enabled(features)
+                        .then(|| get_crate_io_crate_link(crate_key, crate_value))
+                        .flatten()
+                {
+                    document_links.push(document_link);
+                }
                 total_document_links.extend(document_links);
             }
         }
@@ -685,6 +702,19 @@ fn dependency_uses_local_path(crate_value: &tombi_document_tree::Value) -> bool 
     )
 }
 
+fn dependency_uses_default_registry(crate_value: &tombi_document_tree::Value) -> bool {
+    match crate_value {
+        tombi_document_tree::Value::String(_) => true,
+        tombi_document_tree::Value::Table(table) => {
+            !table.contains_key("path")
+                && !table.contains_key("git")
+                && !table.contains_key("registry")
+                && !table.contains_key("workspace")
+        }
+        _ => false,
+    }
+}
+
 fn workspace_dependency_target(
     crate_key: &tombi_document_tree::Key,
     crate_value: &tombi_document_tree::Value,
@@ -903,7 +933,7 @@ fn document_link_for_bin_targets(
     let Some((_, tombi_document_tree::Value::Array(bin_items))) =
         dig_keys(crate_document_tree, &["bin"])
     else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     bin_items

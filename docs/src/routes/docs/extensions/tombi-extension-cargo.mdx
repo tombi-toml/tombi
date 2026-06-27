@@ -250,6 +250,11 @@ Promote versioned dependencies into the workspace while switching members to use
 
 The workspace entry keeps the original requirement, and the member now follows the workspace-managed version.
 
+#### Update Dependency to Latest Version
+
+Refresh the selected dependency requirement to the latest published version.
+Use this when the manifest already references a package and you want Tombi to rewrite just the version requirement without converting the dependency shape.
+
 ### Document Links
 
 The extension enriches `Cargo.toml` with contextual document links so you can jump directly to related resources:

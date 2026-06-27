@@ -1,30 +1,22 @@
 use std::path::Path;
 
-use serde::Deserialize;
+use itertools::Itertools;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{Value, dig_accessors, dig_keys};
-use tombi_extension::{HoverMetadata, append_latest_version, fetch_cached_remote_json};
+use tombi_extension::fetch_cached_remote_json;
+use tombi_extension::{HoverMetadata, HoverTextChange, append_latest_version};
+use tombi_hashmap::HashMap;
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
-    collect_feature_usage_locations, dependency_package_name, feature_key_at_accessors,
-    feature_usage_target_for_feature_key, find_cargo_toml, find_workspace_cargo_toml,
+    cargo_lock::{exact_crates_io_version, load_cached_cargo_lock},
+    collect_feature_usage_locations,
+    crates_io::CratesIoVersionDetailResponse,
+    dependency_package_name, feature_key_at_accessors, feature_usage_target_for_feature_key,
+    fetch_crates_io_crate, find_cargo_toml, find_workspace_cargo_toml,
     get_workspace_cargo_toml_path, is_any_dependency_accessor, load_cargo_toml,
     sanitize_dependency_key,
 };
-
-#[derive(Debug, Deserialize)]
-struct CratesIoCrateResponse {
-    #[serde(rename = "crate")]
-    crate_info: CratesIoCrate,
-}
-
-#[derive(Debug, Deserialize)]
-struct CratesIoCrate {
-    name: Option<String>,
-    description: Option<String>,
-    max_version: Option<String>,
-}
 
 pub async fn hover(
     text_document_uri: &tombi_uri::Uri,
@@ -34,6 +26,9 @@ pub async fn hover(
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
+    dependency_detail_hover_enabled: bool,
+    feature_dependencies_hover_enabled: bool,
+    default_features_hover_enabled: bool,
 ) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
@@ -43,25 +38,64 @@ pub async fn hover(
         return Ok(None);
     };
 
-    if let Some(metadata) = feature_key_hover_metadata(
-        document_tree,
-        accessors,
-        position,
-        &cargo_toml_path,
-        toml_version,
-    )
-    .await
+    if dependency_detail_hover_enabled
+        && let Some(metadata) = feature_key_hover_metadata(
+            document_tree,
+            accessors,
+            position,
+            &cargo_toml_path,
+            toml_version,
+        )
+        .await
     {
         return Ok(Some(metadata));
     }
 
-    let Some(dependency_accessors) = get_dependency_accessors(accessors) else {
-        return Ok(None);
-    };
+    if (feature_dependencies_hover_enabled || default_features_hover_enabled)
+        && let Some(metadata) = dependency_features_hover_metadata(
+            document_tree,
+            accessors,
+            position,
+            &cargo_toml_path,
+            toml_version,
+            offline,
+            cache_options,
+            feature_dependencies_hover_enabled,
+            default_features_hover_enabled,
+        )
+        .await?
+    {
+        return Ok(Some(metadata));
+    }
 
-    if !is_hovering_dependency_key(document_tree, dependency_accessors, position) {
+    if !dependency_detail_hover_enabled {
         return Ok(None);
     }
+
+    let (dependency_accessors, hover_target) =
+        if let Some(dependency_accessors) = get_dependency_accessors(accessors) {
+            if is_hovering_dependency_key(document_tree, dependency_accessors, position) {
+                (dependency_accessors, DependencyHoverTarget::Key)
+            } else if is_hovering_string_dependency_version(
+                document_tree,
+                dependency_accessors,
+                position,
+            ) {
+                (dependency_accessors, DependencyHoverTarget::Version)
+            } else {
+                return Ok(None);
+            }
+        } else if is_dependency_version_accessor(accessors) {
+            if !is_hovering_dependency_version(document_tree, accessors, position) {
+                return Ok(None);
+            }
+            (
+                &accessors[..accessors.len().saturating_sub(1)],
+                DependencyHoverTarget::Version,
+            )
+        } else {
+            return Ok(None);
+        };
 
     let Some(Accessor::Key(dependency_key)) = dependency_accessors.last() else {
         return Ok(None);
@@ -71,14 +105,16 @@ pub async fn hover(
         return Ok(None);
     };
 
-    if let Some(metadata) = resolve_local_dependency_metadata(
-        document_tree,
-        dependency_accessors,
-        dependency_key,
-        dependency_value,
-        &cargo_toml_path,
-        toml_version,
-    ) {
+    if hover_target == DependencyHoverTarget::Key
+        && let Some(metadata) = resolve_local_dependency_metadata(
+            document_tree,
+            dependency_accessors,
+            dependency_key,
+            dependency_value,
+            &cargo_toml_path,
+            toml_version,
+        )
+    {
         return Ok(Some(metadata));
     }
 
@@ -87,7 +123,51 @@ pub async fn hover(
     }
 
     let package_name = dependency_package_name(dependency_key, dependency_value);
-    fetch_crates_io_metadata(package_name, offline, cache_options).await
+
+    let Some(response) = fetch_crates_io_crate(package_name, offline, cache_options).await? else {
+        return Ok(None);
+    };
+
+    if response.crate_info.name.is_none()
+        && response.crate_info.description.is_none()
+        && response.crate_info.max_version.is_none()
+    {
+        return Ok(None);
+    }
+
+    match hover_target {
+        DependencyHoverTarget::Version => {
+            let Some(max_version) = response.crate_info.max_version else {
+                return Ok(None);
+            };
+
+            Ok(Some(HoverMetadata {
+                title: None,
+                description: append_latest_version(None, Some(max_version))
+                    .map(HoverTextChange::Append),
+            }))
+        }
+        DependencyHoverTarget::Key => Ok(Some(HoverMetadata {
+            title: response.crate_info.name.map(HoverTextChange::Replace),
+            description: append_latest_version(
+                response.crate_info.description,
+                response.crate_info.max_version,
+            )
+            .map(HoverTextChange::Replace),
+        })),
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DependencyHoverTarget {
+    Key,
+    Version,
+}
+
+#[derive(Debug, Default)]
+struct DependencyFeatureMetadata {
+    feature_dependencies_map: Option<HashMap<String, Vec<String>>>,
+    default_features: Option<Vec<String>>,
 }
 
 async fn feature_key_hover_metadata(
@@ -112,12 +192,12 @@ async fn feature_key_hover_metadata(
 
     Some(HoverMetadata {
         title: None,
-        description: Some(render_feature_usage_links(
+        description: Some(HoverTextChange::Replace(render_feature_usage_links(
             document_tree,
             cargo_toml_path,
             usage_locations.as_slice(),
             toml_version,
-        )),
+        ))),
     })
 }
 
@@ -189,6 +269,370 @@ fn format_feature_usage_label(project_root: &Path, cargo_toml_path: &Path, line:
     format!("{relative_path}:{line}")
 }
 
+async fn dependency_features_hover_metadata(
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[Accessor],
+    _position: tombi_text::Position,
+    cargo_toml_path: &Path,
+    toml_version: TomlVersion,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
+    feature_dependencies_hover_enabled: bool,
+    default_features_hover_enabled: bool,
+) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
+    if !feature_dependencies_hover_enabled && !default_features_hover_enabled {
+        return Ok(None);
+    }
+
+    let Some(dependency_accessors) = dependency_features_parent_accessors(accessors) else {
+        return Ok(None);
+    };
+    let Some((_, dependency_value)) = dig_accessors(document_tree, dependency_accessors) else {
+        return Ok(None);
+    };
+    let Value::Table(table) = dependency_value else {
+        return Ok(None);
+    };
+    let Some((_, _)) = table.get_key_value("features") else {
+        return Ok(None);
+    };
+
+    if dependency_table_default_features_disabled(table) {
+        return Ok(None);
+    }
+
+    let Some(Accessor::Key(dependency_key)) = dependency_accessors.last() else {
+        return Ok(None);
+    };
+
+    let feature_name = hovered_dependency_feature_name(document_tree, accessors);
+    let dependency_feature_metadata = try_get_dependency_feature_metadata(
+        document_tree,
+        dependency_key,
+        dependency_value,
+        cargo_toml_path,
+        toml_version,
+        offline,
+        cache_options,
+    )
+    .await?;
+
+    Ok(format_dependency_features_hover_tooltip(
+        if feature_dependencies_hover_enabled {
+            dependency_feature_metadata.as_ref().and_then(|metadata| {
+                feature_name
+                    .as_deref()
+                    .and_then(|name| metadata.feature_dependencies(name))
+            })
+        } else {
+            None
+        },
+        if default_features_hover_enabled {
+            dependency_feature_metadata
+                .as_ref()
+                .and_then(|metadata| metadata.default_features())
+        } else {
+            None
+        },
+    )
+    .map(|description| HoverMetadata {
+        title: None,
+        description: Some(HoverTextChange::Append(description)),
+    }))
+}
+
+fn dependency_features_parent_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
+    if matches_accessors!(accessors, ["workspace", "dependencies", _, "features"])
+        || matches_accessors!(accessors, ["dependencies", _, "features"])
+        || matches_accessors!(accessors, ["dev-dependencies", _, "features"])
+        || matches_accessors!(accessors, ["build-dependencies", _, "features"])
+        || matches_accessors!(accessors, ["target", _, "dependencies", _, "features"])
+        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _, "features"])
+        || matches_accessors!(
+            accessors,
+            ["target", _, "build-dependencies", _, "features"]
+        )
+    {
+        return Some(&accessors[..accessors.len().saturating_sub(1)]);
+    }
+
+    if matches_accessors!(accessors, ["workspace", "dependencies", _, "features", _])
+        || matches_accessors!(accessors, ["dependencies", _, "features", _])
+        || matches_accessors!(accessors, ["dev-dependencies", _, "features", _])
+        || matches_accessors!(accessors, ["build-dependencies", _, "features", _])
+        || matches_accessors!(accessors, ["target", _, "dependencies", _, "features", _])
+        || matches_accessors!(
+            accessors,
+            ["target", _, "dev-dependencies", _, "features", _]
+        )
+        || matches_accessors!(
+            accessors,
+            ["target", _, "build-dependencies", _, "features", _]
+        )
+    {
+        return Some(&accessors[..accessors.len().saturating_sub(2)]);
+    }
+
+    None
+}
+
+async fn try_get_dependency_feature_metadata(
+    document_tree: &tombi_document_tree::DocumentTree,
+    dependency_key: &str,
+    dependency_value: &Value,
+    cargo_toml_path: &Path,
+    toml_version: TomlVersion,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
+) -> Result<Option<DependencyFeatureMetadata>, tower_lsp::jsonrpc::Error> {
+    let Value::Table(table) = dependency_value else {
+        return Ok(None);
+    };
+
+    if let Some(Value::String(path)) = table.get("path") {
+        let Some((_, _, dependency_document_tree)) =
+            find_cargo_toml(cargo_toml_path, Path::new(path.value()), toml_version)
+        else {
+            return Ok(None);
+        };
+        return Ok(get_dependency_feature_metadata(&dependency_document_tree));
+    }
+
+    if table.contains_key("git") || table.contains_key("registry") {
+        return Ok(None);
+    }
+
+    if let Some(Value::String(version)) = table.get("version") {
+        return registry_dependency_feature_metadata(
+            dependency_package_name(dependency_key, dependency_value),
+            version.value(),
+            cargo_toml_path,
+            toml_version,
+            offline,
+            cache_options,
+        )
+        .await;
+    }
+
+    let Some(Value::Boolean(workspace)) = table.get("workspace") else {
+        return Ok(None);
+    };
+    if !workspace.value() {
+        return Ok(None);
+    }
+
+    let Some((workspace_cargo_toml_path, _, workspace_document_tree)) = find_workspace_cargo_toml(
+        cargo_toml_path,
+        get_workspace_cargo_toml_path(document_tree),
+        toml_version,
+    ) else {
+        return Ok(None);
+    };
+    let Some((_, workspace_dependency_value)) = dig_keys(
+        &workspace_document_tree,
+        &["workspace", "dependencies", dependency_key],
+    ) else {
+        return Ok(None);
+    };
+    let Value::Table(workspace_dependency_table) = workspace_dependency_value else {
+        return Ok(None);
+    };
+
+    if dependency_table_default_features_disabled(workspace_dependency_table) {
+        return Ok(None);
+    }
+
+    if let Some(Value::String(path)) = workspace_dependency_table.get("path") {
+        let Some((_, _, dependency_document_tree)) = find_cargo_toml(
+            &workspace_cargo_toml_path,
+            Path::new(path.value()),
+            toml_version,
+        ) else {
+            return Ok(None);
+        };
+        return Ok(get_dependency_feature_metadata(&dependency_document_tree));
+    }
+
+    if workspace_dependency_table.contains_key("git")
+        || workspace_dependency_table.contains_key("registry")
+    {
+        return Ok(None);
+    }
+
+    let Some(Value::String(version)) = workspace_dependency_table.get("version") else {
+        return Ok(None);
+    };
+
+    registry_dependency_feature_metadata(
+        dependency_package_name(dependency_key, workspace_dependency_value),
+        version.value(),
+        cargo_toml_path,
+        toml_version,
+        offline,
+        cache_options,
+    )
+    .await
+}
+
+fn hovered_dependency_feature_name(
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[Accessor],
+) -> Option<String> {
+    if !matches!(
+        accessors,
+        [.., Accessor::Key(features), Accessor::Index(_)] if features == "features"
+    ) {
+        return None;
+    }
+
+    match dig_accessors(document_tree, accessors) {
+        Some((_, Value::String(feature))) => Some(feature.value().to_string()),
+        _ => None,
+    }
+}
+
+async fn registry_dependency_feature_metadata(
+    crate_name: &str,
+    version_requirement: &str,
+    cargo_toml_path: &Path,
+    toml_version: TomlVersion,
+    offline: bool,
+    cache_options: Option<&tombi_cache::Options>,
+) -> Result<Option<DependencyFeatureMetadata>, tower_lsp::jsonrpc::Error> {
+    let Some(version) = (if let Some(version) = exact_crates_io_version(version_requirement) {
+        Some(version)
+    } else {
+        load_cached_cargo_lock(cargo_toml_path, toml_version)
+            .await
+            .and_then(|lock| lock.resolve_dependency_version(crate_name, version_requirement))
+    }) else {
+        return Ok(None);
+    };
+
+    let url = format!("https://crates.io/api/v1/crates/{crate_name}/{version}");
+    let Some(resp) =
+        fetch_cached_remote_json::<CratesIoVersionDetailResponse>(&url, offline, cache_options)
+            .await
+    else {
+        return Ok(None);
+    };
+
+    let mut features = resp.version.features;
+    let default_features = features
+        .remove("default")
+        .filter(|features| !features.is_empty());
+
+    Ok(Some(DependencyFeatureMetadata {
+        feature_dependencies_map: Some(features),
+        default_features,
+    }))
+}
+
+fn dependency_table_default_features_disabled(table: &tombi_document_tree::Table) -> bool {
+    table
+        .get("default-features")
+        .is_some_and(|value| match value {
+            Value::Boolean(boolean) => !boolean.value(),
+            _ => false,
+        })
+}
+
+fn format_default_features_tooltip(default_features: &[String]) -> String {
+    let mut default_features = default_features.to_vec();
+    default_features.sort();
+
+    format!(
+        "Default Features:\n{}",
+        default_features
+            .iter()
+            .map(|feature| format!("  - `{feature}`"))
+            .join("\n")
+    )
+}
+
+fn format_feature_dependencies_tooltip(feature_dependencies: &[String]) -> String {
+    format!(
+        "Feature Dependencies:\n{}",
+        feature_dependencies
+            .iter()
+            .map(|feature| format!("  - `{feature}`"))
+            .join("\n")
+    )
+}
+
+fn format_dependency_features_hover_tooltip(
+    feature_dependencies: Option<&[String]>,
+    default_features: Option<&[String]>,
+) -> Option<String> {
+    match (feature_dependencies, default_features) {
+        (Some(feature_dependencies), Some(default_features))
+            if !feature_dependencies.is_empty() =>
+        {
+            Some(format!(
+                "{}\n\n{}",
+                format_feature_dependencies_tooltip(feature_dependencies),
+                format_default_features_tooltip(default_features),
+            ))
+        }
+        (Some(feature_dependencies), _) if !feature_dependencies.is_empty() => {
+            Some(format_feature_dependencies_tooltip(feature_dependencies))
+        }
+        (_, Some(default_features)) if !default_features.is_empty() => {
+            Some(format_default_features_tooltip(default_features))
+        }
+        _ => None,
+    }
+}
+
+fn get_dependency_feature_metadata(
+    dependency_document_tree: &tombi_document_tree::DocumentTree,
+) -> Option<DependencyFeatureMetadata> {
+    let (_, Value::Table(features)) = dig_keys(dependency_document_tree, &["features"])? else {
+        return None;
+    };
+
+    let mut feature_dependencies_map = HashMap::default();
+    for (feature_key, value) in features.key_values() {
+        let Value::Array(feature_values) = value else {
+            continue;
+        };
+        let feature_dependencies = feature_values
+            .values()
+            .iter()
+            .filter_map(|value| match value {
+                Value::String(feature) => Some(feature.value().to_string()),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        feature_dependencies_map.insert(feature_key.value.to_string(), feature_dependencies);
+    }
+
+    let default_features = feature_dependencies_map
+        .remove("default")
+        .filter(|default_features| !default_features.is_empty());
+
+    Some(DependencyFeatureMetadata {
+        feature_dependencies_map: Some(feature_dependencies_map),
+        default_features,
+    })
+}
+
+impl DependencyFeatureMetadata {
+    fn feature_dependencies(&self, feature_name: &str) -> Option<&[String]> {
+        self.feature_dependencies_map
+            .as_ref()?
+            .get(feature_name)
+            .map(Vec::as_slice)
+            .filter(|features| !features.is_empty())
+    }
+
+    fn default_features(&self) -> Option<&[String]> {
+        self.default_features
+            .as_deref()
+            .filter(|features| !features.is_empty())
+    }
+}
+
 fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
     if is_any_dependency_accessor(accessors) {
         Some(accessors)
@@ -197,16 +641,21 @@ fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
     }
 }
 
+fn is_dependency_version_accessor(accessors: &[Accessor]) -> bool {
+    matches!(accessors.last(), Some(Accessor::Key(key)) if key == "version")
+        && is_any_dependency_accessor(&accessors[..accessors.len().saturating_sub(1)])
+}
+
 fn is_hovering_dependency_key(
     document_tree: &tombi_document_tree::DocumentTree,
     dependency_accessors: &[Accessor],
     position: tombi_text::Position,
 ) -> bool {
-    let dependency_keys = dependency_accessors
+    let Some(dependency_keys) = dependency_accessors
         .iter()
         .map(Accessor::as_key)
-        .collect::<Option<Vec<_>>>();
-    let Some(dependency_keys) = dependency_keys else {
+        .collect::<Option<Vec<_>>>()
+    else {
         return false;
     };
     let Some((dependency_key, _)) = dig_keys(document_tree, &dependency_keys) else {
@@ -214,6 +663,36 @@ fn is_hovering_dependency_key(
     };
 
     dependency_key.range().contains(position)
+}
+
+fn is_hovering_dependency_version(
+    document_tree: &tombi_document_tree::DocumentTree,
+    version_accessors: &[Accessor],
+    position: tombi_text::Position,
+) -> bool {
+    let Some(version_keys) = version_accessors
+        .iter()
+        .map(Accessor::as_key)
+        .collect::<Option<Vec<_>>>()
+    else {
+        return false;
+    };
+    let Some((version_key, version_value)) = dig_keys(document_tree, &version_keys) else {
+        return false;
+    };
+
+    version_key.range().contains(position) || version_value.range().contains(position)
+}
+
+fn is_hovering_string_dependency_version(
+    document_tree: &tombi_document_tree::DocumentTree,
+    dependency_accessors: &[Accessor],
+    position: tombi_text::Position,
+) -> bool {
+    matches!(
+        dig_accessors(document_tree, dependency_accessors),
+        Some((_, Value::String(version))) if version.range().contains(position)
+    )
 }
 
 fn resolve_local_dependency_metadata(
@@ -328,37 +807,9 @@ fn load_package_metadata(
     }
 
     Some(HoverMetadata {
-        title: package_name,
-        description,
+        title: package_name.map(HoverTextChange::Replace),
+        description: description.map(HoverTextChange::Replace),
     })
-}
-
-async fn fetch_crates_io_metadata(
-    package_name: &str,
-    offline: bool,
-    cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
-    let url = format!("https://crates.io/api/v1/crates/{package_name}");
-    let Some(response) =
-        fetch_cached_remote_json::<CratesIoCrateResponse>(&url, offline, cache_options).await
-    else {
-        return Ok(None);
-    };
-
-    if response.crate_info.name.is_none()
-        && response.crate_info.description.is_none()
-        && response.crate_info.max_version.is_none()
-    {
-        return Ok(None);
-    }
-
-    Ok(Some(HoverMetadata {
-        title: response.crate_info.name,
-        description: append_latest_version(
-            response.crate_info.description,
-            response.crate_info.max_version,
-        ),
-    }))
 }
 
 #[cfg(test)]
@@ -367,6 +818,7 @@ mod tests {
     use tombi_document_tree::TryIntoDocumentTree;
 
     use super::*;
+    use crate::crates_io::CratesIoCrateResponse;
 
     #[test]
     fn parses_crates_io_metadata_response() {
@@ -390,22 +842,30 @@ mod tests {
     }
 
     #[test]
-    fn only_matches_exact_dependency_paths() {
+    fn dependency_accessors_match_only_exact_dependency_paths() {
         let dependency_accessors = [
             Accessor::Key("dependencies".into()),
             Accessor::Key("serde".into()),
         ];
-        let nested_accessors = [
+        let version_accessors = [
             Accessor::Key("dependencies".into()),
             Accessor::Key("serde".into()),
             Accessor::Key("version".into()),
+        ];
+        let feature_accessors = [
+            Accessor::Key("dependencies".into()),
+            Accessor::Key("serde".into()),
+            Accessor::Key("features".into()),
         ];
 
         assert_eq!(
             get_dependency_accessors(&dependency_accessors),
             Some(&dependency_accessors[..])
         );
-        assert_eq!(get_dependency_accessors(&nested_accessors), None);
+        assert_eq!(get_dependency_accessors(&version_accessors), None);
+        assert_eq!(get_dependency_accessors(&feature_accessors), None);
+        assert!(is_dependency_version_accessor(&version_accessors));
+        assert!(!is_dependency_version_accessor(&feature_accessors));
     }
 
     #[test]
@@ -433,5 +893,82 @@ mod tests {
             &dependency_accessors,
             value_position,
         ));
+    }
+
+    #[test]
+    fn hovering_dependency_version_value_counts_as_hover_target() {
+        let source = "[dependencies]\nserde = { version = \"1.0\" }\n";
+        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node()).unwrap();
+        let document_tree = root.try_into_document_tree(TomlVersion::V1_0_0).unwrap();
+        let version_accessors = [
+            Accessor::Key("dependencies".into()),
+            Accessor::Key("serde".into()),
+            Accessor::Key("version".into()),
+        ];
+
+        let version_value_position = tombi_text::Position::default()
+            + tombi_text::RelativePosition::of("[dependencies]\nserde = { version = \"1");
+
+        assert!(is_hovering_dependency_version(
+            &document_tree,
+            &version_accessors,
+            version_value_position,
+        ));
+    }
+
+    #[tokio::test]
+    async fn dependency_features_hover_metadata_skips_disabled_default_features() {
+        let source = "[dependencies]\nserde = { version = \"1.0\", default-features = false, features = [\"derive\"] }\n";
+        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node()).unwrap();
+        let document_tree = root.try_into_document_tree(TomlVersion::V1_0_0).unwrap();
+        let accessors = [
+            Accessor::Key("dependencies".into()),
+            Accessor::Key("serde".into()),
+            Accessor::Key("features".into()),
+        ];
+        let position = tombi_text::Position::default()
+            + tombi_text::RelativePosition::of(
+                "[dependencies]\nserde = { version = \"1.0\", default-features = false, fe",
+            );
+
+        assert_eq!(
+            dependency_features_hover_metadata(
+                &document_tree,
+                &accessors,
+                position,
+                Path::new("Cargo.toml"),
+                TomlVersion::V1_0_0,
+                true,
+                None,
+                true,
+                true,
+            )
+            .await
+            .unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn format_default_features_tooltip_renders_sorted_feature_list() {
+        assert_eq!(
+            format_default_features_tooltip(&["bbb".to_string(), "aaa".to_string()]),
+            "Default Features:\n  - `aaa`\n  - `bbb`"
+        );
+    }
+
+    #[test]
+    fn format_dependency_features_hover_tooltip_places_feature_dependencies_before_default_features()
+     {
+        assert_eq!(
+            format_dependency_features_hover_tooltip(
+                Some(&["serde_derive".to_string()]),
+                Some(&["std".to_string()]),
+            ),
+            Some(
+                "Feature Dependencies:\n  - `serde_derive`\n\nDefault Features:\n  - `std`"
+                    .to_string()
+            )
+        );
     }
 }

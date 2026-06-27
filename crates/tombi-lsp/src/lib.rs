@@ -13,6 +13,8 @@ mod references;
 mod remote_file;
 mod schema_resolver;
 mod semantic_tokens;
+mod workspace_config;
+mod workspace_diagnostic;
 
 pub mod handler {
     mod associate_schema;
@@ -29,6 +31,7 @@ pub mod handler {
     mod document_symbol;
     mod folding_range;
     mod formatting;
+    mod get_built_in_schema;
     mod get_status;
     mod get_toml_version;
     mod goto_declaration;
@@ -61,6 +64,7 @@ pub mod handler {
     pub use document_symbol::handle_document_symbol;
     pub use folding_range::handle_folding_range;
     pub use formatting::handle_formatting;
+    pub use get_built_in_schema::{GetBuiltInSchemaParams, handle_get_built_in_schema};
     pub use get_status::{GetStatusResponse, handle_get_status};
     pub use get_toml_version::{
         GetTomlVersionResponse, TomlVersionSource, handle_get_toml_version,
@@ -79,7 +83,7 @@ pub mod handler {
     pub use shutdown::handle_shutdown;
     pub use update_config::handle_update_config;
     pub use update_schema::handle_update_schema;
-    pub use workspace_diagnostic::push_workspace_diagnostics;
+    pub use workspace_diagnostic::handle_workspace_diagnostic;
 }
 
 pub use backend::Backend;
@@ -113,6 +117,7 @@ pub async fn serve(_args: impl Into<Args>, offline: bool, no_cache: bool) {
         )
     })
     .custom_method("tombi/getStatus", Backend::get_status)
+    .custom_method("tombi/getBuiltInSchema", Backend::get_built_in_schema)
     .custom_method("tombi/getTomlVersion", Backend::get_toml_version)
     .custom_method("tombi/listSchemas", Backend::list_schemas)
     .custom_method("tombi/updateSchema", Backend::update_schema)

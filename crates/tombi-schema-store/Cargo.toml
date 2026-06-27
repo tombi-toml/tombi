@@ -16,7 +16,6 @@ log.workspace = true
 reqwest = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
-surf = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio.workspace = true
 tombi-accessor.workspace = true
@@ -44,5 +43,7 @@ document-tree = ["dep:tombi-document-tree"]
 gloo-net06 = ["dep:gloo-net"]
 native = ["reqwest01", "tombi-future/native"]
 reqwest01 = ["dep:reqwest"]
-surf2 = ["dep:surf"]
 wasm = ["gloo-net06", "tombi-future/wasm"]
+
+[lints]
+workspace = true

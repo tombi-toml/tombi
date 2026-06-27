@@ -51,7 +51,7 @@ pub async fn goto_declaration(
             toml_version,
         )?
     } else {
-        Vec::with_capacity(0)
+        Vec::new()
     };
 
     if locations.is_empty() {
@@ -68,10 +68,10 @@ fn goto_declaration_for_dependency_package(
     toml_version: TomlVersion,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     let Some((_, Value::String(dep_str))) = dig_accessors(document_tree, accessors) else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
     let Some(requirement) = parse_requirement(dep_str.value()) else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
     let package_name = requirement.name.as_ref();
 
@@ -101,10 +101,10 @@ fn dependency_source_declaration_locations(
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     let Some((_, Value::Table(sources))) = dig_keys(document_tree, &["tool", "uv", "sources"])
     else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
     let Some((source_key, Value::Table(source_table))) = sources.get_key_value(package_name) else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     if let Some((_, Value::Boolean(is_workspace))) = source_table.get_key_value("workspace")
@@ -127,7 +127,7 @@ fn dependency_source_declaration_locations(
     }
 
     let Ok(uri) = tombi_uri::Uri::from_file_path(pyproject_toml_path) else {
-        return Ok(Vec::with_capacity(0));
+        return Ok(Vec::new());
     };
 
     Ok(vec![tombi_extension::Location {

@@ -5,10 +5,10 @@ use tower_lsp::lsp_types::{
     DiagnosticServerCapabilities, DocumentLinkOptions, FileOperationFilter, FileOperationPattern,
     FileOperationPatternKind, FileOperationRegistrationOptions, FoldingRangeProviderCapability,
     HoverProviderCapability, InitializeParams, InitializeResult, InlayHintOptions,
-    InlayHintServerCapabilities, MessageType, OneOf, SemanticTokensFullOptions,
-    SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities, ServerInfo,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-    TextDocumentSyncSaveOptions, TypeDefinitionProviderCapability, WorkDoneProgressOptions,
+    InlayHintServerCapabilities, OneOf, SemanticTokensFullOptions, SemanticTokensLegend,
+    SemanticTokensOptions, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
+    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
+    TypeDefinitionProviderCapability, WorkDoneProgressOptions,
     WorkspaceFileOperationsServerCapabilities, WorkspaceFoldersServerCapabilities,
     WorkspaceServerCapabilities,
 };
@@ -37,20 +37,14 @@ pub async fn handle_initialize(
         log::info!("{name} version: {version}",);
     }
 
-    log::info!("Loading config...");
-    if let Err(error) = backend.config_manager.load().await {
-        let error_message = error.to_string();
-
-        log::error!("{error_message}");
-
-        backend
-            .client
-            .show_message(MessageType::ERROR, error_message)
-            .await;
-    }
-
     let mut backend_capabilities = backend.capabilities.write().await;
     backend_capabilities.encoding_kind = negotiated_wide_encoding(&client_capabilities);
+    backend_capabilities.workspace_diagnostic_refresh_support = client_capabilities
+        .workspace
+        .as_ref()
+        .and_then(|workspace| workspace.diagnostic.as_ref())
+        .and_then(|diagnostic| diagnostic.refresh_support)
+        .unwrap_or_default();
     if let Some(text_document_capabilities) = client_capabilities.text_document.as_ref()
         && let Some(diagnostic_capabilities) = text_document_capabilities.diagnostic.as_ref()
         && diagnostic_capabilities.dynamic_registration == Some(true)
@@ -178,7 +172,7 @@ pub fn server_capabilities(
         diagnostic_provider: if backend_capabilities.diagnostic_mode == DiagnosticMode::Pull {
             Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
                 inter_file_dependencies: false,
-                workspace_diagnostics: false,
+                workspace_diagnostics: true,
                 ..Default::default()
             }))
         } else {

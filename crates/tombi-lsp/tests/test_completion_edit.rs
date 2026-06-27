@@ -6,6 +6,68 @@ use tombi_test_lib::{
 
 mod completion_edit {
     use super::*;
+    use unicode_segmentation::UnicodeSegmentation;
+
+    fn line_column_to_byte_offset(line: &str, column: usize) -> usize {
+        line.graphemes(true).take(column).map(str::len).sum()
+    }
+
+    fn apply_text_edit(text: &str, text_edit: &tombi_extension::TextEdit) -> String {
+        let mut new_text = String::new();
+        let mut cursor = text.split('\n').enumerate();
+        let start_line = text_edit.range.start.line as usize;
+        let end_line = text_edit.range.end.line as usize;
+
+        while let Some((index, line)) = cursor.next() {
+            if index != 0 {
+                new_text.push('\n');
+            }
+
+            if start_line == index {
+                let start_column =
+                    line_column_to_byte_offset(line, text_edit.range.start.column as usize);
+                new_text.push_str(&line[..start_column]);
+                new_text.push_str(&text_edit.new_text);
+                if index == end_line {
+                    let end_column =
+                        line_column_to_byte_offset(line, text_edit.range.end.column as usize);
+                    new_text.push_str(&line[end_column..]);
+                    continue;
+                }
+                for (index, line) in cursor.by_ref() {
+                    if index == end_line {
+                        let end_column =
+                            line_column_to_byte_offset(line, text_edit.range.end.column as usize);
+                        new_text.push_str(&line[end_column..]);
+                        break;
+                    }
+                }
+            } else {
+                new_text.push_str(line);
+            }
+        }
+
+        new_text
+    }
+
+    #[test]
+    fn apply_text_edit_uses_grapheme_columns_for_unicode() {
+        let text = r#"lsp = { "日本語" = "値", comp }"#;
+        let start = text.find("comp").unwrap();
+        let end = start + "comp".len();
+        let text_edit = tombi_extension::TextEdit {
+            range: tombi_text::Range::new(
+                tombi_text::Position::default() + tombi_text::RelativePosition::of(&text[..start]),
+                tombi_text::Position::default() + tombi_text::RelativePosition::of(&text[..end]),
+            ),
+            new_text: "completion".to_string(),
+        };
+
+        pretty_assertions::assert_eq!(
+            apply_text_edit(text, &text_edit),
+            r#"lsp = { "日本語" = "値", completion }"#
+        );
+    }
 
     mod tombi_schema {
         use tombi_test_lib::tombi_schema_path;
@@ -209,6 +271,23 @@ mod completion_edit {
                 r#"
                 [dependencies]
                 serde = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_dependencies_serde_table_bare_key(
+                r#"
+                [dependencies.serde]
+                work█
+                "#,
+                Select("workspace = true"),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies.serde]
+                workspace = true
                 "#
             );
         }
@@ -1205,8 +1284,6 @@ mod completion_edit {
                     LspService,
                 };
                 use tombi_text::IntoLsp;
-                use unicode_segmentation::UnicodeSegmentation;
-
                 tombi_test_lib::init_log();
 
                 #[allow(unused)]
@@ -1412,8 +1489,7 @@ mod completion_edit {
                     .into());
                 };
 
-                let mut new_text = "".to_string();
-                match completion_edit.text_edit {
+                let mut new_text = match completion_edit.text_edit {
                     CompletionTextEdit::Edit(text_edit) => {
                         let pre_cursor_text = {
                             let start_line = text_edit.range.start.line as usize;
@@ -1477,71 +1553,21 @@ mod completion_edit {
                             );
                         }
 
-                        let mut cursor = toml_text.split('\n').enumerate();
-                        let start_line = text_edit.range.start.line as usize;
-                        let end_line = text_edit.range.end.line as usize;
-
-                        while let Some((index, line)) = cursor.next() {
-                            if index != 0 {
-                                new_text.push('\n');
-                            }
-
-                            if start_line == index {
-                                new_text.push_str(&line[..text_edit.range.start.column as usize]);
-                                new_text.push_str(&text_edit.new_text);
-                                if index == end_line {
-                                    new_text.push_str(&line[text_edit.range.end.column as usize..]);
-                                    continue;
-                                }
-                                while let Some((index, line)) = cursor.next() {
-                                    if index == end_line {
-                                        new_text.push_str(&line[text_edit.range.end.column as usize..]);
-                                        break;
-                                    }
-                                }
-                            } else {
-                                new_text.push_str(line);
-                            }
-
-                        }
+                        super::apply_text_edit(&toml_text, &text_edit)
                     }
-                    _ => {
-                        return Err("failed to get the text edit of the selected completion item".into());
+                    CompletionTextEdit::InsertAndReplace(_) => {
+                        return Err(
+                            "InsertAndReplace completion edits are not currently produced by the \
+                             completion pipeline under test. Add a focused fixture before \
+                             extending this harness."
+                                .into(),
+                        );
                     }
-                }
+                };
 
                 if let Some(text_edits) = completion_edit.additional_text_edits {
                     for text_edit in text_edits {
-                        let mut additional_new_text = "".to_string();
-                        let mut cursor = new_text.split('\n').enumerate();
-                        let start_line = text_edit.range.start.line as usize;
-                        let end_line = text_edit.range.end.line as usize;
-
-                        while let Some((index, line)) = cursor.next() {
-                            if index != 0 {
-                                additional_new_text.push('\n');
-                            }
-
-                            if start_line == index {
-                                additional_new_text.push_str(&line[..text_edit.range.start.column as usize]);
-                                additional_new_text.push_str(&text_edit.new_text);
-                                if index == end_line {
-                                    additional_new_text.push_str(&line[text_edit.range.end.column as usize..]);
-                                    continue;
-                                }
-                                while let Some((index, line)) = cursor.next() {
-                                    if index == end_line {
-                                        additional_new_text.push_str(&line[text_edit.range.end.column as usize..]);
-                                        break;
-                                    }
-                                }
-                                continue
-                            } else {
-                                additional_new_text.push_str(line);
-                            }
-
-                        }
-                        new_text = additional_new_text;
+                        new_text = super::apply_text_edit(&new_text, &text_edit);
                     }
                 }
 

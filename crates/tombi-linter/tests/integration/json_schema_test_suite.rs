@@ -591,7 +591,8 @@ mod draft7_dependencies {
         );
 
         suite_test!(
-            #[tokio::test] async fn matches_both(
+            #[tokio::test]
+            async fn matches_both(
                 r#"
                 foo = 1
                 bar = 2
@@ -1740,7 +1741,8 @@ mod draft2020_12_dependent_schemas {
         );
 
         suite_test!(
-            #[tokio::test] async fn matches_both(
+            #[tokio::test]
+            async fn matches_both(
                 r#"
                 foo = 1
                 bar = 2

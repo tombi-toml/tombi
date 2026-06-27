@@ -1,0 +1,49 @@
+name: 🚀 Feature Request
+description: Suggest an improvement or new feature for Tombi.
+title: "🚀 Feature Request: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement.
+
+        If you want Tombi to support a third-party project's TOML file by adding a JSON Schema, please do not open a Tombi issue. Ask that project to generate or maintain its JSON Schema, then submit it to [SchemaStore](https://github.com/SchemaStore/schemastore/issues/new/choose).
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight
+      options:
+        - label: I have searched existing Issues and Discussions for related requests.
+          required: true
+        - label: This is not only a request to add a JSON Schema for a third-party project. For that case, I will ask the target project and SchemaStore instead.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem would this feature solve?
+      placeholder: Describe the workflow, limitation, or use case.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What behavior or API would you like Tombi to provide?
+      placeholder: Describe the expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: What alternatives or workarounds have you considered?
+    validations:
+      required: false
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add links, examples, screenshots, logs, or related issues.
+    validations:
+      required: false

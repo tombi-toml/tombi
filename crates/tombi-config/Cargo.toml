@@ -29,3 +29,6 @@ jsonschema = [
   "tombi-x-keyword/jsonschema",
 ]
 serde = ["dep:serde", "tombi-severity-level/serde"]
+
+[lints]
+workspace = true

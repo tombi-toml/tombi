@@ -49,10 +49,14 @@ impl WalkDir {
         let results = Arc::new(Mutex::new(Vec::new()));
 
         let mut builder = WalkBuilder::new(root_path);
+        let respect_ignore_files = self.options.respect_ignore_files.value();
         builder
             .hidden(false)
             .follow_links(false)
-            .ignore(false)
+            .parents(respect_ignore_files)
+            .ignore(respect_ignore_files)
+            .git_ignore(respect_ignore_files)
+            .git_exclude(respect_ignore_files)
             .git_global(false)
             .threads(rayon::current_num_threads());
 
@@ -114,6 +118,19 @@ impl WalkDir {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    fn write_file(path: &Path, contents: &str) {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).unwrap();
+        }
+        fs::write(path, contents).unwrap();
+    }
+
+    fn make_git_root(root: &Path) {
+        fs::create_dir_all(root.join(".git")).unwrap();
+    }
 
     // Convenience functions using the new API
     fn find_rust_files<P: AsRef<Path>>(root: P) -> Result<Vec<PathBuf>, crate::Error> {
@@ -122,6 +139,7 @@ mod tests {
             FilesOptions {
                 include: Some(vec!["*.rs".into()]),
                 exclude: None,
+                respect_ignore_files: true.into(),
             },
         );
         // Note: This is a blocking version, async version would need tokio runtime
@@ -190,6 +208,7 @@ mod tests {
             FilesOptions {
                 include: Some(vec!["*.toml".into()]),
                 exclude: None,
+                respect_ignore_files: true.into(),
             },
         );
         // Similar blocking implementation as find_rust_files
@@ -266,6 +285,7 @@ mod tests {
             FilesOptions {
                 include: Some(vec!["*.rs".into(), "*.toml".into()]),
                 exclude: None,
+                respect_ignore_files: true.into(),
             },
         );
         assert_eq!(
@@ -282,6 +302,7 @@ mod tests {
             FilesOptions {
                 include: None,
                 exclude: Some(vec!["target/**".into(), "node_modules/**".into()]),
+                respect_ignore_files: true.into(),
             },
         );
         assert_eq!(
@@ -298,6 +319,7 @@ mod tests {
             FilesOptions {
                 include: Some(vec!["*.rs".into()]),
                 exclude: Some(vec!["target/**".into()]),
+                respect_ignore_files: true.into(),
             },
         );
         assert_eq!(walker.options.include, Some(vec!["*.rs".into()]));
@@ -312,6 +334,7 @@ mod tests {
             FilesOptions {
                 include: Some(vec!["invalid[pattern".into()]),
                 exclude: None,
+                respect_ignore_files: true.into(),
             },
         );
         // Invalid patterns will cause panic at runtime, not compile time
@@ -326,6 +349,7 @@ mod tests {
             FilesOptions {
                 include: Some(vec!["*.rs".into()]),
                 exclude: None,
+                respect_ignore_files: true.into(),
             },
         );
         let result = walker.walk().await;
@@ -340,6 +364,7 @@ mod tests {
             FilesOptions {
                 include: Some(vec!["*.toml".into()]),
                 exclude: Some(vec!["target/**".into()]),
+                respect_ignore_files: true.into(),
             },
         );
         let result = walker.walk().await;
@@ -357,6 +382,120 @@ mod tests {
     #[test]
     fn test_error_handling() {
         let result = find_rust_files("/nonexistent/path");
-        assert!(matches!(result, Err(crate::Error::RootPathNotFound { .. })));
+        std::assert_matches!(result, Err(crate::Error::RootPathNotFound { .. }));
+    }
+
+    #[tokio::test]
+    async fn test_walkdir_respects_gitignore_when_enabled() {
+        let tempdir = tempdir().unwrap();
+        let root = tempdir.path();
+        make_git_root(root);
+        write_file(&root.join(".gitignore"), "ignored.toml\n");
+        write_file(&root.join("included.toml"), "key = 1\n");
+        write_file(&root.join("ignored.toml"), "key = 2\n");
+
+        let walker = WalkDir::new_with_options(
+            root,
+            FilesOptions {
+                include: Some(vec!["**/*.toml".into()]),
+                exclude: None,
+                respect_ignore_files: true.into(),
+            },
+        );
+
+        let result = walker.walk().await.unwrap();
+        assert!(result.iter().any(|path| path.ends_with("included.toml")));
+        assert!(!result.iter().any(|path| path.ends_with("ignored.toml")));
+    }
+
+    #[tokio::test]
+    async fn test_walkdir_ignores_gitignore_when_disabled() {
+        let tempdir = tempdir().unwrap();
+        let root = tempdir.path();
+        make_git_root(root);
+        write_file(&root.join(".gitignore"), "ignored.toml\n");
+        write_file(&root.join("included.toml"), "key = 1\n");
+        write_file(&root.join("ignored.toml"), "key = 2\n");
+
+        let walker = WalkDir::new_with_options(
+            root,
+            FilesOptions {
+                include: Some(vec!["**/*.toml".into()]),
+                exclude: None,
+                respect_ignore_files: false.into(),
+            },
+        );
+
+        let result = walker.walk().await.unwrap();
+        assert!(result.iter().any(|path| path.ends_with("included.toml")));
+        assert!(result.iter().any(|path| path.ends_with("ignored.toml")));
+    }
+
+    #[tokio::test]
+    async fn test_walkdir_respects_git_exclude_when_enabled() {
+        let tempdir = tempdir().unwrap();
+        let root = tempdir.path();
+        make_git_root(root);
+        write_file(&root.join(".git/info/exclude"), "ignored.toml\n");
+        write_file(&root.join("included.toml"), "key = 1\n");
+        write_file(&root.join("ignored.toml"), "key = 2\n");
+
+        let walker = WalkDir::new_with_options(
+            root,
+            FilesOptions {
+                include: Some(vec!["**/*.toml".into()]),
+                exclude: None,
+                respect_ignore_files: true.into(),
+            },
+        );
+
+        let result = walker.walk().await.unwrap();
+        assert!(result.iter().any(|path| path.ends_with("included.toml")));
+        assert!(!result.iter().any(|path| path.ends_with("ignored.toml")));
+    }
+
+    #[tokio::test]
+    async fn test_walkdir_ignores_git_exclude_when_disabled() {
+        let tempdir = tempdir().unwrap();
+        let root = tempdir.path();
+        make_git_root(root);
+        write_file(&root.join(".git/info/exclude"), "ignored.toml\n");
+        write_file(&root.join("included.toml"), "key = 1\n");
+        write_file(&root.join("ignored.toml"), "key = 2\n");
+
+        let walker = WalkDir::new_with_options(
+            root,
+            FilesOptions {
+                include: Some(vec!["**/*.toml".into()]),
+                exclude: None,
+                respect_ignore_files: false.into(),
+            },
+        );
+
+        let result = walker.walk().await.unwrap();
+        assert!(result.iter().any(|path| path.ends_with("included.toml")));
+        assert!(result.iter().any(|path| path.ends_with("ignored.toml")));
+    }
+
+    #[tokio::test]
+    async fn test_walkdir_respects_dot_ignore_when_enabled() {
+        let tempdir = tempdir().unwrap();
+        let root = tempdir.path();
+        write_file(&root.join(".ignore"), "ignored.toml\n");
+        write_file(&root.join("included.toml"), "key = 1\n");
+        write_file(&root.join("ignored.toml"), "key = 2\n");
+
+        let walker = WalkDir::new_with_options(
+            root,
+            FilesOptions {
+                include: Some(vec!["**/*.toml".into()]),
+                exclude: None,
+                respect_ignore_files: true.into(),
+            },
+        );
+
+        let result = walker.walk().await.unwrap();
+        assert!(result.iter().any(|path| path.ends_with("included.toml")));
+        assert!(!result.iter().any(|path| path.ends_with("ignored.toml")));
     }
 }

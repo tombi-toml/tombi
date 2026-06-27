@@ -130,7 +130,7 @@ pub async fn handle_completion(
                 toml_version,
                 comment_context.as_ref(),
             ) else {
-                return Ok(Some(Vec::with_capacity(0)));
+                return Ok(Some(Vec::new()));
             };
 
             (keys, completion_hint)
@@ -142,7 +142,7 @@ pub async fn handle_completion(
                 toml_version,
                 comment_context.as_ref(),
             ) else {
-                return Ok(Some(Vec::with_capacity(0)));
+                return Ok(Some(Vec::new()));
             };
 
             let schema_context = tombi_schema_store::SchemaContext::from_source_schema(
@@ -172,7 +172,7 @@ pub async fn handle_completion(
                 toml_version,
                 comment_context.as_ref(),
             ) else {
-                return Ok(Some(Vec::with_capacity(0)));
+                return Ok(Some(Vec::new()));
             };
 
             (keys, completion_hint)

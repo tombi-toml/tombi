@@ -191,10 +191,8 @@ impl Cursor<'_> {
 
                     return Ok(Token::new(SyntaxKind::STRING, self.pop_span_range()));
                 }
-                '\u{0000}'..='\u{001F}' => {
-                    if first_error.is_none() {
-                        first_error = Some(InvalidString);
-                    }
+                '\u{0000}'..='\u{001F}' if first_error.is_none() => {
+                    first_error = Some(InvalidString);
                 }
                 '\\' => match self.bump() {
                     Some(escape_char) => match escape_char {

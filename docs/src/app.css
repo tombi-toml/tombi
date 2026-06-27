@@ -3,7 +3,7 @@
 
 :root {
   --docs-fixed-header-height: 80px;
-  --docs-sticky-table-offset: 20px;
+  --docs-sticky-table-offset: 0px;
 }
 
 html {

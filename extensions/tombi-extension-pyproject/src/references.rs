@@ -3,10 +3,10 @@ use tombi_document_tree::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
-    collect_workspace_project_dependency_definitions, extract_exclude_patterns,
-    extract_member_patterns, find_pyproject_toml_paths, find_workspace_pyproject_toml,
-    get_workspace_member_dependency_definitions, is_dependency_name_accessors,
-    is_project_name_accessors, load_pyproject_toml_document_tree, parse_requirement,
+    extract_exclude_patterns, extract_member_patterns, find_pyproject_toml_paths,
+    find_workspace_pyproject_toml, get_workspace_member_dependency_definitions,
+    is_dependency_name_accessors, is_project_name_accessors, load_pyproject_toml_document_tree,
+    parse_requirement,
 };
 
 pub async fn references(
@@ -51,14 +51,6 @@ pub async fn references(
         let package_name = requirement.name.as_ref();
 
         let mut locations = Vec::new();
-        if requirement.version_or_url.is_none() {
-            locations.extend(collect_workspace_project_dependency_definitions(
-                package_name,
-                &pyproject_toml_path,
-                toml_version,
-            ));
-        }
-
         if tombi_document_tree::dig_keys(document_tree, &["tool", "uv", "workspace"]).is_some() {
             locations.extend(get_workspace_member_dependency_definitions(
                 document_tree,

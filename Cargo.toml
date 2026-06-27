@@ -53,6 +53,7 @@ log = "0.4.22"
 nu-ansi-term = "0.50.1"
 pep508_rs = "0.9"
 pretty_assertions = "1.4.1"
+proc-macro-crate = "3.4.0"
 proc-macro2 = "1.0.95"
 quote = "1.0.40"
 rayon = "1.10.0"
@@ -62,16 +63,15 @@ reqwest = { version = "0.12.15", default-features = false, features = [
 ] }
 rstest = { version = "0.25.0" }
 rustc-hash = { version = "2.1.1" }
-schemars = { version = "1.0.2", features = ["preserve_order", "url2"] }
-semver = { version = "1.0.26" }
-serde = { version = "1.0.219", features = [
-  "derive",
-] }
+schemars = { version = "1.2.1", features = ["preserve_order", "url2"] }
+semver = "1.0.17"
+serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
 serde_tombi = { path = "rust/serde_tombi", default-features = false }
+serde_tombi_macros = { path = "rust/serde_tombi_macros" }
 similar = { version = "2.7.0" }
-surf = "2.3.2"
-tar = { version = "0.4.44" }
+syn = { version = "2.0.110", features = ["extra-traits", "full"] }
+tar = { version = "0.4.46" }
 tempfile = { version = "3.15.0" }
 textwrap = { version = "0.16.2" }
 thiserror = { version = "2.0.12" }
@@ -132,13 +132,18 @@ xshell.version = "0.2.7"
 zed_extension_api = "0.7.0"
 zip = { version = "2.3.0" }
 
+[workspace.lints.clippy]
+collapsible_match = "warn"
+explicit_counter_loop = "warn"
+needless_for_each = "warn"
+ptr_cast_constness = "warn"
+
 [workspace.lints.rust]
 aarch64_softfloat_neon = "warn"
 deprecated = "warn"
 
 [workspace.metadata.cargo-shear]
 ignored = [
-  "semver",
   "wasi",
   "wasm-bindgen",
   "wasm-bindgen-futures",

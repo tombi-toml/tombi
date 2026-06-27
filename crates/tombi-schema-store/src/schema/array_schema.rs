@@ -53,14 +53,12 @@ impl ArraySchema {
     ) -> Self {
         let mut anchor_collector = anchor_collector;
         let mut dynamic_anchor_collector = dynamic_anchor_collector;
-        let uses_prefix_items_semantics =
-            dialect.is_some_and(|dialect| crate::supports_keyword(dialect, "prefixItems"));
+        let uses_prefix_items_semantics = crate::supports_keyword(dialect, "prefixItems");
         let has_prefix_items = object.get("prefixItems").is_some()
             || object
                 .get("items")
                 .is_some_and(|value| value.as_array().is_some());
-        let supports_unevaluated =
-            dialect.is_some_and(|dialect| crate::supports_keyword(dialect, "unevaluatedItems"));
+        let supports_unevaluated = crate::supports_keyword(dialect, "unevaluatedItems");
         let (one_of, any_of, all_of, not) = crate::adjacent_applicators(
             object,
             string_formats,

@@ -3,13 +3,13 @@ use crate::{
     dependency_parent_accessors, feature_table_string_at_accessors, find_workspace_cargo_toml,
     get_workspace_cargo_toml_path, goto_definition_for_workspace_cargo_toml,
     goto_workspace_managed_dependency_locations, is_dependency_accessor, is_feature_key_accessor,
-    is_optional_dependency_accessor, is_package_name_accessor, is_workspace_definition_accessor,
-    is_workspace_dependency_accessor, is_workspace_flag_accessor,
+    is_optional_dependency, is_optional_dependency_accessor, is_package_name_accessor,
+    is_workspace_definition_accessor, is_workspace_dependency_accessor, is_workspace_flag_accessor,
     is_workspace_managed_dependency_accessor, resolve_dependency_feature_string,
     resolve_feature_table_string,
 };
 use tombi_config::TomlVersion;
-use tombi_document_tree::{Value, dig_keys};
+use tombi_document_tree::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn goto_definition(
@@ -107,7 +107,7 @@ fn goto_definition_for_package_name(
 
     let Some((_, Value::String(package_name))) = dig_keys(document_tree, &["package", "name"])
     else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     vec![tombi_extension::Location {
@@ -124,11 +124,11 @@ fn goto_definition_for_feature_key(
     debug_assert!(matches_accessors!(accessors, ["features", _]));
 
     let Some(feature_name) = accessors.get(1).and_then(Accessor::as_key) else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     let Some((key, _)) = dig_keys(document_tree, &["features", feature_name]) else {
-        return Vec::with_capacity(0);
+        return Vec::new();
     };
 
     vec![tombi_extension::Location {
@@ -142,22 +142,22 @@ fn goto_definition_for_optional_dependency(
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
 ) -> Vec<tombi_extension::Location> {
-    let dependency_accessors = dependency_parent_accessors(accessors);
-    let Some(dependency_names) = dependency_accessors
-        .iter()
-        .map(Accessor::as_key)
-        .collect::<Option<Vec<_>>>()
-    else {
-        return Vec::with_capacity(0);
-    };
+    if !is_optional_dependency(document_tree, accessors) {
+        return Vec::new();
+    }
 
-    let Some((dependency_key, _)) = dig_keys(document_tree, &dependency_names) else {
-        return Vec::with_capacity(0);
+    let Some((_, Value::Table(table))) =
+        dig_accessors(document_tree, dependency_parent_accessors(accessors))
+    else {
+        return Vec::new();
+    };
+    let Some((optional_key, Value::Boolean(optional))) = table.get_key_value("optional") else {
+        return Vec::new();
     };
 
     vec![tombi_extension::Location {
         uri: text_document_uri.clone(),
-        range: dependency_key.unquoted_range(),
+        range: optional_key.range() + optional.range(),
     }]
 }
 

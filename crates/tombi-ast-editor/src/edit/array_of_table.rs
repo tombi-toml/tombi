@@ -23,7 +23,7 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
         async move {
             let Some(header_accessors) = self.get_header_accessors(schema_context.toml_version)
             else {
-                return Vec::with_capacity(0);
+                return Vec::new();
             };
 
             let comment_directive = get_comment_directive_content::<
