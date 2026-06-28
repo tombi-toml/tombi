@@ -114,7 +114,7 @@ pub async fn handle_formatting(
             if document_text.as_ref() != formatted {
                 let edits =
                     compute_text_edits(document_text.as_ref(), &formatted, line_index.as_ref());
-                log::debug!("{:?}", edits);
+                log::debug!("edits: {:?}", edits);
                 if let Ok(mut document_sources) = backend.document_sources.try_write()
                     && let Some(document_source) = document_sources.get_mut(&text_document_uri)
                     && document_source.text() == document_text.as_ref()
