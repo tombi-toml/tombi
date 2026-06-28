@@ -20,10 +20,7 @@ export class Server {
           ]).stdout.setEncoding("utf-8"),
         );
 
-        const prefix = LANGUAGE_SERVER_NAME;
-        version = version
-          .slice(version.startsWith(prefix) ? prefix.length : 0)
-          .trim();
+        version = parseTombiVersionOutput(version);
       } catch {
         version = "<unknown>";
       }
@@ -35,4 +32,12 @@ export class Server {
 
     return this.version;
   }
+}
+
+export function parseTombiVersionOutput(output: string): string {
+  const version = output
+    .trim()
+    .match(/^tombi\s+v?([0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?)/)?.[1];
+
+  return version ?? output.trim();
 }
