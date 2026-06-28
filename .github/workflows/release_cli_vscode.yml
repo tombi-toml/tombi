@@ -204,10 +204,10 @@ jobs:
           set -e
           if gh release view "${{ github.ref_name }}" --json body -q ".body" | grep -q .; then
             echo "Release notes exist for tag ${{ github.ref_name }}"
-            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "No release notes found for tag ${{ github.ref_name }}"
-            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
   release-notes:
@@ -240,7 +240,7 @@ jobs:
         id: find_cli_assets
         shell: bash
         run: |
-          echo "ASSETS=$(find tombi-cli-artifacts tombi-vscode-artifacts -type f | tr '\n' ' ')" >> $GITHUB_ENV
+          echo "ASSETS=$(find tombi-cli-artifacts tombi-vscode-artifacts -type f | tr '\n' ' ')" >> "$GITHUB_ENV"
 
       - name: Check ASSETS
         run: |
@@ -441,7 +441,99 @@ jobs:
           repository: setup-tombi
           tag: ${{ steps.stable-version.outputs.stable_tag }}
 
-  publish-winget:
+  validate-winget-manifest:
+    if: "!startsWith(github.ref, 'refs/tags/v')"
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Resolve winget validation release
+        id: winget-release
+        shell: pwsh
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if ($env:REF_NAME -match '^v(\d+\.\d+\.\d+)$') {
+            "release_tag=$env:REF_NAME" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            "stable_version=$($Matches[1])" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          } else {
+            $headers = @{
+              "Accept" = "application/vnd.github+json"
+              "Authorization" = "Bearer $env:GITHUB_TOKEN"
+              "X-GitHub-Api-Version" = "2022-11-28"
+            }
+            $latestRelease = Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/tombi-toml/tombi/releases/latest"
+            if ($latestRelease.tag_name -notmatch '^v(\d+\.\d+\.\d+)$') {
+              throw "Latest release tag is not a stable version: $($latestRelease.tag_name)"
+            }
+
+            Write-Host "Using latest stable release $($latestRelease.tag_name) for winget dry-run validation."
+            "release_tag=$($latestRelease.tag_name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            "stable_version=$($Matches[1])" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
+
+      - name: Generate and validate winget manifest
+        shell: pwsh
+        env:
+          REF_NAME: ${{ steps.winget-release.outputs.release_tag }}
+          VERSION: ${{ steps.winget-release.outputs.stable_version }}
+          WINGETCREATE_VERSION: 1.12.8.0
+        run: |
+          $x64InstallerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-x86_64-pc-windows-msvc.zip"
+          $arm64InstallerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-aarch64-pc-windows-msvc.zip"
+          $wingetCreateUrl = "https://github.com/microsoft/winget-create/releases/download/v$env:WINGETCREATE_VERSION/wingetcreate.exe"
+          $wingetCreateChecksumUrl = "$wingetCreateUrl.txt"
+
+          Invoke-WebRequest $wingetCreateUrl -OutFile wingetcreate.exe
+          Invoke-WebRequest $wingetCreateChecksumUrl -OutFile wingetcreate.exe.sha256.txt
+
+          $expectedHash = (Get-Content wingetcreate.exe.sha256.txt -Raw).Trim().ToUpperInvariant()
+          $actualHash = (Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash.ToUpperInvariant()
+          if ($actualHash -ne $expectedHash) {
+            throw "wingetcreate.exe checksum mismatch. Expected $expectedHash but got $actualHash."
+          }
+
+          $manifestDir = Join-Path $PWD "winget-manifests"
+          .\wingetcreate.exe update tombi-toml.tombi --urls "$x64InstallerUrl|x64" "$arm64InstallerUrl|arm64" -v $env:VERSION --out $manifestDir
+
+          $installerManifest = Get-ChildItem -Path $manifestDir -Recurse -Filter "*.installer.yaml" | Select-Object -First 1
+          if (-not $installerManifest) {
+            throw "winget installer manifest was not generated."
+          }
+
+          $content = Get-Content $installerManifest.FullName -Raw
+          if ($content -notmatch "(?m)^InstallationMetadata:") {
+            $installationMetadata = @(
+              "InstallationMetadata:"
+              "  DefaultInstallLocation: '%LOCALAPPDATA%\Microsoft\WinGet\Packages\tombi-toml.tombi__DefaultSource'"
+              "  Files:"
+              "  - RelativeFilePath: tombi.exe"
+              "    FileType: launch"
+              "    InvocationParameter: --version"
+            ) -join "`r`n"
+            $content = $content -replace "(?m)^ManifestType:", "$installationMetadata`r`nManifestType:"
+            Set-Content -Path $installerManifest.FullName -Value $content -NoNewline
+          }
+
+          $content = Get-Content $installerManifest.FullName -Raw
+          if ($content -notmatch "(?m)^\s+InvocationParameter: --version$") {
+            throw "winget installer manifest does not contain InvocationParameter: --version."
+          }
+
+          if (Get-Command winget -ErrorAction SilentlyContinue) {
+            winget validate --manifest $manifestDir
+          } else {
+            Write-Warning "winget command is not available; skipped local winget validate."
+          }
+
+      - name: Upload winget manifest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: winget-manifests
+          path: winget-manifests
+
+  validate-winget-release-manifest:
     needs: [release-notes]
     if: startsWith(github.ref, 'refs/tags/v') && (github.event_name != 'workflow_dispatch' || inputs.skip_winget != true)
     runs-on: windows-latest
@@ -461,20 +553,14 @@ jobs:
             "stable_version=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           }
 
-      - name: Submit winget manifest update
+      - name: Generate and validate winget manifest
         if: steps.stable-version.outputs.stable_version != ''
         shell: pwsh
         env:
-          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
           REF_NAME: ${{ github.ref_name }}
           VERSION: ${{ steps.stable-version.outputs.stable_version }}
           WINGETCREATE_VERSION: 1.12.8.0
         run: |
-          if (-not $env:WINGET_TOKEN) {
-            Write-Host "WINGET_TOKEN is not configured; skipping winget manifest submission."
-            exit 0
-          }
-
           $x64InstallerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-x86_64-pc-windows-msvc.zip"
           $arm64InstallerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-aarch64-pc-windows-msvc.zip"
           $wingetCreateUrl = "https://github.com/microsoft/winget-create/releases/download/v$env:WINGETCREATE_VERSION/wingetcreate.exe"
@@ -489,4 +575,81 @@ jobs:
             throw "wingetcreate.exe checksum mismatch. Expected $expectedHash but got $actualHash."
           }
 
-          .\wingetcreate.exe update tombi-toml.tombi --urls "$x64InstallerUrl|x64" "$arm64InstallerUrl|arm64" -v $env:VERSION -t $env:WINGET_TOKEN --submit
+          $manifestDir = Join-Path $PWD "winget-manifests"
+          .\wingetcreate.exe update tombi-toml.tombi --urls "$x64InstallerUrl|x64" "$arm64InstallerUrl|arm64" -v $env:VERSION --out $manifestDir
+
+          $installerManifest = Get-ChildItem -Path $manifestDir -Recurse -Filter "*.installer.yaml" | Select-Object -First 1
+          if (-not $installerManifest) {
+            throw "winget installer manifest was not generated."
+          }
+
+          $content = Get-Content $installerManifest.FullName -Raw
+          if ($content -notmatch "(?m)^InstallationMetadata:") {
+            $installationMetadata = @(
+              "InstallationMetadata:"
+              "  DefaultInstallLocation: '%LOCALAPPDATA%\Microsoft\WinGet\Packages\tombi-toml.tombi__DefaultSource'"
+              "  Files:"
+              "  - RelativeFilePath: tombi.exe"
+              "    FileType: launch"
+              "    InvocationParameter: --version"
+            ) -join "`r`n"
+            $content = $content -replace "(?m)^ManifestType:", "$installationMetadata`r`nManifestType:"
+            Set-Content -Path $installerManifest.FullName -Value $content -NoNewline
+          }
+
+          $content = Get-Content $installerManifest.FullName -Raw
+          if ($content -notmatch "(?m)^\s+InvocationParameter: --version$") {
+            throw "winget installer manifest does not contain InvocationParameter: --version."
+          }
+
+          if (Get-Command winget -ErrorAction SilentlyContinue) {
+            winget validate --manifest $manifestDir
+          } else {
+            Write-Warning "winget command is not available; skipped local winget validate."
+          }
+
+      - name: Upload winget manifest
+        if: steps.stable-version.outputs.stable_version != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: winget-manifests
+          path: winget-manifests
+
+  publish-winget:
+    needs: [validate-winget-release-manifest]
+    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name != 'workflow_dispatch' || inputs.skip_winget != true)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download winget manifest
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: winget-manifests
+          path: winget-manifests
+
+      - name: Submit winget manifest update
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          WINGETCREATE_VERSION: 1.12.8.0
+        run: |
+          if (-not $env:WINGET_TOKEN) {
+            Write-Host "WINGET_TOKEN is not configured; skipping winget manifest submission."
+            exit 0
+          }
+
+          $wingetCreateUrl = "https://github.com/microsoft/winget-create/releases/download/v$env:WINGETCREATE_VERSION/wingetcreate.exe"
+          $wingetCreateChecksumUrl = "$wingetCreateUrl.txt"
+
+          Invoke-WebRequest $wingetCreateUrl -OutFile wingetcreate.exe
+          Invoke-WebRequest $wingetCreateChecksumUrl -OutFile wingetcreate.exe.sha256.txt
+
+          $expectedHash = (Get-Content wingetcreate.exe.sha256.txt -Raw).Trim().ToUpperInvariant()
+          $actualHash = (Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash.ToUpperInvariant()
+          if ($actualHash -ne $expectedHash) {
+            throw "wingetcreate.exe checksum mismatch. Expected $expectedHash but got $actualHash."
+          }
+
+          $manifestDir = Join-Path $PWD "winget-manifests"
+          .\wingetcreate.exe submit $manifestDir -t $env:WINGET_TOKEN
