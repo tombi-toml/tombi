@@ -97,7 +97,7 @@ where
                     {
                         Ok(_) => true,
                         Err(tombi_validator::Error { diagnostics, .. }) => {
-                            diagnostics.iter().all(is_allowed_branch_diagnostic)
+                            diagnostics.iter().all(Diagnostic::is_warning)
                         }
                     };
 
@@ -176,10 +176,6 @@ where
         Some(HoverContent::Value(hover_value_content))
     }
     .boxed()
-}
-
-fn is_allowed_branch_diagnostic(diagnostic: &Diagnostic) -> bool {
-    diagnostic.is_warning() || matches!(diagnostic.code(), "enum" | "const")
 }
 
 impl GetHoverContent for tombi_schema_store::AnyOfSchema {
