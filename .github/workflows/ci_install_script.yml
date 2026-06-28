@@ -87,12 +87,19 @@ jobs:
 
           version_prefix="${version%%[-+]*}"
           IFS=. read -r major minor patch <<<"$version_prefix"
+          fallback_target=""
           case "$(uname -s)" in
             Linux)
               case "$(uname -m)" in
-                aarch64) target="aarch64-unknown-linux-musl" ;;
+                aarch64)
+                  target="aarch64-unknown-linux-gnu"
+                  fallback_target="aarch64-unknown-linux-musl"
+                  ;;
                 armv7l) target="arm-unknown-linux-gnueabihf" ;;
-                *) target="x86_64-unknown-linux-musl" ;;
+                *)
+                  target="x86_64-unknown-linux-gnu"
+                  fallback_target="x86_64-unknown-linux-musl"
+                  ;;
               esac
               if [ "$major" -eq 0 ] && { [ "$minor" -lt 9 ] || { [ "$minor" -eq 9 ] && [ "$patch" -lt 23 ]; }; }; then
                 extension=".gz"
@@ -126,13 +133,21 @@ jobs:
               ;;
           esac
 
-          asset_name="tombi-cli-${version}-${target}${extension}"
           release_json="$(curl -fsSL "https://api.github.com/repos/tombi-toml/tombi/releases/tags/v${version}")"
-          url="$(printf '%s' "$release_json" | jq -r --arg name "$asset_name" '.assets[] | select(.name == $name) | .browser_download_url' | head -n 1)"
-          checksum="$(printf '%s' "$release_json" | jq -r --arg name "$asset_name" '.assets[] | select(.name == $name) | .digest' | head -n 1)"
+          resolved_target=""
+          for candidate_target in "$target" ${fallback_target:+"$fallback_target"}; do
+            candidate_asset_name="tombi-cli-${version}-${candidate_target}${extension}"
+            url="$(printf '%s' "$release_json" | jq -r --arg name "$candidate_asset_name" '.assets[] | select(.name == $name) | .browser_download_url' | head -n 1)"
+            checksum="$(printf '%s' "$release_json" | jq -r --arg name "$candidate_asset_name" '.assets[] | select(.name == $name) | .digest' | head -n 1)"
+            if [ -n "$url" ] && [ "$url" != "null" ] && [ -n "$checksum" ] && [ "$checksum" != "null" ]; then
+              resolved_target="$candidate_target"
+              asset_name="$candidate_asset_name"
+              break
+            fi
+          done
 
           if [ -z "$url" ] || [ "$url" = "null" ]; then
-            echo "Failed to resolve release asset URL for ${asset_name}" >&2
+            echo "Failed to resolve release asset URL for tombi-cli-${version}-${target}${extension}" >&2
             exit 1
           fi
           if [ -z "$checksum" ] || [ "$checksum" = "null" ]; then
@@ -149,7 +164,7 @@ jobs:
           metadata_file="${RUNNER_TEMP}/install-metadata.env"
           {
             printf 'version=%s\n' "$version"
-            printf 'target=%s\n' "$target"
+            printf 'target=%s\n' "$resolved_target"
             printf 'extension=%s\n' "$extension"
             printf 'url=%s\n' "$url"
             printf 'checksum=%s\n' "$checksum"
