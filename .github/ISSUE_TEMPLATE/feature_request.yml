@@ -1,6 +1,6 @@
-name: 🚀 Feature Request
+name: 🦅 Feature Request
 description: Suggest an improvement or new feature for Tombi.
-title: "🚀 Feature Request: "
+title: "🦅 Feature Request: "
 body:
   - type: markdown
     attributes:
