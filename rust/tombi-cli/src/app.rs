@@ -10,7 +10,7 @@ use clap::{
 #[command(
     name="tombi",
     about = app_about(),
-    version = env!("__TOMBI_VERSION").trim_start_matches('v'),
+    version = app_version(),
     styles=app_styles(),
     disable_help_subcommand(true),
 )]
@@ -84,6 +84,14 @@ fn app_about() -> String {
 
     format!(
         "{title_style}                          {title} {title_style:#}{desc_style}: TOML Toolkit                          {desc_style:#}"
+    )
+}
+
+fn app_version() -> String {
+    format!(
+        "{} ({})",
+        env!("__TOMBI_VERSION").trim_start_matches('v'),
+        env!("__TOMBI_TARGET_TRIPLE"),
     )
 }
 

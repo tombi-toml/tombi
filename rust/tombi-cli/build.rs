@@ -1,6 +1,7 @@
 use std::process::Command;
 
 fn main() {
+    let target = std::env::var("TARGET").expect("TARGET should be set by Cargo");
     let re = tombi_regex::Regex::new(r"^v\d+\.\d+\.\d+$").unwrap();
 
     // Try to get version from git tag
@@ -23,5 +24,6 @@ fn main() {
         .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
 
     println!("cargo:rustc-env=__TOMBI_VERSION={git_version}");
+    println!("cargo:rustc-env=__TOMBI_TARGET_TRIPLE={target}");
     println!("cargo:rerun-if-changed=.git/HEAD");
 }

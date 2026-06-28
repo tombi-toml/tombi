@@ -402,7 +402,10 @@ main() {
 	fi
 
 	if "${EXE_NAME}" --version >/dev/null 2>&1; then
-		INSTALLED_VERSION=$("${EXE_NAME}" --version 2>&1 | head -n 1 | sed -E 's/tombi //; s/^v//' || echo "unknown")
+		INSTALLED_VERSION=$("${EXE_NAME}" --version 2>&1 | head -n 1 | sed -nE 's/^tombi v?([0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?).*/\1/p')
+		if [ -z "$INSTALLED_VERSION" ]; then
+			INSTALLED_VERSION="unknown"
+		fi
 		if [ "$INSTALLED_VERSION" != "$VERSION" ]; then
 			print_error "Installed version mismatch: expected ${VERSION}, but got ${INSTALLED_VERSION}"
 			exit 1
