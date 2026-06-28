@@ -87,17 +87,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-24.04
-            target: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-musl
             vscode_target: linux-x64
           - os: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
-            vscode_target: linux-arm64
-          - os: ubuntu-24.04
-            target: x86_64-unknown-linux-musl
-            vscode_target: linux-x64-musl
-          - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-musl
-            vscode_target: linux-arm64-musl
+            vscode_target: linux-arm64
           - os: ubuntu-24.04
             target: arm-unknown-linux-gnueabihf
             vscode_target: linux-armhf
@@ -137,28 +131,13 @@ jobs:
           node-version-file: ".node-version"
           cache: "pnpm"
 
-      - name: Install arm64 toolchain
-        if: matrix.vscode_target == 'linux-arm64' || matrix.vscode_target == 'linux-arm64-musl'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
+      - name: Update apt repositories
+        if: matrix.target == 'arm-unknown-linux-gnueabihf'
+        run: sudo apt-get update
 
       - name: Install ARM target toolchain
         if: matrix.target == 'arm-unknown-linux-gnueabihf'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-arm-linux-gnueabihf
-
-      - name: Install musl toolchain
-        if: matrix.vscode_target == 'linux-x64-musl' || matrix.vscode_target == 'linux-arm64-musl'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools
-
-      - name: Set jemalloc page size for linux-arm64
-        if: matrix.vscode_target == 'linux-arm64'
-        run: |
-          echo "JEMALLOC_SYS_WITH_LG_PAGE=16" >> $GITHUB_ENV
+        run: sudo apt-get install gcc-arm-linux-gnueabihf
 
       - run: pnpm install && pnpm run build
         working-directory: ./editors/vscode
