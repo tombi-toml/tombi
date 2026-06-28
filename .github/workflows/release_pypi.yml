@@ -18,6 +18,8 @@ permissions:
 
 env:
   TOMBI_VERSION: ""
+  CARGO_PROFILE_RELEASE_LTO: "fat"
+  CARGO_PROFILE_RELEASE_STRIP: "symbols"
 
 jobs:
   detect-changes:
