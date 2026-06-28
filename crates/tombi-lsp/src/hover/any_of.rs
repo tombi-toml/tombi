@@ -55,15 +55,6 @@ where
         .await?;
 
         for resolved_schema in &resolved_schemas {
-            if let Some(values) = resolved_schema
-                .value_schema
-                .as_ref()
-                .get_enum(schema_uri, definitions, schema_context)
-                .await
-            {
-                enum_values.extend(values);
-            }
-
             value_type_set.insert(resolved_schema.value_schema.value_type().await);
         }
 
@@ -100,17 +91,31 @@ where
                         hover_value_content.value_type = value_type.clone();
                     }
 
-                    match value
+                    let is_applicable_branch = match value
                         .validate(accessors, Some(resolved_schema), schema_context)
                         .await
                     {
-                        Ok(_) => valid_hover_value_contents.push(hover_value_content.clone()),
-                        Err(tombi_validator::Error { diagnostics, .. })
-                            if diagnostics.iter().all(Diagnostic::is_warning) =>
-                        {
-                            valid_hover_value_contents.push(hover_value_content.clone());
+                        Ok(_) => true,
+                        Err(tombi_validator::Error { diagnostics, .. }) => {
+                            diagnostics.iter().all(Diagnostic::is_warning)
                         }
-                        _ => {}
+                    };
+
+                    if is_applicable_branch {
+                        valid_hover_value_contents.push(hover_value_content.clone());
+
+                        if let Some(values) = resolved_schema
+                            .value_schema
+                            .as_ref()
+                            .get_enum(
+                                &resolved_schema.schema_uri,
+                                &resolved_schema.definitions,
+                                schema_context,
+                            )
+                            .await
+                        {
+                            enum_values.extend(values);
+                        }
                     }
 
                     any_hover_value_contents.push(hover_value_content);

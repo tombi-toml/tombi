@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "format": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FeatureToggle"
+        },
+        {
+          "$ref": "#/definitions/FormatOptions"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "FeatureToggle": {
+      "type": "string",
+      "enum": ["on", "off"]
+    },
+    "FormatOptions": {
+      "type": "object",
+      "properties": {
+        "indent-style": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/IndentStyle"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "IndentStyle": {
+      "oneOf": [
+        {
+          "type": "string",
+          "const": "space"
+        },
+        {
+          "type": "string",
+          "const": "tab"
+        }
+      ]
+    }
+  }
+}
