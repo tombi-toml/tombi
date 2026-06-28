@@ -1,0 +1,63 @@
+name: Generate winget manifest
+description: Generate the tombi winget manifest with wingetcreate, inject InstallationMetadata, and validate it.
+
+inputs:
+  release-tag:
+    description: GitHub release tag that hosts the installer assets (e.g. v1.2.3).
+    required: true
+  version:
+    description: Stable version number without the leading v (e.g. 1.2.3).
+    required: true
+  wingetcreate-path:
+    description: Path to a verified wingetcreate.exe (see the setup-wingetcreate action).
+    required: true
+  output-dir:
+    description: Directory the generated manifest is written into.
+    required: false
+    default: winget-manifests
+
+runs:
+  using: composite
+  steps:
+    - shell: pwsh
+      env:
+        REF_NAME: ${{ inputs.release-tag }}
+        VERSION: ${{ inputs.version }}
+        WINGETCREATE_PATH: ${{ inputs.wingetcreate-path }}
+        OUTPUT_DIR: ${{ inputs.output-dir }}
+      run: |
+        $x64InstallerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-x86_64-pc-windows-msvc.zip"
+        $arm64InstallerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-aarch64-pc-windows-msvc.zip"
+
+        $manifestDir = Join-Path $PWD $env:OUTPUT_DIR
+        & $env:WINGETCREATE_PATH update tombi-toml.tombi --urls "$x64InstallerUrl|x64" "$arm64InstallerUrl|arm64" -v $env:VERSION --out $manifestDir
+
+        $installerManifest = Get-ChildItem -Path $manifestDir -Recurse -Filter "*.installer.yaml" | Select-Object -First 1
+        if (-not $installerManifest) {
+          throw "winget installer manifest was not generated."
+        }
+
+        # wingetcreate does not emit InstallationMetadata, so inject it manually.
+        # The -notmatch guard keeps this idempotent if a future version starts emitting it.
+        $content = Get-Content $installerManifest.FullName -Raw
+        if ($content -notmatch "(?m)^InstallationMetadata:") {
+          $installationMetadata = @(
+            "InstallationMetadata:"
+            "  DefaultInstallLocation: '%LOCALAPPDATA%\Microsoft\WinGet\Packages\tombi-toml.tombi__DefaultSource'"
+            "  Files:"
+            "  - RelativeFilePath: tombi.exe"
+            "    FileType: launch"
+            "    InvocationParameter: --version"
+          ) -join "`r`n"
+          $content = $content -replace "(?m)^ManifestType:", "$installationMetadata`r`nManifestType:"
+          Set-Content -Path $installerManifest.FullName -Value $content -NoNewline
+        }
+
+        if ($content -notmatch "(?m)^\s+InvocationParameter: --version$") {
+          throw "winget installer manifest does not contain InvocationParameter: --version."
+        }
+
+        if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+          throw "winget command is not available; cannot validate manifest."
+        }
+        winget validate --manifest $manifestDir

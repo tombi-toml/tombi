@@ -1,0 +1,36 @@
+name: Setup wingetcreate
+description: Download wingetcreate.exe and verify it against its published SHA256 checksum.
+
+inputs:
+  version:
+    description: wingetcreate release version without the leading v.
+    required: false
+    default: 1.12.8.0
+
+outputs:
+  path:
+    description: Absolute path to the verified wingetcreate.exe.
+    value: ${{ steps.download.outputs.path }}
+
+runs:
+  using: composite
+  steps:
+    - id: download
+      shell: pwsh
+      env:
+        WINGETCREATE_VERSION: ${{ inputs.version }}
+      run: |
+        $wingetCreateUrl = "https://github.com/microsoft/winget-create/releases/download/v$env:WINGETCREATE_VERSION/wingetcreate.exe"
+        $wingetCreateChecksumUrl = "$wingetCreateUrl.txt"
+        $wingetCreatePath = Join-Path $PWD "wingetcreate.exe"
+
+        Invoke-WebRequest $wingetCreateUrl -OutFile $wingetCreatePath
+        Invoke-WebRequest $wingetCreateChecksumUrl -OutFile "$wingetCreatePath.sha256.txt"
+
+        $expectedHash = (Get-Content "$wingetCreatePath.sha256.txt" -Raw).Trim().ToUpperInvariant()
+        $actualHash = (Get-FileHash $wingetCreatePath -Algorithm SHA256).Hash.ToUpperInvariant()
+        if ($actualHash -ne $expectedHash) {
+          throw "wingetcreate.exe checksum mismatch. Expected $expectedHash but got $actualHash."
+        }
+
+        "path=$wingetCreatePath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
