@@ -234,15 +234,13 @@ detect_os_arch() {
 		OS="unknown-linux"
 		if [ "${ARCH}" = "aarch64" ]; then
 			ARCH="aarch64"
-			TARGET="${ARCH}-${OS}-gnu"
-			FALLBACK_TARGET="${ARCH}-${OS}-musl"
+			TARGET="${ARCH}-${OS}-musl"
 		elif [ "${ARCH}" = "armv7l" ]; then
 			ARCH="arm"
 			TARGET="${ARCH}-${OS}-gnueabihf"
 		else
 			ARCH="x86_64"
-			TARGET="${ARCH}-${OS}-gnu"
-			FALLBACK_TARGET="${ARCH}-${OS}-musl"
+			TARGET="${ARCH}-${OS}-musl"
 		fi
 		;;
 	Darwin)
@@ -306,27 +304,16 @@ create_install_dir() {
 # Download and install tombi
 download_and_install() {
 	ARTIFACT_EXTENSION=$(artifact_extension)
+	DOWNLOAD_URL="${RELEASE_BASE_URL}/v${VERSION}/tombi-cli-${VERSION}-${TARGET}${ARTIFACT_EXTENSION}"
 	TEMP_FILE="${TEMP_DIR}/tombi-${VERSION}${ARTIFACT_EXTENSION}"
 
-	DOWNLOAD_TARGET="${TARGET}"
-	for CANDIDATE_TARGET in "${TARGET}" ${FALLBACK_TARGET:+"${FALLBACK_TARGET}"}; do
-		DOWNLOAD_URL="${RELEASE_BASE_URL}/v${VERSION}/tombi-cli-${VERSION}-${CANDIDATE_TARGET}${ARTIFACT_EXTENSION}"
-		print_step "Download from ${DOWNLOAD_URL}"
-		print_step "Downloading tombi ${VERSION} (${CANDIDATE_TARGET})..."
+	print_step "Download from ${DOWNLOAD_URL}"
+	print_step "Downloading tombi ${VERSION} (${TARGET})..."
 
-		if download_to_file "${DOWNLOAD_URL}" "${TEMP_FILE}" && [ -s "${TEMP_FILE}" ]; then
-			DOWNLOAD_TARGET="${CANDIDATE_TARGET}"
-			break
-		fi
-
-		rm -f "${TEMP_FILE}"
-		if [ -n "${FALLBACK_TARGET:-}" ] && [ "${CANDIDATE_TARGET}" = "${TARGET}" ]; then
-			print_step "Primary artifact not found for ${TARGET}; trying ${FALLBACK_TARGET}."
-		else
-			print_error "Download failed. Please check the URL: ${DOWNLOAD_URL}"
-			exit 1
-		fi
-	done
+	if ! download_to_file "${DOWNLOAD_URL}" "${TEMP_FILE}" || [ ! -s "${TEMP_FILE}" ]; then
+		print_error "Download failed. Please check the URL: ${DOWNLOAD_URL}"
+		exit 1
+	fi
 
 	if [ -n "${NORMALIZED_CHECKSUM:-}" ]; then
 		verify_archive_checksum "${TEMP_FILE}" "${NORMALIZED_CHECKSUM}"
@@ -338,7 +325,7 @@ download_and_install() {
 		EXTRACTED_FILE="${TEMP_DIR}/${EXE_NAME}"
 	elif [ "${ARTIFACT_EXTENSION}" = ".tar.gz" ]; then
 		tar -xzf "${TEMP_FILE}" -C "${TEMP_DIR}"
-		EXTRACTED_FILE="${TEMP_DIR}/tombi-cli-${VERSION}-${DOWNLOAD_TARGET}/${EXE_NAME}"
+		EXTRACTED_FILE="${TEMP_DIR}/tombi-cli-${VERSION}-${TARGET}/${EXE_NAME}"
 	elif [ "${ARTIFACT_EXTENSION}" = ".gz" ]; then
 		gzip -d "${TEMP_FILE}" -f
 		EXTRACTED_FILE="${TEMP_FILE%.gz}"
