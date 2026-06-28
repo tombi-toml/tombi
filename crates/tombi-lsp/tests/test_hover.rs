@@ -29,6 +29,11 @@ fn array_values_order_one_of_schema_path() -> PathBuf {
         .join("crates/tombi-lsp/tests/fixtures/array-values-order-one-of.schema.json")
 }
 
+fn any_of_table_property_enum_schema_path() -> PathBuf {
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/any-of-table-property-enum.schema.json")
+}
+
 fn exact_index_hover_test_schema_path() -> PathBuf {
     tombi_test_lib::project_root_path().join("schemas/exact-index-hover-test.schema.json")
 }
@@ -909,6 +914,40 @@ mod hover_keys_value {
                 "Keys": "repos[0].hooks[0].id",
                 "Value": "String",
                 "Default": "\"builtin-hook\""
+            });
+        );
+    }
+
+    mod any_of_schema {
+        use super::*;
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn any_of_hover_uses_enum_from_matching_table_property_branch(
+                r#"
+                [format]
+                indent-style = "█space"
+                "#,
+                SchemaPath(any_of_table_property_enum_schema_path()),
+            ) -> Ok({
+                "Keys": "format.indent-style",
+                "Value": "String?",
+                "Enum": ["\"space\"", "\"tab\""]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn any_of_hover_keeps_matching_table_property_enum_while_editing_invalid_value(
+                r#"
+                [format]
+                indent-style = "█spac"
+                "#,
+                SchemaPath(any_of_table_property_enum_schema_path()),
+            ) -> Ok({
+                "Keys": "format.indent-style",
+                "Value": "String?",
+                "Enum": ["\"space\"", "\"tab\""]
             });
         );
     }
