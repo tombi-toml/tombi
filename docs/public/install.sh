@@ -346,7 +346,7 @@ download_and_install() {
 }
 
 # Version
-LATEST_STABLE_VERSION="1.1.5"
+LATEST_STABLE_VERSION="1.1.6"
 if [ -n "${__SPECIFIED_VERSION}" ]; then
 	VERSION="${__SPECIFIED_VERSION}"
 	print_step "Using specified version: ${VERSION}"
