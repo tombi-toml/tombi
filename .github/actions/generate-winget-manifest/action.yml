@@ -57,8 +57,7 @@ runs:
           throw "winget installer manifest does not contain InvocationParameter: --version."
         }
 
-        if (Get-Command winget -ErrorAction SilentlyContinue) {
-          winget validate --manifest $manifestDir
-        } else {
-          Write-Warning "winget command is not available; skipped local winget validate."
+        if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+          throw "winget command is not available; cannot validate manifest."
         }
+        winget validate --manifest $manifestDir
