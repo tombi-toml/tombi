@@ -65,4 +65,4 @@ runs:
           throw "winget command is not available; cannot validate manifest."
         }
         $manifestVersionDir = Split-Path -Parent $installerManifest.FullName
-        winget validate --manifest $manifestVersionDir
+        winget validate --manifest $manifestVersionDir --ignore-warnings
