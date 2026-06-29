@@ -191,6 +191,42 @@ impl DocumentSchema {
         self.id.as_ref().unwrap_or(&self.schema_uri)
     }
 
+    /// Resolve a root-level `$ref` once at load time so the document exposes a usable
+    /// value schema (e.g. schemas whose root is only `{ "$ref": "#/definitions/..." }`).
+    ///
+    /// No-op when the root is already resolved (or absent). The borrow of `definitions`
+    /// / `base_uri` ends before `value_schema` is reassigned, so nothing is cloned.
+    pub(crate) async fn resolve_root_schema(
+        &mut self,
+        schema_store: &SchemaStore,
+    ) -> Result<(), crate::Error> {
+        if !self.value_schema.as_ref().is_some_and(Referable::is_ref) {
+            return Ok(());
+        }
+
+        let mut root_schema = self.value_schema.take().expect("checked above");
+        let resolved_value = root_schema
+            .resolve(
+                Cow::Borrowed(self.base_uri()),
+                Cow::Borrowed(&self.definitions),
+                schema_store,
+            )
+            .await?
+            .map(|current_schema| current_schema.value_schema);
+
+        self.value_schema = Some(match resolved_value {
+            // `resolve` rewrites `root_schema` in place for the definition / external
+            // reference paths; only the JSON-pointer fallback leaves it as a `Ref`.
+            Some(value) if !root_schema.is_resolved() => Referable::Resolved {
+                schema_uri: None,
+                value,
+            },
+            _ => root_schema,
+        });
+
+        Ok(())
+    }
+
     pub fn as_current_schema(&self) -> Option<CurrentSchema<'_>> {
         self.value_schema().map(|value_schema| CurrentSchema {
             value_schema: value_schema.clone(),
