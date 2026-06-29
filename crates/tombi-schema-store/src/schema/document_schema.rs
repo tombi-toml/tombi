@@ -19,6 +19,7 @@ pub struct DocumentSchema {
     pub(crate) toml_version: Option<TomlVersion>,
     pub(crate) string_formats: Option<Vec<StringFormat>>,
     pub(crate) format_assertion: bool,
+    pub(crate) root_schema: Option<Referable<ValueSchema>>,
     pub value_schema: Option<Arc<ValueSchema>>,
     pub definitions: SchemaDefinitions,
     pub anchors: SchemaAnchors,
@@ -29,18 +30,25 @@ impl DocumentSchema {
     pub fn new(node: tombi_json::ValueNode, schema_uri: SchemaUri) -> Self {
         match node {
             tombi_json::ValueNode::Object(object) => Self::new_from_object(object, schema_uri),
-            tombi_json::ValueNode::Bool(bool) => Self {
-                id: None,
-                schema_uri,
-                dialect: None,
-                toml_version: None,
-                string_formats: None,
-                format_assertion: true,
-                value_schema: Some(Arc::new(super::bool_value_schema(bool.value, bool.range))),
-                definitions: SchemaDefinitions::new(Default::default()),
-                anchors: SchemaAnchors::new(Default::default()),
-                dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
-            },
+            tombi_json::ValueNode::Bool(bool) => {
+                let value_schema = Arc::new(super::bool_value_schema(bool.value, bool.range));
+                Self {
+                    id: None,
+                    schema_uri,
+                    dialect: None,
+                    toml_version: None,
+                    string_formats: None,
+                    format_assertion: true,
+                    root_schema: Some(Referable::Resolved {
+                        schema_uri: None,
+                        value: value_schema.clone(),
+                    }),
+                    value_schema: Some(value_schema),
+                    definitions: SchemaDefinitions::new(Default::default()),
+                    anchors: SchemaAnchors::new(Default::default()),
+                    dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
+                }
+            }
             _ => Self {
                 id: None,
                 schema_uri,
@@ -48,6 +56,7 @@ impl DocumentSchema {
                 toml_version: None,
                 string_formats: None,
                 format_assertion: true,
+                root_schema: None,
                 value_schema: None,
                 definitions: SchemaDefinitions::new(Default::default()),
                 anchors: SchemaAnchors::new(Default::default()),
@@ -106,14 +115,17 @@ impl DocumentSchema {
         let collect_anchor = crate::supports_keyword(dialect, "$anchor");
         let collect_dynamic_anchor = crate::supports_keyword(dialect, "$dynamicAnchor")
             || crate::supports_keyword(dialect, "$recursiveAnchor");
-        let value_schema = ValueSchema::new(
+        let root_schema = Referable::new(
             &object,
             string_formats.as_deref(),
             dialect,
             collect_anchor.then_some(&mut anchors),
             collect_dynamic_anchor.then_some(&mut dynamic_anchors),
-        )
-        .map(Arc::new);
+        );
+        let value_schema = root_schema.as_ref().and_then(|schema| match schema {
+            Referable::Resolved { value, .. } => Some(value.clone()),
+            Referable::Ref { .. } => None,
+        });
 
         let mut definitions = tombi_hashmap::HashMap::default();
         if let Some(tombi_json::ValueNode::Object(object)) = object.get("definitions") {
@@ -143,19 +155,6 @@ impl DocumentSchema {
             }
         }
 
-        if let Some(value_schema) = value_schema.as_ref() {
-            let root_referable = Referable::Resolved {
-                schema_uri: None,
-                value: value_schema.clone(),
-            };
-            super::update_named_anchors(
-                &object,
-                &root_referable,
-                dialect,
-                collect_anchor.then_some(&mut anchors),
-                collect_dynamic_anchor.then_some(&mut dynamic_anchors),
-            );
-        }
         Self {
             id,
             schema_uri,
@@ -163,6 +162,7 @@ impl DocumentSchema {
             toml_version,
             string_formats,
             format_assertion,
+            root_schema,
             value_schema,
             definitions: SchemaDefinitions::new(definitions.into()),
             anchors: SchemaAnchors::new(anchors.into()),
@@ -180,6 +180,10 @@ impl DocumentSchema {
 
     pub fn string_formats(&self) -> Option<&[StringFormat]> {
         self.string_formats.as_deref()
+    }
+
+    pub(crate) fn root_schema(&self) -> Option<&Referable<ValueSchema>> {
+        self.root_schema.as_ref()
     }
 
     pub fn toml_version(&self) -> Option<TomlVersion> {

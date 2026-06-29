@@ -530,21 +530,13 @@ impl SchemaStore {
                 schema_uri: schema_uri.clone(),
             });
         }
-        let root_object = schema_value.as_object().cloned();
         let mut document_schema = DocumentSchema::new(schema_value, schema_uri.clone());
         if document_schema.value_schema.is_none()
-            && let Some(root_object) = root_object.as_ref()
-            && let Some(mut root_referable) = Referable::new(
-                root_object,
-                document_schema.string_formats(),
-                document_schema.dialect(),
-                None,
-                None,
-            )
+            && let Some(mut root_schema) = document_schema.root_schema().cloned()
         {
             let document_base_uri = document_schema.base_uri().clone();
             let definitions = document_schema.definitions.clone();
-            if let Some(current_schema) = root_referable
+            if let Some(current_schema) = root_schema
                 .resolve(
                     Cow::Borrowed(&document_base_uri),
                     Cow::Borrowed(&definitions),
@@ -553,6 +545,7 @@ impl SchemaStore {
                 .await?
             {
                 document_schema.value_schema = Some(current_schema.value_schema);
+                document_schema.root_schema = Some(root_schema);
             }
         }
         if let Some(
@@ -667,7 +660,12 @@ impl SchemaStore {
                 // Create a new document schema with the fragment-referenced schema_uri in the return value
                 let mut fragment_document_schema = document_schema.as_ref().clone();
                 fragment_document_schema.schema_uri = requested_schema_uri; // Use fragment-full URI for return value
-                fragment_document_schema.value_schema = Some(Arc::new(fragment_value_schema));
+                let fragment_value_schema = Arc::new(fragment_value_schema);
+                fragment_document_schema.root_schema = Some(Referable::Resolved {
+                    schema_uri: None,
+                    value: fragment_value_schema.clone(),
+                });
+                fragment_document_schema.value_schema = Some(fragment_value_schema);
                 return Ok(Some(Arc::new(fragment_document_schema)));
             }
 
@@ -695,6 +693,10 @@ impl SchemaStore {
                 // Create a new document schema with the fragment-referenced schema_uri in the return value
                 let mut fragment_document_schema = document_schema.as_ref().clone();
                 fragment_document_schema.schema_uri = requested_schema_uri; // Use fragment-full URI for return value
+                fragment_document_schema.root_schema = Some(Referable::Resolved {
+                    schema_uri: None,
+                    value: current_schema.value_schema.clone(),
+                });
                 fragment_document_schema.value_schema = Some(current_schema.value_schema);
                 return Ok(Some(Arc::new(fragment_document_schema)));
             }

@@ -3,7 +3,7 @@ use tombi_schema_store::{SchemaStore, SchemaUri, ValueSchema};
 #[tokio::test]
 async fn root_ref_resolves_ref_definition_and_keeps_sibling_description() {
     let schema_uri =
-        SchemaUri::from_file_path(&tombi_test_lib::root_ref_test_schema_path()).unwrap();
+        SchemaUri::from_file_path(tombi_test_lib::root_ref_test_schema_path()).unwrap();
     let schema_store = SchemaStore::new();
 
     let document_schema = schema_store
