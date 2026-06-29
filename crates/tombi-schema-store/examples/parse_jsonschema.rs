@@ -39,7 +39,14 @@ fn main() {
     match parse(&content) {
         Ok(value_node) => {
             eprintln!("✅ Parse successful!");
-            println!("{:#?}", DocumentSchema::new(value_node, schema_uri));
+            let schema_store = tombi_schema_store::SchemaStore::new();
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("failed to build tokio runtime");
+            let document_schema =
+                runtime.block_on(DocumentSchema::new(value_node, schema_uri, &schema_store));
+            println!("{document_schema:#?}");
         }
         Err(err) => {
             eprintln!("❌ Parse error: {}", err);

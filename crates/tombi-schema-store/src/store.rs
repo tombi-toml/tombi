@@ -530,8 +530,7 @@ impl SchemaStore {
                 schema_uri: schema_uri.clone(),
             });
         }
-        let mut document_schema = DocumentSchema::new(schema_value, schema_uri.clone());
-        document_schema.resolve_root_schema(self).await?;
+        let document_schema = DocumentSchema::new(schema_value, schema_uri.clone(), self).await;
         if let Some(
             ValueSchema::AllOf(AllOfSchema { schemas, .. })
             | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
