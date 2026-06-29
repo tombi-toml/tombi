@@ -107,7 +107,7 @@ where
                             .as_ref()
                             .and_then(|constraints| constraints.r#enum.as_ref())
                         {
-                            enum_values.extend(values.clone());
+                            enum_values.extend(values.iter().cloned());
                         } else if hover_value_content.accessors.as_ref() == accessors {
                             if let Some(values) = resolved_schema
                                 .value_schema
