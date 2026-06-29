@@ -1618,6 +1618,22 @@ mod completion_labels {
         }
     }
 
+    mod root_ref_schema {
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn root_ref_schema_empty(
+                "█",
+                SchemaPath(project_root_path().join("crates/tombi-lsp/tests/fixtures/root-ref.schema.json")),
+            ) -> Ok([
+                "compatibility_date",
+                "name",
+                "workers_dev",
+            ]);
+        }
+    }
+
     mod cargo_schema {
         use tombi_test_lib::cargo_schema_path;
 

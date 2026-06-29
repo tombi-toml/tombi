@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/RootConfig",
+  "definitions": {
+    "RootConfig": {
+      "type": "object",
+      "properties": {
+        "compatibility_date": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "workers_dev": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
