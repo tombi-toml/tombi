@@ -2,10 +2,11 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$ref": "#/definitions/RootConfig",
   "definitions": {
-    "RootConfig": {
+    "ResolvedConfig": {
       "type": "object",
       "properties": {
         "compatibility_date": {
+          "description": "Date that selects the Workers runtime version.",
           "type": "string"
         },
         "name": {
@@ -16,6 +17,10 @@
         }
       },
       "additionalProperties": false
+    },
+    "RootConfig": {
+      "$ref": "#/definitions/ResolvedConfig"
     }
-  }
+  },
+  "description": "Root override description"
 }

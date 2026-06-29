@@ -143,39 +143,6 @@ impl DocumentSchema {
             }
         }
 
-        let value_schema = value_schema.or_else(|| {
-            let tombi_json::ValueNode::String(reference) = object.get("$ref")? else {
-                return None;
-            };
-
-            let Referable::Resolved {
-                value: resolved_schema,
-                ..
-            } = definitions.get(&reference.value)?
-            else {
-                return None;
-            };
-
-            let mut value_schema = resolved_schema.as_ref().clone();
-            if object.get("title").is_some() || object.get("description").is_some() {
-                value_schema.set_title(
-                    object
-                        .get("title")
-                        .and_then(|title| title.as_str().map(|s| s.to_string())),
-                );
-                value_schema.set_description(
-                    object
-                        .get("description")
-                        .and_then(|description| description.as_str().map(|s| s.to_string())),
-                );
-            }
-            if let Some(deprecated) = object.get("deprecated").and_then(|v| v.as_bool()) {
-                value_schema.set_deprecated(deprecated);
-            }
-
-            Some(Arc::new(value_schema))
-        });
-
         if let Some(value_schema) = value_schema.as_ref() {
             let root_referable = Referable::Resolved {
                 schema_uri: None,

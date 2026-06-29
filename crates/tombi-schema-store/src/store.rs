@@ -3,8 +3,8 @@ use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 use crate::resolve_json_pointer;
 use crate::{
     AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, PatternAccessor,
-    PatternAccessors, SourceSchema, SubSchemaUriMap, ValueSchema, get_tombi_schemastore_content,
-    http_client::HttpClient, json::JsonCatalog,
+    PatternAccessors, Referable, SourceSchema, SubSchemaUriMap, ValueSchema,
+    get_tombi_schemastore_content, http_client::HttpClient, json::JsonCatalog,
 };
 use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
@@ -530,7 +530,31 @@ impl SchemaStore {
                 schema_uri: schema_uri.clone(),
             });
         }
-        let document_schema = DocumentSchema::new(schema_value, schema_uri.clone());
+        let root_object = schema_value.as_object().cloned();
+        let mut document_schema = DocumentSchema::new(schema_value, schema_uri.clone());
+        if document_schema.value_schema.is_none()
+            && let Some(root_object) = root_object.as_ref()
+            && let Some(mut root_referable) = Referable::new(
+                root_object,
+                document_schema.string_formats(),
+                document_schema.dialect(),
+                None,
+                None,
+            )
+        {
+            let document_base_uri = document_schema.base_uri().clone();
+            let definitions = document_schema.definitions.clone();
+            if let Some(current_schema) = root_referable
+                .resolve(
+                    Cow::Borrowed(&document_base_uri),
+                    Cow::Borrowed(&definitions),
+                    self,
+                )
+                .await?
+            {
+                document_schema.value_schema = Some(current_schema.value_schema);
+            }
+        }
         if let Some(
             ValueSchema::AllOf(AllOfSchema { schemas, .. })
             | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })

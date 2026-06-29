@@ -1619,17 +1619,32 @@ mod completion_labels {
     }
 
     mod root_ref_schema {
+        use tombi_test_lib::root_ref_test_schema_path;
+
         use super::*;
 
         test_completion_labels! {
             #[tokio::test]
             async fn root_ref_schema_empty(
                 "█",
-                SchemaPath(project_root_path().join("crates/tombi-lsp/tests/fixtures/root-ref.schema.json")),
+                SchemaPath(root_ref_test_schema_path()),
             ) -> Ok([
                 "compatibility_date",
                 "name",
                 "workers_dev",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn root_ref_schema_completion_documentation(
+                "█",
+                SchemaPath(root_ref_test_schema_path()),
+            ) -> Ok([
+                {
+                    "label": "compatibility_date",
+                    "documentation": "Date that selects the Workers runtime version.",
+                },
             ]);
         }
     }
