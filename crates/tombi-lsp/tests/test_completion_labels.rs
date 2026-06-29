@@ -747,6 +747,7 @@ mod completion_labels {
                 "recursive-defs-any-of-test.schema.json",
                 "recursive-schema.schema.json",
                 "ref-sibling-annotations-test.schema.json",
+                "root-ref-test.schema.json",
                 "string-format-test.schema.json",
                 "subschema-singleton-label-test.schema.json",
                 "table-const-enum-test.schema.json",
