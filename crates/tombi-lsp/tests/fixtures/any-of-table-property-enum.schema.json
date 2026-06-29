@@ -11,6 +11,16 @@
           "$ref": "#/definitions/FormatOptions"
         }
       ]
+    },
+    "check": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TypeCheckOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "additionalProperties": false,
@@ -34,6 +44,54 @@
         }
       },
       "additionalProperties": false
+    },
+    "TypeCheckOptions": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FeatureToggle"
+        },
+        {
+          "$ref": "#/definitions/TypeCheckOptionsTable"
+        }
+      ]
+    },
+    "TypeCheckOptionsTable": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CheckRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "CheckRules": {
+      "type": "object",
+      "properties": {
+        "unknown-table": {
+          "description": "Report references to tables that are not defined across loaded SQL files. Default is error.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleLevel"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "error"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RuleLevel": {
+      "type": "string",
+      "enum": ["off", "warn", "error"]
     },
     "IndentStyle": {
       "oneOf": [

@@ -950,6 +950,23 @@ mod hover_keys_value {
                 "Enum": ["\"space\"", "\"tab\""]
             });
         );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn nested_any_of_hover_uses_enum_from_deep_matching_table_property_branch(
+                r#"
+                [check]
+                [check.rules]
+                unknown-table = "█error"
+                "#,
+                SchemaPath(any_of_table_property_enum_schema_path()),
+            ) -> Ok({
+                "Keys": "check.rules.unknown-table",
+                "Value": "String?",
+                "Enum": ["\"off\"", "\"warn\"", "\"error\""],
+                "Default": "\"error\""
+            });
+        );
     }
 
     mod adjacent_applicators_schema {
