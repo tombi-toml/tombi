@@ -53,7 +53,11 @@ runs:
           Set-Content -Path $installerManifest.FullName -Value $content -NoNewline
         }
 
-        if ($content -notmatch "(?m)^\s+InvocationParameter: --version$") {
+        $content = Get-Content $installerManifest.FullName -Raw
+        $hasInvocationParameter = $content -split "\r?\n" | Where-Object {
+          $_ -match "^\s+InvocationParameter: --version\s*$"
+        }
+        if (-not $hasInvocationParameter) {
           throw "winget installer manifest does not contain InvocationParameter: --version."
         }
 
