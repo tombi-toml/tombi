@@ -102,20 +102,28 @@ where
                     };
 
                     if is_applicable_branch {
-                        valid_hover_value_contents.push(hover_value_content.clone());
-
-                        if let Some(values) = resolved_schema
-                            .value_schema
+                        if let Some(values) = hover_value_content
+                            .constraints
                             .as_ref()
-                            .get_enum(
-                                &resolved_schema.schema_uri,
-                                &resolved_schema.definitions,
-                                schema_context,
-                            )
-                            .await
+                            .and_then(|constraints| constraints.r#enum.as_ref())
                         {
-                            enum_values.extend(values);
+                            enum_values.extend(values.clone());
+                        } else if hover_value_content.accessors.as_ref() == accessors {
+                            if let Some(values) = resolved_schema
+                                .value_schema
+                                .as_ref()
+                                .get_enum(
+                                    &resolved_schema.schema_uri,
+                                    &resolved_schema.definitions,
+                                    schema_context,
+                                )
+                                .await
+                            {
+                                enum_values.extend(values);
+                            }
                         }
+
+                        valid_hover_value_contents.push(hover_value_content.clone());
                     }
 
                     any_hover_value_contents.push(hover_value_content);
