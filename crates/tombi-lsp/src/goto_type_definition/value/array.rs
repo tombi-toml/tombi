@@ -48,8 +48,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
             {
                 let current_schema =
                     document_schema
-                        .value_schema
-                        .as_ref()
+                        .value_schema()
                         .map(|value_schema| CurrentSchema {
                             value_schema: value_schema.clone(),
                             schema_uri: Cow::Borrowed(&document_schema.schema_uri),

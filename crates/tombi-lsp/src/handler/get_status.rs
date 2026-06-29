@@ -60,7 +60,7 @@ pub async fn handle_get_status(
                     match schema_store.try_get_document_schema(&schema_uri).await {
                         Ok(Some(doc_schema)) => {
                             let (title, description) =
-                                if let Some(value_schema) = &doc_schema.value_schema {
+                                if let Some(value_schema) = doc_schema.value_schema() {
                                     (
                                         value_schema.title().map(|s| s.to_string()),
                                         value_schema.description().map(|s| s.to_string()),

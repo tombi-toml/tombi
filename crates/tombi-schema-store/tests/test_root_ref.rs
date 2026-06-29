@@ -12,14 +12,14 @@ async fn root_ref_resolves_ref_definition_and_keeps_sibling_description() {
         .unwrap()
         .unwrap();
 
-    match document_schema.value_schema.as_deref() {
+    match document_schema.value_schema().map(|schema| &**schema) {
         Some(ValueSchema::Table(_)) => {}
         other => panic!("expected table schema, got {other:?}"),
     }
     assert_eq!(
         document_schema
-            .value_schema
-            .as_deref()
+            .value_schema()
+            .map(|schema| &**schema)
             .and_then(ValueSchema::description),
         Some("Root override description")
     );

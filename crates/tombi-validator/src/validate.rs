@@ -57,8 +57,7 @@ pub fn validate<'a: 'b, 'b>(
                 .as_deref()
                 .and_then(|root_schema| {
                     root_schema
-                        .value_schema
-                        .as_ref()
+                        .value_schema()
                         .map(|value_schema| CurrentSchema {
                             value_schema: value_schema.clone(),
                             schema_uri: Cow::Borrowed(&root_schema.schema_uri),

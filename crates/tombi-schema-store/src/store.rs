@@ -531,28 +531,39 @@ impl SchemaStore {
             });
         }
         let mut document_schema = DocumentSchema::new(schema_value, schema_uri.clone());
-        if document_schema.value_schema.is_none()
-            && let Some(mut root_schema) = document_schema.root_schema().cloned()
+        // Resolve a root-level `$ref` once at load time so the document exposes a usable
+        // value schema (e.g. schemas whose root is only `{ "$ref": "#/definitions/..." }`).
+        if document_schema
+            .value_schema
+            .as_ref()
+            .is_some_and(Referable::is_ref)
         {
             let document_base_uri = document_schema.base_uri().clone();
             let definitions = document_schema.definitions.clone();
-            if let Some(current_schema) = root_schema
+            let mut root_schema = document_schema.value_schema.take().expect("checked above");
+            let resolved_value = root_schema
                 .resolve(
                     Cow::Borrowed(&document_base_uri),
                     Cow::Borrowed(&definitions),
                     self,
                 )
                 .await?
-            {
-                document_schema.value_schema = Some(current_schema.value_schema);
-                document_schema.root_schema = Some(root_schema);
-            }
+                .map(|current_schema| current_schema.value_schema);
+            document_schema.value_schema = Some(match resolved_value {
+                // `resolve` rewrites `root_schema` in place for the definition / external
+                // reference paths; only the JSON-pointer fallback leaves it as a `Ref`.
+                Some(value) if !root_schema.is_resolved() => Referable::Resolved {
+                    schema_uri: None,
+                    value,
+                },
+                _ => root_schema,
+            });
         }
         if let Some(
             ValueSchema::AllOf(AllOfSchema { schemas, .. })
             | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
             | ValueSchema::OneOf(OneOfSchema { schemas, .. }),
-        ) = document_schema.value_schema.as_deref()
+        ) = document_schema.value_schema().map(|schema| &**schema)
         {
             let document_base_uri = document_schema.base_uri().clone();
             {
@@ -660,12 +671,10 @@ impl SchemaStore {
                 // Create a new document schema with the fragment-referenced schema_uri in the return value
                 let mut fragment_document_schema = document_schema.as_ref().clone();
                 fragment_document_schema.schema_uri = requested_schema_uri; // Use fragment-full URI for return value
-                let fragment_value_schema = Arc::new(fragment_value_schema);
-                fragment_document_schema.root_schema = Some(Referable::Resolved {
+                fragment_document_schema.value_schema = Some(Referable::Resolved {
                     schema_uri: None,
-                    value: fragment_value_schema.clone(),
+                    value: Arc::new(fragment_value_schema),
                 });
-                fragment_document_schema.value_schema = Some(fragment_value_schema);
                 return Ok(Some(Arc::new(fragment_document_schema)));
             }
 
@@ -693,11 +702,10 @@ impl SchemaStore {
                 // Create a new document schema with the fragment-referenced schema_uri in the return value
                 let mut fragment_document_schema = document_schema.as_ref().clone();
                 fragment_document_schema.schema_uri = requested_schema_uri; // Use fragment-full URI for return value
-                fragment_document_schema.root_schema = Some(Referable::Resolved {
+                fragment_document_schema.value_schema = Some(Referable::Resolved {
                     schema_uri: None,
-                    value: current_schema.value_schema.clone(),
+                    value: current_schema.value_schema,
                 });
-                fragment_document_schema.value_schema = Some(current_schema.value_schema);
                 return Ok(Some(Arc::new(fragment_document_schema)));
             }
 
@@ -1462,7 +1470,7 @@ mod tests {
             .unwrap();
 
         std::assert_matches!(
-            document_schema.value_schema.as_deref(),
+            document_schema.value_schema().map(|schema| &**schema),
             Some(ValueSchema::Anything(_))
         );
 
@@ -1507,7 +1515,7 @@ mod tests {
             .unwrap();
 
         std::assert_matches!(
-            document_schema.value_schema.as_deref(),
+            document_schema.value_schema().map(|schema| &**schema),
             Some(ValueSchema::String(_))
         );
 
@@ -1536,7 +1544,7 @@ mod tests {
             .unwrap();
 
         std::assert_matches!(
-            document_schema.value_schema.as_deref(),
+            document_schema.value_schema().map(|schema| &**schema),
             Some(ValueSchema::String(_))
         );
 
@@ -1550,7 +1558,7 @@ mod tests {
             .unwrap();
 
         std::assert_matches!(
-            document_schema.value_schema.as_deref(),
+            document_schema.value_schema().map(|schema| &**schema),
             Some(ValueSchema::Integer(_))
         );
 

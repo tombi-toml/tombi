@@ -27,15 +27,13 @@ pub async fn get_hover_content(
     let table = tree.deref();
     match schema_context.root_schema {
         Some(document_schema) => {
-            let current_schema =
-                document_schema
-                    .value_schema
-                    .as_ref()
-                    .map(|value_schema| CurrentSchema {
-                        value_schema: value_schema.clone(),
-                        schema_uri: Cow::Borrowed(&document_schema.schema_uri),
-                        definitions: Cow::Borrowed(&document_schema.definitions),
-                    });
+            let current_schema = document_schema
+                .value_schema()
+                .map(|value_schema| CurrentSchema {
+                    value_schema: value_schema.clone(),
+                    schema_uri: Cow::Borrowed(&document_schema.schema_uri),
+                    definitions: Cow::Borrowed(&document_schema.definitions),
+                });
             table
                 .get_hover_content(position, keys, &[], current_schema.as_ref(), schema_context)
                 .await

@@ -35,7 +35,7 @@ impl Validate for tombi_document_tree::Table {
             if let Some(Ok(document_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
-                && let Some(value_schema) = &document_schema.value_schema
+                && let Some(value_schema) = document_schema.value_schema()
             {
                 return self
                     .validate(

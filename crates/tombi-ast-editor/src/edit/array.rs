@@ -141,7 +141,7 @@ fn resolve_array_item_edit_context<'a: 'b, 'b>(
         if let Some(Ok(document_schema)) = schema_context
             .get_subschema(accessors, current_schema.as_ref())
             .await
-            && let Some(value_schema) = &document_schema.value_schema
+            && let Some(value_schema) = document_schema.value_schema()
         {
             return resolve_array_item_edit_context(
                 node,

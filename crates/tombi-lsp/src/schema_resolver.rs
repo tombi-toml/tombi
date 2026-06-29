@@ -136,7 +136,7 @@ async fn resolve_current_schema(
     schema_context: &SchemaContext<'_>,
 ) -> Option<CurrentSchema<'static>> {
     let document_schema = schema_context.root_schema?;
-    let value_schema = document_schema.value_schema.as_ref()?;
+    let value_schema = document_schema.value_schema()?;
     let current_schema = CurrentSchema {
         value_schema: value_schema.clone(),
         schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
