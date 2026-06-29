@@ -3,7 +3,7 @@ use std::fmt::Write;
 use itertools::Itertools;
 use tombi_ast::DanglingCommentGroupOr;
 
-use crate::{Format, format::filter_map_unique_keys};
+use crate::{Format, format::filter_map_unique_keys, types::WithAlignmentHint};
 
 impl Format for tombi_ast::Table {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
@@ -22,7 +22,9 @@ impl Format for tombi_ast::Table {
         self.header_leading_comments().collect_vec().format(f)?;
 
         f.write_indent()?;
-        write!(f, "[{header}]")?;
+        write!(f, "[")?;
+        WithAlignmentHint::new(&header).format(f)?;
+        write!(f, "]")?;
 
         if let Some(trailing_comment) = self.header_trailing_comment() {
             trailing_comment.format(f)?;

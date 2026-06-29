@@ -108,8 +108,8 @@ where
                             .and_then(|constraints| constraints.r#enum.as_ref())
                         {
                             enum_values.extend(values.iter().cloned());
-                        } else if hover_value_content.accessors.as_ref() == accessors {
-                            if let Some(values) = resolved_schema
+                        } else if hover_value_content.accessors.as_ref() == accessors
+                            && let Some(values) = resolved_schema
                                 .value_schema
                                 .as_ref()
                                 .get_enum(
@@ -118,9 +118,8 @@ where
                                     schema_context,
                                 )
                                 .await
-                            {
-                                enum_values.extend(values);
-                            }
+                        {
+                            enum_values.extend(values);
                         }
 
                         valid_hover_value_contents.push(hover_value_content.clone());

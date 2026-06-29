@@ -1455,6 +1455,37 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
+            async fn test_string_key_quote_style_double(
+                r#"
+                'key' = 'value'
+
+                [dependencies.'unicase']
+                name = 'unicase'
+
+                [[dependencies.'array']]
+                name = 'array'
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        string_quote_style: Some(StringQuoteStyle::Double),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                "key" = "value"
+
+                [dependencies."unicase"]
+                name = "unicase"
+
+                [[dependencies."array"]]
+                name = "array"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_string_quote_style_single(
                 r#"
                 key = "value"
@@ -1474,6 +1505,58 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
+            async fn test_string_key_quote_style_single(
+                r#"
+                "key" = "value"
+
+                [dependencies."unicase"]
+                name = "unicase"
+
+                [[dependencies."array"]]
+                name = "array"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        string_quote_style: Some(StringQuoteStyle::Single),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                'key' = 'value'
+
+                [dependencies.'unicase']
+                name = 'unicase'
+
+                [[dependencies.'array']]
+                name = 'array'
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_string_key_quote_style_single_preserves_unsafe_basic_keys(
+                r#"
+                "key'" = "value"
+                "key\n" = "escaped"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        string_quote_style: Some(StringQuoteStyle::Single),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                "key'" = 'value'
+                "key\n" = 'escaped'
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_string_quote_style_preserve(
                 r#"
                 key = "value"
@@ -1487,6 +1570,92 @@ mod format_options {
             ) -> Ok(
                 r#"
                 key = "value"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_string_key_quote_style_double_preserves_unsafe_literal_keys(
+                r#"
+                'key"' = 'value'
+                'key\n' = 'escaped'
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        string_quote_style: Some(StringQuoteStyle::Double),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                'key"' = "value"
+                'key\n' = "escaped"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_string_key_quote_style_preserve(
+                r#"
+                "key" = 'value'
+
+                [dependencies.'unicase']
+                name = "unicase"
+
+                [[dependencies."array"]]
+                name = 'array'
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        string_quote_style: Some(StringQuoteStyle::Preserve),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(source)
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_string_key_quote_style_double_with_equals_sign_alignment(
+                r#"
+                'key' = 'value'
+                'longer' = 'value2'
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        string_quote_style: Some(StringQuoteStyle::Double),
+                        key_value_equals_sign_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                "key"    = "value"
+                "longer" = "value2"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_string_key_quote_style_single_with_equals_sign_alignment(
+                r#"
+                "key" = "value"
+                "longer" = "value2"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        string_quote_style: Some(StringQuoteStyle::Single),
+                        key_value_equals_sign_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                'key'    = 'value'
+                'longer' = 'value2'
                 "#
             )
         }

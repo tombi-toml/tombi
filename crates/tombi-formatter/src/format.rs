@@ -6,17 +6,44 @@ mod root;
 mod table;
 mod value;
 
+use std::borrow::Cow;
 use std::fmt::Write;
 
 use itertools::Itertools;
 use tombi_ast::{AstChildren, AstNode};
-use tombi_config::TomlVersion;
+use tombi_config::{StringQuoteStyle, TomlVersion};
 use tombi_syntax::SyntaxKind::{LINE_BREAK, WHITESPACE};
 
 use crate::types::AlignmentWidth;
 
 pub trait Format {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error>;
+}
+
+/// Re-quote `text` to use `quote` as its delimiter, swapping the surrounding quotes.
+///
+/// Leaves `text` untouched when the new delimiter or an escape would alter the content.
+// TODO: Only supports simple conditions, so it needs to be changed to behavior closer to black
+fn requote_string(text: &str, quote: char) -> Cow<'_, str> {
+    if text.contains('\\') || text.contains(quote) {
+        Cow::Borrowed(text)
+    } else {
+        Cow::Owned(format!("{quote}{}{quote}", &text[1..text.len() - 1]))
+    }
+}
+
+fn format_basic_string_quote_style(text: &str, quote_style: StringQuoteStyle) -> Cow<'_, str> {
+    match quote_style {
+        StringQuoteStyle::Double | StringQuoteStyle::Preserve => Cow::Borrowed(text),
+        StringQuoteStyle::Single => requote_string(text, '\''),
+    }
+}
+
+fn format_literal_string_quote_style(text: &str, quote_style: StringQuoteStyle) -> Cow<'_, str> {
+    match quote_style {
+        StringQuoteStyle::Single | StringQuoteStyle::Preserve => Cow::Borrowed(text),
+        StringQuoteStyle::Double => requote_string(text, '"'),
+    }
 }
 
 fn write_trailing_comment_alignment_space(
