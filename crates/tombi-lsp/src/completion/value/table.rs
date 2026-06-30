@@ -172,8 +172,11 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             .await;
 
                                         if !contents.is_empty()
-                                            && current_schema.value_schema.deprecated().await
-                                                == Some(true)
+                                            && current_schema
+                                                .value_schema
+                                                .deprecation()
+                                                .await
+                                                .is_some()
                                         {
                                             for content in &mut contents {
                                                 if !content.in_comment {
@@ -268,9 +271,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 if !contents.is_empty()
                                                     && current_schema
                                                         .value_schema
-                                                        .deprecated()
+                                                        .deprecation()
                                                         .await
-                                                        == Some(true)
+                                                        .is_some()
                                                 {
                                                     for content in &mut contents {
                                                         if !content.in_comment {
@@ -335,9 +338,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 if !contents.is_empty()
                                                     && current_schema
                                                         .value_schema
-                                                        .deprecated()
+                                                        .deprecation()
                                                         .await
-                                                        == Some(true)
+                                                        .is_some()
                                                 {
                                                     for content in &mut contents {
                                                         if !content.in_comment {
@@ -382,8 +385,11 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         .await;
 
                                         if !contents.is_empty()
-                                            && current_schema.value_schema.deprecated().await
-                                                == Some(true)
+                                            && current_schema
+                                                .value_schema
+                                                .deprecation()
+                                                .await
+                                                .is_some()
                                         {
                                             for content in &mut contents {
                                                 if !content.in_comment {
@@ -469,8 +475,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     .await;
 
                                     if !contents.is_empty()
-                                        && current_schema.value_schema.deprecated().await
-                                            == Some(true)
+                                        && current_schema.value_schema.deprecation().await.is_some()
                                     {
                                         for content in &mut contents {
                                             if !content.in_comment {
@@ -582,7 +587,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 reference,
                                                 title,
                                                 description,
-                                                deprecated,
+                                                deprecation,
                                                 ..
                                             } = &property_schema.property_schema
                                                 && is_online_url(reference)
@@ -590,7 +595,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 Some((
                                                     title.clone(),
                                                     description.clone(),
-                                                    *deprecated,
+                                                    deprecation.as_ref().map(|_| true),
                                                 ))
                                             } else {
                                                 None
@@ -695,7 +700,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 .await,
                                             None,
                                             Some(current_schema.schema_uri.as_ref()),
-                                            value_schema.deprecated().await,
+                                            value_schema.deprecation().await.map(|_| true),
                                             completion_hint,
                                             key_singleton_literal_label(&schema_candidates),
                                         ));
@@ -735,7 +740,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     table_schema.additional_key_label.as_deref(),
                                     position,
                                     Some(schema_uri.as_ref()),
-                                    value_schema.deprecated().await,
+                                    value_schema.deprecation().await.map(|_| true),
                                     completion_hint,
                                 ));
                             }
@@ -964,7 +969,11 @@ impl FindCompletionContents for TableSchema {
                             .await,
                         self.required.as_ref(),
                         Some(current_schema.schema_uri.as_ref()),
-                        current_schema.value_schema.deprecated().await,
+                        current_schema
+                            .value_schema
+                            .deprecation()
+                            .await
+                            .map(|_| true),
                         completion_hint,
                         singleton_value_label.clone(),
                     ));
@@ -1344,7 +1353,11 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                     .await,
                 table_schema.required.as_ref(),
                 Some(&current_schema.schema_uri),
-                current_schema.value_schema.deprecated().await,
+                current_schema
+                    .value_schema
+                    .deprecation()
+                    .await
+                    .map(|_| true),
                 completion_hint,
                 singleton_value_label.clone(),
             ));

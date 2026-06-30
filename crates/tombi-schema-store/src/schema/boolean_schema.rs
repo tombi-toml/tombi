@@ -9,7 +9,7 @@ pub struct BooleanSchema {
     pub const_value: Option<bool>,
     pub r#enum: Option<Vec<bool>>,
     pub examples: Option<Vec<bool>>,
-    pub deprecated: Option<bool>,
+    pub deprecation: Option<crate::Deprecation>,
     pub one_of: Option<Box<OneOfSchema>>,
     pub any_of: Option<Box<AnyOfSchema>>,
     pub all_of: Option<Box<AllOfSchema>>,
@@ -48,7 +48,7 @@ impl BooleanSchema {
                 .get("examples")
                 .and_then(|v| v.as_array())
                 .map(|array| array.items.iter().filter_map(|v| v.as_bool()).collect()),
-            deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
+            deprecation: crate::Deprecation::new(object),
             one_of,
             any_of,
             all_of,

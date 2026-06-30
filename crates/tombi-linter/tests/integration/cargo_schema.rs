@@ -394,3 +394,38 @@ test_lint! {
         level: tombi_diagnostic::Level::ERROR,
     }])
 }
+
+test_lint! {
+    #[test]
+    fn test_deprecation_message_emits_deprecated_warning(
+        "legacy = 1\n",
+        Config(deprecated_schema_config(None)),
+    ) -> Diagnostics([{
+        code: "deprecated",
+        level: tombi_diagnostic::Level::WARNING,
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_deprecation_message_text_surfaced(
+        "legacy = 1\n",
+        Config(deprecated_schema_config(None)),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::DeprecatedValueWithMessage(
+            tombi_schema_store::SchemaAccessors::from(vec![
+                tombi_schema_store::SchemaAccessor::Key("legacy".to_string()),
+            ]),
+            "1".to_string(),
+            "Use `value` instead".to_string(),
+        ),
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_deprecation_message_ignored_without_deprecated(
+        "message_only = 1\n",
+        Config(deprecated_schema_config(None)),
+    ) -> Ok(_)
+}

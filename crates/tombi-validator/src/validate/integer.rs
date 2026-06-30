@@ -372,7 +372,7 @@ async fn validate_integer_schema(
     if diagnostics.is_empty() {
         handle_deprecated_value(
             &mut diagnostics,
-            integer_schema.deprecated,
+            integer_schema.deprecation.as_ref(),
             accessors,
             integer_value,
             Some(current_schema),
@@ -579,7 +579,7 @@ async fn validate_float_schema_for_integer(
     if diagnostics.is_empty() {
         handle_deprecated_value(
             &mut diagnostics,
-            float_schema.deprecated,
+            float_schema.deprecation.as_ref(),
             accessors,
             integer_value,
             Some(current_schema),

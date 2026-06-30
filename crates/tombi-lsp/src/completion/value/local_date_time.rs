@@ -83,7 +83,7 @@ impl FindCompletionContents for LocalDateTimeSchema {
                     self.description.clone(),
                     edit,
                     schema_uri,
-                    self.deprecated,
+                    self.deprecation.as_ref().map(|_| true),
                 ));
 
                 return merge_adjacent_schema_completion_items(
@@ -111,7 +111,7 @@ impl FindCompletionContents for LocalDateTimeSchema {
                         self.description.clone(),
                         edit,
                         schema_uri,
-                        self.deprecated,
+                        self.deprecation.as_ref().map(|_| true),
                     ));
                 }
 
@@ -139,7 +139,7 @@ impl FindCompletionContents for LocalDateTimeSchema {
                     self.description.clone(),
                     edit,
                     schema_uri,
-                    self.deprecated,
+                    self.deprecation.as_ref().map(|_| true),
                 ));
             }
 
@@ -156,7 +156,7 @@ impl FindCompletionContents for LocalDateTimeSchema {
                         self.description.clone(),
                         edit,
                         schema_uri,
-                        self.deprecated,
+                        self.deprecation.as_ref().map(|_| true),
                     ));
                 }
             }

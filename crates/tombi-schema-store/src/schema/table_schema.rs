@@ -53,7 +53,7 @@ pub struct TableSchema {
     pub const_value: Option<tombi_json::Object>,
     pub r#enum: Option<Vec<tombi_json::Object>>,
     pub examples: Option<Vec<tombi_json::Object>>,
-    pub deprecated: Option<bool>,
+    pub deprecation: Option<crate::Deprecation>,
     pub additional_key_label: Option<String>,
     pub one_of: Option<Box<OneOfSchema>>,
     pub any_of: Option<Box<AnyOfSchema>>,
@@ -316,7 +316,7 @@ impl TableSchema {
                         .filter_map(|v| v.as_object().map(|v| v.into()))
                         .collect()
                 }),
-            deprecated: object_node.get("deprecated").and_then(|v| v.as_bool()),
+            deprecation: crate::Deprecation::new(object_node),
             additional_key_label: object_node
                 .get(X_TOMBI_ADDITIONAL_KEY_LABEL)
                 .and_then(|v| v.as_str().map(|s| s.to_string())),

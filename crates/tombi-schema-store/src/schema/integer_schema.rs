@@ -14,7 +14,7 @@ pub struct IntegerSchema {
     pub default: Option<i64>,
     pub const_value: Option<i64>,
     pub examples: Option<Vec<i64>>,
-    pub deprecated: Option<bool>,
+    pub deprecation: Option<crate::Deprecation>,
     pub one_of: Option<Box<OneOfSchema>>,
     pub any_of: Option<Box<AnyOfSchema>>,
     pub all_of: Option<Box<AllOfSchema>>,
@@ -58,7 +58,7 @@ impl IntegerSchema {
                 .get("examples")
                 .and_then(|v| v.as_array())
                 .map(|v| v.items.iter().filter_map(|v| v.as_i64()).collect()),
-            deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
+            deprecation: crate::Deprecation::new(object),
             one_of,
             any_of,
             all_of,

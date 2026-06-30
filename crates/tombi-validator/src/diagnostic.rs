@@ -17,9 +17,17 @@ pub enum DiagnosticKind {
     #[error("`{0}` is deprecated")]
     Deprecated(SchemaAccessors),
 
+    /// The entire Table or Array is deprecated with a custom message (`deprecationMessage`)
+    #[error("{1}")]
+    DeprecatedWithMessage(SchemaAccessors, String),
+
     /// The value is deprecated
     #[error("`{0} = {1}` is deprecated")]
     DeprecatedValue(SchemaAccessors, String),
+
+    /// The value is deprecated with a custom message (`deprecationMessage`)
+    #[error("{2}")]
+    DeprecatedValueWithMessage(SchemaAccessors, String, String),
 
     #[error(
         "In strict mode, {accessors} does not allow \"{key}\" key. \
@@ -171,9 +179,10 @@ impl DiagnosticKind {
     pub fn code(&self) -> &'static str {
         match *self {
             DiagnosticKind::UnusedNoqa { .. } => "unused-noqa",
-            DiagnosticKind::Deprecated { .. } | DiagnosticKind::DeprecatedValue { .. } => {
-                "deprecated"
-            }
+            DiagnosticKind::Deprecated { .. }
+            | DiagnosticKind::DeprecatedWithMessage { .. }
+            | DiagnosticKind::DeprecatedValue { .. }
+            | DiagnosticKind::DeprecatedValueWithMessage { .. } => "deprecated",
             DiagnosticKind::TableStrictAdditionalKeys { .. } => "table-strict-additional-keys",
             DiagnosticKind::KeyNotAllowed { .. } => "key-not-allowed",
             DiagnosticKind::UnevaluatedPropertyNotAllowed { .. } => {
