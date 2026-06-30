@@ -8,7 +8,9 @@
       "not": {
         "const": "forbidden"
       },
-      "x-not-error-message": "This value is forbidden."
+      "errorMessage": {
+        "not": "This value is forbidden."
+      }
     },
     "without_message": {
       "type": "string",

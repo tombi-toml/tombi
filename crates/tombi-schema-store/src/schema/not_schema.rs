@@ -1,4 +1,4 @@
-use tombi_x_keyword::{StringFormat, X_NOT_ERROR_MESSAGE};
+use tombi_x_keyword::{ERROR_MESSAGE, StringFormat};
 
 use crate::{AnchorCollector, DynamicAnchorCollector, SchemaItem, schema_item_from_schema_value};
 
@@ -36,7 +36,9 @@ impl NotSchema {
             .map(|schema| Self {
                 schema,
                 error_message: object
-                    .get(X_NOT_ERROR_MESSAGE)
+                    .get(ERROR_MESSAGE)
+                    .and_then(|value| value.as_object())
+                    .and_then(|error_messages| error_messages.get("not"))
                     .and_then(|value| value.as_str().map(str::to_string)),
             })
     }
