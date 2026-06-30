@@ -5,10 +5,15 @@ use crate::{AnchorCollector, DynamicAnchorCollector, SchemaItem, schema_item_fro
 #[derive(Debug, Clone)]
 pub struct NotSchema {
     pub schema: SchemaItem,
-    pub error_message: Option<String>,
+    error_message: Option<String>,
 }
 
 impl NotSchema {
+    #[inline]
+    pub fn error_message(&self) -> Option<&str> {
+        self.error_message.as_deref()
+    }
+
     #[inline]
     pub fn new(
         object: &tombi_json::ObjectNode,

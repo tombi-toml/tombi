@@ -5,8 +5,6 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{Validate, validate::handle_unused_noqa};
 
-const DEFAULT_NOT_SCHEMA_MATCH_MESSAGE: &str = "\"not\" schema is matched";
-
 pub async fn validate_not<'a, T>(
     value: &T,
     accessors: &[tombi_schema_store::Accessor],
@@ -35,13 +33,13 @@ where
             .await
             .is_ok()
     {
-        let message = not_schema
-            .error_message
-            .clone()
-            .unwrap_or_else(|| DEFAULT_NOT_SCHEMA_MATCH_MESSAGE.to_string());
+        let kind = match not_schema.error_message() {
+            Some(message) => crate::DiagnosticKind::NotSchemaMatchWithMessage(message.to_string()),
+            None => crate::DiagnosticKind::NotSchemaMatch,
+        };
         let mut diagnostics = Vec::with_capacity(1);
         crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::NotSchemaMatch { message }),
+            kind: Box::new(kind),
             range: value.range(),
         }
         .push_diagnostic_with_level(

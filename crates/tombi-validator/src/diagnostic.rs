@@ -151,8 +151,11 @@ pub enum DiagnosticKind {
     #[error("The schema matches no values")]
     Nothing,
 
-    #[error("{message}")]
-    NotSchemaMatch { message: String },
+    #[error("\"not\" schema is matched")]
+    NotSchemaMatch,
+
+    #[error("{0}")]
+    NotSchemaMatchWithMessage(String),
 
     #[error("When \"{dependent_key}\" is present, \"{required_key}\" is required")]
     TableDependencyRequired {
@@ -213,7 +216,9 @@ impl DiagnosticKind {
             DiagnosticKind::OneOfMultipleMatch { .. } => "one-of-multiple-match",
             DiagnosticKind::OneOfNoMatch { .. } => "one-of-no-match",
             DiagnosticKind::Nothing => "nothing",
-            DiagnosticKind::NotSchemaMatch { .. } => "not-schema-match",
+            DiagnosticKind::NotSchemaMatch | DiagnosticKind::NotSchemaMatchWithMessage(_) => {
+                "not-schema-match"
+            }
             DiagnosticKind::KeyEmpty => "key-empty",
             DiagnosticKind::TableDependencyRequired { .. } => "table-dependency-required",
         }

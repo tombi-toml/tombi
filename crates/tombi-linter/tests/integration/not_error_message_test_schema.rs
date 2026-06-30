@@ -17,9 +17,9 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Err([
-        tombi_validator::DiagnosticKind::NotSchemaMatch {
-            message: "This value is forbidden.".to_string(),
-        },
+        tombi_validator::DiagnosticKind::NotSchemaMatchWithMessage(
+            "This value is forbidden.".to_string(),
+        ),
     ])
 }
 
@@ -31,9 +31,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Err([
-        tombi_validator::DiagnosticKind::NotSchemaMatch {
-            message: "\"not\" schema is matched".to_string(),
-        },
+        tombi_validator::DiagnosticKind::NotSchemaMatch,
     ])
 }
 

@@ -740,6 +740,7 @@ mod completion_labels {
                 "issue-1895-rustfmt-like.schema.json",
                 "lsp-consistency-test.schema.json",
                 "min-max-contains-test.schema.json",
+                "not-error-message-test.schema.json",
                 "one-of-hover-discriminator-test.schema.json",
                 "partial-taskipy.schema.json",
                 "prefix-items-test.schema.json",
