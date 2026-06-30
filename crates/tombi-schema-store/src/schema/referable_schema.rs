@@ -457,26 +457,51 @@ fn apply_ref_annotations(
     examples: Option<&Vec<tombi_json::Value>>,
     deprecation: Option<Deprecation>,
 ) {
-    if let Referable::Resolved {
-        value: value_schema,
-        ..
-    } = referable_schema
-    {
-        let value_schema = Arc::make_mut(value_schema);
-        if let Some(title) = title {
-            value_schema.set_title(Some(title.clone()));
+    match referable_schema {
+        Referable::Resolved {
+            value: value_schema,
+            ..
+        } => {
+            let value_schema = Arc::make_mut(value_schema);
+            if let Some(title) = title {
+                value_schema.set_title(Some(title.clone()));
+            }
+            if let Some(description) = description {
+                value_schema.set_description(Some(description.clone()));
+            }
+            if let Some(default) = default {
+                value_schema.set_default(Some(default.clone()));
+            }
+            if let Some(examples) = examples {
+                value_schema.set_examples(Some(examples.clone()));
+            }
+            if let Some(deprecation) = deprecation {
+                value_schema.set_deprecation(deprecation);
+            }
         }
-        if let Some(description) = description {
-            value_schema.set_description(Some(description.clone()));
-        }
-        if let Some(default) = default {
-            value_schema.set_default(Some(default.clone()));
-        }
-        if let Some(examples) = examples {
-            value_schema.set_examples(Some(examples.clone()));
-        }
-        if let Some(deprecation) = deprecation {
-            value_schema.set_deprecation(deprecation);
+        Referable::Ref {
+            title: ref_title,
+            description: ref_description,
+            default: ref_default,
+            examples: ref_examples,
+            deprecation: ref_deprecation,
+            ..
+        } => {
+            if let Some(title) = title {
+                *ref_title = Some(title.clone());
+            }
+            if let Some(description) = description {
+                *ref_description = Some(description.clone());
+            }
+            if let Some(default) = default {
+                *ref_default = Some(default.clone());
+            }
+            if let Some(examples) = examples {
+                *ref_examples = Some(examples.clone());
+            }
+            if let Some(deprecation) = deprecation {
+                *ref_deprecation = Some(deprecation);
+            }
         }
     }
 }
