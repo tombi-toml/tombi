@@ -31,73 +31,42 @@ impl DocumentSchema {
         schema_uri: SchemaUri,
         schema_store: &SchemaStore,
     ) -> Self {
-        let (mut document_schema, root_ref) = match node {
-            tombi_json::ValueNode::Object(object) => Self::new_from_object(object, schema_uri),
-            tombi_json::ValueNode::Bool(bool) => (
-                Self {
-                    id: None,
-                    schema_uri,
-                    dialect: None,
-                    toml_version: None,
-                    string_formats: None,
-                    format_assertion: true,
-                    value_schema: Some(Arc::new(super::bool_value_schema(bool.value, bool.range))),
-                    definitions: SchemaDefinitions::new(Default::default()),
-                    anchors: SchemaAnchors::new(Default::default()),
-                    dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
-                },
-                None,
-            ),
-            _ => (
-                Self {
-                    id: None,
-                    schema_uri,
-                    dialect: None,
-                    toml_version: None,
-                    string_formats: None,
-                    format_assertion: true,
-                    value_schema: None,
-                    definitions: SchemaDefinitions::new(Default::default()),
-                    anchors: SchemaAnchors::new(Default::default()),
-                    dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
-                },
-                None,
-            ),
-        };
-
-        // Resolve a root-level `$ref` once at load time so the document exposes a usable
-        // value schema (e.g. schemas whose root is only `{ "$ref": "#/definitions/..." }`).
-        // `definitions` / `base_uri` are borrowed only until the resolved value is built.
-        if let Some(mut root_ref) = root_ref {
-            let resolved_value = match root_ref
-                .resolve(
-                    Cow::Borrowed(document_schema.base_uri()),
-                    Cow::Borrowed(&document_schema.definitions),
-                    schema_store,
-                )
-                .await
-            {
-                Ok(resolved) => resolved.map(|current_schema| current_schema.value_schema),
-                Err(error) => {
-                    log::warn!(
-                        "failed to resolve root $ref for {}: {error}",
-                        document_schema.schema_uri
-                    );
-                    None
-                }
-            };
-            document_schema.value_schema = resolved_value;
+        match node {
+            tombi_json::ValueNode::Object(object) => {
+                Self::new_from_object(object, schema_uri, schema_store).await
+            }
+            tombi_json::ValueNode::Bool(bool) => Self {
+                id: None,
+                schema_uri,
+                dialect: None,
+                toml_version: None,
+                string_formats: None,
+                format_assertion: true,
+                value_schema: Some(Arc::new(super::bool_value_schema(bool.value, bool.range))),
+                definitions: SchemaDefinitions::new(Default::default()),
+                anchors: SchemaAnchors::new(Default::default()),
+                dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
+            },
+            _ => Self {
+                id: None,
+                schema_uri,
+                dialect: None,
+                toml_version: None,
+                string_formats: None,
+                format_assertion: true,
+                value_schema: None,
+                definitions: SchemaDefinitions::new(Default::default()),
+                anchors: SchemaAnchors::new(Default::default()),
+                dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
+            },
         }
-
-        document_schema
     }
 
-    /// Builds the document from its root object, returning the still-unresolved root
-    /// `$ref` (if any) so the async [`Self::new`] can resolve it.
-    fn new_from_object(
+    async fn new_from_object(
         object: tombi_json::ObjectNode,
         schema_uri: SchemaUri,
-    ) -> (Self, Option<Referable<ValueSchema>>) {
+        schema_store: &SchemaStore,
+    ) -> Self {
         let id = resolve_schema_id(&object, &schema_uri);
 
         let dialect = object.get("$schema").and_then(|value| match value {
@@ -148,8 +117,7 @@ impl DocumentSchema {
         let collect_dynamic_anchor = crate::supports_keyword(dialect, "$dynamicAnchor")
             || crate::supports_keyword(dialect, "$recursiveAnchor");
         // The root value schema may itself be a `$ref`. A direct schema resolves to an
-        // `Arc` immediately; a root `$ref` is carried out as `root_ref` for `Self::new` to
-        // resolve (the store is not available here).
+        // `Arc` immediately; a root `$ref` is resolved below once the definitions are built.
         let (value_schema, root_ref) = match Referable::new(
             &object,
             string_formats.as_deref(),
@@ -190,21 +158,43 @@ impl DocumentSchema {
             }
         }
 
-        (
-            Self {
-                id,
-                schema_uri,
-                dialect,
-                toml_version,
-                string_formats,
-                format_assertion,
-                value_schema,
-                definitions: SchemaDefinitions::new(definitions.into()),
-                anchors: SchemaAnchors::new(anchors.into()),
-                dynamic_anchors: SchemaDynamicAnchors::new(dynamic_anchors.into()),
-            },
-            root_ref,
-        )
+        let mut document_schema = Self {
+            id,
+            schema_uri,
+            dialect,
+            toml_version,
+            string_formats,
+            format_assertion,
+            value_schema,
+            definitions: SchemaDefinitions::new(definitions.into()),
+            anchors: SchemaAnchors::new(anchors.into()),
+            dynamic_anchors: SchemaDynamicAnchors::new(dynamic_anchors.into()),
+        };
+
+        // Resolve a root-level `$ref` once at load time so the document exposes a usable
+        // value schema (e.g. schemas whose root is only `{ "$ref": "#/definitions/..." }`).
+        // `definitions` / `base_uri` are borrowed only until the resolved value is built.
+        if let Some(mut root_ref) = root_ref {
+            document_schema.value_schema = match root_ref
+                .resolve(
+                    Cow::Borrowed(document_schema.base_uri()),
+                    Cow::Borrowed(&document_schema.definitions),
+                    schema_store,
+                )
+                .await
+            {
+                Ok(resolved) => resolved.map(|current_schema| current_schema.value_schema),
+                Err(error) => {
+                    log::warn!(
+                        "failed to resolve root $ref for {}: {error}",
+                        document_schema.schema_uri
+                    );
+                    None
+                }
+            };
+        }
+
+        document_schema
     }
 
     pub fn dialect(&self) -> Option<JsonSchemaDialect> {
