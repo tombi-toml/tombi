@@ -3,8 +3,8 @@ use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 use crate::resolve_json_pointer;
 use crate::{
     AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, PatternAccessor,
-    PatternAccessors, Referable, SourceSchema, SubSchemaUriMap, ValueSchema,
-    get_tombi_schemastore_content, http_client::HttpClient, json::JsonCatalog,
+    PatternAccessors, SourceSchema, SubSchemaUriMap, ValueSchema, get_tombi_schemastore_content,
+    http_client::HttpClient, json::JsonCatalog,
 };
 use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
@@ -535,7 +535,7 @@ impl SchemaStore {
             ValueSchema::AllOf(AllOfSchema { schemas, .. })
             | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
             | ValueSchema::OneOf(OneOfSchema { schemas, .. }),
-        ) = document_schema.value_schema().map(|schema| &**schema)
+        ) = document_schema.value_schema.as_deref()
         {
             let document_base_uri = document_schema.base_uri().clone();
             {
@@ -643,10 +643,7 @@ impl SchemaStore {
                 // Create a new document schema with the fragment-referenced schema_uri in the return value
                 let mut fragment_document_schema = document_schema.as_ref().clone();
                 fragment_document_schema.schema_uri = requested_schema_uri; // Use fragment-full URI for return value
-                fragment_document_schema.value_schema = Some(Referable::Resolved {
-                    schema_uri: None,
-                    value: Arc::new(fragment_value_schema),
-                });
+                fragment_document_schema.value_schema = Some(Arc::new(fragment_value_schema));
                 return Ok(Some(Arc::new(fragment_document_schema)));
             }
 
@@ -674,10 +671,7 @@ impl SchemaStore {
                 // Create a new document schema with the fragment-referenced schema_uri in the return value
                 let mut fragment_document_schema = document_schema.as_ref().clone();
                 fragment_document_schema.schema_uri = requested_schema_uri; // Use fragment-full URI for return value
-                fragment_document_schema.value_schema = Some(Referable::Resolved {
-                    schema_uri: None,
-                    value: current_schema.value_schema,
-                });
+                fragment_document_schema.value_schema = Some(current_schema.value_schema);
                 return Ok(Some(Arc::new(fragment_document_schema)));
             }
 
@@ -1442,7 +1436,7 @@ mod tests {
             .unwrap();
 
         std::assert_matches!(
-            document_schema.value_schema().map(|schema| &**schema),
+            document_schema.value_schema.as_deref(),
             Some(ValueSchema::Anything(_))
         );
 
@@ -1487,7 +1481,7 @@ mod tests {
             .unwrap();
 
         std::assert_matches!(
-            document_schema.value_schema().map(|schema| &**schema),
+            document_schema.value_schema.as_deref(),
             Some(ValueSchema::String(_))
         );
 
@@ -1516,7 +1510,7 @@ mod tests {
             .unwrap();
 
         std::assert_matches!(
-            document_schema.value_schema().map(|schema| &**schema),
+            document_schema.value_schema.as_deref(),
             Some(ValueSchema::String(_))
         );
 
@@ -1530,7 +1524,7 @@ mod tests {
             .unwrap();
 
         std::assert_matches!(
-            document_schema.value_schema().map(|schema| &**schema),
+            document_schema.value_schema.as_deref(),
             Some(ValueSchema::Integer(_))
         );
 

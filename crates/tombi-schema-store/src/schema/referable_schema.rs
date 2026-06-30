@@ -67,13 +67,6 @@ impl<T> Referable<T> {
             Self::Ref { .. } => None,
         }
     }
-
-    pub fn resolved_arc(&self) -> Option<&Arc<T>> {
-        match self {
-            Self::Resolved { value, .. } => Some(value),
-            Self::Ref { .. } => None,
-        }
-    }
 }
 
 impl Referable<ValueSchema> {
@@ -592,7 +585,7 @@ async fn resolve_external_reference(
     };
 
     let Some(fragment) = fragment else {
-        let Some(value_schema) = document_schema.value_schema() else {
+        let Some(value_schema) = document_schema.value_schema.as_ref() else {
             return Err(crate::Error::InvalidJsonSchemaReference {
                 reference: reference.to_owned(),
                 schema_uri: resolved_schema_uri,

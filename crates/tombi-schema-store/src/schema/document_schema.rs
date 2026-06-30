@@ -19,7 +19,7 @@ pub struct DocumentSchema {
     pub(crate) toml_version: Option<TomlVersion>,
     pub(crate) string_formats: Option<Vec<StringFormat>>,
     pub(crate) format_assertion: bool,
-    pub(crate) value_schema: Option<Referable<ValueSchema>>,
+    pub value_schema: Option<Arc<ValueSchema>>,
     pub definitions: SchemaDefinitions,
     pub anchors: SchemaAnchors,
     pub dynamic_anchors: SchemaDynamicAnchors,
@@ -31,48 +31,45 @@ impl DocumentSchema {
         schema_uri: SchemaUri,
         schema_store: &SchemaStore,
     ) -> Self {
-        let mut document_schema = match node {
+        let (mut document_schema, root_ref) = match node {
             tombi_json::ValueNode::Object(object) => Self::new_from_object(object, schema_uri),
-            tombi_json::ValueNode::Bool(bool) => Self {
-                id: None,
-                schema_uri,
-                dialect: None,
-                toml_version: None,
-                string_formats: None,
-                format_assertion: true,
-                value_schema: Some(Referable::Resolved {
-                    schema_uri: None,
-                    value: Arc::new(super::bool_value_schema(bool.value, bool.range)),
-                }),
-                definitions: SchemaDefinitions::new(Default::default()),
-                anchors: SchemaAnchors::new(Default::default()),
-                dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
-            },
-            _ => Self {
-                id: None,
-                schema_uri,
-                dialect: None,
-                toml_version: None,
-                string_formats: None,
-                format_assertion: true,
-                value_schema: None,
-                definitions: SchemaDefinitions::new(Default::default()),
-                anchors: SchemaAnchors::new(Default::default()),
-                dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
-            },
+            tombi_json::ValueNode::Bool(bool) => (
+                Self {
+                    id: None,
+                    schema_uri,
+                    dialect: None,
+                    toml_version: None,
+                    string_formats: None,
+                    format_assertion: true,
+                    value_schema: Some(Arc::new(super::bool_value_schema(bool.value, bool.range))),
+                    definitions: SchemaDefinitions::new(Default::default()),
+                    anchors: SchemaAnchors::new(Default::default()),
+                    dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
+                },
+                None,
+            ),
+            _ => (
+                Self {
+                    id: None,
+                    schema_uri,
+                    dialect: None,
+                    toml_version: None,
+                    string_formats: None,
+                    format_assertion: true,
+                    value_schema: None,
+                    definitions: SchemaDefinitions::new(Default::default()),
+                    anchors: SchemaAnchors::new(Default::default()),
+                    dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
+                },
+                None,
+            ),
         };
 
         // Resolve a root-level `$ref` once at load time so the document exposes a usable
         // value schema (e.g. schemas whose root is only `{ "$ref": "#/definitions/..." }`).
-        // `definitions` / `base_uri` are borrowed only until `resolved_value` is built, so
-        // reassigning `value_schema` afterwards needs no clone.
-        if document_schema
-            .value_schema
-            .as_ref()
-            .is_some_and(Referable::is_ref)
-        {
-            let mut root_schema = document_schema.value_schema.take().expect("checked above");
-            let resolved_value = match root_schema
+        // `definitions` / `base_uri` are borrowed only until the resolved value is built.
+        if let Some(mut root_ref) = root_ref {
+            let resolved_value = match root_ref
                 .resolve(
                     Cow::Borrowed(document_schema.base_uri()),
                     Cow::Borrowed(&document_schema.definitions),
@@ -89,21 +86,18 @@ impl DocumentSchema {
                     None
                 }
             };
-            document_schema.value_schema = Some(match resolved_value {
-                // `resolve` rewrites `root_schema` in place for the definition / external
-                // reference paths; only the JSON-pointer fallback leaves it as a `Ref`.
-                Some(value) if !root_schema.is_resolved() => Referable::Resolved {
-                    schema_uri: None,
-                    value,
-                },
-                _ => root_schema,
-            });
+            document_schema.value_schema = resolved_value;
         }
 
         document_schema
     }
 
-    fn new_from_object(object: tombi_json::ObjectNode, schema_uri: SchemaUri) -> Self {
+    /// Builds the document from its root object, returning the still-unresolved root
+    /// `$ref` (if any) so the async [`Self::new`] can resolve it.
+    fn new_from_object(
+        object: tombi_json::ObjectNode,
+        schema_uri: SchemaUri,
+    ) -> (Self, Option<Referable<ValueSchema>>) {
         let id = resolve_schema_id(&object, &schema_uri);
 
         let dialect = object.get("$schema").and_then(|value| match value {
@@ -153,15 +147,20 @@ impl DocumentSchema {
         let collect_anchor = crate::supports_keyword(dialect, "$anchor");
         let collect_dynamic_anchor = crate::supports_keyword(dialect, "$dynamicAnchor")
             || crate::supports_keyword(dialect, "$recursiveAnchor");
-        // The root value schema may itself be a `$ref`; it is left unresolved here and
-        // resolved once during schema loading (see `SchemaStore::fetch_document_schema`).
-        let value_schema = Referable::new(
+        // The root value schema may itself be a `$ref`. A direct schema resolves to an
+        // `Arc` immediately; a root `$ref` is carried out as `root_ref` for `Self::new` to
+        // resolve (the store is not available here).
+        let (value_schema, root_ref) = match Referable::new(
             &object,
             string_formats.as_deref(),
             dialect,
             collect_anchor.then_some(&mut anchors),
             collect_dynamic_anchor.then_some(&mut dynamic_anchors),
-        );
+        ) {
+            Some(Referable::Resolved { value, .. }) => (Some(value), None),
+            Some(root_ref @ Referable::Ref { .. }) => (None, Some(root_ref)),
+            None => (None, None),
+        };
 
         let mut definitions = tombi_hashmap::HashMap::default();
         if let Some(tombi_json::ValueNode::Object(object)) = object.get("definitions") {
@@ -191,18 +190,21 @@ impl DocumentSchema {
             }
         }
 
-        Self {
-            id,
-            schema_uri,
-            dialect,
-            toml_version,
-            string_formats,
-            format_assertion,
-            value_schema,
-            definitions: SchemaDefinitions::new(definitions.into()),
-            anchors: SchemaAnchors::new(anchors.into()),
-            dynamic_anchors: SchemaDynamicAnchors::new(dynamic_anchors.into()),
-        }
+        (
+            Self {
+                id,
+                schema_uri,
+                dialect,
+                toml_version,
+                string_formats,
+                format_assertion,
+                value_schema,
+                definitions: SchemaDefinitions::new(definitions.into()),
+                anchors: SchemaAnchors::new(anchors.into()),
+                dynamic_anchors: SchemaDynamicAnchors::new(dynamic_anchors.into()),
+            },
+            root_ref,
+        )
     }
 
     pub fn dialect(&self) -> Option<JsonSchemaDialect> {
@@ -215,11 +217,6 @@ impl DocumentSchema {
 
     pub fn string_formats(&self) -> Option<&[StringFormat]> {
         self.string_formats.as_deref()
-    }
-
-    /// The resolved root value schema, if the root `$ref` (if any) has been resolved.
-    pub fn value_schema(&self) -> Option<&Arc<ValueSchema>> {
-        self.value_schema.as_ref().and_then(Referable::resolved_arc)
     }
 
     pub fn toml_version(&self) -> Option<TomlVersion> {
@@ -236,11 +233,13 @@ impl DocumentSchema {
     }
 
     pub fn as_current_schema(&self) -> Option<CurrentSchema<'_>> {
-        self.value_schema().map(|value_schema| CurrentSchema {
-            value_schema: value_schema.clone(),
-            schema_uri: Cow::Borrowed(&self.schema_uri),
-            definitions: Cow::Borrowed(&self.definitions),
-        })
+        self.value_schema
+            .as_ref()
+            .map(|value_schema| CurrentSchema {
+                value_schema: value_schema.clone(),
+                schema_uri: Cow::Borrowed(&self.schema_uri),
+                definitions: Cow::Borrowed(&self.definitions),
+            })
     }
 }
 
@@ -272,7 +271,7 @@ impl FindSchemaCandidates for DocumentSchema {
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
         async move {
-            if let Some(value_schema) = self.value_schema() {
+            if let Some(value_schema) = &self.value_schema {
                 value_schema
                     .find_schema_candidates(accessors, schema_uri, definitions, schema_store)
                     .await
@@ -419,10 +418,7 @@ mod tests {
         let schema_value = tombi_json::ValueNode::from_str("true").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
         let doc = new_document_schema(schema_value, uri).await;
-        std::assert_matches!(
-            doc.value_schema().map(|schema| &**schema),
-            Some(ValueSchema::Anything(_))
-        );
+        std::assert_matches!(doc.value_schema.as_deref(), Some(ValueSchema::Anything(_)));
     }
 
     #[tokio::test]
@@ -430,10 +426,7 @@ mod tests {
         let schema_value = tombi_json::ValueNode::from_str("false").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
         let doc = new_document_schema(schema_value, uri).await;
-        std::assert_matches!(
-            doc.value_schema().map(|schema| &**schema),
-            Some(ValueSchema::Nothing(_))
-        );
+        std::assert_matches!(doc.value_schema.as_deref(), Some(ValueSchema::Nothing(_)));
     }
 
     #[tokio::test]

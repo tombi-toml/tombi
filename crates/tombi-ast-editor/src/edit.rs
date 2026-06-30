@@ -44,7 +44,7 @@ fn edit_recursive<'a: 'b, 'b>(
         if let Some(Ok(document_schema)) = schema_context
             .get_subschema(accessors.as_ref(), current_schema.as_ref())
             .await
-            && let Some(value_schema) = document_schema.value_schema()
+            && let Some(value_schema) = &document_schema.value_schema
         {
             return edit_recursive(
                 node,
