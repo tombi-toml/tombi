@@ -1,10 +1,11 @@
-use tombi_x_keyword::StringFormat;
+use tombi_x_keyword::{StringFormat, X_NOT_ERROR_MESSAGE};
 
 use crate::{AnchorCollector, DynamicAnchorCollector, SchemaItem, schema_item_from_schema_value};
 
 #[derive(Debug, Clone)]
 pub struct NotSchema {
     pub schema: SchemaItem,
+    pub error_message: Option<String>,
 }
 
 impl NotSchema {
@@ -27,6 +28,11 @@ impl NotSchema {
                     dynamic_anchor_collector,
                 )
             })
-            .map(|schema| Self { schema })
+            .map(|schema| Self {
+                schema,
+                error_message: object
+                    .get(X_NOT_ERROR_MESSAGE)
+                    .and_then(|value| value.as_str().map(str::to_string)),
+            })
     }
 }

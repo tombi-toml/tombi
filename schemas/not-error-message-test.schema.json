@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "NotErrorMessageTest",
+  "type": "object",
+  "properties": {
+    "with_message": {
+      "type": "string",
+      "not": {
+        "const": "forbidden"
+      },
+      "x-not-error-message": "This value is forbidden."
+    },
+    "without_message": {
+      "type": "string",
+      "not": {
+        "const": "forbidden"
+      }
+    }
+  },
+  "additionalProperties": false
+}
