@@ -70,4 +70,8 @@ impl IntegerSchema {
     pub fn value_type(&self) -> crate::ValueType {
         crate::ValueType::Integer
     }
+
+    pub fn deprecated(&self) -> Option<bool> {
+        self.deprecation.as_ref().map(|_| true)
+    }
 }

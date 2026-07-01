@@ -70,4 +70,8 @@ impl LocalTimeSchema {
     pub const fn value_type(&self) -> crate::ValueType {
         crate::ValueType::LocalTime
     }
+
+    pub fn deprecated(&self) -> Option<bool> {
+        self.deprecation.as_ref().map(|_| true)
+    }
 }

@@ -538,7 +538,7 @@ impl FindCompletionContents for ArraySchema {
                             self.description.clone(),
                             edit,
                             schema_uri,
-                            self.deprecation.as_ref().map(|_| true),
+                            self.deprecated(),
                         ));
                     }
 
@@ -556,7 +556,7 @@ impl FindCompletionContents for ArraySchema {
                                 self.description.clone(),
                                 edit,
                                 schema_uri,
-                                self.deprecation.as_ref().map(|_| true),
+                                self.deprecated(),
                             ));
                         }
                     }

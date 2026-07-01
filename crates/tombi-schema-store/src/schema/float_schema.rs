@@ -70,4 +70,8 @@ impl FloatSchema {
     pub const fn value_type(&self) -> crate::ValueType {
         crate::ValueType::Float
     }
+
+    pub fn deprecated(&self) -> Option<bool> {
+        self.deprecation.as_ref().map(|_| true)
+    }
 }

@@ -373,14 +373,14 @@ test_lint! {
         "tuple = [{ value = 1 }, { value = 2 }]\n",
         Config(deprecated_exact_index_override_config()),
     ) -> Err([
-        tombi_validator::DiagnosticKind::DeprecatedValue(
-            tombi_schema_store::SchemaAccessors::from(vec![
+        tombi_validator::DiagnosticKind::DeprecatedValue {
+            schema_accessors: tombi_schema_store::SchemaAccessors::from(vec![
                 tombi_schema_store::SchemaAccessor::Key("tuple".to_string()),
                 tombi_schema_store::SchemaAccessor::Index(0),
                 tombi_schema_store::SchemaAccessor::Key("value".to_string()),
             ]),
-            "1".to_string(),
-        ),
+            value: "1".to_string(),
+        },
     ])
 }
 
@@ -412,13 +412,13 @@ test_lint! {
         "legacy = 1\n",
         Config(deprecated_schema_config(None)),
     ) -> Err([
-        tombi_validator::DiagnosticKind::DeprecatedValueWithMessage(
-            tombi_schema_store::SchemaAccessors::from(vec![
+        tombi_validator::DiagnosticKind::DeprecatedValueWithMessage {
+            schema_accessors: tombi_schema_store::SchemaAccessors::from(vec![
                 tombi_schema_store::SchemaAccessor::Key("legacy".to_string()),
             ]),
-            "1".to_string(),
-            "Use `value` instead".to_string(),
-        ),
+            value: "1".to_string(),
+            message: "Use `value` instead".to_string(),
+        },
     ])
 }
 

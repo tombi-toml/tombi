@@ -97,4 +97,8 @@ impl StringSchema {
     pub const fn value_type(&self) -> crate::ValueType {
         crate::ValueType::String
     }
+
+    pub fn deprecated(&self) -> Option<bool> {
+        self.deprecation.as_ref().map(|_| true)
+    }
 }

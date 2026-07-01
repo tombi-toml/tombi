@@ -123,12 +123,13 @@ pub fn handle_deprecated<'a, T>(
         let level =
             resolve_deprecated_lint_level(common_rules, current_schema, accessors, schema_context);
 
-        let accessors = tombi_schema_store::SchemaAccessors::from(accessors);
+        let schema_accessors = tombi_schema_store::SchemaAccessors::from(accessors);
         let kind = match deprecation.message() {
-            Some(message) => {
-                crate::DiagnosticKind::DeprecatedWithMessage(accessors, message.to_string())
-            }
-            None => crate::DiagnosticKind::Deprecated(accessors),
+            Some(message) => crate::DiagnosticKind::DeprecatedWithMessage {
+                schema_accessors,
+                message: message.to_string(),
+            },
+            None => crate::DiagnosticKind::Deprecated { schema_accessors },
         };
 
         crate::Diagnostic {
@@ -163,15 +164,18 @@ pub fn handle_deprecated_value<'a, T>(
         let level =
             resolve_deprecated_lint_level(common_rules, current_schema, accessors, schema_context);
 
-        let accessors = tombi_schema_store::SchemaAccessors::from(accessors);
+        let schema_accessors = tombi_schema_store::SchemaAccessors::from(accessors);
         let value_string = value.to_string();
         let kind = match deprecation.message() {
-            Some(message) => crate::DiagnosticKind::DeprecatedValueWithMessage(
-                accessors,
-                value_string,
-                message.to_string(),
-            ),
-            None => crate::DiagnosticKind::DeprecatedValue(accessors, value_string),
+            Some(message) => crate::DiagnosticKind::DeprecatedValueWithMessage {
+                schema_accessors,
+                value: value_string,
+                message: message.to_string(),
+            },
+            None => crate::DiagnosticKind::DeprecatedValue {
+                schema_accessors,
+                value: value_string,
+            },
         };
 
         crate::Diagnostic {

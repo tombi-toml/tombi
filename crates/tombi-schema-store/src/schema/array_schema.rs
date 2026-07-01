@@ -220,6 +220,10 @@ impl ArraySchema {
     pub fn value_type(&self) -> crate::ValueType {
         crate::ValueType::Array
     }
+
+    pub fn deprecated(&self) -> Option<bool> {
+        self.deprecation.as_ref().map(|_| true)
+    }
 }
 
 impl FindSchemaCandidates for ArraySchema {

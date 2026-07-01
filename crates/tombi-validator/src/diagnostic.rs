@@ -14,20 +14,30 @@ pub enum DiagnosticKind {
     UnusedNoqa { rule_name: &'static str },
 
     /// The entire Table or Array is deprecated
-    #[error("`{0}` is deprecated")]
-    Deprecated(SchemaAccessors),
+    #[error("`{schema_accessors}` is deprecated")]
+    Deprecated { schema_accessors: SchemaAccessors },
 
     /// The entire Table or Array is deprecated with a custom message (`deprecationMessage`)
-    #[error("{1}")]
-    DeprecatedWithMessage(SchemaAccessors, String),
+    #[error("`{schema_accessors}` is deprecated. {message}")]
+    DeprecatedWithMessage {
+        schema_accessors: SchemaAccessors,
+        message: String,
+    },
 
     /// The value is deprecated
-    #[error("`{0} = {1}` is deprecated")]
-    DeprecatedValue(SchemaAccessors, String),
+    #[error("`{schema_accessors} = {value}` is deprecated")]
+    DeprecatedValue {
+        schema_accessors: SchemaAccessors,
+        value: String,
+    },
 
     /// The value is deprecated with a custom message (`deprecationMessage`)
-    #[error("{2}")]
-    DeprecatedValueWithMessage(SchemaAccessors, String, String),
+    #[error("`{schema_accessors} = {value}` is deprecated. {message}")]
+    DeprecatedValueWithMessage {
+        schema_accessors: SchemaAccessors,
+        value: String,
+        message: String,
+    },
 
     #[error(
         "In strict mode, {accessors} does not allow \"{key}\" key. \

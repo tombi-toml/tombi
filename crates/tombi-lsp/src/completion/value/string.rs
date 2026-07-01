@@ -120,7 +120,7 @@ impl FindCompletionContents for StringSchema {
                     self.description.clone(),
                     edit,
                     schema_uri,
-                    self.deprecation.as_ref().map(|_| true),
+                    self.deprecated(),
                 ));
             }
 
@@ -133,7 +133,7 @@ impl FindCompletionContents for StringSchema {
                     self.description.clone(),
                     edit,
                     schema_uri,
-                    self.deprecation.as_ref().map(|_| true),
+                    self.deprecated(),
                 ));
                 return merge_adjacent_schema_completion_items(
                     position,
@@ -160,7 +160,7 @@ impl FindCompletionContents for StringSchema {
                         self.description.clone(),
                         edit,
                         schema_uri,
-                        self.deprecation.as_ref().map(|_| true),
+                        self.deprecated(),
                     ));
                 }
                 return merge_adjacent_schema_completion_items(
@@ -191,7 +191,7 @@ impl FindCompletionContents for StringSchema {
                         self.description.clone(),
                         edit,
                         schema_uri,
-                        self.deprecation.as_ref().map(|_| true),
+                        self.deprecated(),
                     ));
                 }
             }
