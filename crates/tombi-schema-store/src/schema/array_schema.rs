@@ -35,7 +35,7 @@ pub struct ArraySchema {
     pub const_value: Option<tombi_json::Value>,
     pub examples: Option<Vec<tombi_json::Value>>,
     pub values_order: Option<XTombiArrayValuesOrder>,
-    pub deprecated: Option<bool>,
+    pub deprecation: Option<crate::Deprecation>,
     pub one_of: Option<Box<OneOfSchema>>,
     pub any_of: Option<Box<AnyOfSchema>>,
     pub all_of: Option<Box<AllOfSchema>>,
@@ -200,7 +200,7 @@ impl ArraySchema {
             values_order: object
                 .get(X_TOMBI_ARRAY_VALUES_ORDER)
                 .and_then(XTombiArrayValuesOrder::new),
-            deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
+            deprecation: crate::Deprecation::new(object),
             one_of,
             any_of,
             all_of,
@@ -219,6 +219,10 @@ impl ArraySchema {
 
     pub fn value_type(&self) -> crate::ValueType {
         crate::ValueType::Array
+    }
+
+    pub fn deprecated(&self) -> Option<bool> {
+        self.deprecation.as_ref().map(|_| true)
     }
 }
 

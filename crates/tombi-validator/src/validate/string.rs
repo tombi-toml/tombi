@@ -320,7 +320,7 @@ where
 
             handle_deprecated_value(
                 &mut diagnostics,
-                string_schema.deprecated,
+                string_schema.deprecation.as_ref(),
                 accessors,
                 string_value,
                 Some(current_schema),

@@ -4,6 +4,15 @@
     "value": {
       "type": "integer",
       "deprecated": true
+    },
+    "legacy": {
+      "type": "integer",
+      "deprecated": true,
+      "deprecationMessage": "Use `value` instead"
+    },
+    "message_only": {
+      "type": "integer",
+      "deprecationMessage": "Use `value` instead"
     }
   },
   "additionalProperties": false

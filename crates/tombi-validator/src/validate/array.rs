@@ -563,7 +563,7 @@ async fn validate_array(
     if total_diagnostics.is_empty() {
         handle_deprecated(
             &mut total_diagnostics,
-            array_schema.deprecated,
+            array_schema.deprecation.as_ref(),
             accessors,
             array_value,
             Some(current_schema),

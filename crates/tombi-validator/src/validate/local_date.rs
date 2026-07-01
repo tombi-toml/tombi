@@ -187,7 +187,7 @@ async fn validate_local_date(
     if diagnostics.is_empty() {
         handle_deprecated_value(
             &mut diagnostics,
-            local_date_schema.deprecated,
+            local_date_schema.deprecation.as_ref(),
             accessors,
             local_date_value,
             Some(current_schema),

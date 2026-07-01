@@ -6,8 +6,8 @@ use tombi_x_keyword::StringFormat;
 use crate::x_taplo::XTaplo;
 
 use super::{
-    AnchorCollector, DynamicAnchorCollector, SchemaDefinitions, SchemaMap, SchemaUri, ValueSchema,
-    bool_value_schema,
+    AnchorCollector, Deprecation, DynamicAnchorCollector, SchemaDefinitions, SchemaMap, SchemaUri,
+    ValueSchema, bool_value_schema,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,7 +30,7 @@ pub enum Referable<T> {
         description: Option<String>,
         default: Option<tombi_json::Value>,
         examples: Option<Vec<tombi_json::Value>>,
-        deprecated: Option<bool>,
+        deprecation: Option<Deprecation>,
     },
 }
 
@@ -120,9 +120,7 @@ impl Referable<ValueSchema> {
                     .get("examples")
                     .and_then(|examples| examples.as_array())
                     .map(|array| array.items.iter().map(Into::into).collect()),
-                deprecated: object
-                    .get("deprecated")
-                    .and_then(|deprecated| deprecated.as_bool()),
+                deprecation: Deprecation::new(object),
             })
         } else {
             ValueSchema::new(
@@ -159,10 +157,12 @@ impl Referable<ValueSchema> {
         matches!(self, Referable::Ref { .. })
     }
 
-    pub fn deprecated<'a: 'b, 'b>(&'a self) -> tombi_future::BoxFuture<'b, Option<bool>> {
+    pub fn deprecation<'a: 'b, 'b>(
+        &'a self,
+    ) -> tombi_future::BoxFuture<'b, Option<crate::Deprecation>> {
         Box::pin(async move {
             match self {
-                Referable::Resolved { value, .. } => value.deprecated().await,
+                Referable::Resolved { value, .. } => value.deprecation().await,
                 Referable::Ref { .. } => None,
             }
         })
@@ -214,7 +214,7 @@ impl Referable<ValueSchema> {
                     description,
                     default,
                     examples,
-                    deprecated,
+                    deprecation,
                 } => {
                     let dynamic_target = match kind {
                         ReferenceKind::DynamicRef => parse_dynamic_anchor_reference(reference),
@@ -240,7 +240,7 @@ impl Referable<ValueSchema> {
                                 description.as_ref(),
                                 default.as_ref(),
                                 examples.as_ref(),
-                                *deprecated,
+                                deprecation.clone(),
                             );
                             *self = referable_schema;
                             return self
@@ -268,7 +268,7 @@ impl Referable<ValueSchema> {
                             description.as_ref(),
                             default.as_ref(),
                             examples.as_ref(),
-                            *deprecated,
+                            deprecation.clone(),
                         );
 
                         *self = referable_schema;
@@ -301,8 +301,8 @@ impl Referable<ValueSchema> {
                                 if let Some(examples) = examples {
                                     resolved_schema.set_examples(Some(examples.clone()));
                                 }
-                                if let Some(deprecated) = deprecated {
-                                    resolved_schema.set_deprecated(*deprecated);
+                                if let Some(deprecation) = deprecation {
+                                    resolved_schema.set_deprecation(deprecation.clone());
                                 }
 
                                 return Ok(Some(CurrentSchema {
@@ -338,9 +338,9 @@ impl Referable<ValueSchema> {
                             let value_schema = Arc::make_mut(&mut resolved_value);
                             value_schema.set_examples(Some(examples.clone()));
                         }
-                        if let Some(deprecated) = deprecated {
+                        if let Some(deprecation) = deprecation {
                             let value_schema = Arc::make_mut(&mut resolved_value);
-                            value_schema.set_deprecated(*deprecated);
+                            value_schema.set_deprecation(deprecation.clone());
                         }
 
                         *self = Referable::Resolved {
@@ -455,7 +455,7 @@ fn apply_ref_annotations(
     description: Option<&String>,
     default: Option<&tombi_json::Value>,
     examples: Option<&Vec<tombi_json::Value>>,
-    deprecated: Option<bool>,
+    deprecation: Option<Deprecation>,
 ) {
     match referable_schema {
         Referable::Resolved {
@@ -475,8 +475,8 @@ fn apply_ref_annotations(
             if let Some(examples) = examples {
                 value_schema.set_examples(Some(examples.clone()));
             }
-            if let Some(deprecated) = deprecated {
-                value_schema.set_deprecated(deprecated);
+            if let Some(deprecation) = deprecation {
+                value_schema.set_deprecation(deprecation);
             }
         }
         Referable::Ref {
@@ -484,7 +484,7 @@ fn apply_ref_annotations(
             description: ref_description,
             default: ref_default,
             examples: ref_examples,
-            deprecated: ref_deprecated,
+            deprecation: ref_deprecation,
             ..
         } => {
             if let Some(title) = title {
@@ -499,8 +499,8 @@ fn apply_ref_annotations(
             if let Some(examples) = examples {
                 *ref_examples = Some(examples.clone());
             }
-            if let Some(deprecated) = deprecated {
-                *ref_deprecated = Some(deprecated);
+            if let Some(deprecation) = deprecation {
+                *ref_deprecation = Some(deprecation);
             }
         }
     }
@@ -1113,7 +1113,7 @@ mod test {
             description: None,
             default: None,
             examples: None,
-            deprecated: None,
+            deprecation: None,
         };
 
         let value_type = referable.value_type().await;

@@ -433,5 +433,13 @@ Some are used as annotations for validation behavior, hover, completion, or diag
 </Note>
 
 <Note>
+`deprecationMessage` is a non-standard keyword originating from the VS Code JSON language service
+(it is not part of any JSON Schema dialect), and Tombi accepts it for compatibility. It is only
+honored alongside `deprecated: true`: when both are present, the `deprecationMessage` string is
+used as the deprecation diagnostic message (instead of the generic one). A `deprecationMessage`
+without `deprecated: true` is ignored.
+</Note>
+
+<Note>
 Tombi defaults to a non-standard `strict` behavior: when `additionalProperties` is omitted, objects are treated as closed unless you disable `schema.strict`.
 </Note>

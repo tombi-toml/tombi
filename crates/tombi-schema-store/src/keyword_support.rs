@@ -40,8 +40,8 @@ pub fn keyword_vocabulary(keyword: &str) -> Option<JsonSchemaVocabulary> {
             Some(JsonSchemaVocabulary::Validation)
         }
         "unevaluatedProperties" | "unevaluatedItems" => Some(JsonSchemaVocabulary::Unevaluated),
-        "title" | "description" | "default" | "deprecated" | "readOnly" | "writeOnly"
-        | "examples" | "$comment" => Some(JsonSchemaVocabulary::MetaData),
+        "title" | "description" | "default" | "deprecated" | "deprecationMessage" | "readOnly"
+        | "writeOnly" | "examples" | "$comment" => Some(JsonSchemaVocabulary::MetaData),
         "format" => Some(JsonSchemaVocabulary::Format),
         "contentEncoding" | "contentMediaType" | "contentSchema" => {
             Some(JsonSchemaVocabulary::Content)

@@ -190,7 +190,7 @@ async fn validate_boolean(
     if diagnostics.is_empty() {
         handle_deprecated_value(
             &mut diagnostics,
-            boolean_schema.deprecated,
+            boolean_schema.deprecation.as_ref(),
             accessors,
             boolean_value,
             Some(current_schema),

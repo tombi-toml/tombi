@@ -293,9 +293,10 @@ async fn validate_table(
                 .await
                 .inspect_err(|err| log::warn!("{err}"))
             {
+                let deprecation = current_schema.value_schema.deprecation().await;
                 handle_deprecated_value(
                     &mut total_diagnostics,
-                    current_schema.value_schema.deprecated().await,
+                    deprecation.as_ref(),
                     &new_accessors,
                     value,
                     Some(&current_schema),
@@ -750,7 +751,7 @@ async fn validate_table(
     if total_diagnostics.is_empty() {
         handle_deprecated(
             &mut total_diagnostics,
-            table_schema.deprecated,
+            table_schema.deprecation.as_ref(),
             accessors,
             table_value,
             Some(current_schema),
@@ -1245,7 +1246,7 @@ async fn convert_deprecated_diagnostics_range(
     key: &tombi_document_tree::Key,
     schema_diagnostics: &mut [tombi_diagnostic::Diagnostic],
 ) {
-    if current_schema.value_schema.deprecated().await == Some(true) {
+    if current_schema.value_schema.deprecation().await.is_some() {
         for diagnostic in schema_diagnostics.iter_mut() {
             if diagnostic.code() == "deprecated" && diagnostic.range() == value.range() {
                 let range = key.range() + value.range();

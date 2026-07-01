@@ -107,7 +107,7 @@ fn resolve_deprecated_lint_level(
 
 pub fn handle_deprecated<'a, T>(
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-    deprecated: Option<bool>,
+    deprecation: Option<&tombi_schema_store::Deprecation>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
     current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,
@@ -119,14 +119,21 @@ pub fn handle_deprecated<'a, T>(
 ) where
     T: tombi_document_tree::ValueImpl,
 {
-    if deprecated == Some(true) {
+    if let Some(deprecation) = deprecation {
         let level =
             resolve_deprecated_lint_level(common_rules, current_schema, accessors, schema_context);
 
+        let schema_accessors = tombi_schema_store::SchemaAccessors::from(accessors);
+        let kind = match deprecation.message() {
+            Some(message) => crate::DiagnosticKind::DeprecatedWithMessage {
+                schema_accessors,
+                message: message.to_string(),
+            },
+            None => crate::DiagnosticKind::Deprecated { schema_accessors },
+        };
+
         crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::Deprecated(
-                tombi_schema_store::SchemaAccessors::from(accessors),
-            )),
+            kind: Box::new(kind),
             range: value.range(),
         }
         .push_diagnostic_with_level(level, diagnostics);
@@ -141,7 +148,7 @@ pub fn handle_deprecated<'a, T>(
 
 pub fn handle_deprecated_value<'a, T>(
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-    deprecated: Option<bool>,
+    deprecation: Option<&tombi_schema_store::Deprecation>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
     current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,
@@ -153,15 +160,26 @@ pub fn handle_deprecated_value<'a, T>(
 ) where
     T: tombi_document_tree::ValueImpl + ToString,
 {
-    if deprecated == Some(true) {
+    if let Some(deprecation) = deprecation {
         let level =
             resolve_deprecated_lint_level(common_rules, current_schema, accessors, schema_context);
 
+        let schema_accessors = tombi_schema_store::SchemaAccessors::from(accessors);
+        let value_string = value.to_string();
+        let kind = match deprecation.message() {
+            Some(message) => crate::DiagnosticKind::DeprecatedValueWithMessage {
+                schema_accessors,
+                value: value_string,
+                message: message.to_string(),
+            },
+            None => crate::DiagnosticKind::DeprecatedValue {
+                schema_accessors,
+                value: value_string,
+            },
+        };
+
         crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
-                tombi_schema_store::SchemaAccessors::from(accessors),
-                value.to_string(),
-            )),
+            kind: Box::new(kind),
             range: value.range(),
         }
         .push_diagnostic_with_level(level, diagnostics);
@@ -343,7 +361,7 @@ fn is_multiple_of_with_tolerance(value: f64, multiple_of: f64) -> bool {
 
 #[allow(clippy::result_large_err)]
 fn validate_deprecated<'a, T>(
-    deprecated: Option<bool>,
+    deprecation: Option<&tombi_schema_store::Deprecation>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
     current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,
@@ -359,7 +377,7 @@ where
     let mut diagnostics = Vec::with_capacity(1);
     handle_deprecated(
         &mut diagnostics,
-        deprecated,
+        deprecation,
         accessors,
         value,
         current_schema,

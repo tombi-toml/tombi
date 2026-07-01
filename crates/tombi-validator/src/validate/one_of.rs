@@ -166,7 +166,7 @@ where
             if error.diagnostics.is_empty() {
                 handle_deprecated(
                     &mut error.diagnostics,
-                    one_of_schema.deprecated,
+                    one_of_schema.deprecation.as_ref(),
                     accessors,
                     value,
                     Some(current_schema),

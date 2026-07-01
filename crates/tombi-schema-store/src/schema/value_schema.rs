@@ -6,9 +6,10 @@ use tombi_json::StringNode;
 use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
 use super::{
-    AllOfSchema, AnchorCollector, AnyOfSchema, ArraySchema, BooleanSchema, DynamicAnchorCollector,
-    FindSchemaCandidates, FloatSchema, IntegerSchema, LocalDateSchema, LocalDateTimeSchema,
-    LocalTimeSchema, OffsetDateTimeSchema, OneOfSchema, SchemaUri, StringSchema, TableSchema,
+    AllOfSchema, AnchorCollector, AnyOfSchema, ArraySchema, BooleanSchema, Deprecation,
+    DynamicAnchorCollector, FindSchemaCandidates, FloatSchema, IntegerSchema, LocalDateSchema,
+    LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema, OneOfSchema, SchemaUri,
+    StringSchema, TableSchema,
 };
 use crate::{
     Accessor, JsonSchemaVocabulary, Referable, SchemaDefinitions, SchemaStore,
@@ -514,7 +515,7 @@ impl ValueSchema {
                         .get("examples")
                         .and_then(|v| v.as_array())
                         .map(|array| array.items.iter().map(|v| v.into()).collect()),
-                    deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
+                    deprecation: Deprecation::new(object),
                     keys_order: object
                         .get(X_TOMBI_TABLE_KEYS_ORDER)
                         .and_then(|v| v.as_str().and_then(|s| TableKeysOrder::try_from(s).ok())),
@@ -563,51 +564,70 @@ impl ValueSchema {
         }
     }
 
-    pub async fn deprecated(&self) -> Option<bool> {
+    /// The deprecation state of this schema, used for diagnostics and completion.
+    ///
+    /// For composites (`oneOf`/`anyOf`/`allOf`) the node is deprecated only when every
+    /// non-null branch is deprecated; the first branch's `deprecationMessage` (if any) is
+    /// surfaced. The schema's own deprecation takes precedence over its branches.
+    pub async fn deprecation(&self) -> Option<Deprecation> {
         match self {
-            Self::Boolean(boolean) => boolean.deprecated,
-            Self::Integer(integer) => integer.deprecated,
-            Self::Float(float) => float.deprecated,
-            Self::String(string) => string.deprecated,
-            Self::LocalDate(local_date) => local_date.deprecated,
-            Self::LocalDateTime(local_date_time) => local_date_time.deprecated,
-            Self::LocalTime(local_time) => local_time.deprecated,
-            Self::OffsetDateTime(offset_date_time) => offset_date_time.deprecated,
-            Self::Array(array) => array.deprecated,
-            Self::Table(table) => table.deprecated,
+            Self::Boolean(boolean) => boolean.deprecation.clone(),
+            Self::Integer(integer) => integer.deprecation.clone(),
+            Self::Float(float) => float.deprecation.clone(),
+            Self::String(string) => string.deprecation.clone(),
+            Self::LocalDate(local_date) => local_date.deprecation.clone(),
+            Self::LocalDateTime(local_date_time) => local_date_time.deprecation.clone(),
+            Self::LocalTime(local_time) => local_time.deprecation.clone(),
+            Self::OffsetDateTime(offset_date_time) => offset_date_time.deprecation.clone(),
+            Self::Array(array) => array.deprecation.clone(),
+            Self::Table(table) => table.deprecation.clone(),
             Self::OneOf(OneOfSchema {
-                deprecated,
+                deprecation,
                 schemas,
                 ..
             })
             | Self::AnyOf(AnyOfSchema {
-                deprecated,
+                deprecation,
                 schemas,
                 ..
             })
             | Self::AllOf(AllOfSchema {
-                deprecated,
+                deprecation,
                 schemas,
                 ..
             }) => {
-                if let Some(true) = deprecated {
-                    Some(true)
-                } else {
-                    let mut has_deprecated = false;
-                    for schema in schemas.read().await.iter() {
-                        if schema
-                            .resolved()
-                            .is_some_and(|value_schema| matches!(value_schema, ValueSchema::Null))
-                        {
-                            continue;
-                        }
-                        if schema.deprecated().await != Some(true) {
-                            return None;
-                        } else {
-                            has_deprecated = true;
-                        }
+                if let Some(deprecation) = deprecation {
+                    return Some(deprecation.clone());
+                }
+
+                let mut has_branch = false;
+                let mut message = None;
+                for schema in schemas.read().await.iter() {
+                    if schema
+                        .resolved()
+                        .is_some_and(|value_schema| matches!(value_schema, ValueSchema::Null))
+                    {
+                        continue;
                     }
-                    if has_deprecated { Some(true) } else { None }
+                    has_branch = true;
+                    match schema.deprecation().await {
+                        Some(deprecation) => {
+                            if message.is_none() {
+                                message = deprecation.message().map(ToString::to_string);
+                            }
+                        }
+                        None => return None,
+                    }
+                }
+
+                if has_branch {
+                    Some(
+                        message
+                            .map(Deprecation::Message)
+                            .unwrap_or(Deprecation::True),
+                    )
+                } else {
+                    None
                 }
             }
             Self::Null | Self::Anything(_) | Self::Nothing(_) => None,
@@ -881,23 +901,22 @@ impl ValueSchema {
         }
     }
 
-    pub(crate) fn set_deprecated(&mut self, deprecated: bool) {
+    pub(crate) fn set_deprecation(&mut self, deprecation: Deprecation) {
+        let deprecation = Some(deprecation);
         match self {
-            Self::Boolean(boolean) => boolean.deprecated = Some(deprecated),
-            Self::Integer(integer) => integer.deprecated = Some(deprecated),
-            Self::Float(float) => float.deprecated = Some(deprecated),
-            Self::String(string) => string.deprecated = Some(deprecated),
-            Self::LocalDate(local_date) => local_date.deprecated = Some(deprecated),
-            Self::LocalDateTime(local_date_time) => local_date_time.deprecated = Some(deprecated),
-            Self::LocalTime(local_time) => local_time.deprecated = Some(deprecated),
-            Self::OffsetDateTime(offset_date_time) => {
-                offset_date_time.deprecated = Some(deprecated)
-            }
-            Self::Array(array) => array.deprecated = Some(deprecated),
-            Self::Table(table) => table.deprecated = Some(deprecated),
-            Self::OneOf(one_of) => one_of.deprecated = Some(deprecated),
-            Self::AnyOf(any_of) => any_of.deprecated = Some(deprecated),
-            Self::AllOf(all_of) => all_of.deprecated = Some(deprecated),
+            Self::Boolean(boolean) => boolean.deprecation = deprecation,
+            Self::Integer(integer) => integer.deprecation = deprecation,
+            Self::Float(float) => float.deprecation = deprecation,
+            Self::String(string) => string.deprecation = deprecation,
+            Self::LocalDate(local_date) => local_date.deprecation = deprecation,
+            Self::LocalDateTime(local_date_time) => local_date_time.deprecation = deprecation,
+            Self::LocalTime(local_time) => local_time.deprecation = deprecation,
+            Self::OffsetDateTime(offset_date_time) => offset_date_time.deprecation = deprecation,
+            Self::Array(array) => array.deprecation = deprecation,
+            Self::Table(table) => table.deprecation = deprecation,
+            Self::OneOf(one_of) => one_of.deprecation = deprecation,
+            Self::AnyOf(any_of) => any_of.deprecation = deprecation,
+            Self::AllOf(all_of) => all_of.deprecation = deprecation,
             Self::Null | Self::Anything(_) | Self::Nothing(_) => {}
         }
     }

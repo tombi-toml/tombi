@@ -65,7 +65,7 @@ where
         if total_diagnostics.is_empty() {
             handle_deprecated(
                 &mut total_diagnostics,
-                all_of_schema.deprecated,
+                all_of_schema.deprecation.as_ref(),
                 accessors,
                 value,
                 Some(current_schema),

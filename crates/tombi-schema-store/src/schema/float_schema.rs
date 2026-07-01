@@ -14,7 +14,7 @@ pub struct FloatSchema {
     pub default: Option<f64>,
     pub const_value: Option<f64>,
     pub examples: Option<Vec<f64>>,
-    pub deprecated: Option<bool>,
+    pub deprecation: Option<crate::Deprecation>,
     pub one_of: Option<Box<OneOfSchema>>,
     pub any_of: Option<Box<AnyOfSchema>>,
     pub all_of: Option<Box<AllOfSchema>>,
@@ -58,7 +58,7 @@ impl FloatSchema {
                 .get("examples")
                 .and_then(|v| v.as_array())
                 .map(|v| v.items.iter().filter_map(|v| v.as_f64()).collect()),
-            deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
+            deprecation: crate::Deprecation::new(object),
             one_of,
             any_of,
             all_of,
@@ -69,5 +69,9 @@ impl FloatSchema {
 
     pub const fn value_type(&self) -> crate::ValueType {
         crate::ValueType::Float
+    }
+
+    pub fn deprecated(&self) -> Option<bool> {
+        self.deprecation.as_ref().map(|_| true)
     }
 }

@@ -15,7 +15,7 @@ pub struct OneOfSchema {
     pub schemas: ReferableValueSchemas,
     pub default: Option<tombi_json::Value>,
     pub examples: Option<Vec<tombi_json::Value>>,
-    pub deprecated: Option<bool>,
+    pub deprecation: Option<crate::Deprecation>,
     pub keys_order: Option<TableKeysOrder>,
     pub not: Option<Box<NotSchema>>,
     pub if_then_else: Option<Box<IfThenElseSchema>>,
@@ -69,7 +69,7 @@ impl OneOfSchema {
                 .get("examples")
                 .and_then(|v| v.as_array())
                 .map(|array| array.items.iter().map(|v| v.into()).collect()),
-            deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
+            deprecation: crate::Deprecation::new(object),
             keys_order: object
                 .get(X_TOMBI_TABLE_KEYS_ORDER)
                 .and_then(|v| v.as_str().and_then(|s| TableKeysOrder::try_from(s).ok())),

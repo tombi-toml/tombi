@@ -359,7 +359,7 @@ async fn validate_float(
     if diagnostics.is_empty() {
         handle_deprecated_value(
             &mut diagnostics,
-            float_schema.deprecated,
+            float_schema.deprecation.as_ref(),
             accessors,
             float_value,
             Some(current_schema),

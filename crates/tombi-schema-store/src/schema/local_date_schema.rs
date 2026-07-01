@@ -9,7 +9,7 @@ pub struct LocalDateSchema {
     pub default: Option<String>,
     pub const_value: Option<String>,
     pub examples: Option<Vec<String>>,
-    pub deprecated: Option<bool>,
+    pub deprecation: Option<crate::Deprecation>,
     pub one_of: Option<Box<OneOfSchema>>,
     pub any_of: Option<Box<AnyOfSchema>>,
     pub all_of: Option<Box<AllOfSchema>>,
@@ -58,7 +58,7 @@ impl LocalDateSchema {
                     .filter_map(|v| v.as_str().map(ToString::to_string))
                     .collect()
             }),
-            deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
+            deprecation: crate::Deprecation::new(object),
             range: object.range,
             one_of,
             any_of,
@@ -69,5 +69,9 @@ impl LocalDateSchema {
 
     pub fn value_type(&self) -> crate::ValueType {
         crate::ValueType::LocalDate
+    }
+
+    pub fn deprecated(&self) -> Option<bool> {
+        self.deprecation.as_ref().map(|_| true)
     }
 }
