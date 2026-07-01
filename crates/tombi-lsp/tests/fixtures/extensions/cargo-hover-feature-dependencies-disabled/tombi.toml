@@ -2,7 +2,7 @@
 "tombi-toml/cargo" = {
   lsp.hover = {
     default-features.enabled = true,
-    feature-dependencies.enabled = false,
     dependency-detail.enabled = true,
+    feature-dependencies.enabled = false,
   }
 }
