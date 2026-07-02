@@ -8,13 +8,13 @@ changelog:
     - title: 🚨 Breaking Changes
       labels:
         - breaking-change
-    - title: 🚀 New Features
+    - title: 🦅 New Features
       labels:
         - enhancement
-    - title: 🐛 Bug Fixes
+    - title: 🐝 Bug Fixes
       labels:
         - bug
-    - title: 👒 Dependencies
+    - title: 📦 Dependencies
       labels:
         - dependencies
     - title: 🛠️ Other Changes
