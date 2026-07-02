@@ -23,7 +23,7 @@ impl Print<Simple> for Level {
             Style::new()
         };
 
-        print!("{}", level_style.paint(self.as_padded_str()));
+        eprint!("{}", level_style.paint(self.as_padded_str()));
     }
 }
 
@@ -36,6 +36,6 @@ impl Print<Simple> for Diagnostic {
         };
 
         self.level().print(printer);
-        println!(": {}", message_style.paint(self.message()));
+        eprintln!(": {}", message_style.paint(self.message()));
     }
 }
