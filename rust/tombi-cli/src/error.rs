@@ -84,6 +84,6 @@ impl Print<Simple> for Error {
         };
 
         Level::ERROR.print(printer);
-        println!(": {}", message_style.paint(self.to_string()));
+        eprintln!(": {}", message_style.paint(self.to_string()));
     }
 }

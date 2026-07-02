@@ -37,10 +37,10 @@ impl Print<Pretty> for Diagnostic {
             (Style::new(), Style::new(), Style::new())
         };
 
-        println!(": {}", message_style.paint(self.message()));
+        eprintln!(": {}", message_style.paint(self.message()));
 
         if let Some(source_file) = self.source_file() {
-            println!(
+            eprintln!(
                 "    {} {}",
                 at_style.paint("at"),
                 link_style.paint(format!(
@@ -51,7 +51,7 @@ impl Print<Pretty> for Diagnostic {
                 )),
             );
         } else {
-            println!(
+            eprintln!(
                 "    {}",
                 at_style.paint(format!(
                     "at line {} column {}",
