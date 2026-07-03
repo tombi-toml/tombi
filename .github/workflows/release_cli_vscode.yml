@@ -216,6 +216,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -241,7 +243,12 @@ jobs:
         id: find_cli_assets
         shell: bash
         run: |
-          echo "ASSETS=$(find tombi-cli-artifacts tombi-vscode-artifacts -type f | tr '\n' ' ')" >> "$GITHUB_ENV"
+          echo "ASSETS=$(find tombi-cli-artifacts tombi-vscode-artifacts -type f | sort | tr '\n' ' ')" >> "$GITHUB_ENV"
+          {
+            echo "release_assets<<EOF"
+            find tombi-cli-artifacts tombi-vscode-artifacts -type f | sort
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Check ASSETS
         run: |
@@ -251,6 +258,12 @@ jobs:
             exit 1
           fi
           echo "ASSETS found successfully."
+
+      - name: Generate artifact attestation
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        if: startsWith(github.ref, 'refs/tags/') && needs.check-release-notes.outputs.exists == 'false'
+        with:
+          subject-path: ${{ steps.find_cli_assets.outputs.release_assets }}
 
       - name: Create GitHub Release
         env:
