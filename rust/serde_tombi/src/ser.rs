@@ -146,8 +146,8 @@ impl Serializer<'_> {
         match formatter.format(&toml_text).await {
             Ok(formatted) => Ok(formatted),
             Err(errors) => {
-                tracing::trace!("toml_text:\n{}", toml_text);
-                tracing::trace!("errors: {:?}", errors);
+                log::trace!("toml_text:\n{}", toml_text);
+                log::trace!("errors: {:?}", errors);
                 unreachable!("Document must be valid TOML.")
             }
         }

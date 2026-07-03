@@ -39,7 +39,7 @@ where
         schema_context.store,
     )
     .await
-    .inspect_err(|err| tracing::warn!("{err}"))
+    .inspect_err(|err| log::warn!("{err}"))
     {
         value
             .validate(accessors, Some(&if_current_schema), schema_context)
@@ -59,7 +59,7 @@ where
                 schema_context.store,
             )
             .await
-            .inspect_err(|err| tracing::warn!("{err}"))
+            .inspect_err(|err| log::warn!("{err}"))
         {
             let branch_result = value
                 .validate(accessors, Some(&then_current_schema), schema_context)
@@ -78,7 +78,7 @@ where
                 schema_context.store,
             )
             .await
-            .inspect_err(|err| tracing::warn!("{err}"))
+            .inspect_err(|err| log::warn!("{err}"))
         {
             return value
                 .validate(accessors, Some(&else_current_schema), schema_context)

@@ -553,7 +553,7 @@ age = 30
             Value::Table(aaa_table),
         );
 
-        tracing::trace!("document: {document:?}");
+        log::trace!("document: {document:?}");
 
         // Test to_string method
         let toml_string = crate::to_string_async(&document).await.unwrap();

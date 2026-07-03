@@ -1334,7 +1334,7 @@ mod goto_definition_tests {
             return Err("failed to handle goto_definition".into());
         };
 
-        tracing::debug!("goto_definition result: {:#?}", result);
+        log::debug!("goto_definition result: {:#?}", result);
 
         match expected {
             ExpectedGotoDefinition::Paths(expected_paths) => match result {

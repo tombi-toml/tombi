@@ -66,7 +66,7 @@ pub async fn get_workspace_configs(backend: &Backend) -> Option<Vec<WorkspaceCon
                     .collect_vec()
             });
 
-    tracing::debug!("workspace_folder_paths: {:?}", workspace_folder_paths);
+    log::debug!("workspace_folder_paths: {:?}", workspace_folder_paths);
 
     let workspace_folder_paths = workspace_folder_paths?;
 

@@ -3,8 +3,8 @@ use tower_lsp::lsp_types::DidChangeTextDocumentParams;
 use crate::backend::Backend;
 
 pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentParams) {
-    tracing::info!("handle_did_change");
-    tracing::trace!("{:?}", params);
+    log::info!("handle_did_change");
+    log::trace!("{:?}", params);
 
     let DidChangeTextDocumentParams {
         text_document,
@@ -16,7 +16,7 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
 
     for content_change in content_changes {
         if let Some(range) = content_change.range {
-            tracing::warn!("Range change is not supported: {:?}", range);
+            log::warn!("Range change is not supported: {:?}", range);
         } else {
             latest_text = Some(content_change.text);
         }

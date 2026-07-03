@@ -57,12 +57,12 @@ impl FileSearch {
         match FileInputType::from(files) {
             FileInputType::Stdin => FileSearch::Stdin,
             FileInputType::Project => {
-                tracing::debug!("Searching for TOML files using configured patterns...");
+                log::debug!("Searching for TOML files using configured patterns...");
 
                 FileSearch::Files(search_pattern_matched_paths(&root, files_options).await)
             }
             FileInputType::Files => {
-                tracing::debug!("Searching for TOML files using user input patterns...");
+                log::debug!("Searching for TOML files using user input patterns...");
 
                 let mut matched_paths = Vec::with_capacity(100);
 
@@ -85,7 +85,7 @@ impl FileSearch {
                         let path = PathBuf::from(file_path);
                         if path.is_file() {
                             if is_excluded(&path, &root, files_options.exclude.as_deref()) {
-                                tracing::debug!(
+                                log::debug!(
                                     "Skipping {path:?} because it matches an exclude pattern"
                                 );
                                 matched_paths.push(FileSearchEntry::Skipped(path));
@@ -127,8 +127,8 @@ pub async fn search_pattern_matched_paths<P: AsRef<std::path::Path>>(
     root: P,
     files_options: FilesOptions,
 ) -> Vec<FileSearchEntry> {
-    tracing::debug!("Include patterns: {:?}", files_options.include);
-    tracing::debug!("Exclude patterns: {:?}", files_options.exclude);
+    log::debug!("Include patterns: {:?}", files_options.include);
+    log::debug!("Exclude patterns: {:?}", files_options.exclude);
 
     match WalkDir::new_with_options(root, files_options).walk().await {
         Ok(results) => results.into_iter().map(FileSearchEntry::Found).collect(),

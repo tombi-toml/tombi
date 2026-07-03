@@ -99,7 +99,7 @@ pub use hover::HoverContent;
 pub struct Args {}
 
 pub async fn serve(_args: impl Into<Args>, offline: bool, no_cache: bool) {
-    tracing::info!(
+    log::info!(
         "Tombi Language Server version \"{}\" will start.",
         env!("CARGO_PKG_VERSION")
     );
@@ -130,5 +130,5 @@ pub async fn serve(_args: impl Into<Args>, offline: bool, no_cache: bool) {
         .serve(service)
         .await;
 
-    tracing::info!("Tombi LSP Server did shut down.");
+    log::info!("Tombi LSP Server did shut down.");
 }

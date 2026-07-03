@@ -9,8 +9,8 @@ pub async fn handle_document_symbol(
     backend: &Backend,
     params: DocumentSymbolParams,
 ) -> Result<Option<DocumentSymbolResponse>, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_document_symbol");
-    tracing::trace!("{:?}", params);
+    log::info!("handle_document_symbol");
+    log::trace!("{:?}", params);
 
     let DocumentSymbolParams { text_document, .. } = params;
 

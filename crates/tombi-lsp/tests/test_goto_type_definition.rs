@@ -808,7 +808,7 @@ mod goto_type_definition_tests {
                     return Err("failed to handle goto_type_definition".into());
                 };
 
-                tracing::debug!("goto_type_definition result: {:#?}", result);
+                log::debug!("goto_type_definition result: {:#?}", result);
 
                 let expected_path = $expected_schema_path.to_owned();
 
@@ -841,7 +841,7 @@ mod goto_type_definition_tests {
                                 }
                             }).collect_vec();
 
-                        tracing::debug!("definition_urls: {:#?}", definition_urls);
+                        log::debug!("definition_urls: {:#?}", definition_urls);
 
                         pretty_assertions::assert_eq!(
                             definition_urls,

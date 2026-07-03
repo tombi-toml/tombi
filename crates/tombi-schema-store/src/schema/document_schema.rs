@@ -185,7 +185,7 @@ impl DocumentSchema {
             {
                 Ok(resolved) => resolved.map(|current_schema| current_schema.value_schema),
                 Err(error) => {
-                    tracing::warn!(
+                    log::warn!(
                         "failed to resolve root $ref for {}: {error}",
                         document_schema.schema_uri
                     );
@@ -211,7 +211,7 @@ impl DocumentSchema {
 
     pub fn toml_version(&self) -> Option<TomlVersion> {
         self.toml_version.inspect(|version| {
-            tracing::trace!(
+            log::trace!(
                 "use schema TOML version \"{version}\" for {}",
                 self.schema_uri
             );

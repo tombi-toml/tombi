@@ -136,13 +136,13 @@ impl Backend {
             }
 
             if !capabilities.workspace_diagnostic_refresh_support {
-                tracing::debug!("Client does not support workspace/diagnostic/refresh");
+                log::debug!("Client does not support workspace/diagnostic/refresh");
                 return;
             }
         }
 
         if let Err(error) = self.client.workspace_diagnostic_refresh().await {
-            tracing::debug!("Failed to request diagnostic refresh: {error}");
+            log::debug!("Failed to request diagnostic refresh: {error}");
         }
     }
 

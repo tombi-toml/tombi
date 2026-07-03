@@ -160,7 +160,7 @@ async fn validate_array(
                     schema_context.store,
                 )
                 .await
-                .inspect_err(|err| tracing::warn!("{err}"))
+                .inspect_err(|err| log::warn!("{err}"))
                 .ok()
                 .flatten()
             } else if let Some(items) = &array_schema.items {
@@ -172,7 +172,7 @@ async fn validate_array(
                     schema_context.store,
                 )
                 .await
-                .inspect_err(|err| tracing::warn!("{err}"))
+                .inspect_err(|err| log::warn!("{err}"))
                 .ok()
                 .flatten()
             } else {
@@ -196,7 +196,7 @@ async fn validate_array(
                     schema_context.store,
                 )
                 .await
-                .inspect_err(|err| tracing::warn!("{err}"))
+                .inspect_err(|err| log::warn!("{err}"))
                     && let Err(crate::Error { diagnostics, .. }) = value
                         .validate(&new_accessors, Some(&item_schema), schema_context)
                         .await
@@ -236,7 +236,7 @@ async fn validate_array(
             schema_context.store,
         )
         .await
-        .inspect_err(|err| tracing::warn!("{err}"))
+        .inspect_err(|err| log::warn!("{err}"))
         {
             for (index, value) in array_value.values().iter().enumerate() {
                 evaluated[index] = true;
@@ -264,7 +264,7 @@ async fn validate_array(
             schema_context.store,
         )
         .await
-        .inspect_err(|err| tracing::warn!("{err}"))
+        .inspect_err(|err| log::warn!("{err}"))
     {
         let min_contains = array_schema.min_contains.unwrap_or(1);
         let max_contains = array_schema.max_contains;
@@ -349,7 +349,7 @@ async fn validate_array(
                 schema_context.store,
             )
             .await
-            .inspect_err(|err| tracing::warn!("{err}"))
+            .inspect_err(|err| log::warn!("{err}"))
             .ok()
             .flatten()
         } else {

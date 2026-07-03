@@ -19,7 +19,7 @@ async fn resolve_schema_item_owned(
         schema_context.store,
     )
     .await
-    .inspect_err(|err| tracing::warn!("{err}"))
+    .inspect_err(|err| log::warn!("{err}"))
     .ok()
     .flatten()
     .map(CurrentSchema::into_owned)
@@ -182,7 +182,7 @@ fn resolve_schema_with_accessors<'a: 'b, 'b>(
                         schema_context.store,
                     )
                     .await
-                    .inspect_err(|err| tracing::warn!("{err}"))
+                    .inspect_err(|err| log::warn!("{err}"))
                     .ok()
                     .flatten()?
                     .into_owned();

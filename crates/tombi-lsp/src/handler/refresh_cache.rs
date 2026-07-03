@@ -10,19 +10,19 @@ pub async fn handle_refresh_cache(
     backend: &Backend,
     _params: RefreshCacheParams,
 ) -> Result<bool, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_refresh_cache");
+    log::info!("handle_refresh_cache");
 
     match backend.config_manager.refresh_cache().await {
         Ok(true) => {
-            tracing::info!("Cache refreshed");
+            log::info!("Cache refreshed");
             Ok(true)
         }
         Ok(false) => {
-            tracing::info!("No cache to refresh");
+            log::info!("No cache to refresh");
             Ok(false)
         }
         Err(err) => {
-            tracing::error!("Failed to refresh cache: {err}");
+            log::error!("Failed to refresh cache: {err}");
             Err(tower_lsp::jsonrpc::Error {
                 code: tower_lsp::jsonrpc::ErrorCode::InternalError,
 

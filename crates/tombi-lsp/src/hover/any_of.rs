@@ -28,11 +28,11 @@ where
         + Send
         + std::fmt::Debug,
 {
-    tracing::trace!("value = {:?}", value);
-    tracing::trace!("keys = {:?}", keys);
-    tracing::trace!("accessors = {:?}", accessors);
-    tracing::trace!("any_of_schema = {:?}", any_of_schema);
-    tracing::trace!("schema_uri = {:?}", schema_uri);
+    log::trace!("value = {:?}", value);
+    log::trace!("keys = {:?}", keys);
+    log::trace!("accessors = {:?}", accessors);
+    log::trace!("any_of_schema = {:?}", any_of_schema);
+    log::trace!("schema_uri = {:?}", schema_uri);
 
     async move {
         let mut any_hover_value_contents = vec![];

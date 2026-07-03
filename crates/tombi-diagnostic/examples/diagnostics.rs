@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use tombi_diagnostic::{Diagnostic, Print, printer::Pretty};
-use tracing_subscriber::prelude::*;
 
 #[derive(clap::Parser)]
 pub struct Args {}
@@ -25,8 +24,8 @@ pub fn source_file() -> PathBuf {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _args = Args::parse_from(std::env::args_os());
 
-    tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().pretty().without_time())
+    env_logger::Builder::from_default_env()
+        .format_timestamp(None)
         .init();
 
     let source_file = source_file();
