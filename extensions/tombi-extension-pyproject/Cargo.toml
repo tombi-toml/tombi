@@ -11,7 +11,6 @@ license.workspace = true
 futures.workspace = true
 glob.workspace = true
 itertools.workspace = true
-log.workspace = true
 pep508_rs.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -29,6 +28,7 @@ tombi-text.workspace = true
 tombi-uri.workspace = true
 tombi-version-sort.workspace = true
 tower-lsp.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

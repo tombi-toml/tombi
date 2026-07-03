@@ -24,11 +24,11 @@ where
         + Send
         + std::fmt::Debug,
 {
-    log::trace!("value: {:?}", value);
-    log::trace!("keys: {:?}", keys);
-    log::trace!("accessors: {:?}", accessors);
-    log::trace!("one_of_schema: {:?}", one_of_schema);
-    log::trace!("schema_uri: {:?}", schema_uri);
+    tracing::trace!("value: {:?}", value);
+    tracing::trace!("keys: {:?}", keys);
+    tracing::trace!("accessors: {:?}", accessors);
+    tracing::trace!("one_of_schema: {:?}", one_of_schema);
+    tracing::trace!("schema_uri: {:?}", schema_uri);
 
     async move {
         let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(

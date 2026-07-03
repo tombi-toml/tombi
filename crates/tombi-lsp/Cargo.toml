@@ -11,7 +11,6 @@ clap = { workspace = true, optional = true }
 dirs.workspace = true
 futures.workspace = true
 itertools.workspace = true
-log.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -47,6 +46,7 @@ tombi-uri.workspace = true
 tombi-validator.workspace = true
 tombi-x-keyword.workspace = true
 tower-lsp.workspace = true
+tracing.workspace = true
 unicode-segmentation.workspace = true
 
 [dev-dependencies]

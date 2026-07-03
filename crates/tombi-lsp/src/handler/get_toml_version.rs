@@ -7,8 +7,8 @@ pub async fn handle_get_toml_version(
     backend: &Backend,
     params: TextDocumentIdentifier,
 ) -> Result<GetTomlVersionResponse, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_get_toml_version");
-    log::trace!("{:?}", params);
+    tracing::info!("handle_get_toml_version");
+    tracing::trace!("{:?}", params);
 
     let TextDocumentIdentifier { uri } = params;
     let text_document_uri = uri.into();

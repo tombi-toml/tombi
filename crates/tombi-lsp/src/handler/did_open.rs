@@ -3,8 +3,8 @@ use tower_lsp::lsp_types::DidOpenTextDocumentParams;
 use crate::{backend::Backend, document::DocumentSource};
 
 pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParams) {
-    log::info!("handle_did_open");
-    log::trace!("{:?}", params);
+    tracing::info!("handle_did_open");
+    tracing::trace!("{:?}", params);
 
     let DidOpenTextDocumentParams { text_document, .. } = params;
 
@@ -80,7 +80,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
             };
 
             if should_refresh_inlay_hint && let Err(err) = client.inlay_hint_refresh().await {
-                log::debug!("Failed to request warmed inlay hint refresh: {err}");
+                tracing::debug!("Failed to request warmed inlay hint refresh: {err}");
             }
         });
         backend.register_background_task(&refresh_task);

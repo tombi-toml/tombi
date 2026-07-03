@@ -13,8 +13,8 @@ pub async fn handle_code_action(
     backend: &Backend,
     params: CodeActionParams,
 ) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_code_action");
-    log::trace!("{:?}", params);
+    tracing::info!("handle_code_action");
+    tracing::trace!("{:?}", params);
 
     let CodeActionParams {
         text_document,
@@ -41,7 +41,7 @@ pub async fn handle_code_action(
         .unwrap_or_default()
         .value()
     {
-        log::debug!("`server.code_action.enabled` is false");
+        tracing::debug!("`server.code_action.enabled` is false");
         return Ok(None);
     }
 

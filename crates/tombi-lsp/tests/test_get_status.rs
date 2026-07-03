@@ -258,7 +258,7 @@ macro_rules! test_get_status {
             .await
             .expect("Failed to get status");
 
-            log::debug!("status: {:#?}", status);
+            tracing::debug!("status: {:#?}", status);
 
             // Verify toml_version
             assert_eq!(

@@ -31,11 +31,11 @@ impl FindCompletionContents for tombi_document_tree::Table {
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
     ) -> BoxFuture<'b, Vec<CompletionContent>> {
-        log::trace!("self = {:?}", self);
-        log::trace!("keys = {:?}", keys);
-        log::trace!("accessors = {:?}", accessors);
-        log::trace!("current_schema = {:?}", current_schema);
-        log::trace!("completion_hint = {:?}", completion_hint);
+        tracing::trace!("self = {:?}", self);
+        tracing::trace!("keys = {:?}", keys);
+        tracing::trace!("accessors = {:?}", accessors);
+        tracing::trace!("current_schema = {:?}", current_schema);
+        tracing::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
             if keys.is_empty() {
@@ -151,7 +151,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         )
                                         .await
                                     {
-                                        log::trace!(
+                                        tracing::trace!(
                                             "property_schema = {:?}",
                                             current_schema.value_schema
                                         );
@@ -246,7 +246,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 )
                                                 .await
                                             {
-                                                log::trace!(
+                                                tracing::trace!(
                                                     "property_schema = {:?}",
                                                     &current_schema.value_schema
                                                 );
@@ -302,14 +302,14 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     for property_key in pattern_keys {
                                         let Ok(pattern) = tombi_regex::Regex::new(&property_key)
                                         else {
-                                            log::warn!(
+                                            tracing::warn!(
                                                 "Invalid regex pattern property: {}",
                                                 property_key
                                             );
                                             continue;
                                         };
                                         if pattern.is_match(accessor_str) {
-                                            log::trace!(
+                                            tracing::trace!(
                                                 "pattern_property_schema = {:?}",
                                                 &current_schema.value_schema
                                             );
@@ -358,7 +358,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 if let Some((_, referable_additional_property_schema)) =
                                     &table_schema.additional_property_schema
                                 {
-                                    log::trace!(
+                                    tracing::trace!(
                                         "additional_property_schema = {:?}",
                                         referable_additional_property_schema
                                     );
@@ -675,7 +675,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             .await;
 
                                         for error in errors {
-                                            log::warn!("{}", error);
+                                            tracing::warn!("{}", error);
                                         }
 
                                         completion_contents.push(CompletionContent::new_key(
@@ -888,12 +888,12 @@ impl FindCompletionContents for TableSchema {
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
     ) -> BoxFuture<'b, Vec<CompletionContent>> {
-        log::trace!("self = {:?}", self);
-        log::trace!("position = {:?}", position);
-        log::trace!("keys = {:?}", keys);
-        log::trace!("accessors = {:?}", accessors);
-        log::trace!("current_schema = {:?}", current_schema);
-        log::trace!("completion_hint = {:?}", completion_hint);
+        tracing::trace!("self = {:?}", self);
+        tracing::trace!("position = {:?}", position);
+        tracing::trace!("keys = {:?}", keys);
+        tracing::trace!("accessors = {:?}", accessors);
+        tracing::trace!("current_schema = {:?}", current_schema);
+        tracing::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
             let Some(current_schema) = current_schema else {
@@ -919,7 +919,7 @@ impl FindCompletionContents for TableSchema {
                     Ok(Some(current_schema)) => current_schema,
                     Ok(None) => continue,
                     Err(err) => {
-                        log::warn!("{err}");
+                        tracing::warn!("{err}");
                         continue;
                     }
                 };
@@ -935,7 +935,7 @@ impl FindCompletionContents for TableSchema {
                     .await;
 
                 for error in errors {
-                    log::warn!("{}", error);
+                    tracing::warn!("{}", error);
                 }
 
                 let singleton_value_label = key_singleton_literal_label(&schema_candidates);
@@ -1055,12 +1055,12 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     completion_hint: Option<CompletionHint>,
 ) -> BoxFuture<'b, Vec<CompletionContent>> {
-    log::trace!("key = {:?}", key);
-    log::trace!("value = {:?}", value);
-    log::trace!("keys = {:?}", keys);
-    log::trace!("accessors = {:?}", accessors);
-    log::trace!("current_schema = {:?}", current_schema);
-    log::trace!("completion_hint = {:?}", completion_hint);
+    tracing::trace!("key = {:?}", key);
+    tracing::trace!("value = {:?}", value);
+    tracing::trace!("keys = {:?}", keys);
+    tracing::trace!("accessors = {:?}", accessors);
+    tracing::trace!("current_schema = {:?}", current_schema);
+    tracing::trace!("completion_hint = {:?}", completion_hint);
 
     async move {
         if keys.len() == 1 {
@@ -1223,7 +1223,7 @@ fn table_schema_has_remaining_key_completion<'a>(
 
             if !errors.is_empty() {
                 for error in errors {
-                    log::warn!("{}", error);
+                    tracing::warn!("{}", error);
                 }
                 return true;
             }
@@ -1275,7 +1275,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
             .await;
 
         for error in errors {
-            log::warn!("{}", error);
+            tracing::warn!("{}", error);
         }
 
         let singleton_value_label = key_singleton_literal_label(&schema_candidates);

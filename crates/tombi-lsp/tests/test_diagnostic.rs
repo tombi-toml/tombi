@@ -477,7 +477,7 @@ macro_rules! test_diagnostic {
             }
         };
 
-        log::debug!("diagnostics: {:#?}", diagnostics);
+        tracing::debug!("diagnostics: {:#?}", diagnostics);
 
         // Expected diagnostics
         #[allow(unused)]
@@ -782,7 +782,7 @@ macro_rules! test_diagnostic_file {
             }
         };
 
-        log::debug!("diagnostics: {:#?}", diagnostics);
+        tracing::debug!("diagnostics: {:#?}", diagnostics);
 
         // Expected diagnostics
         #[allow(unused)]

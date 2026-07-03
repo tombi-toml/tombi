@@ -7,8 +7,8 @@ pub async fn handle_inlay_hint(
     backend: &Backend,
     params: InlayHintParams,
 ) -> Result<Option<Vec<tombi_extension::InlayHint>>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_inlay_hint");
-    log::trace!("{:?}", params);
+    tracing::info!("handle_inlay_hint");
+    tracing::trace!("{:?}", params);
 
     let InlayHintParams {
         text_document,

@@ -52,15 +52,15 @@ pub async fn push_diagnostics(backend: &Backend, text_document_uri: tombi_uri::U
         },
     };
 
-    log::info!("push_diagnostics");
-    log::trace!("{:?}", params);
+    tracing::info!("push_diagnostics");
+    tracing::trace!("{:?}", params);
 
     let Some(diagnostics_result) = get_diagnostics_result(backend, &params.text_document.uri).await
     else {
         return;
     };
 
-    log::trace!("{:?}", diagnostics_result);
+    tracing::trace!("{:?}", diagnostics_result);
 
     let crate::diagnostic::DiagnosticsResult {
         diagnostics,

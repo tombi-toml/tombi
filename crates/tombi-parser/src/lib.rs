@@ -190,7 +190,7 @@ macro_rules! test_parser {
 
             let p = $crate::parse(textwrap::dedent($source).trim());
 
-            log::debug!("syntax_node: {:#?}", p.syntax_node());
+            tracing::debug!("syntax_node: {:#?}", p.syntax_node());
 
             pretty_assertions::assert_eq!(
                 p.errors,
@@ -206,7 +206,7 @@ macro_rules! test_parser {
 
             let p = $crate::parse(textwrap::dedent($source).trim());
 
-            log::debug!("syntax_node: {:#?}", p.syntax_node());
+            tracing::debug!("syntax_node: {:#?}", p.syntax_node());
 
             pretty_assertions::assert_eq!(
                 p.errors,
@@ -229,7 +229,7 @@ macro_rules! test_parser {
 
             let p = $crate::parse(textwrap::dedent($source).trim());
 
-            log::debug!("syntax_node: {:#?}", p.syntax_node());
+            tracing::debug!("syntax_node: {:#?}", p.syntax_node());
 
             pretty_assertions::assert_eq!(
                 p.errors,
@@ -264,7 +264,7 @@ macro_rules! test_parser {
 
             let p = $crate::parse(textwrap::dedent($source).trim());
 
-            log::debug!("syntax_node: {:#?}", p.syntax_node());
+            tracing::debug!("syntax_node: {:#?}", p.syntax_node());
 
             pretty_assertions::assert_eq!(
                 p.errors,

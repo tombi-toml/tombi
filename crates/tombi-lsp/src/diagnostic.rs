@@ -58,7 +58,7 @@ pub async fn get_diagnostics_result(
         .unwrap_or_default()
         .value()
     {
-        log::debug!("`lsp.diagnostic.enabled` is false");
+        tracing::debug!("`lsp.diagnostic.enabled` is false");
         return None;
     }
 
@@ -66,11 +66,13 @@ pub async fn get_diagnostics_result(
         match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
-                log::info!("Skip {text_document_path:?} because it is not in config.files.include");
+                tracing::info!(
+                    "Skip {text_document_path:?} because it is not in config.files.include"
+                );
                 return None;
             }
             MatchResult::ExcludeMatched => {
-                log::info!("Skip {text_document_path:?} because it is in config.files.exclude");
+                tracing::info!("Skip {text_document_path:?} because it is in config.files.exclude");
                 return None;
             }
         }
@@ -96,7 +98,7 @@ pub async fn get_diagnostics_result(
         text_document_path.as_deref(),
         config_path.as_deref(),
     ) else {
-        log::debug!("Linting disabled for {:?} by override", text_document_path);
+        tracing::debug!("Linting disabled for {:?} by override", text_document_path);
         return None;
     };
 

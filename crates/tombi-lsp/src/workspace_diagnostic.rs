@@ -19,8 +19,8 @@ pub async fn push_workspace_diagnostics(
     backend: &Backend,
     options: &WorkspaceDiagnosticOptions,
 ) -> Result<(), tower_lsp::jsonrpc::Error> {
-    log::info!("push_workspace_diagnostics");
-    log::trace!("{:?}", options);
+    tracing::info!("push_workspace_diagnostics");
+    tracing::trace!("{:?}", options);
 
     for text_document_uri in collect_workspace_diagnostic_targets(backend).await {
         publish_workspace_diagnostics(backend, text_document_uri, options).await;
@@ -48,7 +48,7 @@ pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tomb
 
     for workspace_config in configs {
         if !workspace_config.is_workspace_diagnostic_enabled() {
-            log::debug!(
+            tracing::debug!(
                 "`lsp.workspace-diagnostic.enabled` is false in {}",
                 workspace_config.workspace_folder_path.display()
             );
@@ -58,7 +58,7 @@ pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tomb
         if let Some(home_dir) = &home_dir
             && &workspace_config.workspace_folder_path == home_dir
         {
-            log::debug!(
+            tracing::debug!(
                 "Skip diagnostics for workspace folder matching $HOME: {:?}",
                 workspace_config.workspace_folder_path
             );
@@ -107,7 +107,7 @@ async fn publish_workspace_diagnostics(
         return;
     };
 
-    log::trace!("{:?}", diagnostics_result);
+    tracing::trace!("{:?}", diagnostics_result);
 
     let DiagnosticsResult {
         diagnostics,
@@ -115,7 +115,7 @@ async fn publish_workspace_diagnostics(
     } = diagnostics_result;
 
     if !options.include_open_files && version.is_some() {
-        log::debug!(
+        tracing::debug!(
             "Skip publishing workspace diagnostics because version is some: {text_document_uri}"
         );
         return;
@@ -131,13 +131,13 @@ pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_
     let text_document_path = match text_document_uri.to_file_path() {
         Ok(text_document_path) => text_document_path,
         Err(_) => {
-            log::warn!("Watcher event for non-file URI: {text_document_uri}");
+            tracing::warn!("Watcher event for non-file URI: {text_document_uri}");
             return false;
         }
     };
 
     let Ok(content) = tokio::fs::read_to_string(&text_document_path).await else {
-        log::warn!(
+        tracing::warn!(
             "Failed to read file for diagnostics: {:?}",
             text_document_path
         );
@@ -153,7 +153,7 @@ pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_
         let mut document_sources = backend.document_sources.write().await;
         if let Some(source) = document_sources.get_mut(&text_document_uri) {
             if source.version.is_some() {
-                log::debug!("Skip diagnostics for open document: {text_document_uri}");
+                tracing::debug!("Skip diagnostics for open document: {text_document_uri}");
                 return true;
             }
 
