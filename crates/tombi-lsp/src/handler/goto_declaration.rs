@@ -10,8 +10,8 @@ pub async fn handle_goto_declaration(
     backend: &Backend,
     params: GotoDeclarationParams,
 ) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_goto_declaration");
-    tracing::trace!("{:?}", params);
+    log::info!("handle_goto_declaration");
+    log::trace!("{:?}", params);
 
     let GotoDeclarationParams {
         text_document_position_params:
@@ -36,7 +36,7 @@ pub async fn handle_goto_declaration(
         .unwrap_or_default()
         .value()
     {
-        tracing::debug!("`server.goto_declaration.enabled` is false");
+        log::debug!("`server.goto_declaration.enabled` is false");
         return Ok(None);
     }
 

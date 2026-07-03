@@ -253,7 +253,7 @@ impl FindSchemaCandidates for ArraySchema {
                 schema_store,
             )
             .await
-            .inspect_err(|err| tracing::warn!("{err}"))
+            .inspect_err(|err| log::warn!("{err}"))
             {
                 let (mut item_candidates, mut item_errors) = value_schema
                     .find_schema_candidates(
@@ -286,7 +286,7 @@ impl XTombiArrayValuesOrder {
                 match ArrayValuesOrder::try_from(string.value.as_ref()) {
                     Ok(val) => return Some(XTombiArrayValuesOrder::All(val)),
                     Err(_) => {
-                        tracing::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}", string.value);
+                        log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}", string.value);
                     }
                 }
             }
@@ -303,7 +303,7 @@ impl XTombiArrayValuesOrder {
                                     {
                                         Some(val) => orders.push(val),
                                         None => {
-                                            tracing::warn!(
+                                            log::warn!(
                                                 "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
                                                 group_orders
                                             );
@@ -325,7 +325,7 @@ impl XTombiArrayValuesOrder {
                                     {
                                         Some(val) => orders.push(val),
                                         None => {
-                                            tracing::warn!(
+                                            log::warn!(
                                                 "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
                                                 group_orders
                                             );
@@ -338,7 +338,7 @@ impl XTombiArrayValuesOrder {
                             }
                         }
                         _ => {
-                            tracing::warn!(
+                            log::warn!(
                                 "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} group: {}",
                                 group_name.value
                             );

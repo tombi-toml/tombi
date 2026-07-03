@@ -134,7 +134,7 @@ pub async fn code_action(
 
     // Try to find workspace pyproject.toml
     let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
-        tracing::warn!(
+        log::warn!(
             "Failed to convert URI to file path: {:?}",
             text_document_uri
         );
@@ -165,7 +165,7 @@ pub async fn code_action(
         let Some((workspace_path, workspace_root, workspace_document_tree)) =
             find_workspace_pyproject_toml(&pyproject_toml_path, toml_version)
         else {
-            tracing::debug!(
+            log::debug!(
                 "No workspace pyproject.toml found: {:?}",
                 pyproject_toml_path.display()
             );
@@ -174,7 +174,7 @@ pub async fn code_action(
 
         // Load workspace text and create line index for workspace document
         let Ok(workspace_text) = std::fs::read_to_string(&workspace_path) else {
-            tracing::warn!(
+            log::warn!(
                 "Failed to read workspace pyproject.toml: {:?}",
                 workspace_path.display()
             );
@@ -223,7 +223,7 @@ pub async fn code_action(
                 &workspace_document_tree,
             )
         {
-            tracing::debug!(
+            log::debug!(
                 "Providing 'Add to Workspace and Use Workspace Dependency' code action: action={:?}, uri={:?}",
                 action.title,
                 text_document_uri
@@ -529,7 +529,7 @@ fn add_workspace_dependency_code_action(
 
     // Generate workspace URI
     let Ok(workspace_uri) = tombi_uri::Uri::from_file_path(workspace_pyproject_toml_path) else {
-        tracing::warn!(
+        log::warn!(
             "Failed to convert workspace path to URI: {:?}",
             workspace_pyproject_toml_path.display()
         );

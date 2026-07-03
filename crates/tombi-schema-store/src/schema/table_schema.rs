@@ -162,11 +162,11 @@ impl TableSchema {
                     if let Ok(v) = ArrayValuesOrderBy::try_from(v) {
                         Some(v)
                     } else {
-                        tracing::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {v}");
+                        log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {v}");
                         None
                     }
                 } else {
-                    tracing::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {}", v);
+                    log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {}", v);
                     None
                 }
             });
@@ -503,7 +503,7 @@ impl FindSchemaCandidates for TableSchema {
                         )
                         .await
                         .inspect_err(|err| {
-                            tracing::warn!(
+                            log::warn!(
                                 "cannot resolve property schema: schema_uri={schema_uri} accessors={accessors} error={err}",
                                 schema_uri = schema_uri,
                                 accessors = Accessors::from(accessors.to_vec()),
@@ -543,7 +543,7 @@ impl FindSchemaCandidates for TableSchema {
                 )
                 .await
                 .inspect_err(|err| {
-                    tracing::warn!(
+                    log::warn!(
                         "cannot resolve property schema: schema_uri={schema_uri} accessors={accessors} error={err}",
                         schema_uri = schema_uri,
                         accessors = Accessors::from(accessors.to_vec()),
@@ -593,7 +593,7 @@ impl XTombiTableKeysOrder {
                 match TableKeysOrder::try_from(order.as_str()) {
                     Ok(val) => Some(XTombiTableKeysOrder::All(val)),
                     Err(_) => {
-                        tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {order}");
+                        log::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {order}");
                         None
                     }
                 }
@@ -603,19 +603,19 @@ impl XTombiTableKeysOrder {
                 for (group_name, order) in &object_node.properties {
                     let Ok(target) = TableKeysOrderGroupKind::try_from(group_name.value.as_str())
                     else {
-                        tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER} group: {group_name}");
+                        log::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER} group: {group_name}");
                         return None;
                     };
 
                     let Some(Ok(order)) = order.as_str().map(TableKeysOrder::try_from) else {
-                        tracing::warn!(
+                        log::warn!(
                             "Invalid {X_TOMBI_TABLE_KEYS_ORDER} {group_name} group: {order}"
                         );
                         return None;
                     };
 
                     if order == TableKeysOrder::Schema && target != TableKeysOrderGroupKind::Keys {
-                        tracing::warn!(
+                        log::warn!(
                             "Invalid {X_TOMBI_TABLE_KEYS_ORDER} {group_name} group: {order}"
                         );
                         return None;
@@ -626,7 +626,7 @@ impl XTombiTableKeysOrder {
                 Some(Self::Groups(sort_orders))
             }
             order => {
-                tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order);
+                log::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order);
                 None
             }
         }

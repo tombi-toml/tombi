@@ -16,9 +16,9 @@ impl crate::Edit for tombi_ast::InlineTable {
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
-        tracing::trace!("node = {:?}", node);
-        tracing::trace!("accessors = {:?}", accessors);
-        tracing::trace!("current_schema = {:?}", current_schema);
+        log::trace!("node = {:?}", node);
+        log::trace!("accessors = {:?}", accessors);
+        log::trace!("current_schema = {:?}", current_schema);
 
         async move {
             let mut changes = vec![];

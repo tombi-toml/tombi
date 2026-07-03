@@ -1,12 +1,10 @@
 mod command;
-mod tracing_formatter;
+mod tombi_log;
 
 use clap::{
     Parser,
     builder::styling::{AnsiColor, Color, Style},
 };
-use tracing_formatter::TombiFormatter;
-use tracing_subscriber::prelude::*;
 
 #[derive(clap::Parser)]
 #[command(
@@ -53,21 +51,16 @@ struct CommonArgs {
 pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
     let args: Args = args.into();
     let log_level = args.verbosity.log_level();
+    let show_trace_location = log_level == log::LevelFilter::Trace;
 
-    tracing_subscriber::registry()
-        .with(
-            // Filter out all logs from other crates
-            tracing_subscriber::filter::Targets::new()
-                .with_target("tombi", log_level)
-                .with_target("tombi_", log_level)
-                .with_target("serde_tombi", log_level)
-                .with_default(tracing_subscriber::filter::LevelFilter::OFF),
-        )
-        .with(
-            tracing_subscriber::fmt::layer()
-                .event_format(TombiFormatter::from(log_level))
-                .with_writer(std::io::stderr),
-        )
+    let use_ansi_color = use_ansi_color();
+    env_logger::Builder::new()
+        .filter_level(log::LevelFilter::Warn)
+        .filter_module("tombi", log_level)
+        .filter_module("tombi_", log_level)
+        .filter_module("serde_tombi", log_level)
+        .format(tombi_log::format(use_ansi_color, show_trace_location))
+        .target(env_logger::Target::Stderr)
         .init();
 
     match args.subcommand {

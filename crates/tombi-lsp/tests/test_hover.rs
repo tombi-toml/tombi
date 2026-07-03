@@ -2306,7 +2306,7 @@ mod hover_keys_value {
                     return Err("failed to handle hover content".into());
                 };
 
-                tracing::debug!("hover_content: {:#?}", hover_content);
+                log::debug!("hover_content: {:#?}", hover_content);
 
                 if let Some(expected_has_schema) = None::<bool> $(.or(Some($has_schema)))? {
                     assert_eq!(

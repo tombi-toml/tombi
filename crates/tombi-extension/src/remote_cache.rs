@@ -33,7 +33,7 @@ pub async fn warm_remote_json_cache(
 
 async fn get_cached_remote_json_file_path(url: &str) -> Option<PathBuf> {
     let uri = tombi_uri::Uri::from_str(url)
-        .inspect_err(|err| tracing::warn!("Invalid URL for remote cache {url}: {err}"))
+        .inspect_err(|err| log::warn!("Invalid URL for remote cache {url}: {err}"))
         .ok()?;
 
     get_cache_file_path(&uri).await
@@ -57,13 +57,13 @@ async fn fetch_cached_remote_json_from_path<T: DeserializeOwned>(
         {
             return Some(cached_value);
         }
-        tracing::debug!("offline mode, skip fetch remote metadata from url: {url}");
+        log::debug!("offline mode, skip fetch remote metadata from url: {url}");
         return None;
     }
 
     let bytes = match HTTP_CLIENT.get_bytes(url).await {
         Ok(bytes) => {
-            tracing::debug!("fetch remote metadata from url: {url}");
+            log::debug!("fetch remote metadata from url: {url}");
             bytes
         }
         Err(err) => {
@@ -72,13 +72,13 @@ async fn fetch_cached_remote_json_from_path<T: DeserializeOwned>(
             {
                 return Some(cached_value);
             }
-            tracing::warn!("Failed to fetch remote metadata from {url}: {err}");
+            log::warn!("Failed to fetch remote metadata from {url}: {err}");
             return None;
         }
     };
 
     if let Err(err) = save_to_cache(cache_file_path, &bytes).await {
-        tracing::warn!("{err}");
+        log::warn!("{err}");
     }
 
     parse_json(url, &bytes)
@@ -91,7 +91,7 @@ async fn warm_remote_json_cache_from_path(
     cache_options: Option<&tombi_cache::Options>,
 ) -> bool {
     if offline {
-        tracing::debug!("offline mode, skip warming remote metadata from url: {url}");
+        log::debug!("offline mode, skip warming remote metadata from url: {url}");
         return false;
     }
 
@@ -99,35 +99,33 @@ async fn warm_remote_json_cache_from_path(
         .and_then(|options| options.no_cache)
         .unwrap_or_default()
     {
-        tracing::debug!("no_cache enabled, skip warming remote metadata from url: {url}");
+        log::debug!("no_cache enabled, skip warming remote metadata from url: {url}");
         return false;
     }
 
     let Some(cache_file_path) = cache_file_path else {
-        tracing::debug!(
-            "cache file path unavailable, skip warming remote metadata from url: {url}"
-        );
+        log::debug!("cache file path unavailable, skip warming remote metadata from url: {url}");
         return false;
     };
 
     if is_cache_fresh(cache_file_path, cache_options) {
-        tracing::debug!("remote metadata cache is fresh: {url}");
+        log::debug!("remote metadata cache is fresh: {url}");
         return false;
     }
 
     let bytes = match HTTP_CLIENT.get_bytes(url).await {
         Ok(bytes) => {
-            tracing::debug!("warm remote metadata cache from url: {url}");
+            log::debug!("warm remote metadata cache from url: {url}");
             bytes
         }
         Err(err) => {
-            tracing::warn!("Failed to warm remote metadata cache from {url}: {err}");
+            log::warn!("Failed to warm remote metadata cache from {url}: {err}");
             return false;
         }
     };
 
     if let Err(err) = save_to_cache(Some(cache_file_path), &bytes).await {
-        tracing::warn!("{err}");
+        log::warn!("{err}");
     }
 
     true
@@ -148,7 +146,7 @@ fn is_cache_fresh(cache_file_path: &Path, cache_options: Option<&tombi_cache::Op
     let metadata = match std::fs::metadata(cache_file_path) {
         Ok(metadata) => metadata,
         Err(err) => {
-            tracing::warn!(
+            log::warn!(
                 "Failed to read cache metadata from {:?}: {err}",
                 cache_file_path
             );
@@ -159,7 +157,7 @@ fn is_cache_fresh(cache_file_path: &Path, cache_options: Option<&tombi_cache::Op
     let modified = match metadata.modified() {
         Ok(modified) => modified,
         Err(err) => {
-            tracing::warn!(
+            log::warn!(
                 "Failed to read cache modified time from {:?}: {err}",
                 cache_file_path
             );
@@ -170,7 +168,7 @@ fn is_cache_fresh(cache_file_path: &Path, cache_options: Option<&tombi_cache::Op
     match modified.elapsed() {
         Ok(elapsed) => elapsed <= cache_ttl,
         Err(err) => {
-            tracing::warn!(
+            log::warn!(
                 "Failed to calculate cache age for {:?}: {err}",
                 cache_file_path
             );
@@ -186,12 +184,12 @@ async fn load_cached_json<T: DeserializeOwned>(
 ) -> Option<T> {
     match read_from_cache(Some(cache_file_path), cache_options).await {
         Ok(Some(cached_text)) => {
-            tracing::debug!("load remote metadata from cache: {url}");
+            log::debug!("load remote metadata from cache: {url}");
             parse_json(url, cached_text.as_bytes())
         }
         Ok(None) => None,
         Err(err) => {
-            tracing::warn!("Failed to read cached remote metadata from {url}: {err}");
+            log::warn!("Failed to read cached remote metadata from {url}: {err}");
             None
         }
     }
@@ -215,7 +213,7 @@ fn parse_json<T: DeserializeOwned>(url: &str, bytes: &[u8]) -> Option<T> {
     match serde_json::from_slice(bytes) {
         Ok(value) => Some(value),
         Err(err) => {
-            tracing::warn!("Failed to parse remote metadata response from {url}: {err}");
+            log::warn!("Failed to parse remote metadata response from {url}: {err}");
             None
         }
     }

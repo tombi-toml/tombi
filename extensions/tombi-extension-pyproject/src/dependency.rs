@@ -28,7 +28,7 @@ pub(crate) fn parse_requirement(dependency: &str) -> Option<Requirement<Verbatim
     match Requirement::<VerbatimUrl>::from_str(dependency) {
         Ok(requirement) => Some(requirement),
         Err(e) => {
-            tracing::debug!(
+            log::debug!(
                 "Failed to parse PEP 508 dependency string: dependency={:?}, error={:?}",
                 dependency,
                 e

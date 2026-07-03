@@ -193,7 +193,7 @@ async fn get_sorted_values_order_all<'a>(
     {
         Ok(sortable_values) => sortable_values,
         Err(reason) => {
-            tracing::debug!("{reason}");
+            log::debug!("{reason}");
             return None;
         }
     };
@@ -269,7 +269,7 @@ async fn get_sorted_values_order_groups<'a>(
                                 .append(&mut sort_array_values(sortable_values, *group_order));
                         }
                         Err(warning) => {
-                            tracing::warn!("{warning}");
+                            log::warn!("{warning}");
                             sorted_values_with_comma.append(&mut group_values_with_comma);
                         }
                     }

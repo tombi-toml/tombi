@@ -115,9 +115,9 @@ pub fn load_with_path_and_level(
                 current_dir.join(TOMBI_TOML_FILENAME),
                 current_dir.join(".config").join(TOMBI_TOML_FILENAME),
             ] {
-                tracing::trace!("Checking config file at {:?}", &config_path);
+                log::trace!("Checking config file at {:?}", &config_path);
                 if config_path.is_file() {
-                    tracing::debug!("Project config found at {:?}", &config_path);
+                    log::debug!("Project config found at {:?}", &config_path);
 
                     let Some(config) = try_from_path(&config_path)? else {
                         unreachable!(
@@ -131,9 +131,9 @@ pub fn load_with_path_and_level(
             }
 
             let pyproject_toml_path = current_dir.join(PYPROJECT_TOML_FILENAME);
-            tracing::trace!("Checking pyproject.toml file at {:?}", &pyproject_toml_path);
+            log::trace!("Checking pyproject.toml file at {:?}", &pyproject_toml_path);
             if pyproject_toml_path.exists() {
-                tracing::debug!(
+                log::debug!(
                     "\"{}\" found at {:?}",
                     PYPROJECT_TOML_FILENAME,
                     pyproject_toml_path
@@ -144,10 +144,10 @@ pub fn load_with_path_and_level(
                         return Ok((config, Some(pyproject_toml_path), ConfigLevel::Project));
                     }
                     Ok(None) => {
-                        tracing::debug!("No [tool.tombi] found in {:?}", &pyproject_toml_path);
+                        log::debug!("No [tool.tombi] found in {:?}", &pyproject_toml_path);
                     }
                     Err(error) => {
-                        tracing::debug!(
+                        log::debug!(
                             "Failed to parse pyproject.toml file for config at {:?}: {}",
                             &pyproject_toml_path,
                             error
@@ -164,13 +164,13 @@ pub fn load_with_path_and_level(
 
     if let Some((user_config_path, config_level)) = get_user_or_system_tombi_config_path_and_level()
     {
-        tracing::debug!("{CONFIG_TOML_FILENAME} found at {:?}", &user_config_path);
+        log::debug!("{CONFIG_TOML_FILENAME} found at {:?}", &user_config_path);
         let Some(config) = try_from_path(&user_config_path)? else {
             unreachable!("{CONFIG_TOML_FILENAME} should always be parsed successfully.");
         };
         Ok((config, Some(user_config_path), config_level))
     } else {
-        tracing::debug!("config file not found, use default config");
+        log::debug!("config file not found, use default config");
 
         Ok((Config::default(), None, ConfigLevel::Default))
     }

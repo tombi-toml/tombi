@@ -186,7 +186,7 @@ async fn validate_table(
                     schema_context.store,
                 )
                 .await
-                .inspect_err(|err| tracing::warn!("{err}"))
+                .inspect_err(|err| log::warn!("{err}"))
                 && let Err(crate::Error {
                     mut diagnostics, ..
                 }) = value
@@ -209,7 +209,7 @@ async fn validate_table(
                 .collect_vec();
             for pattern_key in pattern_keys {
                 let Ok(pattern) = tombi_regex::Regex::new(&pattern_key) else {
-                    tracing::warn!("Invalid regex pattern property: {}", pattern_key);
+                    log::warn!("Invalid regex pattern property: {}", pattern_key);
                     continue;
                 };
                 if pattern.is_match(accessor_raw_text) {
@@ -222,7 +222,7 @@ async fn validate_table(
                             schema_context.store,
                         )
                         .await
-                        .inspect_err(|err| tracing::warn!("{err}"))
+                        .inspect_err(|err| log::warn!("{err}"))
                         && let Err(crate::Error {
                             mut diagnostics, ..
                         }) = value
@@ -291,7 +291,7 @@ async fn validate_table(
                     schema_context.store,
                 )
                 .await
-                .inspect_err(|err| tracing::warn!("{err}"))
+                .inspect_err(|err| log::warn!("{err}"))
             {
                 let deprecation = current_schema.value_schema.deprecation().await;
                 handle_deprecated_value(
@@ -330,7 +330,7 @@ async fn validate_table(
                         schema_context.store,
                     )
                     .await
-                    .inspect_err(|err| tracing::warn!("{err}"))
+                    .inspect_err(|err| log::warn!("{err}"))
                 {
                     if let Err(crate::Error { diagnostics, .. }) = value
                         .validate(&new_accessors, Some(&unevaluated_schema), schema_context)
@@ -552,7 +552,7 @@ async fn validate_table(
                         schema_context.store,
                     )
                     .await
-                    .inspect_err(|err| tracing::warn!("{err}"))
+                    .inspect_err(|err| log::warn!("{err}"))
                     {
                         // A dependency schema is an additional constraint layered on top of
                         // the parent table schema. Running strict mode here against the
@@ -620,7 +620,7 @@ async fn validate_table(
                 schema_context.store,
             )
             .await
-            .inspect_err(|err| tracing::warn!("{err}"))
+            .inspect_err(|err| log::warn!("{err}"))
             {
                 // See the rationale in the `Dependency::Schema` branch above.
                 let dependency_schema_context = tombi_schema_store::SchemaContext {
@@ -724,7 +724,7 @@ async fn validate_table(
             schema_context.store,
         )
         .await
-        .inspect_err(|err| tracing::warn!("{err}"))
+        .inspect_err(|err| log::warn!("{err}"))
     {
         for key in table_value.keys() {
             if let Err(crate::Error { diagnostics, .. }) = key
@@ -851,7 +851,7 @@ fn collect_evaluated_properties_from_table_schema<'a>(
             .filter_map(|pattern_key| match tombi_regex::Regex::new(pattern_key) {
                 Ok(pattern) => Some(pattern),
                 Err(_) => {
-                    tracing::warn!("Invalid regex pattern property: {}", pattern_key);
+                    log::warn!("Invalid regex pattern property: {}", pattern_key);
                     None
                 }
             })
@@ -1016,7 +1016,7 @@ fn collect_evaluated_properties_from_schema_item<'a>(
             schema_context.store,
         )
         .await
-        .inspect_err(|err| tracing::warn!("{err}"))
+        .inspect_err(|err| log::warn!("{err}"))
         {
             collect_evaluated_properties_from_value_schema(
                 table_value,
@@ -1151,7 +1151,7 @@ fn collect_evaluated_properties_from_if_then_else_schema<'a>(
             schema_context.store,
         )
         .await
-        .inspect_err(|err| tracing::warn!("{err}")) else {
+        .inspect_err(|err| log::warn!("{err}")) else {
             return crate::EvaluatedLocations::new();
         };
 
