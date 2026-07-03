@@ -820,8 +820,8 @@ mod refactor_rewrite {
                     );
                 };
                 toml_text.remove(index);
-                log::debug!("test toml text: {:?}", toml_text);
-                log::debug!("test toml text index: {:?}", index);
+                tracing::debug!("test toml text: {:?}", toml_text);
+                tracing::debug!("test toml text index: {:?}", index);
 
                 let line_index =
                     tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
@@ -866,7 +866,7 @@ mod refactor_rewrite {
                     return Err("failed to get code actions".into());
                 };
 
-                log::debug!("code actions found: {:?}", actions);
+                tracing::debug!("code actions found: {:?}", actions);
 
                 match (actions, $expected) {
                     (Some(actions), Some(expected)) => {
@@ -947,7 +947,7 @@ mod refactor_rewrite {
                         if args.select.is_some() {
                             return Err("Select(..) should not be provided when expecting no code actions (Ok(None))".into());
                         };
-                        log::debug!("no code actions found, as expected");
+                        tracing::debug!("no code actions found, as expected");
                         Ok(())
                     }
                     (Some(actions), None) => {

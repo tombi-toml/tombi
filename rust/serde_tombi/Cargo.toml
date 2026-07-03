@@ -14,7 +14,6 @@ ignored = ["textwrap"]  # Used in `toml_text_assert_eq` macro
 chrono.workspace = true
 dirs.workspace = true
 itertools.workspace = true
-log.workspace = true
 serde.workspace = true
 serde_tombi_macros.workspace = true
 textwrap.workspace = true
@@ -32,6 +31,7 @@ tombi-schema-store.workspace = true
 tombi-toml-text.workspace = true
 tombi-toml-version.workspace = true
 tombi-validator.workspace = true
+tracing.workspace = true
 typed-builder.workspace = true
 
 [dev-dependencies]

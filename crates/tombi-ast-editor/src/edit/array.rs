@@ -21,9 +21,9 @@ impl crate::Edit for tombi_ast::Array {
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
-        log::trace!("node = {:?}", node);
-        log::trace!("accessors = {:?}", accessors);
-        log::trace!("current_schema = {:?}", current_schema);
+        tracing::trace!("node = {:?}", node);
+        tracing::trace!("accessors = {:?}", accessors);
+        tracing::trace!("current_schema = {:?}", current_schema);
 
         async move {
             let tombi_document_tree::Value::Array(array_node) = node else {
@@ -202,7 +202,7 @@ fn resolve_array_item_edit_context<'a: 'b, 'b>(
                 schema_context.store,
             )
             .await
-            .inspect_err(|err| log::warn!("{err}"))
+            .inspect_err(|err| tracing::warn!("{err}"))
         {
             return Some(current_schema);
         }

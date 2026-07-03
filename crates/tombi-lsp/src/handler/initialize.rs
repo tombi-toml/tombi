@@ -23,8 +23,8 @@ pub async fn handle_initialize(
     backend: &Backend,
     params: InitializeParams,
 ) -> Result<InitializeResult, tower_lsp::jsonrpc::Error> {
-    log::debug!("handle_initialize");
-    log::trace!("{:?}", params);
+    tracing::debug!("handle_initialize");
+    tracing::trace!("{:?}", params);
 
     let InitializeParams {
         capabilities: client_capabilities,
@@ -34,7 +34,7 @@ pub async fn handle_initialize(
 
     if let Some(ClientInfo { name, version }) = client_info {
         let version = version.unwrap_or_default();
-        log::info!("{name} version: {version}",);
+        tracing::info!("{name} version: {version}",);
     }
 
     let mut backend_capabilities = backend.capabilities.write().await;
@@ -52,7 +52,7 @@ pub async fn handle_initialize(
         backend_capabilities.diagnostic_mode = DiagnosticMode::Pull;
     }
 
-    log::debug!("backend_capabilities: {:?}", backend_capabilities);
+    tracing::debug!("backend_capabilities: {:?}", backend_capabilities);
 
     Ok(InitializeResult {
         server_info: Some(ServerInfo {

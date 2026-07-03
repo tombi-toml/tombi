@@ -24,8 +24,8 @@ pub fn validate_any_of<'a: 'b, 'b, T>(
 where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
-    log::trace!("value = {:?}", value);
-    log::trace!("any_of_schema = {:?}", any_of_schema);
+    tracing::trace!("value = {:?}", value);
+    tracing::trace!("any_of_schema = {:?}", any_of_schema);
 
     async move {
         let mut total_diagnostics = vec![];

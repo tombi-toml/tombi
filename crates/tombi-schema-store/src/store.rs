@@ -200,11 +200,11 @@ impl SchemaStore {
             } {
                 schema_uri
             } else {
-                log::warn!("Invalid schema path: {}", schema.path());
+                tracing::warn!("Invalid schema path: {}", schema.path());
                 return;
             };
 
-            log::debug!("Load schema from config: {}", schema_uri);
+            tracing::debug!("Load schema from config: {}", schema_uri);
 
             self.schemas.write().await.push(crate::Schema {
                 title: None,
@@ -248,7 +248,7 @@ impl SchemaStore {
                     }
                 })?;
 
-                log::debug!("load catalog from file: {}", catalog_uri);
+                tracing::debug!("load catalog from file: {}", catalog_uri);
 
                 serde_json::from_str(&content).map_err(|err| crate::Error::InvalidJsonFormat {
                     uri: catalog_uri.deref().clone(),
@@ -278,13 +278,13 @@ impl SchemaStore {
                     {
                         return Ok(Some(catalog));
                     }
-                    log::debug!("offline mode, skip fetch catalog from url: {}", catalog_uri);
+                    tracing::debug!("offline mode, skip fetch catalog from url: {}", catalog_uri);
                     return Ok(None);
                 }
 
                 let bytes = match self.http_client.get_bytes(catalog_uri.as_str()).await {
                     Ok(bytes) => {
-                        log::debug!("fetch catalog from url: {}", catalog_uri);
+                        tracing::debug!("fetch catalog from url: {}", catalog_uri);
                         bytes
                     }
                     Err(err) => {
@@ -305,7 +305,7 @@ impl SchemaStore {
                 };
 
                 if let Err(err) = save_to_cache(catalog_cache_path.as_deref(), &bytes).await {
-                    log::warn!("{err}");
+                    tracing::warn!("{err}");
                 }
 
                 match serde_json::from_slice::<crate::json::JsonCatalog>(&bytes) {
@@ -373,7 +373,7 @@ impl SchemaStore {
 
     pub async fn update_schema(&self, mut schema_uri: SchemaUri) -> Result<bool, crate::Error> {
         if matches!(schema_uri.scheme(), "http" | "https") && self.offline() {
-            log::debug!("offline mode, skip fetch schema from url: {}", schema_uri);
+            tracing::debug!("offline mode, skip fetch schema from url: {}", schema_uri);
             return Ok(false);
         }
 
@@ -393,7 +393,7 @@ impl SchemaStore {
                     document_schema,
                 },
             );
-            log::debug!("update schema: {}", schema_uri);
+            tracing::debug!("update schema: {}", schema_uri);
             return Ok(true);
         }
 
@@ -421,7 +421,7 @@ impl SchemaStore {
                 let file = std::fs::File::open(&schema_path)
                     .map_err(|_| crate::Error::SchemaFileReadFailed { schema_path })?;
 
-                log::debug!("fetch schema from file: {}", schema_uri);
+                tracing::debug!("fetch schema from file: {}", schema_uri);
 
                 Ok(Some(tombi_json::ValueNode::from_reader(file).map_err(
                     |err| crate::Error::SchemaFileParseFailed {
@@ -453,13 +453,13 @@ impl SchemaStore {
                     {
                         return Ok(Some(schema_value));
                     }
-                    log::debug!("offline mode, skip fetch schema from uri: {}", schema_uri);
+                    tracing::debug!("offline mode, skip fetch schema from uri: {}", schema_uri);
                     return Ok(None);
                 }
 
                 let bytes = match self.http_client.get_bytes(schema_uri.as_str()).await {
                     Ok(bytes) => {
-                        log::debug!("fetch schema from uri: {}", schema_uri);
+                        tracing::debug!("fetch schema from uri: {}", schema_uri);
                         bytes
                     }
                     Err(err) => {
@@ -480,7 +480,7 @@ impl SchemaStore {
                 };
 
                 if let Err(err) = save_to_cache(schema_cache_path.as_deref(), &bytes).await {
-                    log::warn!("{err}");
+                    tracing::warn!("{err}");
                 }
 
                 Ok(Some(
@@ -499,7 +499,7 @@ impl SchemaStore {
                     });
                 };
 
-                log::debug!("fetch schema from embedded file: {}", schema_uri);
+                tracing::debug!("fetch schema from embedded file: {}", schema_uri);
 
                 Ok(Some(tombi_json::ValueNode::from_str(content).map_err(
                     |err| crate::Error::SchemaFileParseFailed {
@@ -969,13 +969,13 @@ impl SchemaStore {
                     },
                 },
                 Ok(None) => {
-                    log::warn!(
+                    tracing::warn!(
                         "Failed to find document schema: {}",
                         matching_schema.schema_uri
                     );
                 }
                 Err(err) => {
-                    log::warn!(
+                    tracing::warn!(
                         "Failed to get document schema for {url}: {err}",
                         url = matching_schema.schema_uri,
                     );
@@ -1017,10 +1017,10 @@ impl SchemaStore {
         .inspect(|source_schema| {
             if let Some(source_schema) = source_schema {
                 if let Some(root_schema) = &source_schema.root_schema {
-                    log::trace!("find root schema from {}", root_schema.schema_uri);
+                    tracing::trace!("find root schema from {}", root_schema.schema_uri);
                 }
                 for (accessors, schema_uri) in &source_schema.sub_schema_uri_map {
-                    log::trace!(
+                    tracing::trace!(
                         "find sub schema {:?} from {}",
                         PatternAccessors::from(accessors.clone()),
                         schema_uri
@@ -1173,7 +1173,7 @@ async fn load_catalog_from_cache(
     if let Some(catalog_cache_content) =
         read_from_cache(Some(catalog_cache_path), cache_options).await?
     {
-        log::debug!("load catalog from cache: {}", tagalog_uri);
+        tracing::debug!("load catalog from cache: {}", tagalog_uri);
 
         return Ok(Some(serde_json::from_str(&catalog_cache_content).map_err(
             |err| crate::Error::CatalogFileParseFailed {
@@ -1214,7 +1214,7 @@ async fn load_json_schema_from_cache(
     if let Some(schema_cache_content) =
         read_from_cache(Some(schema_cache_path), cache_options).await?
     {
-        log::debug!("load schema from cache: {}", schema_uri);
+        tracing::debug!("load schema from cache: {}", schema_uri);
 
         return Ok(Some(
             tombi_json::ValueNode::from_str(&schema_cache_content).map_err(|err| {

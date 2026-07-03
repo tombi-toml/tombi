@@ -14,6 +14,10 @@ macro_rules! toml_text_assert_eq {
 }
 
 pub fn init_log() {
-    let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("off"))
-        .try_init();
+    if let Ok(level) = std::env::var("RUST_LOG") {
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter(level)
+            .pretty()
+            .try_init();
+    }
 }

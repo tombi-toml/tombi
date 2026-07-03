@@ -9,8 +9,8 @@ pub async fn handle_get_built_in_schema(
     _backend: &Backend,
     params: GetBuiltInSchemaParams,
 ) -> Result<Option<String>, tower_lsp::jsonrpc::Error> {
-    log::debug!("handle_get_built_in_schema");
-    log::trace!("{:?}", params);
+    tracing::debug!("handle_get_built_in_schema");
+    tracing::trace!("{:?}", params);
 
     let Ok(schema_uri) = SchemaUri::from_str(&params.uri) else {
         return Ok(None);

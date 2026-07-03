@@ -169,7 +169,10 @@ fn edit_recursive<'a: 'b, 'b>(
                             let pattern = match tombi_regex::Regex::new(&property_key) {
                                 Ok(pattern) => pattern,
                                 Err(_) => {
-                                    log::warn!("Invalid regex pattern property: {}", property_key);
+                                    tracing::warn!(
+                                        "Invalid regex pattern property: {}",
+                                        property_key
+                                    );
                                     continue;
                                 }
                             };
@@ -200,7 +203,7 @@ fn edit_recursive<'a: 'b, 'b>(
                     if let Some((_, referable_additional_property_schema)) =
                         &table_schema.additional_property_schema
                     {
-                        log::trace!(
+                        tracing::trace!(
                             "additional_property_schema = {:?}",
                             referable_additional_property_schema
                         );

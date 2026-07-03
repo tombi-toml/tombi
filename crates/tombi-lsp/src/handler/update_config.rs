@@ -6,8 +6,8 @@ pub async fn handle_update_config(
     backend: &Backend,
     params: TextDocumentIdentifier,
 ) -> Result<bool, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_update_config");
-    log::trace!("{:?}", params);
+    tracing::info!("handle_update_config");
+    tracing::trace!("{:?}", params);
 
     let text_document_uri: tombi_uri::Uri = params.uri.into();
 
@@ -21,11 +21,11 @@ pub async fn handle_update_config(
                 {
                     Ok(_) => {
                         backend.workspace_diagnostics_cache.write().await.reset();
-                        log::info!("Updated config: {}", text_document_uri);
+                        tracing::info!("Updated config: {}", text_document_uri);
                         return Ok(true);
                     }
                     Err(err) => {
-                        log::error!(
+                        tracing::error!(
                             "Failed to update config for {config_path}: {err}",
                             config_path = config_path.display()
                         );
@@ -34,7 +34,7 @@ pub async fn handle_update_config(
             }
             Ok(None) => {}
             Err(err) => {
-                log::error!(
+                tracing::error!(
                     "Failed to load config for update for {config_path}: {err}",
                     config_path = config_path.display()
                 );

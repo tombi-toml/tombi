@@ -16,8 +16,8 @@ pub async fn handle_hover(
     backend: &backend::Backend,
     params: HoverParams,
 ) -> Result<Option<HoverContent>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_hover");
-    log::trace!("{:?}", params);
+    tracing::info!("handle_hover");
+    tracing::trace!("{:?}", params);
 
     let HoverParams {
         text_document_position_params:
@@ -46,7 +46,7 @@ pub async fn handle_hover(
         .unwrap_or_default()
         .value()
     {
-        log::debug!("`server.hover.enabled` is false");
+        tracing::debug!("`server.hover.enabled` is false");
         return Ok(None);
     }
 
@@ -78,12 +78,12 @@ pub async fn handle_hover(
     }
 
     let Some((keys, range)) = get_hover_keys_with_range(&root, position, toml_version).await else {
-        log::debug!("Failed to get hover keys with range");
+        tracing::debug!("Failed to get hover keys with range");
         return Ok(None);
     };
 
     if keys.is_empty() && range.is_none() {
-        log::debug!("Keys and range are empty");
+        tracing::debug!("Keys and range are empty");
         return Ok(None);
     }
 

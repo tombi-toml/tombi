@@ -27,7 +27,7 @@ where
             schema_context.store,
         )
         .await
-        .inspect_err(|err| log::warn!("{err}"))
+        .inspect_err(|err| tracing::warn!("{err}"))
         && value
             .validate(accessors, Some(&current_schema), schema_context)
             .await

@@ -3,8 +3,8 @@ use tower_lsp::lsp_types::DidCloseTextDocumentParams;
 use crate::Backend;
 
 pub async fn handle_did_close(backend: &Backend, params: DidCloseTextDocumentParams) {
-    log::info!("handle_did_close");
-    log::trace!("{:?}", params);
+    tracing::info!("handle_did_close");
+    tracing::trace!("{:?}", params);
 
     let DidCloseTextDocumentParams { text_document } = params;
 

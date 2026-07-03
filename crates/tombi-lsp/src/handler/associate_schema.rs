@@ -41,11 +41,11 @@ pub struct AssociateSchemaParams {
 /// }
 /// ```
 pub async fn handle_associate_schema(backend: &Backend, params: AssociateSchemaParams) {
-    log::info!("handle_associate_schema");
-    log::trace!("{:?}", params);
+    tracing::info!("handle_associate_schema");
+    tracing::trace!("{:?}", params);
 
     let Ok(schema_uri) = tombi_schema_store::SchemaUri::from_str(&params.uri) else {
-        log::warn!("Invalid schema URL: {}", params.uri);
+        tracing::warn!("Invalid schema URL: {}", params.uri);
         return;
     };
 
@@ -78,6 +78,6 @@ pub async fn handle_associate_schema(backend: &Backend, params: AssociateSchemaP
     )
     .await
     {
-        log::warn!("Failed to push workspace diagnostics: {err}");
+        tracing::warn!("Failed to push workspace diagnostics: {err}");
     }
 }

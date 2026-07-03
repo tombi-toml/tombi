@@ -16,8 +16,8 @@ pub async fn handle_formatting(
     backend: &Backend,
     params: DocumentFormattingParams,
 ) -> Result<Option<Vec<TextEdit>>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_formatting");
-    log::trace!("{:?}", params);
+    tracing::info!("handle_formatting");
+    tracing::trace!("{:?}", params);
 
     let DocumentFormattingParams {
         text_document,
@@ -43,7 +43,7 @@ pub async fn handle_formatting(
         .unwrap_or_default()
         .value()
     {
-        log::debug!("`server.formatting.enabled` is false");
+        tracing::debug!("`server.formatting.enabled` is false");
         return Ok(None);
     }
 
@@ -61,11 +61,13 @@ pub async fn handle_formatting(
         match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
-                log::info!("Skip {text_document_path:?} because it is not in config.files.include");
+                tracing::info!(
+                    "Skip {text_document_path:?} because it is not in config.files.include"
+                );
                 return Ok(None);
             }
             MatchResult::ExcludeMatched => {
-                log::info!("Skip {text_document_path:?} because it is in config.files.exclude");
+                tracing::info!("Skip {text_document_path:?} because it is in config.files.exclude");
                 return Ok(None);
             }
         }
@@ -94,7 +96,7 @@ pub async fn handle_formatting(
         text_document_path.as_deref(),
         config_path.as_deref(),
     ) else {
-        log::debug!(
+        tracing::debug!(
             "Formatting disabled for {:?} by override",
             text_document_path
         );
@@ -114,7 +116,7 @@ pub async fn handle_formatting(
             if document_text.as_ref() != formatted {
                 let edits =
                     compute_text_edits(document_text.as_ref(), &formatted, line_index.as_ref());
-                log::debug!("edits: {:?}", edits);
+                tracing::debug!("edits: {:?}", edits);
                 if let Ok(mut document_sources) = backend.document_sources.try_write()
                     && let Some(document_source) = document_sources.get_mut(&text_document_uri)
                     && document_source.text() == document_text.as_ref()
@@ -124,7 +126,7 @@ pub async fn handle_formatting(
 
                 return Ok(Some(edits));
             } else {
-                log::debug!("no change");
+                tracing::debug!("no change");
                 backend
                     .client
                     .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {
@@ -136,7 +138,7 @@ pub async fn handle_formatting(
             }
         }
         Err(diagnostics) => {
-            log::error!("Failed to format");
+            tracing::error!("Failed to format");
             backend
                 .client
                 .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {

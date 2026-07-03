@@ -18,8 +18,8 @@ pub async fn handle_completion(
     backend: &backend::Backend,
     params: CompletionParams,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_completion");
-    log::trace!("{:?}", params);
+    tracing::info!("handle_completion");
+    tracing::trace!("{:?}", params);
 
     let CompletionParams {
         text_document_position:
@@ -50,7 +50,7 @@ pub async fn handle_completion(
         .unwrap_or_default()
         .value()
     {
-        log::debug!("`server.completion.enabled` is false");
+        tracing::debug!("`server.completion.enabled` is false");
         return Ok(None);
     }
 
@@ -61,7 +61,7 @@ pub async fn handle_completion(
         .unwrap_or_default()
         .value()
     {
-        log::debug!("`schema.enabled` is false");
+        tracing::debug!("`schema.enabled` is false");
         return Ok(None);
     }
 
@@ -69,7 +69,7 @@ pub async fn handle_completion(
         return Ok(None);
     };
     let Some(document_source) = document_sources.get(&text_document_uri) else {
-        log::trace!("document_source not found");
+        tracing::trace!("document_source not found");
         return Ok(None);
     };
 
@@ -100,7 +100,7 @@ pub async fn handle_completion(
             && let Some(prev_line) = &document_source.text().lines().nth(pos_line - 1)
             && (prev_line.trim().is_empty() || root_schema.is_none())
         {
-            log::trace!("completion skipped due to consecutive line breaks");
+            tracing::trace!("completion skipped due to consecutive line breaks");
             return Ok(None);
         }
     }
@@ -246,7 +246,7 @@ fn get_keys_and_completion_hint(
     let Some((keys, completion_hint)) =
         extract_keys_and_hint(root, position, toml_version, comment_context)
     else {
-        log::trace!("keys and completion_hint not found");
+        tracing::trace!("keys and completion_hint not found");
         return None;
     };
 

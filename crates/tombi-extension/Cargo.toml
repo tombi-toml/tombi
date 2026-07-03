@@ -7,7 +7,6 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-log.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tokio = { workspace = true, features = ["sync"] }
@@ -20,6 +19,7 @@ tombi-text.workspace = true
 tombi-toml-text.workspace = true
 tombi-uri.workspace = true
 tower-lsp.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }

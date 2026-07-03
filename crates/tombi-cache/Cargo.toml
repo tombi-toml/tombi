@@ -8,10 +8,10 @@ license.workspace = true
 
 [dependencies]
 dirs.workspace = true
-log.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["fs"] }
 tombi-uri.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

@@ -112,7 +112,7 @@ pub fn log_keyword_dialect_notes(
             } else {
                 ""
             };
-            log::debug!(
+            tracing::debug!(
                 "deprecated-json-schema-keyword: dialect={} keyword={} hint={}{}",
                 dialect,
                 keyword,
@@ -126,7 +126,7 @@ pub fn log_keyword_dialect_notes(
             && matches!(value, tombi_json::ValueNode::Array(_))
         {
             let hint = replacement_hint("tuple-items").unwrap_or("No replacement hint.");
-            log::debug!(
+            tracing::debug!(
                 "deprecated-json-schema-keyword: dialect={} keyword=tuple-items hint={}",
                 dialect,
                 hint
@@ -134,7 +134,7 @@ pub fn log_keyword_dialect_notes(
         }
 
         if keyword_vocabulary(keyword).is_some() && !supports_keyword(Some(dialect), keyword) {
-            log::debug!(
+            tracing::debug!(
                 "unsupported-json-schema-keyword: dialect={} keyword={}",
                 dialect,
                 keyword

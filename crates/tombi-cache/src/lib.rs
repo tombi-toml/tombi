@@ -144,7 +144,7 @@ pub async fn refresh_cache() -> Result<bool, crate::Error> {
 
 async fn ensure_cache_dir(cache_dir_path: std::path::PathBuf) -> Option<std::path::PathBuf> {
     if let Err(error) = tokio::fs::create_dir_all(&cache_dir_path).await {
-        log::warn!("Failed to create cache directory: {error}");
+        tracing::warn!("Failed to create cache directory: {error}");
         return None;
     }
 

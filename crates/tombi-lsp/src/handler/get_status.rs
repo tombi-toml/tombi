@@ -12,8 +12,8 @@ pub async fn handle_get_status(
     backend: &Backend,
     params: TextDocumentIdentifier,
 ) -> Result<GetStatusResponse, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_get_status");
-    log::trace!("{:?}", params);
+    tracing::info!("handle_get_status");
+    tracing::trace!("{:?}", params);
 
     let TextDocumentIdentifier { uri } = params;
     let text_document_uri = uri.into();

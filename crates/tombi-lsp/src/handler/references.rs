@@ -10,8 +10,8 @@ pub async fn handle_references(
     backend: &Backend,
     params: ReferenceParams,
 ) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_references");
-    log::trace!("{:?}", params);
+    tracing::info!("handle_references");
+    tracing::trace!("{:?}", params);
 
     let ReferenceParams {
         text_document_position:
@@ -37,7 +37,7 @@ pub async fn handle_references(
         .unwrap_or_default()
         .value()
     {
-        log::debug!("`server.references.enabled` is false");
+        tracing::debug!("`server.references.enabled` is false");
         return Ok(None);
     }
 

@@ -1428,7 +1428,7 @@ macro_rules! test_document_link {
 
             let result = handle_document_link(&backend, params).await;
 
-            log::debug!("document_link result: {:#?}", result);
+            tracing::debug!("document_link result: {:#?}", result);
 
             let result = result.map(|result| {
                 result.map(|document_links| {
