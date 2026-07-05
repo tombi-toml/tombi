@@ -184,6 +184,25 @@ test_lint! {
 
 test_lint! {
     #[test]
+    fn test_tombi_schema_deprecated_key_disabled_does_not_report_unused_noqa_on_value(
+        r#"
+        [extensions]
+        "tombi-toml/tombi" = {
+          lsp = {
+            document-link = {
+              # tombi: lint.rules.deprecated.disabled = true
+              path = { enabled = true }
+            },
+            goto-definition.path.enabled = true,
+          }
+        }
+        "#,
+        SchemaPath(tombi_schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
     fn test_tombi_schema_lint_rules_deprecated(
         r#"
         [[schemas]]

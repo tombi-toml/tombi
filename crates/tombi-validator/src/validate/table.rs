@@ -748,7 +748,7 @@ async fn validate_table(
         }
     }
 
-    if total_diagnostics.is_empty() {
+    if total_diagnostics.is_empty() && table_schema.deprecation.is_some() {
         handle_deprecated(
             &mut total_diagnostics,
             table_schema.deprecation.as_ref(),
