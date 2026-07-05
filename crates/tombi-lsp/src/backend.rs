@@ -424,12 +424,12 @@ impl tower_lsp::LanguageServer for Backend {
         &self,
         params: InlayHintParams,
     ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
-        let text_document_uri: tombi_uri::Uri = params.text_document.uri.clone().into();
+        let text_document_uri = params.text_document.uri.as_ref();
         let line_index = {
             let Ok(document_sources) = self.document_sources.try_read() else {
                 return Ok(None);
             };
-            let Some(document_source) = document_sources.get(&text_document_uri) else {
+            let Some(document_source) = document_sources.get(text_document_uri) else {
                 return Ok(None);
             };
             document_source.line_index_arc()
