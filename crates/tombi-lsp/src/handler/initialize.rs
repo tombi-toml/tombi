@@ -171,6 +171,7 @@ pub fn server_capabilities(
         ),
         diagnostic_provider: if backend_capabilities.diagnostic_mode == DiagnosticMode::Pull {
             Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
+                identifier: Some("tombi".to_string()),
                 inter_file_dependencies: false,
                 workspace_diagnostics: true,
                 ..Default::default()

@@ -9,6 +9,7 @@ export function clientOptions(
   workspaceFolder?: vscode.WorkspaceFolder,
 ): languageclient.LanguageClientOptions {
   const options = {
+    diagnosticCollectionName: "tombi",
     documentSelector: SUPPORT_TOML_LANGUAGES.flatMap((language) => [
       { scheme: "file", language },
       { scheme: "untitled", language },
