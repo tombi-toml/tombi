@@ -20,6 +20,15 @@ When set, Tombi will not fetch schemas from remote sources and will only use cac
 - Type: `true | false`
 - Default: `false`
 
+## TOMBI_NO_COLOR
+
+Disable ANSI color output from Tombi CLI diagnostics.
+
+When set to a non-empty value, Tombi will not emit ANSI color sequences in CLI diagnostics. If `TOMBI_NO_COLOR` is not set, Tombi will fall back to `NO_COLOR` if available.
+
+- Type: `String`
+- Default: unset
+
 ## TOMBI_NO_CACHE
 
 Disable cache usage and fetch the latest data from remote sources.
