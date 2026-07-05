@@ -26,6 +26,7 @@ macro_rules! comment_directive_schemastore_hostname {
     };
 }
 
+#[repr(transparent)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Uri(url::Url);
 
@@ -64,6 +65,12 @@ impl From<Uri> for url::Url {
 impl AsRef<url::Url> for Uri {
     fn as_ref(&self) -> &url::Url {
         &self.0
+    }
+}
+
+impl AsRef<Uri> for url::Url {
+    fn as_ref(&self) -> &Uri {
+        unsafe { std::mem::transmute(self) }
     }
 }
 
