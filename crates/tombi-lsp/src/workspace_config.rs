@@ -86,3 +86,17 @@ pub async fn get_workspace_configs(backend: &Backend) -> Option<Vec<WorkspaceCon
 
     Some(configs)
 }
+
+pub fn is_workspace_target(
+    text_document_uri: &tombi_uri::Uri,
+    workspace_configs: &[WorkspaceConfig],
+    home_dir: Option<&std::path::Path>,
+) -> bool {
+    let Ok(text_document_path) = tombi_uri::Uri::to_file_path(text_document_uri) else {
+        return false;
+    };
+
+    workspace_configs
+        .iter()
+        .any(|workspace_config| workspace_config.is_workspace_target(&text_document_path, home_dir))
+}

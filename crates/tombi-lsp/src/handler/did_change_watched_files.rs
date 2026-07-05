@@ -2,7 +2,7 @@ use tower_lsp::lsp_types::{DidChangeWatchedFilesParams, FileChangeType};
 
 use crate::{
     backend::Backend,
-    workspace_config::{WorkspaceConfig, get_workspace_configs},
+    workspace_config::{WorkspaceConfig, get_workspace_configs, is_workspace_target},
     workspace_diagnostic::upsert_document_source,
 };
 
@@ -90,18 +90,4 @@ pub async fn handle_did_change_watched_files(
     if should_refresh_pull_diagnostics {
         backend.refresh_pull_diagnostics().await;
     }
-}
-
-fn is_workspace_target(
-    text_document_uri: &tombi_uri::Uri,
-    workspace_configs: &[WorkspaceConfig],
-    home_dir: Option<&std::path::Path>,
-) -> bool {
-    let Ok(text_document_path) = tombi_uri::Uri::to_file_path(text_document_uri) else {
-        return false;
-    };
-
-    workspace_configs
-        .iter()
-        .any(|workspace_config| workspace_config.is_workspace_target(&text_document_path, home_dir))
 }
