@@ -219,14 +219,14 @@
             "string",
             "null"
           ],
-          "scope": "resource",
+          "scope": "machine",
           "default": null,
           "pattern": "^.*tombi(\\.exe)?$"
         },
         "tombi.args": {
           "description": "Arguments to `tombi` command.",
           "type": "array",
-          "scope": "resource",
+          "scope": "machine",
           "default": null,
           "items": {
             "type": "string",
@@ -236,7 +236,7 @@
         "tombi.env": {
           "description": "Environment variables to pass to `tombi` command.",
           "type": "object",
-          "scope": "resource",
+          "scope": "machine",
           "default": null,
           "patternProperties": {
             "^.+$": {
