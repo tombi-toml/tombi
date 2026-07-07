@@ -346,6 +346,31 @@ It removes **all file caches** and fetches the latest schema over the network fo
 VSCode supports associating a TOML schema with a file match pattern.
 See [VSCode Extension](/docs/editors/vscode-extension#json-schema-association) for details.
 
+## Non-standard Supported Features
+
+Tombi supports the following features for compatibility with existing schema tooling, even though
+they are not part of the JSON Schema specification.
+
+### deprecationMessage
+
+`deprecationMessage` is a non-standard keyword originating from the VS Code JSON language service.
+Tombi accepts it for compatibility, but only honors it alongside `deprecated: true`.
+
+When both are present, the `deprecationMessage` string is used as the deprecation diagnostic message
+instead of the generic one. A `deprecationMessage` without `deprecated: true` is ignored.
+
+```json
+{
+  "properties": {
+    "old-key": {
+      "type": "string",
+      "deprecated": true,
+      "deprecationMessage": "Use `new-key` instead."
+    }
+  }
+}
+```
+
 ## Compliance Status
 
 The table below summarizes keyword membership in each JSON Schema dialect and whether Tombi
@@ -430,14 +455,6 @@ accepted even before draft-2020-12.
 <Note>
 `format`, `title`, `description`, `default`, `examples`, `deprecated`, `contentEncoding`, `contentMediaType`, and `contentSchema` are not all treated as pure assertion keywords.
 Some are used as annotations for validation behavior, hover, completion, or diagnostics.
-</Note>
-
-<Note>
-`deprecationMessage` is a non-standard keyword originating from the VS Code JSON language service
-(it is not part of any JSON Schema dialect), and Tombi accepts it for compatibility. It is only
-honored alongside `deprecated: true`: when both are present, the `deprecationMessage` string is
-used as the deprecation diagnostic message (instead of the generic one). A `deprecationMessage`
-without `deprecated: true` is ignored.
 </Note>
 
 <Note>
