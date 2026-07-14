@@ -261,6 +261,30 @@ detect_os_arch() {
 		fi
 		TARGET="${ARCH}-${OS}"
 		;;
+	SunOS)
+		# SunOS can mean either illumos or Oracle Solaris. tombi only ships
+		# prebuilt binaries for illumos.
+		OS_FLAVOR="$(uname -o 2>/dev/null || echo unknown)"
+		if [ "${OS_FLAVOR}" != "illumos" ]; then
+			print_error "Unsupported operating system: ${OS} (${OS_FLAVOR})."
+			print_error "tombi provides prebuilt binaries for illumos only, not Oracle Solaris."
+			print_error "On illumos, ensure 'uname -o' reports 'illumos'; otherwise build from source: https://github.com/tombi-toml/tombi"
+			exit 1
+		fi
+		case "${ARCH}" in
+		i86pc | x86_64)
+			ARCH="x86_64"
+			;;
+		*)
+			print_error "Unsupported architecture '${ARCH}' on illumos."
+			print_error "tombi provides an illumos binary for x86_64 (i86pc) only."
+			print_error "Build tombi from source for this architecture: https://github.com/tombi-toml/tombi"
+			exit 1
+			;;
+		esac
+		OS="unknown-illumos"
+		TARGET="${ARCH}-${OS}"
+		;;
 	*)
 		print_error "Unsupported OS: ${OS}"
 		exit 1

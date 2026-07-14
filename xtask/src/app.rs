@@ -42,7 +42,9 @@ pub fn run(args: impl Into<Args>) -> Result<(), anyhow::Error> {
         command::XTaskCommand::TomlTest(args) => {
             command::toml_test::run(&xshell::Shell::new().unwrap(), verbosity, args)?
         }
-        command::XTaskCommand::Dist => command::dist::run(&xshell::Shell::new().unwrap())?,
+        command::XTaskCommand::Dist(args) => {
+            command::dist::run(&xshell::Shell::new().unwrap(), args)?
+        }
     }
     Ok(())
 }
