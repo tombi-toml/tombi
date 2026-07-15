@@ -17,7 +17,7 @@ pub async fn validate_not<'a, T>(
 where
     T: Validate + ValueImpl + Sync + Send,
 {
-    if let Ok(Some(current_schema)) = not_schema
+    let matches_not_schema = match not_schema
         .schema
         .write()
         .await
@@ -27,12 +27,23 @@ where
             schema_context.store,
         )
         .await
-        .inspect_err(|err| log::warn!("{err}"))
-        && value
+    {
+        Ok(Some(current_schema)) => value
             .validate(accessors, Some(&current_schema), schema_context)
             .await
-            .is_ok()
-    {
+            .is_ok(),
+        Ok(None) => false,
+        Err(err) => {
+            return Err(vec![tombi_diagnostic::Diagnostic::new_error(
+                err.to_string(),
+                err.code(),
+                value.range(),
+            )]
+            .into());
+        }
+    };
+
+    if matches_not_schema {
         let mut diagnostics = Vec::with_capacity(1);
         crate::Diagnostic {
             kind: Box::new(crate::DiagnosticKind::NotSchemaMatch),
