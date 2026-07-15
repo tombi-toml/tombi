@@ -61,6 +61,31 @@ jobs:
       - name: Add install directory to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      # GitHub does not offer illumos runners, so exercise install.sh's SunOS
+      # branch by shimming `uname` (i86pc is what real illumos reports for x86_64).
+      - name: Verify illumos target detection (simulated)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          shim_dir="${RUNNER_TEMP}/uname-shim"
+          mkdir -p "$shim_dir"
+          cat > "$shim_dir/uname" <<'SHIM'
+          #!/bin/sh
+          case "$1" in
+            -s) echo "SunOS" ;;
+            -m) echo "i86pc" ;;
+            *) echo "SunOS" ;;
+          esac
+          SHIM
+          chmod +x "$shim_dir/uname"
+          # Download of the not-yet-published illumos asset is expected to fail;
+          # only the target detection printed before the download is asserted.
+          output="$(PATH="$shim_dir:$PATH" ./docs/public/install.sh --version 1.2.0 2>&1 || true)"
+          printf '%s\n' "$output"
+          if ! printf '%s\n' "$output" | grep -q "Detected system: x86_64-unknown-illumos"; then
+            echo "install.sh did not resolve the illumos target for simulated SunOS" >&2
+            exit 1
+          fi
+
       - name: Resolve release artifact metadata
         env:
           GITHUB_TOKEN: ${{ github.token }}
