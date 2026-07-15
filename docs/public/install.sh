@@ -252,6 +252,19 @@ detect_os_arch() {
 		fi
 		TARGET="${ARCH}-${OS}"
 		;;
+	SunOS)
+		OS="unknown-illumos"
+		case "${ARCH}" in
+		x86_64 | amd64 | i86pc)
+			ARCH="x86_64"
+			;;
+		*)
+			print_error "Unsupported illumos architecture: ${ARCH}"
+			exit 1
+			;;
+		esac
+		TARGET="${ARCH}-${OS}"
+		;;
 	MINGW* | MSYS* | CYGWIN* | Windows_NT)
 		OS="pc-windows-msvc"
 		if [ "${ARCH}" = "aarch64" ]; then

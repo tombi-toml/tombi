@@ -122,6 +122,21 @@ jobs:
                 extension=".tar.gz"
               fi
               ;;
+            SunOS)
+              case "$(uname -m)" in
+                x86_64|amd64|i86pc) arch="x86_64" ;;
+                *)
+                  echo "Unsupported illumos architecture" >&2
+                  exit 1
+                  ;;
+              esac
+              target="${arch}-unknown-illumos"
+              if [ "$major" -eq 0 ] && { [ "$minor" -lt 9 ] || { [ "$minor" -eq 9 ] && [ "$patch" -lt 23 ]; }; }; then
+                extension=".gz"
+              else
+                extension=".tar.gz"
+              fi
+              ;;
             MINGW*|MSYS*|CYGWIN*|Windows_NT)
               case "$(uname -m)" in
                 aarch64) arch="aarch64" ;;

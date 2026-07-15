@@ -24,7 +24,9 @@ pub fn run(sh: &Shell) -> Result<(), anyhow::Error> {
     sh.create_dir(&dist)?;
 
     dist_server(sh, &target)?;
-    dist_client(sh, &target)?;
+    if !target.cli_only {
+        dist_client(sh, &target)?;
+    }
 
     Ok(())
 }
@@ -43,11 +45,21 @@ fn dist_server(sh: &Shell, target: &Target) -> Result<(), anyhow::Error> {
         .join("tombi-cli")
         .join("Cargo.toml");
 
-    xshell::cmd!(
-        sh,
-        "cargo build --locked --manifest-path {manifest_path} --bin tombi --target {target_name} --release"
-    )
-    .run()?;
+    match std::env::var("TOMBI_DIST_BUILD_TOOL").as_deref() {
+        Ok("cross") => xshell::cmd!(
+            sh,
+            "cross build --locked --manifest-path {manifest_path} --bin tombi --target {target_name} --release"
+        )
+        .run()?,
+        Ok("cargo") | Err(_) => xshell::cmd!(
+            sh,
+            "cargo build --locked --manifest-path {manifest_path} --bin tombi --target {target_name} --release"
+        )
+        .run()?,
+        Ok(build_tool) => {
+            anyhow::bail!("Unsupported TOMBI_DIST_BUILD_TOOL: {build_tool}");
+        }
+    }
 
     let dist = project_root_path().join("dist");
     if target_name.contains("-windows-") {
@@ -122,6 +134,7 @@ struct Target {
     cli_artifact_dir_name: String,
     cli_artifact_name: String,
     vscode_artifact_name: String,
+    cli_only: bool,
 }
 
 impl Target {
@@ -174,6 +187,7 @@ impl Target {
         let cli_artifact_dir_name = format!("tombi-cli-{version}-{target_name}");
         let cli_artifact_name = format!("{cli_artifact_dir_name}{cli_artifact_suffix}");
         let vscode_artifact_name = format!("tombi-vscode-{version}-{vscode_target_name}.vsix");
+        let cli_only = std::env::var("TOMBI_DIST_CLI_ONLY").is_ok_and(|value| value == "1");
 
         Self {
             target_name,
@@ -184,6 +198,7 @@ impl Target {
             cli_artifact_dir_name,
             cli_artifact_name,
             vscode_artifact_name,
+            cli_only,
         }
     }
 }
@@ -242,9 +257,14 @@ fn zip(src_path: &Path, symbols_path: Option<&PathBuf>, dest_path: &Path) -> any
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn unix_targets_always_use_tar_gz() {
+        let _guard = ENV_LOCK.lock().unwrap();
+
         unsafe {
             std::env::set_var("TOMBI_TARGET", "aarch64-apple-darwin");
         }
@@ -256,6 +276,31 @@ mod tests {
 
         unsafe {
             std::env::remove_var("TOMBI_TARGET");
+        }
+    }
+
+    #[test]
+    fn cli_only_targets_still_use_target_named_artifacts() {
+        let _guard = ENV_LOCK.lock().unwrap();
+
+        unsafe {
+            std::env::set_var("TOMBI_TARGET", "x86_64-unknown-illumos");
+            std::env::set_var("VSCODE_TARGET", "unused");
+            std::env::set_var("TOMBI_DIST_CLI_ONLY", "1");
+        }
+
+        let target = Target::get(Path::new("."));
+
+        assert!(target.cli_only);
+        assert_eq!(
+            target.cli_artifact_name,
+            format!("tombi-cli-{DEV_VERSION}-x86_64-unknown-illumos.tar.gz")
+        );
+
+        unsafe {
+            std::env::remove_var("TOMBI_TARGET");
+            std::env::remove_var("VSCODE_TARGET");
+            std::env::remove_var("TOMBI_DIST_CLI_ONLY");
         }
     }
 }
