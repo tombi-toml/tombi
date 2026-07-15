@@ -1,5 +1,5 @@
+use tombi_diagnostic::Level;
 use tombi_linter::test_lint;
-use tombi_schema_store::SchemaUri;
 
 fn schema_path() -> std::path::PathBuf {
     tombi_test_lib::project_root_path()
@@ -9,15 +9,46 @@ fn schema_path() -> std::path::PathBuf {
 
 test_lint! {
     #[test]
-    fn test_unresolved_ref_reports_error(
+    fn test_invalid_ref_reports_error_diagnostic(
         r#"
         value = "foo"
         "#,
         SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "invalid-json-pointer", level: Level::ERROR }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_inline_not_rejects_matching_value(
+        r#"
+        inline = "foo"
+        "#,
+        SchemaPath(schema_path()),
     ) -> Err([
-        tombi_schema_store::Error::InvalidJsonPointer {
-            pointer: "#/$defs/missing".to_string(),
-            schema_uri: SchemaUri::from_file_path(schema_path()).unwrap(),
-        }
+        tombi_validator::DiagnosticKind::NotSchemaMatch
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_inline_not_accepts_non_matching_value(
+        r#"
+        inline = "bar"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_inline_not_treats_warning_only_result_as_match(
+        r#"
+        warning = "foo"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::NotSchemaMatch
     ])
 }
