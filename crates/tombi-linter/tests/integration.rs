@@ -28,6 +28,8 @@ mod json_schema_test_suite;
 mod min_max_contains_test_schema;
 #[path = "integration/non_schema.rs"]
 mod non_schema;
+#[path = "integration/not_schema.rs"]
+mod not_schema;
 #[path = "integration/other_schema.rs"]
 mod other_schema;
 #[path = "integration/prefix_items_test_schema.rs"]
