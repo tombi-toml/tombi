@@ -3,7 +3,10 @@ use tombi_document_tree::ValueImpl;
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 use tombi_severity_level::SeverityLevelDefaultError;
 
-use crate::{Validate, validate::handle_unused_noqa};
+use crate::{
+    Validate,
+    validate::{handle_unused_noqa, is_assertion_success},
+};
 
 pub async fn validate_not<'a, T>(
     value: &T,
@@ -17,22 +20,31 @@ pub async fn validate_not<'a, T>(
 where
     T: Validate + ValueImpl + Sync + Send,
 {
-    if let Ok(Some(current_schema)) = not_schema
-        .schema
-        .write()
-        .await
-        .resolve(
-            current_schema.schema_uri.clone(),
-            current_schema.definitions.clone(),
-            schema_context.store,
-        )
-        .await
-        .inspect_err(|err| log::warn!("{err}"))
-        && value
-            .validate(accessors, Some(&current_schema), schema_context)
-            .await
-            .is_ok()
+    let matches_not_schema = match tombi_schema_store::resolve_schema_item(
+        &not_schema.schema,
+        current_schema.schema_uri.clone(),
+        current_schema.definitions.clone(),
+        schema_context.store,
+    )
+    .await
     {
+        Ok(Some(current_schema)) => is_assertion_success(
+            &value
+                .validate(accessors, Some(&current_schema), schema_context)
+                .await,
+        ),
+        Ok(None) => false,
+        Err(err) => {
+            return Err(vec![tombi_diagnostic::Diagnostic::new_error(
+                err.to_string(),
+                err.code(),
+                value.range(),
+            )]
+            .into());
+        }
+    };
+
+    if matches_not_schema {
         let mut diagnostics = Vec::with_capacity(1);
         crate::Diagnostic {
             kind: Box::new(crate::DiagnosticKind::NotSchemaMatch),
