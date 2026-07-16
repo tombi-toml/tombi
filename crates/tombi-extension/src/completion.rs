@@ -512,7 +512,7 @@ impl FromLsp<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
     ) -> tower_lsp::lsp_types::CompletionItem {
         const SECTION_SEPARATOR: &str = "-----";
 
-        let sorted_text = format!("{}_{}", source.priority.as_prefix(), &source.label);
+        let sorted_text = format!("{}_{}", source.priority.as_prefix(), source.label);
 
         let mut schema_text = None;
         if let Some(schema_uri) = &source.schema_uri {

@@ -692,11 +692,6 @@ fn is_plain_name_fragment(fragment: &str) -> bool {
     !fragment.is_empty() && !fragment.contains('/')
 }
 
-/// Two-path schema collection: tries a read lock first for already-resolved schemas,
-/// resolves refs on cloned entries, and writes back only newly-resolved entries.
-///
-/// Returns `None` when schema traversal is re-entrant (cycle guard) or when
-/// an initial read lock cannot be acquired due to concurrent mutation.
 pub async fn resolve_and_collect_schemas(
     schemas: &super::ReferableValueSchemas,
     schema_uri: Cow<'_, SchemaUri>,
@@ -705,6 +700,37 @@ pub async fn resolve_and_collect_schemas(
     schema_visits: &crate::SchemaVisits,
     accessors: &[crate::Accessor],
 ) -> Option<Vec<CurrentSchema<'static>>> {
+    let (collected, errors) = resolve_and_collect_schemas_with_errors(
+        schemas,
+        schema_uri,
+        definitions,
+        schema_store,
+        schema_visits,
+        accessors,
+    )
+    .await?;
+
+    for err in errors {
+        log::warn!("{err}");
+    }
+
+    Some(collected)
+}
+
+/// Two-path schema collection: tries a read lock first for already-resolved schemas,
+/// resolves refs on cloned entries, and writes back only newly-resolved entries.
+///
+/// Returns the successfully resolved schemas together with any resolution errors.
+/// Returns `None` when schema traversal is re-entrant (cycle guard) or when
+/// an initial read lock cannot be acquired due to concurrent mutation.
+pub async fn resolve_and_collect_schemas_with_errors(
+    schemas: &super::ReferableValueSchemas,
+    schema_uri: Cow<'_, SchemaUri>,
+    definitions: Cow<'_, SchemaDefinitions>,
+    schema_store: &crate::SchemaStore,
+    schema_visits: &crate::SchemaVisits,
+    accessors: &[crate::Accessor],
+) -> Option<(Vec<CurrentSchema<'static>>, Vec<crate::Error>)> {
     let Some(_cycle_guard) = schema_visits.get_cycle_guard(schemas) else {
         log::debug!(
             "detected composite schema cycle while collecting schemas: schema_uri={schema_uri} accessors={accessors} reason=reentrant_schema_traversal",
@@ -749,6 +775,7 @@ pub async fn resolve_and_collect_schemas(
     // Build output from read result and avoid cloning the whole referable vector.
     if let Some(resolved_schemas) = resolved_schemas {
         let mut collected = Vec::with_capacity(resolved_schemas.len());
+        let mut errors = Vec::new();
         let default_schema_uri = schema_uri.as_ref().clone();
         let default_definitions = definitions.clone().into_owned();
 
@@ -765,7 +792,7 @@ pub async fn resolve_and_collect_schemas(
                         ),
                         Ok(None) => (default_schema_uri.clone(), default_definitions.clone()),
                         Err(err) => {
-                            log::warn!("{err}");
+                            errors.push(err);
                             continue;
                         }
                     }
@@ -780,11 +807,12 @@ pub async fn resolve_and_collect_schemas(
             });
         }
 
-        return Some(collected);
+        return Some((collected, errors));
     }
 
     // Slow path: unresolved refs exist. Resolve on cloned entries and cache back.
     let mut collected = Vec::with_capacity(schema_entries.len());
+    let mut errors = Vec::new();
     let mut resolved_indices = Vec::new();
     for (index, referable_schema) in schema_entries.iter_mut().enumerate() {
         let was_ref = referable_schema.is_ref();
@@ -795,7 +823,7 @@ pub async fn resolve_and_collect_schemas(
             Ok(Some(current_schema)) => collected.push(current_schema.into_owned()),
             Ok(None) => {}
             Err(err) => {
-                log::warn!("{err}");
+                errors.push(err);
             }
         }
 
@@ -812,7 +840,7 @@ pub async fn resolve_and_collect_schemas(
                 schema_uri = schema_uri.as_ref(),
                 accessors = crate::Accessors::from(accessors.to_vec())
             );
-            return Some(collected);
+            return Some((collected, errors));
         };
 
         for index in resolved_indices {
@@ -826,7 +854,7 @@ pub async fn resolve_and_collect_schemas(
         }
     }
 
-    Some(collected)
+    Some((collected, errors))
 }
 
 /// Resolve a schema item without holding its write lock across await points.

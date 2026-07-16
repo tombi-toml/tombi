@@ -178,7 +178,7 @@ async fn validate_table(
         {
             matched_key = true;
 
-            if let Ok(Some(current_schema)) = table_schema
+            match table_schema
                 .resolve_property_schema(
                     &schema_accessor,
                     current_schema.schema_uri.clone(),
@@ -186,17 +186,33 @@ async fn validate_table(
                     schema_context.store,
                 )
                 .await
-                .inspect_err(|err| log::warn!("{err}"))
-                && let Err(crate::Error {
-                    mut diagnostics, ..
-                }) = value
-                    .validate(&new_accessors, Some(&current_schema), schema_context)
-                    .await
             {
-                convert_deprecated_diagnostics_range(&current_schema, value, key, &mut diagnostics)
-                    .await;
+                Ok(Some(current_schema)) => {
+                    if let Err(crate::Error {
+                        mut diagnostics, ..
+                    }) = value
+                        .validate(&new_accessors, Some(&current_schema), schema_context)
+                        .await
+                    {
+                        convert_deprecated_diagnostics_range(
+                            &current_schema,
+                            value,
+                            key,
+                            &mut diagnostics,
+                        )
+                        .await;
 
-                total_diagnostics.extend(diagnostics);
+                        total_diagnostics.extend(diagnostics);
+                    }
+                }
+                Ok(None) => {}
+                Err(err) => {
+                    total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
+                        err.to_string(),
+                        err.code(),
+                        key.range() + value.range(),
+                    ));
+                }
             }
         }
 
@@ -214,7 +230,7 @@ async fn validate_table(
                 };
                 if pattern.is_match(accessor_raw_text) {
                     matched_key = true;
-                    if let Ok(Some(current_schema)) = table_schema
+                    match table_schema
                         .resolve_pattern_property_schema(
                             &pattern_key,
                             current_schema.schema_uri.clone(),
@@ -222,22 +238,33 @@ async fn validate_table(
                             schema_context.store,
                         )
                         .await
-                        .inspect_err(|err| log::warn!("{err}"))
-                        && let Err(crate::Error {
-                            mut diagnostics, ..
-                        }) = value
-                            .validate(&new_accessors, Some(&current_schema), schema_context)
-                            .await
                     {
-                        convert_deprecated_diagnostics_range(
-                            &current_schema,
-                            value,
-                            key,
-                            &mut diagnostics,
-                        )
-                        .await;
+                        Ok(Some(current_schema)) => {
+                            if let Err(crate::Error {
+                                mut diagnostics, ..
+                            }) = value
+                                .validate(&new_accessors, Some(&current_schema), schema_context)
+                                .await
+                            {
+                                convert_deprecated_diagnostics_range(
+                                    &current_schema,
+                                    value,
+                                    key,
+                                    &mut diagnostics,
+                                )
+                                .await;
 
-                        total_diagnostics.extend(diagnostics);
+                                total_diagnostics.extend(diagnostics);
+                            }
+                        }
+                        Ok(None) => {}
+                        Err(err) => {
+                            total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
+                                err.to_string(),
+                                err.code(),
+                                key.range() + value.range(),
+                            ));
+                        }
                     }
                 }
             }
@@ -284,34 +311,45 @@ async fn validate_table(
             let mut validated_by_additional_schema = false;
             if let Some((_, referable_additional_property_schema)) =
                 &table_schema.additional_property_schema
-                && let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
+            {
+                match tombi_schema_store::resolve_schema_item(
                     referable_additional_property_schema,
                     current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
                     schema_context.store,
                 )
                 .await
-                .inspect_err(|err| log::warn!("{err}"))
-            {
-                let deprecation = current_schema.value_schema.deprecation().await;
-                handle_deprecated_value(
-                    &mut total_diagnostics,
-                    deprecation.as_ref(),
-                    &new_accessors,
-                    value,
-                    Some(&current_schema),
-                    schema_context,
-                    table_value.comment_directives(),
-                    table_rules.as_ref().map(|rules| &rules.common),
-                );
-
-                if let Err(crate::Error { diagnostics, .. }) = value
-                    .validate(&new_accessors, Some(&current_schema), schema_context)
-                    .await
                 {
-                    total_diagnostics.extend(diagnostics);
+                    Ok(Some(current_schema)) => {
+                        let deprecation = current_schema.value_schema.deprecation().await;
+                        handle_deprecated_value(
+                            &mut total_diagnostics,
+                            deprecation.as_ref(),
+                            &new_accessors,
+                            value,
+                            Some(&current_schema),
+                            schema_context,
+                            table_value.comment_directives(),
+                            table_rules.as_ref().map(|rules| &rules.common),
+                        );
+
+                        if let Err(crate::Error { diagnostics, .. }) = value
+                            .validate(&new_accessors, Some(&current_schema), schema_context)
+                            .await
+                        {
+                            total_diagnostics.extend(diagnostics);
+                        }
+                        validated_by_additional_schema = true;
+                    }
+                    Ok(None) => {}
+                    Err(err) => {
+                        total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
+                            err.to_string(),
+                            err.code(),
+                            key.range() + value.range(),
+                        ));
+                    }
                 }
-                validated_by_additional_schema = true;
             }
 
             // `additionalProperties` contributes to evaluated properties only when the keyword exists.
@@ -322,23 +360,33 @@ async fn validate_table(
                 && !validated_by_additional_schema
                 && !evaluated_by_additional_default
             {
-                if let Some(schema_item) = &table_schema.unevaluated_property_schema
-                    && let Ok(Some(unevaluated_schema)) = tombi_schema_store::resolve_schema_item(
+                if let Some(schema_item) = &table_schema.unevaluated_property_schema {
+                    match tombi_schema_store::resolve_schema_item(
                         schema_item,
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
                         schema_context.store,
                     )
                     .await
-                    .inspect_err(|err| log::warn!("{err}"))
-                {
-                    if let Err(crate::Error { diagnostics, .. }) = value
-                        .validate(&new_accessors, Some(&unevaluated_schema), schema_context)
-                        .await
                     {
-                        total_diagnostics.extend(diagnostics);
+                        Ok(Some(unevaluated_schema)) => {
+                            if let Err(crate::Error { diagnostics, .. }) = value
+                                .validate(&new_accessors, Some(&unevaluated_schema), schema_context)
+                                .await
+                            {
+                                total_diagnostics.extend(diagnostics);
+                            }
+                            continue;
+                        }
+                        Ok(None) => {}
+                        Err(err) => {
+                            total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
+                                err.to_string(),
+                                err.code(),
+                                key.range() + value.range(),
+                            ));
+                        }
                     }
-                    continue;
                 }
 
                 if table_schema.unevaluated_properties == Some(false) {
@@ -545,37 +593,46 @@ async fn validate_table(
                     }
                 }
                 tombi_schema_store::Dependency::Schema(schema_item) => {
-                    if let Ok(Some(dep_schema)) = tombi_schema_store::resolve_schema_item(
+                    match tombi_schema_store::resolve_schema_item(
                         schema_item,
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
                         schema_context.store,
                     )
                     .await
-                    .inspect_err(|err| log::warn!("{err}"))
                     {
-                        // A dependency schema is an additional constraint layered on top of
-                        // the parent table schema. Running strict mode here against the
-                        // partial dependency schema causes false-positive additional key
-                        // diagnostics for valid keys defined by the parent schema.
-                        let dependency_schema_context = tombi_schema_store::SchemaContext {
-                            toml_version: schema_context.toml_version,
-                            root_schema: schema_context.root_schema,
-                            sub_schema_uri_map: schema_context.sub_schema_uri_map,
-                            deprecated_lint_level: schema_context.deprecated_lint_level,
-                            schema_format_rules: schema_context.schema_format_rules,
-                            schema_lint_rules: schema_context.schema_lint_rules,
-                            schema_overrides: schema_context.schema_overrides,
-                            schema_visits: schema_context.schema_visits.clone(),
-                            store: schema_context.store,
-                            strict: Some(false),
-                        };
+                        Ok(Some(dep_schema)) => {
+                            // A dependency schema is an additional constraint layered on top of
+                            // the parent table schema. Running strict mode here against the
+                            // partial dependency schema causes false-positive additional key
+                            // diagnostics for valid keys defined by the parent schema.
+                            let dependency_schema_context = tombi_schema_store::SchemaContext {
+                                toml_version: schema_context.toml_version,
+                                root_schema: schema_context.root_schema,
+                                sub_schema_uri_map: schema_context.sub_schema_uri_map,
+                                deprecated_lint_level: schema_context.deprecated_lint_level,
+                                schema_format_rules: schema_context.schema_format_rules,
+                                schema_lint_rules: schema_context.schema_lint_rules,
+                                schema_overrides: schema_context.schema_overrides,
+                                schema_visits: schema_context.schema_visits.clone(),
+                                store: schema_context.store,
+                                strict: Some(false),
+                            };
 
-                        if let Err(crate::Error { diagnostics, .. }) = table_value
-                            .validate(accessors, Some(&dep_schema), &dependency_schema_context)
-                            .await
-                        {
-                            total_diagnostics.extend(diagnostics);
+                            if let Err(crate::Error { diagnostics, .. }) = table_value
+                                .validate(accessors, Some(&dep_schema), &dependency_schema_context)
+                                .await
+                            {
+                                total_diagnostics.extend(diagnostics);
+                            }
+                        }
+                        Ok(None) => {}
+                        Err(err) => {
+                            total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
+                                err.to_string(),
+                                err.code(),
+                                table_value.range(),
+                            ));
                         }
                     }
                 }
@@ -613,34 +670,43 @@ async fn validate_table(
                 continue;
             }
 
-            if let Ok(Some(dep_schema)) = tombi_schema_store::resolve_schema_item(
+            match tombi_schema_store::resolve_schema_item(
                 schema_item,
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
                 schema_context.store,
             )
             .await
-            .inspect_err(|err| log::warn!("{err}"))
             {
-                // See the rationale in the `Dependency::Schema` branch above.
-                let dependency_schema_context = tombi_schema_store::SchemaContext {
-                    toml_version: schema_context.toml_version,
-                    root_schema: schema_context.root_schema,
-                    sub_schema_uri_map: schema_context.sub_schema_uri_map,
-                    deprecated_lint_level: schema_context.deprecated_lint_level,
-                    schema_format_rules: schema_context.schema_format_rules,
-                    schema_lint_rules: schema_context.schema_lint_rules,
-                    schema_overrides: schema_context.schema_overrides,
-                    schema_visits: schema_context.schema_visits.clone(),
-                    store: schema_context.store,
-                    strict: Some(false),
-                };
+                Ok(Some(dep_schema)) => {
+                    // See the rationale in the `Dependency::Schema` branch above.
+                    let dependency_schema_context = tombi_schema_store::SchemaContext {
+                        toml_version: schema_context.toml_version,
+                        root_schema: schema_context.root_schema,
+                        sub_schema_uri_map: schema_context.sub_schema_uri_map,
+                        deprecated_lint_level: schema_context.deprecated_lint_level,
+                        schema_format_rules: schema_context.schema_format_rules,
+                        schema_lint_rules: schema_context.schema_lint_rules,
+                        schema_overrides: schema_context.schema_overrides,
+                        schema_visits: schema_context.schema_visits.clone(),
+                        store: schema_context.store,
+                        strict: Some(false),
+                    };
 
-                if let Err(crate::Error { diagnostics, .. }) = table_value
-                    .validate(accessors, Some(&dep_schema), &dependency_schema_context)
-                    .await
-                {
-                    total_diagnostics.extend(diagnostics);
+                    if let Err(crate::Error { diagnostics, .. }) = table_value
+                        .validate(accessors, Some(&dep_schema), &dependency_schema_context)
+                        .await
+                    {
+                        total_diagnostics.extend(diagnostics);
+                    }
+                }
+                Ok(None) => {}
+                Err(err) => {
+                    total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
+                        err.to_string(),
+                        err.code(),
+                        table_value.range(),
+                    ));
                 }
             }
         }
@@ -716,35 +782,40 @@ async fn validate_table(
         }
     }
 
-    if let Some(property_name_schema) = &table_schema.property_names
-        && let Ok(Some(property_name_current_schema)) = tombi_schema_store::resolve_schema_item(
-            property_name_schema,
-            current_schema.schema_uri.clone(),
-            current_schema.definitions.clone(),
-            schema_context.store,
-        )
-        .await
-        .inspect_err(|err| log::warn!("{err}"))
-    {
-        for key in table_value.keys() {
-            if let Err(crate::Error { diagnostics, .. }) = key
-                .validate(
-                    accessors,
-                    Some(&property_name_current_schema),
-                    schema_context,
-                )
-                .await
+    let property_name_current_schema =
+        if let Some(property_name_schema) = &table_schema.property_names {
+            match tombi_schema_store::resolve_schema_item(
+                property_name_schema,
+                current_schema.schema_uri.clone(),
+                current_schema.definitions.clone(),
+                schema_context.store,
+            )
+            .await
             {
-                total_diagnostics.extend(diagnostics);
+                Ok(property_name_current_schema) => property_name_current_schema,
+                Err(err) => {
+                    total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
+                        err.to_string(),
+                        err.code(),
+                        table_value.range(),
+                    ));
+                    None
+                }
             }
-        }
-    } else {
-        for key in table_value.keys() {
-            if let Err(crate::Error { diagnostics, .. }) =
-                key.validate(accessors, None, schema_context).await
-            {
-                total_diagnostics.extend(diagnostics);
-            }
+        } else {
+            None
+        };
+
+    for key in table_value.keys() {
+        if let Err(crate::Error { diagnostics, .. }) = key
+            .validate(
+                accessors,
+                property_name_current_schema.as_ref(),
+                schema_context,
+            )
+            .await
+        {
+            total_diagnostics.extend(diagnostics);
         }
     }
 
