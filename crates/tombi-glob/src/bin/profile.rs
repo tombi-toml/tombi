@@ -1,6 +1,5 @@
 use std::{env, path::PathBuf, time::Instant};
 
-use tombi_config::FilesOptions;
 use tombi_glob::{FileSearchEntry, search_pattern_matched_paths};
 
 #[tokio::main]
