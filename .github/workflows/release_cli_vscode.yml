@@ -197,9 +197,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [delete-old-dev-artifacts]
     env:
-      TOMBI_TARGET: x86_64-unknown-illumos
-      TOMBI_DIST_BUILD_TOOL: cross
-      TOMBI_DIST_CLI_ONLY: "1"
+      # TOMBI_TARGET / TOMBI_DIST_BUILD_TOOL / TOMBI_DIST_CLI_ONLY are fixed by
+      # the build-cli-illumos action; only GITHUB_REF (consumed by set-version)
+      # is job-specific here.
       GITHUB_REF: ${{ (github.ref) }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

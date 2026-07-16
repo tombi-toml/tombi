@@ -253,6 +253,14 @@ detect_os_arch() {
 		TARGET="${ARCH}-${OS}"
 		;;
 	SunOS)
+		# `uname -s` reports SunOS on both illumos and Oracle Solaris, but the
+		# release artifacts are illumos-only. Reject Solaris instead of handing
+		# it an ABI-incompatible binary. `uname -o` is unavailable on some
+		# systems, so only reject when it explicitly reports Solaris.
+		if [ "$(uname -o 2>/dev/null || echo)" = "Solaris" ]; then
+			print_error "Oracle Solaris is not supported; release builds target illumos only."
+			exit 1
+		fi
 		OS="unknown-illumos"
 		case "${ARCH}" in
 		x86_64 | amd64 | i86pc)

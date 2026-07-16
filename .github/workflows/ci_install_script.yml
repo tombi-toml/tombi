@@ -68,9 +68,10 @@ jobs:
     name: Build CLI (x86_64-unknown-illumos)
     runs-on: ubuntu-24.04
     env:
+      # The build tool (cross) and cli-only flag are fixed by the
+      # build-cli-illumos action; TOMBI_TARGET is kept here because the
+      # artifact verification step below references it.
       TOMBI_TARGET: x86_64-unknown-illumos
-      TOMBI_DIST_BUILD_TOOL: cross
-      TOMBI_DIST_CLI_ONLY: "1"
       GITHUB_REF: ${{ github.ref }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -134,6 +135,7 @@ jobs:
           case "$1" in
             -s) echo "SunOS" ;;
             -m) echo "i86pc" ;;
+            -o) echo "illumos" ;;
             *) echo "SunOS" ;;
           esac
           SHIM
