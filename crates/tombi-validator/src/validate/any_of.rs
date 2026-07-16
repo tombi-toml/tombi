@@ -66,15 +66,16 @@ where
             }
         }
 
-        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
-            &any_of_schema.schemas,
-            current_schema.schema_uri.clone(),
-            current_schema.definitions.clone(),
-            schema_context.store,
-            &schema_context.schema_visits,
-            accessors,
-        )
-        .await
+        let Some((resolved_schemas, resolution_errors)) =
+            tombi_schema_store::resolve_and_collect_schemas_with_errors(
+                &any_of_schema.schemas,
+                current_schema.schema_uri.clone(),
+                current_schema.definitions.clone(),
+                schema_context.store,
+                &schema_context.schema_visits,
+                accessors,
+            )
+            .await
         else {
             if total_diagnostics.is_empty() {
                 return Ok(base_evaluated_locations);
@@ -86,6 +87,10 @@ where
                 });
             }
         };
+
+        total_diagnostics.extend(resolution_errors.into_iter().map(|err| {
+            tombi_diagnostic::Diagnostic::new_error(err.to_string(), err.code(), value.range())
+        }));
 
         let mut total_error = crate::Error::new();
         let mut matched = false;

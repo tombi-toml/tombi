@@ -66,15 +66,16 @@ where
 
         let mut valid_count = 0;
 
-        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
-            &one_of_schema.schemas,
-            current_schema.schema_uri.clone(),
-            current_schema.definitions.clone(),
-            schema_context.store,
-            &schema_context.schema_visits,
-            accessors,
-        )
-        .await
+        let Some((resolved_schemas, resolution_errors)) =
+            tombi_schema_store::resolve_and_collect_schemas_with_errors(
+                &one_of_schema.schemas,
+                current_schema.schema_uri.clone(),
+                current_schema.definitions.clone(),
+                schema_context.store,
+                &schema_context.schema_visits,
+                accessors,
+            )
+            .await
         else {
             if total_diagnostics.is_empty() {
                 return Ok(base_evaluated_locations);
@@ -86,16 +87,23 @@ where
                 });
             }
         };
+        let has_resolution_errors = !resolution_errors.is_empty();
+        total_diagnostics.extend(resolution_errors.into_iter().map(|err| {
+            tombi_diagnostic::Diagnostic::new_error(err.to_string(), err.code(), value.range())
+        }));
+
         let total_count = resolved_schemas.len();
         if total_count == 0 {
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::OneOfNoMatch { total_count }),
-                range: value.range(),
+            if !has_resolution_errors {
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::OneOfNoMatch { total_count }),
+                    range: value.range(),
+                }
+                .push_diagnostic_with_level(
+                    SeverityLevelDefaultError::default(),
+                    &mut total_diagnostics,
+                );
             }
-            .push_diagnostic_with_level(
-                SeverityLevelDefaultError::default(),
-                &mut total_diagnostics,
-            );
             return Err(crate::Error {
                 score: crate::error::TYPE_MATCHED_SCORE,
                 diagnostics: total_diagnostics,

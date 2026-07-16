@@ -33,18 +33,23 @@ where
         let mut total_score = 0;
         let mut evaluated_locations = crate::EvaluatedLocations::new();
 
-        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
-            &all_of_schema.schemas,
-            current_schema.schema_uri.clone(),
-            current_schema.definitions.clone(),
-            schema_context.store,
-            &schema_context.schema_visits,
-            accessors,
-        )
-        .await
+        let Some((resolved_schemas, resolution_errors)) =
+            tombi_schema_store::resolve_and_collect_schemas_with_errors(
+                &all_of_schema.schemas,
+                current_schema.schema_uri.clone(),
+                current_schema.definitions.clone(),
+                schema_context.store,
+                &schema_context.schema_visits,
+                accessors,
+            )
+            .await
         else {
             return Ok(crate::EvaluatedLocations::new());
         };
+
+        total_diagnostics.extend(resolution_errors.into_iter().map(|err| {
+            tombi_diagnostic::Diagnostic::new_error(err.to_string(), err.code(), value.range())
+        }));
 
         for resolved_schema in &resolved_schemas {
             match value

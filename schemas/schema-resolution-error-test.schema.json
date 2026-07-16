@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "direct": {
+      "$ref": "#/$defs/missing"
+    },
+    "all-of-error": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/missing"
+        }
+      ]
+    },
+    "any-of-error": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        }
+      ]
+    },
+    "one-of-error": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/missing"
+        }
+      ]
+    },
+    "if-error": {
+      "type": "object",
+      "if": {
+        "$ref": "#/$defs/missing"
+      }
+    },
+    "then-error": {
+      "type": "object",
+      "if": {
+        "type": "object"
+      },
+      "then": {
+        "$ref": "#/$defs/missing"
+      }
+    },
+    "else-error": {
+      "type": "object",
+      "if": {
+        "type": "string"
+      },
+      "else": {
+        "$ref": "#/$defs/missing"
+      }
+    },
+    "items-error": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/missing"
+      }
+    },
+    "prefix-items-error": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/missing"
+        }
+      ]
+    },
+    "overflow-items-error": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "integer"
+        }
+      ],
+      "items": {
+        "$ref": "#/$defs/missing"
+      }
+    },
+    "contains-error": {
+      "type": "array",
+      "contains": {
+        "$ref": "#/$defs/missing"
+      }
+    },
+    "unevaluated-items-error": {
+      "type": "array",
+      "unevaluatedItems": {
+        "$ref": "#/$defs/missing"
+      }
+    },
+    "pattern-properties-error": {
+      "type": "object",
+      "patternProperties": {
+        "^pat": {
+          "$ref": "#/$defs/missing"
+        }
+      }
+    },
+    "additional-properties-error": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/missing"
+      }
+    },
+    "unevaluated-properties-error": {
+      "type": "object",
+      "unevaluatedProperties": {
+        "$ref": "#/$defs/missing"
+      }
+    },
+    "property-names-error": {
+      "type": "object",
+      "additionalProperties": true,
+      "propertyNames": {
+        "$ref": "#/$defs/missing"
+      }
+    },
+    "dependencies-error": {
+      "type": "object",
+      "properties": {
+        "trigger": {
+          "type": "string"
+        }
+      },
+      "dependencies": {
+        "trigger": {
+          "$ref": "#/$defs/missing"
+        }
+      }
+    },
+    "dependent-schemas-error": {
+      "type": "object",
+      "properties": {
+        "trigger": {
+          "type": "string"
+        }
+      },
+      "dependentSchemas": {
+        "trigger": {
+          "$ref": "#/$defs/missing"
+        }
+      }
+    }
+  }
+}
