@@ -248,7 +248,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             {
                                                 log::trace!(
                                                     "property_schema = {:?}",
-                                                    &current_schema.value_schema
+                                                    current_schema.value_schema
                                                 );
 
                                                 let Some(mut contents) =
@@ -311,7 +311,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         if pattern.is_match(accessor_str) {
                                             log::trace!(
                                                 "pattern_property_schema = {:?}",
-                                                &current_schema.value_schema
+                                                current_schema.value_schema
                                             );
                                             if let Ok(Some(current_schema)) = table_schema
                                                 .resolve_pattern_property_schema(
