@@ -1,5 +1,10 @@
 [extensions]
 "tombi-toml/tombi" = {
-  lsp.document-link.path.enabled = false,
-  lsp.goto-definition.path.enabled = false,
+  lsp = {
+    document-link = {
+      # tombi: lint.rules.deprecated.disabled = true
+      path = { enabled = false },
+    },
+    goto-definition.path.enabled = false,
+  },
 }

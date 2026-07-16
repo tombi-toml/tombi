@@ -1,2 +1,7 @@
 [extensions]
-"tombi-toml/tombi" = { lsp.document-link.path.enabled = true }
+"tombi-toml/tombi" = {
+  lsp.document-link = {
+    # tombi: lint.rules.deprecated.disabled = true
+    path = { enabled = true },
+  },
+}

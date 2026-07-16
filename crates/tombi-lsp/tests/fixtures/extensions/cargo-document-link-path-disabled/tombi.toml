@@ -1,2 +1,7 @@
 [extensions]
-"tombi-toml/cargo" = { lsp.document-link.path.enabled = false }
+"tombi-toml/cargo" = {
+  lsp.document-link = {
+    # tombi: lint.rules.deprecated.disabled = true
+    path = { enabled = false },
+  },
+}
