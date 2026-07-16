@@ -1,0 +1,25 @@
+name: Build illumos CLI
+description: Build the x86_64 illumos CLI release artifact with cross.
+
+runs:
+  using: composite
+  steps:
+    - name: Install Rust toolchain
+      shell: bash
+      run: |
+        rustup update --no-self-update stable
+        rustup target add x86_64-unknown-illumos
+
+    - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+    - name: Install cross
+      shell: bash
+      run: cargo install cross --version 0.2.5 --locked
+
+    - uses: ./.github/actions/set-version
+
+    - name: Run xtask dist
+      shell: bash
+      run: cargo xtask dist
+      env:
+        RUST_BACKTRACE: "1"

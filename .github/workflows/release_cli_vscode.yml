@@ -47,6 +47,7 @@ jobs:
           paths: |
             .cargo/**
             .github/actions/dispatch-versioned-release/**
+            .github/actions/build-cli-illumos/**
             .github/actions/relevant-changes/**
             .github/actions/set-version/**
             .node-version
@@ -203,18 +204,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
-      - name: Install Rust toolchain
-        run: |
-          rustup update --no-self-update stable
-          rustup target add x86_64-unknown-illumos
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
-      - name: Install cross
-        run: cargo install cross --version 0.2.5 --locked
-      - uses: ./.github/actions/set-version
-      - name: Rub xtask dist
-        run: cargo xtask dist
-        env:
-          RUST_BACKTRACE: "1"
+      - uses: ./.github/actions/build-cli-illumos
       - name: Upload tombi-cli artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

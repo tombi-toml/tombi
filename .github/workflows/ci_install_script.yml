@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
+      illumos: ${{ steps.filter-illumos.outputs.relevant }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -31,9 +32,68 @@ jobs:
           paths: |
             docs/public/install.sh
             xtask/src/command/dist.rs
+            .github/actions/build-cli-illumos/**
             .github/workflows/release_cli_vscode.yml
             .github/actions/relevant-changes/**
             .github/workflows/ci_install_script.yml
+      - id: filter-illumos
+        uses: ./.github/actions/relevant-changes
+        with:
+          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          paths: |
+            .cargo/**
+            Cargo.toml
+            Cargo.lock
+            rust-toolchain.toml
+            crates/**
+            extensions/**
+            rust/**
+            xtask/**
+            schemas/**
+            www.schemastore.org/**
+            www.schemastore.tombi/**
+            tombi.toml
+            type-test.toml
+            .github/actions/build-cli-illumos/**
+            .github/actions/relevant-changes/**
+            .github/actions/set-version/**
+            .github/workflows/ci_install_script.yml
+            .github/workflows/release_cli_vscode.yml
+
+  build-cli-illumos:
+    needs: detect-changes
+    if: github.event_name == 'pull_request' && needs.detect-changes.outputs.illumos == 'true'
+    name: Build CLI (x86_64-unknown-illumos)
+    runs-on: ubuntu-24.04
+    env:
+      TOMBI_TARGET: x86_64-unknown-illumos
+      TOMBI_DIST_BUILD_TOOL: cross
+      TOMBI_DIST_CLI_ONLY: "1"
+      GITHUB_REF: ${{ github.ref }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/build-cli-illumos
+
+      - name: Verify tombi-cli artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          artifact="dist/tombi-cli-${TOMBI_VERSION}-${TOMBI_TARGET}.tar.gz"
+          archive_root="tombi-cli-${TOMBI_VERSION}-${TOMBI_TARGET}"
+          expected_path="${archive_root}/tombi"
+
+          test -f "${artifact}"
+          test "$(tar -tzf "${artifact}")" = "${expected_path}"
+
+          extract_dir="${RUNNER_TEMP}/tombi-cli-illumos"
+          mkdir -p "${extract_dir}"
+          tar -xzf "${artifact}" -C "${extract_dir}"
+          test -x "${extract_dir}/${expected_path}"
 
   test-install-script:
     needs: detect-changes
