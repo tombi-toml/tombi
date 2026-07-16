@@ -45,6 +45,7 @@ jobs:
             .cargo/**
             Cargo.toml
             Cargo.lock
+            Cross.toml
             rust-toolchain.toml
             crates/**
             extensions/**
@@ -201,21 +202,6 @@ jobs:
                 *) arch="x86_64" ;;
               esac
               target="${arch}-apple-darwin"
-              if [ "$major" -eq 0 ] && { [ "$minor" -lt 9 ] || { [ "$minor" -eq 9 ] && [ "$patch" -lt 23 ]; }; }; then
-                extension=".gz"
-              else
-                extension=".tar.gz"
-              fi
-              ;;
-            SunOS)
-              case "$(uname -m)" in
-                x86_64|amd64|i86pc) arch="x86_64" ;;
-                *)
-                  echo "Unsupported illumos architecture" >&2
-                  exit 1
-                  ;;
-              esac
-              target="${arch}-unknown-illumos"
               if [ "$major" -eq 0 ] && { [ "$minor" -lt 9 ] || { [ "$minor" -eq 9 ] && [ "$patch" -lt 23 ]; }; }; then
                 extension=".gz"
               else

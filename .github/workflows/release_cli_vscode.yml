@@ -54,6 +54,7 @@ jobs:
             .npmrc
             Cargo.toml
             Cargo.lock
+            Cross.toml
             rust-toolchain.toml
             package.json
             pnpm-lock.yaml

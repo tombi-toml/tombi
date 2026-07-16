@@ -1,0 +1,9 @@
+# cross runs the build inside a container that does not inherit host env vars by
+# default. Forward the release profile knobs set by the release workflow so the
+# cross-built CLI matches the artifacts produced by the native `cargo` targets.
+[build.env]
+passthrough = [
+    "CARGO_PROFILE_RELEASE_LTO",
+    "CARGO_PROFILE_RELEASE_STRIP",
+    "RUST_BACKTRACE",
+]

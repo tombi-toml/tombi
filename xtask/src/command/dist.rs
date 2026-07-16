@@ -46,11 +46,18 @@ fn dist_server(sh: &Shell, target: &Target) -> Result<(), anyhow::Error> {
         .join("Cargo.toml");
 
     match std::env::var("TOMBI_DIST_BUILD_TOOL").as_deref() {
-        Ok("cross") => xshell::cmd!(
-            sh,
-            "cross build --locked --manifest-path {manifest_path} --bin tombi --target {target_name} --release"
-        )
-        .run()?,
+        Ok("cross") => {
+            // cross builds inside a container that mounts the workspace root, so
+            // host absolute paths do not exist there. Run from the project root
+            // and select the crate by package name instead of an absolute
+            // `--manifest-path`.
+            let _dir = sh.push_dir(project_root_path());
+            xshell::cmd!(
+                sh,
+                "cross build --locked -p tombi-cli --bin tombi --target {target_name} --release"
+            )
+            .run()?
+        }
         Ok("cargo") | Err(_) => xshell::cmd!(
             sh,
             "cargo build --locked --manifest-path {manifest_path} --bin tombi --target {target_name} --release"
