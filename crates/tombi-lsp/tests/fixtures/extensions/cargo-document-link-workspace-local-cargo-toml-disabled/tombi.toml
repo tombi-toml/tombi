@@ -2,9 +2,12 @@
 "tombi-toml/cargo" = {
   lsp = {
     document-link = {
-      cargo-toml.enabled = false,
-      path.enabled = false,
-      workspace.enabled = true,
+      # tombi: lint.rules.deprecated.disabled = true
+      cargo-toml = { enabled = false },
+      # tombi: lint.rules.deprecated.disabled = true
+      path = { enabled = false },
+      # tombi: lint.rules.deprecated.disabled = true
+      workspace = { enabled = true },
     },
   },
 }

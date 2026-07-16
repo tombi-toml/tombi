@@ -3,7 +3,8 @@
   lsp = {
     document-link = {
       pypi-org.enabled = false,
-      pyproject-toml.enabled = true,
+      # tombi: lint.rules.deprecated.disabled = true
+      pyproject-toml = { enabled = true },
     },
   },
 }
