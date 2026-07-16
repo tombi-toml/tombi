@@ -1,5 +1,5 @@
 # cross runs the build inside a container that does not inherit host env vars by
-# default. Forward the release profile knobs set by the release workflow so the
+# default. Forward the release profile knobs set by the build action so the
 # cross-built CLI matches the artifacts produced by the native `cargo` targets.
 [build.env]
 passthrough = [
@@ -7,3 +7,8 @@ passthrough = [
     "CARGO_PROFILE_RELEASE_STRIP",
     "RUST_BACKTRACE",
 ]
+
+# LD_LIBRARY_PATH lets rust-objcopy load libLLVM from the toolchain mounted at
+# /rust when Cargo strips the illumos binary.
+[target.x86_64-unknown-illumos.env]
+passthrough = ["LD_LIBRARY_PATH"]

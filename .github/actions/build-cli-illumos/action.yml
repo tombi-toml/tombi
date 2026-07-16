@@ -25,4 +25,26 @@ runs:
         TOMBI_TARGET: x86_64-unknown-illumos
         TOMBI_DIST_BUILD_TOOL: cross
         TOMBI_DIST_CLI_ONLY: "1"
+        CARGO_PROFILE_RELEASE_LTO: "fat"
+        CARGO_PROFILE_RELEASE_STRIP: "symbols"
+        # cross mounts the host Rust toolchain at /rust. rust-objcopy needs the
+        # matching libLLVM from this directory when Cargo strips the binary.
+        LD_LIBRARY_PATH: /rust/lib
         RUST_BACKTRACE: "1"
+
+    - name: Verify tombi CLI is stripped
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        binary="target/x86_64-unknown-illumos/release/tombi"
+        file_output="$(file "${binary}")"
+        printf '%s\n' "${file_output}"
+
+        case "${file_output}" in
+          *", stripped") ;;
+          *)
+            echo "illumos CLI binary is not stripped" >&2
+            exit 1
+            ;;
+        esac
