@@ -47,7 +47,7 @@ where
         }
         Ok(None) => return Ok(crate::EvaluatedLocations::new()),
         Err(err) => {
-            return Err(vec![err.to_diagnostic(value.range())].into());
+            return Err(vec![err.to_warning_diagnostic(value.range())].into());
         }
     };
 
@@ -72,7 +72,7 @@ where
                 Ok(None) => {}
                 Err(err) => {
                     return merge_if_result(
-                        Err(vec![err.to_diagnostic(value.range())].into()),
+                        Err(vec![err.to_warning_diagnostic(value.range())].into()),
                         if_result,
                     );
                 }
@@ -98,7 +98,7 @@ where
                 }
                 Ok(None) => {}
                 Err(err) => {
-                    return Err(vec![err.to_diagnostic(value.range())].into());
+                    return Err(vec![err.to_warning_diagnostic(value.range())].into());
                 }
             }
         }
