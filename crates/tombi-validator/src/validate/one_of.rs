@@ -88,9 +88,11 @@ where
             }
         };
         let has_resolution_errors = !resolution_errors.is_empty();
-        total_diagnostics.extend(resolution_errors.into_iter().map(|err| {
-            tombi_diagnostic::Diagnostic::new_error(err.to_string(), err.code(), value.range())
-        }));
+        total_diagnostics.extend(
+            resolution_errors
+                .into_iter()
+                .map(|err| err.to_diagnostic(value.range())),
+        );
 
         let total_count = resolved_schemas.len();
         if total_count == 0 {

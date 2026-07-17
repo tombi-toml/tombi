@@ -35,12 +35,7 @@ where
         ),
         Ok(None) => false,
         Err(err) => {
-            return Err(vec![tombi_diagnostic::Diagnostic::new_error(
-                err.to_string(),
-                err.code(),
-                value.range(),
-            )]
-            .into());
+            return Err(vec![err.to_diagnostic(value.range())].into());
         }
     };
 

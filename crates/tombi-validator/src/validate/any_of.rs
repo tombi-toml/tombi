@@ -88,9 +88,11 @@ where
             }
         };
 
-        total_diagnostics.extend(resolution_errors.into_iter().map(|err| {
-            tombi_diagnostic::Diagnostic::new_error(err.to_string(), err.code(), value.range())
-        }));
+        total_diagnostics.extend(
+            resolution_errors
+                .into_iter()
+                .map(|err| err.to_diagnostic(value.range())),
+        );
 
         let mut total_error = crate::Error::new();
         let mut matched = false;
