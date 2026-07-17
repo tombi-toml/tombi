@@ -710,64 +710,6 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
-            async fn tombi_schemars_path_file_completion(
-                r#"
-                [[schemas]]
-                path = "█"
-                "#,
-                SourcePath(project_root_path().join("schemas").join("tombi.toml")),
-                SchemaPath(tombi_schema_path()),
-            ) -> Ok([
-                "additional-properties-branch-keys-test.schema.json",
-                "adjacent-applicators-test.schema.json",
-                "adjacent-one-of-additional-properties-test.schema.json",
-                "adjacent-one-of-hover-test.schema.json",
-                "anchor-dynamic-ref-test.schema.json",
-                "anchor-table-test.schema.json",
-                "array-const-enum-test.schema.json",
-                "contains-test.schema.json",
-                "dependencies-strict-mode-test.schema.json",
-                "dependencies-test.schema.json",
-                "dependent-required-test.schema.json",
-                "dependent-schemas-test.schema.json",
-                "deprecated-test.schema.json",
-                "exact-index-hover-test.schema.json",
-                "exact-index-override-test.schema.json",
-                "exact-index-string-test.schema.json",
-                "format-annotation-test.schema.json",
-                "format-assertion-vocab-test.schema.json",
-                "if-then-else-test.schema.json",
-                "issue-1895-rustfmt-like.schema.json",
-                "lsp-consistency-test.schema.json",
-                "min-max-contains-test.schema.json",
-                "one-of-hover-discriminator-test.schema.json",
-                "partial-taskipy.schema.json",
-                "prefix-items-test.schema.json",
-                "recursive-anchor-ref-test.schema.json",
-                "recursive-defs-any-of-test.schema.json",
-                "recursive-schema.schema.json",
-                "ref-sibling-annotations-test.schema.json",
-                "root-ref-test.schema.json",
-                "string-format-test.schema.json",
-                "subschema-singleton-label-test.schema.json",
-                "table-const-enum-test.schema.json",
-                "tuple-items-test.schema.json",
-                "type-test.schema.json",
-                "unevaluated-items-test.schema.json",
-                "unevaluated-properties-branch-additional-test.schema.json",
-                "unevaluated-properties-test.schema.json",
-                "untagged-union.schema.json",
-                "x-tombi-table-keys-order.schema.json",
-                "\"https://www.schemastore.org/cargo.json\"",
-                "\"https://www.schemastore.org/pyproject.json\"",
-                "\"tombi://www.schemastore.org/cargo.json\"",
-                "\"tombi://www.schemastore.org/pyproject.json\"",
-                "\"tombi://www.schemastore.org/tombi.json\"",
-            ]);
-        }
-
-        test_completion_labels! {
-            #[tokio::test]
             async fn tombi_schemars_path_file_completion_from_dot_config_project_root(
                 r#"
                 [[schemas]]

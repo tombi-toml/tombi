@@ -190,7 +190,7 @@ where
                 for file in files {
                     match file {
                         FileSearchEntry::Found(source_path) => {
-                            log::debug!("Formatting... {:?}", &source_path);
+                            log::debug!("Formatting... {:?}", source_path);
 
                             // Get format options with override support
                             let Some(format_options) = tombi_glob::get_format_options(

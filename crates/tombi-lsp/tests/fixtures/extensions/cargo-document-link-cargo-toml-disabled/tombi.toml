@@ -2,10 +2,14 @@
 "tombi-toml/cargo" = {
   lsp = {
     document-link = {
-      cargo-toml.enabled = false,
-      git.enabled = true,
-      path.enabled = true,
-      workspace.enabled = true,
+      # tombi: lint.rules.deprecated.disabled = true
+      cargo-toml = { enabled = false },
+      # tombi: lint.rules.deprecated.disabled = true
+      git = { enabled = true },
+      # tombi: lint.rules.deprecated.disabled = true
+      path = { enabled = true },
+      # tombi: lint.rules.deprecated.disabled = true
+      workspace = { enabled = true },
     },
   },
 }

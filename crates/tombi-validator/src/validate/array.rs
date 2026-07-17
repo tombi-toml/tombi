@@ -150,34 +150,35 @@ async fn validate_array(
     }
 
     if let Some(prefix_items) = &array_schema.prefix_items {
-        // Resolve the overflow schema once before the loop
-        let overflow_schema =
-            if let Some(additional_items_schema) = &array_schema.additional_items_schema {
-                tombi_schema_store::resolve_schema_item(
-                    additional_items_schema,
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    schema_context.store,
-                )
-                .await
-                .inspect_err(|err| log::warn!("{err}"))
-                .ok()
-                .flatten()
-            } else if let Some(items) = &array_schema.items {
-                // 2020-12: items acts as additionalItems when prefixItems is present
-                tombi_schema_store::resolve_schema_item(
-                    items,
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    schema_context.store,
-                )
-                .await
-                .inspect_err(|err| log::warn!("{err}"))
-                .ok()
-                .flatten()
-            } else {
-                None
-            };
+        // Resolve the overflow schema once before the loop.
+        // 2020-12: items acts as additionalItems when prefixItems is present.
+        let overflow_schema = if array_value.values().len() > prefix_items.len() {
+            match array_schema
+                .additional_items_schema
+                .as_ref()
+                .or(array_schema.items.as_ref())
+            {
+                Some(overflow_item) => {
+                    match tombi_schema_store::resolve_schema_item(
+                        overflow_item,
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                    )
+                    .await
+                    {
+                        Ok(overflow_schema) => overflow_schema,
+                        Err(err) => {
+                            total_diagnostics.push(err.to_diagnostic(array_value.range()));
+                            None
+                        }
+                    }
+                }
+                None => None,
+            }
+        } else {
+            None
+        };
 
         // Tuple validation: validate each element against its positional schema
         for (index, value) in array_value.values().iter().enumerate() {
@@ -189,19 +190,26 @@ async fn validate_array(
 
             if index < prefix_items.len() {
                 evaluated[index] = true;
-                if let Ok(Some(item_schema)) = tombi_schema_store::resolve_schema_item(
+                match tombi_schema_store::resolve_schema_item(
                     &prefix_items[index],
                     current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
                     schema_context.store,
                 )
                 .await
-                .inspect_err(|err| log::warn!("{err}"))
-                    && let Err(crate::Error { diagnostics, .. }) = value
-                        .validate(&new_accessors, Some(&item_schema), schema_context)
-                        .await
                 {
-                    total_diagnostics.extend(diagnostics);
+                    Ok(Some(item_schema)) => {
+                        if let Err(crate::Error { diagnostics, .. }) = value
+                            .validate(&new_accessors, Some(&item_schema), schema_context)
+                            .await
+                        {
+                            total_diagnostics.extend(diagnostics);
+                        }
+                    }
+                    Ok(None) => {}
+                    Err(err) => {
+                        total_diagnostics.push(err.to_diagnostic(value.range()));
+                    }
                 }
             } else if let Some(overflow) = &overflow_schema {
                 evaluated[index] = true;
@@ -229,43 +237,57 @@ async fn validate_array(
         }
     } else if let Some(items) = &array_schema.items {
         // Single schema for all items
-        if let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
+        match tombi_schema_store::resolve_schema_item(
             items,
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
             schema_context.store,
         )
         .await
-        .inspect_err(|err| log::warn!("{err}"))
         {
-            for (index, value) in array_value.values().iter().enumerate() {
-                evaluated[index] = true;
-                let new_accessors = accessors
-                    .iter()
-                    .cloned()
-                    .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
-                    .collect_vec();
+            Ok(Some(current_schema)) => {
+                for (index, value) in array_value.values().iter().enumerate() {
+                    evaluated[index] = true;
+                    let new_accessors = accessors
+                        .iter()
+                        .cloned()
+                        .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
+                        .collect_vec();
 
-                if let Err(crate::Error { diagnostics, .. }) = value
-                    .validate(&new_accessors, Some(&current_schema), schema_context)
-                    .await
-                {
-                    total_diagnostics.extend(diagnostics);
+                    if let Err(crate::Error { diagnostics, .. }) = value
+                        .validate(&new_accessors, Some(&current_schema), schema_context)
+                        .await
+                    {
+                        total_diagnostics.extend(diagnostics);
+                    }
                 }
+            }
+            Ok(None) => {}
+            Err(err) => {
+                total_diagnostics.push(err.to_diagnostic(array_value.range()));
             }
         }
     }
 
-    if let Some(contains) = &array_schema.contains
-        && let Ok(Some(contains_schema)) = tombi_schema_store::resolve_schema_item(
+    let contains_schema = match &array_schema.contains {
+        Some(contains) => match tombi_schema_store::resolve_schema_item(
             contains,
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
             schema_context.store,
         )
         .await
-        .inspect_err(|err| log::warn!("{err}"))
-    {
+        {
+            Ok(contains_schema) => contains_schema,
+            Err(err) => {
+                total_diagnostics.push(err.to_diagnostic(array_value.range()));
+                None
+            }
+        },
+        None => None,
+    };
+
+    if let Some(contains_schema) = contains_schema {
         let min_contains = array_schema.min_contains.unwrap_or(1);
         let max_contains = array_schema.max_contains;
         let needs_full_count = max_contains.is_some() || has_unevaluated_items;
@@ -342,16 +364,20 @@ async fn validate_array(
     // Run unevaluatedItems after all applicators that can mark items as evaluated.
     if has_unevaluated_items {
         let unevaluated_schema = if let Some(schema_item) = &array_schema.unevaluated_items_schema {
-            tombi_schema_store::resolve_schema_item(
+            match tombi_schema_store::resolve_schema_item(
                 schema_item,
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
                 schema_context.store,
             )
             .await
-            .inspect_err(|err| log::warn!("{err}"))
-            .ok()
-            .flatten()
+            {
+                Ok(unevaluated_schema) => unevaluated_schema,
+                Err(err) => {
+                    total_diagnostics.push(err.to_diagnostic(array_value.range()));
+                    None
+                }
+            }
         } else {
             None
         };

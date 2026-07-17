@@ -1,2 +1,7 @@
 [extensions]
-"tombi-toml/pyproject" = { lsp.document-link.pyproject-toml.enabled = false }
+"tombi-toml/pyproject" = {
+  lsp.document-link = {
+    # tombi: lint.rules.deprecated.disabled = true
+    pyproject-toml = { enabled = false },
+  },
+}

@@ -140,4 +140,9 @@ impl Error {
             Self::CacheError(error) => error.code(),
         }
     }
+
+    #[inline]
+    pub fn to_diagnostic(&self, range: tombi_text::Range) -> tombi_diagnostic::Diagnostic {
+        tombi_diagnostic::Diagnostic::new_error(self.to_string(), self.code(), range)
+    }
 }

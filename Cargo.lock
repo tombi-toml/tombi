@@ -3186,6 +3186,7 @@ dependencies = [
  "tombi-ast",
  "tombi-cache",
  "tombi-config",
+ "tombi-diagnostic",
  "tombi-document-tree",
  "tombi-future",
  "tombi-hashmap",
