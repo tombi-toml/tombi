@@ -47,9 +47,11 @@ where
             return Ok(crate::EvaluatedLocations::new());
         };
 
-        total_diagnostics.extend(resolution_errors.into_iter().map(|err| {
-            tombi_diagnostic::Diagnostic::new_error(err.to_string(), err.code(), value.range())
-        }));
+        total_diagnostics.extend(
+            resolution_errors
+                .into_iter()
+                .map(|err| err.to_diagnostic(value.range())),
+        );
 
         for resolved_schema in &resolved_schemas {
             match value
