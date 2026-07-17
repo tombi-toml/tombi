@@ -9,13 +9,13 @@ fn schema_path() -> std::path::PathBuf {
 
 test_lint! {
     #[test]
-    fn test_invalid_ref_reports_error_diagnostic(
+    fn test_invalid_ref_reports_warning_diagnostic(
         r#"
         value = "foo"
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::ERROR }
+        { code: "invalid-json-pointer", level: Level::WARNING }
     ])
 }
 

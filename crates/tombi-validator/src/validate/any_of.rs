@@ -91,7 +91,7 @@ where
         total_diagnostics.extend(
             resolution_errors
                 .into_iter()
-                .map(|err| err.to_diagnostic(value.range())),
+                .map(|err| err.to_warning_diagnostic(value.range())),
         );
 
         let mut total_error = crate::Error::new();
