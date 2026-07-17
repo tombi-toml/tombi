@@ -207,11 +207,7 @@ async fn validate_table(
                 }
                 Ok(None) => {}
                 Err(err) => {
-                    total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
-                        err.to_string(),
-                        err.code(),
-                        key.range() + value.range(),
-                    ));
+                    total_diagnostics.push(err.to_diagnostic(key.range() + value.range()));
                 }
             }
         }
@@ -259,11 +255,7 @@ async fn validate_table(
                         }
                         Ok(None) => {}
                         Err(err) => {
-                            total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
-                                err.to_string(),
-                                err.code(),
-                                key.range() + value.range(),
-                            ));
+                            total_diagnostics.push(err.to_diagnostic(key.range() + value.range()));
                         }
                     }
                 }
@@ -343,11 +335,7 @@ async fn validate_table(
                     }
                     Ok(None) => {}
                     Err(err) => {
-                        total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
-                            err.to_string(),
-                            err.code(),
-                            key.range() + value.range(),
-                        ));
+                        total_diagnostics.push(err.to_diagnostic(key.range() + value.range()));
                     }
                 }
             }
@@ -380,11 +368,7 @@ async fn validate_table(
                         }
                         Ok(None) => {}
                         Err(err) => {
-                            total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
-                                err.to_string(),
-                                err.code(),
-                                key.range() + value.range(),
-                            ));
+                            total_diagnostics.push(err.to_diagnostic(key.range() + value.range()));
                         }
                     }
                 }
@@ -628,11 +612,7 @@ async fn validate_table(
                         }
                         Ok(None) => {}
                         Err(err) => {
-                            total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
-                                err.to_string(),
-                                err.code(),
-                                table_value.range(),
-                            ));
+                            total_diagnostics.push(err.to_diagnostic(table_value.range()));
                         }
                     }
                 }
@@ -702,11 +682,7 @@ async fn validate_table(
                 }
                 Ok(None) => {}
                 Err(err) => {
-                    total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
-                        err.to_string(),
-                        err.code(),
-                        table_value.range(),
-                    ));
+                    total_diagnostics.push(err.to_diagnostic(table_value.range()));
                 }
             }
         }
@@ -794,11 +770,7 @@ async fn validate_table(
             {
                 Ok(property_name_current_schema) => property_name_current_schema,
                 Err(err) => {
-                    total_diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
-                        err.to_string(),
-                        err.code(),
-                        table_value.range(),
-                    ));
+                    total_diagnostics.push(err.to_diagnostic(table_value.range()));
                     None
                 }
             }
