@@ -1279,6 +1279,11 @@ packages:
     cpu: [x64]
     os: [linux]
 
+  '@tombi-toml/cli-sunos-x64@0.0.0-dev':
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [sunos]
+
   '@tombi-toml/cli-win32-arm64@0.0.0-dev':
     resolution: {integrity: sha512-d0Fr4C40WFZUFeUOT4xcVqQNwko+F+WEvTGfsw9OOhxA1RwNq/pZ2/H0wL9NM8cmNIq00jhoDklDaPNzTWglFQ==}
     engines: {node: '>=14.0.0'}
@@ -5901,6 +5906,9 @@ snapshots:
     optional: true
 
   '@tombi-toml/cli-linux-x64@0.0.0-dev':
+    optional: true
+
+  '@tombi-toml/cli-sunos-x64@0.0.0-dev':
     optional: true
 
   '@tombi-toml/cli-win32-arm64@0.0.0-dev':
