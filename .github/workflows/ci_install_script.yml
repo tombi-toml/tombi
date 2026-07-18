@@ -177,7 +177,10 @@ jobs:
 
             # Test that the install script works.
             mkdir -p smoke/install-dir
-            sh ./docs/public/install.sh --install-dir smoke/install-dir > smoke/install.log 2>&1
+            if ! sh ./docs/public/install.sh --install-dir smoke/install-dir > smoke/install.log 2>&1; then
+              cat smoke/install.log
+              exit 1
+            fi
             cat smoke/install.log
             grep "Detected system: x86_64-unknown-illumos" smoke/install.log
 
