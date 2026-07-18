@@ -10,7 +10,7 @@ mod store;
 mod value_type;
 mod x_taplo;
 
-pub use error::Error;
+pub use error::{Error, SCHEMA_RESOLUTION_DIAGNOSTIC_CODE};
 pub use http_client::*;
 use itertools::{Either, Itertools};
 pub use json_schema_dialect::JsonSchemaDialect;

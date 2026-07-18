@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use crate::{CatalogUri, SchemaUri};
 
+pub const SCHEMA_RESOLUTION_DIAGNOSTIC_CODE: &str = "schema-resolution";
+
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
     #[error("failed to lock document: {schema_uri}")]
@@ -110,6 +112,10 @@ pub enum Error {
 impl Error {
     #[inline]
     pub fn to_warning_diagnostic(&self, range: tombi_text::Range) -> tombi_diagnostic::Diagnostic {
-        tombi_diagnostic::Diagnostic::new_warning(self.to_string(), "schema-error", range)
+        tombi_diagnostic::Diagnostic::new_warning(
+            self.to_string(),
+            SCHEMA_RESOLUTION_DIAGNOSTIC_CODE,
+            range,
+        )
     }
 }

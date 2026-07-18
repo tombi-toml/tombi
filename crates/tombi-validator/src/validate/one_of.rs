@@ -51,6 +51,7 @@ where
                 if_then_else_schema,
                 current_schema,
                 schema_context,
+                common_rules,
             )
             .await
             {
@@ -88,11 +89,9 @@ where
             }
         };
         let has_resolution_errors = !resolution_errors.is_empty();
-        total_diagnostics.extend(
-            resolution_errors
-                .into_iter()
-                .map(|err| err.to_warning_diagnostic(value.range())),
-        );
+        total_diagnostics.extend(resolution_errors.into_iter().filter_map(|err| {
+            crate::validate::schema_resolution_diagnostic(&err, value.range(), common_rules)
+        }));
 
         let total_count = resolved_schemas.len();
         if total_count == 0 {

@@ -15,7 +15,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 

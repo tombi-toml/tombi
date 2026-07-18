@@ -131,6 +131,7 @@ async fn validate_array(
     lint_rules: Option<&ArrayCommonLintRules>,
 ) -> Result<crate::EvaluatedLocations, crate::Error> {
     let mut total_diagnostics = vec![];
+    let common_rules = lint_rules.map(|rules| &rules.common);
     let mut validation_result = crate::EvaluatedLocations::new();
     let mut evaluated = vec![false; array_value.values().len()];
     let has_unevaluated_items = array_schema.unevaluated_items_schema.is_some()
@@ -143,6 +144,7 @@ async fn validate_array(
             if_then_else_schema,
             current_schema,
             schema_context,
+            common_rules,
         )
         .await
     {
@@ -169,7 +171,13 @@ async fn validate_array(
                     {
                         Ok(overflow_schema) => overflow_schema,
                         Err(err) => {
-                            total_diagnostics.push(err.to_warning_diagnostic(array_value.range()));
+                            if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                                &err,
+                                array_value.range(),
+                                common_rules,
+                            ) {
+                                total_diagnostics.push(diagnostic);
+                            }
                             None
                         }
                     }
@@ -208,7 +216,13 @@ async fn validate_array(
                     }
                     Ok(None) => {}
                     Err(err) => {
-                        total_diagnostics.push(err.to_warning_diagnostic(value.range()));
+                        if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                            &err,
+                            value.range(),
+                            common_rules,
+                        ) {
+                            total_diagnostics.push(diagnostic);
+                        }
                     }
                 }
             } else if let Some(overflow) = &overflow_schema {
@@ -264,7 +278,13 @@ async fn validate_array(
             }
             Ok(None) => {}
             Err(err) => {
-                total_diagnostics.push(err.to_warning_diagnostic(array_value.range()));
+                if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                    &err,
+                    array_value.range(),
+                    common_rules,
+                ) {
+                    total_diagnostics.push(diagnostic);
+                }
             }
         }
     }
@@ -280,7 +300,13 @@ async fn validate_array(
         {
             Ok(contains_schema) => contains_schema,
             Err(err) => {
-                total_diagnostics.push(err.to_warning_diagnostic(array_value.range()));
+                if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                    &err,
+                    array_value.range(),
+                    common_rules,
+                ) {
+                    total_diagnostics.push(diagnostic);
+                }
                 None
             }
         },
@@ -374,7 +400,13 @@ async fn validate_array(
             {
                 Ok(unevaluated_schema) => unevaluated_schema,
                 Err(err) => {
-                    total_diagnostics.push(err.to_warning_diagnostic(array_value.range()));
+                    if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                        &err,
+                        array_value.range(),
+                        common_rules,
+                    ) {
+                        total_diagnostics.push(diagnostic);
+                    }
                     None
                 }
             }

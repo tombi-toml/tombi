@@ -12,6 +12,8 @@ import { Note, Tip } from "~/components/Highlight";
     - [format.rules.array-values-order](#format-rules-array-values-order)
 - [lint](#lint-rules)
   - [lint.rules](#lint-rules)
+    - [lint.rules.schema-resolution](#lint-rules-schema-resolution)
+      - [lint.rules.schema-resolution.disabled](#lint-rules-schema-resolution-disabled)
     - [lint.rules.unused-noqa](#lint-rules-unused-noqa)
       - [lint.rules.unused-noqa.disabled](#lint-rules-unused-noqa-disabled)
     - [lint.rules.type-mismatch](#lint-rules-type-mismatch)
@@ -156,6 +158,21 @@ Value comment directives allow you to disable specific lint rules for individual
 This disable setting is a temporary workaround for incorrect JSON Schema.  
 Please consider contacting the JSON Schema provider (e.g., [Schema Store](https://www.schemastore.org)) to fix the JSON Schema.
 </Note>
+
+### lint.rules.schema-resolution
+
+Warn when a JSON Schema cannot be resolved.
+
+### lint.rules.schema-resolution.disabled
+
+Disable schema-resolution warnings for a specific value.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+dependency = "1.0" # tombi: lint.rules.schema-resolution.disabled = true
+```
 
 ### lint.rules.unused-noqa
 
