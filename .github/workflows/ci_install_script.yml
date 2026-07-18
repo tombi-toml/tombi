@@ -177,9 +177,7 @@ jobs:
 
             # Test that the install script works.
             mkdir -p smoke/install-dir
-            # TODO: This is going to fail until the first illumos release -- remove the
-            # `|| true` once available.
-            sh ./docs/public/install.sh --install-dir smoke/install-dir > smoke/install.log 2>&1 || true
+            sh ./docs/public/install.sh --install-dir smoke/install-dir > smoke/install.log 2>&1
             cat smoke/install.log
             grep "Detected system: x86_64-unknown-illumos" smoke/install.log
 
