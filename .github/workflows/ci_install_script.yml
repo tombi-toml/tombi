@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
-      illumos: ${{ steps.filter-illumos.outputs.relevant }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -25,17 +24,6 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - id: filter
-        uses: ./.github/actions/relevant-changes
-        with:
-          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          paths: |
-            docs/public/install.sh
-            xtask/src/command/dist.rs
-            .github/workflows/release_cli_vscode.yml
-            .github/actions/relevant-changes/**
-            .github/workflows/ci_install_script.yml
-      - id: filter-illumos
         uses: ./.github/actions/relevant-changes
         with:
           base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
@@ -63,7 +51,7 @@ jobs:
 
   build-cli-illumos:
     needs: detect-changes
-    if: needs.detect-changes.outputs.illumos == 'true'
+    if: needs.detect-changes.outputs.relevant == 'true'
     name: Build CLI (x86_64-unknown-illumos)
     runs-on: ubuntu-24.04
     defaults:
@@ -177,11 +165,15 @@ jobs:
 
             # Test that the install script works.
             mkdir -p smoke/install-dir
-            # TODO: This is going to fail until the first illumos release -- remove the
-            # `|| true` once available.
-            sh ./docs/public/install.sh --install-dir smoke/install-dir > smoke/install.log 2>&1 || true
+            PATH="${PWD}/smoke/install-dir:${PATH}"
+            export PATH
+            if ! sh ./docs/public/install.sh --install-dir smoke/install-dir > smoke/install.log 2>&1; then
+              cat smoke/install.log
+              exit 1
+            fi
             cat smoke/install.log
             grep "Detected system: x86_64-unknown-illumos" smoke/install.log
+            tombi --version
 
   test-install-script:
     needs: detect-changes
@@ -207,7 +199,7 @@ jobs:
           persist-credentials: false
 
       - name: Add install directory to PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Resolve release artifact metadata
         env:
