@@ -21,6 +21,12 @@ pub fn run(sh: &Shell) -> Result<(), anyhow::Error> {
 
     println!("Target: {target:#?}");
     println!("VSCode target: {vscode_target:#?}");
+    if vscode_target.is_none() {
+        println!(
+            "Skipping VS Code extension packaging for illumos target: {}",
+            target.target_name
+        );
+    }
 
     sh.remove_path(&dist)?;
     sh.create_dir(&dist)?;
