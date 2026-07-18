@@ -181,6 +181,8 @@ importers:
 
   typescript/@tombi-toml/cli-linux-x64-musl: {}
 
+  typescript/@tombi-toml/cli-sunos-x64: {}
+
   typescript/@tombi-toml/cli-win32-arm64: {}
 
   typescript/@tombi-toml/cli-win32-x64: {}
@@ -203,6 +205,9 @@ importers:
         specifier: 0.0.0-dev
         version: 0.0.0-dev
       '@tombi-toml/cli-linux-x64-musl':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-sunos-x64':
         specifier: 0.0.0-dev
         version: 0.0.0-dev
       '@tombi-toml/cli-win32-arm64':
