@@ -23,17 +23,3 @@ pub enum Error {
         reason: String,
     },
 }
-
-impl Error {
-    #[inline]
-    pub fn code(&self) -> &'static str {
-        match self {
-            Self::CacheFileReadFailed { .. } => "cache-file-read-failed",
-            Self::CacheFileParentDirectoryNotFound { .. } => {
-                "cache-file-parent-directory-not-found"
-            }
-            Self::CacheFileSaveFailed { .. } => "cache-file-save-failed",
-            Self::CacheDirectoryRemoveFailed { .. } => "cache-directory-remove-failed",
-        }
-    }
-}

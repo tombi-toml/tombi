@@ -51,12 +51,7 @@ impl<'a> Linter<'a> {
                 )
                 .await;
             if let Some((err, range)) = error_with_range {
-                self.diagnostics
-                    .push(tombi_diagnostic::Diagnostic::new_warning(
-                        err.to_string(),
-                        err.code(),
-                        range,
-                    ));
+                self.diagnostics.push(err.to_warning_diagnostic(range));
             };
 
             let (tombi_document_comment_directive, diagnostics) =

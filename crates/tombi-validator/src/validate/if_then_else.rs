@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use tombi_comment_directive::value::CommonLintRules;
 use tombi_document_tree::ValueImpl;
 use tombi_schema_store::CurrentSchema;
 
@@ -14,6 +15,7 @@ pub async fn validate_if_then_else<T>(
     if_then_else_schema: &tombi_schema_store::IfThenElseSchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
+    common_rules: Option<&CommonLintRules>,
 ) -> Result<crate::EvaluatedLocations, crate::Error>
 where
     T: Validate + ValueImpl + Sync + Send,
@@ -45,10 +47,16 @@ where
                 .validate(accessors, Some(&if_current_schema), schema_context)
                 .await
         }
-        Ok(None) => return Ok(crate::EvaluatedLocations::new()),
         Err(err) => {
-            return Err(vec![err.to_warning_diagnostic(value.range())].into());
+            if let Some(diagnostic) =
+                crate::validate::schema_resolution_diagnostic(&err, value.range(), common_rules)
+            {
+                return Err(vec![diagnostic].into());
+            }
+
+            return Ok(crate::EvaluatedLocations::new());
         }
+        Ok(None) => return Ok(crate::EvaluatedLocations::new()),
     };
 
     // Per JSON Schema spec: branching is based on assertion result.
@@ -69,13 +77,16 @@ where
                         .await;
                     return merge_if_result(branch_result, if_result);
                 }
-                Ok(None) => {}
                 Err(err) => {
-                    return merge_if_result(
-                        Err(vec![err.to_warning_diagnostic(value.range())].into()),
-                        if_result,
-                    );
+                    if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                        &err,
+                        value.range(),
+                        common_rules,
+                    ) {
+                        return merge_if_result(Err(vec![diagnostic].into()), if_result);
+                    }
                 }
+                Ok(None) => {}
             }
         }
 
@@ -96,10 +107,16 @@ where
                         .validate(accessors, Some(&else_current_schema), schema_context)
                         .await;
                 }
-                Ok(None) => {}
                 Err(err) => {
-                    return Err(vec![err.to_warning_diagnostic(value.range())].into());
+                    if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                        &err,
+                        value.range(),
+                        common_rules,
+                    ) {
+                        return Err(vec![diagnostic].into());
+                    }
                 }
+                Ok(None) => {}
             }
         }
     }

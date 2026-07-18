@@ -120,6 +120,18 @@
     "WithCommonExtensibleLintRules": {
       "type": "object",
       "properties": {
+        "schema-resolution": {
+          "title": "Schema resolution",
+          "description": "Warn when a schema cannot be resolved.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/WarnRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "type-mismatch": {
           "title": "Type mismatch",
           "description": "Check if the value is of the correct type.",
@@ -268,12 +280,12 @@
       },
       "x-tombi-table-keys-order": "ascending"
     },
-    "ErrorRuleOptions": {
+    "WarnRuleOptions": {
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Error rule disabled",
-          "description": "If `true`, Error is disabled for this value.",
+          "title": "Warn rule disabled",
+          "description": "If `true`, Warn is disabled for this value.",
           "type": [
             "boolean",
             "null"
@@ -286,12 +298,12 @@
       },
       "additionalProperties": false
     },
-    "WarnRuleOptions": {
+    "ErrorRuleOptions": {
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Warn rule disabled",
-          "description": "If `true`, Warn is disabled for this value.",
+          "title": "Error rule disabled",
+          "description": "If `true`, Error is disabled for this value.",
           "type": [
             "boolean",
             "null"

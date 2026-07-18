@@ -411,6 +411,12 @@ impl From<&ErrorRuleOptions> for SeverityLevelDefaultError {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct CommonLintRules {
+    /// # Schema resolution
+    ///
+    /// Warn when a schema cannot be resolved.
+    ///
+    pub schema_resolution: Option<WarnRuleOptions>,
+
     /// # Type mismatch
     ///
     /// Check if the value is of the correct type.

@@ -156,6 +156,18 @@
             }
           ]
         },
+        "schema-resolution": {
+          "title": "Schema resolution",
+          "description": "Warn when a schema cannot be resolved.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/WarnRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "type-mismatch": {
           "title": "Type mismatch",
           "description": "Check if the value is of the correct type.",

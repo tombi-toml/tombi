@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use crate::{CatalogUri, SchemaUri};
 
+pub const SCHEMA_RESOLUTION_DIAGNOSTIC_CODE: &str = "schema-resolution";
+
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
     #[error("failed to lock document: {schema_uri}")]
@@ -109,40 +111,11 @@ pub enum Error {
 
 impl Error {
     #[inline]
-    pub fn code(&self) -> &'static str {
-        match self {
-            Self::DocumentLockError { .. } => "document-lock-error",
-            Self::ReferenceLockError { .. } => "reference-lock-error",
-            Self::SchemaLockError => "schema-lock-error",
-            Self::DefinitionNotFound { .. } => "definition-not-found",
-            Self::CatalogPathConvertUriFailed { .. } => "catalog-path-convert-url-failed",
-            Self::CatalogFileParseFailed { .. } => "catalog-file-parse-failed",
-            Self::CatalogUriFetchFailed { .. } => "catalog-url-fetch-failed",
-            Self::CatalogFileNotFound { .. } => "catalog-file-not-found",
-            Self::InvalidCatalogFileUri { .. } => "invalid-catalog-file-url",
-            Self::CatalogFileReadFailed { .. } => "catalog-file-read-failed",
-            Self::InvalidSchemaUri { .. } => "invalid-schema-uri",
-            Self::InvalidSchemaUriOrFilePath { .. } => "invalid-schema-uri-or-file-path",
-            Self::SchemaFileNotFound { .. } => "schema-file-not-found",
-            Self::SchemaResourceNotFound { .. } => "schema-resource-not-found",
-            Self::SchemaFileReadFailed { .. } => "schema-file-read-failed",
-            Self::SchemaFileParseFailed { .. } => "schema-file-parse-failed",
-            Self::SchemaFetchFailed { .. } => "schema-fetch-failed",
-            Self::UnsupportedSourceUri { .. } => "unsupported-source-url",
-            Self::SourceUriParseFailed { .. } => "source-url-parse-failed",
-            Self::InvalidFilePath { .. } => "invalid-file-path",
-            Self::InvalidJsonFormat { .. } => "invalid-json-format",
-            Self::InvalidJsonPointer { .. } => "invalid-json-pointer",
-            Self::InvalidJsonSchemaReference { .. } => "invalid-json-schema-reference",
-            Self::UnsupportedReference { .. } => "unsupported-reference",
-            Self::UnsupportedUriScheme { .. } => "unsupported-url-scheme",
-            Self::SchemaMustBeObjectOrBoolean { .. } => "schema-must-be-object-or-boolean",
-            Self::CacheError(error) => error.code(),
-        }
-    }
-
-    #[inline]
     pub fn to_warning_diagnostic(&self, range: tombi_text::Range) -> tombi_diagnostic::Diagnostic {
-        tombi_diagnostic::Diagnostic::new_warning(self.to_string(), self.code(), range)
+        tombi_diagnostic::Diagnostic::new_warning(
+            self.to_string(),
+            SCHEMA_RESOLUTION_DIAGNOSTIC_CODE,
+            range,
+        )
     }
 }

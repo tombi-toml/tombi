@@ -15,7 +15,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -27,7 +27,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -39,7 +39,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -51,7 +51,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -63,7 +63,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -75,7 +75,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -87,7 +87,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -99,7 +99,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -111,7 +111,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -123,7 +123,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -145,7 +145,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -157,7 +157,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -170,7 +170,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -183,7 +183,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -196,7 +196,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING },
+        { code: "schema-resolution", level: Level::WARNING },
         { code: "table-strict-additional-keys", level: Level::WARNING }
     ])
 }
@@ -210,7 +210,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -223,7 +223,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
     ])
 }
 
@@ -236,6 +236,29 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "invalid-json-pointer", level: Level::WARNING }
+        { code: "schema-resolution", level: Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_nested_schema_resolution_warning_disabled(
+        r#"
+        direct = 1 # tombi: lint.rules.schema-resolution.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_schema_resolution_warning_disabled_keeps_other_diagnostics(
+        r#"
+        [unevaluated-properties-error]
+        extra = 1 # tombi: lint.rules.schema-resolution.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "table-strict-additional-keys", level: Level::WARNING }
     ])
 }

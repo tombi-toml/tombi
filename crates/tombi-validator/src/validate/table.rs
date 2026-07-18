@@ -138,6 +138,7 @@ async fn validate_table(
 ) -> Result<crate::EvaluatedLocations, crate::Error> {
     let mut total_score = TYPE_MATCHED_SCORE;
     let mut total_diagnostics = vec![];
+    let common_rules = table_rules.map(|rules| &rules.common);
     let evaluated_locations = {
         let mut visited_schema_values = HashSet::new();
         collect_evaluated_properties_from_table_schema(
@@ -155,10 +156,9 @@ async fn validate_table(
     for (key, value) in table_value.key_values() {
         let key_rules = get_tombi_key_rules_and_diagnostics(key.comment_directives())
             .await
-            .0
-            .map(|rules| rules.value);
-
-        let key_rules = key_rules.as_ref();
+            .0;
+        let key_common_rules = key_rules.as_ref().map(|rules| &rules.common);
+        let key_rules = key_rules.as_ref().map(|rules| &rules.value);
 
         let accessor_raw_text = &key.value;
         let accessor = Accessor::Key(accessor_raw_text.to_owned());
@@ -207,7 +207,13 @@ async fn validate_table(
                 }
                 Ok(None) => {}
                 Err(err) => {
-                    total_diagnostics.push(err.to_warning_diagnostic(key.range() + value.range()));
+                    if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                        &err,
+                        key.range() + value.range(),
+                        key_common_rules,
+                    ) {
+                        total_diagnostics.push(diagnostic);
+                    }
                 }
             }
         }
@@ -255,8 +261,13 @@ async fn validate_table(
                         }
                         Ok(None) => {}
                         Err(err) => {
-                            total_diagnostics
-                                .push(err.to_warning_diagnostic(key.range() + value.range()));
+                            if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                                &err,
+                                key.range() + value.range(),
+                                key_common_rules,
+                            ) {
+                                total_diagnostics.push(diagnostic);
+                            }
                         }
                     }
                 }
@@ -336,8 +347,13 @@ async fn validate_table(
                     }
                     Ok(None) => {}
                     Err(err) => {
-                        total_diagnostics
-                            .push(err.to_warning_diagnostic(key.range() + value.range()));
+                        if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                            &err,
+                            key.range() + value.range(),
+                            key_common_rules,
+                        ) {
+                            total_diagnostics.push(diagnostic);
+                        }
                     }
                 }
             }
@@ -370,8 +386,13 @@ async fn validate_table(
                         }
                         Ok(None) => {}
                         Err(err) => {
-                            total_diagnostics
-                                .push(err.to_warning_diagnostic(key.range() + value.range()));
+                            if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                                &err,
+                                key.range() + value.range(),
+                                key_common_rules,
+                            ) {
+                                total_diagnostics.push(diagnostic);
+                            }
                         }
                     }
                 }
@@ -615,7 +636,13 @@ async fn validate_table(
                         }
                         Ok(None) => {}
                         Err(err) => {
-                            total_diagnostics.push(err.to_warning_diagnostic(table_value.range()));
+                            if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                                &err,
+                                table_value.range(),
+                                common_rules,
+                            ) {
+                                total_diagnostics.push(diagnostic);
+                            }
                         }
                     }
                 }
@@ -685,7 +712,13 @@ async fn validate_table(
                 }
                 Ok(None) => {}
                 Err(err) => {
-                    total_diagnostics.push(err.to_warning_diagnostic(table_value.range()));
+                    if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                        &err,
+                        table_value.range(),
+                        common_rules,
+                    ) {
+                        total_diagnostics.push(diagnostic);
+                    }
                 }
             }
         }
@@ -773,7 +806,13 @@ async fn validate_table(
             {
                 Ok(property_name_current_schema) => property_name_current_schema,
                 Err(err) => {
-                    total_diagnostics.push(err.to_warning_diagnostic(table_value.range()));
+                    if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                        &err,
+                        table_value.range(),
+                        common_rules,
+                    ) {
+                        total_diagnostics.push(diagnostic);
+                    }
                     None
                 }
             }
@@ -814,6 +853,7 @@ async fn validate_table(
             if_then_else_schema,
             current_schema,
             schema_context,
+            common_rules,
         )
         .await
     {

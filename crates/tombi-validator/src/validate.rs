@@ -329,6 +329,18 @@ pub(crate) fn with_lint_diagnostics(
     }
 }
 
+pub(crate) fn schema_resolution_diagnostic(
+    error: &tombi_schema_store::Error,
+    range: tombi_text::Range,
+    common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
+) -> Option<tombi_diagnostic::Diagnostic> {
+    (!common_rules
+        .and_then(|rules| rules.schema_resolution.as_ref())
+        .and_then(|rule| rule.disabled)
+        .unwrap_or_default())
+    .then(|| error.to_warning_diagnostic(range))
+}
+
 pub(crate) fn has_error_level_diagnostics(error: &crate::Error) -> bool {
     error
         .diagnostics
