@@ -40,6 +40,7 @@ jobs:
             .cargo/**
             .github/actions/relevant-changes/**
             .github/actions/set-version/**
+            .github/scripts/install-cross.sh
             Cargo.toml
             Cargo.lock
             rust-toolchain.toml
@@ -85,6 +86,10 @@ jobs:
           - os: macos-14
             target: aarch64-apple-darwin
             vscode_target: darwin-arm64
+          - os: ubuntu-24.04
+            target: x86_64-unknown-illumos
+            vscode_target: sunos-x64
+            use_cross: true
       fail-fast: false
     name: Package ${{ matrix.vscode_target }}
     runs-on: ${{ matrix.os }}
@@ -100,7 +105,12 @@ jobs:
           node-version-file: ".node-version"
 
       - name: Install Rust toolchain
+        if: ${{ !matrix.use_cross }}
         run: rustup target add ${{ matrix.target }}
+
+      - name: Install cross
+        if: ${{ matrix.use_cross }}
+        run: .github/scripts/install-cross.sh
 
       - name: Install arm64 toolchain
         if: matrix.vscode_target == 'linux-arm64' || matrix.vscode_target == 'linux-arm64-musl'
@@ -123,7 +133,12 @@ jobs:
 
       # Build the CLI binary
       - name: Build binaries
-        run: cargo build -p tombi-cli --release --target ${{ matrix.target }}
+        run: ${{ matrix.use_cross && 'cross' || 'cargo' }} build -p tombi-cli --release --target ${{ matrix.target }}
+        env:
+          # Don't strip illumos binaries because stripping on a different platform
+          # breaks illumos observability tooling such as pstack. See
+          # https://github.com/oxidecomputer/helios/issues/147.
+          CARGO_PROFILE_RELEASE_STRIP: ${{ matrix.target == 'x86_64-unknown-illumos' && 'none' || 'symbols' }}
 
       # Copy the CLI binary and rename it to include the name of the target platform
       - run: ls target

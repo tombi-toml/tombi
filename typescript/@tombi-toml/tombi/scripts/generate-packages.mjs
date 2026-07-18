@@ -77,12 +77,10 @@ function writeManifest(packagePath) {
 		fs.readFileSync(manifestPath).toString("utf-8"),
 	);
 
-	const nativePackages = PLATFORMS.flatMap((platform) =>
-		ARCHITECTURES.map((arch) => [
-			`@tombi-toml/${getName(platform, arch)}`,
-			rootManifest.version,
-		]),
-	);
+	const nativePackages = TARGETS.map(([platform, arch]) => [
+		`@tombi-toml/${getName(platform, arch)}`,
+		rootManifest.version,
+	]);
 
 	manifestData.version = rootManifest.version;
 	manifestData.optionalDependencies = Object.fromEntries(nativePackages);
@@ -95,10 +93,21 @@ function writeManifest(packagePath) {
 const PLATFORMS = ["win32-%s", "darwin-%s", "linux-%s", "linux-%s-musl"];
 const ARCHITECTURES = ["x64", "arm64"];
 
-for (const platform of PLATFORMS) {
-	for (const arch of ARCHITECTURES) {
-		copyBinaryToNativePackage(platform, arch);
-	}
+// We only publish x86_64 binaries for illumos. aarch64-unknown-illumos is a
+// Tier 3 Rust target, but Rust (as of 1.97) doesn't have a prebuilt std for it
+// so it cannot be built or distributed today. It is therefore excluded from the
+// symmetric PLATFORMS x ARCHITECTURES matrix above.
+const EXTRA_TARGETS = [["sunos-%s", "x64"]];
+
+const TARGETS = [
+	...PLATFORMS.flatMap((platform) =>
+		ARCHITECTURES.map((arch) => [platform, arch]),
+	),
+	...EXTRA_TARGETS,
+];
+
+for (const [platform, arch] of TARGETS) {
+	copyBinaryToNativePackage(platform, arch);
 }
 
 writeManifest("tombi");

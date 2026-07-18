@@ -1,0 +1,20 @@
+{
+  "name": "@tombi-toml/cli-sunos-x64",
+  "version": "0.0.0-dev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tombi-toml/tombi.git",
+    "directory": "typescript/@tombi-toml/cli-sunos-x64"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "homepage": "https://tombi-toml.github.io/tombi/",
+  "os": [
+    "sunos"
+  ],
+  "cpu": [
+    "x64"
+  ]
+}

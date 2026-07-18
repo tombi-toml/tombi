@@ -34,6 +34,12 @@ const PLATFORMS = {
     x64: "@tombi-toml/cli-linux-x64-musl/tombi",
     arm64: "@tombi-toml/cli-linux-arm64-musl/tombi",
   },
+  // "sunos" matches both Oracle Solaris and illumos, but we only publish
+  // binaries on illumos, not on Solaris. There doesn't appear to be a way to
+  // distinguish between the two over here.
+  sunos: {
+    x64: "@tombi-toml/cli-sunos-x64/tombi",
+  },
 };
 
 const binPath =

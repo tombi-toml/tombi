@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
+      illumos: ${{ steps.filter-illumos.outputs.relevant }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -34,6 +35,153 @@ jobs:
             .github/workflows/release_cli_vscode.yml
             .github/actions/relevant-changes/**
             .github/workflows/ci_install_script.yml
+      - id: filter-illumos
+        uses: ./.github/actions/relevant-changes
+        with:
+          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          paths: |
+            .cargo/**
+            Cargo.toml
+            Cargo.lock
+            rust-toolchain.toml
+            crates/**
+            extensions/**
+            rust/**
+            xtask/**
+            schemas/**
+            www.schemastore.org/**
+            www.schemastore.tombi/**
+            tombi.toml
+            type-test.toml
+            docs/public/install.sh
+            .github/scripts/install-cross.sh
+            .github/actions/relevant-changes/**
+            .github/actions/set-version/**
+            .github/workflows/ci_install_script.yml
+            .github/workflows/release_cli_vscode.yml
+
+  build-cli-illumos:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.illumos == 'true'
+    name: Build CLI (x86_64-unknown-illumos)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      TOMBI_TARGET: x86_64-unknown-illumos
+      TOMBI_DIST_CARGO: cross
+      CARGO_PROFILE_RELEASE_LTO: "fat"
+      # Don't strip illumos binaries because stripping on a different platform
+      # breaks illumos observability tooling such as pstack. See
+      # https://github.com/oxidecomputer/helios/issues/147.
+      CARGO_PROFILE_RELEASE_STRIP: "none"
+      RUST_BACKTRACE: "1"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        run: rustup update --no-self-update stable
+
+      - name: Install cross
+        run: .github/scripts/install-cross.sh
+
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - uses: ./.github/actions/set-version
+
+      - name: Run xtask dist
+        run: cargo xtask dist --cli-only
+
+      - name: Verify tombi-cli artifact
+        run: |
+          artifact="dist/tombi-cli-${TOMBI_VERSION}-${TOMBI_TARGET}.tar.gz"
+          archive_root="tombi-cli-${TOMBI_VERSION}-${TOMBI_TARGET}"
+          expected_path="${archive_root}/tombi"
+
+          test -f "${artifact}"
+          test "$(tar -tzf "${artifact}")" = "${expected_path}"
+
+          extract_dir="${RUNNER_TEMP}/tombi-cli-illumos"
+          mkdir -p "${extract_dir}"
+          tar -xzf "${artifact}" -C "${extract_dir}"
+          test -x "${extract_dir}/${expected_path}"
+
+      - name: Verify tombi CLI is an unstripped illumos ELF
+        run: |
+          binary="target/${TOMBI_TARGET}/release/tombi"
+          file_output="$(file "${binary}")"
+          printf '%s\n' "${file_output}"
+
+          case "${file_output}" in
+          *"ELF 64-bit LSB executable"*"interpreter /lib/amd64/ld.so.1"*) ;;
+          *)
+            echo "illumos CLI binary is not a Solaris-ABI ELF executable" >&2
+            exit 1
+            ;;
+          esac
+
+          case "${file_output}" in
+          *", not stripped")
+            ;;
+          *)
+            echo "illumos CLI binary was stripped; stripping is explicitly disabled for illumos" >&2
+            exit 1
+            ;;
+          esac
+
+      - name: Upload tombi-cli artifact for smoke test
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: tombi-cli-x86_64-unknown-illumos-smoke
+          path: dist/tombi-cli-*-x86_64-unknown-illumos.tar.gz
+
+  smoke-test-cli-illumos:
+    needs: build-cli-illumos
+    name: Smoke test CLI on OmniOS (x86_64-unknown-illumos)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: tombi-cli-x86_64-unknown-illumos-smoke
+          path: dist
+
+      # Test that the CLI runs on OmniOS (an illumos distro).
+      - name: Run tombi CLI and install.sh on OmniOS
+        uses: vmactions/omnios-vm@7f2be0b927aad1a78498c8aeeac4c4ce1fabd322 # v1.3.3
+        with:
+          release: r151058
+          usesh: true
+          mem: 4096
+          run: |
+            # Download the CLI artifact and ensure it runs.
+            set -ex
+            uname -a
+            mkdir -p smoke
+            gunzip -c dist/tombi-cli-*-x86_64-unknown-illumos.tar.gz > smoke/tombi-cli.tar
+            (cd smoke && tar -xf tombi-cli.tar)
+            bin="$(find smoke -name tombi -type f)"
+            "$bin" --version
+            printf 'title = "smoke"\nvalue   =    1\n' > smoke/smoke.toml
+            "$bin" format --offline smoke/smoke.toml
+            cat smoke/smoke.toml
+            "$bin" lint --offline smoke/smoke.toml
+
+            # Test that the install script works.
+            mkdir -p smoke/install-dir
+            # TODO: This is going to fail until the first illumos release -- remove the
+            # `|| true` once available.
+            sh ./docs/public/install.sh --install-dir smoke/install-dir > smoke/install.log 2>&1 || true
+            cat smoke/install.log
+            grep "Detected system: x86_64-unknown-illumos" smoke/install.log
 
   test-install-script:
     needs: detect-changes
