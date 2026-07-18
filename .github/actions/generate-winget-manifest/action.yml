@@ -11,6 +11,9 @@ inputs:
   wingetcreate-path:
     description: Path to a verified wingetcreate.exe (see the setup-wingetcreate action).
     required: true
+  github-token:
+    description: GitHub token used to read the release metadata.
+    required: true
   output-dir:
     description: Directory the generated manifest is written into.
     required: false
@@ -25,12 +28,24 @@ runs:
         VERSION: ${{ inputs.version }}
         WINGETCREATE_PATH: ${{ inputs.wingetcreate-path }}
         OUTPUT_DIR: ${{ inputs.output-dir }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
       run: |
         $x64InstallerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-x86_64-pc-windows-msvc.zip"
         $arm64InstallerUrl = "https://github.com/tombi-toml/tombi/releases/download/$env:REF_NAME/tombi-cli-$env:VERSION-aarch64-pc-windows-msvc.zip"
 
+        $headers = @{
+          "Accept" = "application/vnd.github+json"
+          "Authorization" = "Bearer $env:GITHUB_TOKEN"
+          "X-GitHub-Api-Version" = "2022-11-28"
+        }
+        $release = Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/tombi-toml/tombi/releases/tags/$env:REF_NAME"
+        if (-not $release.body -or -not $release.html_url -or -not $release.published_at) {
+          throw "GitHub release metadata is incomplete for $env:REF_NAME."
+        }
+        $releaseDate = ([DateTimeOffset]$release.published_at).ToString("yyyy-MM-dd")
+
         $manifestDir = Join-Path $PWD $env:OUTPUT_DIR
-        & $env:WINGETCREATE_PATH update tombi-toml.tombi --urls "$x64InstallerUrl|x64" "$arm64InstallerUrl|arm64" -v $env:VERSION --out $manifestDir
+        & $env:WINGETCREATE_PATH update tombi-toml.tombi --urls "$x64InstallerUrl|x64" "$arm64InstallerUrl|arm64" -v $env:VERSION --release-date $releaseDate --release-notes-url $release.html_url --out $manifestDir
 
         $installerManifest = Get-ChildItem -Path $manifestDir -Recurse -Filter "*.installer.yaml" | Select-Object -First 1
         if (-not $installerManifest) {
@@ -53,12 +68,37 @@ runs:
           Set-Content -Path $installerManifest.FullName -Value $content -NoNewline
         }
 
+        # wingetcreate clears version-specific ReleaseNotes and cannot populate the field.
+        $localeManifest = Get-ChildItem -Path $manifestDir -Recurse -Filter "*.locale.en-US.yaml" | Select-Object -First 1
+        if (-not $localeManifest) {
+          throw "winget locale manifest was not generated."
+        }
+        $releaseNotes = ([regex]::Split($release.body.TrimEnd(), "\r?\n") | ForEach-Object { "  $_" }) -join "`r`n"
+        $releaseNotesMetadata = @(
+          "ReleaseNotes: |-"
+          $releaseNotes
+        ) -join "`r`n"
+        $content = Get-Content $localeManifest.FullName -Raw
+        $content = $content.Replace("ManifestType:", "$releaseNotesMetadata`r`nManifestType:")
+        Set-Content -Path $localeManifest.FullName -Value $content -NoNewline
+
         $content = Get-Content $installerManifest.FullName -Raw
+        if ($content -notmatch "(?m)^ReleaseDate: $([regex]::Escape($releaseDate))\r?$") {
+          throw "winget installer manifest does not contain the GitHub release date."
+        }
         $hasInvocationParameter = $content -split "\r?\n" | Where-Object {
           $_ -match "^\s+InvocationParameter: --version\s*$"
         }
         if (-not $hasInvocationParameter) {
           throw "winget installer manifest does not contain InvocationParameter: --version."
+        }
+
+        $content = Get-Content $localeManifest.FullName -Raw
+        if ($content -notmatch "(?m)^ReleaseNotes: \|-\r?$") {
+          throw "winget locale manifest does not contain release notes."
+        }
+        if ($content -notmatch "(?m)^ReleaseNotesUrl: $([regex]::Escape($release.html_url))\r?$") {
+          throw "winget locale manifest does not contain the GitHub release notes URL."
         }
 
         if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
