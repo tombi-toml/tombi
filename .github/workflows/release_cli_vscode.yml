@@ -633,5 +633,11 @@ jobs:
           WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
           WINGETCREATE_PATH: ${{ steps.wingetcreate.outputs.path }}
         run: |
-          $manifestDir = Join-Path $PWD "winget-manifests"
-          & $env:WINGETCREATE_PATH submit $manifestDir -t $env:WINGET_TOKEN
+          $manifestRoot = Join-Path $PWD "winget-manifests"
+          $installerManifest = Get-ChildItem -Path $manifestRoot -Recurse -Filter "*.installer.yaml" | Select-Object -First 1
+          if (-not $installerManifest) {
+            throw "winget installer manifest was not downloaded."
+          }
+
+          $manifestVersionDir = Split-Path -Parent $installerManifest.FullName
+          & $env:WINGETCREATE_PATH submit $manifestVersionDir -t $env:WINGET_TOKEN

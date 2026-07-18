@@ -35,7 +35,7 @@ where
         ),
         Ok(None) => false,
         Err(err) => {
-            return Err(vec![err.to_diagnostic(value.range())].into());
+            return Err(vec![err.to_warning_diagnostic(value.range())].into());
         }
     };
 

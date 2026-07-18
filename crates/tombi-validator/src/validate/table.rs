@@ -207,7 +207,7 @@ async fn validate_table(
                 }
                 Ok(None) => {}
                 Err(err) => {
-                    total_diagnostics.push(err.to_diagnostic(key.range() + value.range()));
+                    total_diagnostics.push(err.to_warning_diagnostic(key.range() + value.range()));
                 }
             }
         }
@@ -255,7 +255,8 @@ async fn validate_table(
                         }
                         Ok(None) => {}
                         Err(err) => {
-                            total_diagnostics.push(err.to_diagnostic(key.range() + value.range()));
+                            total_diagnostics
+                                .push(err.to_warning_diagnostic(key.range() + value.range()));
                         }
                     }
                 }
@@ -335,7 +336,8 @@ async fn validate_table(
                     }
                     Ok(None) => {}
                     Err(err) => {
-                        total_diagnostics.push(err.to_diagnostic(key.range() + value.range()));
+                        total_diagnostics
+                            .push(err.to_warning_diagnostic(key.range() + value.range()));
                     }
                 }
             }
@@ -368,7 +370,8 @@ async fn validate_table(
                         }
                         Ok(None) => {}
                         Err(err) => {
-                            total_diagnostics.push(err.to_diagnostic(key.range() + value.range()));
+                            total_diagnostics
+                                .push(err.to_warning_diagnostic(key.range() + value.range()));
                         }
                     }
                 }
@@ -612,7 +615,7 @@ async fn validate_table(
                         }
                         Ok(None) => {}
                         Err(err) => {
-                            total_diagnostics.push(err.to_diagnostic(table_value.range()));
+                            total_diagnostics.push(err.to_warning_diagnostic(table_value.range()));
                         }
                     }
                 }
@@ -682,7 +685,7 @@ async fn validate_table(
                 }
                 Ok(None) => {}
                 Err(err) => {
-                    total_diagnostics.push(err.to_diagnostic(table_value.range()));
+                    total_diagnostics.push(err.to_warning_diagnostic(table_value.range()));
                 }
             }
         }
@@ -770,7 +773,7 @@ async fn validate_table(
             {
                 Ok(property_name_current_schema) => property_name_current_schema,
                 Err(err) => {
-                    total_diagnostics.push(err.to_diagnostic(table_value.range()));
+                    total_diagnostics.push(err.to_warning_diagnostic(table_value.range()));
                     None
                 }
             }

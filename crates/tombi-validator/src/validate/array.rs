@@ -169,7 +169,7 @@ async fn validate_array(
                     {
                         Ok(overflow_schema) => overflow_schema,
                         Err(err) => {
-                            total_diagnostics.push(err.to_diagnostic(array_value.range()));
+                            total_diagnostics.push(err.to_warning_diagnostic(array_value.range()));
                             None
                         }
                     }
@@ -208,7 +208,7 @@ async fn validate_array(
                     }
                     Ok(None) => {}
                     Err(err) => {
-                        total_diagnostics.push(err.to_diagnostic(value.range()));
+                        total_diagnostics.push(err.to_warning_diagnostic(value.range()));
                     }
                 }
             } else if let Some(overflow) = &overflow_schema {
@@ -264,7 +264,7 @@ async fn validate_array(
             }
             Ok(None) => {}
             Err(err) => {
-                total_diagnostics.push(err.to_diagnostic(array_value.range()));
+                total_diagnostics.push(err.to_warning_diagnostic(array_value.range()));
             }
         }
     }
@@ -280,7 +280,7 @@ async fn validate_array(
         {
             Ok(contains_schema) => contains_schema,
             Err(err) => {
-                total_diagnostics.push(err.to_diagnostic(array_value.range()));
+                total_diagnostics.push(err.to_warning_diagnostic(array_value.range()));
                 None
             }
         },
@@ -374,7 +374,7 @@ async fn validate_array(
             {
                 Ok(unevaluated_schema) => unevaluated_schema,
                 Err(err) => {
-                    total_diagnostics.push(err.to_diagnostic(array_value.range()));
+                    total_diagnostics.push(err.to_warning_diagnostic(array_value.range()));
                     None
                 }
             }
