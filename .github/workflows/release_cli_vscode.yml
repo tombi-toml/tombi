@@ -47,6 +47,7 @@ jobs:
           paths: |
             .cargo/**
             .github/actions/dispatch-versioned-release/**
+            .github/actions/generate-winget-manifest/**
             .github/actions/relevant-changes/**
             .github/actions/set-version/**
             .github/scripts/install-cross.sh
@@ -533,6 +534,7 @@ jobs:
           release-tag: ${{ steps.winget-release.outputs.release_tag }}
           version: ${{ steps.winget-release.outputs.stable_version }}
           wingetcreate-path: ${{ steps.wingetcreate.outputs.path }}
+          github-token: ${{ github.token }}
 
       - name: Upload winget manifest
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -580,6 +582,7 @@ jobs:
           release-tag: ${{ github.ref_name }}
           version: ${{ steps.stable-version.outputs.stable_version }}
           wingetcreate-path: ${{ steps.wingetcreate.outputs.path }}
+          github-token: ${{ github.token }}
 
       - name: Upload winget manifest
         if: steps.stable-version.outputs.stable_version != ''
