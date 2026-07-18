@@ -33,16 +33,16 @@ where
                 .validate(accessors, Some(&current_schema), schema_context)
                 .await,
         ),
-        Err(err)
-            if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
-                &err,
-                value.range(),
-                common_rules,
-            ) =>
-        {
-            return Err(vec![diagnostic].into());
+        Err(err) => {
+            if let Some(diagnostic) =
+                crate::validate::schema_resolution_diagnostic(&err, value.range(), common_rules)
+            {
+                return Err(vec![diagnostic].into());
+            }
+
+            false
         }
-        Ok(None) | Err(_) => false,
+        Ok(None) => false,
     };
 
     if matches_not_schema {

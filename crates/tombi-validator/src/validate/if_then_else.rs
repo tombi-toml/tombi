@@ -47,16 +47,16 @@ where
                 .validate(accessors, Some(&if_current_schema), schema_context)
                 .await
         }
-        Err(err)
-            if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
-                &err,
-                value.range(),
-                common_rules,
-            ) =>
-        {
-            return Err(vec![diagnostic].into());
+        Err(err) => {
+            if let Some(diagnostic) =
+                crate::validate::schema_resolution_diagnostic(&err, value.range(), common_rules)
+            {
+                return Err(vec![diagnostic].into());
+            }
+
+            return Ok(crate::EvaluatedLocations::new());
         }
-        Ok(None) | Err(_) => return Ok(crate::EvaluatedLocations::new()),
+        Ok(None) => return Ok(crate::EvaluatedLocations::new()),
     };
 
     // Per JSON Schema spec: branching is based on assertion result.
@@ -77,16 +77,16 @@ where
                         .await;
                     return merge_if_result(branch_result, if_result);
                 }
-                Err(err)
+                Err(err) => {
                     if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
                         &err,
                         value.range(),
                         common_rules,
-                    ) =>
-                {
-                    return merge_if_result(Err(vec![diagnostic].into()), if_result);
+                    ) {
+                        return merge_if_result(Err(vec![diagnostic].into()), if_result);
+                    }
                 }
-                Ok(None) | Err(_) => {}
+                Ok(None) => {}
             }
         }
 
@@ -107,16 +107,16 @@ where
                         .validate(accessors, Some(&else_current_schema), schema_context)
                         .await;
                 }
-                Err(err)
+                Err(err) => {
                     if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
                         &err,
                         value.range(),
                         common_rules,
-                    ) =>
-                {
-                    return Err(vec![diagnostic].into());
+                    ) {
+                        return Err(vec![diagnostic].into());
+                    }
                 }
-                Ok(None) | Err(_) => {}
+                Ok(None) => {}
             }
         }
     }
