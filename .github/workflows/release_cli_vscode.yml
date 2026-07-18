@@ -217,7 +217,7 @@ jobs:
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - uses: ./.github/actions/set-version
       - name: Run xtask dist
-        run: cargo xtask dist --cli-only
+        run: cargo xtask dist
         env:
           RUST_BACKTRACE: "1"
       - name: Upload tombi-cli artifacts

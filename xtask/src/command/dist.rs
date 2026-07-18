@@ -13,17 +13,10 @@ use zip::{DateTime, ZipWriter, write::FileOptions};
 use super::set_version::DEV_VERSION;
 use crate::utils::project_root_path;
 
-#[derive(clap::Args, Debug)]
-pub struct Args {
-    /// Build and package only the CLI tarball, skipping the VS Code extension.
-    #[arg(long)]
-    pub cli_only: bool,
-}
-
-pub fn run(sh: &Shell, args: Args) -> Result<(), anyhow::Error> {
+pub fn run(sh: &Shell) -> Result<(), anyhow::Error> {
     let project_root = project_root_path();
     let target = Target::get(&project_root);
-    let vscode_target = resolve_vscode_target(args.cli_only);
+    let vscode_target = resolve_vscode_target(&target.target_name);
     let dist = project_root.join("dist");
 
     println!("Target: {target:#?}");
@@ -206,8 +199,8 @@ impl VscodeTarget {
         let vscode_target_name = match std::env::var("VSCODE_TARGET") {
             Ok(target) if !target.is_empty() => target,
             Ok(_) => panic!(
-                "VSCODE_TARGET is set but empty. Pass in --cli-only to \
-                 skip the VS Code extension, or set VSCODE_TARGET to a vsce target."
+                "VSCODE_TARGET is set but empty. Unset it to use the host default, \
+                 or set it to a vsce target."
             ),
             _ => {
                 if cfg!(target_os = "linux") {
@@ -231,8 +224,8 @@ impl VscodeTarget {
     }
 }
 
-fn resolve_vscode_target(cli_only: bool) -> Option<VscodeTarget> {
-    (!cli_only).then(VscodeTarget::get)
+fn resolve_vscode_target(target_name: &str) -> Option<VscodeTarget> {
+    (!target_name.ends_with("-illumos")).then(VscodeTarget::get)
 }
 
 fn tar_gz(src_path: &Path, root_dir: &str, dest_path: &Path) -> anyhow::Result<()> {
@@ -309,12 +302,15 @@ mod tests {
     }
 
     #[test]
-    fn empty_vscode_target_only_panics_when_vscode_dist_is_requested() {
-        let _guard = pushenv("VSCODE_TARGET", "");
+    fn illumos_target_skips_vscode_dist() {
+        assert!(resolve_vscode_target("x86_64-unknown-illumos").is_none());
+    }
 
-        assert!(resolve_vscode_target(true).is_none());
+    #[test]
+    fn empty_vscode_target_panics_for_supported_targets() {
+        let _vscode = pushenv("VSCODE_TARGET", "");
 
-        let panic = std::panic::catch_unwind(|| resolve_vscode_target(false))
+        let panic = std::panic::catch_unwind(|| resolve_vscode_target("x86_64-unknown-linux-gnu"))
             .expect_err("resolving the VS Code target with empty VSCODE_TARGET panicked");
         let message = panic
             .downcast_ref::<&str>()

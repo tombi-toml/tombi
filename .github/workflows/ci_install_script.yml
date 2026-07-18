@@ -94,7 +94,7 @@ jobs:
       - uses: ./.github/actions/set-version
 
       - name: Run xtask dist
-        run: cargo xtask dist --cli-only
+        run: cargo xtask dist
 
       - name: Verify tombi-cli artifact
         run: |

@@ -20,5 +20,5 @@ pub enum XTaskCommand {
     TomlTest(toml_test::Args),
 
     /// Prepare the distribution.
-    Dist(dist::Args),
+    Dist,
 }
