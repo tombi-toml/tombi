@@ -86,3 +86,31 @@ fn test_offset_date_time_serialization(#[case] offset: TimeZoneOffset, #[case] e
 
     pretty_assertions::assert_eq!(serde_json::to_value(date_time).unwrap(), json!(expected));
 }
+
+// A leap second must survive a round trip, not just parse.
+#[test]
+fn test_local_time_serialization_with_leap_second() {
+    let time = LocalTime::from_hms(23, 59, 60);
+
+    pretty_assertions::assert_eq!(serde_json::to_value(time).unwrap(), json!("23:59:60"));
+}
+
+#[test]
+fn test_local_date_time_serialization_with_leap_second() {
+    let date_time = LocalDateTime::from_ymd_hms(1990, 12, 31, 23, 59, 60);
+
+    pretty_assertions::assert_eq!(
+        serde_json::to_value(date_time).unwrap(),
+        json!("1990-12-31T23:59:60")
+    );
+}
+
+#[test]
+fn test_offset_date_time_serialization_with_leap_second() {
+    let date_time = OffsetDateTime::from_ymd_hms(1990, 12, 31, 23, 59, 60, TimeZoneOffset::Z);
+
+    pretty_assertions::assert_eq!(
+        serde_json::to_value(date_time).unwrap(),
+        json!("1990-12-31T23:59:60Z")
+    );
+}

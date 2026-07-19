@@ -102,9 +102,39 @@ fn test_offset_date_time_deserialization(
     );
 }
 
+// A second of 60 is a leap second, which the TOML ABNF allows:
+// `time-second = 2DIGIT ; 00-58, 00-59, 00-60 based on leap second rules`
+#[test]
+fn test_local_time_deserialization_with_leap_second() {
+    let json = json!("23:59:60");
+    let time: LocalTime = serde_json::from_value(json).unwrap();
+    pretty_assertions::assert_eq!(time, LocalTime::from_hms(23, 59, 60));
+}
+
+#[test]
+fn test_local_date_time_deserialization_with_leap_second() {
+    let json = json!("1990-12-31T23:59:60");
+    let date_time: LocalDateTime = serde_json::from_value(json).unwrap();
+    pretty_assertions::assert_eq!(
+        date_time,
+        LocalDateTime::from_ymd_hms(1990, 12, 31, 23, 59, 60)
+    );
+}
+
+#[test]
+fn test_offset_date_time_deserialization_with_leap_second() {
+    let json = json!("1990-12-31T23:59:60Z");
+    let date_time: OffsetDateTime = serde_json::from_value(json).unwrap();
+    pretty_assertions::assert_eq!(
+        date_time,
+        OffsetDateTime::from_ymd_hms(1990, 12, 31, 23, 59, 60, TimeZoneOffset::Z)
+    );
+}
+
 #[rstest]
 #[case(json!("invalid-date-time"), tombi_date_time::parse::Error::InvalidFormat)]
 #[case(json!("2021-01-01T12:00:00+25:00"), tombi_date_time::parse::Error::InvalidTimeZoneOffsetHour)]
+#[case(json!("2021-01-01T12:00:61"), tombi_date_time::parse::Error::InvalidSecond)]
 #[case(json!(true), "invalid type: boolean `true`, expected a TOML DateTime")]
 fn test_invalid_date_time_deserialization(
     #[case] input: serde_json::Value,

@@ -208,7 +208,7 @@ impl std::str::FromStr for DateTime {
                 return Err(crate::parse::Error::InvalidMinute);
             }
             // 00-58, 00-59, 00-60 based on leap second rules
-            if time.second >= 60 {
+            if time.second > 60 {
                 return Err(crate::parse::Error::InvalidSecond);
             }
             if time.nanosecond > 999_999_999 {
