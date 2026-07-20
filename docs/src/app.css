@@ -4,6 +4,12 @@
 :root {
   --docs-fixed-header-height: 80px;
   --docs-sticky-table-offset: 0px;
+  --docs-page-background: #f9fafb;
+  background-color: var(--docs-page-background);
+}
+
+:root.dark {
+  --docs-page-background: #1f2937;
 }
 
 html {
@@ -19,6 +25,7 @@ body {
     "Helvetica Neue", sans-serif;
   overflow-x: hidden;
   max-width: 100vw;
+  background-color: var(--docs-page-background);
 }
 
 /* Modern Scrollbar Styles */
