@@ -273,4 +273,15 @@ macro_rules! test_parser {
         }
     };
 
+    {#[test] fn $name:ident($source:expr) -> Assert(|$parsed:ident| $assertion:block)} => {
+        #[test]
+        fn $name() {
+            tombi_test_lib::init_log();
+
+            let $parsed = $crate::parse(textwrap::dedent(&$source).trim());
+
+            assert!($assertion);
+        }
+    };
+
 }

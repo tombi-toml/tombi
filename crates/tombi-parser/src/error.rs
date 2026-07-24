@@ -65,6 +65,9 @@ pub enum ErrorKind {
 
     #[error("forbidden last period in keys")]
     ForbiddenKeysLastPeriod,
+
+    #[error("maximum nesting depth exceeded")]
+    RecursionLimitExceeded,
 }
 
 #[derive(thiserror::Error, Debug, Clone)]
@@ -106,6 +109,7 @@ impl Error {
             ErrorKind::ExpectedBraceEnd => "expected-brace-end",
             ErrorKind::ExpectedLineBreak => "expected-line-break",
             ErrorKind::ForbiddenKeysLastPeriod => "forbidden-keys-last-period",
+            ErrorKind::RecursionLimitExceeded => "recursion-limit-exceeded",
         }
     }
 

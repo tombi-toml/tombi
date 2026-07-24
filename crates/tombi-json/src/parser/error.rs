@@ -14,6 +14,8 @@ pub enum Error {
     UnexpectedEof,
     #[error("Invalid value")]
     InvalidValue,
+    #[error("Maximum nesting depth ({limit}) exceeded")]
+    RecursionLimitExceeded { limit: usize },
     #[error("Expected colon")]
     ExpectedColon,
     #[error("Duplicate key: {0}")]
