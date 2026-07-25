@@ -4,7 +4,6 @@ import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
@@ -103,10 +102,10 @@ internal class TombiServerSupportProvider : LspServerSupportProvider {
 
         private fun registerProject(project: Project) {
             if (registeredProjects.add(project)) {
-                Disposer.register(project, Disposable {
+                Disposer.register(project) {
                     invalidate(project)
                     registeredProjects.remove(project)
-                })
+                }
             }
         }
 
