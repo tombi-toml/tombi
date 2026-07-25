@@ -6,10 +6,12 @@
 
 ## Usage
 
-You must [have Tombi installed][2] to use this plugin.
-See Tombi's documentation for more information.
+The plugin uses a Tombi executable already available in the project or on
+`PATH`. If one is not available, it downloads the latest Tombi release
+automatically.
 
-Once Tombi is installed, open any TOML file and start working.
+You can select a specific executable in the plugin settings. Open any TOML file
+to start working.
 
 
 ## Logging
@@ -27,7 +29,6 @@ com.intellij.platform.lsp
 
 
   [1]: https://tombi-toml.github.io/tombi
-  [2]: https://tombi-toml.github.io/tombi/docs/installation
 <!-- Plugin description end -->
 
 
