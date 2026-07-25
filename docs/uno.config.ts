@@ -51,5 +51,9 @@ export default defineConfig({
   shortcuts: {
     "btn-focus":
       "focus:outline-none focus-visible:ring-2 focus-visible:ring-tombi-focus transition-colors focus:rounded-lg",
+    // Site-wide emphasis highlight (e.g. search match), aligned with the
+    // yellow accent used by CodeTabs / ImageTabs / Sidebar in dark mode.
+    "highlight-mark":
+      "bg-yellow-200 dark:bg-yellow dark:text-tombi-900 rounded px-1",
   },
 });

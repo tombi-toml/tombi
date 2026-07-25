@@ -54,13 +54,7 @@ function HighlightedText(props: { text: string; matches: [number, number][] }) {
     <span>
       <For each={segments}>
         {(segment) => (
-          <span
-            class={
-              segment.isHighlight
-                ? "bg-yellow-200 dark:bg-yellow-800 rounded px-1"
-                : ""
-            }
-          >
+          <span class={segment.isHighlight ? "highlight-mark" : ""}>
             {segment.text}
           </span>
         )}
@@ -81,7 +75,7 @@ export function SearchResults(props: SearchResultsProps) {
             {(result) => (
               <A
                 href={result.url}
-                class="block p-4 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg mb-2 transition-colors border border-transparent dark:border-gray-800"
+                class="block no-underline p-4 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg mb-2 transition-colors border border-transparent dark:border-gray-800"
               >
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                   <HighlightedText
