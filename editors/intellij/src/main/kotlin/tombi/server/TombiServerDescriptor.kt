@@ -38,7 +38,7 @@ internal val Project.path: Path?
 /**
  * "Describe" the language server.
  */
-internal class TombiServerDescriptor(project: Project, private val executable: String) :
+internal class TombiServerDescriptor(project: Project, private val command: TombiCommand) :
     ProjectWideLspServerDescriptor(project, PRESENTABLE_NAME) {
 
     /**
@@ -65,7 +65,8 @@ internal class TombiServerDescriptor(project: Project, private val executable: S
         withWorkingDirectory(project.path)
         withCharset(Charsets.UTF_8)
 
-        withExePath(executable)
+        withExePath(command.executable)
+        addParameters(command.arguments)
         addParameter("lsp")
     }
 

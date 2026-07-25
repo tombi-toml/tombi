@@ -6,41 +6,112 @@ import java.nio.file.Path
 
 
 internal object TombiBinaryResolver {
+    private const val MAX_NODE_MODULES_SEARCH_DEPTH = 8
+
     fun resolveLocal(
-        projectPath: Path?,
+        workspacePaths: List<Path>,
+        sdkHomePaths: List<Path>,
         configuredExecutable: String?,
         environment: Map<String, String> = EnvironmentUtil.getEnvironmentMap(),
         osName: String = System.getProperty("os.name"),
         userHome: String = System.getProperty("user.home"),
-    ): String? {
+    ): TombiCommand? {
         configuredExecutable
             ?.trim()
             ?.takeIf(String::isNotEmpty)
-            ?.let { return expandHome(it, userHome) }
+            ?.let { return TombiCommand(expandHome(it, userHome)) }
 
         val isWindows = osName.startsWith("Windows", ignoreCase = true)
         val binaryName = if (isWindows) "tombi.exe" else "tombi"
 
-        if (projectPath != null) {
-            val virtualEnvironmentDirectory = if (isWindows) "Scripts" else "bin"
-            val projectCandidates = mutableListOf(
-                projectPath.resolve(".venv").resolve(virtualEnvironmentDirectory).resolve(binaryName),
-                projectPath.resolve("node_modules").resolve(".bin").resolve(binaryName),
-            )
-            if (isWindows) {
-                projectCandidates.addAll(
-                    listOf("tombi.cmd", "tombi.ps1").map {
-                        projectPath.resolve("node_modules").resolve(".bin").resolve(it)
-                    },
+        resolveSdkInstall(sdkHomePaths, binaryName, isWindows)?.let {
+            return TombiCommand(it.toString())
+        }
+
+        workspacePaths.asSequence()
+            .map {
+                it.resolve(".venv")
+                    .resolve(if (isWindows) "Scripts" else "bin")
+                    .resolve(binaryName)
+            }
+            .firstOrNull(Files::isRegularFile)
+            ?.let { return TombiCommand(it.toString()) }
+
+        resolveNodeModulesInstall(workspacePaths, environment, binaryName, isWindows)?.let {
+            return it
+        }
+
+        return findOnPath(tombiCandidateNames(binaryName, isWindows), environment, isWindows)
+            ?.let { TombiCommand(it.toString()) }
+    }
+
+    private fun resolveSdkInstall(
+        sdkHomePaths: List<Path>,
+        binaryName: String,
+        isWindows: Boolean,
+    ): Path? =
+        sdkHomePaths.asSequence()
+            .flatMap { sdkHomePath ->
+                if (Files.isRegularFile(sdkHomePath)) {
+                    sequenceOf(sdkHomePath.parent?.resolve(binaryName))
+                } else {
+                    sequenceOf(
+                        sdkHomePath.resolve(binaryName),
+                        sdkHomePath.resolve(if (isWindows) "Scripts" else "bin").resolve(binaryName),
+                    )
+                }
+            }
+            .filterNotNull()
+            .firstOrNull(Files::isRegularFile)
+
+    private fun resolveNodeModulesInstall(
+        workspacePaths: List<Path>,
+        environment: Map<String, String>,
+        binaryName: String,
+        isWindows: Boolean,
+    ): TombiCommand? {
+        val searchDirectories = workspacePaths.asSequence()
+            .flatMap(::nodeModulesSearchDirectories)
+            .distinct()
+            .toList()
+
+        val nodeScript = searchDirectories.asSequence()
+            .flatMap { directory ->
+                sequenceOf(
+                    directory.resolve("node_modules/@tombi-toml/tombi/bin/tombi"),
+                    directory.resolve("node_modules/tombi/bin/tombi"),
                 )
             }
-            projectCandidates.firstOrNull(Files::isRegularFile)?.let {
-                return it.toString()
+            .firstOrNull(Files::isRegularFile)
+
+        if (nodeScript != null) {
+            findOnPath(
+                if (isWindows) listOf("node.exe", "node.cmd") else listOf("node"),
+                environment,
+                isWindows,
+            )?.let { node ->
+                return TombiCommand(node.toString(), listOf(nodeScript.toString()))
+            }
+
+            if (!isWindows && Files.isExecutable(nodeScript)) {
+                return TombiCommand(nodeScript.toString())
             }
         }
 
-        return findOnPath(binaryName, environment, isWindows)
+        return searchDirectories.asSequence()
+            .flatMap { directory ->
+                nodeModulesCandidateNames(binaryName, isWindows).asSequence().map { candidateName ->
+                    directory.resolve("node_modules/.bin").resolve(candidateName)
+                }
+            }
+            .firstOrNull(Files::isRegularFile)
+            ?.let { TombiCommand(it.toString()) }
     }
+
+    private fun nodeModulesSearchDirectories(workspacePath: Path): Sequence<Path> =
+        generateSequence(workspacePath) { currentPath ->
+            currentPath.parent?.takeIf { it != currentPath }
+        }.take(MAX_NODE_MODULES_SEARCH_DEPTH + 1)
 
     private fun expandHome(path: String, userHome: String): String =
         when {
@@ -49,29 +120,36 @@ internal object TombiBinaryResolver {
             else -> path
         }
 
+    private fun tombiCandidateNames(binaryName: String, isWindows: Boolean): List<String> =
+        if (isWindows) {
+            listOf(binaryName, "tombi.cmd", "tombi.bat")
+        } else {
+            listOf(binaryName)
+        }
+
+    private fun nodeModulesCandidateNames(binaryName: String, isWindows: Boolean): List<String> =
+        if (isWindows) {
+            listOf("tombi.cmd", binaryName)
+        } else {
+            listOf(binaryName)
+        }
+
     private fun findOnPath(
-        binaryName: String,
+        candidateNames: List<String>,
         environment: Map<String, String>,
         isWindows: Boolean,
-    ): String? {
+    ): Path? {
         val pathValue = environment.entries
             .firstOrNull { (key, _) -> key.equals("PATH", ignoreCase = isWindows) }
             ?.value
             ?: return null
 
         val separator = if (isWindows) ';' else ':'
-        val candidateNames = if (isWindows) {
-            listOf(binaryName, "tombi.cmd", "tombi.bat")
-        } else {
-            listOf(binaryName)
-        }
-
         return pathValue
             .split(separator)
             .asSequence()
             .filter(String::isNotBlank)
             .flatMap { directory -> candidateNames.asSequence().map(Path.of(directory)::resolve) }
             .firstOrNull(Files::isRegularFile)
-            ?.toString()
     }
 }

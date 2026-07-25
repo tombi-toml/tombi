@@ -38,5 +38,11 @@
 			id="tombi.server.TombiServerSupportProvider"
 			implementation="tombi.server.TombiServerSupportProvider"
 		/>
+
+		<notificationGroup
+			id="Tombi"
+			displayType="BALLOON"
+			isLogByDefault="true"
+		/>
 	</extensions>
 </idea-plugin>

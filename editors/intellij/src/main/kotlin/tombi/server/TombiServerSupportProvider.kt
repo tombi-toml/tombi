@@ -1,8 +1,15 @@
 package tombi.server
 
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.LspServer
 import com.intellij.platform.lsp.api.LspServerManager
@@ -13,8 +20,9 @@ import com.intellij.util.concurrency.AppExecutorUtil
 import tombi.Icons
 import tombi.configurations.TombiConfigurable
 import tombi.configurations.tombiConfigurations
-import java.nio.file.Files
+import tombi.message
 import java.nio.file.Path
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -37,40 +45,44 @@ internal class TombiServerSupportProvider : LspServerSupportProvider {
             return
         }
 
-        val configuredExecutable = tombiConfigurations.executable
-        TombiBinaryResolver.resolveLocal(project.path, configuredExecutable)?.let { executable ->
-            serverStarter.ensureServerStarted(TombiServerDescriptor(project, executable))
+        registerProject(project)
+        if ((retryAfterNanos[project] ?: 0) > System.nanoTime()) {
             return
         }
 
-        managedExecutable
-            ?.takeIf { Files.isRegularFile(Path.of(it)) }
-            ?.let { executable ->
-                serverStarter.ensureServerStarted(TombiServerDescriptor(project, executable))
-                return
-            }
+        val configuredExecutable = tombiConfigurations.executable
+        val workspacePaths = project.workspacePaths
+        val sdkHomePaths = project.sdkHomePaths
 
-        val resolution = managedResolutions.computeIfAbsent(project) {
+        val resolution = resolutions.computeIfAbsent(project) {
             CompletableFuture.supplyAsync(
-                { TombiBinaryDownloader.downloadLatestOrCached() },
+                {
+                    TombiBinaryResolver.resolveLocal(
+                        workspacePaths = workspacePaths,
+                        sdkHomePaths = sdkHomePaths,
+                        configuredExecutable = configuredExecutable,
+                    ) ?: TombiCommand(TombiBinaryDownloader.downloadLatestOrCached())
+                },
                 AppExecutorUtil.getAppExecutorService(),
             )
         }
 
-        resolution.whenComplete { executable, error ->
-            managedResolutions.remove(project, resolution)
-
+        resolution.whenComplete { command, error ->
             if (error != null) {
-                LOG.warn("Failed to obtain a Tombi language server", error)
+                if (resolutions.remove(project, resolution)) {
+                    retryAfterNanos[project] = System.nanoTime() + RETRY_DELAY.toNanos()
+                    val cause = error.cause ?: error
+                    LOG.warn("Failed to obtain a Tombi language server", cause)
+                    notifyDownloadFailure(project, cause)
+                }
                 return@whenComplete
             }
 
-            managedExecutable = executable
             ApplicationManager.getApplication().invokeLater {
                 if (!project.isDisposed) {
                     LspServerManager.getInstance(project).ensureServerStarted(
                         TombiServerSupportProvider::class.java,
-                        TombiServerDescriptor(project, executable),
+                        TombiServerDescriptor(project, command),
                     )
                 }
             }
@@ -78,9 +90,64 @@ internal class TombiServerSupportProvider : LspServerSupportProvider {
     }
 
     companion object {
+        private val RETRY_DELAY = Duration.ofMinutes(5)
         private val LOG = Logger.getInstance(TombiServerSupportProvider::class.java)
-        private val managedResolutions = ConcurrentHashMap<Project, CompletableFuture<String>>()
-        @Volatile
-        private var managedExecutable: String? = null
+        private val resolutions = ConcurrentHashMap<Project, CompletableFuture<TombiCommand>>()
+        private val retryAfterNanos = ConcurrentHashMap<Project, Long>()
+        private val registeredProjects = ConcurrentHashMap.newKeySet<Project>()
+
+        internal fun invalidate(project: Project) {
+            resolutions.remove(project)?.cancel(true)
+            retryAfterNanos.remove(project)
+        }
+
+        private fun registerProject(project: Project) {
+            if (registeredProjects.add(project)) {
+                Disposer.register(project, Disposable {
+                    invalidate(project)
+                    registeredProjects.remove(project)
+                })
+            }
+        }
+
+        private fun notifyDownloadFailure(project: Project, error: Throwable) {
+            ApplicationManager.getApplication().invokeLater {
+                if (project.isDisposed) {
+                    return@invokeLater
+                }
+                NotificationGroupManager.getInstance()
+                    .getNotificationGroup("Tombi")
+                    .createNotification(
+                        message("notification.languageServerUnavailable.title"),
+                        error.message ?: message("notification.languageServerUnavailable.content"),
+                        NotificationType.ERROR,
+                    )
+                    .notify(project)
+            }
+        }
     }
 }
+
+
+private val Project.workspacePaths: List<Path>
+    get() = buildSet {
+        path?.let(::add)
+        ModuleManager.getInstance(this@workspacePaths).modules.forEach { module ->
+            ModuleRootManager.getInstance(module).contentRoots.forEach { root ->
+                add(root.toNioPath())
+            }
+        }
+    }.toList()
+
+
+private val Project.sdkHomePaths: List<Path>
+    get() = buildSet {
+        ProjectRootManager.getInstance(this@sdkHomePaths).projectSdk?.homePath
+            ?.let { runCatching { Path.of(it) }.getOrNull() }
+            ?.let(::add)
+        ModuleManager.getInstance(this@sdkHomePaths).modules.forEach { module ->
+            ModuleRootManager.getInstance(module).sdk?.homePath
+                ?.let { runCatching { Path.of(it) }.getOrNull() }
+                ?.let(::add)
+        }
+    }.toList()

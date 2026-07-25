@@ -90,6 +90,7 @@ internal class TombiConfigurable : Configurable {
         val openProjects = projectManager.openProjects.filter { !it.isDefault && !it.isDisposed }
         
         openProjects.forEach { project ->
+            TombiServerSupportProvider.invalidate(project)
             val serverManager = LspServerManager.getInstance(project)
             
             serverManager.stopAndRestartIfNeeded(TombiServerSupportProvider::class.java)

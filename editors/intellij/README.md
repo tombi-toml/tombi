@@ -6,9 +6,10 @@
 
 ## Usage
 
-The plugin uses a Tombi executable already available in the project or on
-`PATH`. If one is not available, it downloads the latest Tombi release
-automatically.
+The plugin uses a Tombi executable from the selected project SDK, `.venv`,
+`node_modules`, or `PATH`. It also searches parent directories for hoisted npm
+installations. If a local executable is not available, it downloads the latest
+Tombi release automatically.
 
 You can select a specific executable in the plugin settings. Open any TOML file
 to start working.

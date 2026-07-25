@@ -1,20 +1,21 @@
 package tombi.server
 
 import com.intellij.openapi.application.PathManager
+import com.intellij.openapi.diagnostic.Logger
+import com.intellij.util.io.HttpRequests
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import java.io.BufferedInputStream
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.PosixFilePermission
-import java.time.Duration
+import java.util.Comparator
 
 
 internal object TombiBinaryDownloader {
@@ -24,17 +25,14 @@ internal object TombiBinaryDownloader {
     @Synchronized
     fun downloadLatestOrCached(
         cacheDirectory: Path = PathManager.getSystemDir().resolve("tombi"),
-        client: HttpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(15))
-            .followRedirects(HttpClient.Redirect.ALWAYS)
-            .build(),
         osName: String = System.getProperty("os.name"),
         architecture: String = System.getProperty("os.arch"),
     ): String {
+        val platform = platform(osName, architecture)
         return try {
-            downloadLatest(cacheDirectory, client, platform(osName, architecture)).toString()
+            downloadLatest(cacheDirectory, platform).toString()
         } catch (error: Exception) {
-            newestCachedBinary(cacheDirectory)?.toString() ?: throw error
+            newestCachedBinary(cacheDirectory, platform.binaryName)?.toString() ?: throw error
         }
     }
 
@@ -70,20 +68,16 @@ internal object TombiBinaryDownloader {
 
     private fun downloadLatest(
         cacheDirectory: Path,
-        client: HttpClient,
         platform: Platform,
     ): Path {
-        val latestRequest = HttpRequest.newBuilder(URI.create("$RELEASES_URL/latest"))
-            .timeout(Duration.ofSeconds(30))
-            .GET()
-            .build()
-        val latestResponse = client.send(latestRequest, HttpResponse.BodyHandlers.discarding())
-        requireSuccess(latestResponse.statusCode(), latestResponse.uri())
-
-        val version = versionFromLatestReleaseUri(latestResponse.uri())
+        val latestReleaseUri = request("$RELEASES_URL/latest", 30_000).connect { response ->
+            URI.create(response.url)
+        }
+        val version = versionFromLatestReleaseUri(latestReleaseUri)
         val versionDirectory = cacheDirectory.resolve("tombi-$version")
         val binaryPath = versionDirectory.resolve(platform.binaryName)
         if (Files.isRegularFile(binaryPath)) {
+            cleanupOldCachedVersions(cacheDirectory, versionDirectory)
             return binaryPath
         }
 
@@ -94,25 +88,16 @@ internal object TombiBinaryDownloader {
         val extractedPath = Files.createTempFile(versionDirectory, "tombi-", ".tmp")
 
         try {
-            val assetRequest = HttpRequest.newBuilder(assetUri)
-                .timeout(Duration.ofMinutes(2))
-                .GET()
-                .build()
-            val assetResponse = client.send(assetRequest, HttpResponse.BodyHandlers.ofFile(archivePath))
-            requireSuccess(assetResponse.statusCode(), assetResponse.uri())
+            request(assetUri.toString(), 120_000).saveToFile(archivePath, null)
 
             BufferedInputStream(Files.newInputStream(archivePath)).use { input ->
                 Files.newOutputStream(extractedPath).use { output ->
-                    when (platform.archiveType) {
-                        ArchiveType.TAR_GZ ->
-                            extractFromTarGz(input, platform.binaryName, output)
-                        ArchiveType.ZIP ->
-                            extractFromZip(input, platform.binaryName, output)
-                    }
+                    extractArchive(input, platform.binaryName, platform.archiveType, output)
                 }
             }
             makeExecutable(extractedPath)
             moveIntoPlace(extractedPath, binaryPath)
+            cleanupOldCachedVersions(cacheDirectory, versionDirectory)
         } finally {
             Files.deleteIfExists(archivePath)
             Files.deleteIfExists(extractedPath)
@@ -121,10 +106,31 @@ internal object TombiBinaryDownloader {
         return binaryPath
     }
 
-    private fun extractFromTarGz(
-        input: java.io.InputStream,
+    private fun request(url: String, readTimeoutMillis: Int) =
+        HttpRequests.request(url)
+            .connectTimeout(15_000)
+            .readTimeout(readTimeoutMillis)
+            .redirectLimit(10)
+            .useProxy(true)
+            .productNameAsUserAgent()
+            .throwStatusCodeException(true)
+
+    internal fun extractArchive(
+        input: InputStream,
         binaryName: String,
-        output: java.io.OutputStream,
+        archiveType: ArchiveType,
+        output: OutputStream,
+    ) {
+        when (archiveType) {
+            ArchiveType.TAR_GZ -> extractFromTarGz(input, binaryName, output)
+            ArchiveType.ZIP -> extractFromZip(input, binaryName, output)
+        }
+    }
+
+    private fun extractFromTarGz(
+        input: InputStream,
+        binaryName: String,
+        output: OutputStream,
     ) {
         TarArchiveInputStream(GzipCompressorInputStream(input)).use { archive ->
             while (true) {
@@ -139,9 +145,9 @@ internal object TombiBinaryDownloader {
     }
 
     private fun extractFromZip(
-        input: java.io.InputStream,
+        input: InputStream,
         binaryName: String,
-        output: java.io.OutputStream,
+        output: OutputStream,
     ) {
         ZipArchiveInputStream(input).use { archive ->
             while (true) {
@@ -184,7 +190,7 @@ internal object TombiBinaryDownloader {
         }
     }
 
-    private fun newestCachedBinary(cacheDirectory: Path): Path? {
+    internal fun newestCachedBinary(cacheDirectory: Path, binaryName: String): Path? {
         if (!Files.isDirectory(cacheDirectory)) {
             return null
         }
@@ -195,9 +201,7 @@ internal object TombiBinaryDownloader {
                     val version = versionPattern.matchEntire(directory.fileName.toString().removePrefix("tombi-"))
                         ?.groupValues
                         ?.get(1)
-                    val binary = listOf("tombi", "tombi.exe")
-                        .map(directory::resolve)
-                        .firstOrNull(Files::isRegularFile)
+                    val binary = directory.resolve(binaryName).takeIf(Files::isRegularFile)
                     if (version != null && binary != null) {
                         Triple(versionComponents(version), version, binary)
                     } else {
@@ -209,6 +213,31 @@ internal object TombiBinaryDownloader {
                 .max { left, right -> compareVersions(left.first, right.first) }
                 .orElse(null)
                 ?.third
+        }
+    }
+
+    internal fun cleanupOldCachedVersions(cacheDirectory: Path, currentVersionDirectory: Path) {
+        runCatching {
+            if (!Files.isDirectory(cacheDirectory)) {
+                return
+            }
+            Files.list(cacheDirectory).use { entries ->
+                entries
+                    .filter { it != currentVersionDirectory }
+                    .filter(Files::isDirectory)
+                    .filter {
+                        versionPattern.matches(it.fileName.toString().removePrefix("tombi-"))
+                    }
+                    .forEach(::deleteRecursively)
+            }
+        }.onFailure { error ->
+            LOG.warn("Failed to remove old cached Tombi binaries", error)
+        }
+    }
+
+    private fun deleteRecursively(directory: Path) {
+        Files.walk(directory).use { entries ->
+            entries.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists)
         }
     }
 
@@ -225,12 +254,6 @@ internal object TombiBinaryDownloader {
         return 0
     }
 
-    private fun requireSuccess(statusCode: Int, uri: URI) {
-        check(statusCode in 200..299) {
-            "Request to $uri failed with HTTP $statusCode"
-        }
-    }
-
     internal data class Platform(
         val target: String,
         val binaryName: String,
@@ -241,4 +264,6 @@ internal object TombiBinaryDownloader {
         TAR_GZ("tar.gz"),
         ZIP("zip"),
     }
+
+    private val LOG = Logger.getInstance(TombiBinaryDownloader::class.java)
 }
