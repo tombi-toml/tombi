@@ -7,6 +7,13 @@ use tombi_json_syntax::{SyntaxKind, T};
 use tombi_json_value::Number;
 use tombi_text::Range;
 
+/// Maximum nesting depth for arrays and objects.
+///
+/// Bounds recursion in `parse_value`/`parse_array`/`parse_object` so a deeply
+/// nested (but finite) document cannot exhaust the thread stack and abort the
+/// process. Matches `serde_json`'s default recursion limit.
+const MAX_RECURSION_DEPTH: usize = 128;
+
 /// Parser for JSON documents
 pub struct Parser<'a> {
     source: &'a str,
@@ -34,7 +41,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let root = self.parse_value()?;
+        let root = self.parse_value(0)?;
 
         // Skip trailing trivia
         while let Some(token) = self.peek() {
@@ -162,7 +169,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_value(&mut self) -> Result<ValueNode, crate::parser::Error> {
+    fn parse_value(&mut self, depth: usize) -> Result<ValueNode, crate::parser::Error> {
         match self.peek() {
             Some(token) => {
                 match token.kind() {
@@ -209,8 +216,8 @@ impl<'a> Parser<'a> {
 
                         Ok(ValueNode::Bool(BoolNode { value, range }))
                     }
-                    T!['['] => self.parse_array(),
-                    T!['{'] => self.parse_object(),
+                    T!['['] => self.parse_array(depth),
+                    T!['{'] => self.parse_object(depth),
                     _ => Err(Error::InvalidValue),
                 }
             }
@@ -218,7 +225,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_array(&mut self) -> Result<ValueNode, crate::parser::Error> {
+    fn parse_array(&mut self, depth: usize) -> Result<ValueNode, crate::parser::Error> {
+        if depth >= MAX_RECURSION_DEPTH {
+            return Err(Error::RecursionLimitExceeded {
+                limit: MAX_RECURSION_DEPTH,
+            });
+        }
+
         // Consume the opening bracket
         let open_token = self.expect(T!['['])?;
         let start_range = open_token.range();
@@ -239,7 +252,7 @@ impl<'a> Parser<'a> {
         // Parse array elements
         loop {
             // Parse value
-            let value = self.parse_value()?;
+            let value = self.parse_value(depth + 1)?;
             items.push(value);
 
             // Check for comma or closing bracket
@@ -283,7 +296,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_object(&mut self) -> Result<ValueNode, crate::parser::Error> {
+    fn parse_object(&mut self, depth: usize) -> Result<ValueNode, crate::parser::Error> {
+        if depth >= MAX_RECURSION_DEPTH {
+            return Err(Error::RecursionLimitExceeded {
+                limit: MAX_RECURSION_DEPTH,
+            });
+        }
+
         // Consume the opening brace
         let open_token = self.expect(T!['{'])?;
         let start_range = open_token.range();
@@ -327,7 +346,7 @@ impl<'a> Parser<'a> {
             self.expect(T![:])?;
 
             // Parse value
-            let value = self.parse_value()?;
+            let value = self.parse_value(depth + 1)?;
 
             // Store key and value
             properties.insert(key, value);
@@ -423,6 +442,17 @@ pub fn parse(source: &str) -> Result<ValueNode, crate::parser::Error> {
 mod tests {
     use super::*;
 
+    macro_rules! test_json_parser {
+        ($(#[$meta:meta])* $name:ident, $source:expr, |$result:ident| $assertion:block) => {
+            $(#[$meta])*
+            #[test]
+            fn $name() {
+                let $result = parse(&$source);
+                assert!($assertion);
+            }
+        };
+    }
+
     #[test]
     fn test_parse_null() {
         let source = "null";
@@ -504,4 +534,28 @@ mod tests {
         let value_node = parse(source).unwrap();
         assert!(value_node.is_object());
     }
+
+    test_json_parser!(
+        nesting_at_limit_is_accepted,
+        format!("{}1{}", "[".repeat(128), "]".repeat(128)),
+        |result| { result.is_ok() }
+    );
+
+    test_json_parser!(
+        nesting_beyond_limit_is_rejected,
+        format!("{}1{}", "[".repeat(129), "]".repeat(129)),
+        |result| { matches!(result, Err(Error::RecursionLimitExceeded { .. })) }
+    );
+
+    test_json_parser!(
+        deeply_nested_arrays_do_not_overflow_stack,
+        "[".repeat(500_000),
+        |result| { result.is_err() }
+    );
+
+    test_json_parser!(
+        deeply_nested_objects_do_not_overflow_stack,
+        "{\"a\":".repeat(500_000),
+        |result| { result.is_err() }
+    );
 }

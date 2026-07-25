@@ -5,11 +5,19 @@ use tombi_syntax::{
 
 use crate::{Event, marker::Marker, token_set::TokenSet};
 
+/// Maximum nesting depth for arrays and inline tables.
+///
+/// Bounds recursion through `Value::parse` so a deeply nested (but finite)
+/// document cannot exhaust the thread stack and abort the process. Matches
+/// `serde_json`'s default recursion limit.
+pub(crate) const MAX_RECURSION_DEPTH: usize = 128;
+
 #[derive(Debug)]
 pub(crate) struct Parser<'t> {
     source: &'t str,
     input_tokens: &'t [tombi_lexer::Token],
     pos: usize,
+    depth: usize,
     pub tokens: Vec<tombi_lexer::Token>,
     pub(crate) events: Vec<crate::Event>,
 }
@@ -20,9 +28,28 @@ impl<'t> Parser<'t> {
             source,
             input_tokens,
             pos: 0, // Start from the beginning to preserve leading trivia
+            depth: 0,
             tokens: Vec::new(),
             events: Vec::new(),
         }
+    }
+
+    /// Current array/inline-table nesting depth.
+    #[inline]
+    pub(crate) fn nested_depth(&self) -> usize {
+        self.depth
+    }
+
+    /// Enter a nested array/inline table. Pair with [`Self::exit_nested`].
+    #[inline]
+    pub(crate) fn enter_nested(&mut self) {
+        self.depth += 1;
+    }
+
+    /// Leave a nested array/inline table.
+    #[inline]
+    pub(crate) fn exit_nested(&mut self) {
+        self.depth -= 1;
     }
 
     pub(crate) fn finish(mut self) -> (Vec<tombi_lexer::Token>, Vec<crate::Event>) {
