@@ -9,23 +9,30 @@ overrides:
   '@babel/core': 7.29.6
   '@vinxi/plugin-mdx>esbuild': 0.28.1
   binary-install>axios: 0.31.1
-  binary-install>tar: 7.5.19
-  brace-expansion: ^2.1.2
+  binary-install>tar: 7.5.21
+  brace-expansion: 5.0.8
   esbuild: 0.28.1
-  fast-uri: 3.1.2
+  fast-uri: 3.1.4
   form-data: 4.0.6
   h3: 1.15.11
   js-yaml: 4.3.0
-  linkify-it: 5.0.1
+  linkify-it: 5.0.2
   markdown-it: 14.2.0
-  minimatch: ^5.1.9
+  minimatch: 10.2.5
   nitropack: 2.13.4
+  postcss: 8.5.18
   qs: 6.15.2
-  tar: 7.5.19
+  seroval: 1.5.3
+  tar: 7.5.21
   tmp: 0.2.7
   undici: 7.28.0
   vitest>vite: ^7.3.5
   ws: 8.21.0
+
+patchedDependencies:
+  serve-handler@6.1.7:
+    hash: be0a500fe2643ca65e526ba3353f141c7285ee74b11e662da69191e2f2d55628
+    path: patches/serve-handler@6.1.7.patch
 
 importers:
 
@@ -118,7 +125,7 @@ importers:
         version: 5.0.0
       unocss:
         specifier: 65.5.0
-        version: 65.5.0(postcss@8.5.15)(vite@6.4.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))
+        version: 65.5.0(postcss@8.5.18)(vite@6.4.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))
       vite:
         specifier: 6.4.3
         version: 6.4.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)
@@ -129,11 +136,11 @@ importers:
         specifier: ^7.7.3
         version: 7.7.3
       valibot:
-        specifier: ^1.2.0
-        version: 1.2.0(typescript@5.9.2)
+        specifier: ^1.4.2
+        version: 1.4.2(typescript@5.9.2)
       vscode-languageclient:
-        specifier: ^9.0.1
-        version: 9.0.1
+        specifier: ^10.1.0
+        version: 10.1.0
     devDependencies:
       '@tsconfig/strictest':
         specifier: ^2.0.6
@@ -1421,7 +1428,7 @@ packages:
     resolution: {integrity: sha512-mSGLX0KgygPhICZlUrjLgDJsEkgtrTjkDRI4skC7ZB/2pwQaESg8M3vhtWK/6XK+WGriUowfd5n6F6cfX3c2eg==}
     engines: {node: '>=14'}
     peerDependencies:
-      postcss: ^8.4.21
+      postcss: 8.5.18
 
   '@unocss/preset-attributify@65.5.0':
     resolution: {integrity: sha512-l3xQK6Om5fNknck04OZy3X7+k0EmVTEzF6BBMCYVaT2ZtCLhlznVt7tEg4ESLuXIZfx/+jd2sW3E3UY/EJ8rUA==}
@@ -1764,8 +1771,9 @@ packages:
   bail@2.0.2:
     resolution: {integrity: sha512-0xO6mYd7JB2YesxDKplafRpsiOzPt9V02ddPCLbY1xYGPOX24NTyN50qnUxgCPcSoYMhKpAuBTjQoRZCAkUDRw==}
 
-  balanced-match@1.0.2:
-    resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
+  balanced-match@4.0.4:
+    resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
+    engines: {node: 18 || 20 || >=22}
 
   bare-events@2.8.2:
     resolution: {integrity: sha512-riJjyv1/mHLIPX4RwiK+oW9/4c3TEUeORHKefKAKnZ5kyslbN+HXowtbaVEqt4IMUB7OXlfixcs6gsFeo/jhiQ==}
@@ -1844,8 +1852,9 @@ packages:
     resolution: {integrity: sha512-F3PH5k5juxom4xktynS7MoFY+NUWH5LC4CnH11YB8NPew+HLpmBLCybSAEyb2F+4pRXhuhWqFesoQd6DAyc2hw==}
     engines: {node: '>=18'}
 
-  brace-expansion@2.1.2:
-    resolution: {integrity: sha512-w5JZcKgdhDOgOwm8H+KgbosopHMuGcl6qbulwjtz3SM7I7P3yW1eAjzMPLrIE+NQ9vjgANKHWeMHnrT0OXW1oA==}
+  brace-expansion@5.0.8:
+    resolution: {integrity: sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg==}
+    engines: {node: 20 || >=22}
 
   braces@3.0.3:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
@@ -2466,8 +2475,8 @@ packages:
     resolution: {integrity: sha512-7MptL8U0cqcFdzIzwOTHoilX9x5BrNqye7Z/LuC7kCMRio1EMSyqRK3BEAUD7sXRq4iT4AzTVuZdhgQ2TCvYLg==}
     engines: {node: '>=8.6.0'}
 
-  fast-uri@3.1.2:
-    resolution: {integrity: sha512-rVjf7ArG3LTk+FS6Yw81V1DLuZl1bRbNrev6Tmd/9RaroeeRRJhAt7jg/6YFxbvAQXUCavSoZhPPj6oOx+5KjQ==}
+  fast-uri@3.1.4:
+    resolution: {integrity: sha512-8JnbkQ4juDyvYs4mgFGQqg4yCYtFDtUtmp2QIQq11ZZe5CFQ5wcqm1rqDgAh/QdMySuBnPzMUiJUNZG5N/AiQw==}
 
   fastq@1.19.0:
     resolution: {integrity: sha512-7SFSRCNjBQIZH/xZR3iy5iQYR8aGBE0h3VG6/cwlbrpdciNYBMotQav8c1XI3HjHH+NikUpP53nPdlZSdWmFzA==}
@@ -2979,8 +2988,8 @@ packages:
     resolution: {integrity: sha512-qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A==}
     engines: {node: '>=6'}
 
-  linkify-it@5.0.1:
-    resolution: {integrity: sha512-wVoTjP4Q6R0NW5hiZkVJaFZPWgtXfoGF+6LucL3/FtiNjmcHhYjEr5f1Kqjirc1nBW07J/ZuRFumqr2oqccEWg==}
+  linkify-it@5.0.2:
+    resolution: {integrity: sha512-ONTm2jCMAVZjgQa/Fy1kScXsuOoF5NPTsoFBdE1KVIZ2vAh/r9+Bqo+0jINCBYnavTPQZz38QzFTme79ENoN3Q==}
 
   listhen@1.9.1:
     resolution: {integrity: sha512-4EhoyVcXEpNlY5HJRSQpH7Rba94M8N2JmI62ePjl0lrJKXSfG0F1FAgHGxBoz/T3pe41sUEwkIRRIcaUL0/Ofw==}
@@ -3289,9 +3298,9 @@ packages:
     resolution: {integrity: sha512-z0yWI+4FDrrweS8Zmt4Ej5HdJmky15+L2e6Wgn3+iK5fWzb6T3fhNFq2+MeTRb064c6Wr4N/wv0DzQTjNzHNGQ==}
     engines: {node: '>=10'}
 
-  minimatch@5.1.9:
-    resolution: {integrity: sha512-7o1wEA2RyMP7Iu7GNba9vc0RWWGACJOCZBJX2GJWip0ikV+wcOsgVuY9uE8CPiyQhkGFSlhuSkZPavN7u1c2Fw==}
-    engines: {node: '>=10'}
+  minimatch@10.2.5:
+    resolution: {integrity: sha512-MULkVLfKGYDFYejP07QOurDLLQpcjk7Fw+7jXS2R2czRQzR56yHRveU5NDJEOviH+hETZKSkIk5c+T23GjFUMg==}
+    engines: {node: 18 || 20 || >=22}
 
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
@@ -3571,8 +3580,8 @@ packages:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
     engines: {node: '>=4'}
 
-  postcss@8.5.15:
-    resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
+  postcss@8.5.18:
+    resolution: {integrity: sha512-xdB1oSLHbz1vRWgCDalrCqEFTWzFlhqFC5tIHLMOSUIjhm3XXQ1qrFy8S/ESr1JYRRXqM3c1QFiMZUJdUTqyMQ==}
     engines: {node: ^10 || ^12 || >=14}
 
   powershell-utils@0.1.0:
@@ -3842,6 +3851,11 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  semver@7.8.5:
+    resolution: {integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==}
+    engines: {node: '>=10'}
+    hasBin: true
+
   send@0.19.2:
     resolution: {integrity: sha512-VMbMxbDeehAxpOtWJXlcUS5E8iXh6QmN+BkRX1GARS3wRaXEEgzCcB10gTQazO42tpNIya8xIyNx8fll1OFPrg==}
     engines: {node: '>= 0.8.0'}
@@ -3858,10 +3872,10 @@ packages:
     resolution: {integrity: sha512-qpY0Cl+fKYFn4GOf3cMiq6l72CpuVaawb6ILjubOQ+diJ54LfOWaSSPsaswN8DRPIPW4Yq+tE1k5aKd7ILyaFg==}
     engines: {node: '>=10'}
     peerDependencies:
-      seroval: ^1.0
+      seroval: 1.5.3
 
-  seroval@1.5.2:
-    resolution: {integrity: sha512-xcRN39BdsnO9Tf+VzsE7b3JyTJASItIV1FVFewJKCFcW4s4haIKS3e6vj8PGB9qBwC7tnuOywQMdv5N4qkzi7Q==}
+  seroval@1.5.3:
+    resolution: {integrity: sha512-BXe0x4buEeYiIKaRUnth1WqCILQ3k4O67KP/B4pC3pVz0Mv2c96ngA9QDREUYxWY1sb2RZVRqwI9RcpVMyHCVw==}
     engines: {node: '>=10'}
 
   serve-handler@6.1.7:
@@ -4131,8 +4145,8 @@ packages:
   tar-stream@3.1.8:
     resolution: {integrity: sha512-U6QpVRyCGHva435KoNWy9PRoi2IFYCgtEhq9nmrPPpbRacPs9IH4aJ3gbrFC8dPcXvdSZ4XXfXT5Fshbp2MtlQ==}
 
-  tar@7.5.19:
-    resolution: {integrity: sha512-4LeEWl96twnS2Q7Bz4MGqgazLqO+hJN63GZxXoIqh1T3VweYD997gbU1ItNsQafqqXTXd5WFyFdReLtwvRBNiw==}
+  tar@7.5.21:
+    resolution: {integrity: sha512-XdhtCvlMywwxpCW8YEq3lOXBJpUPTR2OHHcwLPO3HwsJqOHa2Ok/oJ7ruGzp+JrKoRPVCzJwAdEjqLW/vNRPHA==}
     engines: {node: '>=18'}
 
   teex@1.0.1:
@@ -4484,8 +4498,8 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
-  valibot@1.2.0:
-    resolution: {integrity: sha512-mm1rxUsmOxzrwnX5arGS+U4T25RdvpPjPN4yR0u9pUBov9+zGVtO84tif1eY4r6zWxVxu3KzIyknJy3rxfRZZg==}
+  valibot@1.4.2:
+    resolution: {integrity: sha512-gjdCvJ6d3RyHAneqxMYMW9QMCwYMb3jpOO0IyHZV1bnRHFBHrX3VkIILt5XYR0WhwHiH7Mty8ovuPZ/O3gamrg==}
     peerDependencies:
       typescript: '>=5'
     peerDependenciesMeta:
@@ -4664,19 +4678,22 @@ packages:
       jsdom:
         optional: true
 
-  vscode-jsonrpc@8.2.0:
-    resolution: {integrity: sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA==}
+  vscode-jsonrpc@9.0.1:
+    resolution: {integrity: sha512-rfuA6T75H6m5EkbhtEPzre9pT0HPcDI2MMy4+nPFIBks5J8JBAUHD4tRYSgaBOijIEC7SRkC1kKyXTLqbmh9jw==}
     engines: {node: '>=14.0.0'}
 
-  vscode-languageclient@9.0.1:
-    resolution: {integrity: sha512-JZiimVdvimEuHh5olxhxkht09m3JzUGwggb5eRUkzzJhZ2KjCN0nh55VfiED9oez9DyF8/fz1g1iBV3h+0Z2EA==}
-    engines: {vscode: ^1.82.0}
+  vscode-languageclient@10.1.0:
+    resolution: {integrity: sha512-XXRx6lqVitQy/oOLr9MfNYRG+MbQkhXkDaxbQMiKxEm8zZNfheRFUKNb8UYNh2stn9btl2wQM5wZFJjJvoc+jA==}
+    engines: {vscode: ^1.91.0}
 
-  vscode-languageserver-protocol@3.17.5:
-    resolution: {integrity: sha512-mb1bvRJN8SVznADSGWM9u/b07H7Ecg0I3OgXDuLdn307rl/J3A9YD6/eYOssqhecL27hK1IPZAsaqh00i/Jljg==}
+  vscode-languageserver-protocol@3.18.2:
+    resolution: {integrity: sha512-XRyDbT0Pp3sSNti3JmxVEUMySWCSi1hhM+/KUlCy1hV1zmrqpM1OwO12EAki8blhmLuIMpaJrYbo0OzGVfK2Qg==}
 
-  vscode-languageserver-types@3.17.5:
-    resolution: {integrity: sha512-Ld1VelNuX9pdF39h2Hgaeb5hEZM2Z3jUrrMgWQAu82jMtZp7p3vJT3BzToKtZI7NgQssZje5o0zryOrhQvzQAg==}
+  vscode-languageserver-textdocument@1.0.13:
+    resolution: {integrity: sha512-nx0ZHwMGIsVkzFG3/VLeJYBLTaFBRuNdGDvevvjuoayU5EOS2fEYazOhtCM3PI9ClMMg5igc0uwXtAq4tJj+Dw==}
+
+  vscode-languageserver-types@3.18.0:
+    resolution: {integrity: sha512-8TsGPNMIMiiBdkORgRSvLjuiEIiAFtO+KssmYWxQ+uSVvlf7RjK8YKCOjPzZ+YA04jXEV7+7LvkSmHkhpNS99g==}
 
   vue-flow-layout@0.1.1:
     resolution: {integrity: sha512-JdgRRUVrN0Y2GosA0M68DEbKlXMqJ7FQgsK8CjQD2vxvNSqAU6PZEpi4cfcTVtfM2GVOMjHo7GKKLbXxOBqDqA==}
@@ -5327,7 +5344,7 @@ snapshots:
       node-fetch: 2.7.0
       nopt: 8.1.0
       semver: 7.7.4
-      tar: 7.5.19
+      tar: 7.5.21
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -5800,8 +5817,8 @@ snapshots:
       error-stack-parser: 2.1.4
       html-to-image: 1.11.13
       radix3: 1.1.2
-      seroval: 1.5.2
-      seroval-plugins: 1.5.2(seroval@1.5.2)
+      seroval: 1.5.3
+      seroval-plugins: 1.5.2(seroval@1.5.3)
       shiki: 1.29.2
       source-map-js: 1.2.1
       terracotta: 1.1.0(solid-js@1.9.12)
@@ -6068,13 +6085,13 @@ snapshots:
     transitivePeerDependencies:
       - vue
 
-  '@unocss/postcss@65.5.0(postcss@8.5.15)':
+  '@unocss/postcss@65.5.0(postcss@8.5.18)':
     dependencies:
       '@unocss/config': 65.5.0
       '@unocss/core': 65.5.0
       '@unocss/rule-utils': 65.5.0
       css-tree: 3.2.1
-      postcss: 8.5.15
+      postcss: 8.5.18
       tinyglobby: 0.2.17
 
   '@unocss/preset-attributify@65.5.0':
@@ -6336,7 +6353,7 @@ snapshots:
       leven: 3.1.0
       markdown-it: 14.2.0
       mime: 1.6.0
-      minimatch: 5.1.9
+      minimatch: 10.2.5
       parse-semver: 1.1.1
       read: 1.0.7
       secretlint: 10.2.2
@@ -6374,7 +6391,7 @@ snapshots:
       '@vue/shared': 3.5.32
       estree-walker: 2.0.2
       magic-string: 0.30.21
-      postcss: 8.5.15
+      postcss: 8.5.18
       source-map-js: 1.2.1
 
   '@vue/compiler-ssr@3.5.32':
@@ -6443,7 +6460,7 @@ snapshots:
   ajv@8.18.0:
     dependencies:
       fast-deep-equal: 3.1.3
-      fast-uri: 3.1.2
+      fast-uri: 3.1.4
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
@@ -6554,7 +6571,7 @@ snapshots:
 
   bail@2.0.2: {}
 
-  balanced-match@1.0.2: {}
+  balanced-match@4.0.4: {}
 
   bare-events@2.8.2: {}
 
@@ -6635,9 +6652,9 @@ snapshots:
       widest-line: 5.0.0
       wrap-ansi: 9.0.2
 
-  brace-expansion@2.1.2:
+  brace-expansion@5.0.8:
     dependencies:
-      balanced-match: 1.0.2
+      balanced-match: 4.0.4
 
   braces@3.0.3:
     dependencies:
@@ -7253,7 +7270,7 @@ snapshots:
       merge2: 1.4.1
       micromatch: 4.0.8
 
-  fast-uri@3.1.2: {}
+  fast-uri@3.1.4: {}
 
   fastq@1.19.0:
     dependencies:
@@ -7351,7 +7368,7 @@ snapshots:
     dependencies:
       foreground-child: 3.3.1
       jackspeak: 3.4.3
-      minimatch: 5.1.9
+      minimatch: 10.2.5
       minipass: 7.1.3
       package-json-from-dist: 1.0.1
       path-scurry: 1.11.1
@@ -7360,14 +7377,14 @@ snapshots:
     dependencies:
       foreground-child: 3.3.1
       jackspeak: 4.2.3
-      minimatch: 5.1.9
+      minimatch: 10.2.5
       minipass: 7.1.3
       package-json-from-dist: 1.0.1
       path-scurry: 2.0.2
 
   glob@13.0.6:
     dependencies:
-      minimatch: 5.1.9
+      minimatch: 10.2.5
       minipass: 7.1.3
       path-scurry: 2.0.2
 
@@ -7809,7 +7826,7 @@ snapshots:
 
   leven@3.1.0: {}
 
-  linkify-it@5.0.1:
+  linkify-it@5.0.2:
     dependencies:
       uc.micro: 2.1.0
 
@@ -7898,7 +7915,7 @@ snapshots:
     dependencies:
       argparse: 2.0.1
       entities: 4.5.0
-      linkify-it: 5.0.1
+      linkify-it: 5.0.2
       mdurl: 2.0.0
       punycode.js: 2.3.1
       uc.micro: 2.1.0
@@ -8382,9 +8399,9 @@ snapshots:
   mimic-response@3.1.0:
     optional: true
 
-  minimatch@5.1.9:
+  minimatch@10.2.5:
     dependencies:
-      brace-expansion: 2.1.2
+      brace-expansion: 5.0.8
 
   minimist@1.2.8: {}
 
@@ -8525,7 +8542,7 @@ snapshots:
 
   node-abi@3.89.0:
     dependencies:
-      semver: 7.7.3
+      semver: 7.7.4
     optional: true
 
   node-addon-api@4.3.0:
@@ -8559,7 +8576,7 @@ snapshots:
   normalize-package-data@6.0.2:
     dependencies:
       hosted-git-info: 7.0.2
-      semver: 7.7.3
+      semver: 7.7.4
       validate-npm-package-license: 3.0.4
 
   normalize-path@3.0.0: {}
@@ -8750,7 +8767,7 @@ snapshots:
 
   pluralize@8.0.0: {}
 
-  postcss@8.5.15:
+  postcss@8.5.18:
     dependencies:
       nanoid: 3.3.13
       picocolors: 1.1.1
@@ -8868,7 +8885,7 @@ snapshots:
 
   readdir-glob@1.1.3:
     dependencies:
-      minimatch: 5.1.9
+      minimatch: 10.2.5
 
   readdirp@3.6.0:
     dependencies:
@@ -9100,6 +9117,8 @@ snapshots:
 
   semver@7.7.4: {}
 
+  semver@7.8.5: {}
+
   send@0.19.2:
     dependencies:
       debug: 2.6.9
@@ -9136,18 +9155,18 @@ snapshots:
 
   serialize-javascript@7.0.5: {}
 
-  seroval-plugins@1.5.2(seroval@1.5.2):
+  seroval-plugins@1.5.2(seroval@1.5.3):
     dependencies:
-      seroval: 1.5.2
+      seroval: 1.5.3
 
-  seroval@1.5.2: {}
+  seroval@1.5.3: {}
 
-  serve-handler@6.1.7:
+  serve-handler@6.1.7(patch_hash=be0a500fe2643ca65e526ba3353f141c7285ee74b11e662da69191e2f2d55628):
     dependencies:
       bytes: 3.0.0
       content-disposition: 0.5.2
       mime-types: 2.1.18
-      minimatch: 5.1.9
+      minimatch: 10.2.5
       path-is-inside: 1.0.2
       path-to-regexp: 3.3.0
       range-parser: 1.2.0
@@ -9185,7 +9204,7 @@ snapshots:
       clipboardy: 3.0.0
       compression: 1.8.1
       is-port-reachable: 4.0.0
-      serve-handler: 6.1.7
+      serve-handler: 6.1.7(patch_hash=be0a500fe2643ca65e526ba3353f141c7285ee74b11e662da69191e2f2d55628)
       update-check: 1.5.4
     transitivePeerDependencies:
       - supports-color
@@ -9283,8 +9302,8 @@ snapshots:
   solid-js@1.9.12:
     dependencies:
       csstype: 3.2.3
-      seroval: 1.5.2
-      seroval-plugins: 1.5.2(seroval@1.5.2)
+      seroval: 1.5.3
+      seroval-plugins: 1.5.2(seroval@1.5.3)
 
   solid-mdx@0.0.7(solid-js@1.9.12)(vite@6.4.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)):
     dependencies:
@@ -9470,7 +9489,7 @@ snapshots:
       - bare-buffer
       - react-native-b4a
 
-  tar@7.5.19:
+  tar@7.5.21:
     dependencies:
       '@isaacs/fs-minipass': 4.0.1
       chownr: 3.0.0
@@ -9721,12 +9740,12 @@ snapshots:
 
   universalify@2.0.1: {}
 
-  unocss@65.5.0(postcss@8.5.15)(vite@6.4.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2)):
+  unocss@65.5.0(postcss@8.5.18)(vite@6.4.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2)):
     dependencies:
       '@unocss/astro': 65.5.0(vite@6.4.3(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))(vue@3.5.32(typescript@5.9.2))
       '@unocss/cli': 65.5.0
       '@unocss/core': 65.5.0
-      '@unocss/postcss': 65.5.0(postcss@8.5.15)
+      '@unocss/postcss': 65.5.0(postcss@8.5.18)
       '@unocss/preset-attributify': 65.5.0
       '@unocss/preset-icons': 65.5.0
       '@unocss/preset-mini': 65.5.0
@@ -9825,7 +9844,7 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
-  valibot@1.2.0(typescript@5.9.2):
+  valibot@1.4.2(typescript@5.9.2):
     optionalDependencies:
       typescript: 5.9.2
 
@@ -9973,7 +9992,7 @@ snapshots:
       esbuild: 0.28.1
       fdir: 6.5.0(picomatch@4.0.4)
       picomatch: 4.0.4
-      postcss: 8.5.15
+      postcss: 8.5.18
       rollup: 4.62.1
       tinyglobby: 0.2.17
     optionalDependencies:
@@ -9988,7 +10007,7 @@ snapshots:
       esbuild: 0.28.1
       fdir: 6.5.0(picomatch@4.0.4)
       picomatch: 4.0.4
-      postcss: 8.5.15
+      postcss: 8.5.18
       rollup: 4.62.1
       tinyglobby: 0.2.17
     optionalDependencies:
@@ -10030,20 +10049,23 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vscode-jsonrpc@8.2.0: {}
+  vscode-jsonrpc@9.0.1: {}
 
-  vscode-languageclient@9.0.1:
+  vscode-languageclient@10.1.0:
     dependencies:
-      minimatch: 5.1.9
-      semver: 7.7.3
-      vscode-languageserver-protocol: 3.17.5
+      minimatch: 10.2.5
+      semver: 7.8.5
+      vscode-languageserver-protocol: 3.18.2
+      vscode-languageserver-textdocument: 1.0.13
 
-  vscode-languageserver-protocol@3.17.5:
+  vscode-languageserver-protocol@3.18.2:
     dependencies:
-      vscode-jsonrpc: 8.2.0
-      vscode-languageserver-types: 3.17.5
+      vscode-jsonrpc: 9.0.1
+      vscode-languageserver-types: 3.18.0
 
-  vscode-languageserver-types@3.17.5: {}
+  vscode-languageserver-textdocument@1.0.13: {}
+
+  vscode-languageserver-types@3.18.0: {}
 
   vue-flow-layout@0.1.1(vue@3.5.32(typescript@5.9.2)):
     dependencies:
@@ -10065,7 +10087,7 @@ snapshots:
 
   wasm-pack@0.15.0:
     dependencies:
-      tar: 7.5.19
+      tar: 7.5.21
 
   webidl-conversions@3.0.1: {}
 

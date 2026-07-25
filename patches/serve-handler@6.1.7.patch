@@ -1,0 +1,12 @@
+diff --git a/src/index.js b/src/index.js
+index 9ae9f77..d08d0d4 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -7,6 +7,6 @@ const {realpath, lstat, createReadStream, readdir} = require('fs');
+ const url = require('url');
+ const slasher = require('./glob-slash');
+-const minimatch = require('minimatch');
++const {minimatch} = require('minimatch');
+ const pathToRegExp = require('path-to-regexp');
+ const mime = require('mime-types');
+ const bytes = require('bytes');
