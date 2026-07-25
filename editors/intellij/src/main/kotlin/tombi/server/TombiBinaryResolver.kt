@@ -28,17 +28,16 @@ internal object TombiBinaryResolver {
             return TombiCommand(it.toString())
         }
 
-        workspacePaths.asSequence()
-            .map {
-                it.resolve(".venv")
-                    .resolve(if (isWindows) "Scripts" else "bin")
-                    .resolve(binaryName)
+        // Checked per workspace, matching the VSCode extension: a virtual environment
+        // wins over `node_modules` only within the same workspace, not across them.
+        workspacePaths.forEach { workspacePath ->
+            resolveVirtualEnvironmentInstall(workspacePath, binaryName, isWindows)?.let {
+                return TombiCommand(it.toString())
             }
-            .firstOrNull(Files::isRegularFile)
-            ?.let { return TombiCommand(it.toString()) }
 
-        resolveNodeModulesInstall(workspacePaths, environment, binaryName, isWindows)?.let {
-            return it
+            resolveNodeModulesInstall(workspacePath, environment, binaryName, isWindows)?.let {
+                return it
+            }
         }
 
         return findOnPath(tombiCandidateNames(binaryName, isWindows), environment, isWindows)
@@ -64,16 +63,23 @@ internal object TombiBinaryResolver {
             .filterNotNull()
             .firstOrNull(Files::isRegularFile)
 
+    private fun resolveVirtualEnvironmentInstall(
+        workspacePath: Path,
+        binaryName: String,
+        isWindows: Boolean,
+    ): Path? =
+        workspacePath.resolve(".venv")
+            .resolve(if (isWindows) "Scripts" else "bin")
+            .resolve(binaryName)
+            .takeIf(Files::isRegularFile)
+
     private fun resolveNodeModulesInstall(
-        workspacePaths: List<Path>,
+        workspacePath: Path,
         environment: Map<String, String>,
         binaryName: String,
         isWindows: Boolean,
     ): TombiCommand? {
-        val searchDirectories = workspacePaths.asSequence()
-            .flatMap(::nodeModulesSearchDirectories)
-            .distinct()
-            .toList()
+        val searchDirectories = nodeModulesSearchDirectories(workspacePath).toList()
 
         val nodeScript = searchDirectories.asSequence()
             .flatMap { directory ->
@@ -150,6 +156,16 @@ internal object TombiBinaryResolver {
             .asSequence()
             .filter(String::isNotBlank)
             .flatMap { directory -> candidateNames.asSequence().map(Path.of(directory)::resolve) }
-            .firstOrNull(Files::isRegularFile)
+            .firstOrNull { isRunnable(it, isWindows) }
     }
+
+    /**
+     * `PATH` entries have to be runnable to be worth reporting, mirroring the
+     * `which` lookup the VSCode extension relies on.
+     *
+     * The executable bit is only meaningful on POSIX file systems; on Windows
+     * runnability is decided by the extension, which [tombiCandidateNames] covers.
+     */
+    private fun isRunnable(path: Path, isWindows: Boolean): Boolean =
+        Files.isRegularFile(path) && (isWindows || Files.isExecutable(path))
 }

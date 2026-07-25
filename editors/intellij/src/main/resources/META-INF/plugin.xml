@@ -43,6 +43,8 @@
 			id="Tombi"
 			displayType="BALLOON"
 			isLogByDefault="true"
+			bundle="messages.tombi"
+			key="notification.group.name"
 		/>
 	</extensions>
 </idea-plugin>

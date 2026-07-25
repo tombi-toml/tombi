@@ -51,7 +51,7 @@ class TombiBinaryResolverTest {
         nodeModulesTombi.parent.createDirectories()
         venvTombi.createFile()
         nodeModulesTombi.createFile()
-        pathDirectory.resolve("tombi").createFile()
+        pathDirectory.resolve("tombi").createExecutableFile()
 
         assertEquals(
             TombiCommand(venvTombi.toString()),
@@ -71,7 +71,7 @@ class TombiBinaryResolverTest {
         val node = nodeDirectory.resolve("node")
         nodeScript.parent.createDirectories()
         nodeScript.createFile()
-        node.createFile()
+        node.createExecutableFile()
 
         assertEquals(
             TombiCommand(node.toString(), listOf(nodeScript.toString())),
@@ -90,7 +90,7 @@ class TombiBinaryResolverTest {
         val pathDirectory = Files.createTempDirectory("tombi-path")
         nodeModulesTombi.parent.createDirectories()
         nodeModulesTombi.createFile()
-        pathDirectory.resolve("tombi").createFile()
+        pathDirectory.resolve("tombi").createExecutableFile()
 
         assertEquals(
             TombiCommand(nodeModulesTombi.toString()),
@@ -118,7 +118,7 @@ class TombiBinaryResolverTest {
     @Test
     fun `returns path installation when no project installation exists`() {
         val pathDirectory = Files.createTempDirectory("tombi-path")
-        val pathTombi = pathDirectory.resolve("tombi").createFile()
+        val pathTombi = pathDirectory.resolve("tombi").createExecutableFile()
 
         assertEquals(
             TombiCommand(pathTombi.toString()),
@@ -181,6 +181,43 @@ class TombiBinaryResolverTest {
             ),
         )
     }
+
+    @Test
+    fun `prefers the first workspace node modules over a later workspace virtual environment`() {
+        val firstWorkspace = Files.createTempDirectory("tombi-workspace")
+        val secondWorkspace = Files.createTempDirectory("tombi-workspace")
+        val nodeModulesTombi = firstWorkspace.resolve("node_modules/.bin/tombi")
+        val venvTombi = secondWorkspace.resolve(".venv/bin/tombi")
+        nodeModulesTombi.parent.createDirectories()
+        venvTombi.parent.createDirectories()
+        nodeModulesTombi.createFile()
+        venvTombi.createFile()
+
+        assertEquals(
+            TombiCommand(nodeModulesTombi.toString()),
+            resolveLocal(workspacePaths = listOf(firstWorkspace, secondWorkspace)),
+        )
+    }
+
+    @Test
+    fun `ignores a non executable path entry`() {
+        val pathDirectory = Files.createTempDirectory("tombi-path")
+        pathDirectory.resolve("tombi").createFile()
+
+        assertNull(
+            resolveLocal(
+                workspacePaths = listOf(Files.createTempDirectory("tombi-project")),
+                environment = mapOf("PATH" to pathDirectory.toString()),
+            ),
+        )
+    }
+
+    /**
+     * `PATH` lookups require the executable bit, so fixtures standing in for a
+     * real installation have to set it.
+     */
+    private fun java.nio.file.Path.createExecutableFile(): java.nio.file.Path =
+        createFile().also { it.toFile().setExecutable(true, false) }
 
     private fun resolveLocal(
         workspacePaths: List<java.nio.file.Path> = emptyList(),

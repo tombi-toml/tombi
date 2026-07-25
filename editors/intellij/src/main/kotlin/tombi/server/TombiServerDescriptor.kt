@@ -32,7 +32,8 @@ internal val VirtualFile.isTOMLFile: Boolean
  * may include multiple directories.
  */
 internal val Project.path: Path?
-    get() = guessProjectDir()?.toNioPath() ?: basePath?.let { Path.of(it) }
+    get() = guessProjectDir()?.let { runCatching(it::toNioPath).getOrNull() }
+        ?: basePath?.let { runCatching { Path.of(it) }.getOrNull() }
 
 
 /**

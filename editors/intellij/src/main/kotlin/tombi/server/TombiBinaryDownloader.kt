@@ -2,10 +2,12 @@ package tombi.server
 
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.util.io.HttpRequests
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
+import tombi.message
 import java.io.BufferedInputStream
 import java.io.InputStream
 import java.io.OutputStream
@@ -27,10 +29,11 @@ internal object TombiBinaryDownloader {
         cacheDirectory: Path = PathManager.getSystemDir().resolve("tombi"),
         osName: String = System.getProperty("os.name"),
         architecture: String = System.getProperty("os.arch"),
+        indicator: ProgressIndicator? = null,
     ): String {
         val platform = platform(osName, architecture)
         return try {
-            downloadLatest(cacheDirectory, platform).toString()
+            downloadLatest(cacheDirectory, platform, indicator).toString()
         } catch (error: Exception) {
             newestCachedBinary(cacheDirectory, platform.binaryName)?.toString() ?: throw error
         }
@@ -69,7 +72,9 @@ internal object TombiBinaryDownloader {
     private fun downloadLatest(
         cacheDirectory: Path,
         platform: Platform,
+        indicator: ProgressIndicator?,
     ): Path {
+        indicator?.text = message("progress.checkingForUpdate")
         val latestReleaseUri = latestReleaseUri()
         val version = versionFromLatestReleaseUri(latestReleaseUri)
         val versionDirectory = cacheDirectory.resolve("tombi-$version")
@@ -86,7 +91,8 @@ internal object TombiBinaryDownloader {
         val extractedPath = Files.createTempFile(versionDirectory, "tombi-", ".tmp")
 
         try {
-            request(assetUri.toString(), 120_000).saveToFile(archivePath, null)
+            indicator?.text = message("progress.downloading", version)
+            request(assetUri.toString(), 120_000).saveToFile(archivePath, indicator)
 
             BufferedInputStream(Files.newInputStream(archivePath)).use { input ->
                 Files.newOutputStream(extractedPath).use { output ->
