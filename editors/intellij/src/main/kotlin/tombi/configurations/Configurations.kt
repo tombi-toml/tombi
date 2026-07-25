@@ -21,8 +21,7 @@ internal class TombiConfigurations : BaseState() {
     /**
      * The Tombi executable to be used in commands.
      * 
-     * When unspecified, the plugin looks for a local Tombi installation and
-     * downloads the latest release if none is available.
+     * Defaults to `tombi` if not specified.
      */
-    var executable by string()
+    var executable by string("tombi")
 }
