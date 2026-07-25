@@ -1,5 +1,6 @@
 package tombi.server
 
+import com.sun.net.httpserver.HttpServer
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry
@@ -7,6 +8,7 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.net.InetSocketAddress
 import java.net.URI
 import java.nio.file.Files
 import java.util.Comparator
@@ -52,6 +54,32 @@ class TombiBinaryDownloaderTest {
                 URI.create("https://github.com/tombi-toml/tombi/releases/tag/v1.2.4"),
             ),
         )
+    }
+
+    @Test
+    fun `follows latest release redirect`() {
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext("/releases/latest") { exchange ->
+            exchange.responseHeaders.add("Location", "/releases/tag/v1.2.4")
+            exchange.sendResponseHeaders(302, -1)
+            exchange.close()
+        }
+        server.createContext("/releases/tag/v1.2.4") { exchange ->
+            exchange.sendResponseHeaders(200, -1)
+            exchange.close()
+        }
+        server.start()
+
+        try {
+            assertEquals(
+                URI.create("http://127.0.0.1:${server.address.port}/releases/tag/v1.2.4"),
+                TombiBinaryDownloader.latestReleaseUri(
+                    "http://127.0.0.1:${server.address.port}/releases",
+                ),
+            )
+        } finally {
+            server.stop(0)
+        }
     }
 
     @Test

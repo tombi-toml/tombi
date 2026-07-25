@@ -70,9 +70,7 @@ internal object TombiBinaryDownloader {
         cacheDirectory: Path,
         platform: Platform,
     ): Path {
-        val latestReleaseUri = request("$RELEASES_URL/latest", 30_000).connect { response ->
-            URI.create(response.url)
-        }
+        val latestReleaseUri = latestReleaseUri()
         val version = versionFromLatestReleaseUri(latestReleaseUri)
         val versionDirectory = cacheDirectory.resolve("tombi-$version")
         val binaryPath = versionDirectory.resolve(platform.binaryName)
@@ -105,6 +103,11 @@ internal object TombiBinaryDownloader {
 
         return binaryPath
     }
+
+    internal fun latestReleaseUri(releasesUrl: String = RELEASES_URL): URI =
+        request("$releasesUrl/latest", 30_000).connect { response ->
+            response.connection.url.toURI()
+        }
 
     private fun request(url: String, readTimeoutMillis: Int) =
         HttpRequests.request(url)
