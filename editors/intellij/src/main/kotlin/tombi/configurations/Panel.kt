@@ -47,8 +47,8 @@ private fun Row.executableInput(block: Cell<TextFieldWithBrowseButton>.() -> Uni
 internal fun makePanel(state: TombiConfigurations) = panel {
     row(message("configurations.executable.label")) {
         executableInput {
-            bindText(state::executable.toNonNullableProperty(""))
-            component.emptyText.text = message("configurations.executable.placeholder")
+            bindText(state::executable.toNonNullableProperty("tombi"))
+            component.emptyText.text = "tombi"
         }
     }
 }

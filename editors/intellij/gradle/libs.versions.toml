@@ -1,7 +1,6 @@
 [versions]
 # libraries
 annotations = "26.0.2-1"
-commonsCompress = "1.28.0"
 junit = "4.13.2"
 # plugins
 changelog = "2.4.0"
@@ -14,11 +13,6 @@ qodana = "2025.2.1"
 group = "org.jetbrains"
 name = "annotations"
 version.ref = "annotations"
-
-[libraries.commonsCompress]
-group = "org.apache.commons"
-name = "commons-compress"
-version.ref = "commonsCompress"
 
 [libraries.junit]
 group = "junit"
