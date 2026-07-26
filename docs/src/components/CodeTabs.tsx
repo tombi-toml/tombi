@@ -5,6 +5,7 @@ export type Tab = {
   key: string;
   label: string;
   command: string;
+  language?: string;
 };
 
 type CodeTabsProps = {
@@ -44,7 +45,10 @@ export default function CodeTabs(props: CodeTabsProps) {
           </button>
         )}
       </For>
-      <CodeBlock code={current()?.command || ""} language={props.language} />
+      <CodeBlock
+        code={current()?.command || ""}
+        language={current()?.language || props.language}
+      />
     </div>
   );
 }
