@@ -2,7 +2,7 @@
 <idea-plugin>
 	<!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
 	<id>tombi</id>
-	
+
 	<!-- Public plugin name should be written in Title Case.
 		 Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
 	<!--suppress PluginXmlCapitalization -->
@@ -38,5 +38,7 @@
 			id="tombi.server.TombiServerSupportProvider"
 			implementation="tombi.server.TombiServerSupportProvider"
 		/>
+
+		<errorHandler implementation="com.intellij.diagnostic.JetBrainsMarketplaceErrorReportSubmitter"/>
 	</extensions>
 </idea-plugin>
