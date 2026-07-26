@@ -24,28 +24,99 @@ Choose your preferred installation method:
 
 ## CLI
 
-```sh
-curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh
-```
+<CodeTabs
+  tabs={[
+    {
+      key: "sh",
+      label: "Shell Script",
+      command: "curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh",
+      language: "sh",
+    },
+    {
+      key: "powershell",
+      label: "PowerShell",
+      command:
+        "& ([scriptblock]::Create((irm https://tombi-toml.github.io/tombi/install.ps1)))",
+      language: "powershell",
+    },
+  ]}
+  defaultKey="sh"
+  language="sh"
+/>
+
+On Windows, the default installation directory is `%LOCALAPPDATA%\tombi\bin`, and
+the PowerShell installer does not modify your `PATH`; add the directory to your
+user `PATH`, or use the returned executable path directly.
 
 Install a specific version:
 
-```sh
-curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.7.5
-```
+<CodeTabs
+  tabs={[
+    {
+      key: "sh",
+      label: "Shell Script",
+      command:
+        "curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.7.5",
+      language: "sh",
+    },
+    {
+      key: "powershell",
+      label: "PowerShell",
+      command:
+        "& ([scriptblock]::Create((irm https://tombi-toml.github.io/tombi/install.ps1))) -Version 0.7.5",
+      language: "powershell",
+    },
+  ]}
+  defaultKey="sh"
+  language="sh"
+/>
 
 Install to a specific directory:  
-(Please specify a directory that is already included in your PATH.)
+(For the Shell Script installer, specify a directory that is already included in your `PATH`.)
 
-```sh
-curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --install-dir /custom/path
-```
+<CodeTabs
+  tabs={[
+    {
+      key: "sh",
+      label: "Shell Script",
+      command:
+        "curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --install-dir /custom/path",
+      language: "sh",
+    },
+    {
+      key: "powershell",
+      label: "PowerShell",
+      command:
+        "& ([scriptblock]::Create((irm https://tombi-toml.github.io/tombi/install.ps1))) -InstallDir \"C:\\Tools\\tombi\"",
+      language: "powershell",
+    },
+  ]}
+  defaultKey="sh"
+  language="sh"
+/>
 
 Verify the downloaded archive checksum before extraction:
 
-```sh
-curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --checksum <sha256>
-```
+<CodeTabs
+  tabs={[
+    {
+      key: "sh",
+      label: "Shell Script",
+      command:
+        "curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --checksum <sha256>",
+      language: "sh",
+    },
+    {
+      key: "powershell",
+      label: "PowerShell",
+      command:
+        "& ([scriptblock]::Create((irm https://tombi-toml.github.io/tombi/install.ps1))) -Checksum <sha256>",
+      language: "powershell",
+    },
+  ]}
+  defaultKey="sh"
+  language="sh"
+/>
 
 ## Windows Package Manager
 

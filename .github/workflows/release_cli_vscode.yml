@@ -327,7 +327,7 @@ jobs:
           if [[ "${REF_NAME}" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
             echo "stable_version=${REF_NAME#v}" >> "${GITHUB_OUTPUT}"
           else
-            echo "Skipping install.sh update for non-stable tag: ${REF_NAME}"
+            echo "Skipping installer updates for non-stable tag: ${REF_NAME}"
             echo "stable_version=" >> "${GITHUB_OUTPUT}"
           fi
 
@@ -350,7 +350,7 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
 
-      - name: Decide whether install.sh should be updated
+      - name: Decide whether installers should be updated
         id: should-update
         if: steps.stable-version.outputs.stable_version != ''
         shell: bash
@@ -359,14 +359,27 @@ jobs:
         run: |
           set -euo pipefail
           semver_re='^[0-9]+\.[0-9]+\.[0-9]+$'
-          current_version="$(
+          shell_current_version="$(
             sed -n 's/^LATEST_STABLE_VERSION="\([0-9]\+\.[0-9]\+\.[0-9]\+\)"$/\1/p' docs/public/install.sh
           )"
+          powershell_current_version="$(
+            # shellcheck disable=SC2016 # Match the literal PowerShell variable name.
+            sed -n 's/^\$LatestStableVersion = "\([0-9]\+\.[0-9]\+\.[0-9]\+\)"$/\1/p' docs/public/install.ps1
+          )"
 
-          if [ -z "${current_version}" ]; then
+          if [ -z "${shell_current_version}" ]; then
             echo "LATEST_STABLE_VERSION entry not found in docs/public/install.sh" >&2
             exit 1
           fi
+          if [ -z "${powershell_current_version}" ]; then
+            echo "LatestStableVersion entry not found in docs/public/install.ps1" >&2
+            exit 1
+          fi
+          if [ "${shell_current_version}" != "${powershell_current_version}" ]; then
+            echo "Installer stable versions are inconsistent: install.sh=${shell_current_version}, install.ps1=${powershell_current_version}" >&2
+            exit 1
+          fi
+          current_version="${shell_current_version}"
 
           if ! [[ "${current_version}" =~ ${semver_re} ]]; then
             echo "LATEST_STABLE_VERSION must be a stable semver, got: ${current_version}" >&2
@@ -400,7 +413,7 @@ jobs:
           echo "should_update=${should_update}" >> "${GITHUB_OUTPUT}"
 
           if [ "${should_update}" != "true" ]; then
-            echo "Skipping install.sh update because ${STABLE_VERSION} is not newer than ${current_version}."
+            echo "Skipping installer updates because ${STABLE_VERSION} is not newer than ${current_version}."
           fi
 
       - name: Update embedded stable version
@@ -411,13 +424,19 @@ jobs:
         run: |
           set -euo pipefail
           sed -i 's/^LATEST_STABLE_VERSION=.*/LATEST_STABLE_VERSION="'"${STABLE_VERSION}"'"/' docs/public/install.sh
+          # shellcheck disable=SC2016 # Replace the literal PowerShell variable name.
+          sed -i 's/^\$LatestStableVersion = .*/$LatestStableVersion = "'"${STABLE_VERSION}"'"/' docs/public/install.ps1
 
           if ! grep -Fxq "LATEST_STABLE_VERSION=\"${STABLE_VERSION}\"" docs/public/install.sh; then
             echo "Failed to update embedded stable version to ${STABLE_VERSION}" >&2
             exit 1
           fi
+          if ! grep -Fxq "\$LatestStableVersion = \"${STABLE_VERSION}\"" docs/public/install.ps1; then
+            echo "Failed to update PowerShell embedded stable version to ${STABLE_VERSION}" >&2
+            exit 1
+          fi
 
-      - name: Commit updated install script
+      - name: Commit updated installers
         id: commit-install-script
         if: steps.should-update.outputs.should_update == 'true'
         shell: bash
@@ -425,19 +444,19 @@ jobs:
           STABLE_VERSION: ${{ steps.stable-version.outputs.stable_version }}
         run: |
           set -euo pipefail
-          if git diff --quiet -- docs/public/install.sh; then
+          if git diff --quiet -- docs/public/install.sh docs/public/install.ps1; then
             echo "created_commit=false" >> "${GITHUB_OUTPUT}"
-            echo "install.sh is already up to date."
+            echo "Installer scripts are already up to date."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/public/install.sh
-          git commit -m "docs: update install.sh stable version to ${STABLE_VERSION}"
+          git add docs/public/install.sh docs/public/install.ps1
+          git commit -m "docs: update installer stable version to ${STABLE_VERSION}"
           echo "created_commit=true" >> "${GITHUB_OUTPUT}"
 
-      - name: Push updated install script to main
+      - name: Push updated installers to main
         if: steps.commit-install-script.outputs.created_commit == 'true'
         shell: bash
         run: |
@@ -451,7 +470,7 @@ jobs:
             fi
 
             if [ "${attempt}" -eq 3 ]; then
-              echo "Failed to push updated install.sh to main after ${attempt} attempts." >&2
+              echo "Failed to push updated installer scripts to main after ${attempt} attempts." >&2
               exit 1
             fi
           done
