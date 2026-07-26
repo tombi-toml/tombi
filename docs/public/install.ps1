@@ -130,10 +130,12 @@ function Assert-TombiVersion {
         [string]$ExpectedVersion
     )
 
-    $VersionOutput = (& $BinaryPath --version 2>&1 | Select-Object -First 1).ToString()
-    if ($LASTEXITCODE -ne 0) {
+    $VersionOutputLines = @(& $BinaryPath --version 2>&1)
+    $VersionExitCode = $LASTEXITCODE
+    if ($VersionExitCode -ne 0) {
         throw "$BinaryPath cannot be executed."
     }
+    $VersionOutput = ($VersionOutputLines | Select-Object -First 1).ToString()
     if ($VersionOutput -notmatch "^tombi v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)") {
         throw "Unable to determine the installed Tombi version from: $VersionOutput"
     }
