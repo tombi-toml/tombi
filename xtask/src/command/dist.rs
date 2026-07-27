@@ -100,7 +100,10 @@ fn dist_editor_vscode(
 
     let readme_path = vscode_path.join("README.md");
     let readme = sh.read_file(&readme_path)?;
-    let readme = readme.replace("tombi.svg", "tombi.jpg");
+    let readme = readme.replace(
+        "https://raw.githubusercontent.com/tombi-toml/tombi/refs/heads/main/docs/public/tombi.svg",
+        "https://raw.githubusercontent.com/tombi-toml/tombi/refs/heads/main/docs/public/tombi.jpg",
+    );
     sh.write_file(&readme_path, &readme)?;
 
     if !target.server_path.exists() {
