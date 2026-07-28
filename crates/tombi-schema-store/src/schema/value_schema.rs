@@ -132,14 +132,18 @@ impl ValueSchema {
 
         // Infer type from type-specific keywords when "type" is not explicitly specified
         if let Some(inferred_type) = Self::infer_type_from_keywords(object, dialect) {
-            return Self::new_single(
+            let mut value_schema = Self::new_single(
                 inferred_type,
                 object,
                 string_formats,
                 dialect,
                 anchor_collector,
                 dynamic_anchor_collector,
-            );
+            )?;
+            if let ValueSchema::Table(table_schema) = &mut value_schema {
+                table_schema.mark_type_inferred();
+            }
+            return Some(value_schema);
         }
 
         if object.get("oneOf").is_some() {
@@ -1720,7 +1724,22 @@ mod tests {
             r#"{ "properties": { "name": { "type": "string" } } }"#,
             Some(crate::JsonSchemaDialect::Draft07),
         );
-        std::assert_matches!(schema, Some(ValueSchema::Table(_)));
+        let Some(ValueSchema::Table(schema)) = schema else {
+            panic!("schema is not a Table schema");
+        };
+        assert!(schema.is_type_inferred());
+    }
+
+    #[test]
+    fn test_explicit_object_type_is_not_inferred() {
+        let schema = parse_schema_with_dialect(
+            r#"{ "type": "object", "properties": { "name": { "type": "string" } } }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        let Some(ValueSchema::Table(schema)) = schema else {
+            panic!("schema is not a Table schema");
+        };
+        assert!(!schema.is_type_inferred());
     }
 
     #[test]

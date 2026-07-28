@@ -184,6 +184,31 @@ where
                         result
                     }
                 }
+                ValueSchema::Table(table_schema) if table_schema.is_type_inferred() => {
+                    let result = validate_adjacent_applicators(
+                        string_value,
+                        accessors,
+                        table_schema.one_of.as_deref(),
+                        table_schema.any_of.as_deref(),
+                        table_schema.all_of.as_deref(),
+                        table_schema.not.as_deref(),
+                        current_schema,
+                        schema_context,
+                        comment_directives.as_deref(),
+                        lint_rules.as_ref().map(|rules| &rules.common),
+                    )
+                    .await;
+                    if enable_key_empty_validation
+                        && should_validate_key_empty(Some(current_schema))
+                    {
+                        crate::validate::merge_validation_results(
+                            result,
+                            validate_key_empty_rule(string_value, key_rules.as_ref()),
+                        )
+                    } else {
+                        result
+                    }
+                }
                 ValueSchema::Null => return Ok(crate::EvaluatedLocations::new()),
                 ValueSchema::Anything(_) => handle_anything_schema(string_value),
                 ValueSchema::Nothing(_) => handle_nothing_schema(string_value),

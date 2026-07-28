@@ -955,6 +955,92 @@ mod draft2019_09_unevaluated_properties {
         );
     }
 
+    mod with_adjacent_one_of {
+        use super::*;
+
+        fn schema() -> JsonValue {
+            serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "type": "object",
+                "properties": {
+                    "address": {
+                        "oneOf": [
+                            {"type": "string"},
+                            {
+                                "type": "object",
+                                "required": ["uri"],
+                                "properties": {
+                                    "uri": {"type": "string"}
+                                }
+                            }
+                        ],
+                        "unevaluatedProperties": false
+                    }
+                }
+            })
+        }
+
+        fn explicitly_typed_schema() -> JsonValue {
+            let mut schema = schema();
+            schema["properties"]["address"]["type"] = serde_json::json!("object");
+            schema
+        }
+
+        suite_test!(
+            #[tokio::test] async fn string_branch_is_valid(
+                r#"
+                address = "example"
+                "#,
+                JsonSchema(schema()),
+            ) -> Ok(_);
+        );
+
+        suite_test!(
+            #[tokio::test] async fn table_branch_is_valid(
+                r#"
+                [address]
+                uri = "example"
+                "#,
+                JsonSchema(schema()),
+            ) -> Ok(_);
+        );
+
+        suite_test!(
+            #[tokio::test] async fn table_branch_rejects_unevaluated_properties(
+                r#"
+                [address]
+                uri = "example"
+                extra = true
+                "#,
+                JsonSchema(schema()),
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "extra".to_string()
+                    },
+                    ((2, 0), (2, 12))
+                ),
+            ]);
+        );
+
+        suite_test!(
+            #[tokio::test] async fn explicit_object_type_rejects_string(
+                r#"
+                address = "example"
+                "#,
+                JsonSchema(explicitly_typed_schema()),
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TypeMismatch {
+                        expected: tombi_schema_store::ValueType::Table,
+                        actual: tombi_document_tree::ValueType::String,
+                    },
+                    ((0, 10), (0, 19))
+                ),
+            ]);
+        );
+    }
+
     mod with_nested_properties {
         use super::*;
 

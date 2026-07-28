@@ -28,6 +28,7 @@ use tombi_json::StringNode;
 
 #[derive(Debug, Default, Clone)]
 pub struct TableSchema {
+    type_inferred: bool,
     pub title: Option<String>,
     pub description: Option<String>,
     pub range: tombi_text::Range,
@@ -179,6 +180,7 @@ impl TableSchema {
         );
 
         Self {
+            type_inferred: false,
             title: object_node
                 .get("title")
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
@@ -346,6 +348,16 @@ impl TableSchema {
 
     pub fn value_type(&self) -> crate::ValueType {
         crate::ValueType::Table
+    }
+
+    #[inline]
+    pub(crate) fn mark_type_inferred(&mut self) {
+        self.type_inferred = true;
+    }
+
+    #[inline]
+    pub fn is_type_inferred(&self) -> bool {
+        self.type_inferred
     }
 
     #[inline]
