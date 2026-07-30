@@ -17,6 +17,7 @@ pub struct FormatDefinitions {
     pub indent_sub_tables: bool,
     pub indent_table_key_values: bool,
     pub indent_width: u8,
+    pub key_quote_style: StringQuoteStyle,
     pub string_quote_style: StringQuoteStyle,
     pub trailing_comment_alignment: bool,
     pub trailing_comment_space: String,
@@ -102,6 +103,11 @@ impl FormatDefinitions {
                     .unwrap_or_default()
                     .value() as usize,
             ),
+            key_quote_style: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.key_quote_style.or(rules.string_quote_style))
+                .unwrap_or_default(),
             string_quote_style: options
                 .rules
                 .as_ref()

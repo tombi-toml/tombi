@@ -16,14 +16,13 @@ impl Format for WithAlignmentHint<&tombi_ast::Keys> {
             .keys()
             .map(|key| match key {
                 tombi_ast::Key::BareKey(it) => it.syntax().text().to_string(),
-                tombi_ast::Key::BasicString(it) => format_basic_string_quote_style(
-                    it.token().unwrap().text(),
-                    f.string_quote_style(),
-                )
-                .into_owned(),
+                tombi_ast::Key::BasicString(it) => {
+                    format_basic_string_quote_style(it.token().unwrap().text(), f.key_quote_style())
+                        .into_owned()
+                }
                 tombi_ast::Key::LiteralString(it) => format_literal_string_quote_style(
                     it.token().unwrap().text(),
-                    f.string_quote_style(),
+                    f.key_quote_style(),
                 )
                 .into_owned(),
             })

@@ -55,6 +55,7 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
     - [format.rules.indent-width](#format-rules-indent-width)
     - [format.rules.inline-table-brace-space-width](#format-rules-inline-table-brace-space-width)
     - [format.rules.inline-table-comma-space-width](#format-rules-inline-table-comma-space-width)
+    - [format.rules.key-quote-style](#format-rules-key-quote-style)
     - [format.rules.key-value-equals-sign-alignment](#format-rules-key-value-equals-sign-alignment)
     - [format.rules.key-value-equals-sign-space-width](#format-rules-key-value-equals-sign-space-width)
     - [format.rules.line-ending](#format-rules-line-ending)
@@ -178,6 +179,7 @@ indent-table-key-value-pairs = false
 indent-width = 2
 inline-table-brace-space-width = 1
 inline-table-comma-space-width = 1
+key-quote-style = "double"
 key-value-equals-sign-alignment = false
 key-value-equals-sign-space-width = 1
 line-ending = "lf"
@@ -266,6 +268,7 @@ indent-table-key-value-pairs = true
 indent-width = 4
 inline-table-brace-space-width = 0
 inline-table-comma-space-width = 1
+key-quote-style = "single"
 key-value-equals-sign-alignment = true
 key-value-equals-sign-space-width = 1
 line-ending = "crlf"
@@ -566,6 +569,17 @@ The number of spaces after the comma in a single line inline table.
 key = { a = 1, b = 2 }
 #             ^  <- this
 ```
+
+### format.rules.key-quote-style
+
+The preferred quote character for quoted keys.
+
+- Type: `"double" | "single" | "preserve"`
+- Default: uses `string-quote-style`
+- Enum Values:
+  - `double`: Prefer the double quote like `"key"`
+  - `single`: Prefer the single quote like `'key'`
+  - `preserve`: Preserve the original quote
 
 ### format.rules.key-value-equals-sign-alignment
 
