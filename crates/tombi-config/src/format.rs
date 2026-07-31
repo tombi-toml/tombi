@@ -182,6 +182,13 @@ pub struct FormatRules {
     #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
     pub key_value_equals_sign_alignment: Option<bool>,
 
+    /// # The preferred quote character for keys
+    ///
+    /// Choose which quote style the formatter prefers for quoted keys.
+    /// If unspecified, `string-quote-style` is used.
+    #[cfg_attr(feature = "jsonschema", schemars(default))]
+    pub key_quote_style: Option<StringQuoteStyle>,
+
     /// # The preferred quote character for strings
     ///
     /// Choose which quote style the formatter prefers for basic strings.
@@ -318,6 +325,7 @@ impl FormatRules {
             key_value_equals_sign_alignment: self
                 .key_value_equals_sign_alignment
                 .or(override_rules.key_value_equals_sign_alignment),
+            key_quote_style: self.key_quote_style.or(override_rules.key_quote_style),
             string_quote_style: self
                 .string_quote_style
                 .or(override_rules.string_quote_style),

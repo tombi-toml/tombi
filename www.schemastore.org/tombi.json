@@ -326,6 +326,19 @@
           ],
           "default": false
         },
+        "key-quote-style": {
+          "title": "The preferred quote character for keys",
+          "description": "Choose which quote style the formatter prefers for quoted keys.\nIf unspecified, `string-quote-style` is used.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringQuoteStyle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "string-quote-style": {
           "title": "The preferred quote character for strings",
           "description": "Choose which quote style the formatter prefers for basic strings.",

@@ -308,6 +308,11 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
+    pub(crate) fn key_quote_style(&self) -> tombi_config::StringQuoteStyle {
+        self.definitions.key_quote_style
+    }
+
+    #[inline]
     pub(crate) fn date_time_delimiter(&self) -> Option<&str> {
         self.definitions.date_time_delimiter
     }

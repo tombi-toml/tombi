@@ -1436,6 +1436,71 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
+            async fn test_key_quote_style_defaults_to_string_quote_style(
+                r#"
+                'key' = 'value'
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        string_quote_style: Some(StringQuoteStyle::Double),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                "key" = "value"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_key_quote_style_single(
+                r#"
+                "key" = 'value'
+
+                [target."cfg(unix)".dependencies]
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        key_quote_style: Some(StringQuoteStyle::Single),
+                        string_quote_style: Some(StringQuoteStyle::Double),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                'key' = "value"
+
+                [target.'cfg(unix)'.dependencies]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_key_quote_style_preserve(
+                r#"
+                'single' = 'value'
+                "double" = 'value'
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        key_quote_style: Some(StringQuoteStyle::Preserve),
+                        string_quote_style: Some(StringQuoteStyle::Double),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                'single' = "value"
+                "double" = "value"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_string_quote_style_double(
                 r#"
                 key = 'value'
