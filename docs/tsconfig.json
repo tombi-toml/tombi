@@ -9,11 +9,13 @@
     "jsxImportSource": "solid-js",
     "allowJs": true,
     "strict": true,
+    "skipLibCheck": true,
     "noEmit": true,
     "types": ["vinxi/types/client"],
     "isolatedModules": true,
     "resolveJsonModule": true,
     "paths": {
+      "solid-mdx": ["./node_modules/solid-mdx/types/index.d.ts"],
       "~/*": ["./src/*"]
     }
   }

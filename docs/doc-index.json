@@ -156,6 +156,7 @@
     "children": [
       {
         "title": "Schema Document Directive",
+        "description": "Select a JSON Schema for a document with a comment directive.",
         "path": "/docs/comment-directive/schema-document-directive"
       },
       {
