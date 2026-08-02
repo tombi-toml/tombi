@@ -1,5 +1,5 @@
 import type { Component } from "solid-js";
-import { createEffect, createSignal, For } from "solid-js";
+import { createSignal, For, onCleanup, onMount } from "solid-js";
 
 interface InstallationMethod {
   id: string;
@@ -114,7 +114,7 @@ export const InstallationMethodGrid: Component<InstallationMethodGridProps> = (
   const [isDarkMode, setIsDarkMode] = createSignal(false);
 
   // Check for dark mode
-  createEffect(() => {
+  onMount(() => {
     const checkDarkMode = () => {
       const storedTheme = localStorage.getItem("theme");
       const hasDarkClass = document.documentElement.classList.contains("dark");
@@ -144,10 +144,7 @@ export const InstallationMethodGrid: Component<InstallationMethodGridProps> = (
       attributeFilter: ["class"],
     });
 
-    // Cleanup
-    return () => {
-      observer.disconnect();
-    };
+    onCleanup(() => observer.disconnect());
   });
 
   const categories = [

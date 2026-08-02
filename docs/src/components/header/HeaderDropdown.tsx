@@ -1,5 +1,5 @@
 import type { Accessor } from "solid-js";
-import { createEffect, For } from "solid-js";
+import { createEffect, For, onCleanup } from "solid-js";
 import { isServer } from "solid-js/web";
 import type { DocIndex } from "~/utils/doc-index";
 import docIndex from "../../../doc-index.json";
@@ -30,9 +30,9 @@ export function HeaderDropdown(props: HeaderDropdownProps) {
   createEffect(() => {
     if (!isServer && props.isExpanded()) {
       document.addEventListener("click", handleClickOutside);
-      return () => {
+      onCleanup(() => {
         document.removeEventListener("click", handleClickOutside);
-      };
+      });
     }
   });
 

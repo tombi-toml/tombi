@@ -1,14 +1,8 @@
-import "prismjs";
-import "prismjs/components/prism-toml";
-import "prismjs/components/prism-bash";
-import "prismjs/components/prism-json";
-import "prismjs/components/prism-typescript";
 import { MetaProvider } from "@solidjs/meta";
 
 import { Router } from "@solidjs/router";
 import { FileRoutes } from "@solidjs/start/router";
-import Prism from "prismjs";
-import { onMount, Suspense } from "solid-js";
+import { Suspense } from "solid-js";
 import { MDXProvider } from "solid-mdx";
 import * as components from "~/components";
 import "virtual:uno.css";
@@ -16,10 +10,6 @@ import "./app.css";
 import Layout from "./routes/layout";
 
 export default function App() {
-  onMount(() => {
-    Prism.highlightAll();
-  });
-
   return (
     <Router
       base={import.meta.env.BASE_URL || undefined}
