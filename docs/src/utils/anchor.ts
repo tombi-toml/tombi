@@ -4,6 +4,10 @@ const checkIcon = `<svg fill="none" stroke-width="2" xmlns="http://www.w3.org/20
 
 export function setupAnchors() {
   for (const heading of document.querySelectorAll(".heading-with-anchor")) {
+    if (heading.querySelector(".anchor-link")) {
+      continue;
+    }
+
     const anchorLink = document.createElement("a");
     anchorLink.className = "anchor-link";
     anchorLink.setAttribute("data-anchor", "true");
@@ -11,23 +15,42 @@ export function setupAnchors() {
     anchorLink.innerHTML = clipIcon;
     heading.appendChild(anchorLink);
   }
+}
 
-  document.addEventListener("click", (event) => {
-    const target = event.target as HTMLElement;
-    const anchorLink = target.closest(".anchor-link");
+export function setupAnchorCopyHandling() {
+  const resetTimeoutIds = new Set<ReturnType<typeof setTimeout>>();
+  const handleClick = async (event: MouseEvent) => {
+    if (!(event.target instanceof Element)) {
+      return;
+    }
+
+    const anchorLink = event.target.closest<HTMLElement>(".anchor-link");
     if (anchorLink) {
-      const heading = target.closest(".heading-with-anchor") as HTMLElement;
+      const heading = anchorLink.closest<HTMLElement>(".heading-with-anchor");
       if (heading?.id) {
         event.preventDefault();
         const url = `${window.location.href.split("#")[0]}#${heading.id}`;
-        navigator.clipboard.writeText(url).then(() => {
+        try {
+          await navigator.clipboard.writeText(url);
           anchorLink.innerHTML = checkIcon;
 
-          setTimeout(() => {
+          const timeoutId = setTimeout(() => {
             anchorLink.innerHTML = clipIcon;
+            resetTimeoutIds.delete(timeoutId);
           }, 500);
-        });
+          resetTimeoutIds.add(timeoutId);
+        } catch {
+          // Keep the link icon unchanged when clipboard access is unavailable.
+        }
       }
     }
-  });
+  };
+
+  document.addEventListener("click", handleClick);
+  return () => {
+    document.removeEventListener("click", handleClick);
+    for (const timeoutId of resetTimeoutIds) {
+      clearTimeout(timeoutId);
+    }
+  };
 }

@@ -1,5 +1,5 @@
 import { TbLoaderQuarter, TbSearch } from "solid-icons/tb";
-import { createSignal, onMount } from "solid-js";
+import { createSignal, onCleanup, onMount } from "solid-js";
 import { detectOperatingSystem } from "~/utils/platform";
 import { type SearchResult, searchDocumentation } from "~/utils/search";
 import breakpoints from "../../../breakpoints.json";
@@ -26,21 +26,25 @@ export function HeaderSearch(props: HeaderSearchProps) {
     setIsMac(detectOperatingSystem() === "mac");
     setIsDesktop(window.innerWidth >= breakpoints.md);
 
-    if (typeof window !== "undefined") {
-      window.addEventListener("resize", () => {
-        setIsDesktop(window.innerWidth >= breakpoints.md);
-      });
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= breakpoints.md);
+    };
+    const handleShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
+        event.preventDefault();
+        // Save the currently focused element before opening search
+        props.savePreviousActiveElement?.();
+        searchInputRef?.focus();
+        props.setIsSearchOpen(true);
+      }
+    };
 
-      document.addEventListener("keydown", (e) => {
-        if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-          e.preventDefault();
-          // Save the currently focused element before opening search
-          props.savePreviousActiveElement?.();
-          searchInputRef?.focus();
-          props.setIsSearchOpen(true);
-        }
-      });
-    }
+    window.addEventListener("resize", handleResize);
+    document.addEventListener("keydown", handleShortcut);
+    onCleanup(() => {
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("keydown", handleShortcut);
+    });
   });
 
   const handleSearch = async (query: string) => {

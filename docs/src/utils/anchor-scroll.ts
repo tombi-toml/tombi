@@ -64,25 +64,6 @@ export function handleInitialHash() {
   const targetElement = document.getElementById(targetId);
 
   if (targetElement) {
-    // Use setTimeout to ensure the page is fully rendered
-    setTimeout(() => {
-      scrollToElement(targetElement, false);
-    }, 100);
+    scrollToElement(targetElement, false);
   }
-}
-
-/**
- * Sets up anchor link handling for the entire document
- */
-export function setupAnchorHandling() {
-  // Handle initial hash on page load
-  handleInitialHash();
-
-  // Handle hash changes (browser back/forward)
-  window.addEventListener("hashchange", () => {
-    handleInitialHash();
-  });
-
-  // Handle anchor link clicks
-  document.addEventListener("click", handleAnchorClick);
 }
