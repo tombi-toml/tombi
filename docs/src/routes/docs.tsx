@@ -1,6 +1,7 @@
 import type { RouteSectionProps } from "@solidjs/router";
 import { useLocation } from "@solidjs/router";
 import { createEffect, onCleanup, onMount } from "solid-js";
+import { CodeTabsProvider } from "~/components/CodeTabsContext";
 import { DocNavigation } from "~/components/DocNavigation";
 import { Sidebar } from "~/components/Sidebar";
 import { setupAnchorCopyHandling, setupAnchors } from "~/utils/anchor";
@@ -35,7 +36,9 @@ export default function DocumentationLayout(props: RouteSectionProps) {
         class="flex-1 min-w-0 p-4 mdx-content min-h-screen max-w-full outline-none"
       >
         <div class="max-w-full">
-          {props.children}
+          <CodeTabsProvider scope={location.pathname}>
+            {props.children}
+          </CodeTabsProvider>
           <DocNavigation />
         </div>
       </main>

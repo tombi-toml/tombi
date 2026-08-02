@@ -1,5 +1,6 @@
-import { createSignal, For } from "solid-js";
+import { createEffect, createSignal, For } from "solid-js";
 import { CodeBlock } from "./CodeBlock";
+import { useCodeTabsSelection } from "./CodeTabsContext";
 
 export type Tab = {
   key: string;
@@ -15,10 +16,23 @@ type CodeTabsProps = {
 };
 
 export default function CodeTabs(props: CodeTabsProps) {
+  const sharedSelection = useCodeTabsSelection();
   const [active, setActive] = createSignal(
     props.defaultKey || props.tabs[0].key,
   );
   const current = () => props.tabs.find((tab) => tab.key === active());
+
+  createEffect(() => {
+    const selectedKey = sharedSelection?.selectedKey();
+    if (selectedKey && props.tabs.some((tab) => tab.key === selectedKey)) {
+      setActive(selectedKey);
+    }
+  });
+
+  const selectTab = (key: string) => {
+    setActive(key);
+    sharedSelection?.selectKey(key);
+  };
 
   return (
     <div>
@@ -26,7 +40,7 @@ export default function CodeTabs(props: CodeTabsProps) {
         {(tab) => (
           <button
             type="button"
-            onClick={() => setActive(tab.key)}
+            onClick={() => selectTab(tab.key)}
             class={`px-4 font-semibold text-base cursor-pointer bg-transparent border-0 relative transition-colors
                 ${
                   active() === tab.key
