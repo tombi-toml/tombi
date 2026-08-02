@@ -11,9 +11,18 @@ interface HeaderDropdownProps {
 }
 
 const menuItems: DocIndex[] = [
-  { title: "Home", path: "/" },
-  { title: "Docs", path: "/docs", children: docIndex },
-  { title: "Playground", path: "/playground" },
+  { title: "Home", description: "Tombi home page.", path: "/" },
+  {
+    title: "Docs",
+    description: "Tombi documentation.",
+    path: "/docs",
+    children: docIndex,
+  },
+  {
+    title: "Playground",
+    description: "Try Tombi in the browser.",
+    path: "/playground",
+  },
 ];
 
 export function HeaderDropdown(props: HeaderDropdownProps) {

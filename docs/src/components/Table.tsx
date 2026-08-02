@@ -1,7 +1,7 @@
 import { onCleanup, onMount } from "solid-js";
 import type { JSX } from "solid-js";
 
-export function Table(props: JSX.TableHTMLAttributes<HTMLTableElement>) {
+export function Table(props: JSX.HTMLAttributes<HTMLTableElement>) {
   const { children, ...tableProps } = props;
   let shellRef: HTMLDivElement | undefined;
   let scrollRef: HTMLDivElement | undefined;
@@ -107,7 +107,8 @@ export function Table(props: JSX.TableHTMLAttributes<HTMLTableElement>) {
       const shellRect = shellRef.getBoundingClientRect();
       const stickyHeight = clonedHead.getBoundingClientRect().height;
       const shouldStick =
-        shellRect.top <= stickyTop && shellRect.bottom > stickyTop + stickyHeight;
+        shellRect.top <= stickyTop &&
+        shellRect.bottom > stickyTop + stickyHeight;
 
       shellRef.dataset.stickyActive = shouldStick ? "true" : "false";
       if (!shouldStick) {

@@ -22,7 +22,6 @@ export default defineConfig({
     },
   },
   vite: {
-    // @ts-expect-error
     base: process.env.BASE_URL,
     plugins: [
       mdx.withImports({})({
