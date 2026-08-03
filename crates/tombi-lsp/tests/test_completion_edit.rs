@@ -1035,6 +1035,26 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn key_dot_select_multi_line_basic_string(
+                "key.█",
+                Select("\"\"\"\"\"\""),
+            ) -> Ok(
+                "key = \"\"\"$1\"\"\"$0"
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn key_dot_select_multi_line_literal_string(
+                "key.█",
+                Select("''''''"),
+            ) -> Ok(
+                "key = '''$1'''$0"
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn key_dot_select_today_offset_date_time(
                 "key.█",
                 Select(today_offset_date_time()),

@@ -97,7 +97,7 @@ impl CompletionEdit {
     }
 
     pub fn new_string_literal(
-        quote: char,
+        quote: &str,
         position: tombi_text::Position,
         completion_hint: Option<CompletionHint>,
     ) -> Option<Self> {
