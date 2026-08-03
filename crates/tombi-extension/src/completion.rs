@@ -221,7 +221,7 @@ impl CompletionContent {
 
     pub fn new_type_hint_string(
         kind: CompletionKind,
-        quote: char,
+        quote: &str,
         detail: impl Into<String>,
         edit: Option<CompletionEdit>,
         schema_uri: Option<&SchemaUri>,

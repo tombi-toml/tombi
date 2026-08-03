@@ -465,7 +465,9 @@ mod completion_labels {
                 "\"https://www.schemastore.org/api/json/catalog.json\"",
                 "\"tombi://www.schemastore.org/api/json/catalog.json\"",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
 
@@ -481,7 +483,9 @@ mod completion_labels {
                 "\"https://www.schemastore.org/api/json/catalog.json\"",
                 "\"tombi://www.schemastore.org/api/json/catalog.json\"",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
 
@@ -704,7 +708,9 @@ mod completion_labels {
                 "\"tombi://www.schemastore.org/pyproject.json\"",
                 "\"tombi://www.schemastore.org/tombi.json\"",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
 
@@ -1011,7 +1017,7 @@ mod completion_labels {
                 ]
                 "#,
                 SchemaPath(adjacent_one_of_hover_test_schema_path()),
-            ) -> Ok(["\"builtin-hook\"", "\"\"", "''"]);
+            ) -> Ok(["\"builtin-hook\"", "\"\"", "\"\"\"\"\"\"", "''", "''''''"]);
         }
     }
 
@@ -1134,7 +1140,9 @@ mod completion_labels {
                 },
             ) -> Ok([
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
     }
@@ -1362,7 +1370,9 @@ mod completion_labels {
             ) -> Ok([
                 "include-group",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
                 "{}",
             ]);
         }
@@ -1905,7 +1915,9 @@ mod completion_labels {
                 "\"chrono\"",
                 "\"serde\"",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
 
@@ -1934,7 +1946,9 @@ mod completion_labels {
                 "version",
                 "workspace = true",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
                 "{}",
             ]);
         }
@@ -1964,7 +1978,9 @@ mod completion_labels {
                 "version",
                 "workspace = true",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
                 "{}",
             ]);
         }
@@ -1998,7 +2014,9 @@ mod completion_labels {
                 "\"0.1.0\"",
                 "\"*\"",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
 
@@ -2045,7 +2063,9 @@ mod completion_labels {
                 "\"0.1.0\"",
                 "\"*\"",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
 
@@ -2165,7 +2185,9 @@ mod completion_labels {
                 "\"chrono\"",
                 "\"serde\"",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
 
@@ -2183,7 +2205,9 @@ mod completion_labels {
                 "\"chrono\"",
                 "\"serde\"",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
 
@@ -2203,7 +2227,9 @@ mod completion_labels {
                 "\"extras\"",
                 "\"flag\"",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
 
@@ -2220,7 +2246,9 @@ mod completion_labels {
                 SchemaPath(cargo_schema_path()),
             ) -> Ok([
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
 
@@ -2290,7 +2318,9 @@ mod completion_labels {
                 "\"chrono\"",
                 "\"serde\"",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
 
@@ -2323,7 +2353,9 @@ mod completion_labels {
                 "\"MIT\"",
                 "workspace = true",
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
                 "{}",
             ]);
         }
@@ -2681,7 +2713,9 @@ mod completion_labels {
                 SchemaPath(string_format_test_schema_path()),
             ) -> Ok([
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
                 today_local_date(),
             ]);
         }
@@ -2695,7 +2729,9 @@ mod completion_labels {
                 SchemaPath(string_format_test_schema_path()),
             ) -> Ok([
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
                 today_local_time(),
             ]);
         }
@@ -2709,7 +2745,9 @@ mod completion_labels {
                 SchemaPath(string_format_test_schema_path()),
             ) -> Ok([
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
                 today_local_date_time(),
             ]);
         }
@@ -2723,7 +2761,9 @@ mod completion_labels {
                 SchemaPath(string_format_test_schema_path()),
             ) -> Ok([
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
                 today_offset_date_time(),
             ]);
         }
@@ -2737,7 +2777,9 @@ mod completion_labels {
                 SchemaPath(string_format_test_schema_path()),
             ) -> Ok([
                 "\"\"",
+                "\"\"\"\"\"\"",
                 "''",
+                "''''''",
             ]);
         }
     }
@@ -2752,7 +2794,9 @@ mod completion_labels {
                 #[tokio::test]
                 async fn $name($source $(, $arg)*) -> Ok([
                     "\"\"",
+                    "\"\"\"\"\"\"",
                     "''",
+                    "''''''",
                     today_local_time(),
                     today_local_date(),
                     today_local_date_time(),

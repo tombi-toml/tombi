@@ -69,7 +69,10 @@ impl FindCompletionContents for tombi_document_tree::String {
                             return None;
                         }
 
-                        if completion_content.label == "\"\"" || completion_content.label == "''" {
+                        if matches!(
+                            completion_content.label.as_str(),
+                            "\"\"" | "''" | "\"\"\"\"\"\"" | "''''''"
+                        ) {
                             return None;
                         }
 
@@ -230,16 +233,21 @@ pub fn type_hint_string(
     schema_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
-    [('\"', "BasicString"), ('\'', "LiteralString")]
-        .into_iter()
-        .map(|(quote, detail)| {
-            CompletionContent::new_type_hint_string(
-                CompletionKind::String,
-                quote,
-                detail,
-                CompletionEdit::new_string_literal(quote, position, completion_hint),
-                schema_uri,
-            )
-        })
-        .collect()
+    [
+        ("\"", "BasicString"),
+        ("'", "LiteralString"),
+        ("\"\"\"", "MultiLineBasicString"),
+        ("'''", "MultiLineLiteralString"),
+    ]
+    .into_iter()
+    .map(|(quote, detail)| {
+        CompletionContent::new_type_hint_string(
+            CompletionKind::String,
+            quote,
+            detail,
+            CompletionEdit::new_string_literal(quote, position, completion_hint),
+            schema_uri,
+        )
+    })
+    .collect()
 }
