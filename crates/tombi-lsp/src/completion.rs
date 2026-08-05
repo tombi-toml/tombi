@@ -401,6 +401,7 @@ pub(super) async fn merge_adjacent_schema_completion_items(
                     value_schema: Arc::new(ValueSchema::OneOf(one_of_schema.clone())),
                     schema_uri: current_schema.schema_uri.clone(),
                     definitions: current_schema.definitions.clone(),
+                    strict: current_schema.strict,
                 },
                 schema_context,
                 completion_hint,
@@ -420,6 +421,7 @@ pub(super) async fn merge_adjacent_schema_completion_items(
                     value_schema: Arc::new(ValueSchema::AnyOf(any_of_schema.clone())),
                     schema_uri: current_schema.schema_uri.clone(),
                     definitions: current_schema.definitions.clone(),
+                    strict: current_schema.strict,
                 },
                 schema_context,
                 completion_hint,
@@ -439,6 +441,7 @@ pub(super) async fn merge_adjacent_schema_completion_items(
                     value_schema: Arc::new(ValueSchema::AllOf(all_of_schema.clone())),
                     schema_uri: current_schema.schema_uri.clone(),
                     definitions: current_schema.definitions.clone(),
+                    strict: current_schema.strict,
                 },
                 schema_context,
                 completion_hint,
@@ -468,6 +471,7 @@ pub trait CompletionCandidate {
         &'a self,
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Option<String>>;
@@ -476,6 +480,7 @@ pub trait CompletionCandidate {
         &'a self,
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Option<String>>;
@@ -484,22 +489,36 @@ pub trait CompletionCandidate {
         &self,
         schema_uri: &SchemaUri,
         definitions: &SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &SchemaStore,
         completion_hint: Option<CompletionHint>,
     ) -> Option<String> {
-        self.title(schema_uri, definitions, schema_store, completion_hint)
-            .await
+        self.title(
+            schema_uri,
+            definitions,
+            strict,
+            schema_store,
+            completion_hint,
+        )
+        .await
     }
 
     async fn documentation(
         &self,
         schema_uri: &SchemaUri,
         definitions: &SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &SchemaStore,
         completion_hint: Option<CompletionHint>,
     ) -> Option<String> {
-        self.description(schema_uri, definitions, schema_store, completion_hint)
-            .await
+        self.description(
+            schema_uri,
+            definitions,
+            strict,
+            schema_store,
+            completion_hint,
+        )
+        .await
     }
 }
 
@@ -507,6 +526,7 @@ fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
     composite_schema: &'a T,
     schema_uri: &'a SchemaUri,
     definitions: &'a SchemaDefinitions,
+    strict: Option<tombi_schema_type::BoolDefaultTrue>,
     schema_store: &'a SchemaStore,
     completion_hint: Option<CompletionHint>,
 ) -> tombi_future::BoxFuture<'b, Option<String>> {
@@ -518,6 +538,7 @@ fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
             composite_schema.schemas(),
             Cow::Borrowed(schema_uri),
             Cow::Borrowed(definitions),
+            strict,
             schema_store,
             &schema_visits,
             &[],
@@ -533,6 +554,7 @@ fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
                     current_schema.value_schema.as_ref(),
                     &current_schema.schema_uri,
                     &current_schema.definitions,
+                    current_schema.strict,
                     schema_store,
                     completion_hint,
                 )
@@ -559,6 +581,7 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
     composite_schema: &'a T,
     schema_uri: &'a SchemaUri,
     definitions: &'a SchemaDefinitions,
+    strict: Option<tombi_schema_type::BoolDefaultTrue>,
     schema_store: &'a SchemaStore,
     completion_hint: Option<CompletionHint>,
 ) -> tombi_future::BoxFuture<'b, Option<String>> {
@@ -570,6 +593,7 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
             composite_schema.schemas(),
             Cow::Borrowed(schema_uri),
             Cow::Borrowed(definitions),
+            strict,
             schema_store,
             &schema_visits,
             &[],
@@ -585,6 +609,7 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
                     current_schema.value_schema.as_ref(),
                     &current_schema.schema_uri,
                     &current_schema.definitions,
+                    current_schema.strict,
                     schema_store,
                     completion_hint,
                 )
@@ -614,20 +639,36 @@ macro_rules! impl_composite_completion_candidate {
                 &'a self,
                 schema_uri: &'a SchemaUri,
                 definitions: &'a SchemaDefinitions,
+                strict: Option<tombi_schema_type::BoolDefaultTrue>,
                 schema_store: &'a SchemaStore,
                 completion_hint: Option<CompletionHint>,
             ) -> tombi_future::BoxFuture<'b, Option<String>> {
-                composite_title(self, schema_uri, definitions, schema_store, completion_hint)
+                composite_title(
+                    self,
+                    schema_uri,
+                    definitions,
+                    strict,
+                    schema_store,
+                    completion_hint,
+                )
             }
 
             fn description<'a: 'b, 'b>(
                 &'a self,
                 schema_uri: &'a SchemaUri,
                 definitions: &'a SchemaDefinitions,
+                strict: Option<tombi_schema_type::BoolDefaultTrue>,
                 schema_store: &'a SchemaStore,
                 completion_hint: Option<CompletionHint>,
             ) -> tombi_future::BoxFuture<'b, Option<String>> {
-                composite_description(self, schema_uri, definitions, schema_store, completion_hint)
+                composite_description(
+                    self,
+                    schema_uri,
+                    definitions,
+                    strict,
+                    schema_store,
+                    completion_hint,
+                )
             }
         }
     };

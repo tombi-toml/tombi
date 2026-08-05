@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use std::borrow::Cow;
 use tombi_accessor::MarkdownSchemaAccessors;
 use tombi_comment_directive::value::TableCommonLintRules;
 use tombi_document_tree::ValueImpl;
@@ -32,21 +31,12 @@ impl Validate for tombi_document_tree::Table {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
         async move {
-            if let Some(Ok(document_schema)) = schema_context
+            if let Some(Ok(current_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
-                && let Some(value_schema) = &document_schema.value_schema
             {
                 return self
-                    .validate(
-                        accessors,
-                        Some(&CurrentSchema {
-                            value_schema: value_schema.clone(),
-                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
-                            definitions: Cow::Borrowed(&document_schema.definitions),
-                        }),
-                        schema_context,
-                    )
+                    .validate(accessors, Some(&current_schema), schema_context)
                     .await;
             }
 
@@ -183,6 +173,7 @@ async fn validate_table(
                     &schema_accessor,
                     current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
+                    current_schema.strict,
                     schema_context.store,
                 )
                 .await
@@ -237,6 +228,7 @@ async fn validate_table(
                             &pattern_key,
                             current_schema.schema_uri.clone(),
                             current_schema.definitions.clone(),
+                            current_schema.strict,
                             schema_context.store,
                         )
                         .await
@@ -273,7 +265,10 @@ async fn validate_table(
                 }
             }
 
-            if !matched_key && !table_schema.allows_additional_properties(schema_context.strict()) {
+            if !matched_key
+                && !table_schema
+                    .allows_additional_properties(schema_context.strict(Some(current_schema)))
+            {
                 let level = key_rules
                     .and_then(|rules| {
                         rules
@@ -320,6 +315,7 @@ async fn validate_table(
                     referable_additional_property_schema,
                     current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
+                    current_schema.strict,
                     schema_context.store,
                 )
                 .await
@@ -371,6 +367,7 @@ async fn validate_table(
                         schema_item,
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
+                        current_schema.strict,
                         schema_context.store,
                     )
                     .await
@@ -418,7 +415,9 @@ async fn validate_table(
                 continue;
             }
 
-            if table_schema.check_strict_additional_properties_violation(schema_context.strict()) {
+            if table_schema.check_strict_additional_properties_violation(
+                schema_context.strict(Some(current_schema)),
+            ) {
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::TableStrictAdditionalKeys {
                         accessors: MarkdownSchemaAccessors::from(accessors),
@@ -431,7 +430,9 @@ async fn validate_table(
 
                 continue;
             }
-            if !table_schema.allows_any_additional_properties(schema_context.strict()) {
+            if !table_schema
+                .allows_any_additional_properties(schema_context.strict(Some(current_schema)))
+            {
                 let level = key_rules
                     .and_then(|rules| {
                         rules
@@ -449,7 +450,7 @@ async fn validate_table(
                 }
                 .push_diagnostic_with_level(level, &mut total_diagnostics);
                 continue;
-            } else if schema_context.strict()
+            } else if schema_context.strict(Some(current_schema))
                 && key_rules
                     .and_then(|rules| rules.key_not_allowed.as_ref())
                     .and_then(|rules| rules.disabled)
@@ -605,6 +606,7 @@ async fn validate_table(
                         schema_item,
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
+                        current_schema.strict,
                         schema_context.store,
                     )
                     .await
@@ -617,14 +619,14 @@ async fn validate_table(
                             let dependency_schema_context = tombi_schema_store::SchemaContext {
                                 toml_version: schema_context.toml_version,
                                 root_schema: schema_context.root_schema,
-                                sub_schema_uri_map: schema_context.sub_schema_uri_map,
+                                sub_schema_link_map: schema_context.sub_schema_link_map,
                                 deprecated_lint_level: schema_context.deprecated_lint_level,
                                 schema_format_rules: schema_context.schema_format_rules,
                                 schema_lint_rules: schema_context.schema_lint_rules,
                                 schema_overrides: schema_context.schema_overrides,
                                 schema_visits: schema_context.schema_visits.clone(),
                                 store: schema_context.store,
-                                strict: Some(false),
+                                strict: Some(false.into()),
                             };
 
                             if let Err(crate::Error { diagnostics, .. }) = table_value
@@ -684,6 +686,7 @@ async fn validate_table(
                 schema_item,
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
+                current_schema.strict,
                 schema_context.store,
             )
             .await
@@ -693,14 +696,14 @@ async fn validate_table(
                     let dependency_schema_context = tombi_schema_store::SchemaContext {
                         toml_version: schema_context.toml_version,
                         root_schema: schema_context.root_schema,
-                        sub_schema_uri_map: schema_context.sub_schema_uri_map,
+                        sub_schema_link_map: schema_context.sub_schema_link_map,
                         deprecated_lint_level: schema_context.deprecated_lint_level,
                         schema_format_rules: schema_context.schema_format_rules,
                         schema_lint_rules: schema_context.schema_lint_rules,
                         schema_overrides: schema_context.schema_overrides,
                         schema_visits: schema_context.schema_visits.clone(),
                         store: schema_context.store,
-                        strict: Some(false),
+                        strict: Some(false.into()),
                     };
 
                     if let Err(crate::Error { diagnostics, .. }) = table_value
@@ -800,6 +803,7 @@ async fn validate_table(
                 property_name_schema,
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
+                current_schema.strict,
                 schema_context.store,
             )
             .await
@@ -1099,6 +1103,7 @@ fn collect_evaluated_properties_from_schema_item<'a>(
             schema_item,
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
+            current_schema.strict,
             schema_context.store,
         )
         .await
@@ -1134,6 +1139,7 @@ fn collect_evaluated_properties_from_referable_schemas<'a>(
             applicator.schemas(),
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
+            current_schema.strict,
             schema_context.store,
             &schema_context.schema_visits,
             accessors,
@@ -1234,6 +1240,7 @@ fn collect_evaluated_properties_from_if_then_else_schema<'a>(
             &if_then_else_schema.if_schema,
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
+            current_schema.strict,
             schema_context.store,
         )
         .await

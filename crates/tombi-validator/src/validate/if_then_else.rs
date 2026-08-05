@@ -38,6 +38,7 @@ where
         &if_then_else_schema.if_schema,
         current_schema.schema_uri.clone(),
         current_schema.definitions.clone(),
+        current_schema.strict,
         schema_context.store,
     )
     .await
@@ -67,6 +68,7 @@ where
                 then_schema,
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
+                current_schema.strict,
                 schema_context.store,
             )
             .await
@@ -98,6 +100,7 @@ where
                 else_schema,
                 Cow::Borrowed(current_schema.schema_uri.as_ref()),
                 Cow::Borrowed(current_schema.definitions.as_ref()),
+                current_schema.strict,
                 schema_context.store,
             )
             .await

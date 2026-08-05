@@ -1,9 +1,9 @@
-use std::{borrow::Cow, sync::Arc};
+use std::sync::Arc;
 
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaAccessor, ValueSchema,
+    Accessor, AllOfSchema, AnyOfSchema, OneOfSchema, SchemaAccessor, ValueSchema,
 };
 use tombi_validator::Validate;
 
@@ -41,21 +41,16 @@ fn edit_recursive<'a: 'b, 'b>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
 ) -> BoxFuture<'b, Vec<crate::Change>> {
     async move {
-        if let Some(Ok(document_schema)) = schema_context
+        if let Some(Ok(current_schema)) = schema_context
             .get_subschema(accessors.as_ref(), current_schema.as_ref())
             .await
-            && let Some(value_schema) = &document_schema.value_schema
         {
             return edit_recursive(
                 node,
                 edit_fn,
                 key_accessors,
                 accessors,
-                Some(CurrentSchema {
-                    value_schema: value_schema.clone(),
-                    schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
-                    definitions: Cow::Owned(document_schema.definitions.clone()),
-                }),
+                Some(current_schema),
                 schema_context,
             )
             .await;
@@ -70,6 +65,7 @@ fn edit_recursive<'a: 'b, 'b>(
                         schemas,
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
+                        current_schema.strict,
                         schema_context.store,
                         &schema_context.schema_visits,
                         accessors.as_ref(),
@@ -143,6 +139,7 @@ fn edit_recursive<'a: 'b, 'b>(
                             &key_schema_accessor,
                             current_schema.schema_uri.clone(),
                             current_schema.definitions.clone(),
+                            current_schema.strict,
                             schema_context.store,
                         )
                         .await
@@ -180,6 +177,7 @@ fn edit_recursive<'a: 'b, 'b>(
                                         &property_key,
                                         current_schema.schema_uri.clone(),
                                         current_schema.definitions.clone(),
+                                        current_schema.strict,
                                         schema_context.store,
                                     )
                                     .await
@@ -209,6 +207,7 @@ fn edit_recursive<'a: 'b, 'b>(
                             referable_additional_property_schema,
                             current_schema.schema_uri.clone(),
                             current_schema.definitions.clone(),
+                            current_schema.strict,
                             schema_context.store,
                         )
                         .await
@@ -231,6 +230,7 @@ fn edit_recursive<'a: 'b, 'b>(
                             items,
                             current_schema.schema_uri.clone(),
                             current_schema.definitions.clone(),
+                            current_schema.strict,
                             schema_context.store,
                         )
                         .await

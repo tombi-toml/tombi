@@ -63,6 +63,7 @@ pub fn validate<'a: 'b, 'b>(
                             value_schema: value_schema.clone(),
                             schema_uri: Cow::Borrowed(&root_schema.schema_uri),
                             definitions: Cow::Borrowed(&root_schema.definitions),
+                            strict: root_schema.strict,
                         })
                 })
         });

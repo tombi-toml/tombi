@@ -54,10 +54,9 @@ impl FindCompletionContents for tombi_document_tree::Value {
         log::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
-            if let Some(Ok(document_schema)) = schema_context
+            if let Some(Ok(current_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
-                && let Some(current_schema) = document_schema.as_current_schema()
             {
                 return self
                     .find_completion_contents(
@@ -289,6 +288,7 @@ impl CompletionCandidate for ValueSchema {
         &'a self,
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Option<String>> {
@@ -309,17 +309,35 @@ impl CompletionCandidate for ValueSchema {
                 }
                 Self::OneOf(one_of) => {
                     one_of
-                        .title(schema_uri, definitions, schema_store, completion_hint)
+                        .title(
+                            schema_uri,
+                            definitions,
+                            strict,
+                            schema_store,
+                            completion_hint,
+                        )
                         .await
                 }
                 Self::AnyOf(any_of) => {
                     any_of
-                        .title(schema_uri, definitions, schema_store, completion_hint)
+                        .title(
+                            schema_uri,
+                            definitions,
+                            strict,
+                            schema_store,
+                            completion_hint,
+                        )
                         .await
                 }
                 Self::AllOf(all_of) => {
                     all_of
-                        .title(schema_uri, definitions, schema_store, completion_hint)
+                        .title(
+                            schema_uri,
+                            definitions,
+                            strict,
+                            schema_store,
+                            completion_hint,
+                        )
                         .await
                 }
                 Self::Nothing(_) | Self::Null => None,
@@ -332,6 +350,7 @@ impl CompletionCandidate for ValueSchema {
         &'a self,
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Option<String>> {
@@ -352,17 +371,35 @@ impl CompletionCandidate for ValueSchema {
                 }
                 Self::OneOf(one_of) => {
                     one_of
-                        .description(schema_uri, definitions, schema_store, completion_hint)
+                        .description(
+                            schema_uri,
+                            definitions,
+                            strict,
+                            schema_store,
+                            completion_hint,
+                        )
                         .await
                 }
                 Self::AnyOf(any_of) => {
                     any_of
-                        .description(schema_uri, definitions, schema_store, completion_hint)
+                        .description(
+                            schema_uri,
+                            definitions,
+                            strict,
+                            schema_store,
+                            completion_hint,
+                        )
                         .await
                 }
                 Self::AllOf(all_of) => {
                     all_of
-                        .description(schema_uri, definitions, schema_store, completion_hint)
+                        .description(
+                            schema_uri,
+                            definitions,
+                            strict,
+                            schema_store,
+                            completion_hint,
+                        )
                         .await
                 }
                 Self::Nothing(_) | Self::Null => None,

@@ -1,6 +1,7 @@
 use std::{borrow::Cow, str::FromStr, sync::Arc};
 
 use itertools::Itertools;
+use tombi_schema_type::BoolDefaultTrue;
 use tombi_x_keyword::StringFormat;
 
 use crate::x_taplo::XTaplo;
@@ -39,6 +40,8 @@ pub struct CurrentSchema<'a> {
     pub value_schema: Arc<ValueSchema>,
     pub schema_uri: Cow<'a, SchemaUri>,
     pub definitions: Cow<'a, SchemaDefinitions>,
+    /// strict setting on root-schema/sub-schema level.
+    pub strict: Option<BoolDefaultTrue>,
 }
 
 impl<'a> CurrentSchema<'a> {
@@ -47,6 +50,7 @@ impl<'a> CurrentSchema<'a> {
             value_schema: self.value_schema,
             schema_uri: Cow::Owned(self.schema_uri.into_owned()),
             definitions: Cow::Owned(self.definitions.into_owned()),
+            strict: self.strict,
         }
     }
 }
@@ -192,16 +196,24 @@ impl Referable<ValueSchema> {
         &'a mut self,
         schema_uri: Cow<'a, SchemaUri>,
         definitions: Cow<'a, SchemaDefinitions>,
+        strict: Option<BoolDefaultTrue>,
         schema_store: &'a crate::SchemaStore,
     ) -> tombi_future::BoxFuture<'b, Result<Option<CurrentSchema<'a>>, crate::Error>> {
         let dynamic_scope = vec![schema_uri.as_ref().clone()];
-        self.resolve_with_dynamic_scope(schema_uri, definitions, schema_store, dynamic_scope)
+        self.resolve_with_dynamic_scope(
+            schema_uri,
+            definitions,
+            strict,
+            schema_store,
+            dynamic_scope,
+        )
     }
 
     fn resolve_with_dynamic_scope<'a: 'b, 'b>(
         &'a mut self,
         schema_uri: Cow<'a, SchemaUri>,
         definitions: Cow<'a, SchemaDefinitions>,
+        strict: Option<BoolDefaultTrue>,
         schema_store: &'a crate::SchemaStore,
         dynamic_scope: Vec<SchemaUri>,
     ) -> tombi_future::BoxFuture<'b, Result<Option<CurrentSchema<'a>>, crate::Error>> {
@@ -247,6 +259,7 @@ impl Referable<ValueSchema> {
                                 .resolve_with_dynamic_scope(
                                     Cow::Owned(owner_schema_uri),
                                     Cow::Owned(owner_definitions),
+                                    strict,
                                     schema_store,
                                     scope_for_dynamic_ref,
                                 )
@@ -309,6 +322,7 @@ impl Referable<ValueSchema> {
                                     value_schema: Arc::new(resolved_schema),
                                     schema_uri: Cow::Owned(schema_uri.as_ref().clone()),
                                     definitions: Cow::Owned(definitions.clone().into_owned()),
+                                    strict,
                                 }));
                             } else {
                                 return Err(crate::Error::InvalidJsonPointer {
@@ -320,9 +334,13 @@ impl Referable<ValueSchema> {
                             // Offline Mode
                             return Ok(None);
                         }
-                    } else if let Some(resolved_reference) =
-                        resolve_external_reference(reference, schema_uri.as_ref(), schema_store)
-                            .await?
+                    } else if let Some(resolved_reference) = resolve_external_reference(
+                        reference,
+                        schema_uri.as_ref(),
+                        strict,
+                        schema_store,
+                    )
+                    .await?
                     {
                         let mut resolved_value = resolved_reference.value_schema.clone();
                         if title.is_some() || description.is_some() {
@@ -354,6 +372,7 @@ impl Referable<ValueSchema> {
                             .resolve_with_dynamic_scope(
                                 Cow::Owned(resolved_reference.schema_uri.into_owned()),
                                 Cow::Owned(resolved_reference.definitions.into_owned()),
+                                resolved_reference.strict,
                                 schema_store,
                                 dynamic_scope,
                             )
@@ -368,6 +387,7 @@ impl Referable<ValueSchema> {
                     self.resolve_with_dynamic_scope(
                         schema_uri,
                         definitions,
+                        strict,
                         schema_store,
                         dynamic_scope,
                     )
@@ -400,6 +420,7 @@ impl Referable<ValueSchema> {
                         value_schema: value_schema.clone(),
                         schema_uri,
                         definitions,
+                        strict,
                     }))
                 }
             }
@@ -415,6 +436,7 @@ impl Referable<ValueSchema> {
         &self,
         schema_uri: Cow<'_, SchemaUri>,
         definitions: Cow<'_, SchemaDefinitions>,
+        strict: Option<BoolDefaultTrue>,
         schema_store: &crate::SchemaStore,
     ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
         match self {
@@ -443,6 +465,7 @@ impl Referable<ValueSchema> {
                     value_schema: value_schema.clone(),
                     schema_uri: Cow::Owned(schema_uri.into_owned()),
                     definitions: Cow::Owned(definitions.into_owned()),
+                    strict,
                 }))
             }
         }
@@ -560,6 +583,7 @@ async fn resolve_dynamic_anchor_from_scope(
 async fn resolve_external_reference(
     reference: &str,
     base_schema_uri: &SchemaUri,
+    strict: Option<BoolDefaultTrue>,
     schema_store: &crate::SchemaStore,
 ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
     let joined = if let Ok(url) = base_schema_uri.join(reference) {
@@ -595,6 +619,7 @@ async fn resolve_external_reference(
             value_schema: value_schema.clone(),
             schema_uri: Cow::Owned(document_base_uri(&document_schema)),
             definitions: Cow::Owned(document_schema.definitions.clone()),
+            strict,
         }));
     };
 
@@ -607,6 +632,7 @@ async fn resolve_external_reference(
                 .resolve(
                     Cow::Owned(document_base_uri(&document_schema)),
                     Cow::Owned(document_schema.definitions.clone()),
+                    strict,
                     schema_store,
                 )
                 .await
@@ -635,6 +661,7 @@ async fn resolve_external_reference(
                     value_schema: Arc::new(value_schema),
                     schema_uri: Cow::Owned(document_base_uri(&document_schema)),
                     definitions: Cow::Owned(document_schema.definitions.clone()),
+                    strict,
                 }));
             }
         }
@@ -696,6 +723,7 @@ pub async fn resolve_and_collect_schemas(
     schemas: &super::ReferableValueSchemas,
     schema_uri: Cow<'_, SchemaUri>,
     definitions: Cow<'_, SchemaDefinitions>,
+    strict: Option<BoolDefaultTrue>,
     schema_store: &crate::SchemaStore,
     schema_visits: &crate::SchemaVisits,
     accessors: &[crate::Accessor],
@@ -704,6 +732,7 @@ pub async fn resolve_and_collect_schemas(
         schemas,
         schema_uri,
         definitions,
+        strict,
         schema_store,
         schema_visits,
         accessors,
@@ -727,6 +756,7 @@ pub async fn resolve_and_collect_schemas_with_errors(
     schemas: &super::ReferableValueSchemas,
     schema_uri: Cow<'_, SchemaUri>,
     definitions: Cow<'_, SchemaDefinitions>,
+    strict: Option<BoolDefaultTrue>,
     schema_store: &crate::SchemaStore,
     schema_visits: &crate::SchemaVisits,
     accessors: &[crate::Accessor],
@@ -804,6 +834,7 @@ pub async fn resolve_and_collect_schemas_with_errors(
                 value_schema,
                 schema_uri: Cow::Owned(current_schema_uri),
                 definitions: Cow::Owned(current_definitions),
+                strict,
             });
         }
 
@@ -817,7 +848,12 @@ pub async fn resolve_and_collect_schemas_with_errors(
     for (index, referable_schema) in schema_entries.iter_mut().enumerate() {
         let was_ref = referable_schema.is_ref();
         match referable_schema
-            .resolve(schema_uri.clone(), definitions.clone(), schema_store)
+            .resolve(
+                schema_uri.clone(),
+                definitions.clone(),
+                strict,
+                schema_store,
+            )
             .await
         {
             Ok(Some(current_schema)) => collected.push(current_schema.into_owned()),
@@ -867,20 +903,26 @@ pub async fn resolve_schema_item(
     item: &super::SchemaItem,
     schema_uri: Cow<'_, SchemaUri>,
     definitions: Cow<'_, SchemaDefinitions>,
+    strict: Option<BoolDefaultTrue>,
     schema_store: &crate::SchemaStore,
 ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
     let mut item_schema = {
         let item_schema = item.read().await;
         if item_schema.is_resolved() {
             return item_schema
-                .to_current_schema(schema_uri, definitions, schema_store)
+                .to_current_schema(schema_uri, definitions, strict, schema_store)
                 .await;
         }
         item_schema.clone()
     };
 
     let resolved = item_schema
-        .resolve(schema_uri.clone(), definitions.clone(), schema_store)
+        .resolve(
+            schema_uri.clone(),
+            definitions.clone(),
+            strict,
+            schema_store,
+        )
         .await?
         .map(CurrentSchema::into_owned);
 
@@ -1195,6 +1237,7 @@ mod test {
             .resolve(
                 Cow::Owned(schema_uri),
                 Cow::Owned(definitions),
+                None,
                 &schema_store,
             )
             .await
@@ -1254,6 +1297,7 @@ mod test {
             .resolve(
                 Cow::Owned(schema_uri),
                 Cow::Owned(definitions),
+                None,
                 &schema_store,
             )
             .await
@@ -1322,6 +1366,7 @@ mod test {
             .resolve(
                 Cow::Owned(schema_uri),
                 Cow::Owned(definitions),
+                None,
                 &schema_store,
             )
             .await

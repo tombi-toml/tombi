@@ -38,6 +38,7 @@ where
                 &all_of_schema.schemas,
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
+                current_schema.strict,
                 schema_context.store,
                 &schema_context.schema_visits,
                 accessors,

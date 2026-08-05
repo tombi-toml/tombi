@@ -1,6 +1,31 @@
 mod diagnostic {
     use super::*;
 
+    /// Test for issue #2059: file-glob-scoped strict schema validation.
+    /// https://github.com/tombi-toml/tombi/issues/2059
+    mod issue_2059_schema_strict {
+        use std::path::PathBuf;
+
+        use super::*;
+        use tombi_test_lib::project_root_path;
+
+        fn fixture_path() -> PathBuf {
+            project_root_path().join("crates/tombi-lsp/tests/fixtures/issue-2059-schema-strict")
+        }
+
+        test_diagnostic_file!(
+            #[tokio::test]
+            async fn sub_schema_strict_false_overrides_root_schema_strict_true(
+                r#"
+                [workspace]
+                unknown = true
+                "#,
+                SourcePath(fixture_path().join("priority.toml")),
+                ConfigPath(fixture_path().join("tombi.toml")),
+            ) -> Ok([]);
+        );
+    }
+
     /// Test for issue #1495: Local schema and subdirectories
     /// https://github.com/tombi-toml/tombi/issues/1495
     mod issue_1495_subdirectory_glob {
@@ -381,6 +406,7 @@ macro_rules! test_diagnostic {
                             path: schema_uri.to_string(),
                             include: vec!["*.toml".into()],
                             exclude: None,
+                            strict: None,
                             lint: None,
                             format: None,
                             overrides: None,
@@ -699,6 +725,7 @@ macro_rules! test_diagnostic_file {
                             path: schema_uri.to_string(),
                             include: vec!["*.toml".into()],
                             exclude: None,
+                            strict: None,
                             lint: None,
                             format: None,
                             overrides: None,

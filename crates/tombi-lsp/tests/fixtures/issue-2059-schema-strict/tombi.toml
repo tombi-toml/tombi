@@ -1,0 +1,10 @@
+[[schemas]]
+path = "schema.json"
+include = ["priority.toml"]
+strict = true
+
+[[schemas]]
+root = "workspace"
+path = "subschema.json"
+include = ["priority.toml"]
+strict = false

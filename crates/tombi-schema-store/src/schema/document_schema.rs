@@ -3,6 +3,7 @@ use std::{borrow::Cow, str::FromStr, sync::Arc};
 use itertools::Itertools;
 use tombi_config::TomlVersion;
 use tombi_future::{BoxFuture, Boxable};
+use tombi_schema_type::BoolDefaultTrue;
 use tombi_x_keyword::{StringFormat, X_TOMBI_STRING_FORMATS, X_TOMBI_TOML_VERSION};
 
 use super::{
@@ -15,6 +16,8 @@ use crate::{Accessor, JsonSchemaDialect, SchemaStore};
 pub struct DocumentSchema {
     pub id: Option<SchemaUri>,
     pub schema_uri: SchemaUri,
+    /// strict setting on root-schema level.
+    pub strict: Option<BoolDefaultTrue>,
     pub(crate) dialect: Option<JsonSchemaDialect>,
     pub(crate) toml_version: Option<TomlVersion>,
     pub(crate) string_formats: Option<Vec<StringFormat>>,
@@ -29,15 +32,17 @@ impl DocumentSchema {
     pub async fn new(
         node: tombi_json::ValueNode,
         schema_uri: SchemaUri,
+        strict: Option<BoolDefaultTrue>,
         schema_store: &SchemaStore,
     ) -> Self {
         match node {
             tombi_json::ValueNode::Object(object) => {
-                Self::new_from_object(object, schema_uri, schema_store).await
+                Self::new_from_object(object, schema_uri, strict, schema_store).await
             }
             tombi_json::ValueNode::Bool(bool) => Self {
                 id: None,
                 schema_uri,
+                strict,
                 dialect: None,
                 toml_version: None,
                 string_formats: None,
@@ -50,6 +55,7 @@ impl DocumentSchema {
             _ => Self {
                 id: None,
                 schema_uri,
+                strict,
                 dialect: None,
                 toml_version: None,
                 string_formats: None,
@@ -65,6 +71,7 @@ impl DocumentSchema {
     async fn new_from_object(
         object: tombi_json::ObjectNode,
         schema_uri: SchemaUri,
+        strict: Option<BoolDefaultTrue>,
         schema_store: &SchemaStore,
     ) -> Self {
         let id = resolve_schema_id(&object, &schema_uri);
@@ -161,6 +168,7 @@ impl DocumentSchema {
         let mut document_schema = Self {
             id,
             schema_uri,
+            strict,
             dialect,
             toml_version,
             string_formats,
@@ -179,6 +187,7 @@ impl DocumentSchema {
                 .resolve(
                     Cow::Borrowed(document_schema.base_uri()),
                     Cow::Borrowed(&document_schema.definitions),
+                    strict,
                     schema_store,
                 )
                 .await
@@ -229,6 +238,7 @@ impl DocumentSchema {
                 value_schema: value_schema.clone(),
                 schema_uri: Cow::Borrowed(&self.schema_uri),
                 definitions: Cow::Borrowed(&self.definitions),
+                strict: self.strict,
             })
     }
 }
@@ -258,12 +268,19 @@ impl FindSchemaCandidates for DocumentSchema {
         accessors: &'a [Accessor],
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
         async move {
             if let Some(value_schema) = &self.value_schema {
                 value_schema
-                    .find_schema_candidates(accessors, schema_uri, definitions, schema_store)
+                    .find_schema_candidates(
+                        accessors,
+                        schema_uri,
+                        definitions,
+                        strict,
+                        schema_store,
+                    )
                     .await
             } else {
                 (Vec::new(), Vec::new())
@@ -299,7 +316,7 @@ mod tests {
             .expect("valid schema uri");
 
         let document_schema =
-            DocumentSchema::new(schema_value, schema_uri, &SchemaStore::new()).await;
+            DocumentSchema::new(schema_value, schema_uri, None, &SchemaStore::new()).await;
         let definitions = document_schema.definitions.read().await;
         assert!(!definitions.contains_key("#nameSchema"));
         let anchors = document_schema.anchors.read().await;
@@ -311,7 +328,7 @@ mod tests {
         let schema_json = r#"{ "$schema": "http://json-schema.org/draft-07/schema#" }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, &SchemaStore::new()).await;
+        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new()).await;
         assert!(doc.format_assertion());
     }
 
@@ -320,7 +337,7 @@ mod tests {
         let schema_json = r#"{ "$schema": "https://json-schema.org/draft/2019-09/schema" }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, &SchemaStore::new()).await;
+        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new()).await;
         assert!(!doc.format_assertion());
     }
 
@@ -334,7 +351,7 @@ mod tests {
         }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, &SchemaStore::new()).await;
+        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new()).await;
         assert!(doc.format_assertion());
     }
 
@@ -348,7 +365,7 @@ mod tests {
         }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, &SchemaStore::new()).await;
+        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new()).await;
         assert!(!doc.format_assertion());
     }
 
@@ -357,7 +374,7 @@ mod tests {
         let schema_json = r#"{ "$schema": "https://json-schema.org/draft/2020-12/schema" }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, &SchemaStore::new()).await;
+        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new()).await;
         assert!(!doc.format_assertion());
     }
 
@@ -371,7 +388,7 @@ mod tests {
         }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, &SchemaStore::new()).await;
+        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new()).await;
         assert!(doc.format_assertion());
     }
 
@@ -393,7 +410,7 @@ mod tests {
             .expect("valid schema uri");
 
         let document_schema =
-            DocumentSchema::new(schema_value, schema_uri, &SchemaStore::new()).await;
+            DocumentSchema::new(schema_value, schema_uri, None, &SchemaStore::new()).await;
         let dynamic_anchors = document_schema.dynamic_anchors.read().await;
         assert!(dynamic_anchors.contains_key("#nameSchema"));
     }
@@ -402,7 +419,7 @@ mod tests {
     async fn root_boolean_true_schema_is_accepted() {
         let schema_value = tombi_json::ValueNode::from_str("true").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, &SchemaStore::new()).await;
+        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new()).await;
         std::assert_matches!(doc.value_schema.as_deref(), Some(ValueSchema::Anything(_)));
     }
 
@@ -410,7 +427,7 @@ mod tests {
     async fn root_boolean_false_schema_is_accepted() {
         let schema_value = tombi_json::ValueNode::from_str("false").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, &SchemaStore::new()).await;
+        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new()).await;
         std::assert_matches!(doc.value_schema.as_deref(), Some(ValueSchema::Nothing(_)));
     }
 
@@ -421,7 +438,7 @@ mod tests {
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/base/root.json")
             .expect("valid uri");
 
-        let doc = DocumentSchema::new(schema_value, uri, &SchemaStore::new()).await;
+        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new()).await;
         let expected = tombi_uri::SchemaUri::from_str("https://example.com/other/schema.json")
             .expect("valid uri");
         assert_eq!(doc.id.as_ref(), Some(&expected));
@@ -435,7 +452,7 @@ mod tests {
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/base/root.json")
             .expect("valid uri");
 
-        let doc = DocumentSchema::new(schema_value, uri, &SchemaStore::new()).await;
+        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new()).await;
         let expected = tombi_uri::SchemaUri::from_str("https://example.com/base/defs/schema.json")
             .expect("valid uri");
         assert_eq!(doc.id.as_ref(), Some(&expected));
@@ -449,7 +466,7 @@ mod tests {
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/base/root.json")
             .expect("valid uri");
 
-        let doc = DocumentSchema::new(schema_value, uri.clone(), &SchemaStore::new()).await;
+        let doc = DocumentSchema::new(schema_value, uri.clone(), None, &SchemaStore::new()).await;
         assert_eq!(doc.id, None);
         assert_eq!(doc.base_uri(), &uri);
     }

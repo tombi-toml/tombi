@@ -1441,6 +1441,7 @@ mod hover_keys_value {
                 path: schema_uri.to_string(),
                 include: vec!["*.toml".into()],
                 exclude: None,
+                strict: None,
                 lint: None,
                 format: None,
                 overrides: None,
@@ -1630,6 +1631,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: Some(tombi_config::SchemaFormatOptions {
                         rules: Some(tombi_config::SchemaFormatRules {
@@ -1667,6 +1669,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: None,
                     overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -1708,6 +1711,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: None,
                     overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -1774,6 +1778,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: Some(tombi_config::SchemaFormatOptions {
                         rules: Some(tombi_config::SchemaFormatRules {
@@ -1809,6 +1814,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: None,
                     overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -1848,6 +1854,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: None,
                     overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -1912,6 +1919,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: Some(tombi_config::SchemaFormatOptions {
                         rules: Some(tombi_config::SchemaFormatRules {
@@ -1951,6 +1959,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: None,
                     overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -1990,6 +1999,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: None,
                     overrides: Some(vec![
@@ -2184,6 +2194,7 @@ mod hover_keys_value {
                         path: schema_uri.to_string(),
                         include: vec!["*.toml".into()],
                         exclude: None,
+                        strict: None,
                         lint: None,
                         format: None,
                         overrides: None,
@@ -2204,6 +2215,7 @@ mod hover_keys_value {
                         path: subschema_uri.to_string(),
                         include: vec!["*.toml".into()],
                         exclude: None,
+                        strict: None,
                         root: subschema.root.clone(),
                         lint: None,
                         format: None,

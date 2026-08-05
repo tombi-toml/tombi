@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use itertools::Itertools;
 
 use tombi_future::Boxable;
@@ -42,26 +40,16 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                 return Some(hover_content);
             }
 
-            if let Some(Ok(document_schema)) = schema_context
+            if let Some(Ok(current_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
             {
-                let current_schema =
-                    document_schema
-                        .value_schema
-                        .as_ref()
-                        .map(|value_schema| CurrentSchema {
-                            value_schema: value_schema.clone(),
-                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
-                            definitions: Cow::Borrowed(&document_schema.definitions),
-                        });
-
                 return self
                     .get_type_definition(
                         position,
                         keys,
                         accessors,
-                        current_schema.as_ref(),
+                        Some(&current_schema),
                         schema_context,
                     )
                     .await;
@@ -92,6 +80,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                             &schema_accessor,
                                             current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
+                                            current_schema.strict,
                                             schema_context.store,
                                         )
                                         .await
@@ -138,6 +127,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                                         &property_key,
                                                         current_schema.schema_uri.clone(),
                                                         current_schema.definitions.clone(),
+                                                        current_schema.strict,
                                                         schema_context.store,
                                                     )
                                                     .await
@@ -186,6 +176,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                             referable_additional_property_schema,
                                             current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
+                                            current_schema.strict,
                                             schema_context.store,
                                         )
                                         .await
@@ -214,6 +205,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                         one_of_schema,
                                         &current_schema.schema_uri,
                                         &current_schema.definitions,
+                                        current_schema.strict,
                                         schema_context,
                                     )
                                     .await
@@ -229,6 +221,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                         any_of_schema,
                                         &current_schema.schema_uri,
                                         &current_schema.definitions,
+                                        current_schema.strict,
                                         schema_context,
                                     )
                                     .await
@@ -244,6 +237,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                         all_of_schema,
                                         &current_schema.schema_uri,
                                         &current_schema.definitions,
+                                        current_schema.strict,
                                         schema_context,
                                     )
                                     .await
@@ -319,6 +313,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     one_of_schema,
                                     &current_schema.schema_uri,
                                     &current_schema.definitions,
+                                    current_schema.strict,
                                     schema_context,
                                 )
                                 .await
@@ -334,6 +329,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     any_of_schema,
                                     &current_schema.schema_uri,
                                     &current_schema.definitions,
+                                    current_schema.strict,
                                     schema_context,
                                 )
                                 .await
@@ -349,6 +345,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     all_of_schema,
                                     &current_schema.schema_uri,
                                     &current_schema.definitions,
+                                    current_schema.strict,
                                     schema_context,
                                 )
                                 .await
@@ -368,6 +365,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                             one_of_schema,
                             &current_schema.schema_uri,
                             &current_schema.definitions,
+                            current_schema.strict,
                             schema_context,
                         )
                         .await
@@ -381,6 +379,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                             any_of_schema,
                             &current_schema.schema_uri,
                             &current_schema.definitions,
+                            current_schema.strict,
                             schema_context,
                         )
                         .await
@@ -394,6 +393,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                             all_of_schema,
                             &current_schema.schema_uri,
                             &current_schema.definitions,
+                            current_schema.strict,
                             schema_context,
                         )
                         .await

@@ -2725,6 +2725,7 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror 2.0.12",
+ "tombi-schema-type",
  "tombi-severity-level",
  "tombi-text",
  "tombi-toml-version",
@@ -2762,6 +2763,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.12",
+ "tombi-schema-type",
  "tombi-severity-level",
  "tombi-toml-version",
  "tombi-uri",
@@ -3116,6 +3118,7 @@ dependencies = [
  "tombi-regex",
  "tombi-rg-tree",
  "tombi-schema-store",
+ "tombi-schema-type",
  "tombi-syntax",
  "tombi-test-lib",
  "tombi-text",
@@ -3191,11 +3194,20 @@ dependencies = [
  "tombi-future",
  "tombi-hashmap",
  "tombi-json",
+ "tombi-schema-type",
  "tombi-severity-level",
  "tombi-test-lib",
  "tombi-text",
  "tombi-uri",
  "tombi-x-keyword",
+]
+
+[[package]]
+name = "tombi-schema-type"
+version = "0.0.0-dev"
+dependencies = [
+ "schemars",
+ "serde",
 ]
 
 [[package]]

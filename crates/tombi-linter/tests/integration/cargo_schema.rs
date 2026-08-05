@@ -57,6 +57,305 @@ test_lint! {
     }])
 }
 
+fn scoped_strict_config() -> tombi_config::Config {
+    let schema_path = cargo_schema_path();
+
+    let mut config = tombi_config::Config::default();
+    config.schemas = Some(vec![
+        tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+            toml_version: None,
+            path: schema_path.to_string_lossy().into_owned(),
+            include: vec!["relaxed.toml".into()],
+            exclude: None,
+            strict: Some(false.into()),
+            format: None,
+            lint: None,
+            overrides: None,
+        }),
+        tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+            toml_version: None,
+            path: schema_path.to_string_lossy().into_owned(),
+            include: vec!["*.toml".into()],
+            exclude: None,
+            strict: None,
+            format: None,
+            lint: None,
+            overrides: None,
+        }),
+    ]);
+    config
+}
+
+fn workspace_sub_schema_uri() -> tombi_schema_store::SchemaUri {
+    let mut schema_uri =
+        tombi_schema_store::SchemaUri::from_file_path(cargo_schema_path()).unwrap();
+    schema_uri.set_fragment(Some("/definitions/Workspace"));
+    schema_uri
+}
+
+fn root_and_sub_schema_strict_config(
+    strict: bool,
+    sub_strict: Option<bool>,
+) -> tombi_config::Config {
+    let mut config = tombi_config::Config::default();
+    config.schemas = Some(vec![
+        tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+            toml_version: None,
+            path: cargo_schema_path().to_string_lossy().into_owned(),
+            include: vec!["priority.toml".into()],
+            exclude: None,
+            strict: Some(strict.into()),
+            format: None,
+            lint: None,
+            overrides: None,
+        }),
+        tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
+            root: "workspace".to_string(),
+            path: workspace_sub_schema_uri().to_string(),
+            include: vec!["priority.toml".into()],
+            exclude: None,
+            strict: sub_strict.map(Into::into),
+            format: None,
+            lint: None,
+            overrides: None,
+        }),
+    ]);
+    config
+}
+
+fn sub_and_root_schema_strict_config(
+    strict: bool,
+    sub_strict: Option<bool>,
+) -> tombi_config::Config {
+    let mut config = root_and_sub_schema_strict_config(strict, sub_strict);
+    config.schemas.as_mut().unwrap().reverse();
+    config
+}
+
+fn root_schema_without_strict_config(global_strict: bool) -> tombi_config::Config {
+    let mut config = tombi_config::Config::default();
+    config.schema = Some(tombi_config::SchemaOverviewOptions {
+        enabled: None,
+        strict: Some(global_strict.into()),
+        catalog: None,
+    });
+    config.schemas = Some(vec![tombi_config::SchemaItem::Root(
+        tombi_config::RootSchema {
+            toml_version: None,
+            path: cargo_schema_path().to_string_lossy().into_owned(),
+            include: vec!["global-fallback.toml".into()],
+            exclude: None,
+            strict: None,
+            format: None,
+            lint: None,
+            overrides: None,
+        },
+    )]);
+    config
+}
+
+fn sub_schema_without_root_or_strict_config(global_strict: bool) -> tombi_config::Config {
+    let mut config = tombi_config::Config::default();
+    config.schema = Some(tombi_config::SchemaOverviewOptions {
+        enabled: None,
+        strict: Some(global_strict.into()),
+        catalog: None,
+    });
+    config.schemas = Some(vec![tombi_config::SchemaItem::Sub(
+        tombi_config::SubSchema {
+            root: "workspace".to_string(),
+            path: workspace_sub_schema_uri().to_string(),
+            include: vec!["global-fallback.toml".into()],
+            exclude: None,
+            strict: None,
+            format: None,
+            lint: None,
+            overrides: None,
+        },
+    )]);
+    config
+}
+
+test_lint! {
+    #[test]
+    fn test_schema_strict_false_for_matching_file(
+        r#"
+        [workspace]
+        aaa = 1
+        "#,
+        Config(scoped_strict_config()),
+        SourcePath(project_root_path().join("relaxed.toml")),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_sub_schema_strict_false_overrides_root_schema_strict_true(
+        r#"
+        [workspace]
+        aaa = 1
+        "#,
+        Config(root_and_sub_schema_strict_config(true, Some(false))),
+        SourcePath(project_root_path().join("priority.toml")),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_sub_schema_strict_does_not_affect_root_schema_outside_subtree(
+        r#"
+        [workspace]
+        aaa = 1
+
+        [lib]
+        aaa = 1
+        "#,
+        Config(root_and_sub_schema_strict_config(true, Some(false))),
+        SourcePath(project_root_path().join("priority.toml")),
+    ) -> Err([tombi_validator::DiagnosticKind::TableStrictAdditionalKeys {
+        accessors: tombi_accessor::MarkdownSchemaAccessors::from(vec![
+            tombi_schema_store::SchemaAccessor::Key("lib".to_string()),
+        ]),
+        schema_uri: tombi_schema_store::SchemaUri::from_file_path(cargo_schema_path()).unwrap(),
+        key: "aaa".to_string(),
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_sub_schema_strict_true_overrides_root_schema_strict_false(
+        r#"
+        [workspace]
+        aaa = 1
+        "#,
+        Config(root_and_sub_schema_strict_config(false, Some(true))),
+        SourcePath(project_root_path().join("priority.toml")),
+    ) -> Err([tombi_validator::DiagnosticKind::TableStrictAdditionalKeys {
+        accessors: tombi_accessor::MarkdownSchemaAccessors::from(vec![
+            tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
+        ]),
+        schema_uri: workspace_sub_schema_uri(),
+        key: "aaa".to_string(),
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_sub_schema_without_strict_falls_back_to_root_schema_strict(
+        r#"
+        [workspace]
+        aaa = 1
+        "#,
+        Config(root_and_sub_schema_strict_config(false, None)),
+        SourcePath(project_root_path().join("priority.toml")),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_sub_schema_before_root_without_strict_falls_back_to_root_schema_strict(
+        r#"
+        [workspace]
+        aaa = 1
+        "#,
+        Config(sub_and_root_schema_strict_config(false, None)),
+        SourcePath(project_root_path().join("priority.toml")),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_root_schema_without_strict_falls_back_to_global_strict(
+        r#"
+        [workspace]
+        aaa = 1
+        "#,
+        Config(root_schema_without_strict_config(false)),
+        SourcePath(project_root_path().join("global-fallback.toml")),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_sub_schema_without_root_or_strict_falls_back_to_global_strict(
+        r#"
+        [workspace]
+        aaa = 1
+        "#,
+        Config(sub_schema_without_root_or_strict_config(false)),
+        SourcePath(project_root_path().join("global-fallback.toml")),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_schema_strict_does_not_affect_non_matching_file(
+        r#"
+        [workspace]
+        aaa = 1
+        "#,
+        Config(scoped_strict_config()),
+        SourcePath(project_root_path().join("strict.toml")),
+    ) -> Err([tombi_validator::DiagnosticKind::TableStrictAdditionalKeys {
+        accessors: tombi_accessor::MarkdownSchemaAccessors::from(vec![
+            tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
+        ]),
+        schema_uri: tombi_schema_store::SchemaUri::from_file_path(cargo_schema_path()).unwrap(),
+        key: "aaa".to_string(),
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_document_directive_strict_overrides_schema_strict(
+        r#"
+        #:tombi schema.strict = true
+        [workspace]
+        aaa = 1
+        "#,
+        Config(scoped_strict_config()),
+        SourcePath(project_root_path().join("relaxed.toml")),
+    ) -> Err([tombi_validator::DiagnosticKind::TableStrictAdditionalKeys {
+        accessors: tombi_accessor::MarkdownSchemaAccessors::from(vec![
+            tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
+        ]),
+        schema_uri: tombi_schema_store::SchemaUri::from_file_path(cargo_schema_path()).unwrap(),
+        key: "aaa".to_string(),
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_document_directive_strict_overrides_sub_schema_strict(
+        r#"
+        #:tombi schema.strict = true
+        [workspace]
+        aaa = 1
+        "#,
+        Config(root_and_sub_schema_strict_config(true, Some(false))),
+        SourcePath(project_root_path().join("priority.toml")),
+    ) -> Err([tombi_validator::DiagnosticKind::TableStrictAdditionalKeys {
+        accessors: tombi_accessor::MarkdownSchemaAccessors::from(vec![
+            tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
+        ]),
+        schema_uri: workspace_sub_schema_uri(),
+        key: "aaa".to_string(),
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_document_directive_strict_false_overrides_sub_schema_strict_true(
+        r#"
+        #:tombi schema.strict = false
+        [workspace]
+        aaa = 1
+        "#,
+        Config(root_and_sub_schema_strict_config(false, Some(true))),
+        SourcePath(project_root_path().join("priority.toml")),
+    ) -> Ok(_)
+}
+
 test_lint! {
     #[test]
     fn test_package_name_wrong_type_with_comment_directive_disabled_eq_true(
@@ -98,6 +397,7 @@ fn deprecated_schema_config(deprecated_level: Option<SeverityLevel>) -> tombi_co
             path: schema_uri.to_string(),
             include: vec!["*.toml".into()],
             exclude: None,
+            strict: None,
             lint: deprecated_level.map(|deprecated_level| tombi_config::SchemaLintOptions {
                 rules: Some(tombi_config::SchemaLintRules {
                     deprecated: Some(tombi_severity_level::SeverityLevelDefaultWarn::from(
@@ -125,6 +425,7 @@ fn deprecated_sub_schema_config(deprecated_level: Option<SeverityLevel>) -> tomb
             path: schema_uri.to_string(),
             include: vec!["*.toml".into()],
             exclude: None,
+            strict: None,
             lint: deprecated_level.map(|deprecated_level| tombi_config::SchemaLintOptions {
                 rules: Some(tombi_config::SchemaLintRules {
                     deprecated: Some(tombi_severity_level::SeverityLevelDefaultWarn::from(
@@ -152,6 +453,7 @@ fn deprecated_override_config(deprecated_level: SeverityLevel) -> tombi_config::
             path: schema_uri.to_string(),
             include: vec!["*.toml".into()],
             exclude: None,
+            strict: None,
             lint: None,
             format: None,
             overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -183,6 +485,7 @@ fn deprecated_root_lint_for_subschema_config(
             path: pyproject_schema_path().to_string_lossy().into_owned(),
             include: vec!["pyproject.toml".into()],
             exclude: None,
+            strict: None,
             lint: Some(tombi_config::SchemaLintOptions {
                 rules: Some(tombi_config::SchemaLintRules {
                     deprecated: Some(deprecated_level.into()),
@@ -196,6 +499,7 @@ fn deprecated_root_lint_for_subschema_config(
             path: schema_uri.to_string(),
             include: vec!["pyproject.toml".into()],
             exclude: None,
+            strict: None,
             lint: None,
             format: None,
             overrides: None,
@@ -217,6 +521,7 @@ fn deprecated_exact_index_override_config() -> tombi_config::Config {
             path: schema_uri.to_string(),
             include: vec!["*.toml".into()],
             exclude: None,
+            strict: None,
             lint: None,
             format: None,
             overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -246,6 +551,7 @@ fn deprecated_exact_index_precedence_config() -> tombi_config::Config {
             path: schema_uri.to_string(),
             include: vec!["*.toml".into()],
             exclude: None,
+            strict: None,
             lint: None,
             format: None,
             overrides: Some(vec![

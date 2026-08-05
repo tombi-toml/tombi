@@ -3,8 +3,8 @@ use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 use crate::resolve_json_pointer;
 use crate::{
     AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, PatternAccessor,
-    PatternAccessors, SourceSchema, SubSchemaUriMap, ValueSchema, get_tombi_schemastore_content,
-    http_client::HttpClient, json::JsonCatalog,
+    PatternAccessors, SourceSchema, SubSchemaLink, SubSchemaLinkMap, ValueSchema,
+    get_tombi_schemastore_content, http_client::HttpClient, json::JsonCatalog,
 };
 use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
@@ -90,9 +90,9 @@ impl SchemaStore {
         self.options.cache.as_ref()
     }
 
-    /// Strict mode
-    pub fn strict(&self) -> bool {
-        self.options.strict.unwrap_or(true)
+    /// Strict mode in global level.
+    pub fn strict(&self) -> Option<tombi_schema_type::BoolDefaultTrue> {
+        self.options.strict
     }
 
     pub async fn refresh_cache(
@@ -213,6 +213,7 @@ impl SchemaStore {
                 format_rules: schema.format().and_then(|format| format.rules.clone()),
                 lint_rules: schema.lint().and_then(|lint| lint.rules.clone()),
                 overrides: schema_overrides(schema),
+                strict: schema.strict(),
                 schema_uri,
                 catalog_uri: None,
                 include: schema.include().to_vec(),
@@ -359,6 +360,7 @@ impl SchemaStore {
                     format_rules: None,
                     lint_rules: None,
                     overrides: Default::default(),
+                    strict: None,
                     schema_uri: schema.url,
                     catalog_uri: Some(catalog_uri.clone()),
                     include: schema.file_match,
@@ -530,7 +532,8 @@ impl SchemaStore {
                 schema_uri: schema_uri.clone(),
             });
         }
-        let document_schema = DocumentSchema::new(schema_value, schema_uri.clone(), self).await;
+        let document_schema =
+            DocumentSchema::new(schema_value, schema_uri.clone(), None, self).await;
         if let Some(
             ValueSchema::AllOf(AllOfSchema { schemas, .. })
             | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
@@ -544,6 +547,7 @@ impl SchemaStore {
                         .resolve(
                             Cow::Borrowed(&document_base_uri),
                             Cow::Borrowed(&document_schema.definitions),
+                            None,
                             self,
                         )
                         .await?;
@@ -664,6 +668,7 @@ impl SchemaStore {
                     .to_current_schema(
                         Cow::Borrowed(document_schema.base_uri()),
                         Cow::Borrowed(&document_schema.definitions),
+                        None,
                         self,
                     )
                     .await?
@@ -700,22 +705,28 @@ impl SchemaStore {
 
         let (
             root_schema,
-            sub_schema_uri_map,
+            sub_schema_link_map,
             toml_version,
             deprecated_lint_level,
             schema_format_rules,
             schema_lint_rules,
             schema_overrides,
+            strict,
         ) = if let Some(source_schema) = source_schema {
             let toml_version = source_schema.toml_version();
+            let strict = source_schema
+                .root_schema
+                .as_ref()
+                .and_then(|schema| schema.strict);
             (
                 source_schema.root_schema,
-                source_schema.sub_schema_uri_map,
+                source_schema.sub_schema_link_map,
                 toml_version,
                 source_schema.deprecated_lint_level,
                 source_schema.schema_format_rules,
                 source_schema.schema_lint_rules,
                 source_schema.schema_overrides,
+                strict,
             )
         } else {
             (
@@ -726,20 +737,27 @@ impl SchemaStore {
                 Default::default(),
                 Default::default(),
                 Default::default(),
+                None,
             )
         };
 
-        Ok(Some(SourceSchema::new(
-            self.try_get_document_schema(schema_uri)
-                .await?
-                .or(root_schema),
-            sub_schema_uri_map,
+        let mut root_schema = self
+            .try_get_document_schema(schema_uri)
+            .await?
+            .or(root_schema);
+        if let Some(root_schema) = &mut root_schema {
+            Arc::make_mut(root_schema).strict = strict;
+        }
+        let source_schema = SourceSchema::new(
+            root_schema,
+            sub_schema_link_map,
             toml_version,
             deprecated_lint_level,
             schema_format_rules,
             schema_lint_rules,
             schema_overrides,
-        )))
+        );
+        Ok(Some(source_schema))
     }
 
     pub async fn resolve_source_schema_from_ast(
@@ -823,12 +841,13 @@ impl SchemaStore {
             .collect_vec();
 
         let mut source_schema: Option<SourceSchema> = None;
+        let mut sub_schemas_inheriting_strict = Vec::new();
         for matching_schema in matching_schemas {
             // Skip if the same schema (by URL and sub_root_accessors) is already loaded in source_schema
             let already_loaded = match &matching_schema.sub_root_accessors {
                 Some(sub_root_accessors) => source_schema.as_ref().is_some_and(|source_schema| {
                     source_schema
-                        .sub_schema_uri_map
+                        .sub_schema_link_map
                         .contains_key(sub_root_accessors)
                 }),
                 None => source_schema
@@ -846,14 +865,24 @@ impl SchemaStore {
                     Some(sub_root_accessors) => match source_schema {
                         Some(ref mut source_schema) => {
                             if !source_schema
-                                .sub_schema_uri_map
+                                .sub_schema_link_map
                                 .contains_key(sub_root_accessors)
                             {
                                 let schema_uri_key =
                                     Self::normalize_schema_uri_key(&document_schema.schema_uri);
-                                source_schema.sub_schema_uri_map.insert(
+                                if matching_schema.strict.is_none() {
+                                    sub_schemas_inheriting_strict.push(sub_root_accessors.clone());
+                                }
+                                source_schema.sub_schema_link_map.insert(
                                     sub_root_accessors.clone(),
-                                    document_schema.schema_uri.clone(),
+                                    SubSchemaLink {
+                                        schema_uri: document_schema.schema_uri.clone(),
+                                        strict: matching_schema
+                                            .strict
+                                            .or_else(|| self.strict())
+                                            .unwrap_or_default()
+                                            .value(),
+                                    },
                                 );
                                 if let Some(format_rules) = &matching_schema.format_rules {
                                     source_schema
@@ -873,10 +902,20 @@ impl SchemaStore {
                         None => {
                             let schema_uri_key =
                                 Self::normalize_schema_uri_key(&document_schema.schema_uri);
-                            let mut sub_schema_uri_map = SubSchemaUriMap::default();
-                            sub_schema_uri_map.insert(
+                            if matching_schema.strict.is_none() {
+                                sub_schemas_inheriting_strict.push(sub_root_accessors.clone());
+                            }
+                            let mut sub_schema_link_map = SubSchemaLinkMap::default();
+                            sub_schema_link_map.insert(
                                 sub_root_accessors.clone(),
-                                document_schema.schema_uri.clone(),
+                                SubSchemaLink {
+                                    schema_uri: document_schema.schema_uri.clone(),
+                                    strict: matching_schema
+                                        .strict
+                                        .or_else(|| self.strict())
+                                        .unwrap_or_default()
+                                        .value(),
+                                },
                             );
                             let mut schema_format_rules = crate::SchemaFormatRulesMap::default();
                             if let Some(format_rules) = &matching_schema.format_rules {
@@ -893,7 +932,7 @@ impl SchemaStore {
                                 .insert(schema_uri_key, matching_schema.overrides.clone());
                             let new_source = SourceSchema::new(
                                 None,
-                                sub_schema_uri_map,
+                                sub_schema_link_map,
                                 matching_schema.toml_version,
                                 matching_schema.deprecated_lint_level,
                                 schema_format_rules,
@@ -910,8 +949,8 @@ impl SchemaStore {
                                     Self::normalize_schema_uri_key(&document_schema.schema_uri);
                                 let toml_version =
                                     existing.toml_version().or(matching_schema.toml_version);
-                                let sub_schema_uri_map =
-                                    std::mem::take(&mut existing.sub_schema_uri_map);
+                                let sub_schema_link_map =
+                                    std::mem::take(&mut existing.sub_schema_link_map);
                                 let mut schema_format_rules =
                                     std::mem::take(&mut existing.schema_format_rules);
                                 let mut schema_lint_rules =
@@ -928,9 +967,11 @@ impl SchemaStore {
                                 }
                                 schema_overrides
                                     .insert(schema_uri_key, matching_schema.overrides.clone());
+                                let mut document_schema = document_schema;
+                                Arc::make_mut(&mut document_schema).strict = matching_schema.strict;
                                 *existing = SourceSchema::new(
                                     Some(document_schema),
-                                    sub_schema_uri_map,
+                                    sub_schema_link_map,
                                     toml_version,
                                     matching_schema.deprecated_lint_level,
                                     schema_format_rules,
@@ -955,6 +996,8 @@ impl SchemaStore {
                             let mut schema_overrides = crate::SchemaOverridesMap::default();
                             schema_overrides
                                 .insert(schema_uri_key, matching_schema.overrides.clone());
+                            let mut document_schema = document_schema;
+                            Arc::make_mut(&mut document_schema).strict = matching_schema.strict;
                             let new_source = SourceSchema::new(
                                 Some(document_schema),
                                 Default::default(),
@@ -979,6 +1022,21 @@ impl SchemaStore {
                         "Failed to get document schema for {url}: {err}",
                         url = matching_schema.schema_uri,
                     );
+                }
+            }
+        }
+
+        if let Some(source_schema) = &mut source_schema {
+            let inherited_strict = source_schema
+                .root_schema
+                .as_ref()
+                .and_then(|schema| schema.strict)
+                .or_else(|| self.strict())
+                .unwrap_or_default()
+                .value();
+            for root_accessors in sub_schemas_inheriting_strict {
+                if let Some(link) = source_schema.sub_schema_link_map.get_mut(&root_accessors) {
+                    link.strict = inherited_strict;
                 }
             }
         }
@@ -1019,11 +1077,11 @@ impl SchemaStore {
                 if let Some(root_schema) = &source_schema.root_schema {
                     log::trace!("find root schema from {}", root_schema.schema_uri);
                 }
-                for (accessors, schema_uri) in &source_schema.sub_schema_uri_map {
+                for (accessors, link) in &source_schema.sub_schema_link_map {
                     log::trace!(
                         "find sub schema {:?} from {}",
                         PatternAccessors::from(accessors.clone()),
-                        schema_uri
+                        link.schema_uri
                     );
                 }
             }
@@ -1048,6 +1106,7 @@ impl SchemaStore {
             format_rules: None,
             lint_rules: None,
             overrides: Default::default(),
+            strict: None,
             schema_uri,
             catalog_uri: None,
             include,

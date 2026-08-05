@@ -48,7 +48,8 @@ pub use referable_schema::{
 pub use schema_context::{ResolvedFormatOrder, SchemaContext};
 pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};
 pub use source_schema::{
-    SchemaFormatRulesMap, SchemaLintRulesMap, SchemaOverridesMap, SourceSchema, SubSchemaUriMap,
+    SchemaFormatRulesMap, SchemaLintRulesMap, SchemaOverridesMap, SourceSchema, SubSchemaLink,
+    SubSchemaLinkMap,
 };
 pub use string_schema::StringSchema;
 pub use table_schema::{Dependency, TableKeysOrderGroup, TableSchema, XTombiTableKeysOrder};
@@ -424,6 +425,7 @@ pub struct Schema {
     pub lint_rules: Option<tombi_config::SchemaLintRules>,
     pub overrides: SchemaOverrides,
     pub toml_version: Option<tombi_config::TomlVersion>,
+    pub strict: Option<tombi_schema_type::BoolDefaultTrue>,
     pub schema_uri: tombi_uri::SchemaUri,
     pub catalog_uri: Option<Arc<tombi_uri::CatalogUri>>,
     pub include: Vec<String>,
@@ -437,6 +439,7 @@ pub trait FindSchemaCandidates {
         accessors: &'a [Accessor],
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
     ) -> tombi_future::BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)>;
 }

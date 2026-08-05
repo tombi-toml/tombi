@@ -79,6 +79,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalTime {
                             one_of_schema,
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
+                            current_schema.strict,
                             schema_context,
                         )
                         .await
@@ -92,6 +93,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalTime {
                             any_of_schema,
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
+                            current_schema.strict,
                             schema_context,
                         )
                         .await
@@ -105,6 +107,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalTime {
                             all_of_schema,
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
+                            current_schema.strict,
                             schema_context,
                         )
                         .await

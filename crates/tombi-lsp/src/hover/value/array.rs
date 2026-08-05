@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use itertools::Itertools;
 use tombi_comment_directive::value::{ArrayCommonFormatRules, ArrayCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
@@ -46,26 +44,16 @@ impl GetHoverContent for tombi_document_tree::Array {
                 return Some(hover_content);
             }
 
-            if let Some(Ok(document_schema)) = schema_context
+            if let Some(Ok(current_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
             {
-                let current_schema =
-                    document_schema
-                        .value_schema
-                        .as_ref()
-                        .map(|value_schema| CurrentSchema {
-                            value_schema: value_schema.clone(),
-                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
-                            definitions: Cow::Borrowed(&document_schema.definitions),
-                        });
-
                 return self
                     .get_hover_content(
                         position,
                         keys,
                         accessors,
-                        current_schema.as_ref(),
+                        Some(&current_schema),
                         schema_context,
                     )
                     .await;
@@ -145,6 +133,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                                         one_of_schema,
                                         &current_schema.schema_uri,
                                         &current_schema.definitions,
+                                        current_schema.strict,
                                         schema_context,
                                     )
                                     .await
@@ -161,6 +150,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                                         any_of_schema,
                                         &current_schema.schema_uri,
                                         &current_schema.definitions,
+                                        current_schema.strict,
                                         schema_context,
                                     )
                                     .await
@@ -177,6 +167,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                                         all_of_schema,
                                         &current_schema.schema_uri,
                                         &current_schema.definitions,
+                                        current_schema.strict,
                                         schema_context,
                                     )
                                     .await
@@ -233,6 +224,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                             one_of_schema,
                             &current_schema.schema_uri,
                             &current_schema.definitions,
+                            current_schema.strict,
                             schema_context,
                         )
                         .await;
@@ -246,6 +238,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                             any_of_schema,
                             &current_schema.schema_uri,
                             &current_schema.definitions,
+                            current_schema.strict,
                             schema_context,
                         )
                         .await;
@@ -259,6 +252,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                             all_of_schema,
                             &current_schema.schema_uri,
                             &current_schema.definitions,
+                            current_schema.strict,
                             schema_context,
                         )
                         .await;

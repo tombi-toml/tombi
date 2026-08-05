@@ -46,6 +46,7 @@ impl<'a> Editor<'a> {
                     value_schema: value_schema.clone(),
                     schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                     definitions: Cow::Borrowed(&document_schema.definitions),
+                    strict: document_schema.strict,
                 })
         });
 

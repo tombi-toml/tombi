@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "section": {
+      "$ref": "#"
+    },
+    "inner": {
+      "type": "object",
+      "properties": {
+        "wrong": {
+          "type": "string"
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "x-tombi-array-values-order": {
+        "oneOf": ["ascending", "ascending"]
+      },
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": ["name"],
+            "x-tombi-array-values-order-by": "name"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              }
+            },
+            "required": ["id"],
+            "x-tombi-array-values-order-by": "id"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -85,6 +85,7 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
                             one_of_schema,
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
+                            current_schema.strict,
                             schema_context,
                         )
                         .await
@@ -98,6 +99,7 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
                             any_of_schema,
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
+                            current_schema.strict,
                             schema_context,
                         )
                         .await
@@ -111,6 +113,7 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
                             all_of_schema,
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
+                            current_schema.strict,
                             schema_context,
                         )
                         .await

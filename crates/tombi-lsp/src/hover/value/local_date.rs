@@ -82,6 +82,7 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
                             one_of_schema,
                             &current_schema.schema_uri,
                             &current_schema.definitions,
+                            current_schema.strict,
                             schema_context,
                         )
                         .await
@@ -95,6 +96,7 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
                             any_of_schema,
                             &current_schema.schema_uri,
                             &current_schema.definitions,
+                            current_schema.strict,
                             schema_context,
                         )
                         .await
@@ -108,6 +110,7 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
                             all_of_schema,
                             &current_schema.schema_uri,
                             &current_schema.definitions,
+                            current_schema.strict,
                             schema_context,
                         )
                         .await

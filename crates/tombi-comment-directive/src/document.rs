@@ -70,5 +70,5 @@ pub struct SchemaOptions {
     /// the strict mode treats it as `additionalProperties: false`,
     /// which is different from the JSON Schema specification.
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_true"))]
-    pub strict: Option<bool>,
+    pub strict: Option<tombi_schema_type::BoolDefaultTrue>,
 }

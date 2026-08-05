@@ -180,6 +180,7 @@ pub(super) async fn adjacent_type_definition<
             one_of_schema,
             &current_schema.schema_uri,
             &current_schema.definitions,
+            current_schema.strict,
             schema_context,
         )
         .await
@@ -195,6 +196,7 @@ pub(super) async fn adjacent_type_definition<
             any_of_schema,
             &current_schema.schema_uri,
             &current_schema.definitions,
+            current_schema.strict,
             schema_context,
         )
         .await
@@ -210,6 +212,7 @@ pub(super) async fn adjacent_type_definition<
             all_of_schema,
             &current_schema.schema_uri,
             &current_schema.definitions,
+            current_schema.strict,
             schema_context,
         )
         .await

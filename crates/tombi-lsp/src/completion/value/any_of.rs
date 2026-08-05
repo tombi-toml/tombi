@@ -34,6 +34,7 @@ where
             &any_of_schema.schemas,
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
+            current_schema.strict,
             schema_context.store,
             &schema_context.schema_visits,
             accessors,
@@ -58,6 +59,7 @@ where
             .detail(
                 &current_schema.schema_uri,
                 &current_schema.definitions,
+                current_schema.strict,
                 schema_context.store,
                 completion_hint,
             )
@@ -67,6 +69,7 @@ where
             .documentation(
                 &current_schema.schema_uri,
                 &current_schema.definitions,
+                current_schema.strict,
                 schema_context.store,
                 completion_hint,
             )

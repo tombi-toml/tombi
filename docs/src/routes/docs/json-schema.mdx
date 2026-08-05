@@ -249,7 +249,18 @@ More details are [here](https://github.com/tombi-toml/tombi/issues/1021#issuecom
 By default, Tombi operates in `strict` mode. In this mode, objects without `additionalProperties` are treated as if `additionalProperties: false` was specified.
 This differs from the standard JSON Schema specification but provides more precise validation by eliminating ambiguity.
 
-To disable strict mode, add `schema.strict = false` to your `tombi.toml` configuration.
+To disable strict mode globally, add `schema.strict = false` to your `tombi.toml` configuration.
+You can also set `strict` on a matching `[[schemas]]` root or sub-schema entry.
+
+Tombi resolves strict mode in this order:
+
+1. The document comment directive: `#:tombi schema.strict = true` or `false`
+2. The matching sub-schema `strict` setting
+3. The matching root-schema `strict` setting
+4. The global `schema.strict` setting
+5. The built-in default, `true`
+
+An omitted level falls through to the next one. A sub-schema setting applies only at and below its configured `root`.
 
 ### x-tombi-string-formats
 
