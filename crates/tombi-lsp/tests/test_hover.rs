@@ -84,6 +84,26 @@ async fn write_cached_response(url: &str, body: &str) {
 mod hover_keys_value {
     use super::*;
 
+    mod strict_priority {
+        use super::*;
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn document_directive_strict_false_overrides_default(
+                r#"
+                #:tombi schema.strict = false
+                items = [{ name = "█value", extra = true }]
+                "#,
+                SchemaPath(tombi_test_lib::project_root_path().join(
+                    "schemas/subschema-strict-order-test.schema.json"
+                )),
+            ) -> Ok({
+                "Keys": "items[0].name",
+                "Value": "String"
+            });
+        );
+    }
+
     mod tombi_schema {
         use super::*;
 
