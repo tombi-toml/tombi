@@ -23,6 +23,11 @@ export default defineConfig({
   },
   vite: {
     base: process.env.BASE_URL,
+    optimizeDeps: {
+      esbuildOptions: {
+        target: ["es2020", "edge88", "firefox78", "chrome87", "safari14.1"],
+      },
+    },
     plugins: [
       mdx.withImports({})({
         jsx: true,
