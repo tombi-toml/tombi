@@ -1050,6 +1050,18 @@
             "$ref": "#/definitions/GlobPattern"
           }
         },
+        "strict": {
+          "title": "Enable strict schema validation",
+          "description": "If `additionalProperties` is not specified in the JSON Schema,\nthe strict mode treats it as `additionalProperties: false`,\nwhich is different from the JSON Schema specification.\nIf omitted, the global `schema.strict` setting is used.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "format": {
           "title": "Schema-specific format options",
           "anyOf": [
@@ -1425,6 +1437,18 @@
           "items": {
             "$ref": "#/definitions/GlobPattern"
           }
+        },
+        "strict": {
+          "title": "Enable strict schema validation",
+          "description": "If `additionalProperties` is not specified in the JSON Schema,\nthe strict mode treats it as `additionalProperties: false`,\nwhich is different from the JSON Schema specification.\nThis setting takes precedence over the matching root schema setting.\nIf omitted, the matching root schema or global `schema.strict` setting is used.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "format": {
           "title": "Schema-specific format options",

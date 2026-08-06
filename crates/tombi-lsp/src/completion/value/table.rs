@@ -80,21 +80,16 @@ impl FindCompletionContents for tombi_document_tree::Table {
                 return Vec::new();
             }
 
-            if let Some(Ok(document_schema)) = schema_context
+            if let Some(Ok(current_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
-                && let Some(value_schema) = &document_schema.value_schema
             {
                 return self
                     .find_completion_contents(
                         position,
                         keys,
                         accessors,
-                        Some(&CurrentSchema {
-                            value_schema: value_schema.clone(),
-                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
-                            definitions: Cow::Borrowed(&document_schema.definitions),
-                        }),
+                        Some(&current_schema),
                         schema_context,
                         completion_hint,
                     )
@@ -147,6 +142,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             &schema_accessor,
                                             current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
+                                            current_schema.strict,
                                             schema_context.store,
                                         )
                                         .await
@@ -242,6 +238,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                     &property_key,
                                                     current_schema.schema_uri.clone(),
                                                     current_schema.definitions.clone(),
+                                                    current_schema.strict,
                                                     schema_context.store,
                                                 )
                                                 .await
@@ -318,6 +315,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                     &property_key,
                                                     current_schema.schema_uri.clone(),
                                                     current_schema.definitions.clone(),
+                                                    current_schema.strict,
                                                     schema_context.store,
                                                 )
                                                 .await
@@ -368,6 +366,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             referable_additional_property_schema,
                                             current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
+                                            current_schema.strict,
                                             schema_context.store,
                                         )
                                         .await
@@ -487,9 +486,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     return contents;
                                 }
 
-                                if table_schema
-                                    .allows_any_additional_properties(schema_context.strict())
-                                {
+                                if table_schema.allows_any_additional_properties(
+                                    schema_context.strict(Some(current_schema)),
+                                ) {
                                     return get_property_value_completion_contents(
                                         value,
                                         position,
@@ -625,6 +624,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         &schema_accessor,
                                         current_schema.schema_uri.clone(),
                                         current_schema.definitions.clone(),
+                                        current_schema.strict,
                                         schema_context.store,
                                     )
                                     .await
@@ -648,14 +648,14 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 }
                             }
 
-                            if let Some(sub_schema_uri_map) = schema_context.sub_schema_uri_map {
-                                for (root_accessors, sub_schema_uri) in sub_schema_uri_map {
+                            if let Some(sub_schema_link_map) = schema_context.sub_schema_link_map {
+                                for (root_accessors, sub_schema_link) in sub_schema_link_map {
                                     if let Some(last_key) =
                                         matching_subschema_completion_key(root_accessors, accessors)
                                     {
                                         let Ok(Some(document_schema)) = schema_context
                                             .store
-                                            .try_get_document_schema(sub_schema_uri)
+                                            .try_get_document_schema(&sub_schema_link.schema_uri)
                                             .await
                                         else {
                                             continue;
@@ -670,6 +670,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 accessors,
                                                 &document_schema.schema_uri,
                                                 &document_schema.definitions,
+                                                Some(sub_schema_link.strict.into()),
                                                 schema_context.store,
                                             )
                                             .await;
@@ -686,6 +687,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 .detail(
                                                     &current_schema.schema_uri,
                                                     &current_schema.definitions,
+                                                    current_schema.strict,
                                                     schema_context.store,
                                                     completion_hint,
                                                 )
@@ -694,6 +696,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 .documentation(
                                                     &current_schema.schema_uri,
                                                     &current_schema.definitions,
+                                                    current_schema.strict,
                                                     schema_context.store,
                                                     completion_hint,
                                                 )
@@ -732,6 +735,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     additional_property_schema,
                                     current_schema.schema_uri.clone(),
                                     current_schema.definitions.clone(),
+                                    current_schema.strict,
                                     schema_context.store,
                                 )
                                 .await
@@ -912,6 +916,7 @@ impl FindCompletionContents for TableSchema {
                         &key,
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
+                        current_schema.strict,
                         schema_context.store,
                     )
                     .await
@@ -930,6 +935,7 @@ impl FindCompletionContents for TableSchema {
                         accessors,
                         &current_schema.schema_uri,
                         &current_schema.definitions,
+                        current_schema.strict,
                         schema_context.store,
                     )
                     .await;
@@ -955,6 +961,7 @@ impl FindCompletionContents for TableSchema {
                             .detail(
                                 &current_schema.schema_uri,
                                 &current_schema.definitions,
+                                current_schema.strict,
                                 schema_context.store,
                                 completion_hint,
                             )
@@ -963,6 +970,7 @@ impl FindCompletionContents for TableSchema {
                             .documentation(
                                 &current_schema.schema_uri,
                                 &current_schema.definitions,
+                                current_schema.strict,
                                 schema_context.store,
                                 completion_hint,
                             )
@@ -1003,6 +1011,7 @@ async fn count_table_or_array_schema(
                 &|schema| matches!(schema, ValueSchema::Table(_) | ValueSchema::Array(_)),
                 &current_schema.schema_uri,
                 &current_schema.definitions,
+                current_schema.strict,
                 schema_store,
             )
             .await
@@ -1015,10 +1024,12 @@ async fn count_table_or_array_schema(
                                 schema_uri,
                                 value_schema,
                                 definitions,
+                                strict,
                             })) = tombi_schema_store::resolve_schema_item(
                                 &item,
                                 Cow::Borrowed(&current_schema.schema_uri),
                                 Cow::Borrowed(&current_schema.definitions),
+                                current_schema.strict,
                                 schema_store,
                             )
                             .await
@@ -1028,6 +1039,7 @@ async fn count_table_or_array_schema(
                                     &|schema| matches!(schema, ValueSchema::Table(_)),
                                     &schema_uri,
                                     &definitions,
+                                    strict,
                                     schema_store,
                                 )
                                 .await;
@@ -1204,6 +1216,7 @@ fn table_schema_has_remaining_key_completion<'a>(
                     &property_key,
                     Cow::Borrowed(&schema_uri),
                     Cow::Borrowed(&definitions),
+                    Some(strict.into()),
                     schema_store,
                 )
                 .await
@@ -1217,6 +1230,7 @@ fn table_schema_has_remaining_key_completion<'a>(
                     &[],
                     &current_schema.schema_uri,
                     &current_schema.definitions,
+                    current_schema.strict,
                     schema_store,
                 )
                 .await;
@@ -1270,6 +1284,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                 accessors,
                 &current_schema.schema_uri,
                 &current_schema.definitions,
+                current_schema.strict,
                 schema_context.store,
             )
             .await;
@@ -1317,7 +1332,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                             Cow::Borrowed(&current_schema.schema_uri),
                             Cow::Borrowed(&current_schema.definitions),
                             schema_context.store,
-                            schema_context.strict(),
+                            schema_context.strict(Some(current_schema)),
                         )
                         .await
                     {
@@ -1339,6 +1354,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                     .detail(
                         &current_schema.schema_uri,
                         &current_schema.definitions,
+                        current_schema.strict,
                         schema_context.store,
                         completion_hint,
                     )
@@ -1347,6 +1363,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                     .documentation(
                         &current_schema.schema_uri,
                         &current_schema.definitions,
+                        current_schema.strict,
                         schema_context.store,
                         completion_hint,
                     )

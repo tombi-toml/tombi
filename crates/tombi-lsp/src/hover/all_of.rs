@@ -18,6 +18,7 @@ pub fn get_all_of_hover_content<'a: 'b, 'b, T>(
     all_of_schema: &'a tombi_schema_store::AllOfSchema,
     schema_uri: &'a SchemaUri,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
+    strict: Option<tombi_schema_type::BoolDefaultTrue>,
     schema_context: &'a SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>
 where
@@ -40,6 +41,7 @@ where
             &all_of_schema.schemas,
             Cow::Borrowed(schema_uri),
             Cow::Borrowed(definitions),
+            strict,
             schema_context.store,
             &schema_context.schema_visits,
             accessors,
@@ -53,6 +55,7 @@ where
                 .get_enum(
                     &resolved_schema.schema_uri,
                     &resolved_schema.definitions,
+                    resolved_schema.strict,
                     schema_context,
                 )
                 .await
@@ -210,6 +213,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 &self.schemas,
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
+                current_schema.strict,
                 schema_context.store,
                 &schema_context.schema_visits,
                 accessors,
@@ -239,6 +243,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                     .get_enum(
                         &resolved_schema.schema_uri,
                         &resolved_schema.definitions,
+                        resolved_schema.strict,
                         schema_context,
                     )
                     .await

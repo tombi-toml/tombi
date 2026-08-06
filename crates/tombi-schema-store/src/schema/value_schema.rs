@@ -947,6 +947,7 @@ impl ValueSchema {
         condition: &'a T,
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, Vec<ValueSchema>> {
         async move {
@@ -955,6 +956,7 @@ impl ValueSchema {
                 condition,
                 schema_uri,
                 definitions,
+                strict,
                 schema_store,
                 &schema_visits,
             )
@@ -972,6 +974,7 @@ impl ValueSchema {
         condition: &'a T,
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
         schema_visits: &'a crate::SchemaVisits,
     ) -> BoxFuture<'b, Vec<ValueSchema>> {
@@ -985,6 +988,7 @@ impl ValueSchema {
                         schemas,
                         Cow::Borrowed(schema_uri),
                         Cow::Borrowed(definitions),
+                        strict,
                         schema_store,
                         schema_visits,
                         &[],
@@ -1002,6 +1006,7 @@ impl ValueSchema {
                                     condition,
                                     &current_schema.schema_uri,
                                     &current_schema.definitions,
+                                    current_schema.strict,
                                     schema_store,
                                     schema_visits,
                                 )
@@ -1026,6 +1031,7 @@ impl ValueSchema {
         condition: &'a T,
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, bool>
     where
@@ -1037,6 +1043,7 @@ impl ValueSchema {
                 condition,
                 schema_uri,
                 definitions,
+                strict,
                 schema_store,
                 &schema_visits,
             )
@@ -1050,6 +1057,7 @@ impl ValueSchema {
         condition: &'a T,
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
         schema_visits: &'a crate::SchemaVisits,
     ) -> BoxFuture<'b, bool>
@@ -1064,6 +1072,7 @@ impl ValueSchema {
                         schemas,
                         Cow::Borrowed(schema_uri),
                         Cow::Borrowed(definitions),
+                        strict,
                         schema_store,
                         schema_visits,
                         &[],
@@ -1080,6 +1089,7 @@ impl ValueSchema {
                                 condition,
                                 &current_schema.schema_uri,
                                 &current_schema.definitions,
+                                current_schema.strict,
                                 schema_store,
                                 schema_visits,
                             )
@@ -1094,6 +1104,7 @@ impl ValueSchema {
                         schemas,
                         Cow::Borrowed(schema_uri),
                         Cow::Borrowed(definitions),
+                        strict,
                         schema_store,
                         schema_visits,
                         &[],
@@ -1110,6 +1121,7 @@ impl ValueSchema {
                                 condition,
                                 &current_schema.schema_uri,
                                 &current_schema.definitions,
+                                current_schema.strict,
                                 schema_store,
                                 schema_visits,
                             )
@@ -1130,6 +1142,7 @@ impl ValueSchema {
         accessors: &'a [Accessor],
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
         schema_visits: &'a crate::SchemaVisits,
     ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
@@ -1160,6 +1173,7 @@ impl ValueSchema {
                         schemas,
                         Cow::Borrowed(schema_uri),
                         Cow::Borrowed(definitions),
+                        strict,
                         schema_store,
                         schema_visits,
                         accessors,
@@ -1176,6 +1190,7 @@ impl ValueSchema {
                                 accessors,
                                 &current_schema.schema_uri,
                                 &current_schema.definitions,
+                                current_schema.strict,
                                 schema_store,
                                 schema_visits,
                             )
@@ -1208,6 +1223,7 @@ impl FindSchemaCandidates for ValueSchema {
         accessors: &'a [Accessor],
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
         async move {
@@ -1216,6 +1232,7 @@ impl FindSchemaCandidates for ValueSchema {
                 accessors,
                 schema_uri,
                 definitions,
+                strict,
                 schema_store,
                 &schema_visits,
             )

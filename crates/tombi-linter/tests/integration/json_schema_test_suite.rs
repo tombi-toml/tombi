@@ -30,7 +30,7 @@ async fn validate_test_suite(
     fs::write(&source_path, toml_text).unwrap();
 
     let schema_store = SchemaStore::new_with_options(SchemaStoreOptions {
-        strict: Some(false),
+        strict: Some(false.into()),
         offline: Some(true),
         cache: None,
     });

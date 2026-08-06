@@ -87,6 +87,7 @@ impl GetHoverContent for tombi_document_tree::Float {
                             one_of_schema,
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
+                            current_schema.strict,
                             schema_context,
                         )
                         .await
@@ -100,6 +101,7 @@ impl GetHoverContent for tombi_document_tree::Float {
                             any_of_schema,
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
+                            current_schema.strict,
                             schema_context,
                         )
                         .await
@@ -113,6 +115,7 @@ impl GetHoverContent for tombi_document_tree::Float {
                             all_of_schema,
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
+                            current_schema.strict,
                             schema_context,
                         )
                         .await

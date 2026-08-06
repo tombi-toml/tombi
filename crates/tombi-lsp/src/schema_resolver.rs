@@ -16,6 +16,7 @@ async fn resolve_schema_item_owned(
         schema_item,
         current_schema.schema_uri.clone(),
         current_schema.definitions.clone(),
+        current_schema.strict,
         schema_context.store,
     )
     .await
@@ -141,6 +142,7 @@ async fn resolve_current_schema(
         value_schema: value_schema.clone(),
         schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
         definitions: Cow::Owned(document_schema.definitions.clone()),
+        strict: document_schema.strict,
     };
 
     resolve_schema_with_accessors(current_schema, accessors, schema_context).await
@@ -179,6 +181,7 @@ fn resolve_schema_with_accessors<'a: 'b, 'b>(
                         &SchemaAccessor::from(accessor),
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
+                        current_schema.strict,
                         schema_context.store,
                     )
                     .await
@@ -218,6 +221,7 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
             schemas,
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
+            current_schema.strict,
             schema_context.store,
             &schema_context.schema_visits,
             accessors,

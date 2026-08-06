@@ -110,6 +110,7 @@ tombi-parser = { path = "crates/tombi-parser" }
 tombi-regex = { path = "crates/tombi-regex" }
 tombi-rg-tree = { path = "crates/tombi-rg-tree" }
 tombi-schema-store = { path = "crates/tombi-schema-store", default-features = false }
+tombi-schema-type = { path = "crates/tombi-schema-type" }
 tombi-severity-level = { path = "crates/tombi-severity-level" }
 tombi-syntax = { path = "crates/tombi-syntax" }
 tombi-test-lib = { path = "crates/tombi-test-lib" }

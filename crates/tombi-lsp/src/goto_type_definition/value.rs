@@ -22,10 +22,9 @@ impl GetTypeDefinition for tombi_document_tree::Value {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>> {
         async move {
-            if let Some(Ok(document_schema)) = schema_context
+            if let Some(Ok(current_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
-                && let Some(current_schema) = document_schema.as_current_schema()
             {
                 return self
                     .get_type_definition(

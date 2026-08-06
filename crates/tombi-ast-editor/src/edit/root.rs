@@ -200,5 +200,6 @@ async fn resolve_current_schema_from_comment_directive<'a>(
         value_schema,
         schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
         definitions: Cow::Owned(document_schema.definitions.clone()),
+        strict: document_schema.strict,
     })
 }

@@ -1378,6 +1378,7 @@ mod completion_edit {
                         path: schema_uri.to_string(),
                         include: vec!["*.toml".into()],
                         exclude: None,
+                        strict: None,
                         lint: None,
                         format: None,
                         overrides: None,

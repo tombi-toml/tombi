@@ -1,0 +1,18 @@
+[package]
+name = "tombi-schema-type"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+schemars = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+
+[features]
+jsonschema = ["dep:schemars"]
+serde = ["dep:serde"]
+
+[lints]
+workspace = true

@@ -645,6 +645,43 @@ optional_string = "provided"
     }
 
     #[tokio::test]
+    async fn test_deserialize_schema_strict() {
+        tombi_test_lib::init_log();
+        let toml = r#"
+            [[schemas]]
+            path = "schema.json"
+            include = ["*.toml"]
+            strict = false
+        "#;
+
+        let config: tombi_config::Config = from_str_async(toml)
+            .await
+            .expect("TOML deserialization failed");
+        let schema = config.schemas.unwrap().remove(0);
+
+        pretty_assertions::assert_eq!(schema.strict(), Some(false.into()));
+    }
+
+    #[tokio::test]
+    async fn test_deserialize_sub_schema_strict() {
+        tombi_test_lib::init_log();
+        let toml = r#"
+            [[schemas]]
+            root = "tool.tombi"
+            path = "schema.json"
+            include = ["*.toml"]
+            strict = false
+        "#;
+
+        let config: tombi_config::Config = from_str_async(toml)
+            .await
+            .expect("TOML deserialization failed");
+        let schema = config.schemas.unwrap().remove(0);
+
+        pretty_assertions::assert_eq!(schema.strict(), Some(false.into()));
+    }
+
+    #[tokio::test]
     async fn test_deserialize_actual_tombi_config() {
         let config_path = project_root_path().join("tombi.toml");
         let config = crate::config::from_str(

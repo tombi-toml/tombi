@@ -222,6 +222,7 @@ catalog = {
 toml-version = "v1.0.0"
 path = "https://example.com/schema.json"
 include = ["example.toml"]
+strict = false
 
 format.rules = {
   array-values-order.enabled = true,
@@ -961,6 +962,7 @@ Apply a schema to the entire TOML document.
 toml-version = "v1.0.0"  # optional
 path = "https://example.com/schema.json"
 include = ["example.toml"]
+strict = false
 
 [schemas.lint.rules]
 deprecated = "error"
@@ -970,6 +972,7 @@ deprecated = "error"
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
 - `exclude`(optional): File match patterns to skip even if `include` matched
+- `strict`(optional): Override `schema.strict` for files matched by this root schema
 - `lint.rules.deprecated`(optional): Override the deprecated diagnostic level for this schema with `"off"`, `"warn"`, or `"error"`
 - `format.rules.array-values-order.enabled`(optional): Enable schema-defined array value ordering for this schema
 - `format.rules.table-keys-order.enabled`(optional): Enable schema-defined table key ordering for this schema
@@ -992,6 +995,7 @@ Sub schemas are mainly provided for configuring extension features, such as the 
 root = "tool.taskipy"
 path = "schemas/partial-taskipy.schema.json"
 include = ["pyproject.toml"]
+strict = false
 
 [schemas.lint.rules]
 deprecated = "warn"
@@ -1001,6 +1005,7 @@ deprecated = "warn"
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
 - `exclude`(optional): File match patterns to skip even if `include` matched
+- `strict`(optional): Override the matching root schema or global `schema.strict` setting below this sub-schema root
 - `lint.rules.deprecated`(optional): Override the deprecated diagnostic level for this schema with `"off"`, `"warn"`, or `"error"`
 - `format.rules.array-values-order.enabled`(optional): Enable schema-defined array value ordering for this schema
 - `format.rules.table-keys-order.enabled`(optional): Enable schema-defined table key ordering for this schema

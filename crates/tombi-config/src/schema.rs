@@ -51,8 +51,8 @@ impl SchemaOverviewOptions {
         }
     }
 
-    pub fn strict(&self) -> Option<bool> {
-        self.strict.as_ref().map(|strict| strict.value())
+    pub fn strict(&self) -> Option<BoolDefaultTrue> {
+        self.strict
     }
 }
 
@@ -124,6 +124,13 @@ impl SchemaItem {
         match self {
             Self::Root(item) => item.toml_version,
             Self::Sub(_) => None,
+        }
+    }
+
+    pub fn strict(&self) -> Option<BoolDefaultTrue> {
+        match self {
+            Self::Root(item) => item.strict,
+            Self::Sub(item) => item.strict,
         }
     }
 
@@ -210,6 +217,14 @@ pub struct RootSchema {
     /// Supports glob pattern.
     pub exclude: Option<Vec<GlobPattern>>,
 
+    /// # Enable strict schema validation
+    ///
+    /// If `additionalProperties` is not specified in the JSON Schema,
+    /// the strict mode treats it as `additionalProperties: false`,
+    /// which is different from the JSON Schema specification.
+    /// If omitted, the global `schema.strict` setting is used.
+    pub strict: Option<BoolDefaultTrue>,
+
     /// # Schema-specific format options
     pub format: Option<SchemaFormatOptions>,
 
@@ -257,6 +272,15 @@ pub struct SubSchema {
     /// The file match pattern to exclude the target from applying the sub schema.
     /// Supports glob pattern.
     pub exclude: Option<Vec<GlobPattern>>,
+
+    /// # Enable strict schema validation
+    ///
+    /// If `additionalProperties` is not specified in the JSON Schema,
+    /// the strict mode treats it as `additionalProperties: false`,
+    /// which is different from the JSON Schema specification.
+    /// This setting takes precedence over the matching root schema setting.
+    /// If omitted, the matching root schema or global `schema.strict` setting is used.
+    pub strict: Option<BoolDefaultTrue>,
 
     /// # Schema-specific format options
     pub format: Option<SchemaFormatOptions>,

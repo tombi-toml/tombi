@@ -44,8 +44,12 @@ fn main() {
                 .enable_all()
                 .build()
                 .expect("failed to build tokio runtime");
-            let document_schema =
-                runtime.block_on(DocumentSchema::new(value_node, schema_uri, &schema_store));
+            let document_schema = runtime.block_on(DocumentSchema::new(
+                value_node,
+                schema_uri,
+                None,
+                &schema_store,
+            ));
             println!("{document_schema:#?}");
         }
         Err(err) => {

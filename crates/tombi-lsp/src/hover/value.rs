@@ -31,10 +31,9 @@ impl GetHoverContent for tombi_document_tree::Value {
         log::trace!("current_schema = {:?}", current_schema);
 
         async move {
-            if let Some(Ok(document_schema)) = schema_context
+            if let Some(Ok(current_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
-                && let Some(current_schema) = document_schema.as_current_schema()
             {
                 return self
                     .get_hover_content(

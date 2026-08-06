@@ -6,6 +6,25 @@ mod goto_type_definition_tests {
         lsp_consistency_test_schema_path,
     };
 
+    mod strict_priority {
+        use super::*;
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn document_directive_strict_false_overrides_default(
+                r#"
+                #:tombi schema.strict = false
+                items = [{ name = "█value", extra = true }]
+                "#,
+                SchemaPath(tombi_test_lib::project_root_path().join(
+                    "schemas/subschema-strict-order-test.schema.json"
+                )),
+            ) -> Ok(tombi_test_lib::project_root_path().join(
+                "schemas/subschema-strict-order-test.schema.json"
+            ));
+        );
+    }
+
     mod tombi_schema {
         use super::*;
         use tombi_test_lib::tombi_schema_path;
@@ -696,6 +715,7 @@ mod goto_type_definition_tests {
                         path: schema_uri.to_string(),
                         include: vec!["*.toml".into()],
                         exclude: None,
+                        strict: None,
                         lint: None,
                         format: None,
                         overrides: None,
@@ -716,6 +736,7 @@ mod goto_type_definition_tests {
                         path: subschema_uri.to_string(),
                         include: vec!["*.toml".into()],
                         exclude: None,
+                        strict: None,
                         root: subschema.root.clone(),
                         lint: None,
                         format: None,

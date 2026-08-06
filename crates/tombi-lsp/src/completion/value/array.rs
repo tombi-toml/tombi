@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use std::borrow::Cow;
 use tombi_document_tree::{ArrayKind, LiteralValueRef};
 use tombi_extension::{AddLeadingComma, AddTrailingComma, CompletionKind};
 use tombi_future::Boxable;
@@ -54,21 +53,16 @@ impl FindCompletionContents for tombi_document_tree::Array {
                 return completions;
             }
 
-            if let Some(Ok(document_schema)) = schema_context
+            if let Some(Ok(current_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
-                && let Some(value_schema) = &document_schema.value_schema
             {
                 return self
                     .find_completion_contents(
                         position,
                         keys,
                         accessors,
-                        Some(&CurrentSchema {
-                            value_schema: value_schema.clone(),
-                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
-                            definitions: Cow::Borrowed(&document_schema.definitions),
-                        }),
+                        Some(&current_schema),
                         schema_context,
                         completion_hint,
                     )
@@ -425,10 +419,9 @@ impl FindCompletionContents for tombi_document_tree::Array {
                     .chain(std::iter::once(Accessor::Index(new_item_index)))
                     .collect_vec();
 
-                if let Some(Ok(document_schema)) = schema_context
+                if let Some(Ok(current_schema)) = schema_context
                     .get_subschema(&new_item_accessors, None)
                     .await
-                    && let Some(current_schema) = document_schema.as_current_schema()
                 {
                     let new_item_hint = new_item_completion_hint(
                         self,

@@ -7,7 +7,14 @@ use tombi_severity_level::SeverityLevelDefaultWarn;
 use super::{DocumentSchema, SchemaOverrides, SchemaUri};
 use crate::{PatternAccessor, PatternAccessors};
 
-pub type SubSchemaUriMap = tombi_hashmap::IndexMap<Vec<PatternAccessor>, SchemaUri>;
+#[derive(Debug, Clone)]
+pub struct SubSchemaLink {
+    pub schema_uri: SchemaUri,
+    /// Effective sub-schema-level strict setting after lower-priority fallback resolution.
+    pub strict: bool,
+}
+
+pub type SubSchemaLinkMap = tombi_hashmap::IndexMap<Vec<PatternAccessor>, SubSchemaLink>;
 pub type SchemaFormatRulesMap = tombi_hashmap::HashMap<SchemaUri, SchemaFormatRules>;
 pub type SchemaLintRulesMap = tombi_hashmap::HashMap<SchemaUri, SchemaLintRules>;
 pub type SchemaOverridesMap = tombi_hashmap::HashMap<SchemaUri, SchemaOverrides>;
@@ -15,7 +22,7 @@ pub type SchemaOverridesMap = tombi_hashmap::HashMap<SchemaUri, SchemaOverrides>
 #[derive(Clone, Default)]
 pub struct SourceSchema {
     pub root_schema: Option<Arc<DocumentSchema>>,
-    pub sub_schema_uri_map: SubSchemaUriMap,
+    pub sub_schema_link_map: SubSchemaLinkMap,
     pub deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
     pub schema_format_rules: SchemaFormatRulesMap,
     pub schema_lint_rules: SchemaLintRulesMap,
@@ -29,7 +36,7 @@ pub struct SourceSchema {
 impl SourceSchema {
     pub fn new(
         root_schema: Option<Arc<DocumentSchema>>,
-        sub_schema_uri_map: SubSchemaUriMap,
+        sub_schema_link_map: SubSchemaLinkMap,
         toml_version: Option<TomlVersion>,
         deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
         schema_format_rules: SchemaFormatRulesMap,
@@ -38,7 +45,7 @@ impl SourceSchema {
     ) -> Self {
         Self {
             root_schema,
-            sub_schema_uri_map,
+            sub_schema_link_map,
             deprecated_lint_level,
             schema_format_rules,
             schema_lint_rules,
@@ -65,17 +72,22 @@ impl std::fmt::Debug for SourceSchema {
             .root_schema
             .as_ref()
             .map(|schema| schema.schema_uri.to_string());
-        let sub_schema_uri_map = self
-            .sub_schema_uri_map
+        let sub_schema_link_map = self
+            .sub_schema_link_map
             .iter()
-            .map(|(accessors, url)| {
-                format!("[{:?}]: {}", PatternAccessors::from(accessors.clone()), url)
+            .map(|(accessors, link)| {
+                format!(
+                    "[{:?}]: {} (strict: {})",
+                    PatternAccessors::from(accessors.clone()),
+                    link.schema_uri,
+                    link.strict,
+                )
             })
             .collect_vec()
             .join(", ");
         write!(
             f,
-            "SourceSchema {{ root_schema: {root_schema_uri:?}, sub_schema_uri_map: {sub_schema_uri_map:?} }}"
+            "SourceSchema {{ root_schema: {root_schema_uri:?}, sub_schema_link_map: {sub_schema_link_map:?} }}"
         )
     }
 }

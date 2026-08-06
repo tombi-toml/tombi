@@ -115,6 +115,7 @@ where
             value_schema,
             schema_uri,
             definitions,
+            strict,
         }) = current_schema
         {
             match value_schema.as_ref() {
@@ -137,6 +138,7 @@ where
                         schemas,
                         Cow::Borrowed(schema_uri),
                         Cow::Borrowed(definitions),
+                        *strict,
                         schema_context.store,
                         &schema_context.schema_visits,
                         accessors,
@@ -244,6 +246,7 @@ where
                                 &tombi_schema_store::SchemaAccessor::from(&accessor),
                                 current_schema.schema_uri.clone(),
                                 current_schema.definitions.clone(),
+                                current_schema.strict,
                                 schema_context.store,
                             )
                             .await
@@ -274,6 +277,7 @@ where
                                     referable_schema,
                                     current_schema.schema_uri.clone(),
                                     current_schema.definitions.clone(),
+                                    current_schema.strict,
                                     schema_context.store,
                                 )
                                 .await
@@ -331,6 +335,7 @@ where
                         referable_schema,
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
+                        current_schema.strict,
                         schema_context.store,
                     )
                     .await

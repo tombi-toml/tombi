@@ -164,6 +164,7 @@ pub trait GetEnum {
         &'a self,
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_context: &'a SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>>;
 }
@@ -173,6 +174,7 @@ impl GetEnum for ValueSchema {
         &'a self,
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_context: &'a SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
         async move {
@@ -333,7 +335,8 @@ impl GetEnum for ValueSchema {
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
                 | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                 | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
-                    get_enum_from_schemas(schemas, schema_uri, definitions, schema_context).await
+                    get_enum_from_schemas(schemas, schema_uri, definitions, strict, schema_context)
+                        .await
                 }
             }
         }
@@ -346,6 +349,7 @@ fn get_enum_from_schemas<'a: 'b, 'b>(
     schemas: &'a tombi_schema_store::ReferableValueSchemas,
     schema_uri: &'a SchemaUri,
     definitions: &'a SchemaDefinitions,
+    strict: Option<tombi_schema_type::BoolDefaultTrue>,
     schema_context: &'a SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
     async move {
@@ -354,6 +358,7 @@ fn get_enum_from_schemas<'a: 'b, 'b>(
             schemas,
             std::borrow::Cow::Borrowed(schema_uri),
             std::borrow::Cow::Borrowed(definitions),
+            strict,
             schema_context.store,
             &schema_context.schema_visits,
             &[],
@@ -363,7 +368,12 @@ fn get_enum_from_schemas<'a: 'b, 'b>(
         for resolved in &resolved_schemas {
             if let Some(values) = resolved
                 .value_schema
-                .get_enum(&resolved.schema_uri, &resolved.definitions, schema_context)
+                .get_enum(
+                    &resolved.schema_uri,
+                    &resolved.definitions,
+                    resolved.strict,
+                    schema_context,
+                )
                 .await
             {
                 enum_values.extend(values);

@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use itertools::Itertools;
 use tombi_comment_directive::value::ArrayCommonLintRules;
 use tombi_document_tree::ValueImpl;
@@ -30,21 +28,12 @@ impl Validate for tombi_document_tree::Array {
             .map(|directives| directives.cloned().collect_vec());
 
         async move {
-            if let Some(Ok(document_schema)) = schema_context
+            if let Some(Ok(current_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
-                && let Some(value_schema) = &document_schema.value_schema
             {
                 return self
-                    .validate(
-                        accessors,
-                        Some(&CurrentSchema {
-                            value_schema: value_schema.clone(),
-                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
-                            definitions: Cow::Borrowed(&document_schema.definitions),
-                        }),
-                        schema_context,
-                    )
+                    .validate(accessors, Some(&current_schema), schema_context)
                     .await;
             }
 
@@ -165,6 +154,7 @@ async fn validate_array(
                         overflow_item,
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
+                        current_schema.strict,
                         schema_context.store,
                     )
                     .await
@@ -202,6 +192,7 @@ async fn validate_array(
                     &prefix_items[index],
                     current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
+                    current_schema.strict,
                     schema_context.store,
                 )
                 .await
@@ -255,6 +246,7 @@ async fn validate_array(
             items,
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
+            current_schema.strict,
             schema_context.store,
         )
         .await
@@ -294,6 +286,7 @@ async fn validate_array(
             contains,
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
+            current_schema.strict,
             schema_context.store,
         )
         .await
@@ -394,6 +387,7 @@ async fn validate_array(
                 schema_item,
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
+                current_schema.strict,
                 schema_context.store,
             )
             .await

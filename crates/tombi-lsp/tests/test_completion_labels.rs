@@ -674,6 +674,7 @@ mod completion_labels {
                 "format",
                 "lint",
                 "overrides",
+                "strict",
                 "toml-version",
             ]);
         }
@@ -2624,6 +2625,21 @@ mod completion_labels {
         }
     }
 
+    mod strict_priority {
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn document_directive_strict_false_overrides_default(
+                r#"
+                #:tombi schema.strict = false
+                unknown =█
+                "#,
+                SchemaPath(project_root_path().join("schemas/subschema-strict-order-test.schema.json")),
+            ) -> Ok(AnyValue);
+        }
+    }
+
     mod with_subschema {
         use tombi_test_lib::{project_root_path, pyproject_schema_path, type_test_schema_path};
 
@@ -3019,6 +3035,7 @@ mod completion_labels {
                         path: schema_uri.to_string(),
                         include: vec!["*.toml".into()],
                         exclude: None,
+                        strict: None,
                         lint: None,
                         format: None,
                         overrides: None,
@@ -3039,6 +3056,7 @@ mod completion_labels {
                         path: subschema_uri.to_string(),
                         include: vec!["*.toml".into()],
                         exclude: None,
+                        strict: None,
                         root: subschema.root.to_string(),
                         lint: None,
                         format: None,

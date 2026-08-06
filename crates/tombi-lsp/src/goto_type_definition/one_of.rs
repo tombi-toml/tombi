@@ -14,6 +14,7 @@ pub fn get_one_of_type_definition<'a: 'b, 'b, T>(
     one_of_schema: &'a tombi_schema_store::OneOfSchema,
     schema_uri: &'a SchemaUri,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
+    strict: Option<tombi_schema_type::BoolDefaultTrue>,
     schema_context: &'a tombi_schema_store::SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>>
 where
@@ -35,6 +36,7 @@ where
             &one_of_schema.schemas,
             Cow::Borrowed(schema_uri),
             Cow::Borrowed(definitions),
+            strict,
             schema_context.store,
             &schema_context.schema_visits,
             accessors,

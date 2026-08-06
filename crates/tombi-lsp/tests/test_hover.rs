@@ -84,6 +84,26 @@ async fn write_cached_response(url: &str, body: &str) {
 mod hover_keys_value {
     use super::*;
 
+    mod strict_priority {
+        use super::*;
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn document_directive_strict_false_overrides_default(
+                r#"
+                #:tombi schema.strict = false
+                items = [{ name = "█value", extra = true }]
+                "#,
+                SchemaPath(tombi_test_lib::project_root_path().join(
+                    "schemas/subschema-strict-order-test.schema.json"
+                )),
+            ) -> Ok({
+                "Keys": "items[0].name",
+                "Value": "String"
+            });
+        );
+    }
+
     mod tombi_schema {
         use super::*;
 
@@ -1441,6 +1461,7 @@ mod hover_keys_value {
                 path: schema_uri.to_string(),
                 include: vec!["*.toml".into()],
                 exclude: None,
+                strict: None,
                 lint: None,
                 format: None,
                 overrides: None,
@@ -1630,6 +1651,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: Some(tombi_config::SchemaFormatOptions {
                         rules: Some(tombi_config::SchemaFormatRules {
@@ -1667,6 +1689,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: None,
                     overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -1708,6 +1731,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: None,
                     overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -1774,6 +1798,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: Some(tombi_config::SchemaFormatOptions {
                         rules: Some(tombi_config::SchemaFormatRules {
@@ -1809,6 +1834,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: None,
                     overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -1848,6 +1874,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: None,
                     overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -1912,6 +1939,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: Some(tombi_config::SchemaFormatOptions {
                         rules: Some(tombi_config::SchemaFormatRules {
@@ -1951,6 +1979,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: None,
                     overrides: Some(vec![tombi_config::SchemaOverrideItem {
@@ -1990,6 +2019,7 @@ mod hover_keys_value {
                     .to_string(),
                     include: vec!["*.toml".into()],
                     exclude: None,
+                    strict: None,
                     lint: None,
                     format: None,
                     overrides: Some(vec![
@@ -2184,6 +2214,7 @@ mod hover_keys_value {
                         path: schema_uri.to_string(),
                         include: vec!["*.toml".into()],
                         exclude: None,
+                        strict: None,
                         lint: None,
                         format: None,
                         overrides: None,
@@ -2204,6 +2235,7 @@ mod hover_keys_value {
                         path: subschema_uri.to_string(),
                         include: vec!["*.toml".into()],
                         exclude: None,
+                        strict: None,
                         root: subschema.root.clone(),
                         lint: None,
                         format: None,

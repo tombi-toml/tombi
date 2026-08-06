@@ -1,8 +1,6 @@
 mod array_bracket_space_width;
 mod array_comma_space_width;
 mod blank_lines;
-mod bool_default_false;
-mod bool_default_true;
 mod date_time_delimiter;
 mod glob_pattern;
 mod indent_style;
@@ -20,8 +18,6 @@ mod trailing_comment_space_width;
 pub use array_bracket_space_width::ArrayBracketSpaceWidth;
 pub use array_comma_space_width::ArrayCommaSpaceWidth;
 pub use blank_lines::{BlankLines, BlankLinesLimit};
-pub use bool_default_false::BoolDefaultFalse;
-pub use bool_default_true::BoolDefaultTrue;
 pub use date_time_delimiter::DateTimeDelimiter;
 pub use glob_pattern::GlobPattern;
 pub use indent_style::IndentStyle;
@@ -36,4 +32,5 @@ pub use schema_catalog_path::{
     JSON_SCHEMASTORE_CATALOG_URL, SchemaCatalogPath, TOMBI_SCHEMASTORE_CATALOG_URL,
 };
 pub use string_quote_style::StringQuoteStyle;
+pub use tombi_schema_type::{BoolDefaultFalse, BoolDefaultTrue};
 pub use trailing_comment_space_width::TrailingCommentSpaceWidth;

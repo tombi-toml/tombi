@@ -22,14 +22,15 @@ impl<T> From<T> for ResolvedFormatOrder<T> {
 pub struct SchemaContext<'a> {
     pub toml_version: tombi_config::TomlVersion,
     pub root_schema: Option<&'a crate::DocumentSchema>,
-    pub sub_schema_uri_map: Option<&'a crate::SubSchemaUriMap>,
+    pub sub_schema_link_map: Option<&'a crate::SubSchemaLinkMap>,
     pub deprecated_lint_level: Option<SeverityLevelDefaultWarn>,
     pub schema_format_rules: Option<&'a crate::SchemaFormatRulesMap>,
     pub schema_lint_rules: Option<&'a crate::SchemaLintRulesMap>,
     pub schema_overrides: Option<&'a crate::SchemaOverridesMap>,
     pub schema_visits: SchemaVisits,
     pub store: &'a crate::SchemaStore,
-    pub strict: Option<bool>,
+    /// strict setting on document comment-directive level.
+    pub strict: Option<tombi_schema_type::BoolDefaultTrue>,
 }
 
 impl SchemaContext<'_> {
@@ -37,12 +38,12 @@ impl SchemaContext<'_> {
         toml_version: tombi_config::TomlVersion,
         source_schema: Option<&'a crate::SourceSchema>,
         store: &'a crate::SchemaStore,
-        strict: Option<bool>,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
     ) -> SchemaContext<'a> {
         SchemaContext {
             toml_version,
             root_schema: source_schema.and_then(|schema| schema.root_schema.as_deref()),
-            sub_schema_uri_map: source_schema.map(|schema| &schema.sub_schema_uri_map),
+            sub_schema_link_map: source_schema.map(|schema| &schema.sub_schema_link_map),
             deprecated_lint_level: source_schema.and_then(|schema| schema.deprecated_lint_level),
             schema_format_rules: source_schema.map(|schema| &schema.schema_format_rules),
             schema_lint_rules: source_schema.map(|schema| &schema.schema_lint_rules),
@@ -54,23 +55,23 @@ impl SchemaContext<'_> {
     }
 
     #[inline]
-    pub fn strict(&self) -> bool {
-        self.strict.unwrap_or_else(|| self.store.strict())
-    }
-
-    pub fn with_strict(&self, strict: Option<bool>) -> SchemaContext<'_> {
-        SchemaContext {
-            toml_version: self.toml_version,
-            root_schema: self.root_schema,
-            sub_schema_uri_map: self.sub_schema_uri_map,
-            deprecated_lint_level: self.deprecated_lint_level,
-            schema_format_rules: self.schema_format_rules,
-            schema_lint_rules: self.schema_lint_rules,
-            schema_overrides: self.schema_overrides,
-            schema_visits: self.schema_visits.clone(),
-            store: self.store,
-            strict,
-        }
+    pub fn strict(&self, current_schema: Option<&crate::CurrentSchema<'_>>) -> bool {
+        // document comment-directive level
+        self.strict
+            .or_else(
+                // root-schema / sub-schema level
+                || current_schema.and_then(|schema| schema.strict),
+            )
+            .or_else(
+                // root-schema level
+                || self.root_schema.and_then(|schema| schema.strict),
+            )
+            .or_else(
+                // global level
+                || self.store.strict(),
+            )
+            .unwrap_or_default()
+            .value()
     }
 
     #[inline]
@@ -337,26 +338,36 @@ impl SchemaContext<'_> {
         &self,
         accessors: &[crate::Accessor],
         current_schema: Option<&crate::CurrentSchema<'_>>,
-    ) -> Option<Result<std::sync::Arc<crate::DocumentSchema>, crate::Error>> {
-        if let Some(sub_schema_uri_map) = self.sub_schema_uri_map
-            && let Some((_, sub_schema_uri)) = sub_schema_uri_map
+    ) -> Option<Result<crate::CurrentSchema<'static>, crate::Error>> {
+        if let Some(sub_schema_link_map) = self.sub_schema_link_map
+            && let Some((_, sub_schema_link)) = sub_schema_link_map
                 .iter()
-                .filter_map(|(pattern, sub_schema_uri)| {
+                .filter_map(|(pattern, sub_schema_link)| {
                     crate::pattern_match_score(pattern, accessors)
-                        .map(|score| (score, sub_schema_uri))
+                        .map(|score| (score, sub_schema_link))
                 })
                 .fold(None, |best: Option<(usize, _)>, candidate| match best {
                     Some(best) if best.0 >= candidate.0 => Some(best),
                     _ => Some(candidate),
                 })
-            && current_schema
-                .is_none_or(|current_schema| &*current_schema.schema_uri != sub_schema_uri)
+            && current_schema.is_none_or(|current_schema| {
+                current_schema.schema_uri.as_ref() != &sub_schema_link.schema_uri
+                    || current_schema.strict != Some(sub_schema_link.strict.into())
+            })
         {
-            return self
+            return match self
                 .store
-                .try_get_document_schema(sub_schema_uri)
+                .try_get_document_schema(&sub_schema_link.schema_uri)
                 .await
-                .transpose();
+            {
+                Ok(Some(document_schema)) => document_schema.as_current_schema().map(|schema| {
+                    let mut schema = schema.into_owned();
+                    schema.strict = Some(sub_schema_link.strict.into());
+                    Ok(schema)
+                }),
+                Ok(None) => None,
+                Err(err) => Some(Err(err)),
+            };
         }
         None
     }

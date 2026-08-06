@@ -3,6 +3,7 @@ use std::{borrow::Cow, sync::Arc};
 use itertools::Itertools;
 use tombi_accessor::Accessors;
 use tombi_future::{BoxFuture, Boxable};
+use tombi_schema_type::BoolDefaultTrue;
 use tombi_x_keyword::{
     ArrayValuesOrderBy, StringFormat, TableKeysOrder, TableKeysOrderGroupKind,
     X_TOMBI_ADDITIONAL_KEY_LABEL, X_TOMBI_ARRAY_VALUES_ORDER_BY, X_TOMBI_TABLE_KEYS_ORDER,
@@ -387,6 +388,7 @@ impl TableSchema {
         accessor: &SchemaAccessor,
         schema_uri: Cow<'_, SchemaUri>,
         definitions: Cow<'_, SchemaDefinitions>,
+        strict: Option<BoolDefaultTrue>,
         schema_store: &SchemaStore,
     ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
         let mut property_schema = {
@@ -400,7 +402,7 @@ impl TableSchema {
 
             if property_schema.is_resolved() {
                 return property_schema
-                    .to_current_schema(schema_uri, definitions, schema_store)
+                    .to_current_schema(schema_uri, definitions, strict, schema_store)
                     .await;
             }
 
@@ -408,7 +410,12 @@ impl TableSchema {
         };
 
         let resolved = property_schema
-            .resolve(schema_uri.clone(), definitions.clone(), schema_store)
+            .resolve(
+                schema_uri.clone(),
+                definitions.clone(),
+                strict,
+                schema_store,
+            )
             .await?
             .map(CurrentSchema::into_owned);
 
@@ -433,6 +440,7 @@ impl TableSchema {
         pattern_key: &str,
         schema_uri: Cow<'_, SchemaUri>,
         definitions: Cow<'_, SchemaDefinitions>,
+        strict: Option<BoolDefaultTrue>,
         schema_store: &SchemaStore,
     ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
         let Some(pattern_properties) = &self.pattern_properties else {
@@ -450,7 +458,7 @@ impl TableSchema {
 
             if property_schema.is_resolved() {
                 return property_schema
-                    .to_current_schema(schema_uri, definitions, schema_store)
+                    .to_current_schema(schema_uri, definitions, strict, schema_store)
                     .await;
             }
 
@@ -458,7 +466,12 @@ impl TableSchema {
         };
 
         let resolved = pattern_property_schema
-            .resolve(schema_uri.clone(), definitions.clone(), schema_store)
+            .resolve(
+                schema_uri.clone(),
+                definitions.clone(),
+                strict,
+                schema_store,
+            )
             .await?
             .map(CurrentSchema::into_owned);
 
@@ -485,6 +498,7 @@ impl FindSchemaCandidates for TableSchema {
         accessors: &'a [Accessor],
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
         async move {
@@ -499,6 +513,7 @@ impl FindSchemaCandidates for TableSchema {
                             &property_key,
                             Cow::Borrowed(schema_uri),
                             Cow::Borrowed(definitions),
+                            strict,
                             schema_store,
                         )
                         .await
@@ -516,6 +531,7 @@ impl FindSchemaCandidates for TableSchema {
                         value_schema,
                         schema_uri,
                         definitions,
+                        strict
                     }) = current_schema
                     {
                         let (schema_candidates, schema_errors) = value_schema
@@ -523,6 +539,7 @@ impl FindSchemaCandidates for TableSchema {
                                 accessors,
                                 &schema_uri,
                                 &definitions,
+                                strict,
                                 schema_store,
                             )
                             .await;
@@ -539,6 +556,7 @@ impl FindSchemaCandidates for TableSchema {
                     &SchemaAccessor::from(&accessors[0]),
                     Cow::Borrowed(schema_uri),
                     Cow::Borrowed(definitions),
+                    strict,
                     schema_store,
                 )
                 .await
@@ -556,6 +574,7 @@ impl FindSchemaCandidates for TableSchema {
                 value_schema,
                 schema_uri,
                 definitions,
+                strict,
             }) = current_schema
             {
                 return value_schema
@@ -563,6 +582,7 @@ impl FindSchemaCandidates for TableSchema {
                         &accessors[1..],
                         &schema_uri,
                         &definitions,
+                        strict,
                         schema_store,
                     )
                     .await;

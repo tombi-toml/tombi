@@ -1,13 +1,9 @@
-use std::borrow::Cow;
-
 use itertools::Itertools;
 use tombi_ast::{AstNode, DanglingCommentGroupOr};
 use tombi_comment_directive::value::{ArrayCommonFormatRules, ArrayCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, ValueSchema,
-};
+use tombi_schema_store::{Accessor, AllOfSchema, AnyOfSchema, OneOfSchema, ValueSchema};
 use tombi_validator::Validate;
 
 use crate::rule::{array_comma_trailing_comment, array_values_order};
@@ -138,19 +134,14 @@ fn resolve_array_item_edit_context<'a: 'b, 'b>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
 ) -> BoxFuture<'b, Option<tombi_schema_store::CurrentSchema<'a>>> {
     async move {
-        if let Some(Ok(document_schema)) = schema_context
+        if let Some(Ok(current_schema)) = schema_context
             .get_subschema(accessors, current_schema.as_ref())
             .await
-            && let Some(value_schema) = &document_schema.value_schema
         {
             return resolve_array_item_edit_context(
                 node,
                 accessors,
-                Some(CurrentSchema {
-                    value_schema: value_schema.clone(),
-                    schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
-                    definitions: Cow::Owned(document_schema.definitions.clone()),
-                }),
+                Some(current_schema),
                 schema_context,
             )
             .await;
@@ -165,6 +156,7 @@ fn resolve_array_item_edit_context<'a: 'b, 'b>(
                         schemas,
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
+                        current_schema.strict,
                         schema_context.store,
                         &schema_context.schema_visits,
                         accessors,
@@ -199,6 +191,7 @@ fn resolve_array_item_edit_context<'a: 'b, 'b>(
                 item_schema,
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
+                current_schema.strict,
                 schema_context.store,
             )
             .await

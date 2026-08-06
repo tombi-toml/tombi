@@ -40,6 +40,7 @@ tombi-parser.workspace = true
 tombi-regex.workspace = true
 tombi-rg-tree.workspace = true
 tombi-schema-store = { workspace = true, features = ["document-tree"] }
+tombi-schema-type.workspace = true
 tombi-syntax.workspace = true
 tombi-text = { workspace = true, features = ["lsp"] }
 tombi-toml-text.workspace = true

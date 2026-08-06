@@ -87,11 +87,14 @@ pub async fn handle_hover(
         return Ok(None);
     }
 
+    let strict = tombi_validator::comment_directive::get_tombi_document_comment_directive(&root)
+        .await
+        .and_then(|directive| directive.schema.and_then(|schema| schema.strict));
     let schema_context = SchemaContext::from_source_schema(
         toml_version,
         source_schema.as_ref(),
         &schema_store,
-        None,
+        strict,
     );
 
     let mut hover_content =

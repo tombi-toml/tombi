@@ -117,9 +117,9 @@ impl<'a> Linter<'a> {
                 root_schema: source_schema
                     .as_ref()
                     .and_then(|source_schema| source_schema.root_schema.as_deref()),
-                sub_schema_uri_map: source_schema
+                sub_schema_link_map: source_schema
                     .as_ref()
-                    .map(|source_schema| &source_schema.sub_schema_uri_map),
+                    .map(|source_schema| &source_schema.sub_schema_link_map),
                 deprecated_lint_level: source_schema
                     .as_ref()
                     .and_then(|source_schema| source_schema.deprecated_lint_level),

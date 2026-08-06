@@ -1,6 +1,7 @@
 #[derive(Debug, Clone)]
 pub struct Options {
-    pub strict: Option<bool>,
+    /// strict setting in global level.
+    pub strict: Option<tombi_schema_type::BoolDefaultTrue>,
     pub offline: Option<bool>,
     pub cache: Option<tombi_cache::Options>,
 }

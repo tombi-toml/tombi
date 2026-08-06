@@ -2553,4 +2553,46 @@ mod schema_overrides {
             "#
         )
     }
+
+    test_format! {
+        #[tokio::test]
+        async fn test_subschema_strict_is_used_for_array_order_branch_validation(
+            r#"
+            [section]
+            items = [
+              { name = "b", extra = true },
+              { name = "a", extra = true },
+            ]
+            "#,
+            ConfigText({
+                let schema_path = tombi_test_lib::project_root_path()
+                    .join("schemas")
+                    .join("subschema-strict-order-test.schema.json");
+                format!(
+                    r#"
+                [[schemas]]
+                path = "{}"
+                include = ["*.toml"]
+                strict = true
+
+                [[schemas]]
+                root = "section"
+                path = "{}"
+                include = ["*.toml"]
+                strict = false
+                "#,
+                    schema_path.display(),
+                    schema_path.display(),
+                )
+            }),
+        ) -> Ok(
+            r#"
+            [section]
+            items = [
+              { name = "a", extra = true },
+              { name = "b", extra = true },
+            ]
+            "#
+        )
+    }
 }

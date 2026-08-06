@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
+use tombi_schema_type::BoolDefaultTrue;
 use tombi_x_keyword::{
     ArrayValuesOrder, ArrayValuesOrderGroup, StringFormat, X_TOMBI_ARRAY_VALUES_ORDER,
 };
@@ -232,6 +233,7 @@ impl FindSchemaCandidates for ArraySchema {
         accessors: &'a [Accessor],
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
+        strict: Option<BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
         async move {
@@ -246,10 +248,12 @@ impl FindSchemaCandidates for ArraySchema {
                 schema_uri,
                 value_schema,
                 definitions,
+                strict,
             })) = crate::resolve_schema_item(
                 items,
                 Cow::Borrowed(schema_uri),
                 Cow::Borrowed(definitions),
+                strict,
                 schema_store,
             )
             .await
@@ -260,6 +264,7 @@ impl FindSchemaCandidates for ArraySchema {
                         &accessors[1..],
                         &schema_uri,
                         &definitions,
+                        strict,
                         schema_store,
                     )
                     .await;

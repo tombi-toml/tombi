@@ -88,7 +88,16 @@ macro_rules! test_lint {
             )*
 
             // Initialize schema store
-            let schema_store = tombi_schema_store::SchemaStore::new();
+            let schema_store = tombi_schema_store::SchemaStore::new_with_options(
+                tombi_schema_store::Options {
+                    strict: args
+                        .config
+                        .as_ref()
+                        .and_then(|config| config.schema.as_ref())
+                        .and_then(|schema| schema.strict()),
+                    ..Default::default()
+                },
+            );
 
             if let Some(config) = &args.config {
                 schema_store.load_config(config, None).await.unwrap();
@@ -202,7 +211,16 @@ macro_rules! test_lint {
             )*
 
             // Initialize schema store
-            let schema_store = tombi_schema_store::SchemaStore::new();
+            let schema_store = tombi_schema_store::SchemaStore::new_with_options(
+                tombi_schema_store::Options {
+                    strict: args
+                        .config
+                        .as_ref()
+                        .and_then(|config| config.schema.as_ref())
+                        .and_then(|schema| schema.strict()),
+                    ..Default::default()
+                },
+            );
 
             if let Some(config) = &args.config {
                 schema_store.load_config(config, None).await.unwrap();

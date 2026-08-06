@@ -35,6 +35,7 @@ pub async fn get_hover_content(
                         value_schema: value_schema.clone(),
                         schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                         definitions: Cow::Borrowed(&document_schema.definitions),
+                        strict: document_schema.strict,
                     });
             table
                 .get_hover_content(position, keys, &[], current_schema.as_ref(), schema_context)
@@ -188,6 +189,7 @@ pub(super) async fn merge_adjacent_hover_content<
                 one_of_schema,
                 &current_schema.schema_uri,
                 &current_schema.definitions,
+                current_schema.strict,
                 schema_context,
             )
             .await,
@@ -204,6 +206,7 @@ pub(super) async fn merge_adjacent_hover_content<
                 any_of_schema,
                 &current_schema.schema_uri,
                 &current_schema.definitions,
+                current_schema.strict,
                 schema_context,
             )
             .await,
@@ -220,6 +223,7 @@ pub(super) async fn merge_adjacent_hover_content<
                 all_of_schema,
                 &current_schema.schema_uri,
                 &current_schema.definitions,
+                current_schema.strict,
                 schema_context,
             )
             .await,
