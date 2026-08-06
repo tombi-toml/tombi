@@ -59,23 +59,11 @@ struct Tool {
 }
 
 #[inline]
-fn config_file_parse_warning_message(
-    config_path: &std::path::Path,
-    error: &crate::de::Error,
-) -> String {
-    if error.is_value_error() {
-        format!("Failed to parse config file {config_path:?} — {error}")
-    } else {
-        format!("Failed to parse config file {config_path:?}")
-    }
-}
-
-#[inline]
 fn config_file_parse_error(
     config_path: &std::path::Path,
     error: crate::de::Error,
 ) -> tombi_config::Error {
-    log::warn!("{}", config_file_parse_warning_message(config_path, &error));
+    log::warn!("{}", format!("Failed to parse config file {config_path:?}"));
 
     tombi_config::Error::ConfigFileParseFailed {
         config_path: config_path.to_owned(),
@@ -286,44 +274,6 @@ mod tests {
             .prefix(test_name)
             .tempdir()
             .unwrap()
-    }
-
-    #[test]
-    fn reports_config_parse_warnings() {
-        let temp_dir = temp_test_dir("config-parse-warnings");
-
-        for (config_filename, config_text, error_detail) in [
-            (TOMBI_TOML_FILENAME, "toml-version = ", None),
-            (
-                TOMBI_TOML_FILENAME,
-                "[format.rules]\nindent-width = \"two\"\n",
-                Some("format.rules.indent-width: invalid type: string \"two\", expected u8"),
-            ),
-            (
-                PYPROJECT_TOML_FILENAME,
-                "[tool.tombi.format.rules]\nindent-width = \"two\"\n",
-                Some(
-                    "tool.tombi.format.rules.indent-width: invalid type: string \"two\", expected u8",
-                ),
-            ),
-        ] {
-            let config_path = temp_dir.path().join(config_filename);
-            let error = if config_filename == PYPROJECT_TOML_FILENAME {
-                PyProjectToml::from_str(config_text, &config_path).unwrap_err()
-            } else {
-                crate::config::from_str(config_text, &config_path).unwrap_err()
-            };
-            let message = config_file_parse_warning_message(&config_path, &error);
-
-            assert_eq!(
-                message,
-                match error_detail {
-                    Some(error_detail) =>
-                        format!("Failed to parse config file {config_path:?} — {error_detail}"),
-                    None => format!("Failed to parse config file {config_path:?}"),
-                }
-            );
-        }
     }
 
     #[test]

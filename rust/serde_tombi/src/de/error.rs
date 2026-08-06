@@ -4,12 +4,6 @@ use itertools::Itertools;
 #[error(transparent)]
 pub struct Error(Box<InnerError>);
 
-impl Error {
-    pub(crate) fn is_value_error(&self) -> bool {
-        matches!(self.0.as_ref(), InnerError::DocumentDeserializeWithPath(_))
-    }
-}
-
 #[derive(Debug, thiserror::Error)]
 enum InnerError {
     #[error(transparent)]
