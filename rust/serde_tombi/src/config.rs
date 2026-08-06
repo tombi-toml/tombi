@@ -63,7 +63,7 @@ fn config_file_parse_error(
     config_path: &std::path::Path,
     error: crate::de::Error,
 ) -> tombi_config::Error {
-    log::warn!("{}", format!("Failed to parse config file {config_path:?}"));
+    log::warn!("Failed to parse config file {config_path:?}");
 
     tombi_config::Error::ConfigFileParseFailed {
         config_path: config_path.to_owned(),
