@@ -109,7 +109,7 @@ impl Deserializer<'_> {
     where
         T: DeserializeOwned,
     {
-        Ok(serde_path_to_error::deserialize(&document)?)
+        Ok(T::deserialize(&document)?)
     }
 
     async fn get_toml_version(

@@ -16,7 +16,6 @@ dirs.workspace = true
 itertools.workspace = true
 log.workspace = true
 serde.workspace = true
-serde_path_to_error.workspace = true
 serde_tombi_macros.workspace = true
 textwrap.workspace = true
 thiserror.workspace = true
