@@ -59,16 +59,25 @@ struct Tool {
 }
 
 #[inline]
-fn config_file_parse_error(
-    config_path: &std::path::Path,
-    error: crate::de::Error,
-) -> tombi_config::Error {
-    log::warn!("Failed to parse config file {config_path:?}");
-
-    tombi_config::Error::ConfigFileParseFailed {
+fn config_file_parse_error(config_path: &std::path::Path) -> tombi_config::Error {
+    let error = tombi_config::Error::ConfigFileParseFailed {
         config_path: config_path.to_owned(),
-        reason: error.to_string(),
-    }
+    };
+
+    log::warn!("{}", error);
+
+    error
+}
+
+#[inline]
+fn config_file_read_error(config_path: &std::path::Path) -> tombi_config::Error {
+    let error = tombi_config::Error::ConfigFileReadFailed {
+        config_path: config_path.to_owned(),
+    };
+
+    log::warn!("{}", error);
+
+    error
 }
 
 pub fn try_from_path<P: AsRef<std::path::Path>>(
@@ -82,24 +91,18 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
         });
     }
 
-    let config_text = std::fs::read_to_string(config_path).map_err(|error| {
-        log::warn!("Failed to read config file {config_path:?}");
-
-        tombi_config::Error::ConfigFileReadFailed {
-            config_path: config_path.to_owned(),
-            reason: error.to_string(),
-        }
-    })?;
+    let config_text =
+        std::fs::read_to_string(config_path).map_err(|_| config_file_read_error(config_path))?;
 
     match config_path.file_name().and_then(|name| name.to_str()) {
         Some(DOT_TOMBI_TOML_FILENAME | TOMBI_TOML_FILENAME | CONFIG_TOML_FILENAME) => {
             crate::config::from_str(&config_text, config_path)
                 .map(Some)
-                .map_err(|error| config_file_parse_error(config_path, error))
+                .map_err(|_| config_file_parse_error(config_path))
         }
         Some(PYPROJECT_TOML_FILENAME) => {
             let pyproject_toml = PyProjectToml::from_str(&config_text, config_path)
-                .map_err(|error| config_file_parse_error(config_path, error))?;
+                .map_err(|_| config_file_parse_error(config_path))?;
             if let Some(Tool {
                 tombi: Some(tombi_config),
             }) = pyproject_toml.tool
