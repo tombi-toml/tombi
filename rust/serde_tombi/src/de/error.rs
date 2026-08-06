@@ -4,6 +4,12 @@ use itertools::Itertools;
 #[error(transparent)]
 pub struct Error(Box<InnerError>);
 
+impl Error {
+    pub(crate) fn is_value_error(&self) -> bool {
+        matches!(self.0.as_ref(), InnerError::DocumentDeserializeWithPath(_))
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 enum InnerError {
     #[error(transparent)]
@@ -16,7 +22,7 @@ enum InnerError {
     SchemaStore(#[from] tombi_schema_store::Error),
 
     #[error(transparent)]
-    DocumentDeserialize(#[from] tombi_document::de::Error),
+    DocumentDeserializeWithPath(#[from] serde_path_to_error::Error<tombi_document::de::Error>),
 
     #[error("{}", .0.iter().map(|e| e.to_string()).collect_vec().join(", "))]
     Parser(Vec<tombi_parser::Error>),
@@ -61,8 +67,8 @@ impl From<tombi_schema_store::Error> for Error {
     }
 }
 
-impl From<tombi_document::de::Error> for Error {
-    fn from(error: tombi_document::de::Error) -> Self {
-        Self(Box::new(InnerError::DocumentDeserialize(error)))
+impl From<serde_path_to_error::Error<tombi_document::de::Error>> for Error {
+    fn from(error: serde_path_to_error::Error<tombi_document::de::Error>) -> Self {
+        Self(Box::new(InnerError::DocumentDeserializeWithPath(error)))
     }
 }

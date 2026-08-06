@@ -58,6 +58,31 @@ struct Tool {
     tombi: Option<Config>,
 }
 
+#[inline]
+fn config_file_parse_warning_message(
+    config_path: &std::path::Path,
+    error: &crate::de::Error,
+) -> String {
+    if error.is_value_error() {
+        format!("Failed to parse config file {config_path:?} — {error}")
+    } else {
+        format!("Failed to parse config file {config_path:?}")
+    }
+}
+
+#[inline]
+fn config_file_parse_error(
+    config_path: &std::path::Path,
+    error: crate::de::Error,
+) -> tombi_config::Error {
+    log::warn!("{}", config_file_parse_warning_message(config_path, &error));
+
+    tombi_config::Error::ConfigFileParseFailed {
+        config_path: config_path.to_owned(),
+        reason: error.to_string(),
+    }
+}
+
 pub fn try_from_path<P: AsRef<std::path::Path>>(
     config_path: P,
 ) -> Result<Option<Config>, tombi_config::Error> {
@@ -69,27 +94,24 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
         });
     }
 
-    let Ok(config_text) = std::fs::read_to_string(config_path) else {
-        return Err(tombi_config::Error::ConfigFileReadFailed {
+    let config_text = std::fs::read_to_string(config_path).map_err(|error| {
+        log::warn!("Failed to read config file {config_path:?}");
+
+        tombi_config::Error::ConfigFileReadFailed {
             config_path: config_path.to_owned(),
-        });
-    };
+            reason: error.to_string(),
+        }
+    })?;
 
     match config_path.file_name().and_then(|name| name.to_str()) {
         Some(DOT_TOMBI_TOML_FILENAME | TOMBI_TOML_FILENAME | CONFIG_TOML_FILENAME) => {
-            match crate::config::from_str(&config_text, config_path) {
-                Ok(tombi_config) => Ok(Some(tombi_config)),
-                Err(_) => Err(tombi_config::Error::ConfigFileParseFailed {
-                    config_path: config_path.to_owned(),
-                }),
-            }
+            crate::config::from_str(&config_text, config_path)
+                .map(Some)
+                .map_err(|error| config_file_parse_error(config_path, error))
         }
         Some(PYPROJECT_TOML_FILENAME) => {
-            let Ok(pyproject_toml) = PyProjectToml::from_str(&config_text, config_path) else {
-                return Err(tombi_config::Error::ConfigFileParseFailed {
-                    config_path: config_path.to_owned(),
-                });
-            };
+            let pyproject_toml = PyProjectToml::from_str(&config_text, config_path)
+                .map_err(|error| config_file_parse_error(config_path, error))?;
             if let Some(Tool {
                 tombi: Some(tombi_config),
             }) = pyproject_toml.tool
@@ -119,14 +141,18 @@ pub fn load_with_path_and_level(
                 if config_path.is_file() {
                     log::debug!("Project config found at {:?}", config_path);
 
-                    let Some(config) = try_from_path(&config_path)? else {
-                        unreachable!(
-                            "project config should always be parsed successfully: {:?}",
-                            config_path
-                        );
-                    };
-
-                    return Ok((config, Some(config_path), ConfigLevel::Project));
+                    match try_from_path(&config_path) {
+                        Ok(Some(config)) => {
+                            return Ok((config, Some(config_path), ConfigLevel::Project));
+                        }
+                        Ok(None) => {
+                            unreachable!(
+                                "project config should always be parsed successfully: {:?}",
+                                config_path
+                            );
+                        }
+                        Err(_) => {}
+                    }
                 }
             }
 
@@ -139,19 +165,12 @@ pub fn load_with_path_and_level(
                     pyproject_toml_path
                 );
 
-                match try_from_path(&pyproject_toml_path) {
-                    Ok(Some(config)) => {
+                match try_from_path(&pyproject_toml_path).ok().flatten() {
+                    Some(config) => {
                         return Ok((config, Some(pyproject_toml_path), ConfigLevel::Project));
                     }
-                    Ok(None) => {
+                    None => {
                         log::debug!("No [tool.tombi] found in {:?}", pyproject_toml_path);
-                    }
-                    Err(error) => {
-                        log::debug!(
-                            "Failed to parse pyproject.toml file for config at {:?}: {}",
-                            pyproject_toml_path,
-                            error
-                        );
                     }
                 };
             }
@@ -165,15 +184,19 @@ pub fn load_with_path_and_level(
     if let Some((user_config_path, config_level)) = get_user_or_system_tombi_config_path_and_level()
     {
         log::debug!("{CONFIG_TOML_FILENAME} found at {:?}", user_config_path);
-        let Some(config) = try_from_path(&user_config_path)? else {
-            unreachable!("{CONFIG_TOML_FILENAME} should always be parsed successfully.");
-        };
-        Ok((config, Some(user_config_path), config_level))
-    } else {
-        log::debug!("config file not found, use default config");
-
-        Ok((Config::default(), None, ConfigLevel::Default))
+        match try_from_path(&user_config_path).ok().flatten() {
+            Some(config) => {
+                return Ok((config, Some(user_config_path), config_level));
+            }
+            None => {
+                unreachable!("{CONFIG_TOML_FILENAME} should always be parsed successfully.");
+            }
+        }
     }
+
+    log::debug!("config file not found, use default config");
+
+    Ok((Config::default(), None, ConfigLevel::Default))
 }
 
 #[inline]
@@ -263,6 +286,67 @@ mod tests {
             .prefix(test_name)
             .tempdir()
             .unwrap()
+    }
+
+    #[test]
+    fn reports_config_parse_warnings() {
+        let temp_dir = temp_test_dir("config-parse-warnings");
+
+        for (config_filename, config_text, error_detail) in [
+            (TOMBI_TOML_FILENAME, "toml-version = ", None),
+            (
+                TOMBI_TOML_FILENAME,
+                "[format.rules]\nindent-width = \"two\"\n",
+                Some("format.rules.indent-width: invalid type: string \"two\", expected u8"),
+            ),
+            (
+                PYPROJECT_TOML_FILENAME,
+                "[tool.tombi.format.rules]\nindent-width = \"two\"\n",
+                Some(
+                    "tool.tombi.format.rules.indent-width: invalid type: string \"two\", expected u8",
+                ),
+            ),
+        ] {
+            let config_path = temp_dir.path().join(config_filename);
+            let error = if config_filename == PYPROJECT_TOML_FILENAME {
+                PyProjectToml::from_str(config_text, &config_path).unwrap_err()
+            } else {
+                crate::config::from_str(config_text, &config_path).unwrap_err()
+            };
+            let message = config_file_parse_warning_message(&config_path, &error);
+
+            assert_eq!(
+                message,
+                match error_detail {
+                    Some(error_detail) =>
+                        format!("Failed to parse config file {config_path:?} — {error_detail}"),
+                    None => format!("Failed to parse config file {config_path:?}"),
+                }
+            );
+        }
+    }
+
+    #[test]
+    fn loads_next_project_config_after_parse_error() {
+        let temp_dir = temp_test_dir("config-parse-error-fallback");
+        let nested_dir = temp_dir.path().join("workspace/nested");
+
+        std::fs::create_dir_all(&nested_dir).unwrap();
+        write_file(
+            &temp_dir.path().join(DOT_TOMBI_TOML_FILENAME),
+            "toml-version = ",
+        );
+        write_file(
+            &temp_dir.path().join(TOMBI_TOML_FILENAME),
+            "toml-version = \"v1.0.0\"\n",
+        );
+
+        let (config, config_path, config_level) =
+            load_with_path_and_level(Some(nested_dir)).unwrap();
+
+        assert_eq!(config.toml_version, Some(TomlVersion::V1_0_0));
+        assert_eq!(config_path, Some(temp_dir.path().join(TOMBI_TOML_FILENAME)));
+        assert_eq!(config_level, ConfigLevel::Project);
     }
 
     #[test]
