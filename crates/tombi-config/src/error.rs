@@ -9,10 +9,10 @@ pub enum Error {
     #[error("config file not found: {config_path:?}")]
     ConfigFileNotFound { config_path: std::path::PathBuf },
 
-    #[error("failed to read {config_path:?}")]
+    #[error("failed to read config file {config_path:?}")]
     ConfigFileReadFailed { config_path: std::path::PathBuf },
 
-    #[error("failed to parse {config_path:?}")]
+    #[error("failed to parse config file {config_path:?}")]
     ConfigFileParseFailed { config_path: std::path::PathBuf },
 
     #[error("unsupported config file: {config_path:?}")]
