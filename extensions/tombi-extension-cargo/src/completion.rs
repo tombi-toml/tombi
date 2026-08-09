@@ -70,13 +70,15 @@ pub async fn completion(
         return Ok(Some(completions));
     }
 
-    let cargo_toml_path = std::path::Path::new(text_document_uri.path());
+    let Ok(cargo_toml_path) = text_document_uri.to_file_path() else {
+        return Ok(None);
+    };
 
     if let Some(Accessor::Key(first)) = accessors.first() {
         if first == "workspace" {
             completion_workspace(
                 document_tree,
-                cargo_toml_path,
+                &cargo_toml_path,
                 position,
                 accessors,
                 completion_hint,
@@ -89,7 +91,7 @@ pub async fn completion(
         } else {
             completion_member(
                 document_tree,
-                cargo_toml_path,
+                &cargo_toml_path,
                 position,
                 accessors,
                 completion_hint,
