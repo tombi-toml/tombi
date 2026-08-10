@@ -7,11 +7,13 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+thiserror.workspace = true
+tombi-uri.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs.workspace = true
 log.workspace = true
-thiserror.workspace = true
 tokio = { workspace = true, features = ["fs"] }
-tombi-uri.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

@@ -4,7 +4,9 @@ use crate::resolve_json_pointer;
 use crate::{
     AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, PatternAccessor,
     PatternAccessors, SchemaView, SourceSchema, SubSchemaLink, SubSchemaLinkMap,
-    get_tombi_schemastore_content, http_client::HttpClient, json::JsonCatalog,
+    get_tombi_schemastore_content,
+    http_client::{DefaultHttpClient, HttpClient},
+    json::JsonCatalog,
 };
 use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
@@ -40,7 +42,7 @@ pub struct AssociateSchemaOptions {
 
 #[derive(Debug, Clone)]
 pub struct SchemaStore {
-    http_client: HttpClient,
+    http_client: Arc<dyn HttpClient>,
     document_schemas: DocumentSchemas,
     schemas: Arc<RwLock<Vec<crate::Schema>>>,
     options: crate::Options,
@@ -71,8 +73,16 @@ impl SchemaStore {
     /// Create a store with the given options.
     /// Note that the new_with_options() does not automatically load schemas from Config etc.
     pub fn new_with_options(options: crate::Options) -> Self {
+        Self::new_with_options_and_http_client(options, Arc::new(DefaultHttpClient::new()))
+    }
+
+    /// Create a store with a caller-provided HTTP client.
+    pub fn new_with_options_and_http_client(
+        options: crate::Options,
+        http_client: Arc<dyn HttpClient>,
+    ) -> Self {
         Self {
-            http_client: HttpClient::new(),
+            http_client,
             document_schemas: Arc::new(RwLock::default()),
             schemas: Arc::new(RwLock::new(Vec::new())),
             options,
@@ -1130,6 +1140,7 @@ impl SchemaStore {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 async fn schema_cache_version(schema_uri: &SchemaUri) -> Option<SchemaCacheVersion> {
     let path = match schema_uri.scheme() {
         "file" => tombi_uri::Uri::to_file_path(schema_uri).ok(),
@@ -1148,6 +1159,11 @@ async fn schema_cache_version(schema_uri: &SchemaUri) -> Option<SchemaCacheVersi
             .saturating_add(u64::from(duration.subsec_nanos())),
         len: metadata.len(),
     })
+}
+
+#[cfg(target_arch = "wasm32")]
+async fn schema_cache_version(_schema_uri: &SchemaUri) -> Option<SchemaCacheVersion> {
+    None
 }
 
 fn matches_schema_patterns(

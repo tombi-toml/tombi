@@ -4,6 +4,7 @@ pub use error::Error;
 pub use options::{DEFAULT_CACHE_TTL, Options};
 pub const CACHE_INDEX_FILE_NAME: &str = "__index__.json";
 
+#[cfg(not(target_arch = "wasm32"))]
 pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
     if let Some(tombi_cache_home) = std::env::var_os("TOMBI_CACHE_HOME") {
         return ensure_cache_dir(std::path::PathBuf::from(tombi_cache_home)).await;
@@ -26,6 +27,12 @@ pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
     None
 }
 
+#[cfg(target_arch = "wasm32")]
+pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
+    None
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub async fn get_cache_file_path(cache_file_uri: &tombi_uri::Uri) -> Option<std::path::PathBuf> {
     get_tombi_cache_dir_path().await.map(|mut dir_path| {
         dir_path.push(cache_file_uri.scheme());
@@ -47,6 +54,12 @@ pub async fn get_cache_file_path(cache_file_uri: &tombi_uri::Uri) -> Option<std:
     })
 }
 
+#[cfg(target_arch = "wasm32")]
+pub async fn get_cache_file_path(_cache_file_uri: &tombi_uri::Uri) -> Option<std::path::PathBuf> {
+    None
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub async fn read_from_cache(
     cache_file_path: Option<&std::path::Path>,
     options: Option<&Options>,
@@ -88,6 +101,15 @@ pub async fn read_from_cache(
     Ok(None)
 }
 
+#[cfg(target_arch = "wasm32")]
+pub async fn read_from_cache(
+    _cache_file_path: Option<&std::path::Path>,
+    _options: Option<&Options>,
+) -> Result<Option<String>, crate::Error> {
+    Ok(None)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub async fn save_to_cache(
     cache_file_path: Option<&std::path::Path>,
     bytes: &[u8],
@@ -118,6 +140,15 @@ pub async fn save_to_cache(
     Ok(())
 }
 
+#[cfg(target_arch = "wasm32")]
+pub async fn save_to_cache(
+    _cache_file_path: Option<&std::path::Path>,
+    _bytes: &[u8],
+) -> Result<(), crate::Error> {
+    Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub async fn refresh_cache() -> Result<bool, crate::Error> {
     if let Some(cache_dir_path) = get_tombi_cache_dir_path().await {
         // Remove all contents of the cache directory but keep the directory itself
@@ -142,6 +173,12 @@ pub async fn refresh_cache() -> Result<bool, crate::Error> {
     Ok(false)
 }
 
+#[cfg(target_arch = "wasm32")]
+pub async fn refresh_cache() -> Result<bool, crate::Error> {
+    Ok(false)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 async fn ensure_cache_dir(cache_dir_path: std::path::PathBuf) -> Option<std::path::PathBuf> {
     if let Err(error) = tokio::fs::create_dir_all(&cache_dir_path).await {
         log::warn!("Failed to create cache directory: {error}");

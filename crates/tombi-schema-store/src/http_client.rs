@@ -1,4 +1,13 @@
 mod error;
+pub use error::FetchError;
+
+use bytes::Bytes;
+pub type HttpFuture<'a, T> = tombi_future::BoxFuture<'a, T>;
+
+/// HTTP operations required by the schema store.
+pub trait HttpClient: std::fmt::Debug + Send + Sync {
+    fn get_bytes<'a>(&'a self, url: &'a str) -> HttpFuture<'a, Result<Bytes, FetchError>>;
+}
 
 #[allow(dead_code)]
 #[inline]
@@ -12,31 +21,62 @@ fn http_timeout_secs() -> u64 {
         .unwrap_or(DEFAULT_HTTP_TIMEOUT)
 }
 
-#[cfg(feature = "reqwest01")]
+#[cfg(feature = "reqwest")]
 mod reqwest_client;
-#[cfg(feature = "reqwest01")]
-pub use reqwest_client::HttpClient;
+#[cfg(feature = "reqwest")]
+pub use reqwest_client::ReqwestHttpClient;
 
-#[cfg(feature = "gloo-net06")]
-#[allow(dead_code)]
+#[cfg(all(feature = "gloo-net", target_arch = "wasm32"))]
 mod gloo_net_client;
-#[cfg(all(feature = "gloo-net06", not(feature = "reqwest01")))]
-pub use gloo_net_client::HttpClient;
+#[cfg(all(feature = "gloo-net", target_arch = "wasm32"))]
+pub use gloo_net_client::GlooNetHttpClient;
 
-// Provide a stub when no features are enabled
-#[cfg(not(any(feature = "reqwest01", feature = "gloo-net06")))]
+#[cfg(all(
+    feature = "gloo-net",
+    not(target_arch = "wasm32"),
+    not(feature = "reqwest")
+))]
+compile_error!("the gloo-net HTTP client is only available on wasm32 targets");
+
+#[cfg(all(
+    feature = "reqwest",
+    not(all(target_arch = "wasm32", feature = "gloo-net"))
+))]
+pub type DefaultHttpClient = ReqwestHttpClient;
+
+#[cfg(all(feature = "gloo-net", target_arch = "wasm32"))]
+pub type DefaultHttpClient = GlooNetHttpClient;
+
+// Provide a stub when no built-in client feature is enabled. This keeps the
+// trait usable for callers that inject their own client.
+#[cfg(not(any(feature = "reqwest", all(feature = "gloo-net", target_arch = "wasm32"))))]
 #[derive(Debug, Clone)]
-pub struct HttpClient;
+pub struct DefaultHttpClient;
 
-#[cfg(not(any(feature = "reqwest01", feature = "gloo-net06")))]
-impl HttpClient {
+#[cfg(not(any(feature = "reqwest", all(feature = "gloo-net", target_arch = "wasm32"))))]
+impl Default for DefaultHttpClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(not(any(feature = "reqwest", all(feature = "gloo-net", target_arch = "wasm32"))))]
+impl DefaultHttpClient {
     pub fn new() -> Self {
         Self
     }
+}
 
-    pub async fn get_bytes(&self, _url: &str) -> Result<bytes::Bytes, error::FetchError> {
-        Err(error::FetchError::FetchFailed {
-            reason: "No HTTP client feature enabled".to_string(),
-        })
+#[cfg(not(any(feature = "reqwest", all(feature = "gloo-net", target_arch = "wasm32"))))]
+impl HttpClient for DefaultHttpClient {
+    fn get_bytes<'a>(&'a self, _url: &'a str) -> HttpFuture<'a, Result<Bytes, FetchError>> {
+        use tombi_future::Boxable;
+
+        async {
+            Err(FetchError::FetchFailed {
+                reason: "No HTTP client feature enabled".to_string(),
+            })
+        }
+        .boxed()
     }
 }

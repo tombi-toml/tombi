@@ -17,7 +17,7 @@ reqwest = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["sync"] }
 tombi-accessor.workspace = true
 tombi-ast.workspace = true
 tombi-cache.workspace = true
@@ -39,13 +39,18 @@ reqwest = { workspace = true, features = ["blocking"] }
 tokio = { workspace = true, features = ["macros", "test-util"] }
 tombi-test-lib.workspace = true
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.3.3", features = ["wasm_js"], optional = true }
+
 [features]
 default = ["native"]
 document-tree = ["dep:tombi-document-tree"]
-gloo-net06 = ["dep:gloo-net"]
-native = ["reqwest01", "tombi-future/native"]
-reqwest01 = ["dep:reqwest"]
-wasm = ["gloo-net06", "tombi-future/wasm"]
+gloo-net = ["dep:gloo-net"]
+gloo-net06 = ["gloo-net"]
+native = ["reqwest", "tombi-future/native"]
+reqwest = ["dep:reqwest"]
+reqwest01 = ["reqwest"]
+wasm = ["dep:getrandom", "gloo-net", "tombi-future/wasm"]
 
 [lints]
 workspace = true

@@ -1,9 +1,9 @@
-#[cfg(feature = "native")]
+#[cfg(all(feature = "native", not(target_arch = "wasm32")))]
 mod on_native;
-#[cfg(feature = "native")]
+#[cfg(all(feature = "native", not(target_arch = "wasm32")))]
 pub use on_native::*;
 
-#[cfg(not(feature = "native"))]
+#[cfg(any(not(feature = "native"), target_arch = "wasm32"))]
 mod on_wasm;
-#[cfg(not(feature = "native"))]
+#[cfg(any(not(feature = "native"), target_arch = "wasm32"))]
 pub use on_wasm::*;

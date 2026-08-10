@@ -24,7 +24,7 @@ tombi-comment-directive-serde.workspace = true
 tombi-comment-directive-store.workspace = true
 tombi-config.workspace = true
 tombi-date-time.workspace = true
-tombi-diagnostic.workspace = true
+tombi-diagnostic = { workspace = true, features = ["lsp"] }
 tombi-document-tree.workspace = true
 tombi-extension.workspace = true
 tombi-extension-cargo.workspace = true
