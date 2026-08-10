@@ -4,6 +4,7 @@
   "description": "TOML formatter WASM demo",
   "scripts": {
     "build:wasm": "wasm-pack build --locked --target web --out-dir dist/pkg",
+    "build:docs": "wasm-pack build --locked --target web --out-dir ../../docs/public/wasm",
     "build:copy": "cp -r www/* dist/",
     "build": "mkdir -p dist && pnpm run build:wasm && pnpm run build:copy",
     "dev": "pnpm run build && serve dist",
