@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "foo1": { "type": "string" },
+        "foo2": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "bar1": { "type": "string" },
+        "bar2": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

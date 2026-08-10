@@ -20,7 +20,7 @@ impl Validate for tombi_document_tree::Integer {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
+    ) -> BoxFuture<'b, Result<crate::Valid, crate::Invalid>> {
         async move {
             if let Some(projected_schema) = crate::validate::project_current_schema_for_value(
                 self,
@@ -111,7 +111,7 @@ impl Validate for tombi_document_tree::Integer {
                         )
                         .await
                     }
-                    SchemaView::Null => return Ok(crate::EvaluatedLocations::new()),
+                    SchemaView::Null => return Ok(crate::Valid::new()),
                     SchemaView::Anything(_) => handle_anything_schema(self),
                     SchemaView::Nothing(_) => handle_nothing_schema(self),
                     _ => {
@@ -129,7 +129,7 @@ impl Validate for tombi_document_tree::Integer {
                     }
                 }
             } else {
-                Ok(crate::EvaluatedLocations::new())
+                Ok(crate::Valid::new())
             };
 
             crate::validate::with_lint_diagnostics(result, lint_rules_diagnostics)
@@ -146,7 +146,7 @@ async fn validate_integer_schema(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     lint_rules: Option<&IntegerCommonLintRules>,
-) -> Result<crate::EvaluatedLocations, crate::Error> {
+) -> Result<crate::Valid, crate::Invalid> {
     let mut diagnostics = vec![];
     let value = integer_value.value();
     let range = integer_value.range();
@@ -398,7 +398,7 @@ async fn validate_integer_schema(
     }
 
     let base_result = if diagnostics.is_empty() {
-        Ok(crate::EvaluatedLocations::new())
+        Ok(crate::Valid::new())
     } else {
         Err(diagnostics.into())
     };
@@ -429,7 +429,7 @@ async fn validate_float_schema_for_integer(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     lint_rules: Option<&IntegerCommonLintRules>,
-) -> Result<crate::EvaluatedLocations, crate::Error> {
+) -> Result<crate::Valid, crate::Invalid> {
     let mut diagnostics = vec![];
     let value = integer_value.value() as f64;
     let range = integer_value.range();
@@ -605,7 +605,7 @@ async fn validate_float_schema_for_integer(
     }
 
     let base_result = if diagnostics.is_empty() {
-        Ok(crate::EvaluatedLocations::new())
+        Ok(crate::Valid::new())
     } else {
         Err(diagnostics.into())
     };

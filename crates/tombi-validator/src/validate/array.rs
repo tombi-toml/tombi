@@ -21,7 +21,7 @@ impl Validate for tombi_document_tree::Array {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
+    ) -> BoxFuture<'b, Result<crate::Valid, crate::Invalid>> {
         let comment_directives = self
             .comment_directives()
             .map(|directives| directives.cloned().collect_vec());
@@ -99,7 +99,7 @@ impl Validate for tombi_document_tree::Array {
                         )
                         .await
                     }
-                    SchemaView::Null => return Ok(crate::EvaluatedLocations::new()),
+                    SchemaView::Null => return Ok(crate::Valid::new()),
                     SchemaView::Anything(_) => handle_anything_schema(self),
                     SchemaView::Nothing(_) => handle_nothing_schema(self),
                     _ => {
@@ -132,10 +132,11 @@ async fn validate_array(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     lint_rules: Option<&ArrayCommonLintRules>,
-) -> Result<crate::EvaluatedLocations, crate::Error> {
+) -> Result<crate::Valid, crate::Invalid> {
     let mut total_diagnostics = vec![];
+    let mut assertion_failed = false;
     let common_rules = lint_rules.map(|rules| &rules.common);
-    let mut validation_result = crate::EvaluatedLocations::new();
+    let mut validation_result = crate::Valid::new();
     let mut evaluated = vec![false; array_value.values().len()];
     let has_unevaluated_items = array_schema.unevaluated_items_schema.is_some()
         || array_schema.unevaluated_items == Some(false);
@@ -212,10 +213,29 @@ async fn validate_array(
                 .await
                 {
                     Ok(Some(item_schema)) => {
-                        if let Err(crate::Error { diagnostics, .. }) = value
+                        let result = value
                             .validate(&new_accessors, Some(&item_schema), schema_context)
-                            .await
+                            .await;
+                        let value_matched = is_assertion_success(&result);
+                        let child_evidence = crate::validate::match_evidence(&result);
+                        if child_evidence.root_singleton_matched() {
+                            validation_result
+                                .match_evidence
+                                .mark_primary_value(new_accessors.clone());
+                        }
+                        validation_result
+                            .match_evidence
+                            .mark_declared_child(new_accessors.clone(), value_matched);
+                        validation_result
+                            .match_evidence
+                            .merge_descendant_from(child_evidence);
+                        if let Err(crate::Invalid {
+                            assertion_failed: child_assertion_failed,
+                            diagnostics,
+                            ..
+                        }) = result
                         {
+                            assertion_failed |= child_assertion_failed;
                             total_diagnostics.extend(diagnostics);
                         }
                     }
@@ -232,13 +252,28 @@ async fn validate_array(
                 }
             } else if let Some(overflow) = &overflow_schema {
                 evaluated[index] = true;
-                if let Err(crate::Error { diagnostics, .. }) = value
+                let result = value
                     .validate(&new_accessors, Some(overflow), schema_context)
-                    .await
+                    .await;
+                if is_assertion_success(&result) {
+                    validation_result
+                        .match_evidence
+                        .mark_fallback_child_value(new_accessors.clone());
+                }
+                validation_result
+                    .match_evidence
+                    .merge_descendant_from(crate::validate::match_evidence(&result));
+                if let Err(crate::Invalid {
+                    assertion_failed: child_assertion_failed,
+                    diagnostics,
+                    ..
+                }) = result
                 {
+                    assertion_failed |= child_assertion_failed;
                     total_diagnostics.extend(diagnostics);
                 }
             } else if array_schema.additional_items == Some(false) {
+                assertion_failed = true;
                 if has_unevaluated_items {
                     evaluated[index] = true;
                 }
@@ -274,10 +309,24 @@ async fn validate_array(
                         .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
                         .collect_vec();
 
-                    if let Err(crate::Error { diagnostics, .. }) = value
+                    let result = value
                         .validate(&new_accessors, Some(&current_schema), schema_context)
-                        .await
+                        .await;
+                    if is_assertion_success(&result) {
+                        validation_result
+                            .match_evidence
+                            .mark_fallback_child_value(new_accessors.clone());
+                    }
+                    validation_result
+                        .match_evidence
+                        .merge_descendant_from(crate::validate::match_evidence(&result));
+                    if let Err(crate::Invalid {
+                        assertion_failed: child_assertion_failed,
+                        diagnostics,
+                        ..
+                    }) = result
                     {
+                        assertion_failed |= child_assertion_failed;
                         total_diagnostics.extend(diagnostics);
                     }
                 }
@@ -347,6 +396,7 @@ async fn validate_array(
         }
 
         if match_count < min_contains {
+            assertion_failed = true;
             if array_schema.min_contains.is_some() {
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::ArrayMinContains {
@@ -374,6 +424,7 @@ async fn validate_array(
         if let Some(max) = max_contains
             && match_count > max
         {
+            assertion_failed = true;
             crate::Diagnostic {
                 kind: Box::new(crate::DiagnosticKind::ArrayMaxContains {
                     max_contains: max,
@@ -433,13 +484,19 @@ async fn validate_array(
                     .cloned()
                     .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
                     .collect_vec();
-                if let Err(crate::Error { diagnostics, .. }) = value
+                if let Err(crate::Invalid {
+                    assertion_failed: child_assertion_failed,
+                    diagnostics,
+                    ..
+                }) = value
                     .validate(&new_accessors, Some(schema), schema_context)
                     .await
                 {
+                    assertion_failed |= child_assertion_failed;
                     total_diagnostics.extend(diagnostics);
                 }
             } else if array_schema.unevaluated_items == Some(false) {
+                assertion_failed = true;
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::ArrayUnevaluatedItemNotAllowed { index }),
                     range: value.range(),
@@ -462,7 +519,12 @@ async fn validate_array(
         );
 
         if let Some(const_value) = &array_schema.const_value {
-            if actual_value != *const_value {
+            let matched = actual_value == *const_value;
+            validation_result
+                .match_evidence
+                .mark_root_value_assertion(matched, true);
+            if !matched {
+                assertion_failed = true;
                 let level = lint_rules
                     .map(|rules| &rules.common)
                     .and_then(|rules| {
@@ -496,7 +558,12 @@ async fn validate_array(
         }
 
         if let Some(r#enum) = &array_schema.r#enum {
-            if !r#enum.contains(&actual_value) {
+            let matched = r#enum.contains(&actual_value);
+            validation_result
+                .match_evidence
+                .mark_root_value_assertion(matched, r#enum.len() == 1);
+            if !matched {
+                assertion_failed = true;
                 let level = lint_rules
                     .map(|rules| &rules.common)
                     .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
@@ -528,6 +595,7 @@ async fn validate_array(
     if let Some(max_items) = array_schema.max_items
         && array_value.values().len() > max_items
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -562,6 +630,7 @@ async fn validate_array(
     if let Some(min_items) = array_schema.min_items
         && array_value.values().len() < min_items
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -596,6 +665,7 @@ async fn validate_array(
     if array_schema.unique_items == Some(true)
         && let Some(duplicated_ranges) = get_duplicated_ranges(array_value)
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -645,13 +715,17 @@ async fn validate_array(
         }
     }
 
-    let base_result = if total_diagnostics.is_empty() {
+    assertion_failed |= total_diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.level() == tombi_diagnostic::Level::ERROR);
+    let base_result = if total_diagnostics.is_empty() && !assertion_failed {
         Ok(validation_result)
     } else {
-        Err(crate::Error {
-            score: crate::error::TYPE_MATCHED_SCORE,
+        Err(crate::Invalid {
+            assertion_failed,
+            match_evidence: validation_result.match_evidence.clone(),
             diagnostics: total_diagnostics,
-            evaluated_locations: validation_result,
+            local_evaluated_locations: validation_result,
         })
     };
 
@@ -677,12 +751,12 @@ async fn validate_array_without_schema(
     array_value: &tombi_document_tree::Array,
     accessors: &[tombi_schema_store::Accessor],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-) -> Result<crate::EvaluatedLocations, crate::Error> {
+) -> Result<crate::Valid, crate::Invalid> {
     let mut total_diagnostics = vec![];
 
     // Validate without schema
     for (index, value) in array_value.values().iter().enumerate() {
-        if let Err(crate::Error { diagnostics, .. }) = value
+        if let Err(crate::Invalid { diagnostics, .. }) = value
             .validate(
                 &accessors
                     .iter()
@@ -699,7 +773,7 @@ async fn validate_array_without_schema(
     }
 
     if total_diagnostics.is_empty() {
-        Ok(crate::EvaluatedLocations::new())
+        Ok(crate::Valid::new())
     } else {
         Err(total_diagnostics.into())
     }

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "foo-kind": { "const": "foo" },
+    "bar-kind": { "const": "bar" }
+  },
+  "anyOf": [
+    {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/foo-kind" },
+        "foo1": { "type": "string" },
+        "foo2": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/bar-kind" },
+        "bar1": { "type": "string" },
+        "bar2": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

@@ -5,9 +5,7 @@ use tombi_document_tree::ValueImpl;
 use tombi_schema_store::CurrentSchema;
 
 use crate::Validate;
-use crate::validate::{
-    has_error_level_diagnostics, is_assertion_success, merge_validation_results,
-};
+use crate::validate::{is_assertion_success, merge_validation_results};
 
 pub async fn validate_if_then_else<T>(
     value: &T,
@@ -16,21 +14,23 @@ pub async fn validate_if_then_else<T>(
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     common_rules: Option<&CommonLintRules>,
-) -> Result<crate::EvaluatedLocations, crate::Error>
+) -> Result<crate::Valid, crate::Invalid>
 where
     T: Validate + ValueImpl + Sync + Send,
 {
     #[allow(clippy::result_large_err)]
     let merge_if_result =
-        |branch_result: Result<crate::EvaluatedLocations, crate::Error>,
-         if_result: Result<crate::EvaluatedLocations, crate::Error>| match if_result {
-            Ok(evaluated_locations) => {
-                merge_validation_results(Ok(evaluated_locations), branch_result)
+        |branch_result: Result<crate::Valid, crate::Invalid>,
+         if_result: Result<crate::Valid, crate::Invalid>| {
+            match if_result {
+                Ok(evaluated_locations) => {
+                    merge_validation_results(Ok(evaluated_locations), branch_result)
+                }
+                Err(error) if !error.assertion_failed => {
+                    merge_validation_results(Err(error), branch_result)
+                }
+                Err(_) => branch_result,
             }
-            Err(error) if !has_error_level_diagnostics(&error) => {
-                merge_validation_results(Err(error), branch_result)
-            }
-            Err(_) => branch_result,
         };
 
     // Resolve and validate the `if` schema
@@ -55,9 +55,9 @@ where
                 return Err(vec![diagnostic].into());
             }
 
-            return Ok(crate::EvaluatedLocations::new());
+            return Ok(crate::Valid::new());
         }
-        Ok(None) => return Ok(crate::EvaluatedLocations::new()),
+        Ok(None) => return Ok(crate::Valid::new()),
     };
 
     // Per JSON Schema spec: branching is based on assertion result.
@@ -92,7 +92,7 @@ where
             }
         }
 
-        return merge_if_result(Ok(crate::EvaluatedLocations::new()), if_result);
+        return merge_if_result(Ok(crate::Valid::new()), if_result);
     } else {
         // `if` did not match → apply `else` schema if present
         if let Some(else_schema) = &if_then_else_schema.else_schema {
@@ -124,5 +124,5 @@ where
         }
     }
 
-    Ok(crate::EvaluatedLocations::new())
+    Ok(crate::Valid::new())
 }

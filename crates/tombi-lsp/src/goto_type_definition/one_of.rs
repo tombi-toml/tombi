@@ -53,10 +53,16 @@ where
                     schema_context,
                 )
                 .await
-                && value
-                    .validate(accessors, Some(resolved_schema), schema_context)
-                    .await
-                    .is_ok()
+                && matches!(
+                    value
+                        .validate(accessors, Some(resolved_schema), schema_context)
+                        .await,
+                    Ok(_)
+                        | Err(tombi_validator::Invalid {
+                            assertion_failed: false,
+                            ..
+                        })
+                )
             {
                 return Some(type_definition);
             }

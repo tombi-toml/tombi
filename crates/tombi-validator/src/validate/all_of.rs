@@ -7,8 +7,7 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
 use crate::validate::{
-    handle_deprecated, has_error_level_diagnostics, if_then_else::validate_if_then_else,
-    not_schema::validate_not,
+    handle_deprecated, if_then_else::validate_if_then_else, not_schema::validate_not,
 };
 
 use super::Validate;
@@ -21,7 +20,7 @@ pub fn validate_all_of<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     comment_directives: Option<&'a [TombiValueCommentDirective]>,
     common_rules: Option<&'a CommonLintRules>,
-) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>>
+) -> BoxFuture<'b, Result<crate::Valid, crate::Invalid>>
 where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
@@ -30,8 +29,9 @@ where
 
     async move {
         let mut total_diagnostics = vec![];
-        let mut total_score = 0;
-        let mut evaluated_locations = crate::EvaluatedLocations::new();
+        let mut assertion_failed = false;
+        let mut match_evidence = Box::<crate::MatchEvidence>::default();
+        let mut evaluated_locations = crate::Valid::new();
 
         let Some((resolved_schemas, resolution_errors)) =
             tombi_schema_store::resolve_and_collect_schemas_with_errors(
@@ -45,7 +45,7 @@ where
             )
             .await
         else {
-            return Ok(crate::EvaluatedLocations::new());
+            return Ok(crate::Valid::new());
         };
 
         total_diagnostics.extend(resolution_errors.into_iter().filter_map(|err| {
@@ -59,11 +59,12 @@ where
             {
                 Ok(result) => evaluated_locations.merge_from(result),
                 Err(error) => {
-                    if !has_error_level_diagnostics(&error) {
-                        evaluated_locations.merge_from(error.evaluated_locations.clone());
+                    if !error.assertion_failed {
+                        evaluated_locations.merge_from(error.local_evaluated_locations.clone());
                     }
+                    assertion_failed |= error.assertion_failed;
                     total_diagnostics.extend(error.diagnostics);
-                    total_score += error.score;
+                    match_evidence.merge_from(*error.match_evidence);
                 }
             }
         }
@@ -93,6 +94,7 @@ where
             )
             .await
         {
+            assertion_failed |= error.assertion_failed;
             total_diagnostics.extend(error.diagnostics);
         }
 
@@ -109,22 +111,25 @@ where
             {
                 Ok(result) => evaluated_locations.merge_from(result),
                 Err(error) => {
-                    if !has_error_level_diagnostics(&error) {
-                        evaluated_locations.merge_from(error.evaluated_locations.clone());
+                    if !error.assertion_failed {
+                        evaluated_locations.merge_from(error.local_evaluated_locations.clone());
                     }
+                    assertion_failed |= error.assertion_failed;
                     total_diagnostics.extend(error.diagnostics);
-                    total_score += error.score;
+                    match_evidence.merge_from(*error.match_evidence);
                 }
             }
         }
 
-        if total_diagnostics.is_empty() {
+        if total_diagnostics.is_empty() && !assertion_failed {
             Ok(evaluated_locations)
         } else {
-            Err(crate::Error {
-                score: total_score,
+            match_evidence.merge_from(*evaluated_locations.match_evidence.clone());
+            Err(crate::Invalid {
+                assertion_failed,
+                match_evidence,
                 diagnostics: total_diagnostics,
-                evaluated_locations,
+                local_evaluated_locations: evaluated_locations,
             })
         }
     }

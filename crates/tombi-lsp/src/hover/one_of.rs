@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use tombi_diagnostic::Diagnostic;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri};
 
@@ -137,9 +136,10 @@ where
                         Ok(_) => {
                             valid_hover_value_contents.insert(hover_value_content.clone());
                         }
-                        Err(tombi_validator::Error { diagnostics, .. })
-                            if diagnostics.iter().all(Diagnostic::is_warning) =>
-                        {
+                        Err(tombi_validator::Invalid {
+                            assertion_failed: false,
+                            ..
+                        }) => {
                             valid_hover_value_contents.insert(hover_value_content.clone());
                         }
                         _ => {}
