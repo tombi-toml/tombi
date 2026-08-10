@@ -41,7 +41,7 @@ where
         let mut one_hover_value_contents = tombi_hashmap::HashSet::new();
         let mut valid_hover_value_contents = tombi_hashmap::HashSet::new();
         let mut value_type_set = tombi_hashmap::IndexSet::new();
-        let mut enum_values = Vec::new();
+        let mut enum_domains = Vec::with_capacity(one_of_schema.schemas.read().await.len());
         let default = one_of_schema
             .default
             .as_ref()
@@ -59,16 +59,35 @@ where
         .await?;
 
         for resolved_schema in &resolved_schemas {
-            if let Some(values) = resolved_schema
-                .value_schema
-                .as_ref()
-                .get_enum(schema_uri, definitions, strict, schema_context)
-                .await
-            {
-                enum_values.extend(values);
-            }
+            enum_domains.push(
+                resolved_schema
+                    .schema_view
+                    .as_ref()
+                    .get_enum(schema_uri, definitions, strict, schema_context)
+                    .await,
+            );
 
-            value_type_set.insert(resolved_schema.value_schema.value_type().await);
+            value_type_set.insert(resolved_schema.schema_view.value_type().await);
+        }
+
+        let mut enum_values = tombi_hashmap::IndexSet::new();
+        if enum_domains.iter().all(Option::is_some) {
+            for domain in enum_domains.iter().flatten() {
+                for candidate in domain {
+                    let match_count = enum_domains
+                        .iter()
+                        .flatten()
+                        .filter(|domain| domain.iter().any(|value| value == candidate))
+                        .count();
+                    if match_count == 1 {
+                        enum_values.insert(candidate.clone());
+                    }
+                }
+            }
+        } else {
+            for domain in enum_domains.into_iter().flatten() {
+                enum_values.extend(domain);
+            }
         }
 
         let value_type = if value_type_set.len() == 1 {
@@ -104,7 +123,7 @@ where
                         hover_value_content.value_type = value_type.clone();
                     }
 
-                    if resolved_schema.value_schema.value_type().await
+                    if resolved_schema.schema_view.value_type().await
                         == tombi_schema_store::ValueType::Array
                         && hover_value_content.value_type != tombi_schema_store::ValueType::Array
                     {
@@ -200,10 +219,10 @@ where
 
             if !enum_values.is_empty() {
                 if let Some(constraints) = hover_value_content.constraints.as_mut() {
-                    constraints.r#enum = Some(enum_values);
+                    constraints.r#enum = Some(enum_values.iter().cloned().collect());
                 } else {
                     hover_value_content.constraints = Some(ValueConstraints {
-                        r#enum: Some(enum_values),
+                        r#enum: Some(enum_values.into_iter().collect()),
                         ..Default::default()
                     });
                 }
@@ -249,24 +268,21 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
             .await?;
 
             for resolved_schema in &resolved_schemas {
-                if resolved_schema.value_schema.title().is_some()
-                    || resolved_schema.value_schema.description().is_some()
+                if resolved_schema.schema_view.title().is_some()
+                    || resolved_schema.schema_view.description().is_some()
                 {
                     title_description_set.insert((
+                        resolved_schema.schema_view.title().map(ToString::to_string),
                         resolved_schema
-                            .value_schema
-                            .title()
-                            .map(ToString::to_string),
-                        resolved_schema
-                            .value_schema
+                            .schema_view
                             .description()
                             .map(ToString::to_string),
                     ));
                 }
-                value_type_set.insert(resolved_schema.value_schema.value_type().await);
+                value_type_set.insert(resolved_schema.schema_view.value_type().await);
 
                 if let Some(values) = resolved_schema
-                    .value_schema
+                    .schema_view
                     .as_ref()
                     .get_enum(
                         &resolved_schema.schema_uri,

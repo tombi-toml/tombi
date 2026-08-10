@@ -19,7 +19,7 @@ use tombi_future::Boxable;
 use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
     Accessor, AccessorKeyKind, AllOfSchema, AnyOfSchema, CompositeSchema, CurrentSchema,
-    KeyContext, OneOfSchema, SchemaDefinitions, SchemaStore, SchemaUri, ValueSchema,
+    KeyContext, OneOfSchema, SchemaDefinitions, SchemaStore, SchemaUri, SchemaView,
 };
 use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
 
@@ -387,18 +387,39 @@ pub(super) async fn merge_adjacent_schema_completion_items(
         return base_completion_items;
     };
 
+    let instance_type = match current_schema.schema_view.as_ref() {
+        SchemaView::Boolean(_) => tombi_schema_store::SchemaType::Boolean,
+        SchemaView::Integer(_) => tombi_schema_store::SchemaType::Integer,
+        SchemaView::Float(_) => tombi_schema_store::SchemaType::Number,
+        SchemaView::String(_)
+        | SchemaView::OffsetDateTime(_)
+        | SchemaView::LocalDateTime(_)
+        | SchemaView::LocalDate(_)
+        | SchemaView::LocalTime(_) => tombi_schema_store::SchemaType::String,
+        SchemaView::Array(_) => tombi_schema_store::SchemaType::Array,
+        SchemaView::Table(_) => tombi_schema_store::SchemaType::Object,
+        SchemaView::Null
+        | SchemaView::Anything(_)
+        | SchemaView::Nothing(_)
+        | SchemaView::OneOf(_)
+        | SchemaView::AnyOf(_)
+        | SchemaView::AllOf(_) => return base_completion_items,
+    };
+    let instance_completion = schema_completion::InstanceSchemaCompletion(instance_type);
+
     let mut adjacent_completion_items = Vec::new();
 
     if let Some(one_of_schema) = one_of_schema {
         adjacent_completion_items.extend(
             value::find_one_of_completion_items(
-                &schema_completion::SchemaCompletion,
+                &instance_completion,
                 position,
                 keys,
                 accessors,
                 one_of_schema,
                 &CurrentSchema {
-                    value_schema: Arc::new(ValueSchema::OneOf(one_of_schema.clone())),
+                    schema_view: Arc::new(SchemaView::OneOf(one_of_schema.clone())),
+                    semantic_schema: None,
                     schema_uri: current_schema.schema_uri.clone(),
                     definitions: current_schema.definitions.clone(),
                     strict: current_schema.strict,
@@ -412,13 +433,14 @@ pub(super) async fn merge_adjacent_schema_completion_items(
     if let Some(any_of_schema) = any_of_schema {
         adjacent_completion_items.extend(
             value::find_any_of_completion_items(
-                &schema_completion::SchemaCompletion,
+                &instance_completion,
                 position,
                 keys,
                 accessors,
                 any_of_schema,
                 &CurrentSchema {
-                    value_schema: Arc::new(ValueSchema::AnyOf(any_of_schema.clone())),
+                    schema_view: Arc::new(SchemaView::AnyOf(any_of_schema.clone())),
+                    semantic_schema: None,
                     schema_uri: current_schema.schema_uri.clone(),
                     definitions: current_schema.definitions.clone(),
                     strict: current_schema.strict,
@@ -432,13 +454,14 @@ pub(super) async fn merge_adjacent_schema_completion_items(
     if let Some(all_of_schema) = all_of_schema {
         adjacent_completion_items.extend(
             value::find_all_of_completion_items(
-                &schema_completion::SchemaCompletion,
+                &instance_completion,
                 position,
                 keys,
                 accessors,
                 all_of_schema,
                 &CurrentSchema {
-                    value_schema: Arc::new(ValueSchema::AllOf(all_of_schema.clone())),
+                    schema_view: Arc::new(SchemaView::AllOf(all_of_schema.clone())),
+                    semantic_schema: None,
                     schema_uri: current_schema.schema_uri.clone(),
                     definitions: current_schema.definitions.clone(),
                     strict: current_schema.strict,
@@ -546,12 +569,12 @@ fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
         .await
         {
             for current_schema in &resolved_schemas {
-                if matches!(current_schema.value_schema.as_ref(), ValueSchema::Null) {
+                if matches!(current_schema.schema_view.as_ref(), SchemaView::Null) {
                     continue;
                 }
 
                 if let Some(candidate) = CompletionCandidate::title(
-                    current_schema.value_schema.as_ref(),
+                    current_schema.schema_view.as_ref(),
                     &current_schema.schema_uri,
                     &current_schema.definitions,
                     current_schema.strict,
@@ -601,12 +624,12 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
         .await
         {
             for current_schema in &resolved_schemas {
-                if matches!(current_schema.value_schema.as_ref(), ValueSchema::Null) {
+                if matches!(current_schema.schema_view.as_ref(), SchemaView::Null) {
                     continue;
                 }
 
                 if let Some(candidate) = CompletionCandidate::description(
-                    current_schema.value_schema.as_ref(),
+                    current_schema.schema_view.as_ref(),
                     &current_schema.schema_uri,
                     &current_schema.definitions,
                     current_schema.strict,
@@ -731,6 +754,26 @@ fn tombi_json_value_to_completion_example_item(
         edit,
         schema_uri,
         None,
+    ))
+}
+
+fn tombi_json_value_to_completion_enum_item(
+    value: &tombi_json::Value,
+    position: tombi_text::Position,
+    schema_uri: Option<&SchemaUri>,
+    completion_hint: Option<CompletionHint>,
+) -> Option<CompletionContent> {
+    if !matches!(
+        value,
+        tombi_json::Value::String(_) | tombi_json::Value::Number(_) | tombi_json::Value::Bool(_)
+    ) {
+        return None;
+    }
+
+    let label = value.to_string();
+    let edit = CompletionEdit::new_literal(&label, position, completion_hint);
+    Some(CompletionContent::new_enum_value(
+        label, None, None, edit, schema_uri, None,
     ))
 }
 

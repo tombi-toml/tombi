@@ -4,7 +4,7 @@ use tombi_comment_directive::value::{
     LocalDateTimeCommonFormatRules, LocalDateTimeCommonLintRules,
 };
 use tombi_future::Boxable;
-use tombi_schema_store::ValueSchema;
+use tombi_schema_store::SchemaView;
 
 use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
@@ -46,8 +46,8 @@ impl GetTypeDefinition for tombi_document_tree::LocalDateTime {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::LocalDateTime(local_date_time_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::LocalDateTime(local_date_time_schema) => {
                         let base_type_definition = local_date_time_schema
                             .get_type_definition(
                                 position,
@@ -72,7 +72,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalDateTime {
                         .await
                         .or(base_type_definition)
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         get_one_of_type_definition(
                             self,
                             position,
@@ -86,7 +86,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalDateTime {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         get_any_of_type_definition(
                             self,
                             position,
@@ -100,7 +100,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalDateTime {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         get_all_of_type_definition(
                             self,
                             position,
@@ -141,7 +141,7 @@ impl GetTypeDefinition for tombi_schema_store::LocalDateTimeSchema {
                 TypeDefinition {
                     schema_uri,
                     schema_accessors: accessors.iter().map(Into::into).collect_vec(),
-                    range: schema.value_schema.range(),
+                    range: schema.schema_view.range(),
                 }
             })
         }

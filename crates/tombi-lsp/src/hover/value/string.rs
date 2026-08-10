@@ -1,5 +1,5 @@
 use tombi_comment_directive::value::{StringCommonFormatRules, StringCommonLintRules};
-use tombi_schema_store::{Accessor, CurrentSchema, StringSchema, ValueSchema};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaView, StringSchema};
 use tombi_x_keyword::StringFormat;
 
 use crate::{
@@ -41,8 +41,8 @@ impl GetHoverContent for tombi_document_tree::String {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::String(string_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::String(string_schema) => {
                         if let Some(r#enum) = &string_schema.r#enum
                             && !r#enum.iter().any(|x| x == self.value())
                         {
@@ -79,7 +79,7 @@ impl GetHoverContent for tombi_document_tree::String {
                         )
                         .await
                     }
-                    ValueSchema::OffsetDateTime(offset_date_time_schema)
+                    SchemaView::OffsetDateTime(offset_date_time_schema)
                         if schema_context.has_string_format(StringFormat::DateTime) =>
                     {
                         let mut hover_content = offset_date_time_schema
@@ -112,7 +112,7 @@ impl GetHoverContent for tombi_document_tree::String {
                         )
                         .await
                     }
-                    ValueSchema::LocalDateTime(local_date_time_schema)
+                    SchemaView::LocalDateTime(local_date_time_schema)
                         if schema_context.has_string_format(StringFormat::DateTimeLocal) =>
                     {
                         let mut hover_content = local_date_time_schema
@@ -145,7 +145,7 @@ impl GetHoverContent for tombi_document_tree::String {
                         )
                         .await
                     }
-                    ValueSchema::LocalDate(local_date_schema)
+                    SchemaView::LocalDate(local_date_schema)
                         if schema_context.has_string_format(StringFormat::Date) =>
                     {
                         let mut hover_content = local_date_schema
@@ -178,7 +178,7 @@ impl GetHoverContent for tombi_document_tree::String {
                         )
                         .await
                     }
-                    ValueSchema::LocalTime(local_time_schema)
+                    SchemaView::LocalTime(local_time_schema)
                         if schema_context.has_string_format(StringFormat::TimeLocal) =>
                     {
                         let mut hover_content = local_time_schema
@@ -211,7 +211,7 @@ impl GetHoverContent for tombi_document_tree::String {
                         )
                         .await
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         get_one_of_hover_content(
                             self,
                             position,
@@ -225,7 +225,7 @@ impl GetHoverContent for tombi_document_tree::String {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         get_any_of_hover_content(
                             self,
                             position,
@@ -239,7 +239,7 @@ impl GetHoverContent for tombi_document_tree::String {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         get_all_of_hover_content(
                             self,
                             position,
@@ -250,6 +250,50 @@ impl GetHoverContent for tombi_document_tree::String {
                             &current_schema.definitions,
                             current_schema.strict,
                             schema_context,
+                        )
+                        .await
+                    }
+                    _ if current_schema
+                        .semantic_schema
+                        .as_deref()
+                        .is_some_and(|schema| !schema.has_type_assertion()) =>
+                    {
+                        let (one_of, any_of, all_of, _) =
+                            current_schema.schema_view.adjacent_applicators();
+                        let mut base_hover = None;
+
+                        if let Some(SchemaView::String(projected)) = current_schema
+                            .semantic_schema
+                            .as_deref()
+                            .and_then(|schema| {
+                                schema.schema_view_for_type(
+                                    tombi_schema_store::SchemaType::String,
+                                    schema_context.string_formats(),
+                                )
+                            })
+                        {
+                            base_hover = projected
+                                .get_hover_content(
+                                    position,
+                                    keys,
+                                    accessors,
+                                    Some(current_schema),
+                                    schema_context,
+                                )
+                                .await;
+                        }
+
+                        merge_adjacent_hover_content(
+                            self,
+                            position,
+                            keys,
+                            accessors,
+                            Some(current_schema),
+                            schema_context,
+                            base_hover,
+                            one_of,
+                            any_of,
+                            all_of,
                         )
                         .await
                     }

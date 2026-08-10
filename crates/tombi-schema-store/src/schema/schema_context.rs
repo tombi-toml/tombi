@@ -82,6 +82,11 @@ impl SchemaContext<'_> {
     }
 
     #[inline]
+    pub fn string_formats(&self) -> Option<&[StringFormat]> {
+        self.root_schema.and_then(|root| root.string_formats())
+    }
+
+    #[inline]
     pub fn deprecated_lint_level(
         &self,
         current_schema: Option<&crate::CurrentSchema<'_>>,
@@ -271,8 +276,8 @@ impl SchemaContext<'_> {
         &self,
         current_schema: Option<&crate::CurrentSchema<'_>>,
     ) -> Option<crate::XTombiTableKeysOrder> {
-        match current_schema?.value_schema.as_ref() {
-            crate::ValueSchema::Table(table_schema) => table_schema.keys_order.clone(),
+        match current_schema?.schema_view.as_ref() {
+            crate::SchemaView::Table(table_schema) => table_schema.keys_order.clone(),
             _ => None,
         }
     }
@@ -281,8 +286,8 @@ impl SchemaContext<'_> {
         &self,
         current_schema: Option<&crate::CurrentSchema<'_>>,
     ) -> Option<crate::XTombiArrayValuesOrder> {
-        match current_schema?.value_schema.as_ref() {
-            crate::ValueSchema::Array(array_schema) => array_schema.values_order.clone(),
+        match current_schema?.schema_view.as_ref() {
+            crate::SchemaView::Array(array_schema) => array_schema.values_order.clone(),
             _ => None,
         }
     }

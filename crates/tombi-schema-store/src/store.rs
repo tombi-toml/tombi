@@ -3,7 +3,7 @@ use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 use crate::resolve_json_pointer;
 use crate::{
     AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, PatternAccessor,
-    PatternAccessors, SourceSchema, SubSchemaLink, SubSchemaLinkMap, ValueSchema,
+    PatternAccessors, SchemaView, SourceSchema, SubSchemaLink, SubSchemaLinkMap,
     get_tombi_schemastore_content, http_client::HttpClient, json::JsonCatalog,
 };
 use itertools::{Either, Itertools};
@@ -535,10 +535,10 @@ impl SchemaStore {
         let document_schema =
             DocumentSchema::new(schema_value, schema_uri.clone(), None, self).await;
         if let Some(
-            ValueSchema::AllOf(AllOfSchema { schemas, .. })
-            | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-            | ValueSchema::OneOf(OneOfSchema { schemas, .. }),
-        ) = document_schema.value_schema.as_deref()
+            SchemaView::AllOf(AllOfSchema { schemas, .. })
+            | SchemaView::AnyOf(AnyOfSchema { schemas, .. })
+            | SchemaView::OneOf(OneOfSchema { schemas, .. }),
+        ) = document_schema.schema_view.as_deref()
         {
             let document_base_uri = document_schema.base_uri().clone();
             {
@@ -631,7 +631,7 @@ impl SchemaStore {
                     return Ok(None);
                 };
 
-                let Some(fragment_value_schema) = resolve_json_pointer(
+                let Some(fragment_schema_view) = resolve_json_pointer(
                     &schema_value,
                     &fragment_reference,
                     document_schema.string_formats(),
@@ -647,7 +647,7 @@ impl SchemaStore {
                 // Create a new document schema with the fragment-referenced schema_uri in the return value
                 let mut fragment_document_schema = document_schema.as_ref().clone();
                 fragment_document_schema.schema_uri = requested_schema_uri; // Use fragment-full URI for return value
-                fragment_document_schema.value_schema = Some(Arc::new(fragment_value_schema));
+                fragment_document_schema.schema_view = Some(Arc::new(fragment_schema_view));
                 return Ok(Some(Arc::new(fragment_document_schema)));
             }
 
@@ -676,7 +676,7 @@ impl SchemaStore {
                 // Create a new document schema with the fragment-referenced schema_uri in the return value
                 let mut fragment_document_schema = document_schema.as_ref().clone();
                 fragment_document_schema.schema_uri = requested_schema_uri; // Use fragment-full URI for return value
-                fragment_document_schema.value_schema = Some(current_schema.value_schema);
+                fragment_document_schema.schema_view = Some(current_schema.schema_view);
                 return Ok(Some(Arc::new(fragment_document_schema)));
             }
 
@@ -1387,7 +1387,7 @@ mod tests {
         SchemaStore, load_catalog_from_cache_ignoring_ttl,
         load_json_schema_from_cache_ignoring_ttl, matches_schema_patterns,
     };
-    use crate::{CatalogUri, ValueSchema};
+    use crate::{CatalogUri, SchemaView};
     use tombi_uri::SchemaUri;
 
     fn temp_cache_path(test_name: &str) -> PathBuf {
@@ -1495,8 +1495,8 @@ mod tests {
             .unwrap();
 
         std::assert_matches!(
-            document_schema.value_schema.as_deref(),
-            Some(ValueSchema::Anything(_))
+            document_schema.schema_view.as_deref(),
+            Some(SchemaView::Anything(_))
         );
 
         let _ = std::fs::remove_file(schema_path);
@@ -1540,8 +1540,8 @@ mod tests {
             .unwrap();
 
         std::assert_matches!(
-            document_schema.value_schema.as_deref(),
-            Some(ValueSchema::String(_))
+            document_schema.schema_view.as_deref(),
+            Some(SchemaView::String(_))
         );
 
         let _ = std::fs::remove_file(schema_path);
@@ -1569,8 +1569,8 @@ mod tests {
             .unwrap();
 
         std::assert_matches!(
-            document_schema.value_schema.as_deref(),
-            Some(ValueSchema::String(_))
+            document_schema.schema_view.as_deref(),
+            Some(SchemaView::String(_))
         );
 
         std::fs::write(&schema_path, r#"{"type":"integer"}"#).unwrap();
@@ -1583,8 +1583,8 @@ mod tests {
             .unwrap();
 
         std::assert_matches!(
-            document_schema.value_schema.as_deref(),
-            Some(ValueSchema::Integer(_))
+            document_schema.schema_view.as_deref(),
+            Some(SchemaView::Integer(_))
         );
 
         let _ = std::fs::remove_file(schema_path);

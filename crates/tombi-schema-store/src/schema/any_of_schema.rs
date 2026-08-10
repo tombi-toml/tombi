@@ -4,7 +4,7 @@ use futures::future::join_all;
 use itertools::Itertools;
 use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
-use super::{AnchorCollector, DynamicAnchorCollector, NotSchema, ReferableValueSchemas};
+use super::{AnchorCollector, DynamicAnchorCollector, NotSchema, ReferableSchemaViews};
 use crate::{referable_from_schema_value, schema::if_then_else_schema::IfThenElseSchema};
 
 #[derive(Debug, Default, Clone)]
@@ -12,7 +12,7 @@ pub struct AnyOfSchema {
     pub title: Option<String>,
     pub description: Option<String>,
     pub range: tombi_text::Range,
-    pub schemas: ReferableValueSchemas,
+    pub schemas: ReferableSchemaViews,
     pub default: Option<tombi_json::Value>,
     pub examples: Option<Vec<tombi_json::Value>>,
     pub deprecation: Option<crate::Deprecation>,

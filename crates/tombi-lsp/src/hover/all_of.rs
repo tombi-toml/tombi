@@ -22,7 +22,7 @@ pub fn get_all_of_hover_content<'a: 'b, 'b, T>(
     schema_context: &'a SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>
 where
-    T: GetHoverContent + Sync + Send + std::fmt::Debug,
+    T: GetHoverContent + tombi_document_tree::ValueImpl + Sync + Send + std::fmt::Debug,
 {
     log::trace!("value = {:?}", value);
     log::trace!("keys = {:?}", keys);
@@ -49,8 +49,11 @@ where
         .await?;
 
         for resolved_schema in &resolved_schemas {
+            let projected_schema =
+                super::project_schema_for_value(value, resolved_schema, schema_context);
+            let resolved_schema = projected_schema.as_ref().unwrap_or(resolved_schema);
             if let Some(values) = resolved_schema
-                .value_schema
+                .schema_view
                 .as_ref()
                 .get_enum(
                     &resolved_schema.schema_uri,
@@ -221,24 +224,21 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
             .await?;
 
             for resolved_schema in &resolved_schemas {
-                if resolved_schema.value_schema.title().is_some()
-                    || resolved_schema.value_schema.description().is_some()
+                if resolved_schema.schema_view.title().is_some()
+                    || resolved_schema.schema_view.description().is_some()
                 {
                     title_description_set.insert((
+                        resolved_schema.schema_view.title().map(ToString::to_string),
                         resolved_schema
-                            .value_schema
-                            .title()
-                            .map(ToString::to_string),
-                        resolved_schema
-                            .value_schema
+                            .schema_view
                             .description()
                             .map(ToString::to_string),
                     ));
                 }
-                value_type_set.insert(resolved_schema.value_schema.value_type().await);
+                value_type_set.insert(resolved_schema.schema_view.value_type().await);
 
                 if let Some(values) = resolved_schema
-                    .value_schema
+                    .schema_view
                     .as_ref()
                     .get_enum(
                         &resolved_schema.schema_uri,

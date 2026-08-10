@@ -994,6 +994,46 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn minimum_without_type_does_not_change_string_hover_type(
+                r#"
+                type_agnostic_minimum = "te█xt"
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok({
+                "Keys": "type_agnostic_minimum",
+                "Value": "String?"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn issue_2042_string_branch_hover_uses_applicator_not_keyword_inferred_object(
+                r#"
+                issue_2042_address = "https://exa█mple.com"
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok({
+                "Keys": "issue_2042_address",
+                "Value": "(String ^ Table)?"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn same_type_enum_one_of_hover_keeps_branch_values(
+                r#"
+                same_type_enum_one_of = "r█ed"
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok({
+                "Keys": "same_type_enum_one_of",
+                "Value": "String?",
+                "Enum": ["\"red\"", "\"blue\""]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn adjacent_all_of_offset_date_time_hover_merges_const(
                 r#"
                 offset_date_time_all = 2024-01-15T█10:30:00Z

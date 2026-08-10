@@ -29,10 +29,11 @@ pub async fn get_hover_content(
         Some(document_schema) => {
             let current_schema =
                 document_schema
-                    .value_schema
+                    .schema_view
                     .as_ref()
-                    .map(|value_schema| CurrentSchema {
-                        value_schema: value_schema.clone(),
+                    .map(|schema_view| CurrentSchema {
+                        schema_view: schema_view.clone(),
+                        semantic_schema: document_schema.semantic_schema.clone(),
                         schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                         definitions: Cow::Borrowed(&document_schema.definitions),
                         strict: document_schema.strict,
@@ -58,6 +59,27 @@ pub(super) trait GetHoverContent {
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>;
+}
+
+pub(super) fn project_schema_for_value(
+    value: &impl tombi_document_tree::ValueImpl,
+    schema: &CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+) -> Option<CurrentSchema<'static>> {
+    if !matches!(
+        schema.schema_view.as_ref(),
+        tombi_schema_store::SchemaView::Anything(_)
+    ) || schema
+        .semantic_schema
+        .as_deref()
+        .is_some_and(tombi_schema_store::SemanticSchema::has_references)
+    {
+        return None;
+    }
+    schema.for_instance_type(
+        tombi_schema_store::SchemaType::from_value_type(value.value_type())?,
+        schema_context.string_formats(),
+    )
 }
 
 fn merge_optional_vec<T: PartialEq>(

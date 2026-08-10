@@ -1027,6 +1027,64 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn minimum_without_type_keeps_all_value_type_candidates(
+                r#"
+                type_agnostic_minimum = █
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok([
+                "\"\"",
+                "\"\"\"\"\"\"",
+                "''",
+                "''''''",
+                "3.14",
+                "42",
+                "[]",
+                "{}",
+                "true",
+                "false",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn issue_2042_value_completion_includes_both_branches(
+                r#"
+                issue_2042_address = █
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok([
+                "uri",
+                "\"\"",
+                "\"\"\"\"\"\"",
+                "''",
+                "''''''",
+                "{}",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn same_type_enum_one_of_completion_keeps_distinct_branch_values(
+                r#"
+                same_type_enum_one_of = █
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok(["\"blue\"", "\"red\""]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn enum_completion_is_filtered_by_numeric_sibling_constraint(
+                r#"
+                enum_with_numeric_sibling = █
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok(["12"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn adjacent_all_of_offset_date_time_value_completion(
                 r#"
                 offset_date_time_all = █

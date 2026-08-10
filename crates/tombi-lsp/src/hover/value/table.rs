@@ -4,7 +4,7 @@ use tombi_comment_directive_serde::get_comment_directive_content;
 
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, Accessors, CurrentSchema, SchemaAccessor, TableSchema, ValueSchema, ValueType,
+    Accessor, Accessors, CurrentSchema, SchemaAccessor, SchemaView, TableSchema, ValueType,
 };
 
 use crate::{
@@ -62,8 +62,8 @@ impl GetHoverContent for tombi_document_tree::Table {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::Table(table_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::Table(table_schema) => {
                         if let Some(key) = keys.first() {
                             if let Some(value) = self.get(key) {
                                 let accessor = Accessor::Key(key.value.clone());
@@ -110,23 +110,23 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         if keys.len() == 1
                                             && !value.contains(position)
                                             && matches!(
-                                                current_schema.value_schema.as_ref(),
-                                                ValueSchema::Anything(_)
+                                                current_schema.schema_view.as_ref(),
+                                                SchemaView::Anything(_)
                                             )
                                         {
                                             let mut value_type =
-                                                current_schema.value_schema.value_type().await;
+                                                current_schema.schema_view.value_type().await;
                                             if !required {
                                                 value_type.set_nullable();
                                             }
 
                                             return Some(HoverContent::Value(HoverValueContent {
                                                 title: current_schema
-                                                    .value_schema
+                                                    .schema_view
                                                     .title()
                                                     .map(ToString::to_string),
                                                 description: current_schema
-                                                    .value_schema
+                                                    .schema_view
                                                     .description()
                                                     .map(ToString::to_string),
                                                 accessors: Accessors::from(property_accessors),
@@ -160,13 +160,13 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                 // When cursor is on key or equals sign,
                                                 // use the property's title and description
                                                 if let Some(title) =
-                                                    current_schema.value_schema.title()
+                                                    current_schema.schema_view.title()
                                                 {
                                                     hover_value_content.title =
                                                         Some(title.to_string());
                                                 }
                                                 if let Some(description) =
-                                                    current_schema.value_schema.description()
+                                                    current_schema.schema_view.description()
                                                 {
                                                     hover_value_content.description =
                                                         Some(description.to_string());
@@ -270,14 +270,14 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                             // When cursor is on key or equals sign,
                                                             // use the property's title and description
                                                             if let Some(title) =
-                                                                current_schema.value_schema.title()
+                                                                current_schema.schema_view.title()
                                                             {
                                                                 hover_value_content.title =
                                                                     Some(title.to_string());
                                                             }
                                                             if let Some(description) =
                                                                 current_schema
-                                                                    .value_schema
+                                                                    .schema_view
                                                                     .description()
                                                             {
                                                                 hover_value_content.description =
@@ -383,12 +383,12 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         if !cursor_on_value {
                                             // When cursor is on key or equals sign,
                                             // use the property's title and description
-                                            if let Some(title) = current_schema.value_schema.title()
+                                            if let Some(title) = current_schema.schema_view.title()
                                             {
                                                 hover_value_content.title = Some(title.to_string());
                                             }
                                             if let Some(description) =
-                                                current_schema.value_schema.description()
+                                                current_schema.schema_view.description()
                                             {
                                                 hover_value_content.description =
                                                     Some(description.to_string());
@@ -483,12 +483,12 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         && keys.len() == 1
                                     {
                                         if !value.contains(position) {
-                                            if let Some(title) = current_schema.value_schema.title()
+                                            if let Some(title) = current_schema.schema_view.title()
                                             {
                                                 hover_value_content.title = Some(title.to_string());
                                             }
                                             if let Some(description) =
-                                                current_schema.value_schema.description()
+                                                current_schema.schema_view.description()
                                             {
                                                 hover_value_content.description =
                                                     Some(description.to_string());
@@ -649,7 +649,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                             hover_content
                         }
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         get_one_of_hover_content(
                             self,
                             position,
@@ -663,7 +663,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         get_any_of_hover_content(
                             self,
                             position,
@@ -677,7 +677,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         get_all_of_hover_content(
                             self,
                             position,

@@ -37,6 +37,28 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                     .await;
             }
 
+            let instance_type = tombi_schema_store::SchemaType::from_value_type(
+                tombi_document_tree::ValueImpl::value_type(self),
+            );
+            let projected_schema = current_schema.and_then(|schema| {
+                instance_type.and_then(|instance_type| {
+                    schema.for_instance_type(instance_type, schema_context.string_formats())
+                })
+            });
+            let current_schema = match current_schema {
+                Some(schema)
+                    if schema.semantic_schema.is_some()
+                        && instance_type.is_some()
+                        && !schema
+                            .semantic_schema
+                            .as_deref()
+                            .is_some_and(|semantic| semantic.has_applicators()) =>
+                {
+                    projected_schema.as_ref()
+                }
+                schema => schema,
+            };
+
             let type_definition = match self {
                 Self::Boolean(boolean) => {
                     boolean
@@ -151,7 +173,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                 Self::Incomplete { .. } => match current_schema {
                     Some(current_schema) => {
                         current_schema
-                            .value_schema
+                            .schema_view
                             .get_type_definition(
                                 position,
                                 keys,
@@ -171,12 +193,12 @@ impl GetTypeDefinition for tombi_document_tree::Value {
 
             if let Some(current_schema) = current_schema
                 && matches!(
-                    current_schema.value_schema.as_ref(),
-                    tombi_schema_store::ValueSchema::Anything(_)
+                    current_schema.schema_view.as_ref(),
+                    tombi_schema_store::SchemaView::Anything(_)
                 )
             {
                 return current_schema
-                    .value_schema
+                    .schema_view
                     .get_type_definition(
                         position,
                         keys,
@@ -193,7 +215,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
     }
 }
 
-impl GetTypeDefinition for tombi_schema_store::ValueSchema {
+impl GetTypeDefinition for tombi_schema_store::SchemaView {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,

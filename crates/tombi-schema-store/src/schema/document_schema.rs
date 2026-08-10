@@ -8,7 +8,8 @@ use tombi_x_keyword::{StringFormat, X_TOMBI_STRING_FORMATS, X_TOMBI_TOML_VERSION
 
 use super::{
     AnchorCollector, CurrentSchema, DynamicAnchorCollector, FindSchemaCandidates, SchemaAnchors,
-    SchemaDefinitions, SchemaDynamicAnchors, SchemaUri, ValueSchema, referable_schema::Referable,
+    SchemaDefinitions, SchemaDynamicAnchors, SchemaUri, SchemaView, SemanticSchema,
+    referable_schema::Referable,
 };
 use crate::{Accessor, JsonSchemaDialect, SchemaStore};
 
@@ -22,7 +23,8 @@ pub struct DocumentSchema {
     pub(crate) toml_version: Option<TomlVersion>,
     pub(crate) string_formats: Option<Vec<StringFormat>>,
     pub(crate) format_assertion: bool,
-    pub value_schema: Option<Arc<ValueSchema>>,
+    pub schema_view: Option<Arc<SchemaView>>,
+    pub semantic_schema: Option<Arc<SemanticSchema>>,
     pub definitions: SchemaDefinitions,
     pub anchors: SchemaAnchors,
     pub dynamic_anchors: SchemaDynamicAnchors,
@@ -47,7 +49,12 @@ impl DocumentSchema {
                 toml_version: None,
                 string_formats: None,
                 format_assertion: true,
-                value_schema: Some(Arc::new(super::bool_value_schema(bool.value, bool.range))),
+                schema_view: Some(Arc::new(super::bool_schema_view(bool.value, bool.range))),
+                semantic_schema: SemanticSchema::from_value_node(
+                    &tombi_json::ValueNode::Bool(bool),
+                    None,
+                )
+                .map(Arc::new),
                 definitions: SchemaDefinitions::new(Default::default()),
                 anchors: SchemaAnchors::new(Default::default()),
                 dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
@@ -60,7 +67,8 @@ impl DocumentSchema {
                 toml_version: None,
                 string_formats: None,
                 format_assertion: true,
-                value_schema: None,
+                schema_view: None,
+                semantic_schema: None,
                 definitions: SchemaDefinitions::new(Default::default()),
                 anchors: SchemaAnchors::new(Default::default()),
                 dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
@@ -125,42 +133,60 @@ impl DocumentSchema {
             || crate::supports_keyword(dialect, "$recursiveAnchor");
         // The root value schema may itself be a `$ref`. A direct schema resolves to an
         // `Arc` immediately; a root `$ref` is resolved below once the definitions are built.
-        let (value_schema, root_ref) = match Referable::new(
+        let (mut schema_view, semantic_schema, root_ref) = match Referable::new(
             &object,
             string_formats.as_deref(),
             dialect,
             collect_anchor.then_some(&mut anchors),
             collect_dynamic_anchor.then_some(&mut dynamic_anchors),
         ) {
-            Some(Referable::Resolved { value, .. }) => (Some(value), None),
-            Some(root_ref @ Referable::Ref { .. }) => (None, Some(root_ref)),
-            None => (None, None),
+            Some(Referable::Resolved {
+                value,
+                semantic_schema,
+                ..
+            }) => (Some(value), semantic_schema, None),
+            Some(root_ref @ Referable::Ref { .. }) => (
+                None,
+                Some(Arc::new(SemanticSchema::from_object_node(&object, dialect))),
+                Some(root_ref),
+            ),
+            None => (None, None, None),
         };
+
+        // A TOML document root is always an object. Select that concrete view at
+        // the document boundary while keeping the semantic schema authoritative.
+        if matches!(schema_view.as_deref(), Some(SchemaView::Anything(_)))
+            && let Some(object_view) = semantic_schema.as_deref().and_then(|schema| {
+                schema.schema_view_for_type(super::SchemaType::Object, string_formats.as_deref())
+            })
+        {
+            schema_view = Some(Arc::new(object_view));
+        }
 
         let mut definitions = tombi_hashmap::HashMap::default();
         if let Some(tombi_json::ValueNode::Object(object)) = object.get("definitions") {
             for (key, value) in object.properties.iter() {
-                if let Some(value_schema) = super::referable_from_schema_value(
+                if let Some(schema_view) = super::referable_from_schema_value(
                     value,
                     string_formats.as_deref(),
                     dialect,
                     collect_anchor.then_some(&mut anchors),
                     collect_dynamic_anchor.then_some(&mut dynamic_anchors),
                 ) {
-                    definitions.insert(format!("#/definitions/{}", key.value), value_schema);
+                    definitions.insert(format!("#/definitions/{}", key.value), schema_view);
                 }
             }
         }
         if let Some(tombi_json::ValueNode::Object(object)) = object.get("$defs") {
             for (key, value) in object.properties.iter() {
-                if let Some(value_schema) = super::referable_from_schema_value(
+                if let Some(schema_view) = super::referable_from_schema_value(
                     value,
                     string_formats.as_deref(),
                     dialect,
                     collect_anchor.then_some(&mut anchors),
                     collect_dynamic_anchor.then_some(&mut dynamic_anchors),
                 ) {
-                    definitions.insert(format!("#/$defs/{}", key.value), value_schema);
+                    definitions.insert(format!("#/$defs/{}", key.value), schema_view);
                 }
             }
         }
@@ -173,7 +199,8 @@ impl DocumentSchema {
             toml_version,
             string_formats,
             format_assertion,
-            value_schema,
+            schema_view,
+            semantic_schema,
             definitions: SchemaDefinitions::new(definitions.into()),
             anchors: SchemaAnchors::new(anchors.into()),
             dynamic_anchors: SchemaDynamicAnchors::new(dynamic_anchors.into()),
@@ -183,16 +210,23 @@ impl DocumentSchema {
         // value schema (e.g. schemas whose root is only `{ "$ref": "#/definitions/..." }`).
         // `definitions` / `base_uri` are borrowed only until the resolved value is built.
         if let Some(mut root_ref) = root_ref {
-            document_schema.value_schema = match root_ref
+            document_schema.schema_view = match root_ref
                 .resolve(
-                    Cow::Borrowed(document_schema.base_uri()),
-                    Cow::Borrowed(&document_schema.definitions),
+                    Cow::Owned(document_schema.base_uri().clone()),
+                    Cow::Owned(document_schema.definitions.clone()),
                     strict,
                     schema_store,
                 )
                 .await
             {
-                Ok(resolved) => resolved.map(|current_schema| current_schema.value_schema),
+                Ok(resolved) => {
+                    if let Some(current_schema) = resolved {
+                        document_schema.semantic_schema = current_schema.semantic_schema;
+                        Some(current_schema.schema_view)
+                    } else {
+                        None
+                    }
+                }
                 Err(error) => {
                     log::warn!(
                         "failed to resolve root $ref for {}: {error}",
@@ -232,14 +266,13 @@ impl DocumentSchema {
     }
 
     pub fn as_current_schema(&self) -> Option<CurrentSchema<'_>> {
-        self.value_schema
-            .as_ref()
-            .map(|value_schema| CurrentSchema {
-                value_schema: value_schema.clone(),
-                schema_uri: Cow::Borrowed(&self.schema_uri),
-                definitions: Cow::Borrowed(&self.definitions),
-                strict: self.strict,
-            })
+        self.schema_view.as_ref().map(|schema_view| CurrentSchema {
+            schema_view: schema_view.clone(),
+            semantic_schema: self.semantic_schema.clone(),
+            schema_uri: Cow::Borrowed(&self.schema_uri),
+            definitions: Cow::Borrowed(&self.definitions),
+            strict: self.strict,
+        })
     }
 }
 
@@ -270,10 +303,10 @@ impl FindSchemaCandidates for DocumentSchema {
         definitions: &'a SchemaDefinitions,
         strict: Option<BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
-    ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
+    ) -> BoxFuture<'b, (Vec<SchemaView>, Vec<crate::Error>)> {
         async move {
-            if let Some(value_schema) = &self.value_schema {
-                value_schema
+            if let Some(schema_view) = &self.schema_view {
+                schema_view
                     .find_schema_candidates(
                         accessors,
                         schema_uri,
@@ -294,7 +327,7 @@ impl FindSchemaCandidates for DocumentSchema {
 mod tests {
     use std::str::FromStr;
 
-    use crate::{SchemaStore, ValueSchema};
+    use crate::{SchemaStore, SchemaView};
 
     use super::DocumentSchema;
 
@@ -420,7 +453,7 @@ mod tests {
         let schema_value = tombi_json::ValueNode::from_str("true").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
         let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new()).await;
-        std::assert_matches!(doc.value_schema.as_deref(), Some(ValueSchema::Anything(_)));
+        std::assert_matches!(doc.schema_view.as_deref(), Some(SchemaView::Anything(_)));
     }
 
     #[tokio::test]
@@ -428,7 +461,7 @@ mod tests {
         let schema_value = tombi_json::ValueNode::from_str("false").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
         let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new()).await;
-        std::assert_matches!(doc.value_schema.as_deref(), Some(ValueSchema::Nothing(_)));
+        std::assert_matches!(doc.schema_view.as_deref(), Some(SchemaView::Nothing(_)));
     }
 
     #[tokio::test]

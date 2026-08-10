@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    AllOfSchema, AnyOfSchema, OneOfSchema, SchemaContext, SchemaDefinitions, SchemaUri, ValueSchema,
+    AllOfSchema, AnyOfSchema, OneOfSchema, SchemaContext, SchemaDefinitions, SchemaUri, SchemaView,
 };
 
 #[derive(Debug, Clone)]
@@ -169,7 +169,7 @@ pub trait GetEnum {
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>>;
 }
 
-impl GetEnum for ValueSchema {
+impl GetEnum for SchemaView {
     fn get_enum<'a: 'b, 'b>(
         &'a self,
         schema_uri: &'a SchemaUri,
@@ -179,7 +179,7 @@ impl GetEnum for ValueSchema {
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
         async move {
             match self {
-                ValueSchema::Boolean(schema) => {
+                SchemaView::Boolean(schema) => {
                     let mut enum_values = Vec::new();
 
                     // Add const_value if present
@@ -198,7 +198,7 @@ impl GetEnum for ValueSchema {
                         None
                     }
                 }
-                ValueSchema::Integer(schema) => {
+                SchemaView::Integer(schema) => {
                     let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
@@ -215,7 +215,7 @@ impl GetEnum for ValueSchema {
                         None
                     }
                 }
-                ValueSchema::Float(schema) => {
+                SchemaView::Float(schema) => {
                     let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
@@ -232,7 +232,7 @@ impl GetEnum for ValueSchema {
                         None
                     }
                 }
-                ValueSchema::String(schema) => {
+                SchemaView::String(schema) => {
                     let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
@@ -249,7 +249,7 @@ impl GetEnum for ValueSchema {
                         None
                     }
                 }
-                ValueSchema::OffsetDateTime(schema) => {
+                SchemaView::OffsetDateTime(schema) => {
                     let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
@@ -270,7 +270,7 @@ impl GetEnum for ValueSchema {
                         None
                     }
                 }
-                ValueSchema::LocalDateTime(schema) => {
+                SchemaView::LocalDateTime(schema) => {
                     let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
@@ -291,7 +291,7 @@ impl GetEnum for ValueSchema {
                         None
                     }
                 }
-                ValueSchema::LocalDate(schema) => {
+                SchemaView::LocalDate(schema) => {
                     let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
@@ -309,7 +309,7 @@ impl GetEnum for ValueSchema {
                         None
                     }
                 }
-                ValueSchema::LocalTime(schema) => {
+                SchemaView::LocalTime(schema) => {
                     let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
@@ -327,14 +327,14 @@ impl GetEnum for ValueSchema {
                         None
                     }
                 }
-                ValueSchema::Anything(_)
-                | ValueSchema::Nothing(_)
-                | ValueSchema::Array(_)
-                | ValueSchema::Table(_)
-                | ValueSchema::Null => None,
-                ValueSchema::OneOf(OneOfSchema { schemas, .. })
-                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-                | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
+                SchemaView::Anything(_)
+                | SchemaView::Nothing(_)
+                | SchemaView::Array(_)
+                | SchemaView::Table(_)
+                | SchemaView::Null => None,
+                SchemaView::OneOf(OneOfSchema { schemas, .. })
+                | SchemaView::AnyOf(AnyOfSchema { schemas, .. })
+                | SchemaView::AllOf(AllOfSchema { schemas, .. }) => {
                     get_enum_from_schemas(schemas, schema_uri, definitions, strict, schema_context)
                         .await
                 }
@@ -346,7 +346,7 @@ impl GetEnum for ValueSchema {
 
 /// Helper function to get enum values from a collection of schemas
 fn get_enum_from_schemas<'a: 'b, 'b>(
-    schemas: &'a tombi_schema_store::ReferableValueSchemas,
+    schemas: &'a tombi_schema_store::ReferableSchemaViews,
     schema_uri: &'a SchemaUri,
     definitions: &'a SchemaDefinitions,
     strict: Option<tombi_schema_type::BoolDefaultTrue>,
@@ -367,7 +367,7 @@ fn get_enum_from_schemas<'a: 'b, 'b>(
 
         for resolved in &resolved_schemas {
             if let Some(values) = resolved
-                .value_schema
+                .schema_view
                 .get_enum(
                     &resolved.schema_uri,
                     &resolved.definitions,

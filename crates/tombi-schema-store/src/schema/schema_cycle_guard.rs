@@ -17,17 +17,17 @@ pub struct SchemaVisits(Arc<Mutex<tombi_hashmap::HashSet<usize>>>);
 impl SchemaVisits {
     pub fn get_cycle_guard(
         &self,
-        schemas: &crate::ReferableValueSchemas,
+        schemas: &crate::ReferableSchemaViews,
     ) -> Option<SchemaCycleGuard> {
         let key = std::sync::Arc::as_ptr(schemas) as usize;
         self.get_cycle_guard_with_key(key)
     }
 
-    pub fn get_value_schema_cycle_guard(
+    pub fn get_schema_view_cycle_guard(
         &self,
-        value_schema: &std::sync::Arc<crate::ValueSchema>,
+        schema_view: &std::sync::Arc<crate::SchemaView>,
     ) -> Option<SchemaCycleGuard> {
-        let key = std::sync::Arc::as_ptr(value_schema) as usize;
+        let key = std::sync::Arc::as_ptr(schema_view) as usize;
         self.get_cycle_guard_with_key(key)
     }
 

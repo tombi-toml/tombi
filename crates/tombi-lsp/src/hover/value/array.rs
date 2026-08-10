@@ -3,7 +3,7 @@ use tombi_comment_directive::value::{ArrayCommonFormatRules, ArrayCommonLintRule
 use tombi_comment_directive_serde::get_comment_directive_content;
 
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, Accessors, ArraySchema, CurrentSchema, ValueSchema, ValueType};
+use tombi_schema_store::{Accessor, Accessors, ArraySchema, CurrentSchema, SchemaView, ValueType};
 
 use crate::{
     HoverContent,
@@ -60,8 +60,8 @@ impl GetHoverContent for tombi_document_tree::Array {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::Array(array_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::Array(array_schema) => {
                         for (index, value) in self.values().iter().enumerate() {
                             if value.contains(position) {
                                 let accessor = Accessor::Index(index);
@@ -215,7 +215,7 @@ impl GetHoverContent for tombi_document_tree::Array {
 
                         return hover_content;
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         return get_one_of_hover_content(
                             self,
                             position,
@@ -229,7 +229,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                         )
                         .await;
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         return get_any_of_hover_content(
                             self,
                             position,
@@ -243,7 +243,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                         )
                         .await;
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         return get_all_of_hover_content(
                             self,
                             position,
@@ -257,7 +257,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                         )
                         .await;
                     }
-                    ValueSchema::Null => {
+                    SchemaView::Null => {
                         for (index, value) in self.values().iter().enumerate() {
                             if value.contains(position) {
                                 let accessor = Accessor::Index(index);

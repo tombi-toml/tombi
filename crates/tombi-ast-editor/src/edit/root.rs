@@ -195,9 +195,10 @@ async fn resolve_current_schema_from_comment_directive<'a>(
         .try_get_document_schema(schema_uri)
         .await
         .ok()??;
-    let value_schema = document_schema.value_schema.clone()?;
+
     Some(CurrentSchema {
-        value_schema,
+        schema_view: document_schema.schema_view.clone()?,
+        semantic_schema: document_schema.semantic_schema.clone(),
         schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
         definitions: Cow::Owned(document_schema.definitions.clone()),
         strict: document_schema.strict,

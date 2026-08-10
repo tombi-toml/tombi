@@ -29,7 +29,7 @@ use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, AnythingSchema, ArraySchema, BooleanSchema, CurrentSchema, FloatSchema,
     IntegerSchema, LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema,
-    SchemaDefinitions, SchemaStore, SchemaUri, StringSchema, TableSchema, ValueSchema,
+    SchemaDefinitions, SchemaStore, SchemaUri, SchemaView, StringSchema, TableSchema,
 };
 
 use super::{
@@ -69,6 +69,21 @@ impl FindCompletionContents for tombi_document_tree::Value {
                     )
                     .await;
             }
+
+            let instance_type = tombi_schema_store::SchemaType::from_value_type(
+                tombi_document_tree::ValueImpl::value_type(self),
+            );
+            let projected_schema = current_schema.and_then(|schema| {
+                instance_type.and_then(|instance_type| {
+                    schema.for_instance_type(instance_type, schema_context.string_formats())
+                })
+            });
+            let current_schema = match current_schema {
+                Some(schema) if schema.semantic_schema.is_some() && instance_type.is_some() => {
+                    projected_schema.as_ref()
+                }
+                schema => schema,
+            };
 
             match self {
                 Self::Boolean(boolean) => {
@@ -283,7 +298,7 @@ pub fn type_hint_value(
     completion_contents
 }
 
-impl CompletionCandidate for ValueSchema {
+impl CompletionCandidate for SchemaView {
     fn title<'a: 'b, 'b>(
         &'a self,
         schema_uri: &'a SchemaUri,

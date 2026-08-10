@@ -1,10 +1,9 @@
 use itertools::Itertools;
 use tombi_accessor::MarkdownSchemaAccessors;
 use tombi_comment_directive::value::TableCommonLintRules;
-use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_hashmap::HashSet;
-use tombi_schema_store::{Accessor, CompositeSchema, CurrentSchema, SchemaAccessor, ValueSchema};
+use tombi_schema_store::{Accessor, CompositeSchema, CurrentSchema, SchemaAccessor, SchemaView};
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError};
 
 use crate::{
@@ -14,7 +13,7 @@ use crate::{
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::{
         filter_table_strict_additional_diagnostics, handle_anything_schema, handle_deprecated,
-        handle_deprecated_value, handle_nothing_schema, handle_type_mismatch, handle_unused_noqa,
+        handle_deprecated_value, handle_nothing_schema, handle_unused_noqa,
         if_then_else::validate_if_then_else, is_assertion_success, merge_validation_results,
         validate_adjacent_applicators,
     },
@@ -40,12 +39,22 @@ impl Validate for tombi_document_tree::Table {
                     .await;
             }
 
+            if let Some(projected_schema) = crate::validate::project_current_schema_for_value(
+                self,
+                current_schema,
+                schema_context,
+            ) {
+                return self
+                    .validate(accessors, Some(&projected_schema), schema_context)
+                    .await;
+            }
+
             let (lint_rules, lint_rules_diagnostics) =
                 get_tombi_table_comment_directive_and_diagnostics(self, accessors).await;
 
             let result = if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::Table(table_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::Table(table_schema) => {
                         validate_table(
                             self,
                             accessors,
@@ -56,7 +65,7 @@ impl Validate for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         validate_one_of(
                             self,
                             accessors,
@@ -70,7 +79,7 @@ impl Validate for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         validate_any_of(
                             self,
                             accessors,
@@ -84,7 +93,7 @@ impl Validate for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         validate_all_of(
                             self,
                             accessors,
@@ -98,15 +107,22 @@ impl Validate for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    ValueSchema::Null => return Ok(crate::EvaluatedLocations::new()),
-                    ValueSchema::Anything(_) => handle_anything_schema(self),
-                    ValueSchema::Nothing(_) => handle_nothing_schema(self),
-                    value_schema => handle_type_mismatch(
-                        value_schema.value_type().await,
-                        self.value_type(),
-                        self.range(),
-                        lint_rules.as_ref().map(|rules| &rules.common),
-                    ),
+                    SchemaView::Null => return Ok(crate::EvaluatedLocations::new()),
+                    SchemaView::Anything(_) => handle_anything_schema(self),
+                    SchemaView::Nothing(_) => handle_nothing_schema(self),
+                    _ => {
+                        crate::validate::validate_mismatched_schema(
+                            self,
+                            accessors,
+                            current_schema,
+                            schema_context,
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
+                            lint_rules.as_ref().map(|rules| &rules.common),
+                        )
+                        .await
+                    }
                 }
             } else {
                 validate_table_without_schema(self, accessors, schema_context).await
@@ -321,7 +337,7 @@ async fn validate_table(
                 .await
                 {
                     Ok(Some(current_schema)) => {
-                        let deprecation = current_schema.value_schema.deprecation().await;
+                        let deprecation = current_schema.schema_view.deprecation().await;
                         handle_deprecated_value(
                             &mut total_diagnostics,
                             deprecation.as_ref(),
@@ -825,6 +841,9 @@ async fn validate_table(
         };
 
     for key in table_value.keys() {
+        if table_schema.property_names.is_some() && property_name_current_schema.is_none() {
+            continue;
+        }
         if let Err(crate::Error { diagnostics, .. }) = key
             .validate(
                 accessors,
@@ -905,7 +924,7 @@ fn collect_evaluated_properties_from_table_schema<'a>(
     visited_schema_values: &'a mut HashSet<usize>,
 ) -> BoxFuture<'a, crate::EvaluatedLocations> {
     async move {
-        let schema_key = std::sync::Arc::as_ptr(&current_schema.value_schema) as usize;
+        let schema_key = std::sync::Arc::as_ptr(&current_schema.schema_view) as usize;
         if !visited_schema_values.insert(schema_key) {
             return crate::EvaluatedLocations::new();
         }
@@ -1085,6 +1104,17 @@ fn collect_evaluated_properties_from_table_schema<'a>(
             );
         }
 
+        // An `unevaluatedProperties: true` subschema succeeds for every
+        // remaining property and therefore annotates all of them as evaluated.
+        // This annotation must be visible to adjacent outer applicators.
+        if table_schema.unevaluated_property_schema.is_none()
+            && table_schema.unevaluated_properties == Some(true)
+        {
+            for key in table_value.keys() {
+                result.mark_property(key.value.to_string());
+            }
+        }
+
         result
     }
     .boxed()
@@ -1109,10 +1139,16 @@ fn collect_evaluated_properties_from_schema_item<'a>(
         .await
         .inspect_err(|err| log::warn!("{err}"))
         {
-            collect_evaluated_properties_from_value_schema(
+            let schema = schema
+                .for_instance_type(
+                    tombi_schema_store::SchemaType::Object,
+                    schema_context.string_formats(),
+                )
+                .unwrap_or(schema);
+            collect_evaluated_properties_from_schema_view(
                 table_value,
                 accessors,
-                schema.value_schema.as_ref(),
+                schema.schema_view.as_ref(),
                 &schema,
                 schema_context,
                 visited_schema_values,
@@ -1131,7 +1167,7 @@ fn collect_evaluated_properties_from_referable_schemas<'a>(
     applicator: &'a (impl CompositeSchema + Sync),
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    visited_schema_values: &'a mut HashSet<usize>,
+    _visited_schema_values: &'a mut HashSet<usize>,
 ) -> BoxFuture<'a, crate::EvaluatedLocations> {
     async move {
         let mut result = crate::EvaluatedLocations::new();
@@ -1150,34 +1186,45 @@ fn collect_evaluated_properties_from_referable_schemas<'a>(
         };
 
         for schema in &schemas {
-            result.merge_from(
-                collect_evaluated_properties_from_value_schema(
-                    table_value,
-                    accessors,
-                    schema.value_schema.as_ref(),
-                    schema,
-                    schema_context,
-                    visited_schema_values,
-                )
-                .await,
-            );
+            let Some(validation_result) = crate::validate::validate_resolved_schema(
+                table_value,
+                accessors,
+                schema,
+                schema_context,
+                table_value
+                    .comment_directives()
+                    .map(|directives| directives.cloned().collect_vec())
+                    .as_deref(),
+                None,
+            )
+            .await
+            else {
+                continue;
+            };
+
+            if crate::validate::is_assertion_success(&validation_result) {
+                match validation_result {
+                    Ok(evaluated_locations) => result.merge_from(evaluated_locations),
+                    Err(error) => result.merge_from(error.evaluated_locations),
+                }
+            }
         }
         result
     }
     .boxed()
 }
 
-fn collect_evaluated_properties_from_value_schema<'a>(
+fn collect_evaluated_properties_from_schema_view<'a>(
     table_value: &'a tombi_document_tree::Table,
     accessors: &'a [tombi_schema_store::Accessor],
-    value_schema: &'a ValueSchema,
+    schema_view: &'a SchemaView,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     visited_schema_values: &'a mut HashSet<usize>,
 ) -> BoxFuture<'a, crate::EvaluatedLocations> {
     async move {
-        match value_schema {
-            ValueSchema::Table(table_schema) => {
+        match schema_view {
+            SchemaView::Table(table_schema) => {
                 collect_evaluated_properties_from_table_schema(
                     table_value,
                     accessors,
@@ -1188,7 +1235,7 @@ fn collect_evaluated_properties_from_value_schema<'a>(
                 )
                 .await
             }
-            ValueSchema::OneOf(one_of_schema) => {
+            SchemaView::OneOf(one_of_schema) => {
                 collect_evaluated_properties_from_referable_schemas(
                     table_value,
                     accessors,
@@ -1199,7 +1246,7 @@ fn collect_evaluated_properties_from_value_schema<'a>(
                 )
                 .await
             }
-            ValueSchema::AnyOf(any_of_schema) => {
+            SchemaView::AnyOf(any_of_schema) => {
                 collect_evaluated_properties_from_referable_schemas(
                     table_value,
                     accessors,
@@ -1210,7 +1257,7 @@ fn collect_evaluated_properties_from_value_schema<'a>(
                 )
                 .await
             }
-            ValueSchema::AllOf(all_of_schema) => {
+            SchemaView::AllOf(all_of_schema) => {
                 collect_evaluated_properties_from_referable_schemas(
                     table_value,
                     accessors,
@@ -1247,16 +1294,22 @@ fn collect_evaluated_properties_from_if_then_else_schema<'a>(
         .inspect_err(|err| log::warn!("{err}")) else {
             return crate::EvaluatedLocations::new();
         };
+        let if_current_schema = if_current_schema
+            .for_instance_type(
+                tombi_schema_store::SchemaType::Object,
+                schema_context.string_formats(),
+            )
+            .unwrap_or(if_current_schema);
 
         let if_result = table_value
             .validate(accessors, Some(&if_current_schema), schema_context)
             .await;
 
         if is_assertion_success(&if_result) {
-            let mut result = collect_evaluated_properties_from_value_schema(
+            let mut result = collect_evaluated_properties_from_schema_view(
                 table_value,
                 accessors,
-                if_current_schema.value_schema.as_ref(),
+                if_current_schema.schema_view.as_ref(),
                 &if_current_schema,
                 schema_context,
                 visited_schema_values,
@@ -1339,7 +1392,7 @@ async fn convert_deprecated_diagnostics_range(
     key: &tombi_document_tree::Key,
     schema_diagnostics: &mut [tombi_diagnostic::Diagnostic],
 ) {
-    if current_schema.value_schema.deprecation().await.is_some() {
+    if current_schema.schema_view.deprecation().await.is_some() {
         for diagnostic in schema_diagnostics.iter_mut() {
             if diagnostic.code() == "deprecated" && diagnostic.range() == value.range() {
                 let range = key.range() + value.range();

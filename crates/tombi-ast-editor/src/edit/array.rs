@@ -3,7 +3,7 @@ use tombi_ast::{AstNode, DanglingCommentGroupOr};
 use tombi_comment_directive::value::{ArrayCommonFormatRules, ArrayCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{Accessor, AllOfSchema, AnyOfSchema, OneOfSchema, ValueSchema};
+use tombi_schema_store::{Accessor, AllOfSchema, AnyOfSchema, OneOfSchema, SchemaView};
 use tombi_validator::Validate;
 
 use crate::rule::{array_comma_trailing_comment, array_values_order};
@@ -88,7 +88,7 @@ impl crate::Edit for tombi_ast::Array {
                 );
 
             let array_schema_values_order = current_schema.and_then(|current_schema| {
-                if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
+                if let SchemaView::Array(array_schema) = current_schema.schema_view.as_ref() {
                     array_schema.values_order.clone()
                 } else {
                     None
@@ -148,10 +148,10 @@ fn resolve_array_item_edit_context<'a: 'b, 'b>(
         }
 
         if let Some(current_schema) = current_schema.as_ref() {
-            match current_schema.value_schema.as_ref() {
-                ValueSchema::AllOf(AllOfSchema { schemas, .. })
-                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-                | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
+            match current_schema.schema_view.as_ref() {
+                SchemaView::AllOf(AllOfSchema { schemas, .. })
+                | SchemaView::AnyOf(AnyOfSchema { schemas, .. })
+                | SchemaView::OneOf(OneOfSchema { schemas, .. }) => {
                     if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
                         schemas,
                         current_schema.schema_uri.clone(),
@@ -185,7 +185,7 @@ fn resolve_array_item_edit_context<'a: 'b, 'b>(
         }
 
         if let Some(current_schema) = current_schema.as_ref()
-            && let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref()
+            && let SchemaView::Array(array_schema) = current_schema.schema_view.as_ref()
             && let Some(item_schema) = &array_schema.items
             && let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
                 item_schema,

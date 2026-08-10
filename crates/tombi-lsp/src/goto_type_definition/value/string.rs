@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use tombi_comment_directive::value::{StringCommonFormatRules, StringCommonLintRules};
 use tombi_future::Boxable;
-use tombi_schema_store::ValueSchema;
+use tombi_schema_store::SchemaView;
 use tombi_x_keyword::StringFormat;
 
 use crate::{
@@ -45,8 +45,8 @@ impl GetTypeDefinition for tombi_document_tree::String {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::String(string_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::String(string_schema) => {
                         let base_type_definition = string_schema
                             .get_type_definition(
                                 position,
@@ -71,7 +71,7 @@ impl GetTypeDefinition for tombi_document_tree::String {
                         .await
                         .or(base_type_definition)
                     }
-                    ValueSchema::OffsetDateTime(offset_date_time_schema)
+                    SchemaView::OffsetDateTime(offset_date_time_schema)
                         if schema_context.has_string_format(StringFormat::DateTime) =>
                     {
                         let base_type_definition = offset_date_time_schema
@@ -98,7 +98,7 @@ impl GetTypeDefinition for tombi_document_tree::String {
                         .await
                         .or(base_type_definition)
                     }
-                    ValueSchema::LocalDateTime(local_date_time_schema)
+                    SchemaView::LocalDateTime(local_date_time_schema)
                         if schema_context.has_string_format(StringFormat::DateTimeLocal) =>
                     {
                         let base_type_definition = local_date_time_schema
@@ -125,7 +125,7 @@ impl GetTypeDefinition for tombi_document_tree::String {
                         .await
                         .or(base_type_definition)
                     }
-                    ValueSchema::LocalDate(local_date_schema)
+                    SchemaView::LocalDate(local_date_schema)
                         if schema_context.has_string_format(StringFormat::Date) =>
                     {
                         let base_type_definition = local_date_schema
@@ -152,7 +152,7 @@ impl GetTypeDefinition for tombi_document_tree::String {
                         .await
                         .or(base_type_definition)
                     }
-                    ValueSchema::LocalTime(local_time_schema)
+                    SchemaView::LocalTime(local_time_schema)
                         if schema_context.has_string_format(StringFormat::TimeLocal) =>
                     {
                         let base_type_definition = local_time_schema
@@ -179,7 +179,7 @@ impl GetTypeDefinition for tombi_document_tree::String {
                         .await
                         .or(base_type_definition)
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         get_one_of_type_definition(
                             self,
                             position,
@@ -193,7 +193,7 @@ impl GetTypeDefinition for tombi_document_tree::String {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         get_any_of_type_definition(
                             self,
                             position,
@@ -207,7 +207,7 @@ impl GetTypeDefinition for tombi_document_tree::String {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         get_all_of_type_definition(
                             self,
                             position,
@@ -218,6 +218,27 @@ impl GetTypeDefinition for tombi_document_tree::String {
                             current_schema.definitions.as_ref(),
                             current_schema.strict,
                             schema_context,
+                        )
+                        .await
+                    }
+                    _ if current_schema
+                        .semantic_schema
+                        .as_deref()
+                        .is_some_and(|schema| !schema.has_type_assertion()) =>
+                    {
+                        let (one_of, any_of, all_of, _) =
+                            current_schema.schema_view.adjacent_applicators();
+
+                        adjacent_type_definition(
+                            self,
+                            position,
+                            keys,
+                            accessors,
+                            Some(current_schema),
+                            schema_context,
+                            one_of,
+                            any_of,
+                            all_of,
                         )
                         .await
                     }
@@ -248,7 +269,7 @@ impl GetTypeDefinition for tombi_schema_store::StringSchema {
                 TypeDefinition {
                     schema_uri,
                     schema_accessors: accessors.iter().map(Into::into).collect_vec(),
-                    range: schema.value_schema.range(),
+                    range: schema.schema_view.range(),
                 }
             })
         }

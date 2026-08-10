@@ -13,8 +13,8 @@ use tombi_comment_directive::value::{
 };
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaContext, TableSchema,
-    ValueSchema, XTombiArrayValuesOrder,
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaContext, SchemaView,
+    TableSchema, XTombiArrayValuesOrder,
 };
 use tombi_syntax::SyntaxElement;
 use tombi_validator::Validate;
@@ -210,14 +210,14 @@ async fn get_sorted_values_order_groups<'a>(
 ) -> Option<Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>> {
     let current_schema = current_schema?;
 
-    match (values_order_group, current_schema.value_schema.as_ref()) {
+    match (values_order_group, current_schema.schema_view.as_ref()) {
         (
             ArrayValuesOrderGroup::OneOf(group_orders),
-            ValueSchema::OneOf(OneOfSchema { schemas, .. }),
+            SchemaView::OneOf(OneOfSchema { schemas, .. }),
         )
         | (
             ArrayValuesOrderGroup::AnyOf(group_orders),
-            ValueSchema::AnyOf(AnyOfSchema { schemas, .. }),
+            SchemaView::AnyOf(AnyOfSchema { schemas, .. }),
         ) => {
             let mut sorted_values_with_comma = Vec::with_capacity(values_with_comma.len());
             let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
@@ -317,16 +317,16 @@ fn try_array_values_order_by_from_item_schema<'a: 'b, 'b>(
 ) -> BoxFuture<'b, Result<ArrayValuesOrderBy, SortFailReason>> {
     async move {
         if let Some(current_schema) = current_schema {
-            match current_schema.value_schema.as_ref() {
-                ValueSchema::Table(TableSchema {
+            match current_schema.schema_view.as_ref() {
+                SchemaView::Table(TableSchema {
                     array_values_order_by: Some(array_values_order_by),
                     ..
                 }) => {
                     return Ok(array_values_order_by.to_owned());
                 }
-                ValueSchema::AllOf(AllOfSchema { schemas, .. })
-                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-                | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
+                SchemaView::AllOf(AllOfSchema { schemas, .. })
+                | SchemaView::AnyOf(AnyOfSchema { schemas, .. })
+                | SchemaView::OneOf(OneOfSchema { schemas, .. }) => {
                     if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
                         schemas,
                         current_schema.schema_uri.clone(),
