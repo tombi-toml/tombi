@@ -537,7 +537,7 @@ jobs:
             throw "Latest release tag is not a stable version: $($latestRelease.tag_name)"
           }
 
-          Write-Host "Using latest stable release $($latestRelease.tag_name) for winget dry-run validation."
+          Write-Host "Using latest stable release $($latestRelease.tag_name) for winget manifest validation and invocation."
           "release_tag=$($latestRelease.tag_name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "stable_version=$($Matches[1])" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
@@ -547,7 +547,7 @@ jobs:
         with:
           version: ${{ env.WINGETCREATE_VERSION }}
 
-      - name: Generate and validate winget manifest
+      - name: Generate and test winget manifest
         uses: ./.github/actions/generate-winget-manifest
         with:
           release-tag: ${{ steps.winget-release.outputs.release_tag }}
@@ -594,7 +594,7 @@ jobs:
         with:
           version: ${{ env.WINGETCREATE_VERSION }}
 
-      - name: Generate and validate winget manifest
+      - name: Generate and test winget manifest
         if: steps.stable-version.outputs.stable_version != ''
         uses: ./.github/actions/generate-winget-manifest
         with:
