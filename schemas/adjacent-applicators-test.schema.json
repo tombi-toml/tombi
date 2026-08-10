@@ -141,7 +141,7 @@
       },
       "oneOf": [{ "required": ["foo"] }, { "required": ["bar"] }]
     },
-    "inferred_dependent_required_any": {
+    "type_agnostic_dependent_required_any": {
       "properties": {
         "foo": { "type": "integer" },
         "bar": { "type": "integer" },
@@ -155,7 +155,7 @@
         { "required": ["baz"] }
       ]
     },
-    "inferred_dependent_schemas_all": {
+    "type_agnostic_dependent_schemas_all": {
       "dependentSchemas": {
         "foo": {
           "required": ["bar"],
@@ -172,6 +172,37 @@
           }
         }
       ]
+    },
+    "issue_2042_address": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "required": ["uri"],
+          "properties": {
+            "uri": { "type": "string" }
+          },
+          "unevaluatedProperties": true
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "type_agnostic_minimum": {
+      "minimum": 10
+    },
+    "mixed_string_and_numeric_constraints": {
+      "minLength": 3,
+      "minimum": 10
+    },
+    "same_type_enum_one_of": {
+      "oneOf": [
+        { "type": "string", "enum": ["red", "shared"] },
+        { "type": "string", "enum": ["blue", "shared"] }
+      ]
+    },
+    "enum_with_numeric_sibling": {
+      "enum": [9, 12],
+      "minimum": 10
     }
   },
   "additionalProperties": false

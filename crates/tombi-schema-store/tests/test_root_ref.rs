@@ -1,4 +1,4 @@
-use tombi_schema_store::{SchemaStore, SchemaUri, ValueSchema};
+use tombi_schema_store::{SchemaStore, SchemaUri, SchemaView};
 
 #[tokio::test]
 async fn root_ref_resolves_ref_definition_and_keeps_sibling_description() {
@@ -12,15 +12,15 @@ async fn root_ref_resolves_ref_definition_and_keeps_sibling_description() {
         .unwrap()
         .unwrap();
 
-    match document_schema.value_schema.as_deref() {
-        Some(ValueSchema::Table(_)) => {}
+    match document_schema.schema_view.as_deref() {
+        Some(SchemaView::Table(_)) => {}
         other => panic!("expected table schema, got {other:?}"),
     }
     assert_eq!(
         document_schema
-            .value_schema
+            .schema_view
             .as_deref()
-            .and_then(ValueSchema::description),
+            .and_then(SchemaView::description),
         Some("Root override description")
     );
 }

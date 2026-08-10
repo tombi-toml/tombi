@@ -1,16 +1,15 @@
 use itertools::Itertools;
 use tombi_comment_directive::value::ArrayCommonLintRules;
-use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{CurrentSchema, ValueSchema};
+use tombi_schema_store::{CurrentSchema, SchemaView};
 use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_array_comment_directive_and_diagnostics,
     validate::{
-        handle_anything_schema, handle_deprecated, handle_nothing_schema, handle_type_mismatch,
-        handle_unused_noqa, if_then_else::validate_if_then_else, is_assertion_success,
-        merge_validation_results, validate_adjacent_applicators,
+        handle_anything_schema, handle_deprecated, handle_nothing_schema, handle_unused_noqa,
+        if_then_else::validate_if_then_else, is_assertion_success, merge_validation_results,
+        validate_adjacent_applicators,
     },
 };
 
@@ -37,12 +36,22 @@ impl Validate for tombi_document_tree::Array {
                     .await;
             }
 
+            if let Some(projected_schema) = crate::validate::project_current_schema_for_value(
+                self,
+                current_schema,
+                schema_context,
+            ) {
+                return self
+                    .validate(accessors, Some(&projected_schema), schema_context)
+                    .await;
+            }
+
             let (lint_rules, lint_rules_diagnostics) =
                 get_tombi_array_comment_directive_and_diagnostics(self, accessors).await;
 
             let result = if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::Array(array_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::Array(array_schema) => {
                         validate_array(
                             self,
                             accessors,
@@ -54,7 +63,7 @@ impl Validate for tombi_document_tree::Array {
                         )
                         .await
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         validate_one_of(
                             self,
                             accessors,
@@ -66,7 +75,7 @@ impl Validate for tombi_document_tree::Array {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         validate_any_of(
                             self,
                             accessors,
@@ -78,7 +87,7 @@ impl Validate for tombi_document_tree::Array {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         validate_all_of(
                             self,
                             accessors,
@@ -90,15 +99,20 @@ impl Validate for tombi_document_tree::Array {
                         )
                         .await
                     }
-                    ValueSchema::Null => return Ok(crate::EvaluatedLocations::new()),
-                    ValueSchema::Anything(_) => handle_anything_schema(self),
-                    ValueSchema::Nothing(_) => handle_nothing_schema(self),
-                    value_schema => handle_type_mismatch(
-                        value_schema.value_type().await,
-                        self.value_type(),
-                        self.range(),
-                        lint_rules.as_ref().map(|rules| &rules.common),
-                    ),
+                    SchemaView::Null => return Ok(crate::EvaluatedLocations::new()),
+                    SchemaView::Anything(_) => handle_anything_schema(self),
+                    SchemaView::Nothing(_) => handle_nothing_schema(self),
+                    _ => {
+                        crate::validate::validate_mismatched_schema(
+                            self,
+                            accessors,
+                            current_schema,
+                            schema_context,
+                            comment_directives.as_deref(),
+                            lint_rules.as_ref().map(|rules| &rules.common),
+                        )
+                        .await
+                    }
                 }
             } else {
                 validate_array_without_schema(self, accessors, schema_context).await

@@ -7,8 +7,8 @@ use tombi_comment_directive::value::{
 };
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaContext, TableSchema,
-    ValueSchema, XTombiTableKeysOrder,
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaContext, SchemaView,
+    TableSchema, XTombiTableKeysOrder,
 };
 use tombi_syntax::SyntaxElement;
 use tombi_validator::Validate;
@@ -112,24 +112,25 @@ where
 {
     async move {
         if let Some(CurrentSchema {
-            value_schema,
+            schema_view,
             schema_uri,
             definitions,
             strict,
+            ..
         }) = current_schema
         {
-            match value_schema.as_ref() {
-                ValueSchema::OneOf(OneOfSchema {
+            match schema_view.as_ref() {
+                SchemaView::OneOf(OneOfSchema {
                     schemas,
                     keys_order,
                     ..
                 })
-                | ValueSchema::AnyOf(AnyOfSchema {
+                | SchemaView::AnyOf(AnyOfSchema {
                     schemas,
                     keys_order,
                     ..
                 })
-                | ValueSchema::AllOf(AllOfSchema {
+                | SchemaView::AllOf(AllOfSchema {
                     schemas,
                     keys_order,
                     ..
@@ -204,7 +205,7 @@ where
                 let schema_override =
                     schema_context.table_order_override(current_schema, accessors);
                 let table_schema = current_schema.and_then(|current_schema| {
-                    if let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref() {
+                    if let SchemaView::Table(table_schema) = current_schema.schema_view.as_ref() {
                         Some(table_schema)
                     } else {
                         None
@@ -329,7 +330,7 @@ where
                     .all(|(accessor, _)| matches!(accessor, Accessor::Index(_))) =>
             {
                 if let Some(current_schema) = current_schema
-                    && let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref()
+                    && let SchemaView::Array(array_schema) = current_schema.schema_view.as_ref()
                     && let Some(referable_schema) = &array_schema.items
                     && let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
                         referable_schema,
@@ -446,7 +447,7 @@ fn get_table_keys_order(
         None => {
             if schema_order_enabled
                 && let Some(current_schema) = current_schema
-                && let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref()
+                && let SchemaView::Table(table_schema) = current_schema.schema_view.as_ref()
             {
                 return table_schema.keys_order.clone();
             }

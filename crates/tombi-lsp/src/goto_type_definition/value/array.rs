@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, ValueSchema};
+use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, SchemaView};
 
 use crate::{
     comment_directive::get_array_comment_directive_content_with_schema_uri,
@@ -56,8 +56,8 @@ impl GetTypeDefinition for tombi_document_tree::Array {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::Array(array_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::Array(array_schema) => {
                         for (index, value) in self.values().iter().enumerate() {
                             if value.contains(position) {
                                 let accessor = Accessor::Index(index);
@@ -126,7 +126,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                             )
                             .await;
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         return get_one_of_type_definition(
                             self,
                             position,
@@ -140,7 +140,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                         )
                         .await;
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         return get_any_of_type_definition(
                             self,
                             position,
@@ -154,7 +154,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                         )
                         .await;
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         return get_all_of_type_definition(
                             self,
                             position,
@@ -214,7 +214,7 @@ impl GetTypeDefinition for ArraySchema {
                 TypeDefinition {
                     schema_uri,
                     schema_accessors: accessors.iter().map(Into::into).collect_vec(),
-                    range: schema.value_schema.range(),
+                    range: schema.schema_view.range(),
                 }
             })
         }

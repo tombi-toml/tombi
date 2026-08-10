@@ -1,5 +1,5 @@
 use tombi_comment_directive::value::{FloatCommonFormatRules, FloatCommonLintRules};
-use tombi_schema_store::{Accessor, CurrentSchema, FloatSchema, ValueSchema};
+use tombi_schema_store::{Accessor, CurrentSchema, FloatSchema, SchemaView};
 
 use crate::{
     HoverContent,
@@ -40,8 +40,8 @@ impl GetHoverContent for tombi_document_tree::Float {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::Float(float_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::Float(float_schema) => {
                         if let Some(r#enum) = &float_schema.r#enum
                             && !r#enum.contains(&self.value())
                         {
@@ -78,7 +78,7 @@ impl GetHoverContent for tombi_document_tree::Float {
                         )
                         .await
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         get_one_of_hover_content(
                             self,
                             position,
@@ -92,7 +92,7 @@ impl GetHoverContent for tombi_document_tree::Float {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         get_any_of_hover_content(
                             self,
                             position,
@@ -106,7 +106,7 @@ impl GetHoverContent for tombi_document_tree::Float {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         get_all_of_hover_content(
                             self,
                             position,

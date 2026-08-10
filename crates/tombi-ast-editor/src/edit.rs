@@ -3,7 +3,7 @@ use std::sync::Arc;
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, OneOfSchema, SchemaAccessor, ValueSchema,
+    Accessor, AllOfSchema, AnyOfSchema, OneOfSchema, SchemaAccessor, SchemaView,
 };
 use tombi_validator::Validate;
 
@@ -57,10 +57,10 @@ fn edit_recursive<'a: 'b, 'b>(
         }
 
         if let Some(current_schema) = current_schema.as_ref() {
-            match current_schema.value_schema.as_ref() {
-                ValueSchema::AllOf(AllOfSchema { schemas, .. })
-                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-                | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
+            match current_schema.schema_view.as_ref() {
+                SchemaView::AllOf(AllOfSchema { schemas, .. })
+                | SchemaView::AnyOf(AnyOfSchema { schemas, .. })
+                | SchemaView::OneOf(OneOfSchema { schemas, .. }) => {
                     let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
                         schemas,
                         current_schema.schema_uri.clone(),
@@ -127,8 +127,8 @@ fn edit_recursive<'a: 'b, 'b>(
         let key_accessors = &key_accessors[1..];
 
         if let Some(current_schema) = current_schema.as_ref() {
-            match current_schema.value_schema.as_ref() {
-                ValueSchema::Table(table_schema) => {
+            match current_schema.schema_view.as_ref() {
+                SchemaView::Table(table_schema) => {
                     let Some(Accessor::Key(key_text)) = accessors.as_ref().last() else {
                         unreachable!("last accessor is not a key");
                     };
@@ -224,7 +224,7 @@ fn edit_recursive<'a: 'b, 'b>(
                         };
                     }
                 }
-                ValueSchema::Array(array_schema) => {
+                SchemaView::Array(array_schema) => {
                     if let Some(items) = &array_schema.items
                         && let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
                             items,

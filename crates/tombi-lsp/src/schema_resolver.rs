@@ -1,11 +1,18 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use tombi_document_tree::{DocumentTree, TableKind, Value, dig_accessors};
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, ArraySchema, CurrentSchema, ReferableValueSchemas, SchemaAccessor, SchemaContext,
-    SchemaItem, TableSchema, ValueSchema,
+    Accessor, ArraySchema, CurrentSchema, ReferableSchemaViews, SchemaAccessor, SchemaContext,
+    SchemaItem, SchemaView, TableSchema,
 };
+
+#[derive(Clone, Copy)]
+enum CompositeKind {
+    One,
+    Any,
+    All,
+}
 
 async fn resolve_schema_item_owned(
     schema_item: &SchemaItem,
@@ -137,9 +144,10 @@ async fn resolve_current_schema(
     schema_context: &SchemaContext<'_>,
 ) -> Option<CurrentSchema<'static>> {
     let document_schema = schema_context.root_schema?;
-    let value_schema = document_schema.value_schema.as_ref()?;
+    let schema_view = document_schema.schema_view.as_ref()?;
     let current_schema = CurrentSchema {
-        value_schema: value_schema.clone(),
+        schema_view: schema_view.clone(),
+        semantic_schema: document_schema.semantic_schema.clone(),
         schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
         definitions: Cow::Owned(document_schema.definitions.clone()),
         strict: document_schema.strict,
@@ -158,14 +166,25 @@ fn resolve_schema_with_accessors<'a: 'b, 'b>(
             return Some(current_schema);
         };
 
-        let composite_schemas = match current_schema.value_schema.as_ref() {
-            ValueSchema::OneOf(schema) => Some(schema.schemas.clone()),
-            ValueSchema::AnyOf(schema) => Some(schema.schemas.clone()),
-            ValueSchema::AllOf(schema) => Some(schema.schemas.clone()),
+        let instance_type = match accessor {
+            Accessor::Key(_) => tombi_schema_store::SchemaType::Object,
+            Accessor::Index(_) => tombi_schema_store::SchemaType::Array,
+        };
+        let current_schema = if current_schema.semantic_schema.is_some() {
+            current_schema.for_instance_type(instance_type, schema_context.string_formats())?
+        } else {
+            current_schema
+        };
+
+        let composite_schemas = match current_schema.schema_view.as_ref() {
+            SchemaView::OneOf(schema) => Some((CompositeKind::One, schema.schemas.clone())),
+            SchemaView::AnyOf(schema) => Some((CompositeKind::Any, schema.schemas.clone())),
+            SchemaView::AllOf(schema) => Some((CompositeKind::All, schema.schemas.clone())),
             _ => None,
         };
-        if let Some(schemas) = composite_schemas {
+        if let Some((kind, schemas)) = composite_schemas {
             return resolve_composite_schema_with_accessors(
+                kind,
                 &schemas,
                 current_schema,
                 accessors,
@@ -174,8 +193,8 @@ fn resolve_schema_with_accessors<'a: 'b, 'b>(
             .await;
         }
 
-        match (accessor, current_schema.value_schema.as_ref()) {
-            (Accessor::Key(_), ValueSchema::Table(table_schema)) => {
+        match (accessor, current_schema.schema_view.as_ref()) {
+            (Accessor::Key(_), SchemaView::Table(table_schema)) => {
                 let next_schema = table_schema
                     .resolve_property_schema(
                         &SchemaAccessor::from(accessor),
@@ -192,7 +211,7 @@ fn resolve_schema_with_accessors<'a: 'b, 'b>(
                 resolve_schema_with_accessors(next_schema, remaining_accessors, schema_context)
                     .await
             }
-            (Accessor::Index(index), ValueSchema::Array(array_schema)) => {
+            (Accessor::Index(index), SchemaView::Array(array_schema)) => {
                 let next_schema = resolve_array_item_schema(
                     *index,
                     array_schema,
@@ -211,7 +230,8 @@ fn resolve_schema_with_accessors<'a: 'b, 'b>(
 }
 
 fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
-    schemas: &'a ReferableValueSchemas,
+    kind: CompositeKind,
+    schemas: &'a ReferableSchemaViews,
     current_schema: CurrentSchema<'static>,
     accessors: &'a [Accessor],
     schema_context: &'a SchemaContext<'a>,
@@ -228,15 +248,70 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
         )
         .await?;
 
+        let mut candidates = Vec::new();
         for schema in collected {
             if let Some(resolved) =
                 resolve_schema_with_accessors(schema.into_owned(), accessors, schema_context).await
             {
-                return Some(resolved);
+                candidates.push(resolved);
             }
         }
 
-        None
+        match candidates.len() {
+            0 => None,
+            1 => candidates.pop(),
+            _ => {
+                let semantic_schemas = candidates
+                    .iter()
+                    .filter_map(|candidate| candidate.semantic_schema.as_deref().cloned())
+                    .collect::<Vec<_>>();
+                let semantic_schema = (semantic_schemas.len() == candidates.len()).then(|| {
+                    let kind = match kind {
+                        CompositeKind::One => tombi_schema_store::SemanticCompositeKind::OneOf,
+                        CompositeKind::Any => tombi_schema_store::SemanticCompositeKind::AnyOf,
+                        CompositeKind::All => tombi_schema_store::SemanticCompositeKind::AllOf,
+                    };
+                    Arc::new(tombi_schema_store::SemanticSchema::composite(
+                        kind,
+                        semantic_schemas,
+                        current_schema
+                            .semantic_schema
+                            .as_ref()
+                            .map_or(Default::default(), |schema| schema.range()),
+                    ))
+                });
+                let referables = candidates
+                    .into_iter()
+                    .map(|candidate| tombi_schema_store::Referable::Resolved {
+                        schema_uri: Some(candidate.schema_uri.into_owned()),
+                        value: candidate.schema_view,
+                        semantic_schema: candidate.semantic_schema,
+                    })
+                    .collect();
+                let schemas = Arc::new(tokio::sync::RwLock::new(referables));
+                let schema_view = match kind {
+                    CompositeKind::One => SchemaView::OneOf(tombi_schema_store::OneOfSchema {
+                        schemas,
+                        ..Default::default()
+                    }),
+                    CompositeKind::Any => SchemaView::AnyOf(tombi_schema_store::AnyOfSchema {
+                        schemas,
+                        ..Default::default()
+                    }),
+                    CompositeKind::All => SchemaView::AllOf(tombi_schema_store::AllOfSchema {
+                        schemas,
+                        ..Default::default()
+                    }),
+                };
+                Some(CurrentSchema {
+                    schema_view: Arc::new(schema_view),
+                    semantic_schema,
+                    schema_uri: current_schema.schema_uri,
+                    definitions: current_schema.definitions,
+                    strict: current_schema.strict,
+                })
+            }
+        }
     }
     .boxed()
 }

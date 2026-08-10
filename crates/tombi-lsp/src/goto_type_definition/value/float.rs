@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use tombi_comment_directive::value::{FloatCommonFormatRules, FloatCommonLintRules};
 use tombi_future::Boxable;
-use tombi_schema_store::ValueSchema;
+use tombi_schema_store::SchemaView;
 
 use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
@@ -44,8 +44,8 @@ impl GetTypeDefinition for tombi_document_tree::Float {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::Float(float_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::Float(float_schema) => {
                         let base_type_definition = float_schema
                             .get_type_definition(
                                 position,
@@ -70,7 +70,7 @@ impl GetTypeDefinition for tombi_document_tree::Float {
                         .await
                         .or(base_type_definition)
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         get_one_of_type_definition(
                             self,
                             position,
@@ -84,7 +84,7 @@ impl GetTypeDefinition for tombi_document_tree::Float {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         get_any_of_type_definition(
                             self,
                             position,
@@ -98,7 +98,7 @@ impl GetTypeDefinition for tombi_document_tree::Float {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         get_all_of_type_definition(
                             self,
                             position,
@@ -139,7 +139,7 @@ impl GetTypeDefinition for tombi_schema_store::FloatSchema {
                 TypeDefinition {
                     schema_uri,
                     schema_accessors: accessors.iter().map(Into::into).collect_vec(),
-                    range: schema.value_schema.range(),
+                    range: schema.schema_view.range(),
                 }
             })
         }

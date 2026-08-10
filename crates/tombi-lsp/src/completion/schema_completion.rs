@@ -1,8 +1,10 @@
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, CurrentSchema, ValueSchema};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaView};
+use tombi_x_keyword::StringFormat;
 
 use super::{
     CompletionContent, CompletionHint, FindCompletionContents,
+    merge_adjacent_schema_completion_items, tombi_json_value_to_completion_enum_item,
     value::{
         find_all_of_completion_items, find_any_of_completion_items, find_one_of_completion_items,
     },
@@ -11,6 +13,41 @@ use super::{
 /// A tag data that indicates that only schema information is used for completion.
 #[derive(Debug)]
 pub struct SchemaCompletion;
+
+#[derive(Debug, Clone, Copy)]
+pub struct InstanceSchemaCompletion(pub tombi_schema_store::SchemaType);
+
+impl FindCompletionContents for InstanceSchemaCompletion {
+    fn find_completion_contents<'a: 'b, 'b>(
+        &'a self,
+        position: tombi_text::Position,
+        keys: &'a [tombi_document_tree::Key],
+        accessors: &'a [Accessor],
+        current_schema: Option<&'a CurrentSchema<'a>>,
+        schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+        completion_hint: Option<CompletionHint>,
+    ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
+        async move {
+            let Some(mut projected_schema) = current_schema.and_then(|schema| {
+                schema.for_instance_type(self.0, schema_context.string_formats())
+            }) else {
+                return Vec::new();
+            };
+            projected_schema.semantic_schema = None;
+            SchemaCompletion
+                .find_completion_contents(
+                    position,
+                    keys,
+                    accessors,
+                    Some(&projected_schema),
+                    schema_context,
+                    completion_hint,
+                )
+                .await
+        }
+        .boxed()
+    }
+}
 
 impl FindCompletionContents for SchemaCompletion {
     fn find_completion_contents<'a: 'b, 'b>(
@@ -32,8 +69,37 @@ impl FindCompletionContents for SchemaCompletion {
                 unreachable!("SchemaCompletion::find_completion_contents called without a schema");
             };
 
-            match current_schema.value_schema.as_ref() {
-                ValueSchema::Boolean(boolean_schema) => {
+            let has_toml_datetime_format = current_schema
+                .semantic_schema
+                .as_deref()
+                .and_then(|schema| schema.string_format())
+                .and_then(|format| format.parse::<StringFormat>().ok())
+                .is_some_and(|format| format.toml_date_time_type().is_some());
+            if !has_toml_datetime_format
+                && let Some(candidates) = current_schema
+                    .semantic_schema
+                    .as_deref()
+                    .and_then(|schema| schema.finite_literal_candidates())
+            {
+                let completion_items = candidates
+                    .iter()
+                    .filter_map(|value| {
+                        tombi_json_value_to_completion_enum_item(
+                            value,
+                            position,
+                            Some(current_schema.schema_uri.as_ref()),
+                            completion_hint,
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                return completion_items;
+            }
+
+            let projected_schema = current_schema.for_completion(schema_context.string_formats());
+            let current_schema = projected_schema.as_ref().unwrap_or(current_schema);
+
+            match current_schema.schema_view.as_ref() {
+                SchemaView::Boolean(boolean_schema) => {
                     boolean_schema
                         .find_completion_contents(
                             position,
@@ -45,7 +111,7 @@ impl FindCompletionContents for SchemaCompletion {
                         )
                         .await
                 }
-                ValueSchema::Integer(integer_schema) => {
+                SchemaView::Integer(integer_schema) => {
                     integer_schema
                         .find_completion_contents(
                             position,
@@ -57,7 +123,7 @@ impl FindCompletionContents for SchemaCompletion {
                         )
                         .await
                 }
-                ValueSchema::Float(float_schema) => {
+                SchemaView::Float(float_schema) => {
                     float_schema
                         .find_completion_contents(
                             position,
@@ -69,7 +135,7 @@ impl FindCompletionContents for SchemaCompletion {
                         )
                         .await
                 }
-                ValueSchema::String(string_schema) => {
+                SchemaView::String(string_schema) => {
                     string_schema
                         .find_completion_contents(
                             position,
@@ -81,7 +147,7 @@ impl FindCompletionContents for SchemaCompletion {
                         )
                         .await
                 }
-                ValueSchema::OffsetDateTime(offset_date_time_schema) => {
+                SchemaView::OffsetDateTime(offset_date_time_schema) => {
                     offset_date_time_schema
                         .find_completion_contents(
                             position,
@@ -93,7 +159,7 @@ impl FindCompletionContents for SchemaCompletion {
                         )
                         .await
                 }
-                ValueSchema::LocalDateTime(local_date_time_schema) => {
+                SchemaView::LocalDateTime(local_date_time_schema) => {
                     local_date_time_schema
                         .find_completion_contents(
                             position,
@@ -105,7 +171,7 @@ impl FindCompletionContents for SchemaCompletion {
                         )
                         .await
                 }
-                ValueSchema::LocalDate(local_date_schema) => {
+                SchemaView::LocalDate(local_date_schema) => {
                     local_date_schema
                         .find_completion_contents(
                             position,
@@ -117,7 +183,7 @@ impl FindCompletionContents for SchemaCompletion {
                         )
                         .await
                 }
-                ValueSchema::LocalTime(local_time_schema) => {
+                SchemaView::LocalTime(local_time_schema) => {
                     local_time_schema
                         .find_completion_contents(
                             position,
@@ -129,7 +195,7 @@ impl FindCompletionContents for SchemaCompletion {
                         )
                         .await
                 }
-                ValueSchema::Array(array_schema) => {
+                SchemaView::Array(array_schema) => {
                     array_schema
                         .find_completion_contents(
                             position,
@@ -141,8 +207,8 @@ impl FindCompletionContents for SchemaCompletion {
                         )
                         .await
                 }
-                ValueSchema::Table(table_schema) => {
-                    table_schema
+                SchemaView::Table(table_schema) => {
+                    let base_completion_items = table_schema
                         .find_completion_contents(
                             position,
                             keys,
@@ -151,9 +217,22 @@ impl FindCompletionContents for SchemaCompletion {
                             schema_context,
                             completion_hint,
                         )
-                        .await
+                        .await;
+                    merge_adjacent_schema_completion_items(
+                        position,
+                        keys,
+                        accessors,
+                        Some(current_schema),
+                        schema_context,
+                        completion_hint,
+                        base_completion_items,
+                        table_schema.one_of.as_deref(),
+                        table_schema.any_of.as_deref(),
+                        table_schema.all_of.as_deref(),
+                    )
+                    .await
                 }
-                ValueSchema::OneOf(one_of_schema) => {
+                SchemaView::OneOf(one_of_schema) => {
                     find_one_of_completion_items(
                         self,
                         position,
@@ -166,7 +245,7 @@ impl FindCompletionContents for SchemaCompletion {
                     )
                     .await
                 }
-                ValueSchema::AnyOf(any_of_schema) => {
+                SchemaView::AnyOf(any_of_schema) => {
                     find_any_of_completion_items(
                         self,
                         position,
@@ -179,7 +258,7 @@ impl FindCompletionContents for SchemaCompletion {
                     )
                     .await
                 }
-                ValueSchema::AllOf(all_of_schema) => {
+                SchemaView::AllOf(all_of_schema) => {
                     find_all_of_completion_items(
                         self,
                         position,
@@ -192,9 +271,7 @@ impl FindCompletionContents for SchemaCompletion {
                     )
                     .await
                 }
-                ValueSchema::Anything(_) | ValueSchema::Nothing(_) | ValueSchema::Null => {
-                    Vec::new()
-                }
+                SchemaView::Anything(_) | SchemaView::Nothing(_) | SchemaView::Null => Vec::new(),
             }
         }
         .boxed()
@@ -202,6 +279,20 @@ impl FindCompletionContents for SchemaCompletion {
 }
 
 impl tombi_validator::Validate for SchemaCompletion {
+    fn validate<'a: 'b, 'b>(
+        &'a self,
+        _accessors: &'a [tombi_schema_store::Accessor],
+        _current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
+        _schema_context: &'a tombi_schema_store::SchemaContext,
+    ) -> tombi_future::BoxFuture<
+        'b,
+        Result<tombi_validator::EvaluatedLocations, tombi_validator::Error>,
+    > {
+        async move { Ok(tombi_validator::EvaluatedLocations::new()) }.boxed()
+    }
+}
+
+impl tombi_validator::Validate for InstanceSchemaCompletion {
     fn validate<'a: 'b, 'b>(
         &'a self,
         _accessors: &'a [tombi_schema_store::Accessor],

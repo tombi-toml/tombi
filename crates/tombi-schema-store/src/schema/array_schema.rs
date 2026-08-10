@@ -10,7 +10,7 @@ use tombi_x_keyword::{
 use super::{
     AllOfSchema, AnchorCollector, AnyOfSchema, CurrentSchema, DynamicAnchorCollector,
     FindSchemaCandidates, NotSchema, OneOfSchema, SchemaDefinitions, SchemaItem, SchemaUri,
-    ValueSchema, schema_item_from_schema_value,
+    SchemaView, schema_item_from_schema_value,
 };
 use crate::{Accessor, SchemaStore, schema::if_then_else_schema::IfThenElseSchema};
 
@@ -235,7 +235,7 @@ impl FindSchemaCandidates for ArraySchema {
         definitions: &'a SchemaDefinitions,
         strict: Option<BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
-    ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
+    ) -> BoxFuture<'b, (Vec<SchemaView>, Vec<crate::Error>)> {
         async move {
             let mut errors = Vec::new();
             let mut candidates = Vec::new();
@@ -246,9 +246,10 @@ impl FindSchemaCandidates for ArraySchema {
 
             if let Ok(Some(CurrentSchema {
                 schema_uri,
-                value_schema,
+                schema_view,
                 definitions,
                 strict,
+                ..
             })) = crate::resolve_schema_item(
                 items,
                 Cow::Borrowed(schema_uri),
@@ -259,7 +260,7 @@ impl FindSchemaCandidates for ArraySchema {
             .await
             .inspect_err(|err| log::warn!("{err}"))
             {
-                let (mut item_candidates, mut item_errors) = value_schema
+                let (mut item_candidates, mut item_errors) = schema_view
                     .find_schema_candidates(
                         &accessors[1..],
                         &schema_uri,

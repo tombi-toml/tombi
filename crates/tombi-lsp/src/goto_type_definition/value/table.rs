@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, TableSchema, ValueSchema};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, SchemaView, TableSchema};
 
 use crate::{
     comment_directive::get_table_comment_directive_content_with_schema_uri,
@@ -56,8 +56,8 @@ impl GetTypeDefinition for tombi_document_tree::Table {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::Table(table_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::Table(table_schema) => {
                         if let Some(key) = keys.first() {
                             if let Some(value) = self.get(key) {
                                 let accessor = Accessor::Key(key.value.clone());
@@ -356,7 +356,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                             None
                         }
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         get_one_of_type_definition(
                             self,
                             position,
@@ -370,7 +370,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         get_any_of_type_definition(
                             self,
                             position,
@@ -384,7 +384,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         get_all_of_type_definition(
                             self,
                             position,
@@ -448,7 +448,7 @@ impl GetTypeDefinition for TableSchema {
                 TypeDefinition {
                     schema_uri,
                     schema_accessors: accessors.iter().map(Into::into).collect_vec(),
-                    range: schema.value_schema.range(),
+                    range: schema.schema_view.range(),
                 }
             })
         }

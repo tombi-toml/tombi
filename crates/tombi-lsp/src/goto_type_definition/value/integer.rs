@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use tombi_comment_directive::value::{IntegerCommonFormatRules, IntegerCommonLintRules};
 use tombi_future::Boxable;
-use tombi_schema_store::ValueSchema;
+use tombi_schema_store::SchemaView;
 
 use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
@@ -44,8 +44,8 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::Integer(integer_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::Integer(integer_schema) => {
                         if let Some(r#enum) = &integer_schema.r#enum
                             && !r#enum.contains(&self.value())
                         {
@@ -76,7 +76,7 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
                         .await
                         .or(base_type_definition)
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         get_one_of_type_definition(
                             self,
                             position,
@@ -90,7 +90,7 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         get_any_of_type_definition(
                             self,
                             position,
@@ -104,7 +104,7 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         get_all_of_type_definition(
                             self,
                             position,
@@ -145,7 +145,7 @@ impl GetTypeDefinition for tombi_schema_store::IntegerSchema {
                 TypeDefinition {
                     schema_uri,
                     schema_accessors: accessors.iter().map(Into::into).collect_vec(),
-                    range: schema.value_schema.range(),
+                    range: schema.schema_view.range(),
                 }
             })
         }

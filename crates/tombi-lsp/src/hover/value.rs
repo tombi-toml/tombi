@@ -10,7 +10,7 @@ mod string;
 mod table;
 
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, CurrentSchema, ValueSchema};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaType, SchemaView};
 
 use crate::HoverContent;
 
@@ -45,6 +45,38 @@ impl GetHoverContent for tombi_document_tree::Value {
                     )
                     .await;
             }
+
+            let instance_type = match self {
+                Self::Boolean(_) => Some(SchemaType::Boolean),
+                Self::Integer(_) => Some(SchemaType::Integer),
+                Self::Float(_) => Some(SchemaType::Number),
+                Self::String(_)
+                | Self::OffsetDateTime(_)
+                | Self::LocalDateTime(_)
+                | Self::LocalDate(_)
+                | Self::LocalTime(_) => Some(SchemaType::String),
+                Self::Array(_) => Some(SchemaType::Array),
+                Self::Table(_) => Some(SchemaType::Object),
+                Self::Incomplete { .. } => None,
+            };
+            let projected_schema = current_schema.and_then(|schema| {
+                instance_type.and_then(|instance_type| {
+                    schema.for_instance_type(instance_type, schema_context.string_formats())
+                })
+            });
+            let current_schema = match current_schema {
+                Some(schema)
+                    if schema.semantic_schema.is_some()
+                        && instance_type.is_some()
+                        && !schema
+                            .semantic_schema
+                            .as_deref()
+                            .is_some_and(|semantic| semantic.has_applicators()) =>
+                {
+                    projected_schema.as_ref()
+                }
+                schema => schema,
+            };
 
             match self {
                 Self::Boolean(boolean) => {
@@ -160,7 +192,7 @@ impl GetHoverContent for tombi_document_tree::Value {
                 Self::Incomplete { range } => match current_schema {
                     Some(current_schema) => {
                         let mut hover_content = current_schema
-                            .value_schema
+                            .schema_view
                             .get_hover_content(
                                 position,
                                 keys,
@@ -186,7 +218,7 @@ impl GetHoverContent for tombi_document_tree::Value {
     }
 }
 
-impl GetHoverContent for ValueSchema {
+impl GetHoverContent for SchemaView {
     fn get_hover_content<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,

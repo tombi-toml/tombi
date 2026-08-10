@@ -1,5 +1,5 @@
 use tombi_comment_directive::value::{LocalTimeCommonFormatRules, LocalTimeCommonLintRules};
-use tombi_schema_store::{Accessor, CurrentSchema, LocalTimeSchema, ValueSchema};
+use tombi_schema_store::{Accessor, CurrentSchema, LocalTimeSchema, SchemaView};
 use tombi_x_keyword::StringFormat;
 
 use crate::{
@@ -41,8 +41,8 @@ impl GetHoverContent for tombi_document_tree::LocalTime {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::LocalTime(local_time_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::LocalTime(local_time_schema) => {
                         let mut hover_content = local_time_schema
                             .get_hover_content(
                                 position,
@@ -73,7 +73,7 @@ impl GetHoverContent for tombi_document_tree::LocalTime {
                         )
                         .await
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         get_one_of_hover_content(
                             self,
                             position,
@@ -87,7 +87,7 @@ impl GetHoverContent for tombi_document_tree::LocalTime {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         get_any_of_hover_content(
                             self,
                             position,
@@ -101,7 +101,7 @@ impl GetHoverContent for tombi_document_tree::LocalTime {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         get_all_of_hover_content(
                             self,
                             position,

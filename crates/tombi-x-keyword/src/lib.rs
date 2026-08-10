@@ -140,95 +140,163 @@ impl<'a> TryFrom<&'a str> for TableKeysOrderGroupKind {
     }
 }
 
+/// The TOML value type represented by a supported string format.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum StringFormat {
-    /// [RFC 5322](https://datatracker.ietf.org/doc/html/rfc5322)
-    Email,
-
-    /// [RFC 1034](https://datatracker.ietf.org/doc/html/rfc1034)
-    Hostname,
-
-    /// [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)
-    Uri,
-
-    /// [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)
-    UriReference,
-
-    /// [RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122)
-    Uuid,
-
-    /// [RFC 2673 §3.2](https://datatracker.ietf.org/doc/html/rfc2673#section-3.2)
-    Ipv4,
-
-    /// [RFC 4291 §2.2](https://datatracker.ietf.org/doc/html/rfc4291#section-2.2)
-    Ipv6,
-
-    /// [RFC 3339 §5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6)
-    DateTime,
-
-    /// [OpenAPI Format Registry](https://spec.openapis.org/registry/format/date-time-local.html)
-    DateTimeLocal,
-
-    /// [RFC 3339 §5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) full-date
-    Date,
-
-    /// [RFC 3339 §5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) full-time
-    Time,
-
-    /// [OpenAPI Format Registry](https://spec.openapis.org/registry/format/time-local.html)
-    TimeLocal,
-
-    /// [ECMA-262](https://262.ecma-international.org/)
-    Regex,
-
-    /// [RFC 6901](https://datatracker.ietf.org/doc/html/rfc6901)
-    JsonPointer,
+pub enum TomlDateTimeType {
+    OffsetDateTime,
+    LocalDateTime,
+    LocalDate,
+    LocalTime,
 }
 
-impl std::fmt::Display for StringFormat {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Email => write!(f, "email"),
-            Self::Hostname => write!(f, "hostname"),
-            Self::Uri => write!(f, "uri"),
-            Self::UriReference => write!(f, "uri-reference"),
-            Self::Uuid => write!(f, "uuid"),
-            Self::Ipv4 => write!(f, "ipv4"),
-            Self::Ipv6 => write!(f, "ipv6"),
-            Self::DateTime => write!(f, "date-time"),
-            Self::DateTimeLocal => write!(f, "date-time-local"),
-            Self::Date => write!(f, "date"),
-            Self::Time => write!(f, "time"),
-            Self::TimeLocal => write!(f, "time-local"),
-            Self::Regex => write!(f, "regex"),
-            Self::JsonPointer => write!(f, "json-pointer"),
+macro_rules! define_string_formats {
+    (
+        $(
+            $(#[$meta:meta])*
+            $variant:ident => {
+                name: $name:literal,
+                aliases: [$($alias:literal),* $(,)?],
+                toml_date_time_type: $toml_date_time_type:tt $(,)?
+            }
+        ),* $(,)?
+    ) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+        #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+        #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+        pub enum StringFormat {
+            $($(#[$meta])* $variant),*
+        }
+
+        impl StringFormat {
+            /// All string formats recognized by Tombi, excluding aliases.
+            pub const ALL: &'static [Self] = &[$(Self::$variant),*];
+
+            /// The canonical JSON Schema format name.
+            pub const fn as_str(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $name),*
+                }
+            }
+
+            /// Non-canonical names accepted for compatibility.
+            pub const fn aliases(self) -> &'static [&'static str] {
+                match self {
+                    $(Self::$variant => &[$($alias),*]),*
+                }
+            }
+
+            /// The TOML date/time value type represented by this format, if any.
+            pub const fn toml_date_time_type(self) -> Option<TomlDateTimeType> {
+                match self {
+                    $(Self::$variant => define_string_formats!(@toml_date_time_type $toml_date_time_type)),*
+                }
+            }
+        }
+
+        impl std::fmt::Display for StringFormat {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str(self.as_str())
+            }
+        }
+
+        impl FromStr for StringFormat {
+            type Err = ();
+
+            fn from_str(value: &str) -> Result<Self, Self::Err> {
+                match value {
+                    $($name $(| $alias)* => Ok(Self::$variant)),*,
+                    _ => Err(()),
+                }
+            }
+        }
+    };
+    (@toml_date_time_type None) => { None };
+    (@toml_date_time_type $variant:ident) => { Some(TomlDateTimeType::$variant) };
+}
+
+define_string_formats! {
+    /// [RFC 5322](https://datatracker.ietf.org/doc/html/rfc5322)
+    Email => { name: "email", aliases: [], toml_date_time_type: None },
+    /// [RFC 1034](https://datatracker.ietf.org/doc/html/rfc1034)
+    Hostname => { name: "hostname", aliases: [], toml_date_time_type: None },
+    /// [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)
+    Uri => { name: "uri", aliases: [], toml_date_time_type: None },
+    /// [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)
+    UriReference => { name: "uri-reference", aliases: [], toml_date_time_type: None },
+    /// [RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122)
+    Uuid => { name: "uuid", aliases: [], toml_date_time_type: None },
+    /// [RFC 2673 §3.2](https://datatracker.ietf.org/doc/html/rfc2673#section-3.2)
+    Ipv4 => { name: "ipv4", aliases: [], toml_date_time_type: None },
+    /// [RFC 4291 §2.2](https://datatracker.ietf.org/doc/html/rfc4291#section-2.2)
+    Ipv6 => { name: "ipv6", aliases: [], toml_date_time_type: None },
+    /// [RFC 3339 §5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6)
+    DateTime => {
+        name: "date-time",
+        aliases: [],
+        toml_date_time_type: OffsetDateTime,
+    },
+    /// [OpenAPI Format Registry](https://spec.openapis.org/registry/format/date-time-local.html)
+    DateTimeLocal => {
+        name: "date-time-local",
+        aliases: ["partial-date-time"],
+        toml_date_time_type: LocalDateTime,
+    },
+    /// [RFC 3339 §5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) full-date
+    Date => { name: "date", aliases: [], toml_date_time_type: LocalDate },
+    /// [RFC 3339 §5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) full-time
+    Time => { name: "time", aliases: [], toml_date_time_type: None },
+    /// [OpenAPI Format Registry](https://spec.openapis.org/registry/format/time-local.html)
+    TimeLocal => {
+        name: "time-local",
+        aliases: ["partial-time"],
+        toml_date_time_type: LocalTime,
+    },
+    /// [ECMA-262](https://262.ecma-international.org/)
+    Regex => { name: "regex", aliases: [], toml_date_time_type: None },
+    /// [RFC 6901](https://datatracker.ietf.org/doc/html/rfc6901)
+    JsonPointer => { name: "json-pointer", aliases: [], toml_date_time_type: None },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{StringFormat, TomlDateTimeType};
+
+    #[test]
+    fn string_format_names_round_trip() {
+        for format in StringFormat::ALL {
+            assert_eq!(format.as_str().parse(), Ok(*format));
+            assert_eq!(format.to_string(), format.as_str());
         }
     }
-}
 
-impl FromStr for StringFormat {
-    type Err = ();
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        match value {
-            "email" => Ok(Self::Email),
-            "hostname" => Ok(Self::Hostname),
-            "uri" => Ok(Self::Uri),
-            "uri-reference" => Ok(Self::UriReference),
-            "uuid" => Ok(Self::Uuid),
-            "ipv4" => Ok(Self::Ipv4),
-            "ipv6" => Ok(Self::Ipv6),
-            "date-time" => Ok(Self::DateTime),
-            "date-time-local" | "partial-date-time" => Ok(Self::DateTimeLocal),
-            "date" => Ok(Self::Date),
-            "time" => Ok(Self::Time),
-            "time-local" | "partial-time" => Ok(Self::TimeLocal),
-            "regex" => Ok(Self::Regex),
-            "json-pointer" => Ok(Self::JsonPointer),
-            _ => Err(()),
+    #[test]
+    fn string_format_aliases_resolve_to_their_canonical_format() {
+        for format in StringFormat::ALL {
+            for alias in format.aliases() {
+                assert_eq!(alias.parse(), Ok(*format));
+            }
         }
+    }
+
+    #[test]
+    fn toml_date_time_formats_are_classified_centrally() {
+        assert_eq!(
+            StringFormat::DateTime.toml_date_time_type(),
+            Some(TomlDateTimeType::OffsetDateTime)
+        );
+        assert_eq!(
+            StringFormat::DateTimeLocal.toml_date_time_type(),
+            Some(TomlDateTimeType::LocalDateTime)
+        );
+        assert_eq!(
+            StringFormat::Date.toml_date_time_type(),
+            Some(TomlDateTimeType::LocalDate)
+        );
+        assert_eq!(
+            StringFormat::TimeLocal.toml_date_time_type(),
+            Some(TomlDateTimeType::LocalTime)
+        );
+        assert_eq!(StringFormat::Time.toml_date_time_type(), None);
     }
 }

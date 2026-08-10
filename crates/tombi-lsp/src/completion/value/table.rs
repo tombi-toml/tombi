@@ -5,7 +5,7 @@ use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, CurrentSchema, FindSchemaCandidates, PatternAccessor, Referable, SchemaAccessor,
-    SchemaStore, TableSchema, ValueSchema, is_online_url,
+    SchemaStore, SchemaView, TableSchema, is_online_url,
 };
 
 use crate::{
@@ -97,8 +97,8 @@ impl FindCompletionContents for tombi_document_tree::Table {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::Table(table_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::Table(table_schema) => {
                         let mut completion_contents = Vec::new();
 
                         if let Some(key) = keys.first() {
@@ -149,7 +149,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     {
                                         log::trace!(
                                             "property_schema = {:?}",
-                                            current_schema.value_schema
+                                            current_schema.schema_view
                                         );
 
                                         let mut contents = value
@@ -169,7 +169,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
                                         if !contents.is_empty()
                                             && current_schema
-                                                .value_schema
+                                                .schema_view
                                                 .deprecation()
                                                 .await
                                                 .is_some()
@@ -245,7 +245,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             {
                                                 log::trace!(
                                                     "property_schema = {:?}",
-                                                    current_schema.value_schema
+                                                    current_schema.schema_view
                                                 );
 
                                                 let Some(mut contents) =
@@ -267,7 +267,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
                                                 if !contents.is_empty()
                                                     && current_schema
-                                                        .value_schema
+                                                        .schema_view
                                                         .deprecation()
                                                         .await
                                                         .is_some()
@@ -308,7 +308,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         if pattern.is_match(accessor_str) {
                                             log::trace!(
                                                 "pattern_property_schema = {:?}",
-                                                current_schema.value_schema
+                                                current_schema.schema_view
                                             );
                                             if let Ok(Some(current_schema)) = table_schema
                                                 .resolve_pattern_property_schema(
@@ -335,7 +335,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
                                                 if !contents.is_empty()
                                                     && current_schema
-                                                        .value_schema
+                                                        .schema_view
                                                         .deprecation()
                                                         .await
                                                         .is_some()
@@ -385,7 +385,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
                                         if !contents.is_empty()
                                             && current_schema
-                                                .value_schema
+                                                .schema_view
                                                 .deprecation()
                                                 .await
                                                 .is_some()
@@ -474,7 +474,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     .await;
 
                                     if !contents.is_empty()
-                                        && current_schema.value_schema.deprecation().await.is_some()
+                                        && current_schema.schema_view.deprecation().await.is_some()
                                     {
                                         for content in &mut contents {
                                             if !content.in_comment {
@@ -660,12 +660,11 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         else {
                                             continue;
                                         };
-                                        let Some(value_schema) = &document_schema.value_schema
-                                        else {
+                                        let Some(schema_view) = &document_schema.schema_view else {
                                             continue;
                                         };
 
-                                        let (schema_candidates, errors) = value_schema
+                                        let (schema_candidates, errors) = schema_view
                                             .find_schema_candidates(
                                                 accessors,
                                                 &document_schema.schema_uri,
@@ -683,7 +682,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             last_key,
                                             position,
                                             current_editing_key_range(keys, position),
-                                            value_schema
+                                            schema_view
                                                 .detail(
                                                     &current_schema.schema_uri,
                                                     &current_schema.definitions,
@@ -692,7 +691,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                     completion_hint,
                                                 )
                                                 .await,
-                                            value_schema
+                                            schema_view
                                                 .documentation(
                                                     &current_schema.schema_uri,
                                                     &current_schema.definitions,
@@ -703,7 +702,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 .await,
                                             None,
                                             Some(current_schema.schema_uri.as_ref()),
-                                            value_schema.deprecation().await.map(|_| true),
+                                            schema_view.deprecation().await.map(|_| true),
                                             completion_hint,
                                             key_singleton_literal_label(&schema_candidates),
                                         ));
@@ -728,7 +727,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                             } else if let Some((_, additional_property_schema)) =
                                 &table_schema.additional_property_schema
                                 && let Ok(Some(CurrentSchema {
-                                    value_schema,
+                                    schema_view,
                                     schema_uri,
                                     ..
                                 })) = tombi_schema_store::resolve_schema_item(
@@ -744,7 +743,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     table_schema.additional_key_label.as_deref(),
                                     position,
                                     Some(schema_uri.as_ref()),
-                                    value_schema.deprecation().await.map(|_| true),
+                                    schema_view.deprecation().await.map(|_| true),
                                     completion_hint,
                                 ));
                             }
@@ -772,6 +771,24 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 )
                                 .await;
                                 completion_contents.extend(completion_items);
+
+                                let projected_items = super::all_of::find_all_of_completion_items(
+                                    &crate::completion::schema_completion::InstanceSchemaCompletion(
+                                        tombi_schema_store::SchemaType::Object,
+                                    ),
+                                    position,
+                                    keys,
+                                    accessors,
+                                    all_of_schema,
+                                    current_schema,
+                                    schema_context,
+                                    completion_hint,
+                                )
+                                .await
+                                .into_iter()
+                                .filter(|item| item.label != "{}")
+                                .collect_vec();
+                                completion_contents.extend(projected_items);
                             }
 
                             if completion_contents.is_empty() {
@@ -813,7 +830,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                         }
                         crate::completion::dedup_completion_contents(completion_contents)
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         find_one_of_completion_items(
                             self,
                             position,
@@ -826,7 +843,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         find_any_of_completion_items(
                             self,
                             position,
@@ -839,7 +856,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         find_all_of_completion_items(
                             self,
                             position,
@@ -930,7 +947,7 @@ impl FindCompletionContents for TableSchema {
                 };
 
                 let (schema_candidates, errors) = current_schema
-                    .value_schema
+                    .schema_view
                     .find_schema_candidates(
                         accessors,
                         &current_schema.schema_uri,
@@ -977,11 +994,7 @@ impl FindCompletionContents for TableSchema {
                             .await,
                         self.required.as_ref(),
                         Some(current_schema.schema_uri.as_ref()),
-                        current_schema
-                            .value_schema
-                            .deprecation()
-                            .await
-                            .map(|_| true),
+                        current_schema.schema_view.deprecation().await.map(|_| true),
                         completion_hint,
                         singleton_value_label.clone(),
                     ));
@@ -1006,9 +1019,9 @@ async fn count_table_or_array_schema(
 ) -> usize {
     join_all(
         current_schema
-            .value_schema
+            .schema_view
             .match_flattened_schemas(
-                &|schema| matches!(schema, ValueSchema::Table(_) | ValueSchema::Array(_)),
+                &|schema| matches!(schema, SchemaView::Table(_) | SchemaView::Array(_)),
                 &current_schema.schema_uri,
                 &current_schema.definitions,
                 current_schema.strict,
@@ -1018,13 +1031,14 @@ async fn count_table_or_array_schema(
             .into_iter()
             .map(|schema| async {
                 match schema {
-                    ValueSchema::Array(array_schema) => {
+                    SchemaView::Array(array_schema) => {
                         if let Some(item) = array_schema.items
                             && let Ok(Some(CurrentSchema {
                                 schema_uri,
-                                value_schema,
+                                schema_view,
                                 definitions,
                                 strict,
+                                ..
                             })) = tombi_schema_store::resolve_schema_item(
                                 &item,
                                 Cow::Borrowed(&current_schema.schema_uri),
@@ -1034,9 +1048,9 @@ async fn count_table_or_array_schema(
                             )
                             .await
                         {
-                            return value_schema
+                            return schema_view
                                 .is_match(
-                                    &|schema| matches!(schema, ValueSchema::Table(_)),
+                                    &|schema| matches!(schema, SchemaView::Table(_)),
                                     &schema_uri,
                                     &definitions,
                                     strict,
@@ -1046,7 +1060,7 @@ async fn count_table_or_array_schema(
                         }
                         true
                     }
-                    ValueSchema::Table(_) => true,
+                    SchemaView::Table(_) => true,
                     _ => unreachable!("only table and array are allowed"),
                 }
             }),
@@ -1225,7 +1239,7 @@ fn table_schema_has_remaining_key_completion<'a>(
             };
 
             let (schema_candidates, errors) = current_schema
-                .value_schema
+                .schema_view
                 .find_schema_candidates(
                     &[],
                     &current_schema.schema_uri,
@@ -1243,7 +1257,7 @@ fn table_schema_has_remaining_key_completion<'a>(
             }
 
             for schema_candidate in schema_candidates {
-                if let ValueSchema::Table(nested_table_schema) = schema_candidate
+                if let SchemaView::Table(nested_table_schema) = schema_candidate
                     && table_schema_has_remaining_key_completion(
                         table,
                         &nested_table_schema,
@@ -1279,7 +1293,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
         let mut completion_contents = Vec::new();
 
         let (schema_candidates, errors) = current_schema
-            .value_schema
+            .schema_view
             .find_schema_candidates(
                 accessors,
                 &current_schema.schema_uri,
@@ -1296,21 +1310,21 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
         let singleton_value_label = key_singleton_literal_label(&schema_candidates);
         for schema_candidate in schema_candidates {
             match &schema_candidate {
-                ValueSchema::Boolean(_)
-                | ValueSchema::Integer(_)
-                | ValueSchema::Float(_)
-                | ValueSchema::String(_)
-                | ValueSchema::OffsetDateTime(_)
-                | ValueSchema::LocalDateTime(_)
-                | ValueSchema::LocalDate(_)
-                | ValueSchema::LocalTime(_) => {
+                SchemaView::Boolean(_)
+                | SchemaView::Integer(_)
+                | SchemaView::Float(_)
+                | SchemaView::String(_)
+                | SchemaView::OffsetDateTime(_)
+                | SchemaView::LocalDateTime(_)
+                | SchemaView::LocalDate(_)
+                | SchemaView::LocalTime(_) => {
                     if matches!(completion_hint, Some(CompletionHint::InTableHeader))
                         || table.contains_key(key_name)
                     {
                         return None;
                     }
                 }
-                ValueSchema::Array(_) => {
+                SchemaView::Array(_) => {
                     if matches!(completion_hint, Some(CompletionHint::InTableHeader))
                         && count_table_or_array_schema(current_schema, schema_context.store).await
                             == 0
@@ -1318,7 +1332,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                         return None;
                     }
                 }
-                ValueSchema::Table(table_schema) => {
+                SchemaView::Table(table_schema) => {
                     if matches!(completion_hint, Some(CompletionHint::InTableHeader))
                         && count_table_or_array_schema(current_schema, schema_context.store).await
                             == 0
@@ -1339,9 +1353,9 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                         return None;
                     }
                 }
-                ValueSchema::Anything(_) => {}
-                ValueSchema::Nothing(_) | ValueSchema::Null => continue,
-                ValueSchema::OneOf(_) | ValueSchema::AnyOf(_) | ValueSchema::AllOf(_) => {
+                SchemaView::Anything(_) => {}
+                SchemaView::Nothing(_) | SchemaView::Null => continue,
+                SchemaView::OneOf(_) | SchemaView::AnyOf(_) | SchemaView::AllOf(_) => {
                     unreachable!("OneOf, AnyOf, and AllOf are not allowed in flattened schema");
                 }
             }
@@ -1370,11 +1384,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                     .await,
                 table_schema.required.as_ref(),
                 Some(&current_schema.schema_uri),
-                current_schema
-                    .value_schema
-                    .deprecation()
-                    .await
-                    .map(|_| true),
+                current_schema.schema_view.deprecation().await.map(|_| true),
                 completion_hint,
                 singleton_value_label.clone(),
             ));
@@ -1385,7 +1395,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
     .boxed()
 }
 
-fn key_singleton_literal_label(schema_candidates: &[ValueSchema]) -> Option<String> {
+fn key_singleton_literal_label(schema_candidates: &[SchemaView]) -> Option<String> {
     let labels = schema_candidates
         .iter()
         .map(|schema_candidate| {
@@ -1408,36 +1418,36 @@ fn key_singleton_literal_label(schema_candidates: &[ValueSchema]) -> Option<Stri
             }
 
             match schema_candidate {
-                ValueSchema::String(schema) => {
+                SchemaView::String(schema) => {
                     singleton_label(&schema.const_value, &schema.r#enum, |v| format!("\"{v}\""))
                 }
-                ValueSchema::Boolean(schema) => {
+                SchemaView::Boolean(schema) => {
                     singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
                 }
-                ValueSchema::Integer(schema) => {
+                SchemaView::Integer(schema) => {
                     singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
                 }
-                ValueSchema::Float(schema) => {
+                SchemaView::Float(schema) => {
                     singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
                 }
-                ValueSchema::LocalDate(schema) => {
+                SchemaView::LocalDate(schema) => {
                     singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
                 }
-                ValueSchema::LocalDateTime(schema) => {
+                SchemaView::LocalDateTime(schema) => {
                     singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
                 }
-                ValueSchema::OffsetDateTime(schema) => {
+                SchemaView::OffsetDateTime(schema) => {
                     singleton_label(&schema.const_value, &schema.r#enum, |v| v.to_string())
                 }
-                ValueSchema::LocalTime(_)
-                | ValueSchema::Array(_)
-                | ValueSchema::Table(_)
-                | ValueSchema::OneOf(_)
-                | ValueSchema::AnyOf(_)
-                | ValueSchema::AllOf(_)
-                | ValueSchema::Null
-                | ValueSchema::Anything(_)
-                | ValueSchema::Nothing(_) => None,
+                SchemaView::LocalTime(_)
+                | SchemaView::Array(_)
+                | SchemaView::Table(_)
+                | SchemaView::OneOf(_)
+                | SchemaView::AnyOf(_)
+                | SchemaView::AllOf(_)
+                | SchemaView::Null
+                | SchemaView::Anything(_)
+                | SchemaView::Nothing(_) => None,
             }
         })
         .collect_vec();

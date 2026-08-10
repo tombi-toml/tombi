@@ -2,7 +2,7 @@ use itertools::Itertools;
 use tombi_document_tree::{ArrayKind, LiteralValueRef};
 use tombi_extension::{AddLeadingComma, AddTrailingComma, CompletionKind};
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, SchemaUri, ValueSchema};
+use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, SchemaUri, SchemaView};
 
 use super::{
     CompletionHint, FindCompletionContents, all_of::find_all_of_completion_items,
@@ -70,8 +70,8 @@ impl FindCompletionContents for tombi_document_tree::Array {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::Array(array_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::Array(array_schema) => {
                         let mut new_item_index = 0;
                         let mut new_item_start_position = None;
                         for (index, value) in self.values().iter().enumerate() {
@@ -307,7 +307,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
 
                         Vec::new()
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         find_one_of_completion_items(
                             self,
                             position,
@@ -320,7 +320,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         find_any_of_completion_items(
                             self,
                             position,
@@ -333,7 +333,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         find_all_of_completion_items(
                             self,
                             position,

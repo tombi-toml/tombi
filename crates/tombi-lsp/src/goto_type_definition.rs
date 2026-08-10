@@ -65,7 +65,7 @@ pub async fn get_type_definition(
             current_schema,
         } => {
             current_schema
-                .value_schema
+                .schema_view
                 .get_type_definition(
                     position,
                     remaining_keys,

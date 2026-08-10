@@ -8,7 +8,7 @@ use crate::x_taplo::XTaplo;
 
 use super::{
     AnchorCollector, Deprecation, DynamicAnchorCollector, SchemaDefinitions, SchemaMap, SchemaUri,
-    ValueSchema, bool_value_schema,
+    SchemaView, bool_schema_view,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,10 +23,12 @@ pub enum Referable<T> {
     Resolved {
         schema_uri: Option<SchemaUri>,
         value: Arc<T>,
+        semantic_schema: Option<Arc<super::SemanticSchema>>,
     },
     Ref {
         reference: String,
         kind: ReferenceKind,
+        semantic_schema: Option<Arc<super::SemanticSchema>>,
         title: Option<String>,
         description: Option<String>,
         default: Option<tombi_json::Value>,
@@ -37,7 +39,10 @@ pub enum Referable<T> {
 
 #[derive(Clone)]
 pub struct CurrentSchema<'a> {
-    pub value_schema: Arc<ValueSchema>,
+    pub schema_view: Arc<SchemaView>,
+    /// Lossless JSON Schema representation and the source of truth.
+    /// `schema_view` is only a derived, instance-specific presentation view.
+    pub semantic_schema: Option<Arc<super::SemanticSchema>>,
     pub schema_uri: Cow<'a, SchemaUri>,
     pub definitions: Cow<'a, SchemaDefinitions>,
     /// strict setting on root-schema/sub-schema level.
@@ -47,18 +52,70 @@ pub struct CurrentSchema<'a> {
 impl<'a> CurrentSchema<'a> {
     pub fn into_owned(self) -> CurrentSchema<'static> {
         CurrentSchema {
-            value_schema: self.value_schema,
+            schema_view: self.schema_view,
+            semantic_schema: self.semantic_schema,
             schema_uri: Cow::Owned(self.schema_uri.into_owned()),
             definitions: Cow::Owned(self.definitions.into_owned()),
             strict: self.strict,
         }
+    }
+
+    /// Rebuilds this schema around a projected view, keeping the semantic
+    /// schema as the source of truth. `None` keeps the current view, which is
+    /// what a boolean `true` schema needs: it has no object payload to project,
+    /// and its existing Anything view already represents the admitted instance.
+    fn with_projected_view(
+        &self,
+        semantic_schema: &Arc<super::SemanticSchema>,
+        projected_view: Option<SchemaView>,
+    ) -> CurrentSchema<'static> {
+        CurrentSchema {
+            schema_view: projected_view
+                .map(Arc::new)
+                .unwrap_or_else(|| self.schema_view.clone()),
+            semantic_schema: Some(semantic_schema.clone()),
+            schema_uri: Cow::Owned(self.schema_uri.as_ref().clone()),
+            definitions: Cow::Owned(self.definitions.as_ref().clone()),
+            strict: self.strict,
+        }
+    }
+
+    /// Projects this schema for the concrete instance type being handled.
+    /// Keywords for other instance types remain semantically inert.
+    pub fn for_instance_type(
+        &self,
+        instance_type: super::SchemaType,
+        string_formats: Option<&[StringFormat]>,
+    ) -> Option<CurrentSchema<'static>> {
+        let semantic_schema = self.semantic_schema.as_ref()?;
+        if !semantic_schema.accepts_instance_type(instance_type) {
+            return None;
+        }
+        Some(self.with_projected_view(
+            semantic_schema,
+            semantic_schema.schema_view_for_type(instance_type, string_formats),
+        ))
+    }
+
+    pub fn for_completion(
+        &self,
+        string_formats: Option<&[StringFormat]>,
+    ) -> Option<CurrentSchema<'static>> {
+        let semantic_schema = self.semantic_schema.as_ref()?;
+        if semantic_schema.has_references() {
+            return Some(self.clone().into_owned());
+        }
+        Some(self.with_projected_view(
+            semantic_schema,
+            semantic_schema.completion_projection(string_formats),
+        ))
     }
 }
 
 impl std::fmt::Debug for CurrentSchema<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CurrentSchema")
-            .field("value_schema", &self.value_schema)
+            .field("schema_view", &self.schema_view)
             .field("schema_uri", &self.schema_uri.to_string())
             .finish()
     }
@@ -73,7 +130,7 @@ impl<T> Referable<T> {
     }
 }
 
-impl Referable<ValueSchema> {
+impl Referable<SchemaView> {
     pub fn new(
         object: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
@@ -113,6 +170,9 @@ impl Referable<ValueSchema> {
             Some(Referable::Ref {
                 reference: reference.to_string(),
                 kind,
+                semantic_schema: Some(Arc::new(super::SemanticSchema::from_object_node(
+                    object, dialect,
+                ))),
                 title: object
                     .get("title")
                     .and_then(|title| title.as_str().map(|s| s.to_string())),
@@ -127,16 +187,59 @@ impl Referable<ValueSchema> {
                 deprecation: Deprecation::new(object),
             })
         } else {
-            ValueSchema::new(
-                object,
-                string_formats,
-                dialect,
-                anchor_collector.as_deref_mut(),
-                dynamic_anchor_collector.as_deref_mut(),
-            )
-            .map(|value_schema| Referable::Resolved {
+            let semantic_schema = Some(Arc::new(super::SemanticSchema::from_object_node(
+                object, dialect,
+            )));
+            let schema_view = if semantic_schema
+                .as_deref()
+                .is_some_and(super::SemanticSchema::has_type_assertion)
+            {
+                semantic_schema.as_ref().and_then(|semantic_schema| {
+                    semantic_schema.completion_projection_with_collectors(
+                        string_formats,
+                        anchor_collector.as_deref_mut(),
+                        dynamic_anchor_collector.as_deref_mut(),
+                    )
+                })
+            } else if object.get("oneOf").is_some() {
+                Some(SchemaView::OneOf(super::OneOfSchema::new(
+                    object,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                )))
+            } else if object.get("anyOf").is_some() {
+                Some(SchemaView::AnyOf(super::AnyOfSchema::new(
+                    object,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                )))
+            } else if object.get("allOf").is_some() {
+                Some(SchemaView::AllOf(super::AllOfSchema::new(
+                    object,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                )))
+            } else {
+                Some(SchemaView::Anything(super::AnythingSchema {
+                    title: object
+                        .get("title")
+                        .and_then(|value| value.as_str().map(ToOwned::to_owned)),
+                    description: object
+                        .get("description")
+                        .and_then(|value| value.as_str().map(ToOwned::to_owned)),
+                    range: object.range,
+                }))
+            };
+            schema_view.map(|schema_view| Referable::Resolved {
                 schema_uri: None,
-                value: Arc::new(value_schema),
+                value: Arc::new(schema_view),
+                semantic_schema,
             })
         };
 
@@ -222,6 +325,7 @@ impl Referable<ValueSchema> {
                 Referable::Ref {
                     reference,
                     kind,
+                    semantic_schema: ref_semantic_schema,
                     title,
                     description,
                     default,
@@ -246,6 +350,7 @@ impl Referable<ValueSchema> {
                             )
                             .await?
                         {
+                            apply_ref_semantics(&mut referable_schema, ref_semantic_schema.clone());
                             apply_ref_annotations(
                                 &mut referable_schema,
                                 title.as_ref(),
@@ -275,6 +380,7 @@ impl Referable<ValueSchema> {
                         None
                     };
                     if let Some(mut referable_schema) = definition_schema.or(anchor_schema) {
+                        apply_ref_semantics(&mut referable_schema, ref_semantic_schema.clone());
                         apply_ref_annotations(
                             &mut referable_schema,
                             title.as_ref(),
@@ -319,7 +425,22 @@ impl Referable<ValueSchema> {
                                 }
 
                                 return Ok(Some(CurrentSchema {
-                                    value_schema: Arc::new(resolved_schema),
+                                    schema_view: Arc::new(resolved_schema),
+                                    semantic_schema: resolve_json_pointer_node(
+                                        &schema_value,
+                                        pointer,
+                                    )
+                                    .and_then(|value| {
+                                        super::SemanticSchema::from_value_node(value, dialect)
+                                    })
+                                    .map(Arc::new)
+                                    .map(|target| {
+                                        combine_ref_semantics(
+                                            ref_semantic_schema.clone(),
+                                            Some(target),
+                                        )
+                                        .expect("resolved reference has semantic schema")
+                                    }),
                                     schema_uri: Cow::Owned(schema_uri.as_ref().clone()),
                                     definitions: Cow::Owned(definitions.clone().into_owned()),
                                     strict,
@@ -342,28 +463,32 @@ impl Referable<ValueSchema> {
                     )
                     .await?
                     {
-                        let mut resolved_value = resolved_reference.value_schema.clone();
+                        let mut resolved_value = resolved_reference.schema_view.clone();
                         if title.is_some() || description.is_some() {
-                            let value_schema = Arc::make_mut(&mut resolved_value);
-                            value_schema.set_title(title.to_owned());
-                            value_schema.set_description(description.to_owned());
+                            let schema_view = Arc::make_mut(&mut resolved_value);
+                            schema_view.set_title(title.to_owned());
+                            schema_view.set_description(description.to_owned());
                         }
                         if let Some(default) = default {
-                            let value_schema = Arc::make_mut(&mut resolved_value);
-                            value_schema.set_default(Some(default.clone()));
+                            let schema_view = Arc::make_mut(&mut resolved_value);
+                            schema_view.set_default(Some(default.clone()));
                         }
                         if let Some(examples) = examples {
-                            let value_schema = Arc::make_mut(&mut resolved_value);
-                            value_schema.set_examples(Some(examples.clone()));
+                            let schema_view = Arc::make_mut(&mut resolved_value);
+                            schema_view.set_examples(Some(examples.clone()));
                         }
                         if let Some(deprecation) = deprecation {
-                            let value_schema = Arc::make_mut(&mut resolved_value);
-                            value_schema.set_deprecation(deprecation.clone());
+                            let schema_view = Arc::make_mut(&mut resolved_value);
+                            schema_view.set_deprecation(deprecation.clone());
                         }
 
                         *self = Referable::Resolved {
                             schema_uri: Some(resolved_reference.schema_uri.as_ref().clone()),
                             value: resolved_value,
+                            semantic_schema: combine_ref_semantics(
+                                ref_semantic_schema.clone(),
+                                resolved_reference.semantic_schema.clone(),
+                            ),
                         };
                         let mut dynamic_scope = dynamic_scope.clone();
                         dynamic_scope.insert(0, resolved_reference.schema_uri.as_ref().clone());
@@ -395,8 +520,8 @@ impl Referable<ValueSchema> {
                 }
                 Referable::Resolved {
                     schema_uri: reference_url,
-                    value: value_schema,
-                    ..
+                    value: schema_view,
+                    semantic_schema,
                 } => {
                     let (schema_uri, definitions) = {
                         match reference_url {
@@ -417,7 +542,8 @@ impl Referable<ValueSchema> {
                     };
 
                     Ok(Some(CurrentSchema {
-                        value_schema: value_schema.clone(),
+                        schema_view: schema_view.clone(),
+                        semantic_schema: semantic_schema.clone(),
                         schema_uri,
                         definitions,
                         strict,
@@ -443,7 +569,8 @@ impl Referable<ValueSchema> {
             Referable::Ref { .. } => Ok(None),
             Referable::Resolved {
                 schema_uri: reference_url,
-                value: value_schema,
+                value: schema_view,
+                semantic_schema,
             } => {
                 let (schema_uri, definitions) = match reference_url {
                     Some(reference_url) => {
@@ -462,7 +589,8 @@ impl Referable<ValueSchema> {
                 };
 
                 Ok(Some(CurrentSchema {
-                    value_schema: value_schema.clone(),
+                    schema_view: schema_view.clone(),
+                    semantic_schema: semantic_schema.clone(),
                     schema_uri: Cow::Owned(schema_uri.into_owned()),
                     definitions: Cow::Owned(definitions.into_owned()),
                     strict,
@@ -473,7 +601,7 @@ impl Referable<ValueSchema> {
 }
 
 fn apply_ref_annotations(
-    referable_schema: &mut Referable<ValueSchema>,
+    referable_schema: &mut Referable<SchemaView>,
     title: Option<&String>,
     description: Option<&String>,
     default: Option<&tombi_json::Value>,
@@ -482,24 +610,23 @@ fn apply_ref_annotations(
 ) {
     match referable_schema {
         Referable::Resolved {
-            value: value_schema,
-            ..
+            value: schema_view, ..
         } => {
-            let value_schema = Arc::make_mut(value_schema);
+            let schema_view = Arc::make_mut(schema_view);
             if let Some(title) = title {
-                value_schema.set_title(Some(title.clone()));
+                schema_view.set_title(Some(title.clone()));
             }
             if let Some(description) = description {
-                value_schema.set_description(Some(description.clone()));
+                schema_view.set_description(Some(description.clone()));
             }
             if let Some(default) = default {
-                value_schema.set_default(Some(default.clone()));
+                schema_view.set_default(Some(default.clone()));
             }
             if let Some(examples) = examples {
-                value_schema.set_examples(Some(examples.clone()));
+                schema_view.set_examples(Some(examples.clone()));
             }
             if let Some(deprecation) = deprecation {
-                value_schema.set_deprecation(deprecation);
+                schema_view.set_deprecation(deprecation);
             }
         }
         Referable::Ref {
@@ -529,10 +656,41 @@ fn apply_ref_annotations(
     }
 }
 
+fn combine_ref_semantics(
+    local: Option<Arc<super::SemanticSchema>>,
+    target: Option<Arc<super::SemanticSchema>>,
+) -> Option<Arc<super::SemanticSchema>> {
+    match (local, target) {
+        (Some(local), Some(target)) => Some(Arc::new(super::SemanticSchema::composite(
+            super::SemanticCompositeKind::AllOf,
+            vec![local.as_ref().clone(), target.as_ref().clone()],
+            local.range(),
+        ))),
+        (Some(schema), None) | (None, Some(schema)) => Some(schema),
+        (None, None) => None,
+    }
+}
+
+fn apply_ref_semantics(
+    referable_schema: &mut Referable<SchemaView>,
+    local: Option<Arc<super::SemanticSchema>>,
+) {
+    match referable_schema {
+        Referable::Resolved {
+            semantic_schema, ..
+        }
+        | Referable::Ref {
+            semantic_schema, ..
+        } => {
+            *semantic_schema = combine_ref_semantics(local, semantic_schema.clone());
+        }
+    }
+}
+
 async fn resolve_from_schema_map(
     map: &std::sync::Arc<tokio::sync::RwLock<SchemaMap>>,
     reference: &str,
-) -> Option<Referable<ValueSchema>> {
+) -> Option<Referable<SchemaView>> {
     let map_guard = map.read().await;
     map_guard.get(reference).cloned()
 }
@@ -541,7 +699,7 @@ async fn resolve_anchor_reference(
     reference: &str,
     schema_uri: &SchemaUri,
     schema_store: &crate::SchemaStore,
-) -> Result<Option<Referable<ValueSchema>>, crate::Error> {
+) -> Result<Option<Referable<SchemaView>>, crate::Error> {
     if !is_plain_name_anchor_reference(reference) {
         return Ok(None);
     }
@@ -555,7 +713,7 @@ async fn resolve_dynamic_anchor_from_scope(
     reference: &str,
     dynamic_scope: &[SchemaUri],
     schema_store: &crate::SchemaStore,
-) -> Result<Option<(Referable<ValueSchema>, SchemaUri, SchemaDefinitions)>, crate::Error> {
+) -> Result<Option<(Referable<SchemaView>, SchemaUri, SchemaDefinitions)>, crate::Error> {
     for scope_schema_uri in dynamic_scope {
         let Some(document_schema) = schema_store
             .try_get_document_schema(scope_schema_uri)
@@ -609,14 +767,15 @@ async fn resolve_external_reference(
     };
 
     let Some(fragment) = fragment else {
-        let Some(value_schema) = document_schema.value_schema.as_ref() else {
+        let Some(schema_view) = document_schema.schema_view.as_ref() else {
             return Err(crate::Error::InvalidJsonSchemaReference {
                 reference: reference.to_owned(),
                 schema_uri: resolved_schema_uri,
             });
         };
         return Ok(Some(CurrentSchema {
-            value_schema: value_schema.clone(),
+            schema_view: schema_view.clone(),
+            semantic_schema: document_schema.semantic_schema.clone(),
             schema_uri: Cow::Owned(document_base_uri(&document_schema)),
             definitions: Cow::Owned(document_schema.definitions.clone()),
             strict,
@@ -654,11 +813,17 @@ async fn resolve_external_reference(
                 .and_then(|object| object.get("$schema"))
                 .and_then(|value| value.as_str())
                 .and_then(|dialect_uri| crate::JsonSchemaDialect::try_from(dialect_uri).ok());
-            if let Some(value_schema) =
+            if let Some(schema_view) =
                 resolve_json_pointer(&schema_value, &reference_with_fragment, None, dialect)?
             {
                 return Ok(Some(CurrentSchema {
-                    value_schema: Arc::new(value_schema),
+                    schema_view: Arc::new(schema_view),
+                    semantic_schema: resolve_json_pointer_node(
+                        &schema_value,
+                        &reference_with_fragment,
+                    )
+                    .and_then(|value| super::SemanticSchema::from_value_node(value, dialect))
+                    .map(Arc::new),
                     schema_uri: Cow::Owned(document_base_uri(&document_schema)),
                     definitions: Cow::Owned(document_schema.definitions.clone()),
                     strict,
@@ -720,7 +885,7 @@ fn is_plain_name_fragment(fragment: &str) -> bool {
 }
 
 pub async fn resolve_and_collect_schemas(
-    schemas: &super::ReferableValueSchemas,
+    schemas: &super::ReferableSchemaViews,
     schema_uri: Cow<'_, SchemaUri>,
     definitions: Cow<'_, SchemaDefinitions>,
     strict: Option<BoolDefaultTrue>,
@@ -753,7 +918,7 @@ pub async fn resolve_and_collect_schemas(
 /// Returns `None` when schema traversal is re-entrant (cycle guard) or when
 /// an initial read lock cannot be acquired due to concurrent mutation.
 pub async fn resolve_and_collect_schemas_with_errors(
-    schemas: &super::ReferableValueSchemas,
+    schemas: &super::ReferableSchemaViews,
     schema_uri: Cow<'_, SchemaUri>,
     definitions: Cow<'_, SchemaDefinitions>,
     strict: Option<BoolDefaultTrue>,
@@ -790,7 +955,12 @@ pub async fn resolve_and_collect_schemas_with_errors(
                         Referable::Resolved {
                             schema_uri: resolved_schema_uri,
                             value,
-                        } => Some((resolved_schema_uri.clone(), value.clone())),
+                            semantic_schema,
+                        } => Some((
+                            resolved_schema_uri.clone(),
+                            value.clone(),
+                            semantic_schema.clone(),
+                        )),
                         Referable::Ref { .. } => None,
                     })
                     .collect_vec(),
@@ -809,7 +979,7 @@ pub async fn resolve_and_collect_schemas_with_errors(
         let default_schema_uri = schema_uri.as_ref().clone();
         let default_definitions = definitions.clone().into_owned();
 
-        for (resolved_schema_uri, value_schema) in resolved_schemas {
+        for (resolved_schema_uri, schema_view, semantic_schema) in resolved_schemas {
             let (current_schema_uri, current_definitions) =
                 if let Some(resolved_schema_uri) = resolved_schema_uri {
                     match schema_store
@@ -831,7 +1001,8 @@ pub async fn resolve_and_collect_schemas_with_errors(
                 };
 
             collected.push(CurrentSchema {
-                value_schema,
+                schema_view,
+                semantic_schema,
                 schema_uri: Cow::Owned(current_schema_uri),
                 definitions: Cow::Owned(current_definitions),
                 strict,
@@ -944,9 +1115,9 @@ pub fn is_json_pointer(reference: &str) -> bool {
     reference.starts_with('#')
 }
 
-/// Resolve a JSON pointer to a ValueSchema.
+/// Resolve a JSON pointer to a SchemaView.
 ///
-/// This function resolves a JSON pointer to a ValueSchema.
+/// This function resolves a JSON pointer to a SchemaView.
 /// It is used to resolve pointers like `#/properties/foo` within the same schema.
 /// More correctly, it should use `#/definitions/foo` to use definitions,
 /// but this function is provided for exceptional cases of some JSON Schema implementations.
@@ -956,22 +1127,34 @@ pub fn resolve_json_pointer(
     pointer: &str,
     string_formats: Option<&[StringFormat]>,
     dialect: Option<crate::JsonSchemaDialect>,
-) -> Result<Option<ValueSchema>, crate::Error> {
-    if !pointer.starts_with('#') {
+) -> Result<Option<SchemaView>, crate::Error> {
+    let Some(current) = resolve_json_pointer_node(schema_node, pointer) else {
         return Ok(None);
+    };
+
+    match current {
+        tombi_json::ValueNode::Object(_) => {
+            Ok(super::SemanticSchema::from_value_node(current, dialect)
+                .and_then(|schema| schema.completion_projection(string_formats)))
+        }
+        tombi_json::ValueNode::Bool(bool_node) => {
+            Ok(Some(bool_schema_view(bool_node.value, bool_node.range)))
+        }
+        _ => Ok(None),
+    }
+}
+
+fn resolve_json_pointer_node<'a>(
+    schema_node: &'a tombi_json::ValueNode,
+    pointer: &str,
+) -> Option<&'a tombi_json::ValueNode> {
+    if !pointer.starts_with('#') {
+        return None;
     }
 
     let path = &pointer[1..]; // Remove the leading '#'
     if path.is_empty() {
-        return Ok(match schema_node {
-            tombi_json::ValueNode::Object(obj) => {
-                ValueSchema::new(obj, string_formats, dialect, None, None)
-            }
-            tombi_json::ValueNode::Bool(bool_node) => {
-                Some(bool_value_schema(bool_node.value, bool_node.range))
-            }
-            _ => None,
-        });
+        return Some(schema_node);
     }
 
     // RFC 6901: Percent-decode the path before splitting on '/'
@@ -987,7 +1170,7 @@ pub fn resolve_json_pointer(
                 if let Some(value) = obj.get(&decoded_segment) {
                     current = value;
                 } else {
-                    return Ok(None);
+                    return None;
                 }
             }
             tombi_json::ValueNode::Array(arr) => {
@@ -995,28 +1178,18 @@ pub fn resolve_json_pointer(
                     if let Some(value) = arr.get(index) {
                         current = value;
                     } else {
-                        return Ok(None);
+                        return None;
                     }
                 } else {
-                    return Ok(None);
+                    return None;
                 }
             }
             _ => {
-                return Ok(None);
+                return None;
             }
         }
     }
-
-    // Convert the final ValueNode to ValueSchema
-    match current {
-        tombi_json::ValueNode::Object(obj) => {
-            Ok(ValueSchema::new(obj, string_formats, dialect, None, None))
-        }
-        tombi_json::ValueNode::Bool(bool_node) => {
-            Ok(Some(bool_value_schema(bool_node.value, bool_node.range)))
-        }
-        _ => Ok(None),
-    }
+    Some(current)
 }
 
 /// Percent-decode a string according to RFC 3986
@@ -1064,7 +1237,7 @@ mod test {
     use std::{borrow::Cow, str::FromStr};
 
     use crate::{
-        Referable, SchemaStore, ValueSchema,
+        Referable, SchemaStore, SchemaView,
         schema::referable_schema::{parse_dynamic_anchor_reference, resolve_json_pointer},
     };
 
@@ -1091,7 +1264,7 @@ mod test {
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
             // The schema should be resolved correctly
-            std::assert_matches!(schema, ValueSchema::String(_));
+            std::assert_matches!(schema, SchemaView::String(_));
         }
 
         // Test case 2: Multiple percent-encoded characters
@@ -1110,7 +1283,7 @@ mod test {
         );
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
-            std::assert_matches!(schema, ValueSchema::String(_));
+            std::assert_matches!(schema, SchemaView::String(_));
         }
 
         // Test case 3: Invalid percent encoding should be preserved
@@ -1159,7 +1332,7 @@ mod test {
         );
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
-            std::assert_matches!(schema, ValueSchema::String(_));
+            std::assert_matches!(schema, SchemaView::String(_));
         }
 
         let result = resolve_json_pointer(
@@ -1170,7 +1343,7 @@ mod test {
         );
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
-            std::assert_matches!(schema, ValueSchema::String(_));
+            std::assert_matches!(schema, SchemaView::String(_));
         }
     }
 
@@ -1179,6 +1352,7 @@ mod test {
         let referable = Referable::Ref {
             reference: "#/definitions/foo".to_string(),
             kind: super::ReferenceKind::Ref,
+            semantic_schema: None,
             title: None,
             description: None,
             default: None,
@@ -1244,8 +1418,8 @@ mod test {
             .unwrap();
 
         std::assert_matches!(
-            resolved.map(|s| s.value_schema),
-            Some(schema) if matches!(&*schema, ValueSchema::String(_))
+            resolved.map(|s| s.schema_view),
+            Some(schema) if matches!(&*schema, SchemaView::String(_))
         );
         let _ = std::fs::remove_file(schema_path);
     }
@@ -1304,8 +1478,8 @@ mod test {
             .unwrap();
 
         std::assert_matches!(
-            resolved.map(|s| s.value_schema),
-            Some(schema) if matches!(&*schema, ValueSchema::String(_))
+            resolved.map(|s| s.schema_view),
+            Some(schema) if matches!(&*schema, SchemaView::String(_))
         );
         let _ = std::fs::remove_file(schema_path);
     }
@@ -1373,8 +1547,8 @@ mod test {
             .unwrap();
 
         std::assert_matches!(
-            resolved.map(|s| s.value_schema),
-            Some(schema) if matches!(&*schema, ValueSchema::String(_))
+            resolved.map(|s| s.schema_view),
+            Some(schema) if matches!(&*schema, SchemaView::String(_))
         );
 
         let _ = std::fs::remove_dir_all(temp_dir);

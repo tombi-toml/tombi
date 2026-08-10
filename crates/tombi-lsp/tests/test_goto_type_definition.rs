@@ -209,6 +209,36 @@ mod goto_type_definition_tests {
 
         test_goto_type_definition!(
             #[tokio::test]
+            async fn minimum_without_type_string_value(
+                r#"
+                type_agnostic_minimum = "te█xt"
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok(adjacent_applicators_test_schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn issue_2042_string_branch_value(
+                r#"
+                issue_2042_address = "https://exa█mple.com"
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok(adjacent_applicators_test_schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn same_type_enum_one_of_value(
+                r#"
+                same_type_enum_one_of = "r█ed"
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok(adjacent_applicators_test_schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
             async fn adjacent_all_of_offset_date_time_value(
                 r#"
                 offset_date_time_all = 2024-01-15T█10:30:00Z

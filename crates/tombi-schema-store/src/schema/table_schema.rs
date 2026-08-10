@@ -12,7 +12,8 @@ use tombi_x_keyword::{
 use super::{
     AnchorCollector, CurrentSchema, DynamicAnchorCollector, FindSchemaCandidates, NotSchema,
     PropertySchema, SchemaAccessor, SchemaDefinitions, SchemaItem, SchemaPatternProperties,
-    SchemaUri, ValueSchema, referable_from_schema_value, schema_item_from_schema_value,
+    SchemaUri, SchemaView, referable_from_schema_value, schema_item_from_schema_value,
+    schema_item_from_schema_value_for_type,
 };
 use crate::{
     Accessor, AllOfSchema, AnyOfSchema, IfThenElseSchema, OneOfSchema, SchemaProperties,
@@ -97,14 +98,14 @@ impl TableSchema {
             Some(tombi_json::ValueNode::Object(object_node)) => {
                 let mut pattern_properties = tombi_hashmap::HashMap::new();
                 for (pattern, value) in object_node.properties.iter() {
-                    if let Some(value_schema) = referable_from_schema_value(
+                    if let Some(schema_view) = referable_from_schema_value(
                         value,
                         string_formats,
                         dialect,
                         anchor_collector.as_deref_mut(),
                         dynamic_anchor_collector.as_deref_mut(),
                     ) {
-                        pattern_properties.insert(pattern.clone(), value_schema);
+                        pattern_properties.insert(pattern.clone(), schema_view);
                     }
                 }
                 Some(pattern_properties)
@@ -117,7 +118,7 @@ impl TableSchema {
         {
             Some(tombi_json::ValueNode::Bool(allow)) => (Some(allow.value), None),
             Some(value @ tombi_json::ValueNode::Object(_)) => {
-                let value_schema = referable_from_schema_value(
+                let schema_view = referable_from_schema_value(
                     value,
                     string_formats,
                     dialect,
@@ -126,7 +127,7 @@ impl TableSchema {
                 );
                 (
                     Some(true),
-                    value_schema
+                    schema_view
                         .map(|schema| (value.range(), Arc::new(tokio::sync::RwLock::new(schema)))),
                 )
             }
@@ -334,8 +335,9 @@ impl TableSchema {
             )
             .map(Box::new),
             property_names: object_node.get("propertyNames").and_then(|value| {
-                schema_item_from_schema_value(
+                schema_item_from_schema_value_for_type(
                     value,
+                    super::SchemaType::String,
                     string_formats,
                     dialect,
                     anchor_collector,
@@ -500,7 +502,7 @@ impl FindSchemaCandidates for TableSchema {
         definitions: &'a SchemaDefinitions,
         strict: Option<BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
-    ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
+    ) -> BoxFuture<'b, (Vec<SchemaView>, Vec<crate::Error>)> {
         async move {
             let mut candidates = Vec::new();
             let mut errors = Vec::new();
@@ -528,13 +530,14 @@ impl FindSchemaCandidates for TableSchema {
                         .flatten();
 
                     if let Some(CurrentSchema {
-                        value_schema,
+                        schema_view,
                         schema_uri,
                         definitions,
-                        strict
+                        strict,
+                        ..
                     }) = current_schema
                     {
-                        let (schema_candidates, schema_errors) = value_schema
+                        let (schema_candidates, schema_errors) = schema_view
                             .find_schema_candidates(
                                 accessors,
                                 &schema_uri,
@@ -571,13 +574,14 @@ impl FindSchemaCandidates for TableSchema {
                 .flatten();
 
             if let Some(CurrentSchema {
-                value_schema,
+                schema_view,
                 schema_uri,
                 definitions,
                 strict,
+                ..
             }) = current_schema
             {
-                return value_schema
+                return schema_view
                     .find_schema_candidates(
                         &accessors[1..],
                         &schema_uri,

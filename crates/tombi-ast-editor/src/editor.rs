@@ -40,10 +40,11 @@ impl<'a> Editor<'a> {
 
         let current_schema = self.schema_context.root_schema.and_then(|document_schema| {
             document_schema
-                .value_schema
+                .schema_view
                 .as_ref()
-                .map(|value_schema| CurrentSchema {
-                    value_schema: value_schema.clone(),
+                .map(|schema_view| CurrentSchema {
+                    schema_view: schema_view.clone(),
+                    semantic_schema: document_schema.semantic_schema.clone(),
                     schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                     definitions: Cow::Borrowed(&document_schema.definitions),
                     strict: document_schema.strict,

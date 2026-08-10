@@ -1,7 +1,7 @@
 use tombi_comment_directive::value::{
     LocalDateTimeCommonFormatRules, LocalDateTimeCommonLintRules,
 };
-use tombi_schema_store::{Accessor, CurrentSchema, LocalDateTimeSchema, ValueSchema};
+use tombi_schema_store::{Accessor, CurrentSchema, LocalDateTimeSchema, SchemaView};
 use tombi_x_keyword::StringFormat;
 
 use crate::{
@@ -43,8 +43,8 @@ impl GetHoverContent for tombi_document_tree::LocalDateTime {
             }
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::LocalDateTime(local_date_time_schema) => {
+                match current_schema.schema_view.as_ref() {
+                    SchemaView::LocalDateTime(local_date_time_schema) => {
                         let mut hover_content = local_date_time_schema
                             .get_hover_content(
                                 position,
@@ -75,7 +75,7 @@ impl GetHoverContent for tombi_document_tree::LocalDateTime {
                         )
                         .await
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    SchemaView::OneOf(one_of_schema) => {
                         get_one_of_hover_content(
                             self,
                             position,
@@ -89,7 +89,7 @@ impl GetHoverContent for tombi_document_tree::LocalDateTime {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    SchemaView::AnyOf(any_of_schema) => {
                         get_any_of_hover_content(
                             self,
                             position,
@@ -103,7 +103,7 @@ impl GetHoverContent for tombi_document_tree::LocalDateTime {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    SchemaView::AllOf(all_of_schema) => {
                         get_all_of_hover_content(
                             self,
                             position,

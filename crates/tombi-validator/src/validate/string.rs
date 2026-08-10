@@ -5,7 +5,7 @@ use tombi_comment_directive::value::{StringCommonFormatRules, StringCommonLintRu
 use tombi_document_tree::{LikeString, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_regex::Regex;
-use tombi_schema_store::ValueSchema;
+use tombi_schema_store::SchemaView;
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_x_keyword::StringFormat;
 use unicode_segmentation::UnicodeSegmentation;
@@ -55,6 +55,21 @@ where
     T: Validate + LikeString + ValueImpl + ToString + Sync + Send + std::fmt::Debug,
 {
     async move {
+        if let Some(projected_schema) = crate::validate::project_current_schema_for_value(
+            string_value,
+            current_schema,
+            schema_context,
+        ) {
+            return validate_like_string(
+                string_value,
+                accessors,
+                Some(&projected_schema),
+                schema_context,
+                enable_key_empty_validation,
+            )
+            .await;
+        }
+
         let comment_directives = string_value
             .comment_directives()
             .map(|directives| directives.cloned().collect_vec());
@@ -88,8 +103,8 @@ where
             };
 
         let result = if let Some(current_schema) = current_schema {
-            match current_schema.value_schema.as_ref() {
-                ValueSchema::String(string_schema) => {
+            match current_schema.schema_view.as_ref() {
+                SchemaView::String(string_schema) => {
                     let key_empty_result = if enable_key_empty_validation
                         && should_validate_key_empty(Some(current_schema))
                     {
@@ -118,7 +133,7 @@ where
                         .await,
                     )
                 }
-                ValueSchema::OneOf(one_of_schema) => {
+                SchemaView::OneOf(one_of_schema) => {
                     let result = validate_one_of(
                         string_value,
                         accessors,
@@ -140,7 +155,7 @@ where
                         result
                     }
                 }
-                ValueSchema::AnyOf(any_of_schema) => {
+                SchemaView::AnyOf(any_of_schema) => {
                     let result = validate_any_of(
                         string_value,
                         accessors,
@@ -162,7 +177,7 @@ where
                         result
                     }
                 }
-                ValueSchema::AllOf(all_of_schema) => {
+                SchemaView::AllOf(all_of_schema) => {
                     let result = validate_all_of(
                         string_value,
                         accessors,
@@ -184,13 +199,13 @@ where
                         result
                     }
                 }
-                ValueSchema::Null => return Ok(crate::EvaluatedLocations::new()),
-                ValueSchema::Anything(_) => handle_anything_schema(string_value),
-                ValueSchema::Nothing(_) => handle_nothing_schema(string_value),
+                SchemaView::Null => return Ok(crate::EvaluatedLocations::new()),
+                SchemaView::Anything(_) => handle_anything_schema(string_value),
+                SchemaView::Nothing(_) => handle_nothing_schema(string_value),
                 // When the schema expects a TOML date/time type but the value is a string,
                 // check if x-tombi-string-formats includes the corresponding format.
                 // If so, validate the string against the format instead of reporting type mismatch.
-                ValueSchema::OffsetDateTime(_) => validate_string_as_date_format(
+                SchemaView::OffsetDateTime(_) => validate_string_as_date_format(
                     string_value,
                     StringFormat::DateTime,
                     tombi_schema_store::ValueType::OffsetDateTime,
@@ -198,7 +213,7 @@ where
                     schema_context,
                     lint_rules.as_ref(),
                 ),
-                ValueSchema::LocalDateTime(_) => validate_string_as_date_format(
+                SchemaView::LocalDateTime(_) => validate_string_as_date_format(
                     string_value,
                     StringFormat::DateTimeLocal,
                     tombi_schema_store::ValueType::LocalDateTime,
@@ -206,7 +221,7 @@ where
                     schema_context,
                     lint_rules.as_ref(),
                 ),
-                ValueSchema::LocalDate(_) => validate_string_as_date_format(
+                SchemaView::LocalDate(_) => validate_string_as_date_format(
                     string_value,
                     StringFormat::Date,
                     tombi_schema_store::ValueType::LocalDate,
@@ -214,7 +229,7 @@ where
                     schema_context,
                     lint_rules.as_ref(),
                 ),
-                ValueSchema::LocalTime(_) => validate_string_as_date_format(
+                SchemaView::LocalTime(_) => validate_string_as_date_format(
                     string_value,
                     StringFormat::TimeLocal,
                     tombi_schema_store::ValueType::LocalTime,
@@ -222,12 +237,17 @@ where
                     schema_context,
                     lint_rules.as_ref(),
                 ),
-                value_schema => handle_type_mismatch(
-                    value_schema.value_type().await,
-                    string_value.value_type(),
-                    ValueImpl::range(string_value),
-                    lint_rules.as_ref().map(|rules| &rules.common),
-                ),
+                _ => {
+                    crate::validate::validate_mismatched_schema(
+                        string_value,
+                        accessors,
+                        current_schema,
+                        schema_context,
+                        comment_directives.as_deref(),
+                        lint_rules.as_ref().map(|rules| &rules.common),
+                    )
+                    .await
+                }
             }
         } else if enable_key_empty_validation && should_validate_key_empty(None) {
             validate_key_empty_rule(string_value, key_rules.as_ref())
@@ -260,8 +280,8 @@ fn should_validate_key_empty(
     current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,
 ) -> bool {
     !matches!(
-        current_schema.map(|schema| schema.value_schema.as_ref()),
-        Some(ValueSchema::String(string_schema)) if string_schema.min_length == Some(0)
+        current_schema.map(|schema| schema.schema_view.as_ref()),
+        Some(SchemaView::String(string_schema)) if string_schema.min_length == Some(0)
     )
 }
 

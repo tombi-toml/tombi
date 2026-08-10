@@ -25,7 +25,7 @@ tombi-hashmap.workspace = true
 tombi-json-value.workspace = true
 tombi-parser.workspace = true
 tombi-regex.workspace = true
-tombi-schema-store.workspace = true
+tombi-schema-store = { workspace = true, features = ["document-tree"] }
 tombi-severity-level.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true

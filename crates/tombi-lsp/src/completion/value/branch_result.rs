@@ -1,4 +1,4 @@
-use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, ValueSchema};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, SchemaView};
 
 use crate::completion::{CompletionContent, CompletionHint, FindCompletionContents};
 
@@ -50,8 +50,8 @@ where
     let mut branch_results = Vec::new();
     for resolved_schema in resolved_schemas {
         let branch_has_key = if let Some(ref first_key) = first_key {
-            match resolved_schema.value_schema.as_ref() {
-                ValueSchema::Table(table_schema) => table_schema
+            match resolved_schema.schema_view.as_ref() {
+                SchemaView::Table(table_schema) => table_schema
                     .properties
                     .read()
                     .await
