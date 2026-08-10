@@ -7,9 +7,7 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
 use super::Validate;
-use crate::validate::{
-    has_error_level_diagnostics, if_then_else::validate_if_then_else, not_schema::validate_not,
-};
+use crate::validate::{if_then_else::validate_if_then_else, not_schema::validate_not};
 use crate::validate::{validate_deprecated, validate_resolved_schema};
 
 pub fn validate_any_of<'a: 'b, 'b, T>(
@@ -20,7 +18,7 @@ pub fn validate_any_of<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     comment_directives: Option<&'a [TombiValueCommentDirective]>,
     common_rules: Option<&'a CommonLintRules>,
-) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>>
+) -> BoxFuture<'b, Result<crate::Valid, crate::Invalid>>
 where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
@@ -29,7 +27,8 @@ where
 
     async move {
         let mut total_diagnostics = vec![];
-        let mut base_evaluated_locations = crate::EvaluatedLocations::new();
+        let mut adjacent_assertion_failed = false;
+        let mut base_evaluated_locations = crate::Valid::new();
 
         if let Some(not_schema) = any_of_schema.not.as_ref()
             && let Err(error) = validate_not(
@@ -43,6 +42,7 @@ where
             )
             .await
         {
+            adjacent_assertion_failed |= error.assertion_failed;
             total_diagnostics.extend(error.diagnostics);
         }
 
@@ -59,8 +59,10 @@ where
             {
                 Ok(result) => base_evaluated_locations.merge_from(result),
                 Err(error) => {
-                    if !has_error_level_diagnostics(&error) {
-                        base_evaluated_locations.merge_from(error.evaluated_locations.clone());
+                    adjacent_assertion_failed |= error.assertion_failed;
+                    if !error.assertion_failed {
+                        base_evaluated_locations
+                            .merge_from(error.local_evaluated_locations.clone());
                     }
                     total_diagnostics.extend(error.diagnostics);
                 }
@@ -79,13 +81,14 @@ where
             )
             .await
         else {
-            if total_diagnostics.is_empty() {
+            if total_diagnostics.is_empty() && !adjacent_assertion_failed {
                 return Ok(base_evaluated_locations);
             } else {
-                return Err(crate::Error {
-                    score: crate::error::TYPE_MATCHED_SCORE,
+                return Err(crate::Invalid {
+                    assertion_failed: adjacent_assertion_failed,
+                    match_evidence: Default::default(),
                     diagnostics: total_diagnostics,
-                    evaluated_locations: base_evaluated_locations,
+                    local_evaluated_locations: base_evaluated_locations,
                 });
             }
         };
@@ -94,7 +97,7 @@ where
             crate::validate::schema_resolution_diagnostic(&err, value.range(), common_rules)
         }));
 
-        let mut total_error = crate::Error::new();
+        let mut total_error = crate::Invalid::new();
         let mut matched = false;
         let mut matched_diagnostics = Vec::new();
         let mut matched_evaluated_locations = base_evaluated_locations;
@@ -112,18 +115,18 @@ where
             else {
                 continue;
             };
-
             match result {
                 Ok(result) => {
                     matched = true;
                     matched_evaluated_locations.merge_from(result);
                 }
                 Err(error) => {
-                    if has_error_level_diagnostics(&error) {
+                    if error.assertion_failed {
                         total_error.combine(error);
                     } else {
                         matched = true;
-                        matched_evaluated_locations.merge_from(error.evaluated_locations.clone());
+                        matched_evaluated_locations
+                            .merge_from(error.local_evaluated_locations.clone());
                         matched_diagnostics.extend(error.diagnostics);
                     }
                 }
@@ -145,21 +148,22 @@ where
 
             matched_diagnostics.extend(total_diagnostics);
 
-            if matched_diagnostics.is_empty() {
+            if matched_diagnostics.is_empty() && !adjacent_assertion_failed {
                 Ok(matched_evaluated_locations)
             } else {
-                Err(crate::Error {
-                    score: crate::error::TYPE_MATCHED_SCORE,
+                Err(crate::Invalid {
+                    assertion_failed: adjacent_assertion_failed,
+                    match_evidence: Default::default(),
                     diagnostics: matched_diagnostics,
-                    evaluated_locations: matched_evaluated_locations,
+                    local_evaluated_locations: matched_evaluated_locations,
                 })
             }
-        } else if total_error.diagnostics.is_empty() && total_diagnostics.is_empty() {
+        } else if !total_error.assertion_failed && total_diagnostics.is_empty() {
             Ok(matched_evaluated_locations)
         } else {
             total_error.prepend_diagnostics(total_diagnostics);
             total_error
-                .evaluated_locations
+                .local_evaluated_locations
                 .merge_from(matched_evaluated_locations);
             Err(total_error)
         }

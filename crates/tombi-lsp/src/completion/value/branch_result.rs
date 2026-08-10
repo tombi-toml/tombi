@@ -66,14 +66,11 @@ where
             .await
         {
             Ok(_) => (true, true),
-            Err(tombi_validator::Error { diagnostics, .. })
-                if diagnostics
-                    .iter()
-                    .all(tombi_diagnostic::Diagnostic::is_warning) =>
-            {
-                (true, true)
-            }
-            Err(tombi_validator::Error { diagnostics, .. }) => (
+            Err(tombi_validator::Invalid {
+                assertion_failed: false,
+                ..
+            }) => (true, true),
+            Err(tombi_validator::Invalid { diagnostics, .. }) => (
                 false,
                 diagnostics
                     .iter()

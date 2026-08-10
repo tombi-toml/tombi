@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use tombi_diagnostic::Diagnostic;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUri};
 
@@ -98,9 +97,9 @@ where
                         .await
                     {
                         Ok(_) => true,
-                        Err(tombi_validator::Error { diagnostics, .. }) => {
-                            diagnostics.iter().all(Diagnostic::is_warning)
-                        }
+                        Err(tombi_validator::Invalid {
+                            assertion_failed, ..
+                        }) => !assertion_failed,
                     };
 
                     if is_applicable_branch {

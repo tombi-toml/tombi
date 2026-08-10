@@ -54,5 +54,7 @@ mod unevaluated_items_test_schema;
 mod unevaluated_properties_branch_additional_test_schema;
 #[path = "integration/unevaluated_properties_test_schema.rs"]
 mod unevaluated_properties_test_schema;
+#[path = "integration/union_best_match.rs"]
+mod union_best_match;
 #[path = "integration/untagged_union_schema.rs"]
 mod untagged_union_schema;
