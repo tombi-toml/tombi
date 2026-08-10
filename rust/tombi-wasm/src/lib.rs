@@ -1,10 +1,18 @@
 use std::str::FromStr;
 
 use js_sys::Promise;
+use serde::Serialize;
+use serde_wasm_bindgen::Serializer;
 use tombi_config::TomlVersion;
 use tombi_diagnostic::Diagnostic;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use wasm_bindgen_futures::future_to_promise;
+
+fn serialize_error(error: &impl Serialize) -> JsValue {
+    error
+        .serialize(&Serializer::json_compatible())
+        .expect("WASM errors must be serializable")
+}
 
 #[wasm_bindgen(start)]
 pub fn start() {
@@ -93,7 +101,7 @@ pub fn format(source: String, file_path: Option<String>, toml_version: Option<St
     future_to_promise(async move {
         match inner_format(source, file_path, toml_version).await {
             Ok(t) => Ok(JsValue::from_str(&t)),
-            Err(e) => Err(serde_wasm_bindgen::to_value(&e).unwrap()),
+            Err(e) => Err(serialize_error(&e)),
         }
     })
 }
@@ -178,7 +186,7 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
     future_to_promise(async move {
         match inner_lint(source, file_path, toml_version).await {
             Ok(_) => Ok(JsValue::NULL),
-            Err(e) => Err(serde_wasm_bindgen::to_value(&e).unwrap()),
+            Err(e) => Err(serialize_error(&e)),
         }
     })
 }

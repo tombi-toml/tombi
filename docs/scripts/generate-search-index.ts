@@ -53,7 +53,7 @@ function generateSearchIndex() {
   });
 
   const outputPath = join(process.cwd(), "src/search-index.json");
-  writeFileSync(outputPath, JSON.stringify(documents, null, 2));
+  writeFileSync(outputPath, `${JSON.stringify(documents, null, 2)}\n`);
 
   console.log(`Generated search index: ${outputPath}`);
   console.log(`Total documents: ${documents.length}`);

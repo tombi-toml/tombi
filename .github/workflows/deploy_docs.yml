@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
       - id: filter
         uses: ./.github/actions/relevant-changes
@@ -32,11 +32,18 @@ jobs:
           head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           paths: |
             docs/**
+            crates/**
+            extensions/**
+            rust/serde_tombi/**
+            rust/tombi-wasm/**
             .github/actions/relevant-changes/**
             .node-version
             .npmrc
+            Cargo.toml
+            Cargo.lock
             pnpm-lock.yaml
             pnpm-workspace.yaml
+            rust-toolchain.toml
             .github/workflows/deploy_docs.yml
 
   deploy:
@@ -63,7 +70,10 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./docs
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install WASM target
+        run: rustup target add wasm32-unknown-unknown
 
       - name: Build
         working-directory: ./docs

@@ -9,6 +9,9 @@
       "**/*.mdx",
       "**/*.json",
       "**/typescript/@tombi-toml/tombi/bin/tombi/**",
+      "!docs/.output",
+      "!docs/.vinxi",
+      "!docs/public/wasm",
       "!**/*.js"
     ]
   },

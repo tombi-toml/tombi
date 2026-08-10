@@ -21,6 +21,7 @@ libcairo.2.dylib
 
 # node
 node_modules
+/docs/public/wasm/
 
 # envrc
 .direnv/

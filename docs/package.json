@@ -4,7 +4,8 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "dev": "pnpm run prebuild && vinxi dev",
-    "prebuild": "pnpm run generate-search-index",
+    "prebuild": "pnpm run build:wasm && pnpm run generate-search-index",
+    "build:wasm": "pnpm --dir ../rust/tombi-wasm build:docs",
     "build": "pnpm run prebuild && vinxi build",
     "start": "vinxi start",
     "format": "biome format --fix",
@@ -24,6 +25,7 @@
     "mdast-util-gfm": "^3.1.0",
     "mdast-util-gfm-table": "^2.0.0",
     "mdast-util-mdx": "^3.0.0",
+    "monaco-editor": "^0.56.0",
     "prismjs": "^1.30.0",
     "solid-highlight": "^0.1.26",
     "solid-icons": "^1.1.0",
