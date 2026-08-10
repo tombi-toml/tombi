@@ -17,3 +17,18 @@ Tombi determines the TOML version for the target file in the following order of 
 3. `x-tombi-toml-version` in the root object of JSON Schema.
 4. `toml-version` specified in the Tombi config.
 5. The default TOML version (Currently `v1.0.0`).
+
+To specify the TOML version at the configuration-file level (priority 4), set `toml-version` at the root of the Tombi config.
+
+```toml
+toml-version = "v1.0.0"
+```
+
+To override the version declared by a JSON Schema for matching files (priority 3), set `toml-version` in `[[schemas]]`.
+
+```toml
+[[schemas]]
+toml-version = "v1.0.0"
+path = "tombi://www.schemastore.org/cargo.json"
+include = ["Cargo.toml"]
+```
