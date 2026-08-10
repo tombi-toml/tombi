@@ -44,7 +44,7 @@ fast-glob = "0.3.0"
 flate2 = "1.0.35"
 futures = "0.3.31"
 glob = "0.3.2"
-gloo-net = "0.6.0"
+gloo-net = { version = "0.6.0", default-features = false, features = ["http"] }
 hashbrown = "0.15.3"
 ignore = "0.4.20"
 itertools = "0.14.0"
@@ -87,7 +87,7 @@ tombi-comment-directive-serde = { path = "crates/tombi-comment-directive-serde" 
 tombi-comment-directive-store = { path = "crates/tombi-comment-directive-store" }
 tombi-config = { path = "crates/tombi-config" }
 tombi-date-time = { path = "crates/tombi-date-time" }
-tombi-diagnostic = { path = "crates/tombi-diagnostic" }
+tombi-diagnostic = { path = "crates/tombi-diagnostic", default-features = false }
 tombi-document = { path = "crates/tombi-document" }
 tombi-document-tree = { path = "crates/tombi-document-tree" }
 tombi-extension = { path = "crates/tombi-extension" }
@@ -114,7 +114,7 @@ tombi-schema-type = { path = "crates/tombi-schema-type" }
 tombi-severity-level = { path = "crates/tombi-severity-level" }
 tombi-syntax = { path = "crates/tombi-syntax" }
 tombi-test-lib = { path = "crates/tombi-test-lib" }
-tombi-text = { path = "crates/tombi-text" }
+tombi-text = { path = "crates/tombi-text", default-features = false, features = ["serde"] }
 tombi-toml-text = { path = "crates/tombi-toml-text" }
 tombi-toml-version = { path = "crates/tombi-toml-version" }
 tombi-uri = { path = "crates/tombi-uri" }
@@ -125,7 +125,7 @@ tower-lsp = { version = "0.20.0" }
 typed-builder = "0.21.0"
 ungrammar.version = "1.16.1"
 unicode-segmentation = "1.12.0"
-uuid = { version = "1.18.0", features = ["v1", "v3", "v4", "v5", "v7", "v8"] }
+uuid = { version = "1.18.0", default-features = false }
 wasi = { version = "0.14.7" }
 wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4.50"

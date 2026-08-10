@@ -159,15 +159,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atomic"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a89cbf775b137e9b968e67227ef7f775587cde3fd31b0d8599dbd0f598a48340"
-dependencies = [
- "bytemuck",
-]
-
-[[package]]
 name = "auditable-serde"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -274,12 +265,6 @@ name = "bumpalo"
 version = "3.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "46c5e41b57b8bba42a04676d81cb89e9ee8e859a1a66f80a5a72e1cb76b34d43"
-
-[[package]]
-name = "bytemuck"
-version = "1.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c76a5792e44e4abe34d3abf15636779261d45a7450612059293d1d2cfc63422"
 
 [[package]]
 name = "byteorder"
@@ -912,15 +897,9 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c06f627b1a58ca3d42b45d6104bf1e1a03799df472df00988b6ba21accc10580"
 dependencies = [
- "futures-channel",
- "futures-core",
- "futures-sink",
  "gloo-utils",
  "http",
  "js-sys",
- "pin-project",
- "serde",
- "serde_json",
  "thiserror 1.0.69",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -934,8 +913,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b5555354113b18c547c1d3a98fbf7fb32a9ff4f6fa112ce823a21641a0ba3aa"
 dependencies = [
  "js-sys",
- "serde",
- "serde_json",
  "wasm-bindgen",
  "web-sys",
 ]
@@ -1442,16 +1419,6 @@ dependencies = [
  "cc",
  "libc",
  "pkg-config",
-]
-
-[[package]]
-name = "md-5"
-version = "0.10.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d89e7ee0cfbedfc4da3340218492196241d89eefb6dab27de5df917a6d2e78cf"
-dependencies = [
- "cfg-if",
- "digest",
 ]
 
 [[package]]
@@ -2326,12 +2293,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sha1_smol"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbfa15b3dddfee50a0fff136974b3e1bde555604ba463834a7eb7deb6417705d"
-
-[[package]]
 name = "shlex"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3175,6 +3136,7 @@ version = "0.0.0-dev"
 dependencies = [
  "bytes",
  "futures",
+ "getrandom 0.3.3",
  "glob",
  "gloo-net",
  "itertools 0.14.0",
@@ -3639,14 +3601,6 @@ name = "uuid"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f33196643e165781c20a5ead5582283a7dacbb87855d867fbc2df3f81eddc1be"
-dependencies = [
- "atomic",
- "getrandom 0.3.3",
- "js-sys",
- "md-5",
- "sha1_smol",
- "wasm-bindgen",
-]
 
 [[package]]
 name = "version-ranges"

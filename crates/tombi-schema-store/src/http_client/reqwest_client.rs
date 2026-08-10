@@ -1,16 +1,17 @@
-use crate::http_client::{error::FetchError, http_timeout_secs};
+use crate::http_client::{FetchError, HttpClient, HttpFuture, http_timeout_secs};
 use bytes::Bytes;
+use tombi_future::Boxable;
 
 #[derive(Debug, Clone)]
-pub struct HttpClient(reqwest::Client);
+pub struct ReqwestHttpClient(reqwest::Client);
 
-impl Default for HttpClient {
+impl Default for ReqwestHttpClient {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl HttpClient {
+impl ReqwestHttpClient {
     pub fn new() -> Self {
         Self(
             reqwest::Client::builder()
@@ -20,28 +21,33 @@ impl HttpClient {
                 .expect("Failed to create reqwest client"),
         )
     }
+}
 
-    pub async fn get_bytes(&self, url: &str) -> Result<Bytes, FetchError> {
-        let response = self
-            .0
-            .get(url)
-            .send()
-            .await
-            .map_err(|err| FetchError::FetchFailed {
-                reason: err.to_string(),
-            })?;
+impl HttpClient for ReqwestHttpClient {
+    fn get_bytes<'a>(&'a self, url: &'a str) -> HttpFuture<'a, Result<Bytes, FetchError>> {
+        async move {
+            let response = self
+                .0
+                .get(url)
+                .send()
+                .await
+                .map_err(|err| FetchError::FetchFailed {
+                    reason: err.to_string(),
+                })?;
 
-        if !response.status().is_success() {
-            return Err(FetchError::StatusNotOk {
-                status: response.status().as_u16(),
-            });
+            if !response.status().is_success() {
+                return Err(FetchError::StatusNotOk {
+                    status: response.status().as_u16(),
+                });
+            }
+
+            response
+                .bytes()
+                .await
+                .map_err(|err| FetchError::BodyReadFailed {
+                    reason: err.to_string(),
+                })
         }
-
-        response
-            .bytes()
-            .await
-            .map_err(|err| FetchError::BodyReadFailed {
-                reason: err.to_string(),
-            })
+        .boxed()
     }
 }

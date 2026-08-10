@@ -6,9 +6,9 @@ use std::{
 
 use serde::de::DeserializeOwned;
 use tombi_cache::{get_cache_file_path, read_from_cache, save_to_cache};
-use tombi_schema_store::HttpClient;
+use tombi_schema_store::{DefaultHttpClient, HttpClient};
 
-static HTTP_CLIENT: LazyLock<HttpClient> = LazyLock::new(HttpClient::new);
+static HTTP_CLIENT: LazyLock<DefaultHttpClient> = LazyLock::new(DefaultHttpClient::new);
 
 pub async fn fetch_cached_remote_json<T: DeserializeOwned>(
     url: &str,

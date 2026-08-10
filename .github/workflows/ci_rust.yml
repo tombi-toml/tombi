@@ -30,7 +30,7 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' &&
             github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
       - id: filter
         uses: ./.github/actions/relevant-changes
@@ -42,9 +42,14 @@ jobs:
           paths: |
             .cargo/**
             .config/nextest.toml
+            .node-version
+            .npmrc
             .github/actions/relevant-changes/**
             Cargo.toml
             Cargo.lock
+            package.json
+            pnpm-lock.yaml
+            pnpm-workspace.yaml
             rust-toolchain.toml
             clippy.toml
             rustfmt.toml
@@ -98,3 +103,30 @@ jobs:
       - uses: cargo-bins/cargo-binstall@8aac5aa2bf0dfaa2863eccad9f43c68fe40e5ec8 # v1.14.1
       - run: cargo binstall --no-confirm cargo-shear
       - run: cargo shear
+
+  wasm:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          run_install: false
+      - name: Install Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          key: wasm32-unknown-unknown
+      - name: Install WASM target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Run WASM Clippy
+        run: cargo clippy --locked -p tombi-wasm --target wasm32-unknown-unknown -- -D warnings
+      - name: Build WASM package
+        run: pnpm --dir rust/tombi-wasm build

@@ -14,7 +14,7 @@ itertools.workspace = true
 semver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-tokio = { workspace = true, features = ["fs", "macros", "rt"] }
+tokio = { workspace = true, features = ["fs", "macros", "rt", "sync"] }
 tombi-ast.workspace = true
 tombi-cache.workspace = true
 tombi-config.workspace = true
