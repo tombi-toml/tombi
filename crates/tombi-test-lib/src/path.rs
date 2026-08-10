@@ -235,3 +235,15 @@ pub fn issue_1895_rustfmt_like_schema_path() -> PathBuf {
         .join("schemas")
         .join("issue-1895-rustfmt-like.schema.json")
 }
+
+pub fn union_best_match_any_of_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("union-best-match-any-of-test.schema.json")
+}
+
+pub fn union_best_match_one_of_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("union-best-match-one-of-test.schema.json")
+}

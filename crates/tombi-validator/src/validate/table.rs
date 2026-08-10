@@ -10,7 +10,6 @@ use crate::{
     comment_directive::{
         get_tombi_key_rules_and_diagnostics, get_tombi_table_comment_directive_and_diagnostics,
     },
-    error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::{
         filter_table_strict_additional_diagnostics, handle_anything_schema, handle_deprecated,
         handle_deprecated_value, handle_nothing_schema, handle_unused_noqa,
@@ -28,7 +27,7 @@ impl Validate for tombi_document_tree::Table {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
+    ) -> BoxFuture<'b, Result<crate::Valid, crate::Invalid>> {
         async move {
             if let Some(Ok(current_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
@@ -107,7 +106,7 @@ impl Validate for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    SchemaView::Null => return Ok(crate::EvaluatedLocations::new()),
+                    SchemaView::Null => return Ok(crate::Valid::new()),
                     SchemaView::Anything(_) => handle_anything_schema(self),
                     SchemaView::Nothing(_) => handle_nothing_schema(self),
                     _ => {
@@ -141,11 +140,12 @@ async fn validate_table(
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     table_rules: Option<&TableCommonLintRules>,
-) -> Result<crate::EvaluatedLocations, crate::Error> {
-    let mut total_score = TYPE_MATCHED_SCORE;
+) -> Result<crate::Valid, crate::Invalid> {
+    let mut match_evidence = Box::<crate::MatchEvidence>::default();
+    let mut assertion_failed = false;
     let mut total_diagnostics = vec![];
     let common_rules = table_rules.map(|rules| &rules.common);
-    let evaluated_locations = {
+    let mut evaluated_locations = {
         let mut visited_schema_values = HashSet::new();
         collect_evaluated_properties_from_table_schema(
             table_value,
@@ -175,6 +175,9 @@ async fn validate_table(
             .collect_vec();
 
         let mut matched_key = false;
+        let mut declared_schema_applied = false;
+        let mut declared_value_matched = true;
+        let mut child_match_evidence = Box::<crate::MatchEvidence>::default();
         let schema_accessor = SchemaAccessor::from(&accessor);
         if table_schema
             .properties
@@ -195,12 +198,21 @@ async fn validate_table(
                 .await
             {
                 Ok(Some(current_schema)) => {
-                    if let Err(crate::Error {
-                        mut diagnostics, ..
-                    }) = value
+                    let result = value
                         .validate(&new_accessors, Some(&current_schema), schema_context)
-                        .await
+                        .await;
+                    declared_schema_applied = true;
+                    declared_value_matched &= crate::validate::is_assertion_success(&result);
+                    child_match_evidence
+                        .merge_from(crate::validate::match_evidence(&result).clone());
+
+                    if let Err(crate::Invalid {
+                        assertion_failed: child_assertion_failed,
+                        mut diagnostics,
+                        ..
+                    }) = result
                     {
+                        assertion_failed |= child_assertion_failed;
                         convert_deprecated_diagnostics_range(
                             &current_schema,
                             value,
@@ -250,12 +262,22 @@ async fn validate_table(
                         .await
                     {
                         Ok(Some(current_schema)) => {
-                            if let Err(crate::Error {
-                                mut diagnostics, ..
-                            }) = value
+                            let result = value
                                 .validate(&new_accessors, Some(&current_schema), schema_context)
-                                .await
+                                .await;
+                            declared_schema_applied = true;
+                            declared_value_matched &=
+                                crate::validate::is_assertion_success(&result);
+                            child_match_evidence
+                                .merge_from(crate::validate::match_evidence(&result).clone());
+
+                            if let Err(crate::Invalid {
+                                assertion_failed: child_assertion_failed,
+                                mut diagnostics,
+                                ..
+                            }) = result
                             {
+                                assertion_failed |= child_assertion_failed;
                                 convert_deprecated_diagnostics_range(
                                     &current_schema,
                                     value,
@@ -285,6 +307,7 @@ async fn validate_table(
                 && !table_schema
                     .allows_additional_properties(schema_context.strict(Some(current_schema)))
             {
+                assertion_failed = true;
                 let level = key_rules
                     .and_then(|rules| {
                         rules
@@ -322,6 +345,16 @@ async fn validate_table(
             }
         }
 
+        if matched_key {
+            match_evidence.merge_descendant_from(&child_match_evidence);
+            if declared_schema_applied {
+                if declared_value_matched && child_match_evidence.root_singleton_matched() {
+                    match_evidence.mark_primary_value(new_accessors.clone());
+                }
+                match_evidence.mark_declared_child(new_accessors.clone(), declared_value_matched);
+            }
+        }
+
         if !matched_key {
             let mut validated_by_additional_schema = false;
             if let Some((_, referable_additional_property_schema)) =
@@ -349,10 +382,21 @@ async fn validate_table(
                             table_rules.as_ref().map(|rules| &rules.common),
                         );
 
-                        if let Err(crate::Error { diagnostics, .. }) = value
+                        let result = value
                             .validate(&new_accessors, Some(&current_schema), schema_context)
-                            .await
+                            .await;
+                        if crate::validate::is_assertion_success(&result) {
+                            match_evidence.mark_fallback_child_value(new_accessors.clone());
+                        }
+                        match_evidence
+                            .merge_descendant_from(crate::validate::match_evidence(&result));
+                        if let Err(crate::Invalid {
+                            assertion_failed: child_assertion_failed,
+                            diagnostics,
+                            ..
+                        }) = result
                         {
+                            assertion_failed |= child_assertion_failed;
                             total_diagnostics.extend(diagnostics);
                         }
                         validated_by_additional_schema = true;
@@ -389,10 +433,15 @@ async fn validate_table(
                     .await
                     {
                         Ok(Some(unevaluated_schema)) => {
-                            if let Err(crate::Error { diagnostics, .. }) = value
+                            if let Err(crate::Invalid {
+                                assertion_failed: child_assertion_failed,
+                                diagnostics,
+                                ..
+                            }) = value
                                 .validate(&new_accessors, Some(&unevaluated_schema), schema_context)
                                 .await
                             {
+                                assertion_failed |= child_assertion_failed;
                                 total_diagnostics.extend(diagnostics);
                             }
                             continue;
@@ -411,6 +460,7 @@ async fn validate_table(
                 }
 
                 if table_schema.unevaluated_properties == Some(false) {
+                    assertion_failed = true;
                     crate::Diagnostic {
                         kind: Box::new(crate::DiagnosticKind::UnevaluatedPropertyNotAllowed {
                             key: key.to_string(),
@@ -449,6 +499,7 @@ async fn validate_table(
             if !table_schema
                 .allows_any_additional_properties(schema_context.strict(Some(current_schema)))
             {
+                assertion_failed = true;
                 let level = key_rules
                     .and_then(|rules| {
                         rules
@@ -487,6 +538,7 @@ async fn validate_table(
     if let Some(required) = &table_schema.required {
         for required_key in required {
             if !keys.contains(&required_key) {
+                assertion_failed = true;
                 let level = table_rules
                     .map(|rules| &rules.value)
                     .and_then(|rules| {
@@ -518,7 +570,12 @@ async fn validate_table(
                         "table-key-required",
                     );
                 }
-                total_score += REQUIRED_KEY_SCORE;
+                let path = accessors
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::once(Accessor::Key(required_key.to_string())))
+                    .collect();
+                match_evidence.mark_required(path);
             }
         }
     }
@@ -526,6 +583,7 @@ async fn validate_table(
     if let Some(max_properties) = table_schema.max_properties
         && table_value.keys().count() > max_properties
     {
+        assertion_failed = true;
         let level = table_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -561,6 +619,7 @@ async fn validate_table(
     if let Some(min_properties) = table_schema.min_properties
         && table_value.keys().count() < min_properties
     {
+        assertion_failed = true;
         let level = table_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -603,6 +662,7 @@ async fn validate_table(
                 tombi_schema_store::Dependency::Property(required_keys) => {
                     for required_key in required_keys {
                         if !keys.contains(&required_key) {
+                            assertion_failed = true;
                             crate::Diagnostic {
                                 kind: Box::new(crate::DiagnosticKind::TableDependencyRequired {
                                     dependent_key: dependent_key.to_string(),
@@ -645,10 +705,15 @@ async fn validate_table(
                                 strict: Some(false.into()),
                             };
 
-                            if let Err(crate::Error { diagnostics, .. }) = table_value
+                            if let Err(crate::Invalid {
+                                assertion_failed: child_assertion_failed,
+                                diagnostics,
+                                ..
+                            }) = table_value
                                 .validate(accessors, Some(&dep_schema), &dependency_schema_context)
                                 .await
                             {
+                                assertion_failed |= child_assertion_failed;
                                 total_diagnostics.extend(diagnostics);
                             }
                         }
@@ -676,6 +741,7 @@ async fn validate_table(
 
             for required_key in required_keys {
                 if !keys.contains(&required_key) {
+                    assertion_failed = true;
                     crate::Diagnostic {
                         kind: Box::new(crate::DiagnosticKind::TableDependencyRequired {
                             dependent_key: dependent_key.to_string(),
@@ -722,10 +788,15 @@ async fn validate_table(
                         strict: Some(false.into()),
                     };
 
-                    if let Err(crate::Error { diagnostics, .. }) = table_value
+                    if let Err(crate::Invalid {
+                        assertion_failed: child_assertion_failed,
+                        diagnostics,
+                        ..
+                    }) = table_value
                         .validate(accessors, Some(&dep_schema), &dependency_schema_context)
                         .await
                     {
+                        assertion_failed |= child_assertion_failed;
                         total_diagnostics.extend(diagnostics);
                     }
                 }
@@ -747,7 +818,10 @@ async fn validate_table(
         let actual_object = crate::convert::table_to_json_object(table_value);
 
         if let Some(const_value) = &table_schema.const_value {
-            if actual_object != *const_value {
+            let matched = actual_object == *const_value;
+            match_evidence.mark_root_value_assertion(matched, true);
+            if !matched {
+                assertion_failed = true;
                 let level = table_rules
                     .map(|rules| &rules.common)
                     .and_then(|rules| {
@@ -781,7 +855,10 @@ async fn validate_table(
         }
 
         if let Some(r#enum) = &table_schema.r#enum {
-            if !r#enum.contains(&actual_object) {
+            let matched = r#enum.contains(&actual_object);
+            match_evidence.mark_root_value_assertion(matched, r#enum.len() == 1);
+            if !matched {
+                assertion_failed = true;
                 let level = table_rules
                     .map(|rules| &rules.common)
                     .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
@@ -844,7 +921,11 @@ async fn validate_table(
         if table_schema.property_names.is_some() && property_name_current_schema.is_none() {
             continue;
         }
-        if let Err(crate::Error { diagnostics, .. }) = key
+        if let Err(crate::Invalid {
+            assertion_failed: child_assertion_failed,
+            diagnostics,
+            ..
+        }) = key
             .validate(
                 accessors,
                 property_name_current_schema.as_ref(),
@@ -852,6 +933,7 @@ async fn validate_table(
             )
             .await
         {
+            assertion_failed |= child_assertion_failed;
             total_diagnostics.extend(diagnostics);
         }
     }
@@ -886,13 +968,18 @@ async fn validate_table(
     let comment_directives = table_value
         .comment_directives()
         .map(|directives| directives.cloned().collect_vec());
-    let base_result = if total_diagnostics.is_empty() {
+    evaluated_locations.match_evidence = match_evidence.clone();
+    assertion_failed |= total_diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.level() == tombi_diagnostic::Level::ERROR);
+    let base_result = if total_diagnostics.is_empty() && !assertion_failed {
         Ok(evaluated_locations)
     } else {
-        Err(crate::Error {
-            score: total_score,
+        Err(crate::Invalid {
+            assertion_failed,
+            match_evidence,
             diagnostics: total_diagnostics,
-            evaluated_locations,
+            local_evaluated_locations: evaluated_locations,
         })
     };
 
@@ -922,14 +1009,14 @@ fn collect_evaluated_properties_from_table_schema<'a>(
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     visited_schema_values: &'a mut HashSet<usize>,
-) -> BoxFuture<'a, crate::EvaluatedLocations> {
+) -> BoxFuture<'a, crate::Valid> {
     async move {
         let schema_key = std::sync::Arc::as_ptr(&current_schema.schema_view) as usize;
         if !visited_schema_values.insert(schema_key) {
-            return crate::EvaluatedLocations::new();
+            return crate::Valid::new();
         }
 
-        let mut result = crate::EvaluatedLocations::new();
+        let mut result = crate::Valid::new();
 
         let property_keys = table_schema
             .properties
@@ -1127,7 +1214,7 @@ fn collect_evaluated_properties_from_schema_item<'a>(
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     visited_schema_values: &'a mut HashSet<usize>,
-) -> BoxFuture<'a, crate::EvaluatedLocations> {
+) -> BoxFuture<'a, crate::Valid> {
     async move {
         if let Ok(Some(schema)) = tombi_schema_store::resolve_schema_item(
             schema_item,
@@ -1155,7 +1242,7 @@ fn collect_evaluated_properties_from_schema_item<'a>(
             )
             .await
         } else {
-            crate::EvaluatedLocations::new()
+            crate::Valid::new()
         }
     }
     .boxed()
@@ -1168,9 +1255,9 @@ fn collect_evaluated_properties_from_referable_schemas<'a>(
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     _visited_schema_values: &'a mut HashSet<usize>,
-) -> BoxFuture<'a, crate::EvaluatedLocations> {
+) -> BoxFuture<'a, crate::Valid> {
     async move {
-        let mut result = crate::EvaluatedLocations::new();
+        let mut result = crate::Valid::new();
         let Some(schemas) = tombi_schema_store::resolve_and_collect_schemas(
             applicator.schemas(),
             current_schema.schema_uri.clone(),
@@ -1205,7 +1292,7 @@ fn collect_evaluated_properties_from_referable_schemas<'a>(
             if crate::validate::is_assertion_success(&validation_result) {
                 match validation_result {
                     Ok(evaluated_locations) => result.merge_from(evaluated_locations),
-                    Err(error) => result.merge_from(error.evaluated_locations),
+                    Err(error) => result.merge_from(error.local_evaluated_locations),
                 }
             }
         }
@@ -1221,7 +1308,7 @@ fn collect_evaluated_properties_from_schema_view<'a>(
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     visited_schema_values: &'a mut HashSet<usize>,
-) -> BoxFuture<'a, crate::EvaluatedLocations> {
+) -> BoxFuture<'a, crate::Valid> {
     async move {
         match schema_view {
             SchemaView::Table(table_schema) => {
@@ -1268,7 +1355,7 @@ fn collect_evaluated_properties_from_schema_view<'a>(
                 )
                 .await
             }
-            _ => crate::EvaluatedLocations::new(),
+            _ => crate::Valid::new(),
         }
     }
     .boxed()
@@ -1281,7 +1368,7 @@ fn collect_evaluated_properties_from_if_then_else_schema<'a>(
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     visited_schema_values: &'a mut HashSet<usize>,
-) -> BoxFuture<'a, crate::EvaluatedLocations> {
+) -> BoxFuture<'a, crate::Valid> {
     async move {
         let Ok(Some(if_current_schema)) = tombi_schema_store::resolve_schema_item(
             &if_then_else_schema.if_schema,
@@ -1292,7 +1379,7 @@ fn collect_evaluated_properties_from_if_then_else_schema<'a>(
         )
         .await
         .inspect_err(|err| log::warn!("{err}")) else {
-            return crate::EvaluatedLocations::new();
+            return crate::Valid::new();
         };
         let if_current_schema = if_current_schema
             .for_instance_type(
@@ -1341,7 +1428,7 @@ fn collect_evaluated_properties_from_if_then_else_schema<'a>(
             )
             .await
         } else {
-            crate::EvaluatedLocations::new()
+            crate::Valid::new()
         }
     }
     .boxed()
@@ -1351,18 +1438,18 @@ async fn validate_table_without_schema(
     table_value: &tombi_document_tree::Table,
     accessors: &[tombi_schema_store::Accessor],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-) -> Result<crate::EvaluatedLocations, crate::Error> {
+) -> Result<crate::Valid, crate::Invalid> {
     let mut total_diagnostics = vec![];
 
     // Validate without schema
     for (key, value) in table_value.key_values() {
-        if let Err(crate::Error { diagnostics, .. }) =
+        if let Err(crate::Invalid { diagnostics, .. }) =
             key.validate(accessors, None, schema_context).await
         {
             total_diagnostics.extend(diagnostics);
         }
 
-        if let Err(crate::Error { diagnostics, .. }) = value
+        if let Err(crate::Invalid { diagnostics, .. }) = value
             .validate(
                 &accessors
                     .iter()
@@ -1379,7 +1466,7 @@ async fn validate_table_without_schema(
     }
 
     if total_diagnostics.is_empty() {
-        Ok(crate::EvaluatedLocations::new())
+        Ok(crate::Valid::new())
     } else {
         Err(total_diagnostics.into())
     }

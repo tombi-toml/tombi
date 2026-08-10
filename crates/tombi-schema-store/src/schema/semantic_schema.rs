@@ -134,6 +134,12 @@ impl SemanticSchema {
         }
     }
 
+    /// Returns whether this schema object itself contains `type`, without
+    /// traversing referenced or applicator schemas.
+    pub fn has_direct_type_assertion(&self) -> bool {
+        matches!(self, Self::Object(object) if object.type_assertion.is_some())
+    }
+
     /// Returns whether an instance type is admitted by the schema's explicit
     /// `type` assertion. Keywords for other types never imply a type here.
     pub fn accepts_instance_type(&self, instance_type: SchemaType) -> bool {

@@ -8,7 +8,7 @@ impl Validate for tombi_document_tree::Value {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
+    ) -> BoxFuture<'b, Result<crate::Valid, crate::Invalid>> {
         async move {
             if let Some(Ok(current_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
