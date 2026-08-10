@@ -1167,22 +1167,11 @@ fn resolve_json_pointer_node<'a>(
 
         match current {
             tombi_json::ValueNode::Object(obj) => {
-                if let Some(value) = obj.get(&decoded_segment) {
-                    current = value;
-                } else {
-                    return None;
-                }
+                current = obj.get(&decoded_segment)?;
             }
             tombi_json::ValueNode::Array(arr) => {
-                if let Ok(index) = decoded_segment.parse::<usize>() {
-                    if let Some(value) = arr.get(index) {
-                        current = value;
-                    } else {
-                        return None;
-                    }
-                } else {
-                    return None;
-                }
+                let index = decoded_segment.parse::<usize>().ok()?;
+                current = arr.get(index)?;
             }
             _ => {
                 return None;
