@@ -1,5 +1,5 @@
 name: Generate winget manifest
-description: Generate the tombi winget manifest with wingetcreate, inject InstallationMetadata, and validate it.
+description: Generate, validate, install, and invoke the tombi winget manifest.
 
 inputs:
   release-tag:
@@ -106,3 +106,115 @@ runs:
         }
         $manifestVersionDir = Split-Path -Parent $installerManifest.FullName
         winget validate --manifest $manifestVersionDir --ignore-warnings
+
+    - name: Install and invoke generated winget manifest
+      shell: pwsh
+      env:
+        VERSION: ${{ inputs.version }}
+        OUTPUT_DIR: ${{ inputs.output-dir }}
+      run: |
+        $manifestRoot = Join-Path $PWD $env:OUTPUT_DIR
+        $installerManifest = Get-ChildItem -Path $manifestRoot -Recurse -Filter "*.installer.yaml" | Select-Object -First 1
+        if (-not $installerManifest) {
+          throw "winget installer manifest was not generated."
+        }
+
+        $manifestVersionDir = Split-Path -Parent $installerManifest.FullName
+        $packageInstallDir = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages\tombi-toml.tombi__DefaultSource"
+        $directExecutable = Join-Path $packageInstallDir "tombi.exe"
+        $aliasExecutable = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Links\tombi.exe"
+        $installed = $false
+        $localManifestFilesEnabled = $false
+        $testFailure = $null
+        $cleanupFailures = [System.Collections.Generic.List[string]]::new()
+
+        function Assert-TombiVersion([string] $executable, [string] $kind) {
+          if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
+            throw "The $kind tombi executable was not installed at $executable."
+          }
+
+          $output = (& $executable --version 2>&1 | Out-String).Trim()
+          $exitCode = $LASTEXITCODE
+          Write-Host "$kind invocation output: $output"
+          if ($exitCode -ne 0) {
+            throw "The $kind tombi executable returned exit code $exitCode for --version."
+          }
+
+          $expected = "^tombi $([regex]::Escape($env:VERSION)) \(x86_64-pc-windows-msvc\)$"
+          if ($output -notmatch $expected) {
+            throw "The $kind tombi executable returned an unexpected version: $output"
+          }
+
+          return $output
+        }
+
+        try {
+          winget settings --enable LocalManifestFiles
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to enable the winget LocalManifestFiles setting (exit code $LASTEXITCODE)."
+          }
+          $localManifestFilesEnabled = $true
+
+          winget install `
+            --manifest $manifestVersionDir `
+            --accept-package-agreements `
+            --accept-source-agreements `
+            --disable-interactivity `
+            --ignore-warnings `
+            --verbose-logs
+          if ($LASTEXITCODE -ne 0) {
+            throw "winget install failed with exit code $LASTEXITCODE."
+          }
+          $installed = $true
+
+          # Match the two executable paths invoked by the winget validation service.
+          $directVersion = Assert-TombiVersion $directExecutable "direct"
+          $aliasVersion = Assert-TombiVersion $aliasExecutable "portable alias"
+          if ($directVersion -ne $aliasVersion) {
+            throw "The direct and portable alias tombi version outputs differ."
+          }
+        }
+        catch {
+          $testFailure = $_
+          $wingetLogDir = Join-Path $env:LOCALAPPDATA "Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\DiagOutputDir"
+          if (Test-Path -LiteralPath $wingetLogDir -PathType Container) {
+            Write-Host "Recent winget diagnostic logs:"
+            Get-ChildItem -LiteralPath $wingetLogDir -Filter "*.log" |
+              Sort-Object LastWriteTime -Descending |
+              Select-Object -First 3 |
+              ForEach-Object {
+                Write-Host "--- $($_.FullName) ---"
+                Get-Content -LiteralPath $_.FullName -Tail 200
+              }
+          }
+        }
+        finally {
+          $installationExists = $installed `
+            -or (Test-Path -LiteralPath $directExecutable -PathType Leaf) `
+            -or (Test-Path -LiteralPath $aliasExecutable -PathType Leaf)
+          if ($installationExists) {
+            winget uninstall `
+              --id tombi-toml.tombi `
+              --exact `
+              --accept-source-agreements `
+              --disable-interactivity
+            if ($LASTEXITCODE -ne 0) {
+              $cleanupFailures.Add("winget uninstall failed with exit code $LASTEXITCODE.")
+            }
+          }
+
+          if ($localManifestFilesEnabled) {
+            winget settings --disable LocalManifestFiles
+            if ($LASTEXITCODE -ne 0) {
+              $cleanupFailures.Add("Failed to disable the winget LocalManifestFiles setting (exit code $LASTEXITCODE).")
+            }
+          }
+        }
+
+        if ($testFailure) {
+          $cleanupFailures | ForEach-Object { Write-Warning $_ }
+          throw $testFailure
+        }
+        if ($cleanupFailures.Count -gt 0) {
+          throw ($cleanupFailures -join " ")
+        }

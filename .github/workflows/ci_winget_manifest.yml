@@ -1,0 +1,60 @@
+name: CI WinGet Manifest
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/actions/generate-winget-manifest/**
+      - .github/actions/setup-wingetcreate/**
+      - .github/workflows/ci_winget_manifest.yml
+      - .github/workflows/release_cli_vscode.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  WINGETCREATE_VERSION: 1.12.8.0
+
+jobs:
+  test-winget-manifest:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Resolve latest stable release
+        id: release
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $headers = @{
+            "Accept" = "application/vnd.github+json"
+            "Authorization" = "Bearer $env:GITHUB_TOKEN"
+            "X-GitHub-Api-Version" = "2022-11-28"
+          }
+          $release = Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/tombi-toml/tombi/releases/latest"
+          if ($release.tag_name -notmatch '^v(\d+\.\d+\.\d+)$') {
+            throw "Latest release tag is not a stable version: $($release.tag_name)"
+          }
+
+          "release_tag=$($release.tag_name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "version=$($Matches[1])" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Setup wingetcreate
+        id: wingetcreate
+        uses: ./.github/actions/setup-wingetcreate
+        with:
+          version: ${{ env.WINGETCREATE_VERSION }}
+
+      - name: Generate and test winget manifest
+        uses: ./.github/actions/generate-winget-manifest
+        with:
+          release-tag: ${{ steps.release.outputs.release_tag }}
+          version: ${{ steps.release.outputs.version }}
+          wingetcreate-path: ${{ steps.wingetcreate.outputs.path }}
+          github-token: ${{ github.token }}
