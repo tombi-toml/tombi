@@ -444,7 +444,7 @@ export default function Playground() {
             <div class="playground-actions">
               <button
                 type="button"
-                class="playground-button playground-button-primary"
+                class="playground-button playground-button-primary group"
                 title={`Format (${formatShortcut()})`}
                 aria-keyshortcuts={
                   formatShortcut() === "⌘S" ? "Meta+S" : "Control+S"
@@ -453,14 +453,10 @@ export default function Playground() {
                 disabled={!wasm() || runState() === "formatting"}
                 aria-busy={runState() === "formatting"}
               >
-                <Show
-                  when={runState() !== "formatting"}
-                  fallback={
-                    <TbLoader2 class="playground-spinner" aria-hidden="true" />
-                  }
-                >
-                  <FaSolidFeather aria-hidden="true" />
-                </Show>
+                <FaSolidFeather
+                  class="group-hover:animate-shake"
+                  aria-hidden="true"
+                />
                 Format
                 <span class="playground-button-shortcut" aria-hidden="true">
                   {formatShortcut()}
