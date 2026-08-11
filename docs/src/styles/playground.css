@@ -123,10 +123,6 @@
   height: 1rem;
 }
 
-.playground-button:not(:disabled):active {
-  transform: translateY(1px);
-}
-
 .playground-button:focus-visible {
   outline: 2px solid #3333ff;
   outline-offset: 2px;
@@ -139,6 +135,13 @@
 
 .playground-button-primary:not(:disabled):hover {
   background: #000099;
+}
+
+.playground-button-shortcut {
+  color: rgb(255 255 255 / 62%);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .playground-button:disabled {
