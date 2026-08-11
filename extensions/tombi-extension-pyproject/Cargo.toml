@@ -22,6 +22,7 @@ tombi-config.workspace = true
 tombi-document-tree.workspace = true
 tombi-extension.workspace = true
 tombi-extension-manifest.workspace = true
+tombi-fs.workspace = true
 tombi-future.workspace = true
 tombi-hashmap.workspace = true
 tombi-parser.workspace = true
@@ -29,8 +30,12 @@ tombi-schema-store.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true
 tombi-version-sort.workspace = true
-tombi-fs.workspace = true
 tower-lsp.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
+tombi-test-lib.workspace = true
 
 [features]
 default = ["native"]
@@ -45,11 +50,6 @@ wasm = [
   "tombi-schema-store/wasm",
   "tower-lsp/runtime-agnostic",
 ]
-
-[dev-dependencies]
-tempfile.workspace = true
-tokio = { workspace = true, features = ["macros", "rt"] }
-tombi-test-lib.workspace = true
 
 [lints]
 workspace = true

@@ -14,12 +14,12 @@ tokio = { workspace = true, features = ["sync"] }
 tombi-ast.workspace = true
 tombi-cache.workspace = true
 tombi-document-tree.workspace = true
+tombi-fs.workspace = true
 tombi-hashmap.workspace = true
 tombi-schema-store.workspace = true
 tombi-text = { workspace = true, features = ["lsp"] }
 tombi-toml-text.workspace = true
 tombi-uri.workspace = true
-tombi-fs.workspace = true
 tower-lsp.workspace = true
 
 [dev-dependencies]

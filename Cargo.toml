@@ -66,11 +66,11 @@ rstest = { version = "0.25.0" }
 rustc-hash = { version = "2.1.1" }
 schemars = { version = "1.2.1", features = ["preserve_order", "url2"] }
 semver = "1.0.17"
+send_wrapper = { version = "0.6.0", features = ["futures"] }
 serde = { version = "1.0.219", features = ["derive", "rc"] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
 serde_tombi = { path = "rust/serde_tombi", default-features = false }
 serde_tombi_macros = { path = "rust/serde_tombi_macros" }
-send_wrapper = { version = "0.6.0", features = ["futures"] }
 similar = { version = "2.7.0" }
 syn = { version = "2.0.110", features = ["extra-traits", "full"] }
 tar = { version = "0.4.46" }
@@ -98,6 +98,7 @@ tombi-extension-manifest = { path = "crates/tombi-extension-manifest" }
 tombi-extension-pyproject = { path = "extensions/tombi-extension-pyproject", default-features = false }
 tombi-extension-tombi = { path = "extensions/tombi-extension-tombi" }
 tombi-formatter = { path = "crates/tombi-formatter" }
+tombi-fs = { path = "crates/tombi-fs" }
 tombi-future = { path = "crates/tombi-future" }
 tombi-glob = { path = "crates/tombi-glob" }
 tombi-hashmap = { path = "crates/tombi-hashmap" }
@@ -116,12 +117,13 @@ tombi-schema-type = { path = "crates/tombi-schema-type" }
 tombi-severity-level = { path = "crates/tombi-severity-level" }
 tombi-syntax = { path = "crates/tombi-syntax" }
 tombi-test-lib = { path = "crates/tombi-test-lib" }
-tombi-text = { path = "crates/tombi-text", default-features = false, features = ["serde"] }
+tombi-text = { path = "crates/tombi-text", default-features = false, features = [
+  "serde"
+] }
 tombi-toml-text = { path = "crates/tombi-toml-text" }
 tombi-toml-version = { path = "crates/tombi-toml-version" }
 tombi-uri = { path = "crates/tombi-uri" }
 tombi-validator = { path = "crates/tombi-validator" }
-tombi-fs = { path = "crates/tombi-fs" }
 tombi-version-sort = { path = "crates/tombi-version-sort" }
 tombi-x-keyword = { path = "crates/tombi-x-keyword" }
 tower-lsp = { version = "0.20.0", default-features = false }
