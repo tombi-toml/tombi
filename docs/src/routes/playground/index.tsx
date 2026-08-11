@@ -450,7 +450,7 @@ export default function Playground() {
                   formatShortcut() === "⌘S" ? "Meta+S" : "Control+S"
                 }
                 onClick={() => void formatAndLint()}
-                disabled={!wasm() || runState() === "formatting"}
+                disabled={!wasm()}
                 aria-busy={runState() === "formatting"}
               >
                 <FaSolidFeather
