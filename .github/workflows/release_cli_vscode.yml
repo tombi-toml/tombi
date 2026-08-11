@@ -81,7 +81,7 @@ jobs:
           name: |
             tombi-cli-0.0.0-*
             tombi-vscode-0.0.0-*
-            tombi-wasm-format-lint-0.0.0-*
+            tombi-wasm-0.0.0-*
             tombi-wasm-lsp-0.0.0-*
 
   release-cli-and-vscode:
@@ -259,15 +259,15 @@ jobs:
       - name: Package WASM assets
         working-directory: rust/tombi-wasm
         run: |
-          mv dist/formatter "tombi-wasm-format-lint-${TOMBI_VERSION}"
-          tar -czf "tombi-wasm-format-lint-${TOMBI_VERSION}.tar.gz" "tombi-wasm-format-lint-${TOMBI_VERSION}"
+          mv dist/formatter "tombi-wasm-${TOMBI_VERSION}"
+          tar -czf "tombi-wasm-${TOMBI_VERSION}.tar.gz" "tombi-wasm-${TOMBI_VERSION}"
           mv dist/lsp "tombi-wasm-lsp-${TOMBI_VERSION}"
           tar -czf "tombi-wasm-lsp-${TOMBI_VERSION}.tar.gz" "tombi-wasm-lsp-${TOMBI_VERSION}"
       - name: Upload format/lint WASM artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: tombi-wasm-format-lint-${{ env.TOMBI_VERSION }}.tar.gz
-          path: rust/tombi-wasm/tombi-wasm-format-lint-${{ env.TOMBI_VERSION }}.tar.gz
+          name: tombi-wasm-${{ env.TOMBI_VERSION }}.tar.gz
+          path: rust/tombi-wasm/tombi-wasm-${{ env.TOMBI_VERSION }}.tar.gz
       - name: Upload LSP WASM artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -323,7 +323,7 @@ jobs:
       - name: Download tombi-wasm artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          pattern: tombi-wasm-*-${{ env.TOMBI_VERSION }}.tar.gz
+          pattern: tombi-wasm*-${{ env.TOMBI_VERSION }}.tar.gz
           path: tombi-wasm-artifacts
 
       - name: Check Directory
