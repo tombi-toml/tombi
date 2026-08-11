@@ -21,6 +21,11 @@ export function loadMonacoEditor(): Promise<Monaco> {
       getWorker: () => new EditorWorker(),
     };
 
+    await Promise.all([
+      import("monaco-editor/editor/contrib/hover/browser/hoverContribution"),
+      import("monaco-editor/editor/contrib/suggest/browser/suggestController"),
+    ]);
+
     const monaco = await import("monaco-editor/editor");
 
     if (!tomlRegistered) {
