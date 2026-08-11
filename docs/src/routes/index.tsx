@@ -116,8 +116,8 @@ export default function Home() {
             class="text-xl group"
           >
             <div class="flex items-center gap-2">
-              Get Started{" "}
               <FaSolidFeather class="w-5 h-5 group-hover:animate-shake" />
+              Get Started
             </div>
           </LinkButton>
           <LinkButton
@@ -126,7 +126,8 @@ export default function Home() {
             class="text-xl"
           >
             <div class="flex items-center gap-2">
-              Go to GitHub <TbBrandGithubFilled class="w-6 h-6" />
+              <TbBrandGithubFilled class="w-6 h-6" />
+              Go to GitHub
             </div>
           </LinkButton>
         </div>
