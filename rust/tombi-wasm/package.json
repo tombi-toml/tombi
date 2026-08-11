@@ -25,7 +25,7 @@
     "build:docs": "rm -f ../../docs/public/wasm/tombi_wasm.d.ts ../../docs/public/wasm/tombi_wasm.js ../../docs/public/wasm/tombi_wasm_bg.wasm ../../docs/public/wasm/tombi_wasm_bg.wasm.d.ts && wasm-pack build --locked --target web --out-dir ../../docs/public/wasm --out-name tombi_lsp_wasm -- --no-default-features --features lsp && cp src/lsp-worker.js ../../docs/public/wasm/worker.js",
     "build:copy": "cp -r www/* dist/",
     "build": "mkdir -p dist && pnpm run build:lib && pnpm run build:lsp && pnpm run build:worker && pnpm run build:metadata && pnpm run build:copy",
-    "test:lib": "node tests/formatter-smoke.mjs",
+    "test:lib": "node tests/lib-smoke.mjs",
     "test:lsp": "node tests/lsp-smoke.mjs",
     "test": "pnpm run test:lib && pnpm run test:lsp",
     "dev": "pnpm run build && serve dist",
