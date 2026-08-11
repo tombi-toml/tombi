@@ -1,0 +1,18 @@
+[package]
+name = "tombi-fs"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description = "Filesystem abstraction for native and WebAssembly Tombi runtimes"
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+glob.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+dirs.workspace = true
+tokio = { workspace = true, features = ["fs", "rt"] }
+
+[lints]
+workspace = true

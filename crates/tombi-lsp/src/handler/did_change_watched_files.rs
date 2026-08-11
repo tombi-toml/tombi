@@ -16,7 +16,7 @@ pub async fn handle_did_change_watched_files(
     log::trace!("{:?}", params);
 
     let mut should_refresh_pull_diagnostics = false;
-    let home_dir = dirs::home_dir();
+    let home_dir = tombi_fs::home_dir();
     let mut workspace_configs: Option<Vec<WorkspaceConfig>> = None;
 
     for change in params.changes {
@@ -26,6 +26,9 @@ pub async fn handle_did_change_watched_files(
 
         match change.typ {
             FileChangeType::DELETED => {
+                if let Ok(path) = uri.to_file_path() {
+                    tombi_fs::remove_file(&path);
+                }
                 {
                     let mut document_sources = backend.document_sources.write().await;
                     document_sources.remove(&uri);

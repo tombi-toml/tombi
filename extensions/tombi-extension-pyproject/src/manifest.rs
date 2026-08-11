@@ -95,7 +95,7 @@ fn load_pyproject_toml(
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<(tombi_ast::Root, tombi_document_tree::DocumentTree)> {
-    let toml_text = std::fs::read_to_string(pyproject_toml_path).ok()?;
+    let toml_text = tombi_fs::read_to_string(pyproject_toml_path).ok()?;
     let root = tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
 
     Some((

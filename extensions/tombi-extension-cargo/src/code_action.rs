@@ -288,7 +288,7 @@ async fn code_actions_for_crate_cargo_toml(
         )
     {
         // Load workspace text and create line index for workspace document
-        let Ok(workspace_text) = std::fs::read_to_string(&workspace_cargo_toml_path) else {
+        let Ok(workspace_text) = tombi_fs::read_to_string(&workspace_cargo_toml_path) else {
             return Ok(code_actions);
         };
         let workspace_line_index =

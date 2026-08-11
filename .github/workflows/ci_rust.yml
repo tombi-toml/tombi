@@ -127,6 +127,8 @@ jobs:
       - name: Install WASM target
         run: rustup target add wasm32-unknown-unknown
       - name: Run WASM Clippy
-        run: cargo clippy --locked -p tombi-wasm --target wasm32-unknown-unknown -- -D warnings
-      - name: Build WASM package
+        run: cargo clippy --locked -p tombi-wasm --target wasm32-unknown-unknown --no-default-features --features lsp -- -D warnings
+      - name: Build WASM package variants
         run: pnpm --dir rust/tombi-wasm build
+      - name: Run WASM smoke tests
+        run: pnpm --dir rust/tombi-wasm test

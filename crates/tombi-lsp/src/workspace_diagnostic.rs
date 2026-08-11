@@ -44,7 +44,7 @@ pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tomb
     };
 
     let mut candidates = tombi_hashmap::HashSet::new();
-    let home_dir = dirs::home_dir();
+    let home_dir = tombi_fs::home_dir();
 
     for workspace_config in configs {
         if !workspace_config.is_workspace_diagnostic_enabled() {
@@ -136,7 +136,7 @@ pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_
         }
     };
 
-    let Ok(content) = tokio::fs::read_to_string(&text_document_path).await else {
+    let Ok(content) = tombi_fs::read_to_string_async(&text_document_path).await else {
         log::warn!(
             "Failed to read file for diagnostics: {:?}",
             text_document_path

@@ -85,14 +85,14 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
 ) -> Result<Option<Config>, tombi_config::Error> {
     let config_path = config_path.as_ref();
 
-    if !config_path.exists() {
+    if !tombi_fs::is_file(config_path) {
         return Err(tombi_config::Error::ConfigFileNotFound {
             config_path: config_path.to_owned(),
         });
     }
 
     let config_text =
-        std::fs::read_to_string(config_path).map_err(|_| config_file_read_error(config_path))?;
+        tombi_fs::read_to_string(config_path).map_err(|_| config_file_read_error(config_path))?;
 
     match config_path.file_name().and_then(|name| name.to_str()) {
         Some(DOT_TOMBI_TOML_FILENAME | TOMBI_TOML_FILENAME | CONFIG_TOML_FILENAME) => {
@@ -129,7 +129,7 @@ pub fn load_with_path_and_level(
                 current_dir.join(".config").join(TOMBI_TOML_FILENAME),
             ] {
                 log::trace!("Checking config file at {:?}", config_path);
-                if config_path.is_file() {
+                if tombi_fs::is_file(&config_path) {
                     log::debug!("Project config found at {:?}", config_path);
 
                     match try_from_path(&config_path) {
@@ -149,7 +149,7 @@ pub fn load_with_path_and_level(
 
             let pyproject_toml_path = current_dir.join(PYPROJECT_TOML_FILENAME);
             log::trace!("Checking pyproject.toml file at {:?}", pyproject_toml_path);
-            if pyproject_toml_path.exists() {
+            if tombi_fs::is_file(&pyproject_toml_path) {
                 log::debug!(
                     "\"{}\" found at {:?}",
                     PYPROJECT_TOML_FILENAME,
@@ -210,7 +210,7 @@ fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBu
         let mut config_path = std::path::PathBuf::from(xdg_config_home);
         config_path.push("tombi");
         config_path.push(CONFIG_TOML_FILENAME);
-        if config_path.is_file() {
+        if tombi_fs::is_file(&config_path) {
             return Some((config_path, ConfigLevel::User));
         }
     }
@@ -221,7 +221,7 @@ fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBu
         config_path.push(".config");
         config_path.push("tombi");
         config_path.push(CONFIG_TOML_FILENAME);
-        if config_path.is_file() {
+        if tombi_fs::is_file(&config_path) {
             return Some((config_path, ConfigLevel::User));
         }
 
@@ -233,7 +233,7 @@ fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBu
             config_path.push("Application Support");
             config_path.push("tombi");
             config_path.push(CONFIG_TOML_FILENAME);
-            if config_path.exists() {
+            if tombi_fs::is_file(&config_path) {
                 return Some((config_path, ConfigLevel::User));
             }
         }
@@ -246,7 +246,7 @@ fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBu
             let mut config_path = std::path::PathBuf::from(appdata);
             config_path.push("tombi");
             config_path.push(CONFIG_TOML_FILENAME);
-            if config_path.is_file() {
+            if tombi_fs::is_file(&config_path) {
                 return Some((config_path, ConfigLevel::User));
             }
         }
@@ -255,7 +255,7 @@ fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBu
     // 4. /etc/tombi/config.toml
     let mut config_path = std::path::PathBuf::from("/etc/tombi");
     config_path.push(CONFIG_TOML_FILENAME);
-    if config_path.exists() {
+    if tombi_fs::is_file(&config_path) {
         return Some((config_path, ConfigLevel::System));
     }
 

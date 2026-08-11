@@ -93,21 +93,11 @@ pub(crate) use comment_directive::{
 };
 pub use hover::HoverContent;
 
-/// Run TOML Language Server
-#[derive(Debug)]
-#[cfg_attr(feature = "clap", derive(clap::Args))]
-pub struct Args {}
-
-pub async fn serve(_args: impl Into<Args>, offline: bool, no_cache: bool) {
-    log::info!(
-        "Tombi Language Server version \"{}\" will start.",
-        env!("CARGO_PKG_VERSION")
-    );
-
-    let stdin = tokio::io::stdin();
-    let stdout = tokio::io::stdout();
-
-    let (service, socket) = tower_lsp::LspService::build(|client| {
+pub fn lsp_service(
+    offline: bool,
+    no_cache: bool,
+) -> (tower_lsp::LspService<Backend>, tower_lsp::ClientSocket) {
+    tower_lsp::LspService::build(|client| {
         Backend::new(
             client,
             &crate::backend::Options {
@@ -124,11 +114,5 @@ pub async fn serve(_args: impl Into<Args>, offline: bool, no_cache: bool) {
     .custom_method("tombi/updateConfig", Backend::update_config)
     .custom_method("tombi/associateSchema", Backend::associate_schema)
     .custom_method("tombi/refreshCache", Backend::refresh_cache)
-    .finish();
-
-    tower_lsp::Server::new(stdin, stdout, socket)
-        .serve(service)
-        .await;
-
-    log::info!("Tombi LSP Server did shut down.");
+    .finish()
 }

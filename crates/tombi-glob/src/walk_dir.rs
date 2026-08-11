@@ -1,5 +1,7 @@
+#[cfg(not(target_family = "wasm"))]
 use ignore::WalkBuilder;
 use std::path::{Path, PathBuf};
+#[cfg(not(target_family = "wasm"))]
 use std::sync::{Arc, Mutex};
 
 use tombi_config::FilesOptions;
@@ -30,7 +32,8 @@ impl WalkDir {
         }
     }
 
-    /// Walk the directory asynchronously and return matching file paths
+    /// Walk the directory asynchronously and return matching file paths.
+    #[cfg(not(target_family = "wasm"))]
     pub async fn walk(self) -> Result<Vec<PathBuf>, crate::Error> {
         let root_path = &self.root;
 
@@ -110,6 +113,54 @@ impl WalkDir {
             .map_err(|_| crate::Error::LockError)?
             .into_inner()
             .map_err(|_| crate::Error::LockError)?;
+
+        Ok(results)
+    }
+
+    /// Walk the browser-backed virtual filesystem and return matching file paths.
+    #[cfg(target_family = "wasm")]
+    pub async fn walk(self) -> Result<Vec<PathBuf>, crate::Error> {
+        let root_path = self.root;
+        if !tombi_fs::is_file(&root_path) && !tombi_fs::is_dir(&root_path) {
+            return Err(crate::Error::RootPathNotFound { path: root_path });
+        }
+        if !tombi_fs::is_dir(&root_path) {
+            return Err(crate::Error::RootPathNotDirectory { path: root_path });
+        }
+
+        let include_patterns = self.options.include.unwrap_or_default();
+        let exclude_patterns = self.options.exclude.unwrap_or_default();
+        let mut directories = vec![root_path.clone()];
+        let mut results = Vec::new();
+
+        while let Some(directory) = directories.pop() {
+            let entries =
+                tombi_fs::read_dir(&directory).map_err(|source| crate::Error::IoError {
+                    path: directory.clone(),
+                    source,
+                })?;
+            for entry in entries {
+                let path = entry.path().to_path_buf();
+                if entry.is_dir() {
+                    directories.push(path);
+                    continue;
+                }
+
+                let path_for_patterns = crate::pattern::path_for_patterns(&path, &root_path);
+                let should_include = include_patterns.is_empty()
+                    || crate::pattern::matches_any_pattern(
+                        path_for_patterns.as_ref(),
+                        &include_patterns,
+                    );
+                let should_exclude = crate::pattern::matches_any_pattern(
+                    path_for_patterns.as_ref(),
+                    &exclude_patterns,
+                );
+                if should_include && !should_exclude {
+                    results.push(path);
+                }
+            }
+        }
 
         Ok(results)
     }

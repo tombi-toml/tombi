@@ -14,7 +14,7 @@ itertools.workspace = true
 semver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-tokio = { workspace = true, features = ["fs", "macros", "rt", "sync"] }
+tokio = { workspace = true, features = ["macros", "rt", "sync"] }
 tombi-ast.workspace = true
 tombi-cache.workspace = true
 tombi-config.workspace = true
@@ -28,7 +28,22 @@ tombi-schema-store.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true
 tombi-version-sort.workspace = true
+tombi-fs.workspace = true
 tower-lsp.workspace = true
+
+[features]
+default = ["native"]
+native = [
+  "tokio/fs",
+  "tombi-future/native",
+  "tombi-schema-store/native",
+  "tower-lsp/runtime-tokio",
+]
+wasm = [
+  "tombi-future/wasm-send",
+  "tombi-schema-store/wasm",
+  "tower-lsp/runtime-agnostic",
+]
 
 [dev-dependencies]
 tempfile.workspace = true

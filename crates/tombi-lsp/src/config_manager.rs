@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use tombi_config::{Config, TomlVersion};
 use tombi_schema_store::{SchemaStore, SchemaUri};
-use tower_lsp::lsp_types::Url;
 
 /// Source type for ConfigSchemaStore without a specific config file
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -227,9 +226,9 @@ impl ConfigManager {
         }
     }
 
-    /// Get the config path for a specific URL
-    pub async fn get_config_path_for_url(&self, url: &Url) -> Option<PathBuf> {
-        if let Ok(path) = url.to_file_path() {
+    /// Get the config path for a specific URI
+    pub async fn get_config_path_for_uri(&self, uri: &tombi_uri::Uri) -> Option<PathBuf> {
+        if let Ok(path) = uri.to_file_path() {
             let source_config_paths = self.source_config_paths.read().await;
             if let Some(config_path) = source_config_paths.get(&path) {
                 return Some(config_path.clone());

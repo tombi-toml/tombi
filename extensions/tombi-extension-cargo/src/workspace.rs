@@ -38,7 +38,7 @@ static DID_OPEN_WORKSPACE_CARGO_TOML_CACHE: LazyLock<
 > = LazyLock::new(|| RwLock::new(HashMap::new()));
 
 pub(crate) fn canonicalize_or_original(path: PathBuf) -> PathBuf {
-    path.canonicalize().unwrap_or(path)
+    tombi_fs::canonicalize(&path).unwrap_or(path)
 }
 
 fn insert_bounded<V>(cache: &mut HashMap<PathBuf, V>, path: PathBuf, value: V) {
@@ -68,7 +68,7 @@ pub(crate) async fn load_cargo_toml_document_tree(
         }
     }
 
-    let parsed_document_tree = tokio::task::spawn_blocking({
+    let parsed_document_tree = tombi_fs::run_blocking({
         let canonicalized_path = canonicalized_path.clone();
         move || {
             load_cargo_toml(&canonicalized_path, toml_version)
@@ -105,7 +105,7 @@ pub(crate) fn find_workspace_cargo_toml(
             Path::new(workspace_path),
             "Cargo.toml",
         )?;
-        let canonicalized_path = workspace_cargo_toml_path.canonicalize().ok()?;
+        let canonicalized_path = tombi_fs::canonicalize(&workspace_cargo_toml_path).ok()?;
         let (root, document_tree) = load_cargo_toml(&canonicalized_path, toml_version)?;
 
         return document_tree.contains_key("workspace").then_some((
@@ -155,7 +155,7 @@ pub(crate) async fn load_workspace_cargo_toml(
         }
     }
 
-    let workspace_cargo_toml = tokio::task::spawn_blocking({
+    let workspace_cargo_toml = tombi_fs::run_blocking({
         let cargo_toml_path = cache_key.clone();
         let workspace_path = workspace_path.map(str::to_owned);
         move || {
@@ -583,18 +583,18 @@ pub(crate) fn find_package_cargo_toml_paths<'a>(
                 member_pattern_path = workspace_dir_path.join(member_pattern_path);
             }
 
-            let mut candidate_paths = match glob::glob(&member_pattern_path.to_string_lossy()) {
+            let candidate_paths = match tombi_fs::glob(&member_pattern_path.to_string_lossy()) {
                 Ok(paths) => paths,
                 Err(_) => return None,
             };
 
-            while let Some(Ok(candidate_path)) = candidate_paths.next() {
-                if !candidate_path.is_dir() {
+            for candidate_path in candidate_paths {
+                if !tombi_fs::is_dir(&candidate_path) {
                     continue;
                 }
 
                 let cargo_toml_path = candidate_path.join("Cargo.toml");
-                if !cargo_toml_path.is_file() {
+                if !tombi_fs::is_file(&cargo_toml_path) {
                     continue;
                 }
 

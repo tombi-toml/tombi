@@ -112,11 +112,9 @@ pub async fn inlay_hint(
     let document_tree = document_tree.clone();
     let uv_lock_cache = load_uv_lock_cache(&pyproject_toml_path, toml_version).await;
 
-    tokio::task::spawn_blocking(move || {
-        inlay_hint_impl(&document_tree, visible_range, uv_lock_cache)
-    })
-    .await
-    .map_err(|_| tower_lsp::jsonrpc::Error::new(tower_lsp::jsonrpc::ErrorCode::InternalError))?
+    tombi_fs::run_blocking(move || inlay_hint_impl(&document_tree, visible_range, uv_lock_cache))
+        .await
+        .map_err(|_| tower_lsp::jsonrpc::Error::new(tower_lsp::jsonrpc::ErrorCode::InternalError))?
 }
 
 fn inlay_hint_impl(
@@ -337,8 +335,8 @@ fn find_uv_lock_path(pyproject_toml_path: &Path) -> Option<std::path::PathBuf> {
 
     loop {
         let candidate = current_dir.join("uv.lock");
-        if candidate.is_file() {
-            return candidate.canonicalize().ok().or(Some(candidate));
+        if tombi_fs::is_file(&candidate) {
+            return tombi_fs::canonicalize(&candidate).ok().or(Some(candidate));
         }
 
         current_dir = current_dir.parent()?;
@@ -355,8 +353,8 @@ async fn load_uv_lock_cache_json(
     uv_lock_path: PathBuf,
     toml_version: TomlVersion,
 ) -> Option<serde_json::Value> {
-    let uv_lock_text = tokio::fs::read_to_string(&uv_lock_path).await.ok()?;
-    tokio::task::spawn_blocking(move || parse_uv_lock_cache_json(uv_lock_text, toml_version))
+    let uv_lock_text = tombi_fs::read_to_string_async(&uv_lock_path).await.ok()?;
+    tombi_fs::run_blocking(move || parse_uv_lock_cache_json(uv_lock_text, toml_version))
         .await
         .ok()
         .flatten()

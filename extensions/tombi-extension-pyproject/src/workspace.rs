@@ -75,18 +75,18 @@ pub(crate) fn find_pyproject_toml_paths<'a>(
                 member_pattern_path = workspace_dir_path.join(member_pattern_path);
             }
 
-            let mut candidate_paths = match glob::glob(&member_pattern_path.to_string_lossy()) {
+            let candidate_paths = match tombi_fs::glob(&member_pattern_path.to_string_lossy()) {
                 Ok(paths) => paths,
                 Err(_) => return None,
             };
 
-            while let Some(Ok(candidate_path)) = candidate_paths.next() {
-                if !candidate_path.is_dir() {
+            for candidate_path in candidate_paths {
+                if !tombi_fs::is_dir(&candidate_path) {
                     continue;
                 }
 
                 let manifest_path = candidate_path.join("pyproject.toml");
-                if !manifest_path.is_file() {
+                if !tombi_fs::is_file(&manifest_path) {
                     continue;
                 }
 

@@ -33,56 +33,54 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         .await
         .clear(&text_document_uri);
 
-    let config_schema_store = backend
-        .config_manager
-        .config_schema_store_for_uri(&text_document_uri)
-        .await;
-    let offline = config_schema_store.schema_store.offline();
-    let cache_options = config_schema_store.schema_store.cache_options();
+    let cache_warming: Option<tombi_future::BoxFuture<'static, bool>> = {
+        let config_schema_store = backend
+            .config_manager
+            .config_schema_store_for_uri(&text_document_uri)
+            .await;
+        let offline = config_schema_store.schema_store.offline();
+        let cache_options = config_schema_store.schema_store.cache_options();
 
-    let mut cache_warming_handle: Option<tokio::task::JoinHandle<bool>> = None;
+        let mut cache_warming = None;
 
-    if config_schema_store.config.cargo_extension_enabled()
-        && let Ok(Some(handle)) = tombi_extension_cargo::did_open(
-            &text_document_uri,
-            document_tree.as_ref(),
-            toml_version,
-            offline,
-            cache_options,
-            config_schema_store.config.cargo_extension_features(),
-        )
-        .await
-    {
-        cache_warming_handle = Some(handle)
-    } else if config_schema_store.config.pyproject_extension_enabled()
-        && let Ok(Some(handle)) = tombi_extension_pyproject::did_open(
-            &text_document_uri,
-            document_tree.as_ref(),
-            toml_version,
-            offline,
-            cache_options,
-            config_schema_store.config.pyproject_extension_features(),
-        )
-        .await
-    {
-        cache_warming_handle = Some(handle)
-    }
+        if config_schema_store.config.cargo_extension_enabled()
+            && let Ok(Some(warming)) = tombi_extension_cargo::did_open(
+                &text_document_uri,
+                document_tree.as_ref(),
+                toml_version,
+                offline,
+                cache_options,
+                config_schema_store.config.cargo_extension_features(),
+            )
+            .await
+        {
+            cache_warming = Some(warming);
+        } else if config_schema_store.config.pyproject_extension_enabled()
+            && let Ok(Some(warming)) = tombi_extension_pyproject::did_open(
+                &text_document_uri,
+                document_tree.as_ref(),
+                toml_version,
+                offline,
+                cache_options,
+                config_schema_store.config.pyproject_extension_features(),
+            )
+            .await
+        {
+            cache_warming = Some(warming);
+        }
+        cache_warming
+    };
 
     // Publish diagnostics for the opened document
     backend.push_diagnostics(text_document_uri).await;
 
-    if let Some(handle) = cache_warming_handle {
-        backend.register_background_task(&handle);
+    if let Some(cache_warming) = cache_warming {
         let client = backend.client.clone();
-        let refresh_task = tokio::spawn(async move {
-            let Ok(should_refresh_inlay_hint) = handle.await else {
-                return;
-            };
-
+        backend.spawn_background_task(async move {
+            let should_refresh_inlay_hint = cache_warming.await;
             if should_refresh_inlay_hint && let Err(err) = client.inlay_hint_refresh().await {
                 log::debug!("Failed to request warmed inlay hint refresh: {err}");
             }
         });
-        backend.register_background_task(&refresh_task);
     }
 }

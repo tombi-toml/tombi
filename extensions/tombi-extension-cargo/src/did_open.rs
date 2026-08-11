@@ -4,6 +4,7 @@ use futures::stream::{self, StreamExt};
 use tombi_config::{CargoExtensionFeatures, TomlVersion};
 use tombi_document_tree::{DocumentTree, Table, Value, dig_keys};
 use tombi_extension::remote_cache::warm_remote_json_cache;
+use tombi_future::Boxable;
 
 use crate::{
     cargo_lock::{exact_crates_io_version, load_cached_cargo_lock},
@@ -38,7 +39,7 @@ pub async fn did_open(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&CargoExtensionFeatures>,
-) -> Result<Option<tokio::task::JoinHandle<bool>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tombi_future::BoxFuture<'static, bool>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
@@ -62,7 +63,7 @@ pub async fn did_open(
     let document_tree = document_tree.clone();
     let cache_options = cache_options.cloned();
     let features = features.cloned();
-    let handle = tokio::spawn(async move {
+    let warm = async move {
         let urls = collect_prefetch_urls(
             &document_tree,
             &cargo_toml_path,
@@ -93,9 +94,9 @@ pub async fn did_open(
         );
 
         should_refresh_inlay_hint
-    });
+    };
 
-    Ok(Some(handle))
+    Ok(Some(warm.boxed()))
 }
 
 async fn warm_urls(

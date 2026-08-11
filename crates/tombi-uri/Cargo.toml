@@ -10,6 +10,9 @@ license.workspace = true
 serde.workspace = true
 url = { version = "2.5.4", features = ["serde"] }
 
+[target.'cfg(not(any(unix, windows, target_os = "redox", target_os = "wasi", target_os = "hermit")))'.dependencies]
+percent-encoding.workspace = true
+
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 
