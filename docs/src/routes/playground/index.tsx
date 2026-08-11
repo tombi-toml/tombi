@@ -83,7 +83,7 @@ export default function Playground() {
     createSignal<MonacoEditor.IStandaloneCodeEditor>();
   const [editorLoading, setEditorLoading] = createSignal(true);
   const [editorError, setEditorError] = createSignal<string>();
-  const [formatShortcut, setFormatShortcut] = createSignal("Ctrl + S");
+  const [formatShortcut, setFormatShortcut] = createSignal("Ctrl S");
   const [runState, setRunState] = createSignal<RunState>("loading");
   const [statusMessage, setStatusMessage] = createSignal(
     "Loading the Tombi WebAssembly runtime…",
@@ -362,7 +362,7 @@ export default function Playground() {
     const operatingSystem = detectOperatingSystem();
     const isApplePlatform =
       operatingSystem === "mac" || operatingSystem === "ios";
-    setFormatShortcut(isApplePlatform ? "Cmd + S" : "Ctrl + S");
+    setFormatShortcut(isApplePlatform ? "⌘S" : "Ctrl S");
 
     const handleShortcut = (event: KeyboardEvent) => {
       if (!event.metaKey && !event.ctrlKey) return;
@@ -447,7 +447,7 @@ export default function Playground() {
                 class="playground-button playground-button-primary"
                 title={`Format (${formatShortcut()})`}
                 aria-keyshortcuts={
-                  formatShortcut() === "Cmd + S" ? "Meta+S" : "Control+S"
+                  formatShortcut() === "⌘S" ? "Meta+S" : "Control+S"
                 }
                 onClick={() => void formatAndLint()}
                 disabled={!wasm() || runState() === "formatting"}
