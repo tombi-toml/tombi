@@ -18,7 +18,7 @@
     "./lsp/worker": "./dist/lsp/worker.js"
   },
   "scripts": {
-    "build:formatter": "wasm-pack build --locked --target web --out-dir dist/formatter --out-name tombi_wasm -- --no-default-features --features formatter",
+    "build:formatter": "wasm-pack build --locked --target web --out-dir dist/formatter --out-name tombi_wasm -- --no-default-features --features lib",
     "build:lsp": "wasm-pack build --locked --target web --out-dir dist/lsp --out-name tombi_lsp_wasm -- --no-default-features --features lsp",
     "build:worker": "cp src/lsp-worker.js dist/lsp/worker.js",
     "build:metadata": "find dist/formatter dist/lsp -name .gitignore -delete",

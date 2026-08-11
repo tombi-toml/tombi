@@ -34,8 +34,8 @@ wasm-streams = { workspace = true, optional = true }
 web-sys = { workspace = true, optional = true }
 
 [features]
-default = ["formatter"]
-formatter = [
+default = ["lib"]
+lib = [
   "dep:itertools",
   "dep:serde",
   "dep:serde_tombi",
