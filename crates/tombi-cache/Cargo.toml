@@ -10,15 +10,15 @@ license.workspace = true
 thiserror.workspace = true
 tombi-uri.workspace = true
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-dirs.workspace = true
-log.workspace = true
-tokio = { workspace = true, features = ["fs"] }
-
 [dev-dependencies]
 tempfile.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
 tombi-test-lib.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+dirs.workspace = true
+log.workspace = true
+tokio = { workspace = true, features = ["fs"] }
 
 [lints]
 workspace = true
