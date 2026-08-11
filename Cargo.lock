@@ -3180,7 +3180,6 @@ version = "0.0.0-dev"
 dependencies = [
  "bytes",
  "futures",
- "getrandom 0.3.3",
  "glob",
  "gloo-net",
  "itertools 0.14.0",

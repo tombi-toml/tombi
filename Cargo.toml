@@ -151,6 +151,4 @@ deprecated = "warn"
 [workspace.metadata.cargo-shear]
 ignored = [
   "wasi",
-  "wasm-bindgen",
-  "wasm-bindgen-futures",
 ]

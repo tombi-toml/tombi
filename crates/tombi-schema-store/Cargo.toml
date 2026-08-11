@@ -39,9 +39,6 @@ reqwest = { workspace = true, features = ["blocking"] }
 tokio = { workspace = true, features = ["macros", "test-util"] }
 tombi-test-lib.workspace = true
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.3.3", features = ["wasm_js"], optional = true }
-
 [features]
 default = ["native"]
 document-tree = ["dep:tombi-document-tree"]
@@ -50,7 +47,7 @@ gloo-net06 = ["gloo-net"]
 native = ["reqwest", "tombi-future/native"]
 reqwest = ["dep:reqwest"]
 reqwest01 = ["reqwest"]
-wasm = ["dep:getrandom", "gloo-net", "tombi-future/wasm"]
+wasm = ["gloo-net", "tombi-future/wasm"]
 
 [lints]
 workspace = true
