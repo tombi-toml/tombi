@@ -12,7 +12,7 @@ interface IconButtonProps {
 
 export const IconButton: ParentComponent<IconButtonProps> = (props) => {
   const baseClasses =
-    "text-white hover:text-white/80 transition-colors bg-transparent border-0 p-2 btn-focus";
+    "text-white hover:text-white/80 transition-colors bg-transparent border-0 p-2 btn-focus cursor-pointer";
 
   return (
     <button

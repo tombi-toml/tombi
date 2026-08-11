@@ -74,7 +74,7 @@ export function HeaderDropdownItem(
           <button
             type="button"
             onClick={toggleOpen}
-            class="w-8 h-16 p-x-8 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 bg-transparent border-none rounded"
+            class="w-8 h-16 p-x-8 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 bg-transparent border-none rounded cursor-pointer"
             aria-expanded={isExpanded()}
             aria-label={isExpanded() ? "Collapse section" : "Expand section"}
             tabindex={props.isExpanded ? 0 : -1}
