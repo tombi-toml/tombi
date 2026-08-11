@@ -17,6 +17,7 @@ import {
 import { PageHeading } from "~/components/PageHeading";
 import { DEFAULT_URL } from "~/remark/page-heading";
 import { loadMonacoEditor, type Monaco } from "~/utils/monaco-editor";
+import { detectOperatingSystem } from "~/utils/platform";
 import {
   loadTombiWasm,
   normalizeWasmError,
@@ -82,7 +83,7 @@ export default function Playground() {
     createSignal<MonacoEditor.IStandaloneCodeEditor>();
   const [editorLoading, setEditorLoading] = createSignal(true);
   const [editorError, setEditorError] = createSignal<string>();
-  const [formatShortcut, setFormatShortcut] = createSignal("Ctrl+S");
+  const [formatShortcut, setFormatShortcut] = createSignal("Ctrl + S");
   const [runState, setRunState] = createSignal<RunState>("loading");
   const [statusMessage, setStatusMessage] = createSignal(
     "Loading the Tombi WebAssembly runtime…",
@@ -358,8 +359,10 @@ export default function Playground() {
   });
 
   onMount(() => {
-    const isApplePlatform = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
-    setFormatShortcut(isApplePlatform ? "⌘S" : "Ctrl+S");
+    const operatingSystem = detectOperatingSystem();
+    const isApplePlatform =
+      operatingSystem === "mac" || operatingSystem === "ios";
+    setFormatShortcut(isApplePlatform ? "Cmd + S" : "Ctrl + S");
 
     const handleShortcut = (event: KeyboardEvent) => {
       if (!event.metaKey && !event.ctrlKey) return;
@@ -444,7 +447,7 @@ export default function Playground() {
                 class="playground-button playground-button-primary"
                 title={`Format (${formatShortcut()})`}
                 aria-keyshortcuts={
-                  formatShortcut() === "⌘S" ? "Meta+S" : "Control+S"
+                  formatShortcut() === "Cmd + S" ? "Meta+S" : "Control+S"
                 }
                 onClick={() => void formatAndLint()}
                 disabled={!wasm() || runState() === "formatting"}
@@ -458,6 +461,9 @@ export default function Playground() {
                   <FaSolidFeather aria-hidden="true" />
                 </Show>
                 {runState() === "formatting" ? "Formatting…" : "Format"}
+                <span class="playground-button-shortcut" aria-hidden="true">
+                  {formatShortcut()}
+                </span>
               </button>
             </div>
           </div>

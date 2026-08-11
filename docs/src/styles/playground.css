@@ -141,6 +141,13 @@
   background: #000099;
 }
 
+.playground-button-shortcut {
+  color: rgb(255 255 255 / 62%);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .playground-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
