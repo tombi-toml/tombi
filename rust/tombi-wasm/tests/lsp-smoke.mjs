@@ -390,7 +390,7 @@ input.push(
     id: 6,
     method: "textDocument/hover",
     params: {
-      position: { line: 0, character: 2 },
+      position: { line: 2, character: 5 },
       textDocument: { uri: "file:///workspace/tombi.toml" },
     },
   }),
