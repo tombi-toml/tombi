@@ -173,7 +173,7 @@ pub async fn code_action(
         };
 
         // Load workspace text and create line index for workspace document
-        let Ok(workspace_text) = std::fs::read_to_string(&workspace_path) else {
+        let Ok(workspace_text) = tombi_fs::read_to_string(&workspace_path) else {
             log::warn!(
                 "Failed to read workspace pyproject.toml: {:?}",
                 workspace_path.display()

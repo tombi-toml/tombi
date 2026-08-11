@@ -426,7 +426,6 @@ mod references_tests {
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([
-                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
                 project_root_path().join("crates/tombi-schema-store/Cargo.toml"),
                 project_root_path().join("crates/tombi-schema-store/Cargo.toml"),
             ]);

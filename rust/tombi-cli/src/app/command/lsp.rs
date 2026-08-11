@@ -13,11 +13,19 @@ pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
         .enable_all()
         .build()?;
 
-    runtime.block_on(tombi_lsp::serve(
-        tombi_lsp::Args {},
-        args.common.offline,
-        args.common.no_cache,
-    ));
+    runtime.block_on(async move {
+        log::info!(
+            "Tombi Language Server version \"{}\" will start.",
+            env!("CARGO_PKG_VERSION")
+        );
+
+        let (service, socket) = tombi_lsp::lsp_service(args.common.offline, args.common.no_cache);
+        tower_lsp::Server::new(tokio::io::stdin(), tokio::io::stdout(), socket)
+            .serve(service)
+            .await;
+
+        log::info!("Tombi LSP Server did shut down.");
+    });
 
     runtime.shutdown_timeout(std::time::Duration::from_secs(1));
 

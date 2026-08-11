@@ -124,7 +124,7 @@ fn resolve_schema_location(
 
     if uri.scheme() == "file" {
         if let Ok(path) = uri.to_file_path() {
-            if !path.is_file() {
+            if !tombi_fs::is_file(&path) {
                 return None;
             }
         } else {

@@ -27,7 +27,7 @@ pub(crate) fn load_cargo_toml(
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<(tombi_ast::Root, tombi_document_tree::DocumentTree)> {
-    let toml_text = std::fs::read_to_string(cargo_toml_path).ok()?;
+    let toml_text = tombi_fs::read_to_string(cargo_toml_path).ok()?;
     let root = tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
 
     Some((
@@ -47,7 +47,7 @@ pub(crate) fn find_cargo_toml(
 )> {
     let crate_cargo_toml_path =
         tombi_extension_manifest::resolve_manifest_path(cargo_toml_path, crate_path, "Cargo.toml")?;
-    let canonicalized_path = crate_cargo_toml_path.canonicalize().ok()?;
+    let canonicalized_path = tombi_fs::canonicalize(&crate_cargo_toml_path).ok()?;
     let (root, document_tree) = load_cargo_toml(&canonicalized_path, toml_version)?;
 
     Some((canonicalized_path, root, document_tree))

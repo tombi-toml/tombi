@@ -148,6 +148,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-codec-lite"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2527c30e3972d8ff366b353125dae828c4252a154dbe6063684f6c5e014760a3"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "futures-core",
+ "futures-io",
+ "futures-sink",
+ "log",
+ "pin-project-lite",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2153,6 +2169,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "send_wrapper"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
+dependencies = [
+ "futures-core",
+]
+
+[[package]]
 name = "serde"
 version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2249,6 +2274,7 @@ dependencies = [
  "tombi-document",
  "tombi-document-tree",
  "tombi-formatter",
+ "tombi-fs",
  "tombi-hashmap",
  "tombi-parser",
  "tombi-schema-store",
@@ -2669,6 +2695,7 @@ dependencies = [
  "tombi-lsp",
  "tombi-regex",
  "tombi-schema-store",
+ "tower-lsp",
 ]
 
 [[package]]
@@ -2805,6 +2832,7 @@ dependencies = [
  "tombi-ast",
  "tombi-cache",
  "tombi-document-tree",
+ "tombi-fs",
  "tombi-hashmap",
  "tombi-schema-store",
  "tombi-test-lib",
@@ -2832,6 +2860,7 @@ dependencies = [
  "tombi-document-tree",
  "tombi-extension",
  "tombi-extension-manifest",
+ "tombi-fs",
  "tombi-future",
  "tombi-hashmap",
  "tombi-parser",
@@ -2847,6 +2876,7 @@ dependencies = [
 name = "tombi-extension-manifest"
 version = "0.0.0-dev"
 dependencies = [
+ "tombi-fs",
  "tombi-uri",
 ]
 
@@ -2869,6 +2899,8 @@ dependencies = [
  "tombi-document-tree",
  "tombi-extension",
  "tombi-extension-manifest",
+ "tombi-fs",
+ "tombi-future",
  "tombi-hashmap",
  "tombi-parser",
  "tombi-schema-store",
@@ -2920,10 +2952,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "tombi-fs"
+version = "0.0.0-dev"
+dependencies = [
+ "dirs",
+ "glob",
+ "tokio",
+]
+
+[[package]]
 name = "tombi-future"
 version = "0.0.0-dev"
 dependencies = [
  "futures",
+ "send_wrapper",
+ "tokio",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -2939,6 +2983,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tombi-config",
+ "tombi-fs",
 ]
 
 [[package]]
@@ -2946,6 +2991,7 @@ name = "tombi-hashmap"
 version = "0.0.0-dev"
 dependencies = [
  "ahash",
+ "getrandom 0.3.3",
  "indexmap",
 ]
 
@@ -3042,13 +3088,10 @@ name = "tombi-lsp"
 version = "0.0.0-dev"
 dependencies = [
  "chrono",
- "clap",
- "dirs",
  "futures",
  "itertools 0.14.0",
  "log",
  "pretty_assertions",
- "reqwest",
  "rstest",
  "serde",
  "serde_json",
@@ -3070,6 +3113,7 @@ dependencies = [
  "tombi-extension-pyproject",
  "tombi-extension-tombi",
  "tombi-formatter",
+ "tombi-fs",
  "tombi-future",
  "tombi-glob",
  "tombi-hashmap",
@@ -3136,7 +3180,6 @@ version = "0.0.0-dev"
 dependencies = [
  "bytes",
  "futures",
- "getrandom 0.3.3",
  "glob",
  "gloo-net",
  "itertools 0.14.0",
@@ -3232,6 +3275,7 @@ dependencies = [
 name = "tombi-uri"
 version = "0.0.0-dev"
 dependencies = [
+ "percent-encoding",
  "pretty_assertions",
  "serde",
  "url",
@@ -3282,6 +3326,7 @@ name = "tombi-wasm"
 version = "0.0.0-dev"
 dependencies = [
  "console_error_panic_hook",
+ "futures",
  "itertools 0.14.0",
  "js-sys",
  "serde",
@@ -3290,11 +3335,17 @@ dependencies = [
  "tombi-config",
  "tombi-diagnostic",
  "tombi-formatter",
+ "tombi-fs",
  "tombi-glob",
  "tombi-linter",
+ "tombi-lsp",
  "tombi-schema-store",
+ "tombi-uri",
+ "tower-lsp",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm-streams",
+ "web-sys",
 ]
 
 [[package]]
@@ -3421,6 +3472,7 @@ version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4ba052b54a6627628d9b3c34c176e7eda8359b7da9acd497b9f20998d118508"
 dependencies = [
+ "async-codec-lite",
  "async-trait",
  "auto_impl",
  "bytes",
@@ -3684,6 +3736,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "555d470ec0bc3bb57890405e5d4322cc9ea83cebb085523ced7be4144dac1e61"
 dependencies = [
  "cfg-if",
+ "futures-core",
  "js-sys",
  "once_cell",
  "wasm-bindgen",
@@ -3749,6 +3802,19 @@ dependencies = [
  "url",
  "wasm-encoder",
  "wasmparser",
+]
+
+[[package]]
+name = "wasm-streams"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15053d8d85c7eccdbefef60f06769760a563c7f0a9d6902a13d35c7800b0ad65"
+dependencies = [
+ "futures-util",
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]

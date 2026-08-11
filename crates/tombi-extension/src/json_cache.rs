@@ -1,4 +1,4 @@
-use std::{future::Future, path::Path, sync::Arc, time::UNIX_EPOCH};
+use std::{future::Future, path::Path, sync::Arc};
 
 use tokio::sync::{Mutex as AsyncMutex, RwLock};
 use tombi_hashmap::HashMap;
@@ -16,12 +16,7 @@ static JSON_CACHE_IN_FLIGHT: std::sync::LazyLock<AsyncMutex<HashMap<String, Arc<
 const MAX_JSON_CACHE_ENTRIES: usize = 128;
 
 pub fn file_cache_version(file_path: &Path) -> Option<u64> {
-    let metadata = std::fs::metadata(file_path).ok()?;
-    let modified = metadata.modified().ok()?;
-    let duration = modified.duration_since(UNIX_EPOCH).ok()?;
-    let modified_millis = u64::try_from(duration.as_millis()).ok()?;
-
-    Some(modified_millis ^ metadata.len().wrapping_mul(0x9E37_79B1_85EB_CA87))
+    tombi_fs::file_version(file_path)
 }
 
 pub async fn get_or_load_json<F, Fut>(

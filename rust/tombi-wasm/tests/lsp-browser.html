@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tombi LSP WASM smoke test</title>
+  </head>
+  <body>
+    <pre id="result">Running...</pre>
+    <script type="module">
+      const result = document.querySelector("#result");
+      const worker = new Worker(new URL("../dist/lsp/worker.js", import.meta.url), {
+        type: "module",
+      });
+
+      worker.addEventListener("error", ({ message }) => {
+        result.textContent = `FAIL: ${message}`;
+      });
+
+      worker.addEventListener("message", ({ data }) => {
+        if (data.id !== undefined && data.method) {
+          worker.postMessage({ jsonrpc: "2.0", id: data.id, result: null });
+        } else if (data.id === 1) {
+          worker.postMessage({ jsonrpc: "2.0", method: "initialized", params: {} });
+          worker.postMessage({
+            jsonrpc: "2.0",
+            method: "textDocument/didOpen",
+            params: {
+              textDocument: {
+                languageId: "toml",
+                text: "key =",
+                uri: "inmemory://model/playground.toml",
+                version: 1,
+              },
+            },
+          });
+          worker.postMessage({
+            jsonrpc: "2.0",
+            id: 2,
+            method: "textDocument/diagnostic",
+            params: { textDocument: { uri: "inmemory://model/playground.toml" } },
+          });
+        } else if (data.id === 2) {
+          result.textContent = data.result?.items?.length > 0 ? "PASS" : "FAIL: no diagnostics";
+          worker.terminate();
+        }
+      });
+
+      worker.postMessage({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: { capabilities: {}, processId: null, rootUri: null },
+      });
+    </script>
+  </body>
+</html>

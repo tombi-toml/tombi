@@ -775,12 +775,17 @@ pub fn get_file_path_completions(
         }
     };
 
-    let Ok(entries) = std::fs::read_dir(&search_dir) else {
+    let Ok(entries) = tombi_fs::read_dir(&search_dir) else {
         return completions;
     };
 
-    for entry in entries.flatten() {
-        let Ok(file_name) = entry.file_name().into_string() else {
+    for entry in entries {
+        let Some(file_name) = entry
+            .path()
+            .file_name()
+            .and_then(|file_name| file_name.to_str())
+            .map(str::to_owned)
+        else {
             continue;
         };
 
@@ -792,11 +797,7 @@ pub fn get_file_path_completions(
             continue;
         }
 
-        let Ok(metadata) = entry.metadata() else {
-            continue;
-        };
-
-        let is_dir = metadata.is_dir();
+        let is_dir = entry.is_dir();
         let is_allowed_file = is_allowed_extension(&file_name, allowed_extensions);
 
         if !is_dir && !is_allowed_file {

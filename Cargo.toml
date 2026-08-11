@@ -52,6 +52,7 @@ js-sys = "0.3.77"
 log = "0.4.22"
 nu-ansi-term = "0.50.1"
 pep508_rs = "0.9"
+percent-encoding = "2.3.1"
 pretty_assertions = "1.4.1"
 proc-macro-crate = "3.4.0"
 proc-macro2 = "1.0.95"
@@ -65,10 +66,11 @@ rstest = { version = "0.25.0" }
 rustc-hash = { version = "2.1.1" }
 schemars = { version = "1.2.1", features = ["preserve_order", "url2"] }
 semver = "1.0.17"
-serde = { version = "1.0.219", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive", "rc"] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
 serde_tombi = { path = "rust/serde_tombi", default-features = false }
 serde_tombi_macros = { path = "rust/serde_tombi_macros" }
+send_wrapper = { version = "0.6.0", features = ["futures"] }
 similar = { version = "2.7.0" }
 syn = { version = "2.0.110", features = ["extra-traits", "full"] }
 tar = { version = "0.4.46" }
@@ -91,9 +93,9 @@ tombi-diagnostic = { path = "crates/tombi-diagnostic", default-features = false 
 tombi-document = { path = "crates/tombi-document" }
 tombi-document-tree = { path = "crates/tombi-document-tree" }
 tombi-extension = { path = "crates/tombi-extension" }
-tombi-extension-cargo = { path = "extensions/tombi-extension-cargo" }
+tombi-extension-cargo = { path = "extensions/tombi-extension-cargo", default-features = false }
 tombi-extension-manifest = { path = "crates/tombi-extension-manifest" }
-tombi-extension-pyproject = { path = "extensions/tombi-extension-pyproject" }
+tombi-extension-pyproject = { path = "extensions/tombi-extension-pyproject", default-features = false }
 tombi-extension-tombi = { path = "extensions/tombi-extension-tombi" }
 tombi-formatter = { path = "crates/tombi-formatter" }
 tombi-future = { path = "crates/tombi-future" }
@@ -119,9 +121,10 @@ tombi-toml-text = { path = "crates/tombi-toml-text" }
 tombi-toml-version = { path = "crates/tombi-toml-version" }
 tombi-uri = { path = "crates/tombi-uri" }
 tombi-validator = { path = "crates/tombi-validator" }
+tombi-fs = { path = "crates/tombi-fs" }
 tombi-version-sort = { path = "crates/tombi-version-sort" }
 tombi-x-keyword = { path = "crates/tombi-x-keyword" }
-tower-lsp = { version = "0.20.0" }
+tower-lsp = { version = "0.20.0", default-features = false }
 typed-builder = "0.21.0"
 ungrammar.version = "1.16.1"
 unicode-segmentation = "1.12.0"
@@ -129,6 +132,8 @@ uuid = { version = "1.18.0", default-features = false }
 wasi = { version = "0.14.7" }
 wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4.50"
+wasm-streams = "0.4.2"
+web-sys = "0.3.77"
 xshell.version = "0.2.7"
 zed_extension_api = "0.7.0"
 zip = { version = "2.3.0" }
@@ -146,6 +151,4 @@ deprecated = "warn"
 [workspace.metadata.cargo-shear]
 ignored = [
   "wasi",
-  "wasm-bindgen",
-  "wasm-bindgen-futures",
 ]

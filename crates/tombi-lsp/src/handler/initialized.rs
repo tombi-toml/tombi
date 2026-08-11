@@ -14,7 +14,7 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
     log::trace!("{:?}", params);
 
     let startup_backend = backend.clone();
-    let startup_task = tokio::spawn(async move {
+    backend.spawn_background_task(async move {
         log::info!("Loading config in background...");
         if let Err(error) = startup_backend.config_manager.load().await {
             log::warn!("Failed to load config: {error}");
@@ -54,7 +54,6 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
             }
         }
     });
-    backend.register_background_task(&startup_task);
 
     log::info!("Registering workspace TOML watchers...");
     if let Err(error) = register_workspace_toml_watcher(backend).await {

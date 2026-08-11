@@ -7,16 +7,13 @@ license.workspace = true
 
 [dependencies]
 chrono.workspace = true
-clap = { workspace = true, optional = true }
-dirs.workspace = true
 futures.workspace = true
 itertools.workspace = true
 log.workspace = true
-reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_tombi.workspace = true
-tokio = { workspace = true, features = ["fs", "io-std", "rt-multi-thread"] }
+tokio = { workspace = true, features = ["rt", "sync"] }
 tombi-ast.workspace = true
 tombi-cache.workspace = true
 tombi-comment-directive.workspace = true
@@ -31,7 +28,6 @@ tombi-extension-cargo.workspace = true
 tombi-extension-pyproject.workspace = true
 tombi-extension-tombi.workspace = true
 tombi-formatter.workspace = true
-tombi-future.workspace = true
 tombi-glob.workspace = true
 tombi-hashmap.workspace = true
 tombi-json.workspace = true
@@ -46,6 +42,7 @@ tombi-text = { workspace = true, features = ["lsp"] }
 tombi-toml-text.workspace = true
 tombi-uri.workspace = true
 tombi-validator.workspace = true
+tombi-fs.workspace = true
 tombi-x-keyword.workspace = true
 tower-lsp.workspace = true
 unicode-segmentation.workspace = true
@@ -58,11 +55,21 @@ textwrap.workspace = true
 tokio = { workspace = true, features = ["fs", "macros", "rt"] }
 tombi-test-lib.workspace = true
 
-[features]
-default = ["clap", "native"]
-clap = ["dep:clap"]
-native = ["tombi-schema-store/native"]
-wasm = ["tombi-schema-store/wasm"]
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+serde_tombi = { workspace = true, features = ["native"] }
+tombi-extension-cargo = { workspace = true, features = ["native"] }
+tombi-extension-pyproject = { workspace = true, features = ["native"] }
+tombi-future = { workspace = true, features = ["native"] }
+tombi-schema-store = { workspace = true, features = ["native"] }
+tower-lsp = { workspace = true, features = ["runtime-tokio"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+serde_tombi = { workspace = true, features = ["wasm"] }
+tombi-extension-cargo = { workspace = true, features = ["wasm"] }
+tombi-extension-pyproject = { workspace = true, features = ["wasm"] }
+tombi-future = { workspace = true, features = ["wasm", "wasm-send"] }
+tombi-schema-store = { workspace = true, features = ["wasm"] }
+tower-lsp = { workspace = true, features = ["runtime-agnostic"] }
 
 [lints]
 workspace = true

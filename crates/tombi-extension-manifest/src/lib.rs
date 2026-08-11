@@ -16,7 +16,7 @@ pub fn find_ancestor_manifest<T>(
         current_dir = target_dir;
         let workspace_toml_path = current_dir.join(manifest_file_name);
 
-        if !workspace_toml_path.is_file() {
+        if !tombi_fs::is_file(&workspace_toml_path) {
             continue;
         }
 
@@ -47,7 +47,7 @@ where
         current_dir = target_dir;
         let workspace_toml_path = current_dir.join(manifest_file_name);
 
-        if !workspace_toml_path.is_file() {
+        if !tombi_fs::is_file(&workspace_toml_path) {
             continue;
         }
 
@@ -80,7 +80,7 @@ pub fn resolve_manifest_path(
         resolved_path.join(manifest_file_name)
     };
 
-    toml_path.is_file().then_some(toml_path)
+    tombi_fs::is_file(&toml_path).then_some(toml_path)
 }
 
 pub fn resolve_relative_file_uri(
@@ -93,7 +93,7 @@ pub fn resolve_relative_file_uri(
         base_manifest_path.parent()?.join(relative_path)
     };
 
-    if !resolved_path.is_file() {
+    if !tombi_fs::is_file(&resolved_path) {
         return None;
     }
 

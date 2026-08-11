@@ -6,9 +6,15 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
+[package.metadata.cargo-shear]
+ignored = ["getrandom"]
+
 [dependencies]
 ahash = { version = "0.8.11" }
 indexmap = { version = "2.9.0" }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+getrandom = { version = "0.3.3", features = ["wasm_js"] }
 
 [features]
 default = []

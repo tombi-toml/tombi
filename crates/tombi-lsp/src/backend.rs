@@ -12,8 +12,8 @@ use tower_lsp::lsp_types::{
     DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
     GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
     InitializeResult, InitializedParams, InlayHint, InlayHintParams, ReferenceParams,
-    SemanticTokensParams, SemanticTokensResult, TextDocumentIdentifier, Url,
-    WorkspaceDiagnosticParams, WorkspaceDiagnosticReportResult,
+    SemanticTokensParams, SemanticTokensResult, TextDocumentIdentifier, WorkspaceDiagnosticParams,
+    WorkspaceDiagnosticReportResult,
     request::{
         GotoDeclarationParams, GotoDeclarationResponse, GotoTypeDefinitionParams,
         GotoTypeDefinitionResponse,
@@ -49,7 +49,7 @@ pub struct Backend {
     #[allow(dead_code)]
     pub client: tower_lsp::Client,
     pub capabilities: Arc<tokio::sync::RwLock<BackendCapabilities>>,
-    pub background_tasks: Arc<std::sync::Mutex<Vec<tokio::task::AbortHandle>>>,
+    pub background_tasks: Arc<std::sync::Mutex<Vec<tombi_future::TaskHandle>>>,
     pub document_sources:
         Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<tombi_uri::Uri, DocumentSource>>>,
     pub config_manager: Arc<ConfigManager>,
@@ -103,13 +103,13 @@ impl Backend {
         }
     }
 
-    pub fn register_background_task(&self, task: &tokio::task::JoinHandle<impl Send + 'static>) {
+    pub fn spawn_background_task(&self, task: impl Future<Output = ()> + Send + 'static) {
         let mut background_tasks = self
             .background_tasks
             .lock()
             .unwrap_or_else(|error| error.into_inner());
         background_tasks.retain(|task| !task.is_finished());
-        background_tasks.push(task.abort_handle());
+        background_tasks.push(tombi_future::spawn(task));
     }
 
     pub fn abort_background_tasks(&self) {
@@ -155,9 +155,12 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn config_path(&self, text_document_uri: &Url) -> Option<std::path::PathBuf> {
+    pub async fn config_path(
+        &self,
+        text_document_uri: &tombi_uri::Uri,
+    ) -> Option<std::path::PathBuf> {
         self.config_manager
-            .get_config_path_for_url(text_document_uri)
+            .get_config_path_for_uri(text_document_uri)
             .await
     }
 

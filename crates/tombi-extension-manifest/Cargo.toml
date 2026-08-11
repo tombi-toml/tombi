@@ -9,6 +9,7 @@ license.workspace = true
 
 [dependencies]
 tombi-uri.workspace = true
+tombi-fs.workspace = true
 
 [lints]
 workspace = true

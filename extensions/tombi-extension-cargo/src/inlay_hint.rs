@@ -205,7 +205,7 @@ pub async fn inlay_hint(
     let sync_text_document_uri = text_document_uri.clone();
     let sync_document_tree = document_tree.clone();
     let sync_features = features.cloned();
-    let sync_hints = tokio::task::spawn_blocking(move || {
+    let sync_hints = tombi_fs::run_blocking(move || {
         inlay_hint_impl(
             &sync_text_document_uri,
             &sync_document_tree,
@@ -918,7 +918,7 @@ async fn preload_local_cargo_toml_cache(
         dependency_version_enabled,
         default_features_enabled,
     );
-    let current_cargo_toml_path = canonicalize_or_original(cargo_toml_path.to_path_buf()).await;
+    let current_cargo_toml_path = canonicalize_or_original(cargo_toml_path.to_path_buf());
     let workspace_cargo_toml =
         if preload_workspace_cargo_toml || !requests.workspace_dependencies.is_empty() {
             load_workspace_document_tree_async(document_tree, cargo_toml_path, toml_version).await
@@ -1177,7 +1177,7 @@ async fn load_workspace_document_tree_async(
             Path::new(workspace_path),
             "Cargo.toml",
         )?;
-        let workspace_cargo_toml_path = canonicalize_or_original(workspace_cargo_toml_path).await;
+        let workspace_cargo_toml_path = canonicalize_or_original(workspace_cargo_toml_path);
         let workspace_document_tree =
             load_cargo_toml_async(&workspace_cargo_toml_path, toml_version).await?;
 
@@ -1194,7 +1194,7 @@ async fn load_workspace_document_tree_async(
             |tree| tree.contains_key("workspace"),
         )
         .await?;
-    let workspace_cargo_toml_path = canonicalize_or_original(workspace_cargo_toml_path).await;
+    let workspace_cargo_toml_path = canonicalize_or_original(workspace_cargo_toml_path);
 
     Some((workspace_cargo_toml_path, workspace_document_tree))
 }
@@ -1209,7 +1209,7 @@ async fn load_cargo_toml_data_for_dependency_path(
         Path::new(dependency_path),
         "Cargo.toml",
     )?;
-    let cargo_toml_path = canonicalize_or_original(cargo_toml_path).await;
+    let cargo_toml_path = canonicalize_or_original(cargo_toml_path);
     let document_tree = load_cargo_toml_async(&cargo_toml_path, toml_version).await?;
 
     Some(LocalCargoTomlData {
@@ -1218,8 +1218,8 @@ async fn load_cargo_toml_data_for_dependency_path(
     })
 }
 
-async fn canonicalize_or_original(path: PathBuf) -> PathBuf {
-    match tokio::fs::canonicalize(&path).await {
+fn canonicalize_or_original(path: PathBuf) -> PathBuf {
+    match tombi_fs::canonicalize(&path) {
         Ok(path) => path,
         Err(_) => path,
     }
@@ -1229,9 +1229,9 @@ async fn load_cargo_toml_async(
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<tombi_document_tree::DocumentTree> {
-    let toml_text = tokio::fs::read_to_string(cargo_toml_path).await.ok()?;
+    let toml_text = tombi_fs::read_to_string_async(cargo_toml_path).await.ok()?;
 
-    tokio::task::spawn_blocking(move || {
+    tombi_fs::run_blocking(move || {
         let root = tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
         root.try_into_document_tree(toml_version).ok()
     })
@@ -1241,7 +1241,7 @@ async fn load_cargo_toml_async(
 }
 
 fn canonicalize_or_original_sync(path: PathBuf) -> PathBuf {
-    path.canonicalize().unwrap_or(path)
+    tombi_fs::canonicalize(&path).unwrap_or(path)
 }
 
 fn load_cached_cargo_toml_document_tree(
@@ -1326,7 +1326,7 @@ fn find_workspace_cargo_toml_with_local_cache(
             current_dir = target_dir;
             let workspace_cargo_toml_path = current_dir.join("Cargo.toml");
 
-            if !workspace_cargo_toml_path.is_file() {
+            if !tombi_fs::is_file(&workspace_cargo_toml_path) {
                 continue;
             }
 
@@ -1920,7 +1920,7 @@ async fn load_cargo_lock_cache_json(
     cargo_lock_path: PathBuf,
     toml_version: TomlVersion,
 ) -> Option<serde_json::Value> {
-    tokio::task::spawn_blocking(move || parse_cargo_lock_cache_json(&cargo_lock_path, toml_version))
+    tombi_fs::run_blocking(move || parse_cargo_lock_cache_json(&cargo_lock_path, toml_version))
         .await
         .ok()
         .flatten()

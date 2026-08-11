@@ -117,8 +117,14 @@ fn url_from_file_path<P: AsRef<std::path::Path>>(path: P) -> Result<url::Url, ()
     target_os = "hermit"
 )))]
 #[allow(clippy::result_unit_err)]
-fn url_from_file_path<P: AsRef<std::path::Path>>(_path: P) -> Result<url::Url, ()> {
-    Err(())
+fn url_from_file_path<P: AsRef<std::path::Path>>(path: P) -> Result<url::Url, ()> {
+    let path = path.as_ref().to_str().ok_or(())?;
+    if !path.starts_with('/') {
+        return Err(());
+    }
+    let mut url = url::Url::parse("file:///").map_err(|_| ())?;
+    url.set_path(path);
+    Ok(url)
 }
 
 #[cfg(any(
@@ -143,6 +149,12 @@ fn url_to_file_path(url: &url::Url) -> Result<std::path::PathBuf, ()> {
 )))]
 #[inline]
 #[allow(clippy::result_unit_err)]
-fn url_to_file_path(_url: &url::Url) -> Result<std::path::PathBuf, ()> {
-    Err(())
+fn url_to_file_path(url: &url::Url) -> Result<std::path::PathBuf, ()> {
+    if url.scheme() != "file" || !matches!(url.host_str(), None | Some("localhost")) {
+        return Err(());
+    }
+    let path = percent_encoding::percent_decode_str(url.path())
+        .decode_utf8()
+        .map_err(|_| ())?;
+    Ok(std::path::PathBuf::from(path.as_ref()))
 }

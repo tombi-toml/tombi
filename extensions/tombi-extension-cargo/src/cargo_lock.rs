@@ -57,7 +57,7 @@ pub(crate) fn load_cargo_lock_from_path(
     cargo_lock_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<CargoLock> {
-    let cargo_lock_text = std::fs::read_to_string(cargo_lock_path).ok()?;
+    let cargo_lock_text = tombi_fs::read_to_string(cargo_lock_path).ok()?;
     let root = tombi_ast::Root::cast(tombi_parser::parse(&cargo_lock_text).into_syntax_node())?;
     let document_tree = root.try_into_document_tree(toml_version).ok()?;
 
@@ -69,8 +69,8 @@ pub(crate) fn find_cargo_lock_path(cargo_toml_path: &Path) -> Option<std::path::
 
     loop {
         let candidate = current_dir.join("Cargo.lock");
-        if candidate.is_file() {
-            return candidate.canonicalize().ok().or(Some(candidate));
+        if tombi_fs::is_file(&candidate) {
+            return tombi_fs::canonicalize(&candidate).ok().or(Some(candidate));
         }
 
         current_dir = current_dir.parent()?;
@@ -146,12 +146,10 @@ async fn load_cached_cargo_lock_json(
     cargo_lock_path: PathBuf,
     toml_version: TomlVersion,
 ) -> Option<serde_json::Value> {
-    tokio::task::spawn_blocking(move || {
-        parse_cached_cargo_lock_json(&cargo_lock_path, toml_version)
-    })
-    .await
-    .ok()
-    .flatten()
+    tombi_fs::run_blocking(move || parse_cached_cargo_lock_json(&cargo_lock_path, toml_version))
+        .await
+        .ok()
+        .flatten()
 }
 
 fn parse_cached_cargo_lock_json(

@@ -4,6 +4,7 @@ use futures::stream::{self, StreamExt};
 use tombi_config::{PyprojectExtensionFeatures, TomlVersion};
 use tombi_document_tree::{DocumentTree, Table, Value, dig_keys};
 use tombi_extension::remote_cache::warm_remote_json_cache;
+use tombi_future::Boxable;
 
 use crate::{
     collect_all_dependency_requirements_from_document_tree, find_workspace_pyproject_toml,
@@ -18,7 +19,7 @@ pub async fn did_open(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&PyprojectExtensionFeatures>,
-) -> Result<Option<tokio::task::JoinHandle<bool>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tombi_future::BoxFuture<'static, bool>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(None);
     }
@@ -52,7 +53,7 @@ pub async fn did_open(
 
     let document_tree = document_tree.clone();
     let cache_options = cache_options.cloned();
-    let handle = tokio::spawn(async move {
+    let warm = async move {
         let urls = collect_prefetch_urls(&document_tree, &pyproject_toml_path, toml_version);
         if urls.is_empty() {
             return false;
@@ -65,9 +66,9 @@ pub async fn did_open(
             })
             .await;
         true
-    });
+    };
 
-    Ok(Some(handle))
+    Ok(Some(warm.boxed()))
 }
 
 fn warming_disabled(offline: bool, cache_options: Option<&tombi_cache::Options>) -> bool {
