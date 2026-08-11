@@ -10,38 +10,6 @@ license.workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[features]
-default = ["formatter"]
-formatter = [
-  "dep:itertools",
-  "dep:serde",
-  "dep:serde-wasm-bindgen",
-  "dep:serde_tombi",
-  "dep:tombi-config",
-  "dep:tombi-diagnostic",
-  "dep:tombi-formatter",
-  "dep:tombi-glob",
-  "dep:tombi-linter",
-  "dep:tombi-schema-store",
-  "serde_tombi/wasm",
-  "tombi-diagnostic/wasm",
-  "tombi-schema-store/wasm",
-]
-lsp = [
-  "formatter",
-  "dep:futures",
-  "dep:tombi-lsp",
-  "dep:tombi-uri",
-  "dep:tombi-fs",
-  "dep:tower-lsp",
-  "dep:wasm-streams",
-  "dep:web-sys",
-  "tower-lsp/runtime-agnostic",
-  "wasm-bindgen-futures/futures-core-03-stream",
-  "web-sys/console",
-  "web-sys/WritableStream",
-]
-
 [dependencies]
 console_error_panic_hook.workspace = true
 futures = { workspace = true, optional = true }
@@ -53,17 +21,49 @@ serde-wasm-bindgen = { version = "0.6.5", optional = true }
 tombi-config = { workspace = true, optional = true }
 tombi-diagnostic = { workspace = true, optional = true }
 tombi-formatter = { workspace = true, optional = true }
+tombi-fs = { workspace = true, optional = true }
 tombi-glob = { workspace = true, optional = true }
 tombi-linter = { workspace = true, optional = true }
 tombi-lsp = { workspace = true, optional = true }
 tombi-schema-store = { workspace = true, optional = true }
 tombi-uri = { workspace = true, optional = true }
-tombi-fs = { workspace = true, optional = true }
 tower-lsp = { workspace = true, optional = true }
 wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
 wasm-streams = { workspace = true, optional = true }
 web-sys = { workspace = true, optional = true }
+
+[features]
+default = ["formatter"]
+formatter = [
+  "dep:itertools",
+  "dep:serde",
+  "dep:serde_tombi",
+  "dep:serde-wasm-bindgen",
+  "dep:tombi-config",
+  "dep:tombi-diagnostic",
+  "dep:tombi-formatter",
+  "dep:tombi-glob",
+  "dep:tombi-linter",
+  "dep:tombi-schema-store",
+  "serde_tombi/wasm",
+  "tombi-diagnostic/wasm",
+  "tombi-schema-store/wasm",
+]
+lsp = [
+  "dep:futures",
+  "dep:tombi-fs",
+  "dep:tombi-lsp",
+  "dep:tombi-uri",
+  "dep:tower-lsp",
+  "dep:wasm-streams",
+  "dep:web-sys",
+  "formatter",
+  "tower-lsp/runtime-agnostic",
+  "wasm-bindgen-futures/futures-core-03-stream",
+  "web-sys/WritableStream",
+  "web-sys/console",
+]
 
 [lints]
 workspace = true
