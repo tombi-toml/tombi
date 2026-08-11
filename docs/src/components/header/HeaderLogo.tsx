@@ -64,7 +64,7 @@ export function HeaderLogo() {
             <A
               id={props.id}
               href="/"
-              class={`${props.linkClass} outline-none items-center no-underline transition-all duration-300 ease-in-out focus-visible:ring-2 focus-visible:ring-tombi-focus focus:rounded-lg relative cursor-pointer md:cursor-default`}
+              class={`${props.linkClass} outline-none items-center no-underline transition-all duration-300 ease-in-out focus-visible:ring-2 focus-visible:ring-tombi-focus focus:rounded-lg relative cursor-pointer`}
               onClick={(e) => handleLogoClick(e, props)}
               onKeyDown={(e) => handleLogoKeyDown(e, props)}
             >
