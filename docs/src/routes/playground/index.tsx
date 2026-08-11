@@ -437,7 +437,6 @@ export default function Playground() {
               >
                 <option value="v1.1.0">TOML v1.1.0</option>
                 <option value="v1.0.0">TOML v1.0.0</option>
-                <option value="v1.1.0-preview">TOML v1.1 preview</option>
               </select>
             </label>
 
