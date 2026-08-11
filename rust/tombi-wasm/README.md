@@ -4,8 +4,8 @@ WebAssembly builds for Tombi's formatter, linter, and language server.
 
 The package provides two entry points so applications only load the capabilities they use:
 
-- `tombi-wasm/formatter` contains the formatter and linter.
-- `tombi-wasm/lsp` contains the language server as well as the direct formatter and linter APIs.
+- `tombi-wasm/lib` contains the formatter and linter.
+- `tombi-wasm/lsp` contains the language server, including formatting and diagnostics over LSP.
 - `tombi-wasm/lsp/worker` runs the language server in a Web Worker and exchanges JSON-RPC objects through `postMessage`.
 
 Build both variants and run their smoke tests with:

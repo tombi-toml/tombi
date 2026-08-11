@@ -3,13 +3,13 @@
   "version": "0.0.0",
   "description": "Tombi formatter, linter, and language server for WebAssembly",
   "files": [
-    "dist/formatter",
+    "dist/lib",
     "dist/lsp"
   ],
   "exports": {
-    "./formatter": {
-      "types": "./dist/formatter/tombi_wasm.d.ts",
-      "import": "./dist/formatter/tombi_wasm.js"
+    "./lib": {
+      "types": "./dist/lib/tombi_wasm.d.ts",
+      "import": "./dist/lib/tombi_wasm.js"
     },
     "./lsp": {
       "types": "./dist/lsp/tombi_lsp_wasm.d.ts",
@@ -18,16 +18,16 @@
     "./lsp/worker": "./dist/lsp/worker.js"
   },
   "scripts": {
-    "build:formatter": "wasm-pack build --locked --target web --out-dir dist/formatter --out-name tombi_wasm -- --no-default-features --features formatter",
+    "build:lib": "wasm-pack build --locked --target web --out-dir dist/lib --out-name tombi_wasm -- --no-default-features --features lib",
     "build:lsp": "wasm-pack build --locked --target web --out-dir dist/lsp --out-name tombi_lsp_wasm -- --no-default-features --features lsp",
     "build:worker": "cp src/lsp-worker.js dist/lsp/worker.js",
-    "build:metadata": "find dist/formatter dist/lsp -name .gitignore -delete",
+    "build:metadata": "find dist/lib dist/lsp -name .gitignore -delete",
     "build:docs": "rm -f ../../docs/public/wasm/tombi_wasm.d.ts ../../docs/public/wasm/tombi_wasm.js ../../docs/public/wasm/tombi_wasm_bg.wasm ../../docs/public/wasm/tombi_wasm_bg.wasm.d.ts && wasm-pack build --locked --target web --out-dir ../../docs/public/wasm --out-name tombi_lsp_wasm -- --no-default-features --features lsp && cp src/lsp-worker.js ../../docs/public/wasm/worker.js",
     "build:copy": "cp -r www/* dist/",
-    "build": "mkdir -p dist && pnpm run build:formatter && pnpm run build:lsp && pnpm run build:worker && pnpm run build:metadata && pnpm run build:copy",
-    "test:formatter": "node tests/formatter-smoke.mjs",
+    "build": "mkdir -p dist && pnpm run build:lib && pnpm run build:lsp && pnpm run build:worker && pnpm run build:metadata && pnpm run build:copy",
+    "test:lib": "node tests/lib-smoke.mjs",
     "test:lsp": "node tests/lsp-smoke.mjs",
-    "test": "pnpm run test:formatter && pnpm run test:lsp",
+    "test": "pnpm run test:lib && pnpm run test:lsp",
     "dev": "pnpm run build && serve dist",
     "clean": "rm -rf dist"
   },

@@ -34,8 +34,8 @@ wasm-streams = { workspace = true, optional = true }
 web-sys = { workspace = true, optional = true }
 
 [features]
-default = ["formatter"]
-formatter = [
+default = ["lib"]
+lib = [
   "dep:itertools",
   "dep:serde",
   "dep:serde_tombi",
@@ -52,13 +52,14 @@ formatter = [
 ]
 lsp = [
   "dep:futures",
+  "dep:serde",
+  "dep:serde-wasm-bindgen",
   "dep:tombi-fs",
   "dep:tombi-lsp",
   "dep:tombi-uri",
   "dep:tower-lsp",
   "dep:wasm-streams",
   "dep:web-sys",
-  "formatter",
   "tower-lsp/runtime-agnostic",
   "wasm-bindgen-futures/futures-core-03-stream",
   "web-sys/WritableStream",

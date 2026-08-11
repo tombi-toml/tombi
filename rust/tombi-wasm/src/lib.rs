@@ -1,9 +1,9 @@
-#[cfg(feature = "formatter")]
+#[cfg(feature = "lib")]
 mod formatter;
 #[cfg(feature = "lsp")]
 mod lsp;
 
-#[cfg(feature = "formatter")]
+#[cfg(feature = "lib")]
 pub use formatter::{format, lint};
 #[cfg(feature = "lsp")]
 pub use lsp::{
