@@ -451,6 +451,7 @@ export default function Playground() {
                 }
                 onClick={() => void formatAndLint()}
                 disabled={!wasm() || runState() === "formatting"}
+                aria-busy={runState() === "formatting"}
               >
                 <Show
                   when={runState() !== "formatting"}
@@ -460,7 +461,7 @@ export default function Playground() {
                 >
                   <FaSolidFeather aria-hidden="true" />
                 </Show>
-                {runState() === "formatting" ? "Formatting…" : "Format"}
+                Format
                 <span class="playground-button-shortcut" aria-hidden="true">
                   {formatShortcut()}
                 </span>
