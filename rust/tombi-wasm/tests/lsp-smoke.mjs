@@ -3,8 +3,6 @@ import { readFile } from "node:fs/promises";
 
 import init, {
   ServerConfig,
-  format,
-  lint,
   serve,
   set_workspace_files,
 } from "../dist/lsp/tombi_lsp_wasm.js";
@@ -98,9 +96,6 @@ member = { workspace = true }
 `,
   },
 ]);
-
-assert.equal(await format("key={nested=1}", "playground.toml", "v1.1.0"), "key = { nested = 1 }\n");
-await lint("key = 1", "playground.toml", "v1.1.0");
 
 const input = new AsyncByteQueue();
 let outputBuffer = new Uint8Array();

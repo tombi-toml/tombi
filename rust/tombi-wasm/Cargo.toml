@@ -28,8 +28,9 @@ formatter = [
   "tombi-schema-store/wasm",
 ]
 lsp = [
-  "formatter",
   "dep:futures",
+  "dep:serde",
+  "dep:serde-wasm-bindgen",
   "dep:tombi-lsp",
   "dep:tombi-uri",
   "dep:tombi-fs",
