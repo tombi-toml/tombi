@@ -51,10 +51,14 @@ The preview version includes exciting features like trailing comma support in In
 `v1.1.0` has only just been released and is not yet supported by many tools.
 Therefore, `v1.0.0` will be used as the default TOML version for the time being.
 
-If you want to use `v1.1.0`, please specify `toml-version = "v1.1.0"` in your `tombi.toml`,
-or set `x-tombi-toml-version = "v1.1.0"` in your JSON Schema.
+To override `x-tombi-toml-version` with an older version, set `toml-version` in each relevant `[[schemas]]` entry in your `tombi.toml`.
 
-For example, the JSON Schema for `tombi.toml` specifies `v1.1.0`.
+```toml
+[[schemas]]
+toml-version = "v1.0.0"
+path = "tombi://www.schemastore.org/cargo.json"
+include = ["Cargo.toml"]
+```
 </Note>
 
 ### x-tombi-additional-key-label
