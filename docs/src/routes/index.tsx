@@ -68,7 +68,7 @@ export default function Home() {
         <h1 class="sr-only">Tombi</h1>
         <div class="relative py-8 w-screen -mx-[calc((100vw-100%)/2)] overflow-hidden bg-gradient-to-b from-gray-900 to-gray-500">
           <img
-            src={`${import.meta.env.BASE_URL}/tombi-transparent.svg`}
+            src={`${import.meta.env.SERVER_BASE_URL}/tombi-transparent.svg`}
             alt="Tombi Logo"
             class="w-auto max-h-80 mx-auto px-8"
           />
@@ -92,7 +92,7 @@ export default function Home() {
         </div>
 
         <img
-          src={`${import.meta.env.BASE_URL}/demo.gif`}
+          src={`${import.meta.env.SERVER_BASE_URL}/demo.gif`}
           alt="Tombi Demo"
           class="w-full my-16"
         />

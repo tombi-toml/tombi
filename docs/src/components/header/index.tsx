@@ -13,7 +13,7 @@ export function Header() {
   let previousActiveElement: HTMLElement | null = null;
 
   const getPageTitle = () => {
-    const base = import.meta.env.BASE_URL;
+    const base = import.meta.env.SERVER_BASE_URL;
     let path = location.pathname;
     if (base && path.startsWith(base)) {
       path = path.slice(base.length) || "/";

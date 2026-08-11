@@ -199,7 +199,7 @@ export const InstallationMethodGrid: Component<InstallationMethodGridProps> = (
             >
               <div class="flex flex-col items-center gap-2">
                 <img
-                  src={`${import.meta.env.BASE_URL}${
+                  src={`${import.meta.env.SERVER_BASE_URL}${
                     isDarkMode() && method.imageDark
                       ? method.imageDark
                       : method.image

@@ -22,7 +22,8 @@ export default defineConfig({
     },
   },
   vite: {
-    base: process.env.BASE_URL,
+    // Vinxi combines server.baseURL with its /_build client base. Overriding
+    // Vite's base here would omit /_build from dynamically preloaded assets.
     optimizeDeps: {
       esbuildOptions: {
         target: ["es2020", "edge88", "firefox78", "chrome87", "safari14.1"],

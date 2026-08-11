@@ -20,7 +20,7 @@ export default function ImageTabs(props: ImageTabsProps) {
   const currentSrc = () => {
     let src = current()?.src || "";
     if (src.startsWith("/")) {
-      src = `${import.meta.env.BASE_URL}${src}`;
+      src = `${import.meta.env.SERVER_BASE_URL}${src}`;
     }
     return src;
   };

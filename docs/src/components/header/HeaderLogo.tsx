@@ -13,14 +13,14 @@ type LogoProps = {
 const logoProps: LogoProps[] = [
   {
     id: "mobile-logo",
-    src: `${import.meta.env.BASE_URL}/icon.svg`,
+    src: `${import.meta.env.SERVER_BASE_URL}/icon.svg`,
     class: "h-16 w-16",
     linkClass: "md:hidden flex",
     preventDefault: true,
   },
   {
     id: "desktop-logo",
-    src: `${import.meta.env.BASE_URL}/tombi-transparent.svg`,
+    src: `${import.meta.env.SERVER_BASE_URL}/tombi-transparent.svg`,
     class: "h-16 w-auto",
     linkClass: "hidden md:flex",
     preventDefault: false,
