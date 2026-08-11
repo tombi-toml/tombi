@@ -250,6 +250,66 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_dependency_groups_singleline_include_group_v1_1_0(
+                r#"
+                #:tombi toml-version = "v1.1.0"
+                [dependency-groups]
+                dev = [
+                  "maturin>=1.5,<2.0",
+                  "pytest>=9.0.3",
+                  "ruff>=0.7.4",
+                  { include-group = "stub" },
+                ]
+                "#,
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                #:tombi toml-version = "v1.1.0"
+
+                [dependency-groups]
+                dev = [
+                  "maturin>=1.5,<2.0",
+                  "pytest>=9.0.3",
+                  "ruff>=0.7.4",
+                  { include-group = "stub" },
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_dependency_groups_multiline_include_group_v1_1_0(
+                r#"
+                #:tombi toml-version = "v1.1.0"
+                [dependency-groups]
+                dev = [
+                  "maturin>=1.5,<2.0",
+                  "pytest>=9.0.3",
+                  "ruff>=0.7.4",
+                  { include-group = "stub", },
+                ]
+                "#,
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                #:tombi toml-version = "v1.1.0"
+
+                [dependency-groups]
+                dev = [
+                  "maturin>=1.5,<2.0",
+                  "pytest>=9.0.3",
+                  "ruff>=0.7.4",
+                  {
+                    include-group = "stub",
+                  },
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_dependency_groups_multiple_lines_include_group_with_comment_directive_array_values_order_ascending(
                 r#"
                 [dependency-groups]

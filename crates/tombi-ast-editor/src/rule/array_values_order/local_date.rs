@@ -48,11 +48,10 @@ pub async fn create_local_date_sortable_values<'a>(
                         continue;
                     };
 
-                    for (key_value, comma) in group.key_values_with_comma() {
+                    for key_value in group.key_values() {
                         let Some(keys) = key_value.keys() else {
                             continue;
                         };
-                        let comma = comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
 
                         let mut keys_iter = keys.keys();
                         if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
