@@ -77,9 +77,9 @@ export function loadTombiWasm(): Promise<TombiWasm> {
   if (wasmPromise) return wasmPromise;
 
   wasmPromise = (async () => {
-    const baseUrl = import.meta.env.BASE_URL.endsWith("/")
-      ? import.meta.env.BASE_URL
-      : `${import.meta.env.BASE_URL}/`;
+    const baseUrl = import.meta.env.SERVER_BASE_URL.endsWith("/")
+      ? import.meta.env.SERVER_BASE_URL
+      : `${import.meta.env.SERVER_BASE_URL}/`;
     const moduleUrl = new URL(
       `${baseUrl}wasm/tombi_wasm.js`,
       window.location.origin,

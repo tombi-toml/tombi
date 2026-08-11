@@ -9,7 +9,7 @@ interface LinkCardProps {
 
 export const LinkCard: Component<LinkCardProps> = (props) => {
   if (props.image.startsWith("/")) {
-    props.image = `${import.meta.env.BASE_URL}${props.image}`;
+    props.image = `${import.meta.env.SERVER_BASE_URL}${props.image}`;
   }
   return (
     <div
