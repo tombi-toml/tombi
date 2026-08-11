@@ -31,7 +31,7 @@
         <pre id="output"></pre>
 
         <script type="module">
-            import init, { format, lint } from "./formatter/tombi_wasm.js";
+            import init, { format, lint } from "./lib/tombi_wasm.js";
 
             init().then(() => {
                 document.getElementById("run").onclick = async () => {

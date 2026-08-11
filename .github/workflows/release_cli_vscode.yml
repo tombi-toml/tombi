@@ -259,7 +259,7 @@ jobs:
       - name: Package WASM assets
         working-directory: rust/tombi-wasm
         run: |
-          mv dist/formatter "tombi-wasm-lib-${TOMBI_VERSION}"
+          mv dist/lib "tombi-wasm-lib-${TOMBI_VERSION}"
           tar -czf "tombi-wasm-lib-${TOMBI_VERSION}.tar.gz" "tombi-wasm-lib-${TOMBI_VERSION}"
           mv dist/lsp "tombi-wasm-lsp-${TOMBI_VERSION}"
           tar -czf "tombi-wasm-lsp-${TOMBI_VERSION}.tar.gz" "tombi-wasm-lsp-${TOMBI_VERSION}"
