@@ -6,8 +6,83 @@ import init, { format, lint } from "../../../typescript/@tombi-toml/wasm-lib/dis
 const wasm = await readFile(new URL("../../../typescript/@tombi-toml/wasm-lib/dist/tombi_wasm_bg.wasm", import.meta.url));
 await init({ module_or_path: wasm });
 
-assert.equal(await format("key={nested=1}", "playground.toml", "v1.1.0"), "key = { nested = 1 }\n");
-assert.equal(await lint("key = 1", "playground.toml", "v1.1.0"), undefined);
-const diagnostics = await lint("key =", "playground.toml", "v1.1.0");
+assert.deepEqual(await format("", "playground.toml"), {
+  formatted: "",
+  diagnostics: [],
+});
+assert.deepEqual(await format("key=1", "playground.toml"), {
+  formatted: "key = 1\n",
+  diagnostics: [],
+});
+assert.deepEqual(
+  await format("key={nested=1}", "playground.toml", {
+    config: 'toml-version = "v1.1.0"',
+  }),
+  {
+    formatted: "key = { nested = 1 }\n",
+    diagnostics: [],
+  },
+);
+const formattedWithConfig = await format("[package]\nname=1", "Cargo.toml", {
+  config: {
+    content: `
+[format.rules]
+indent-table-key-value-pairs = true
+indent-width = 4
+`,
+    path: "/workspace/tombi.toml",
+  },
+});
+assert.equal(formattedWithConfig.formatted, "[package]\n    name = 1\n");
+
+const formatDisabledByOverride = await format("key=1", "/workspace/generated/output.toml", {
+  config: {
+    content: `
+[[overrides]]
+files.include = ["generated/*.toml"]
+
+[overrides.format]
+enabled = false
+`,
+    path: "/workspace/tombi.toml",
+  },
+});
+assert.deepEqual(formatDisabledByOverride, { formatted: "key=1", diagnostics: [] });
+
+const formatError = await format("key =", "playground.toml", {
+  config: { content: 'toml-version = "v1.1.0"', path: "tombi.toml" },
+});
+assert.equal(formatError.formatted, undefined);
+assert.equal(Object.hasOwn(formatError, "formatted"), false);
+assert.ok(Array.isArray(formatError.diagnostics));
+assert.ok(formatError.diagnostics.length > 0);
+assert.ok(formatError.diagnostics.every((diagnostic) => diagnostic.level === "error"));
+
+assert.deepEqual(await lint("key = 1", "playground.toml"), { diagnostics: [] });
+const { diagnostics } = await lint("key =", "playground.toml", {
+  config: { content: 'toml-version = "v1.1.0"', path: "tombi.toml" },
+});
 assert.ok(Array.isArray(diagnostics));
 assert.ok(diagnostics.length > 0);
+assert.ok(diagnostics.every((diagnostic) => diagnostic.level === "error"));
+
+const warningResult = await lint(
+  `
+[fruit.apple]
+color = "red"
+
+[animal]
+type = "mammal"
+
+[fruit.orange]
+color = "orange"
+`,
+  "playground.toml",
+);
+assert.ok(warningResult.diagnostics.length > 0);
+assert.ok(warningResult.diagnostics.every((diagnostic) => diagnostic.level === "warning"));
+
+await assert.rejects(format("key = 1", "playground.toml", { config: "invalid =" }), (error) => {
+  assert.equal(typeof error.error, "string");
+  return true;
+});

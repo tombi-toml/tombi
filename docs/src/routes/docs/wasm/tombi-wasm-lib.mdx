@@ -14,7 +14,7 @@ pnpm add tombi-wasm-lib
 Initialize the WASM module before calling `format`:
 
 ```ts
-import init, { format, type FormatError } from "tombi-wasm-lib";
+import init, { format, type TombiWasmError } from "tombi-wasm-lib";
 
 await init();
 
@@ -24,24 +24,31 @@ name = "example"
 `;
 
 try {
-  const formatted = await format(source, "Cargo.toml");
-  console.log(formatted);
+  const { formatted, diagnostics } = await format(source, "Cargo.toml");
+
+  if (formatted !== undefined) {
+    console.log(formatted);
+  }
+
+  for (const diagnostic of diagnostics) {
+    console.error(diagnostic.message);
+  }
 } catch (error) {
-  console.error(error as FormatError);
+  console.error(error as TombiWasmError);
 }
 ```
 
-`format` returns the formatted TOML as a Promise. Configuration errors and
-formatting diagnostics reject the Promise.
-The package exports the corresponding `FormatError` type for handling these
-rejections.
+`format` resolves to an object containing the formatted TOML when formatting
+succeeds and an array of diagnostics. The diagnostics array is empty when none were
+reported. When diagnostics prevent formatting, `formatted` is omitted.
+Configuration and execution errors reject the Promise as `TombiWasmError`.
 
 ## Lint TOML
 
 Initialize the WASM module before calling `lint`:
 
 ```ts
-import init, { lint, type LintError } from "tombi-wasm-lib";
+import init, { lint, type TombiWasmError } from "tombi-wasm-lib";
 
 await init();
 
@@ -51,35 +58,52 @@ name = "example"
 `;
 
 try {
-  const diagnostics = await lint(source, "Cargo.toml");
+  const { diagnostics } = await lint(source, "Cargo.toml");
 
-  if (diagnostics) {
+  if (diagnostics.length > 0) {
     for (const diagnostic of diagnostics) {
-      console.error(
-        `${diagnostic.message} (${diagnostic.range.start.line}:${diagnostic.range.start.column})`,
-      );
+      const message = `${diagnostic.message} (${diagnostic.range.start.line}:${diagnostic.range.start.column})`;
+
+      if (diagnostic.level === "error") {
+        console.error(message);
+      } else {
+        console.warn(message);
+      }
     }
   } else {
     console.log("No diagnostics");
   }
 } catch (error) {
   // Configuration and execution errors reject the Promise.
-  console.error(error as LintError);
+  console.error(error as TombiWasmError);
 }
 ```
 
-`lint` resolves to a diagnostics array when the TOML contains problems, or to
-`undefined` when there are no diagnostics. Configuration and execution errors reject
-the Promise; the corresponding rejection shape is exported as `LintError`.
+`lint` resolves to an object containing a diagnostics array. The array is empty when
+no diagnostics were reported. Configuration and execution errors reject the Promise
+as `TombiWasmError`.
 
-Both functions accept an optional file path for matching configuration and
-formatter/linter options, followed by an optional TOML version:
+Both functions accept an optional options object as the third argument. `config`
+replaces the automatically discovered configuration and accepts an object or string:
 
 ```ts
-await format(source, "Cargo.toml", "v1.1.0");
-await lint(source, "Cargo.toml", "v1.0.0");
+const config = {
+  content: `
+toml-version = "v1.1.0"
+
+[format.rules]
+indent-width = 4
+`,
+  path: "/workspace/tombi.toml",
+};
+
+await format(source, "Cargo.toml", { config });
+await lint(source, "Cargo.toml", { config });
+
+// The configuration content can be passed as a string shorthand. It is
+// treated as the content of a virtual `tombi.toml`.
+await format(source, "Cargo.toml", { config: config.content });
 ```
 
-If the TOML version is not specified, Tombi reads it from the matching
-`tombi.toml`. If it is not configured there either, Tombi uses the default
-version `v1.0.0`.
+When `config` is omitted, Tombi uses automatic discovery and falls back to the
+default configuration if no configuration file is found.

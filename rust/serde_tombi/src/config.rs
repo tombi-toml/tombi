@@ -10,8 +10,9 @@ use tombi_config::{
 /// If [crate::from_str_async] is used to parse the Config, it will cause a stack overflow due to circular references.
 /// Therefore, [crate::config::from_str], which does not use schema_store and is not async, is called to prevent stack overflow.
 ///
-/// This function is not public and is only used internally.
-pub(crate) fn from_str(
+/// This parser uses the TOML version required by Tombi configuration files and
+/// avoids recursively loading configuration while deserializing `Config`.
+pub fn from_str(
     toml_text: &str,
     config_path: &std::path::Path,
 ) -> Result<Config, crate::de::Error> {
