@@ -128,6 +128,11 @@ fn format_comment(
     strip_leading_spaces: bool,
 ) -> Result<(), std::fmt::Error> {
     let comment_string = comment.to_string();
+
+    if f.comment_style() == tombi_config::CommentStyle::Preserve {
+        return write!(f, "{comment_string}");
+    }
+
     {
         // For the purpose of reading the JSON Schema path defined in the file by taplo,
         // we format in a different style from the tombi comment style.
@@ -192,7 +197,7 @@ fn format_comment(
 mod tests {
     use itertools::Itertools;
     use tombi_ast::AstNode;
-    use tombi_config::FormatRules;
+    use tombi_config::{CommentStyle, FormatRules};
 
     use crate::{Formatter, test_format};
 
@@ -280,6 +285,45 @@ mod tests {
     test_format! {
         #[tokio::test]
         async fn comment_without_space(r"#comment") -> Ok("# comment")
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn preserve_comment_style(
+            r##"
+            #DIRECTIVE key1="value1" key2="value2"
+            key="value"#TRAILING
+            #    dangling comment
+            "##,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    comment_style: Some(CommentStyle::Preserve),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(
+            r##"
+            #DIRECTIVE key1="value1" key2="value2"
+            key = "value"  #TRAILING
+            #    dangling comment
+            "##
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn preserve_comment_directive_style(
+            r##"
+            #:schema  https://www.schemastore.org/pyproject.json
+            #:tombi   toml-version   = 'v1.0.0'
+            "##,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    comment_style: Some(CommentStyle::Preserve),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(source)
     }
 
     test_format! {
