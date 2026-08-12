@@ -1,6 +1,7 @@
 mod array_bracket_space_width;
 mod array_comma_space_width;
 mod blank_lines;
+mod comment_style;
 mod date_time_delimiter;
 mod glob_pattern;
 mod indent_style;
@@ -18,6 +19,7 @@ mod trailing_comment_space_width;
 pub use array_bracket_space_width::ArrayBracketSpaceWidth;
 pub use array_comma_space_width::ArrayCommaSpaceWidth;
 pub use blank_lines::{BlankLines, BlankLinesLimit};
+pub use comment_style::CommentStyle;
 pub use date_time_delimiter::DateTimeDelimiter;
 pub use glob_pattern::GlobPattern;
 pub use indent_style::IndentStyle;

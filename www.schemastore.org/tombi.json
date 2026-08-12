@@ -221,6 +221,19 @@
           ],
           "default": 1
         },
+        "comment-style": {
+          "title": "The style used to format comments",
+          "description": "- `normalize`: Normalize comment text according to Tombi's formatting rules.\n- `preserve`: Preserve the original comment text while formatting its placement normally.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommentStyle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "normalize"
+        },
         "date-time-delimiter": {
           "title": "The delimiter between date and time",
           "description": "In accordance with [RFC 3339](https://datatracker.ietf.org/doc/html/rfc3339), you can use `T` or space character between date and time.\n\n- `T`: Use `T` between date and time like `2001-01-01T00:00:00`\n- `space`: Use space between date and time like `2001-01-01 00:00:00`\n- `preserve`: Preserve the original delimiter.",
@@ -440,6 +453,21 @@
       "format": "uint8",
       "minimum": 0,
       "maximum": 255
+    },
+    "CommentStyle": {
+      "description": "The style used to format comments.",
+      "oneOf": [
+        {
+          "description": "Normalize comment text according to Tombi's formatting rules.",
+          "type": "string",
+          "const": "normalize"
+        },
+        {
+          "description": "Preserve the original comment text while formatting its placement normally.",
+          "type": "string",
+          "const": "preserve"
+        }
+      ]
     },
     "DateTimeDelimiter": {
       "description": "DateTime delimiter",

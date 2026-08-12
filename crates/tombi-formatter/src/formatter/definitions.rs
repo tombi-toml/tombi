@@ -1,4 +1,4 @@
-use tombi_config::{DateTimeDelimiter, FormatOptions, IndentStyle, StringQuoteStyle};
+use tombi_config::{CommentStyle, DateTimeDelimiter, FormatOptions, IndentStyle, StringQuoteStyle};
 
 /// FormatDefinitions provides the definition of the format that does not have the freedom set by [`FormatOptions`][crate::FormatOptions].
 ///
@@ -26,6 +26,7 @@ pub struct FormatDefinitions {
     pub date_time_delimiter: Option<&'static str>,
     pub array_bracket_space: String,
     pub array_comma_space: String,
+    pub comment_style: CommentStyle,
     pub inline_table_brace_space: String,
     pub inline_table_comma_space: String,
 }
@@ -138,6 +139,11 @@ impl FormatDefinitions {
                     .unwrap_or_default()
                     .value() as usize,
             ),
+            comment_style: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.comment_style)
+                .unwrap_or_default(),
             inline_table_brace_space: " ".repeat(
                 options
                     .rules
