@@ -242,8 +242,8 @@ pub struct FormatRules {
 
     /// # The maximum line width
     ///
-    /// The formatter will try to keep lines within this width when specified.
-    /// If omitted, there is no line-width limit.
+    /// The formatter will try to keep lines within this width.
+    #[cfg_attr(feature = "jsonschema", schemars(default = "LineWidth::default"))]
     pub line_width: Option<LineWidth>,
 
     /// # The number of blank lines between tables.
