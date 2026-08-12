@@ -1,42 +1,33 @@
-# Tombi WebAssembly packages
+# tombi-wasm
 
-WebAssembly builds for Tombi's formatter, linter, and Language Server are published
-as separate npm packages so applications do not download capabilities they do not use.
+WebAssembly bindings for Tombi's formatter, linter, and Language Server.
 
-The package provides two entry points so applications only load the capabilities they use:
+This crate is built with [`wasm-bindgen`](https://github.com/rustwasm/wasm-bindgen)
+and exposes JavaScript-compatible APIs for browser environments. The functionality
+is selected with Cargo features:
 
-- `@tombi-toml/wasm-lib` contains the formatter and linter.
-- `@tombi-toml/wasm-lsp` contains the Language Server and its Web Worker adapter.
+- `lib` (default) provides the formatter and linter APIs.
+- `lsp` provides the Language Server runtime and workspace file APIs.
 
-Build both variants and run their smoke tests with:
+The `lib` and `lsp` features are mutually exclusive build variants. Build this
+crate with `wasm-pack` and select the required feature explicitly:
 
 ```sh
-pnpm --dir typescript/@tombi-toml/wasm-lib build
-pnpm --dir typescript/@tombi-toml/wasm-lsp build
-pnpm --dir typescript/@tombi-toml/wasm-lib test
-pnpm --dir typescript/@tombi-toml/wasm-lsp test
+wasm-pack build \
+  --target web \
+  --no-default-features \
+  --features lib
 ```
 
-The worker accepts standard LSP JSON-RPC messages only. Browser hosts represent their workspace by
-opening each file with `textDocument/didOpen`, synchronizing edits with `textDocument/didChange`,
-and sending `textDocument/didSave` when appropriate:
+To build the Language Server variant:
 
-```js
-worker.postMessage({
-  jsonrpc: "2.0",
-  method: "textDocument/didOpen",
-  params: {
-    textDocument: {
-      languageId: "toml",
-      uri: "file:///workspace/Cargo.toml",
-      version: 1,
-      text: "[workspace]\nmembers = [\"app\"]\n",
-    },
-  },
-});
+```sh
+wasm-pack build \
+  --target web \
+  --no-default-features \
+  --features lsp
 ```
 
-The server mirrors opened `file:` documents into its in-memory filesystem, allowing extensions to
-resolve paths across all opened workspace files. Hosts embedding `serve` directly can use the
-exported `set_workspace_entries` JavaScript API before starting the server to preload files that
-will remain unopened; this is an embedding API and is not part of the worker protocol.
+The Language Server communicates through standard LSP JSON-RPC messages. Browser
+hosts can use the exported `serve` API with Web Streams and use
+`set_workspace_entries` to preload files that are not opened through LSP.
