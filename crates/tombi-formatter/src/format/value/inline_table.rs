@@ -81,7 +81,8 @@ pub(crate) fn exceeds_line_width(
             .count();
     }
 
-    Ok(length > f.line_width() as usize)
+    Ok(f.line_width()
+        .is_some_and(|line_width| length > line_width as usize))
 }
 
 fn format_multiline_inline_table(
@@ -473,6 +474,14 @@ mod tests {
               ] },
             ] }
             "#,
+            TomlVersion::V1_0_0
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn inline_table_with_long_array_without_line_width(
+            r#"hello = { a = 1, b = "very long string", c = -10, d = 2025-02-01, version = ["asdfgnfdsdfghgfdsxcvbvcxcvb"] }"#,
             TomlVersion::V1_0_0
         ) -> Ok(source)
     }

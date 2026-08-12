@@ -389,7 +389,7 @@
         },
         "line-width": {
           "title": "The maximum line width",
-          "description": "The formatter will try to keep lines within this width.",
+          "description": "The formatter will try to keep lines within this width when specified.\nIf omitted, there is no line-width limit.",
           "anyOf": [
             {
               "$ref": "#/definitions/LineWidth"
@@ -397,8 +397,7 @@
             {
               "type": "null"
             }
-          ],
-          "default": 80
+          ]
         },
         "table-blank-lines": {
           "title": "The number of blank lines between tables.",
