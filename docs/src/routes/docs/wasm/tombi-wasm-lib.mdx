@@ -83,8 +83,8 @@ try {
 no diagnostics were reported. Configuration and execution errors reject the Promise
 as `TombiWasmError`.
 
-Both functions accept an optional options object as the third argument. Pass
-`config` to replace the automatically discovered configuration:
+Both functions accept an optional options object as the third argument. `config`
+replaces the automatically discovered configuration and accepts an object or string:
 
 ```ts
 const config = {
@@ -105,10 +105,5 @@ await lint(source, "Cargo.toml", { config });
 await format(source, "Cargo.toml", { config: config.content });
 ```
 
-The `config` property is optional. When omitted, Tombi discovers its configuration
-as before and uses the default configuration values when no configuration file is
-found. When an object is provided, `config.content` replaces the discovered
-configuration and `config.path` supplies the base path for relative schema paths
-and `[[overrides]]`. A string is shorthand for the content of a virtual
-`tombi.toml`. If the TOML version is not configured, Tombi uses the default version
-`v1.0.0`.
+When `config` is omitted, Tombi uses automatic discovery and falls back to the
+default configuration if no configuration file is found.
