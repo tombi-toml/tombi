@@ -1,6 +1,7 @@
 use nu_ansi_term::{Color, Style};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Level {
     ERROR,
     WARNING,

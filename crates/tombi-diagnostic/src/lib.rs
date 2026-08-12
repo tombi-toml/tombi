@@ -8,23 +8,11 @@ pub use printer::Print;
 #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[cfg_attr(feature = "wasm", derive(serde::Serialize))]
 pub struct Diagnostic {
-    #[cfg_attr(feature = "wasm", serde(serialize_with = "serialize_level"))]
     level: level::Level,
     code: String,
     message: String,
     range: tombi_text::Range,
     source_file: Option<std::path::PathBuf>,
-}
-
-#[cfg(feature = "wasm")]
-fn serialize_level<S>(level: &level::Level, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    serializer.serialize_str(match level {
-        level::Level::ERROR => "error",
-        level::Level::WARNING => "warning",
-    })
 }
 
 impl Diagnostic {
