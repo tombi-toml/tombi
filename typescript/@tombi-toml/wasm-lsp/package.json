@@ -14,7 +14,7 @@
     "./worker": "./dist/worker.js"
   },
   "scripts": {
-    "build": "rm -rf dist && cd ../../../rust/tombi-wasm && wasm-pack build --locked --target web --out-dir ../../typescript/@tombi-toml/wasm-lsp/dist --out-name tombi_lsp_wasm -- --no-default-features --features lsp && cp src/lsp-worker.js ../../typescript/@tombi-toml/wasm-lsp/dist/worker.js",
+    "build": "rm -rf dist && cd ../../../rust/tombi-wasm && wasm-pack build --locked --target web --out-dir ../../typescript/@tombi-toml/wasm-lsp/dist --out-name tombi_lsp_wasm -- --no-default-features --features lsp && rm ../../typescript/@tombi-toml/wasm-lsp/dist/.gitignore && cp src/lsp-worker.js ../../typescript/@tombi-toml/wasm-lsp/dist/worker.js",
     "build:docs": "rm -f ../../../docs/public/wasm/tombi_lsp_wasm.d.ts ../../../docs/public/wasm/tombi_lsp_wasm.js ../../../docs/public/wasm/tombi_lsp_wasm_bg.wasm ../../../docs/public/wasm/tombi_lsp_wasm_bg.wasm.d.ts && cd ../../../rust/tombi-wasm && wasm-pack build --locked --target web --out-dir ../../docs/public/wasm --out-name tombi_lsp_wasm -- --no-default-features --features lsp && cp src/lsp-worker.js ../../docs/public/wasm/worker.js",
     "test": "pnpm run build && node ../../../rust/tombi-wasm/tests/lsp-smoke.mjs",
     "clean": "rm -rf dist"
