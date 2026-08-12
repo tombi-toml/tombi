@@ -5,7 +5,7 @@
     "preinstall": "npx only-allow pnpm",
     "dev": "pnpm run prebuild && vinxi dev",
     "prebuild": "pnpm run build:wasm && pnpm run generate-search-index",
-    "build:wasm": "pnpm --dir ../typescript/@tombi-toml/wasm-lsp build:docs",
+    "build:wasm": "pnpm --dir ../rust/tombi-wasm build:docs",
     "build": "pnpm run prebuild && vinxi build",
     "start": "vinxi start",
     "format": "biome format --fix",

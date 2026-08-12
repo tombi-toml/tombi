@@ -118,23 +118,6 @@
     ]
   },
   {
-    "title": "WebAssembly",
-    "description": "Run Tombi's formatter, linter, and Language Server in JavaScript and browsers.",
-    "path": "/docs/wasm",
-    "children": [
-      {
-        "title": "Formatter and Linter",
-        "description": "Use the tombi-wasm-lib package for formatting and linting.",
-        "path": "/docs/wasm/tombi-wasm-lib"
-      },
-      {
-        "title": "Language Server",
-        "description": "Use the tombi-wasm-lsp package and its Web Worker adapter.",
-        "path": "/docs/wasm/tombi-wasm-lsp"
-      }
-    ]
-  },
-  {
     "title": "Editors",
     "description": "Use Tombi in your favorite editor with official extensions.",
     "path": "/docs/editors",
