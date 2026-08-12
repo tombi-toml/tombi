@@ -2695,6 +2695,7 @@ dependencies = [
  "tombi-lsp",
  "tombi-regex",
  "tombi-schema-store",
+ "tower 0.5.2",
  "tower-lsp",
 ]
 
