@@ -1140,7 +1140,14 @@ zzz = "1.0"
         let toml = to_string_async(&test)
             .await
             .expect("TOML serialization failed");
-        let expected = r#"dependencies = [{ name = "serde", version = "1" }, { name = "tokio", version = "1" }]"#;
+        let expected = r#"
+dependencies = [
+  { name = "serde", version = "1" },
+  { name = "tokio", version = "1" }
+]
+"#
+        .strip_prefix("\n")
+        .unwrap();
 
         toml_text_assert_eq!(toml, expected);
     }

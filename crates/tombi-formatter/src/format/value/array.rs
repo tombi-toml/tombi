@@ -74,8 +74,7 @@ pub(crate) fn exceeds_line_width(
             .count();
     }
 
-    Ok(f.line_width()
-        .is_some_and(|line_width| length > line_width as usize))
+    Ok(length > f.line_width() as usize)
 }
 
 fn format_multiline_array(

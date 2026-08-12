@@ -109,7 +109,12 @@ mod table_keys_order {
                 version = "1.0.0"
                 description = "Reserved package for tombi"
                 requires-python = ">=3.10"
-                dependencies = ["maturin>=1.5,<2.0", "tombi-cli>=0.0.0", "tombi-formatter>=0.0.0", "tombi-linter>=0.0.0"]
+                dependencies = [
+                  "maturin>=1.5,<2.0",
+                  "tombi-cli>=0.0.0",
+                  "tombi-formatter>=0.0.0",
+                  "tombi-linter>=0.0.0"
+                ]
                 "#
             )
         }
