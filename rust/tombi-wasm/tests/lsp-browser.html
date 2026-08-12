@@ -8,9 +8,12 @@
     <pre id="result">Running...</pre>
     <script type="module">
       const result = document.querySelector("#result");
-      const worker = new Worker(new URL("../dist/lsp/worker.js", import.meta.url), {
-        type: "module",
-      });
+      const worker = new Worker(
+        new URL("../../../typescript/@tombi-toml/wasm-lsp/dist/worker.js", import.meta.url),
+        {
+          type: "module",
+        },
+      );
 
       worker.addEventListener("error", ({ message }) => {
         result.textContent = `FAIL: ${message}`;

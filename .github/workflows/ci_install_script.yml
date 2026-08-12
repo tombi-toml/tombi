@@ -207,13 +207,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          github_api_curl() {
-            curl -fsSL \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "$@"
-          }
+          case "$(uname -s)" in
+            MINGW*|MSYS*|CYGWIN*|Windows_NT)
+              github_api_curl() {
+                GITHUB_API_URL="$1" powershell.exe -NoProfile -NonInteractive -Command \
+                  '$ErrorActionPreference = "Stop"; $headers = @{ Accept = "application/vnd.github+json"; Authorization = "Bearer " + $env:GITHUB_TOKEN; "X-GitHub-Api-Version" = "2022-11-28" }; (Invoke-RestMethod -Headers $headers -Uri $env:GITHUB_API_URL | ConvertTo-Json -Depth 100)'
+              }
+              ;;
+            *)
+              github_api_curl() {
+                curl -fsSL \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "$@"
+              }
+              ;;
+          esac
 
           requested_version="$(grep -E '^LATEST_STABLE_VERSION=\"[0-9]+\.[0-9]+\.[0-9]+\"$' ./docs/public/install.sh)"
           requested_version="${requested_version#LATEST_STABLE_VERSION=\"}"
@@ -229,8 +239,7 @@ jobs:
             exit 1
           fi
 
-          release_check_url="https://github.com/tombi-toml/tombi/releases/tag/v${requested_version}"
-          if curl -fsSLI "$release_check_url" >/dev/null 2>&1; then
+          if github_api_curl "https://api.github.com/repos/tombi-toml/tombi/releases/tags/v${requested_version}" >/dev/null 2>&1; then
             version="$requested_version"
           else
             echo "Release v${requested_version} is not published yet; falling back to v${latest_version} for installer CI." >&2

@@ -57,6 +57,8 @@ jobs:
             crates/**
             extensions/**
             rust/**
+            typescript/@tombi-toml/wasm-lib/**
+            typescript/@tombi-toml/wasm-lsp/**
             editors/zed/**
             toml-test/**
             xtask/**
@@ -131,6 +133,10 @@ jobs:
       - name: Run LSP WASM Clippy
         run: cargo clippy --locked -p tombi-wasm --target wasm32-unknown-unknown --no-default-features --features lsp -- -D warnings
       - name: Build WASM package variants
-        run: pnpm --dir rust/tombi-wasm build
+        run: |
+          pnpm --dir typescript/@tombi-toml/wasm-lib build
+          pnpm --dir typescript/@tombi-toml/wasm-lsp build
       - name: Run WASM smoke tests
-        run: pnpm --dir rust/tombi-wasm test
+        run: |
+          pnpm --dir typescript/@tombi-toml/wasm-lib test
+          pnpm --dir typescript/@tombi-toml/wasm-lsp test

@@ -63,6 +63,8 @@ jobs:
             crates/**
             extensions/**
             rust/**
+            typescript/@tombi-toml/wasm-lib/**
+            typescript/@tombi-toml/wasm-lsp/**
             xtask/**
             schemas/**
             www.schemastore.org/**
@@ -253,26 +255,31 @@ jobs:
         run: rustup target add wasm32-unknown-unknown
       - uses: ./.github/actions/set-version
       - name: Build WASM package variants
-        run: pnpm --dir rust/tombi-wasm build
-      - name: Run WASM smoke tests
-        run: pnpm --dir rust/tombi-wasm test
-      - name: Package WASM assets
-        working-directory: rust/tombi-wasm
         run: |
-          mv dist/lib "tombi-wasm-lib-${TOMBI_VERSION}"
+          pnpm --dir typescript/@tombi-toml/wasm-lib build
+          pnpm --dir typescript/@tombi-toml/wasm-lsp build
+      - name: Run WASM smoke tests
+        run: |
+          pnpm --dir typescript/@tombi-toml/wasm-lib test
+          pnpm --dir typescript/@tombi-toml/wasm-lsp test
+      - name: Package WASM assets
+        run: |
+          mkdir "tombi-wasm-lib-${TOMBI_VERSION}"
+          cp -r typescript/@tombi-toml/wasm-lib/dist/. "tombi-wasm-lib-${TOMBI_VERSION}/"
           tar -czf "tombi-wasm-lib-${TOMBI_VERSION}.tar.gz" "tombi-wasm-lib-${TOMBI_VERSION}"
-          mv dist/lsp "tombi-wasm-lsp-${TOMBI_VERSION}"
+          mkdir "tombi-wasm-lsp-${TOMBI_VERSION}"
+          cp -r typescript/@tombi-toml/wasm-lsp/dist/. "tombi-wasm-lsp-${TOMBI_VERSION}/"
           tar -czf "tombi-wasm-lsp-${TOMBI_VERSION}.tar.gz" "tombi-wasm-lsp-${TOMBI_VERSION}"
       - name: Upload WASM library artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: tombi-wasm-lib-${{ env.TOMBI_VERSION }}.tar.gz
-          path: rust/tombi-wasm/tombi-wasm-lib-${{ env.TOMBI_VERSION }}.tar.gz
+          path: tombi-wasm-lib-${{ env.TOMBI_VERSION }}.tar.gz
       - name: Upload LSP WASM artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: tombi-wasm-lsp-${{ env.TOMBI_VERSION }}.tar.gz
-          path: rust/tombi-wasm/tombi-wasm-lsp-${{ env.TOMBI_VERSION }}.tar.gz
+          path: tombi-wasm-lsp-${{ env.TOMBI_VERSION }}.tar.gz
 
   check-release-notes:
     needs: detect-changes
