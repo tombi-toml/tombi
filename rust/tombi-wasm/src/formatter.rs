@@ -53,17 +53,13 @@ fn deserialize_options(options: JsValue) -> Result<Options, String> {
 
 fn load_config(
     options: Options,
-    source_path: &std::path::Path,
 ) -> Result<(tombi_config::Config, Option<std::path::PathBuf>), String> {
     if let Some(config) = options.config {
         let (config_content, config_path) = match config {
             ConfigInput::File { content, path } => (content, std::path::PathBuf::from(path)),
             ConfigInput::Text(content) => (
                 content,
-                source_path
-                    .parent()
-                    .unwrap_or_else(|| std::path::Path::new(""))
-                    .join(tombi_config::TOMBI_TOML_FILENAME),
+                std::path::PathBuf::from(tombi_config::TOMBI_TOML_FILENAME),
             ),
         };
         let config = serde_tombi::config::from_str(&config_content, &config_path)
@@ -89,8 +85,7 @@ pub fn format(source: String, source_path: String, options: JsValue) -> Promise 
     ) -> Result<FormatResult, FormatError> {
         let source_path = std::path::PathBuf::from(source_path);
         let options = deserialize_options(options).map_err(|error| FormatError { error })?;
-        let (config, config_path) =
-            load_config(options, &source_path).map_err(|error| FormatError { error })?;
+        let (config, config_path) = load_config(options).map_err(|error| FormatError { error })?;
         let toml_version = config.toml_version.unwrap_or_default();
 
         let schema_options = config.schema.as_ref();
@@ -159,8 +154,7 @@ pub fn lint(source: String, source_path: String, options: JsValue) -> Promise {
     ) -> Result<LintResult, LintError> {
         let source_path = std::path::PathBuf::from(source_path);
         let options = deserialize_options(options).map_err(|error| LintError { error })?;
-        let (config, config_path) =
-            load_config(options, &source_path).map_err(|error| LintError { error })?;
+        let (config, config_path) = load_config(options).map_err(|error| LintError { error })?;
         let toml_version = config.toml_version.unwrap_or_default();
 
         let schema_options = config.schema.as_ref();

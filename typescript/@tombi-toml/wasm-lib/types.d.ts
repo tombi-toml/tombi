@@ -39,8 +39,8 @@ export type LintResult = {
 
 /**
  * An in-memory `tombi.toml` configuration.
- * When a string is provided, it is treated as the configuration content and
- * `tombi.toml` is assumed to exist next to `sourcePath`.
+ * When a string is provided, it is treated as the content of a virtual
+ * `tombi.toml`.
  */
 export type Config = { content: string; path: string } | string;
 
