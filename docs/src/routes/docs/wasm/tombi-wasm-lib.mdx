@@ -70,21 +70,15 @@ try {
 `undefined` when there are no diagnostics. Configuration and execution errors reject
 the Promise.
 
-For both functions, the optional file path selects matching configuration and
-formatter/linter options. The optional third argument selects the TOML version. It
-uses the same `v1.x.x` notation as `toml-version` in `tombi.toml`:
+Both functions accept an optional file path for matching configuration and
+formatter/linter options, followed by an optional TOML version:
 
 ```ts
 await format(source, "Cargo.toml", "v1.1.0");
 await lint(source, "Cargo.toml", "v1.0.0");
 ```
 
-If omitted, Tombi uses `toml-version` from the matching `tombi.toml`; when it is
-not configured, the default is `v1.0.0`. An explicitly passed third argument takes
-precedence. The supported values are `v1.0.0`, `v1.1.0-preview`, and `v1.1.0`.
-
-The equivalent `tombi.toml` setting is:
-
-```toml
-toml-version = "v1.1.0"
-```
+The version uses the same notation as `toml-version` in `tombi.toml`. If omitted,
+Tombi uses the matching configuration value, or `v1.0.0` when it is not configured.
+An explicitly passed version takes precedence. Supported values are `v1.0.0`,
+`v1.1.0-preview`, and `v1.1.0`.
