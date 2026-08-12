@@ -53,7 +53,7 @@ const formatError = await format("key =", "playground.toml", {
   config: { content: 'toml-version = "v1.1.0"', path: "tombi.toml" },
 });
 assert.equal(formatError.formatted, undefined);
-assert.ok(Object.hasOwn(formatError, "formatted"));
+assert.equal(Object.hasOwn(formatError, "formatted"), false);
 assert.ok(Array.isArray(formatError.diagnostics));
 assert.ok(formatError.diagnostics.length > 0);
 

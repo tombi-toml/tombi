@@ -23,7 +23,7 @@ export interface Range {
 
 /** The result of formatting a TOML document. */
 export interface FormatResult {
-  formatted: string | undefined;
+  formatted?: string;
   diagnostics: Diagnostic[];
 }
 

@@ -40,7 +40,7 @@ try {
 
 `format` resolves to an object containing the formatted TOML when formatting
 succeeds and an array of diagnostics. The diagnostics array is empty when none were
-reported. When diagnostics prevent formatting, `formatted` is `undefined`.
+reported. When diagnostics prevent formatting, `formatted` is omitted.
 Configuration and execution errors reject the Promise as `TombiWasmError`.
 
 ## Lint TOML

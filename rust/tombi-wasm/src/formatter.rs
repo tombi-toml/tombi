@@ -31,16 +31,19 @@ fn serialize(value: &impl Serialize) -> JsValue {
 
 fn serialize_format_result(result: FormatResult) -> JsValue {
     let object = Object::new();
-    let (formatted, diagnostics) = match result {
-        FormatResult::Formatted(formatted) => (
-            JsValue::from_str(&formatted),
-            serialize(&Vec::<Diagnostic>::new()),
-        ),
-        FormatResult::Diagnostics(diagnostics) => (JsValue::UNDEFINED, serialize(&diagnostics)),
+    let diagnostics = match result {
+        FormatResult::Formatted(formatted) => {
+            Reflect::set(
+                &object,
+                &JsValue::from_str("formatted"),
+                &JsValue::from_str(&formatted),
+            )
+            .expect("WASM format results must be writable");
+            serialize(&Vec::<Diagnostic>::new())
+        }
+        FormatResult::Diagnostics(diagnostics) => serialize(&diagnostics),
     };
 
-    Reflect::set(&object, &JsValue::from_str("formatted"), &formatted)
-        .expect("WASM format results must be writable");
     Reflect::set(&object, &JsValue::from_str("diagnostics"), &diagnostics)
         .expect("WASM format results must be writable");
     object.into()
