@@ -123,14 +123,14 @@
     "path": "/docs/wasm",
     "children": [
       {
-        "title": "tombi-wasm-lib",
+        "title": "Formatter and Linter",
         "description": "Use the tombi-wasm-lib package for formatting and linting.",
-        "path": "/docs/wasm/lib"
+        "path": "/docs/wasm/tombi-wasm-lib"
       },
       {
-        "title": "tombi-wasm-lsp",
+        "title": "Language Server",
         "description": "Use the tombi-wasm-lsp package and its Web Worker adapter.",
-        "path": "/docs/wasm/lsp"
+        "path": "/docs/wasm/tombi-wasm-lsp"
       }
     ]
   },
