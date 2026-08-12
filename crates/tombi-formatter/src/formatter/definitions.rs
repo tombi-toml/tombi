@@ -9,7 +9,7 @@ use tombi_config::{DateTimeDelimiter, FormatOptions, IndentStyle, StringQuoteSty
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Clone)]
 pub struct FormatDefinitions {
-    pub line_width: u8,
+    pub line_width: Option<u8>,
     pub line_ending: tombi_config::LineEnding,
     pub group_blank_lines_limit: u8,
     pub table_blank_lines: u8,
@@ -37,8 +37,7 @@ impl FormatDefinitions {
                 .rules
                 .as_ref()
                 .and_then(|rules| rules.line_width)
-                .unwrap_or_default()
-                .value(),
+                .map(|line_width| line_width.value()),
             line_ending: options
                 .rules
                 .as_ref()

@@ -228,7 +228,7 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) const fn line_width(&self) -> u8 {
+    pub(crate) const fn line_width(&self) -> Option<u8> {
         self.definitions.line_width
     }
 
