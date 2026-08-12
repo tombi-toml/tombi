@@ -62,9 +62,13 @@ try {
 
   if (diagnostics.length > 0) {
     for (const diagnostic of diagnostics) {
-      console.error(
-        `${diagnostic.message} (${diagnostic.range.start.line}:${diagnostic.range.start.column})`,
-      );
+      const message = `${diagnostic.message} (${diagnostic.range.start.line}:${diagnostic.range.start.column})`;
+
+      if (diagnostic.level === "ERROR") {
+        console.error(message);
+      } else {
+        console.warn(message);
+      }
     }
   } else {
     console.log("No diagnostics");
