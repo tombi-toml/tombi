@@ -8,10 +8,10 @@
 //! this structure is currently empty.
 
 use crate::{
-    ArrayBracketSpaceWidth, ArrayCommaSpaceWidth, BlankLines, BlankLinesLimit, DateTimeDelimiter,
-    IndentStyle, IndentWidth, InlineTableBraceSpaceWidth, InlineTableCommaSpaceWidth,
-    KeyValueEqualsSignSpaceWidth, LineEnding, LineWidth, StringQuoteStyle,
-    TrailingCommentSpaceWidth,
+    ArrayBracketSpaceWidth, ArrayCommaSpaceWidth, BlankLines, BlankLinesLimit, CommentStyle,
+    DateTimeDelimiter, IndentStyle, IndentWidth, InlineTableBraceSpaceWidth,
+    InlineTableCommaSpaceWidth, KeyValueEqualsSignSpaceWidth, LineEnding, LineWidth,
+    StringQuoteStyle, TrailingCommentSpaceWidth,
 };
 
 /// # Formatter options
@@ -56,6 +56,13 @@ pub struct FormatRules {
         schemars(default = "ArrayCommaSpaceWidth::default")
     )]
     pub array_comma_space_width: Option<ArrayCommaSpaceWidth>,
+
+    /// # The style used to format comments
+    ///
+    /// - `normalize`: Normalize comment text according to Tombi's formatting rules.
+    /// - `preserve`: Preserve the original comment text while formatting its placement normally.
+    #[cfg_attr(feature = "jsonschema", schemars(default = "CommentStyle::default"))]
+    pub comment_style: Option<CommentStyle>,
 
     /// # The delimiter between date and time
     ///
@@ -304,6 +311,7 @@ impl FormatRules {
             array_comma_space_width: self
                 .array_comma_space_width
                 .or(override_rules.array_comma_space_width),
+            comment_style: self.comment_style.or(override_rules.comment_style),
             date_time_delimiter: self
                 .date_time_delimiter
                 .or(override_rules.date_time_delimiter),

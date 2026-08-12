@@ -47,6 +47,7 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
   - [format.rules](#format-rules)
     - [format.rules.array-bracket-space-width](#format-rules-array-bracket-space-width)
     - [format.rules.array-comma-space-width](#format-rules-array-comma-space-width)
+    - [format.rules.comment-style](#format-rules-comment-style)
     - [format.rules.date-time-delimiter](#format-rules-date-time-delimiter)
     - [format.rules.group-blank-lines-limit](#format-rules-group-blank-lines-limit)
     - [format.rules.indent-style](#format-rules-indent-style)
@@ -172,6 +173,7 @@ respect-ignore-files = true
 [format.rules]
 array-bracket-space-width = 0
 array-comma-space-width = 1
+comment-style = "normalize"
 date-time-delimiter = "T"
 group-blank-lines-limit = 1
 indent-style = "space"
@@ -444,6 +446,18 @@ The number of spaces after the comma in a single line array.
 key = [ 1, 2, 3 ]
 #         ^  ^  <- this
 ```
+
+### format.rules.comment-style
+
+The style used to format comments.
+
+- Type: `"normalize" | "preserve"`
+- Default: `"normalize"`
+- Enum Values:
+  - `normalize`: Normalize comment text according to Tombi's formatting rules.
+  - `preserve`: Preserve the original comment text while formatting its placement normally.
+
+For example, comment indentation and the spacing before trailing comments are still controlled by the formatter.
 
 ### format.rules.date-time-delimiter
 
