@@ -22,20 +22,15 @@ export interface Range {
 }
 
 /** The result of formatting a TOML document. */
-export type FormatResult =
-  | {
-      formatted: string;
-      diagnostics: undefined;
-    }
-  | {
-      formatted: undefined;
-      diagnostics: Diagnostic[];
-    };
+export interface FormatResult {
+  formatted: string | undefined;
+  diagnostics: Diagnostic[];
+}
 
 /** The result of linting a TOML document. */
-export type LintResult = {
-  diagnostics?: Diagnostic[];
-};
+export interface LintResult {
+  diagnostics: Diagnostic[];
+}
 
 /**
  * An in-memory `tombi.toml` configuration.

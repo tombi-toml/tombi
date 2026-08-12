@@ -32,7 +32,10 @@ fn serialize(value: &impl Serialize) -> JsValue {
 fn serialize_format_result(result: FormatResult) -> JsValue {
     let object = Object::new();
     let (formatted, diagnostics) = match result {
-        FormatResult::Formatted(formatted) => (JsValue::from_str(&formatted), JsValue::UNDEFINED),
+        FormatResult::Formatted(formatted) => (
+            JsValue::from_str(&formatted),
+            serialize(&Vec::<Diagnostic>::new()),
+        ),
         FormatResult::Diagnostics(diagnostics) => (JsValue::UNDEFINED, serialize(&diagnostics)),
     };
 
@@ -138,8 +141,7 @@ pub fn format(source: String, source_path: String, options: JsValue) -> Promise 
 pub fn lint(source: String, source_path: String, options: JsValue) -> Promise {
     #[derive(serde::Serialize, Debug)]
     struct LintResult {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        diagnostics: Option<Vec<Diagnostic>>,
+        diagnostics: Vec<Diagnostic>,
     }
 
     #[derive(serde::Serialize, Debug)]
@@ -178,7 +180,9 @@ pub fn lint(source: String, source_path: String, options: JsValue) -> Promise {
             tombi_glob::get_lint_options(&config, Some(&source_path), config_path.as_deref())
         else {
             // If linting is disabled, return success
-            return Ok(LintResult { diagnostics: None });
+            return Ok(LintResult {
+                diagnostics: Vec::new(),
+            });
         };
 
         match tombi_linter::Linter::new(
@@ -190,10 +194,10 @@ pub fn lint(source: String, source_path: String, options: JsValue) -> Promise {
         .lint(&source)
         .await
         {
-            Ok(_) => Ok(LintResult { diagnostics: None }),
-            Err(diagnostics) => Ok(LintResult {
-                diagnostics: Some(diagnostics),
+            Ok(_) => Ok(LintResult {
+                diagnostics: Vec::new(),
             }),
+            Err(diagnostics) => Ok(LintResult { diagnostics }),
         }
     }
 

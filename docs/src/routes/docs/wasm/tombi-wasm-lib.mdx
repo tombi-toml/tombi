@@ -28,20 +28,20 @@ try {
 
   if (formatted !== undefined) {
     console.log(formatted);
-  } else {
-    for (const diagnostic of diagnostics) {
-      console.error(diagnostic.message);
-    }
+  }
+
+  for (const diagnostic of diagnostics) {
+    console.error(diagnostic.message);
   }
 } catch (error) {
   console.error(error as TombiWasmError);
 }
 ```
 
-`format` resolves to an object containing the formatted TOML and diagnostics.
-On success, the result contains `formatted`. When document diagnostics prevent
-formatting, the result instead contains `diagnostics`. Configuration and execution
-errors reject the Promise as `TombiWasmError`.
+`format` resolves to an object containing the formatted TOML when formatting
+succeeds and an array of diagnostics. The diagnostics array is empty when none were
+reported. When diagnostics prevent formatting, `formatted` is `undefined`.
+Configuration and execution errors reject the Promise as `TombiWasmError`.
 
 ## Lint TOML
 
@@ -60,7 +60,7 @@ name = "example"
 try {
   const { diagnostics } = await lint(source, "Cargo.toml");
 
-  if (diagnostics) {
+  if (diagnostics.length > 0) {
     for (const diagnostic of diagnostics) {
       console.error(
         `${diagnostic.message} (${diagnostic.range.start.line}:${diagnostic.range.start.column})`,
@@ -75,8 +75,8 @@ try {
 }
 ```
 
-`lint` resolves to an object whose optional `diagnostics` property is present when
-diagnostics were reported. Configuration and execution errors reject the Promise
+`lint` resolves to an object containing a diagnostics array. The array is empty when
+no diagnostics were reported. Configuration and execution errors reject the Promise
 as `TombiWasmError`.
 
 Both functions accept a source path for matching `[[overrides]]`, followed by

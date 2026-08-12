@@ -6,9 +6,13 @@ import init, { format, lint } from "../../../typescript/@tombi-toml/wasm-lib/dis
 const wasm = await readFile(new URL("../../../typescript/@tombi-toml/wasm-lib/dist/tombi_wasm_bg.wasm", import.meta.url));
 await init({ module_or_path: wasm });
 
+assert.deepEqual(await format("", "playground.toml"), {
+  formatted: "",
+  diagnostics: [],
+});
 assert.deepEqual(await format("key=1", "playground.toml"), {
   formatted: "key = 1\n",
-  diagnostics: undefined,
+  diagnostics: [],
 });
 assert.deepEqual(
   await format("key={nested=1}", "playground.toml", {
@@ -16,7 +20,7 @@ assert.deepEqual(
   }),
   {
     formatted: "key = { nested = 1 }\n",
-    diagnostics: undefined,
+    diagnostics: [],
   },
 );
 const formattedWithConfig = await format("[package]\nname=1", "Cargo.toml", {
@@ -43,7 +47,7 @@ enabled = false
     path: "/workspace/tombi.toml",
   },
 });
-assert.deepEqual(formatDisabledByOverride, { formatted: "key=1", diagnostics: undefined });
+assert.deepEqual(formatDisabledByOverride, { formatted: "key=1", diagnostics: [] });
 
 const formatError = await format("key =", "playground.toml", {
   config: { content: 'toml-version = "v1.1.0"', path: "tombi.toml" },
@@ -53,7 +57,7 @@ assert.ok(Object.hasOwn(formatError, "formatted"));
 assert.ok(Array.isArray(formatError.diagnostics));
 assert.ok(formatError.diagnostics.length > 0);
 
-assert.deepEqual(await lint("key = 1", "playground.toml"), {});
+assert.deepEqual(await lint("key = 1", "playground.toml"), { diagnostics: [] });
 const { diagnostics } = await lint("key =", "playground.toml", {
   config: { content: 'toml-version = "v1.1.0"', path: "tombi.toml" },
 });
