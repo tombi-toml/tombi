@@ -2,6 +2,8 @@ packages:
   - "docs"
   - "editors/vscode"
   - "rust/tombi-wasm"
+  - "rust/tombi-wasm-lib"
+  - "rust/tombi-wasm-lsp"
   - "typescript/@tombi-toml/*"
 overrides:
   "@azure/msal-node": 5.2.2

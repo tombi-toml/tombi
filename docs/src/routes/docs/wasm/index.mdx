@@ -1,0 +1,21 @@
+# WebAssembly
+
+Tombi's WebAssembly support is published as two npm packages. They are separated so
+an application only downloads the runtime it needs:
+
+| Package | Contents |
+| --- | --- |
+| [`tombi-wasm-lib`](/docs/wasm/lib) | Formatter and linter |
+| [`tombi-wasm-lsp`](/docs/wasm/lsp) | Language Server |
+
+Install only the package required by your application:
+
+```sh
+pnpm add tombi-wasm-lib
+pnpm add tombi-wasm-lsp
+```
+
+The two packages are built from the shared `tombi-wasm` Rust crate. The `lib` and
+`lsp` features produce independent WASM artifacts.
+
+<a href="/playground" class="inline-block px-4 py-2 rounded bg-[--color-primary] text-white no-underline hover:opacity-90">Try the WASM Playground</a>

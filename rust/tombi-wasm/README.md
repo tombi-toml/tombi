@@ -1,18 +1,18 @@
-# tombi-wasm
+# Tombi WebAssembly packages
 
-WebAssembly builds for Tombi's formatter, linter, and language server.
+WebAssembly builds for Tombi's formatter, linter, and Language Server are published
+as separate npm packages so applications do not download capabilities they do not use.
 
 The package provides two entry points so applications only load the capabilities they use:
 
-- `tombi-wasm/lib` contains the formatter and linter.
-- `tombi-wasm/lsp` contains the language server, including formatting and diagnostics over LSP.
-- `tombi-wasm/lsp/worker` runs the language server in a Web Worker and exchanges JSON-RPC objects through `postMessage`.
+- `tombi-wasm-lib` contains the formatter and linter.
+- `tombi-wasm-lsp` contains the Language Server and its Web Worker adapter.
 
 Build both variants and run their smoke tests with:
 
 ```sh
-pnpm build
-pnpm test
+pnpm --dir rust/tombi-wasm build
+pnpm --dir rust/tombi-wasm test
 ```
 
 The worker accepts standard LSP JSON-RPC messages only. Browser hosts represent their workspace by

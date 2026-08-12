@@ -180,6 +180,18 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
 
+  rust/tombi-wasm-lib:
+    devDependencies:
+      wasm-pack:
+        specifier: ^0.15.0
+        version: 0.15.0
+
+  rust/tombi-wasm-lsp:
+    devDependencies:
+      wasm-pack:
+        specifier: ^0.15.0
+        version: 0.15.0
+
   typescript/@tombi-toml/cli-darwin-arm64: {}
 
   typescript/@tombi-toml/cli-darwin-x64: {}

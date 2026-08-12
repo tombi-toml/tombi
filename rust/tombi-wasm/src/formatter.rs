@@ -29,16 +29,16 @@ pub fn format(source: String, file_path: Option<String>, toml_version: Option<St
         file_path: Option<String>,
         toml_version: Option<String>,
     ) -> Result<String, FormatError> {
-        let toml_version = match toml_version {
+        let requested_toml_version = match toml_version {
             Some(v) => match TomlVersion::from_str(&v) {
-                Ok(v) => v,
+                Ok(v) => Some(v),
                 Err(_) => {
                     return Err(FormatError::Error {
                         error: "Invalid TOML version".to_string(),
                     });
                 }
             },
-            None => TomlVersion::default(),
+            None => None,
         };
 
         let (config, config_path) =
@@ -50,6 +50,10 @@ pub fn format(source: String, file_path: Option<String>, toml_version: Option<St
                     });
                 }
             };
+
+        let toml_version = requested_toml_version
+            .or(config.toml_version)
+            .unwrap_or_default();
 
         let schema_options = config.schema.as_ref();
         let schema_store =
@@ -108,24 +112,23 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
     #[serde(rename_all = "camelCase")]
     enum LintError {
         Error { error: String },
-        Diagnostics { diagnostics: Vec<Diagnostic> },
     }
 
     async fn inner_lint(
         source: String,
         file_path: Option<String>,
         toml_version: Option<String>,
-    ) -> Result<(), LintError> {
-        let toml_version = match toml_version {
+    ) -> Result<Option<Vec<Diagnostic>>, LintError> {
+        let requested_toml_version = match toml_version {
             Some(v) => match TomlVersion::from_str(&v) {
-                Ok(v) => v,
+                Ok(v) => Some(v),
                 Err(_) => {
                     return Err(LintError::Error {
                         error: "Invalid TOML version".to_string(),
                     });
                 }
             },
-            None => TomlVersion::default(),
+            None => None,
         };
 
         let (config, config_path) =
@@ -137,6 +140,10 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
                     });
                 }
             };
+
+        let toml_version = requested_toml_version
+            .or(config.toml_version)
+            .unwrap_or_default();
 
         let schema_options = config.schema.as_ref();
         let schema_store =
@@ -161,7 +168,7 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
             tombi_glob::get_lint_options(&config, file_path_buf.as_deref(), config_path.as_deref())
         else {
             // If linting is disabled, return success
-            return Ok(());
+            return Ok(None);
         };
 
         match tombi_linter::Linter::new(
@@ -173,14 +180,15 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
         .lint(&source)
         .await
         {
-            Ok(_) => Ok(()),
-            Err(diagnostics) => Err(LintError::Diagnostics { diagnostics }),
+            Ok(_) => Ok(None),
+            Err(diagnostics) => Ok(Some(diagnostics)),
         }
     }
 
     future_to_promise(async move {
         match inner_lint(source, file_path, toml_version).await {
-            Ok(_) => Ok(JsValue::NULL),
+            Ok(Some(diagnostics)) => Ok(serialize_error(&diagnostics)),
+            Ok(None) => Ok(JsValue::UNDEFINED),
             Err(e) => Err(serialize_error(&e)),
         }
     })
