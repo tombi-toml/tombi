@@ -2,7 +2,7 @@ export * from "./tombi_wasm";
 
 /** A diagnostic reported by Tombi. */
 export interface Diagnostic {
-  level: "ERROR" | "WARNING";
+  level: "error" | "warning";
   code: string;
   message: string;
   range: Range;

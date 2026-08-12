@@ -64,7 +64,7 @@ try {
     for (const diagnostic of diagnostics) {
       const message = `${diagnostic.message} (${diagnostic.range.start.line}:${diagnostic.range.start.column})`;
 
-      if (diagnostic.level === "ERROR") {
+      if (diagnostic.level === "error") {
         console.error(message);
       } else {
         console.warn(message);

@@ -56,6 +56,7 @@ assert.equal(formatError.formatted, undefined);
 assert.equal(Object.hasOwn(formatError, "formatted"), false);
 assert.ok(Array.isArray(formatError.diagnostics));
 assert.ok(formatError.diagnostics.length > 0);
+assert.ok(formatError.diagnostics.every((diagnostic) => diagnostic.level === "error"));
 
 assert.deepEqual(await lint("key = 1", "playground.toml"), { diagnostics: [] });
 const { diagnostics } = await lint("key =", "playground.toml", {
@@ -63,6 +64,23 @@ const { diagnostics } = await lint("key =", "playground.toml", {
 });
 assert.ok(Array.isArray(diagnostics));
 assert.ok(diagnostics.length > 0);
+assert.ok(diagnostics.every((diagnostic) => diagnostic.level === "error"));
+
+const warningResult = await lint(
+  `
+[fruit.apple]
+color = "red"
+
+[animal]
+type = "mammal"
+
+[fruit.orange]
+color = "orange"
+`,
+  "playground.toml",
+);
+assert.ok(warningResult.diagnostics.length > 0);
+assert.ok(warningResult.diagnostics.every((diagnostic) => diagnostic.level === "warning"));
 
 await assert.rejects(format("key = 1", "playground.toml", { config: "invalid =" }), (error) => {
   assert.equal(typeof error.error, "string");
