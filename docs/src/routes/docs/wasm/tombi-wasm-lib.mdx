@@ -83,9 +83,8 @@ try {
 no diagnostics were reported. Configuration and execution errors reject the Promise
 as `TombiWasmError`.
 
-Both functions accept a source path for matching `[[overrides]]`, followed by
-an optional options object. Pass `config` to replace the
-automatically discovered `tombi.toml` configuration:
+Both functions accept an optional options object as the third argument. Pass
+`config` to replace the automatically discovered configuration:
 
 ```ts
 const config = {
