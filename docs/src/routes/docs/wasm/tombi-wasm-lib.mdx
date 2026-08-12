@@ -33,6 +33,8 @@ try {
 
 `format` returns the formatted TOML as a Promise. Configuration errors and
 formatting diagnostics reject the Promise.
+The package exports the corresponding `FormatError` type for handling these
+rejections.
 
 ## Lint TOML
 
@@ -68,7 +70,7 @@ try {
 
 `lint` resolves to a diagnostics array when the TOML contains problems, or to
 `undefined` when there are no diagnostics. Configuration and execution errors reject
-the Promise.
+the Promise; the corresponding rejection shape is exported as `LintError`.
 
 Both functions accept an optional file path for matching configuration and
 formatter/linter options, followed by an optional TOML version:

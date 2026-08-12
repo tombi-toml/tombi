@@ -8,12 +8,12 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/tombi_wasm.d.ts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/tombi_wasm.js"
     }
   },
   "scripts": {
-    "build": "rm -rf dist && cd ../../../rust/tombi-wasm && wasm-pack build --locked --target web --out-dir ../../typescript/@tombi-toml/wasm-lib/dist --out-name tombi_wasm -- --no-default-features --features lib",
+    "build": "rm -rf dist && cd ../../../rust/tombi-wasm && wasm-pack build --locked --target web --out-dir ../../typescript/@tombi-toml/wasm-lib/dist --out-name tombi_wasm -- --no-default-features --features lib && cp ../../typescript/@tombi-toml/wasm-lib/types.d.ts ../../typescript/@tombi-toml/wasm-lib/dist/index.d.ts",
     "test": "pnpm run build && node ../../../rust/tombi-wasm/tests/lib-smoke.mjs",
     "clean": "rm -rf dist"
   },
