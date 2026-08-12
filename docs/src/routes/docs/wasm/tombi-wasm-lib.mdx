@@ -1,0 +1,83 @@
+# `tombi-wasm-lib`
+
+`tombi-wasm-lib` provides Tombi's formatter and linter for browsers and other
+JavaScript environments.
+
+## Install
+
+```sh
+pnpm add tombi-wasm-lib
+```
+
+## Format TOML
+
+Initialize the WASM module before calling `format`:
+
+```ts
+import init, { format } from "tombi-wasm-lib";
+
+await init();
+
+const source = `
+[package]
+name = "example"
+`;
+
+try {
+  const formatted = await format(source, "Cargo.toml");
+  console.log(formatted);
+} catch (error: unknown) {
+  console.error(error);
+}
+```
+
+`format` returns the formatted TOML as a Promise. Configuration errors and
+formatting diagnostics reject the Promise.
+
+## Lint TOML
+
+Initialize the WASM module before calling `lint`:
+
+```ts
+import init, { lint } from "tombi-wasm-lib";
+
+await init();
+
+const source = `
+[package]
+name = "example"
+`;
+
+try {
+  const diagnostics = await lint(source, "Cargo.toml");
+
+  if (diagnostics) {
+    for (const diagnostic of diagnostics) {
+      console.error(
+        `${diagnostic.message} (${diagnostic.range.start.line}:${diagnostic.range.start.column})`,
+      );
+    }
+  } else {
+    console.log("No diagnostics");
+  }
+} catch (error: unknown) {
+  // Configuration and execution errors reject the Promise.
+  console.error(error);
+}
+```
+
+`lint` resolves to a diagnostics array when the TOML contains problems, or to
+`undefined` when there are no diagnostics. Configuration and execution errors reject
+the Promise.
+
+Both functions accept an optional file path for matching configuration and
+formatter/linter options, followed by an optional TOML version:
+
+```ts
+await format(source, "Cargo.toml", "v1.1.0");
+await lint(source, "Cargo.toml", "v1.0.0");
+```
+
+If the TOML version is not specified, Tombi reads it from the matching
+`tombi.toml`. If it is not configured there either, Tombi uses the default
+version `v1.0.0`.

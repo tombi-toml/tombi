@@ -1,0 +1,81 @@
+# `tombi-wasm-lsp`
+
+`tombi-wasm-lsp` provides Tombi's Language Server for browsers and other JavaScript
+environments. It also includes a Web Worker adapter at
+`tombi-wasm-lsp/worker`.
+
+## Install
+
+```sh
+pnpm add tombi-wasm-lsp
+```
+
+## Run the Language Server
+
+The package exposes `serve` for hosts that provide browser-compatible streams.
+`ServerConfig` receives an async iterator of `Uint8Array` input chunks and a
+`WritableStream` for output:
+
+```ts
+import init, { ServerConfig, serve } from "tombi-wasm-lsp";
+
+await init();
+
+const input = new ReadableStream<Uint8Array>({
+  start(controller) {
+    // Enqueue LSP-framed messages here.
+  },
+});
+const output = new WritableStream<Uint8Array>({
+  write(chunk) {
+    // Read LSP-framed responses here.
+    console.log(chunk);
+  },
+});
+
+await serve(new ServerConfig(input.values(), output));
+```
+
+Messages use standard LSP JSON-RPC framing (`Content-Length` followed by a JSON
+message). Browser hosts should represent the virtual workspace with
+`textDocument/didOpen`, synchronize edits with `textDocument/didChange`, and send
+`textDocument/didSave` when appropriate.
+
+Before starting a server, preload files that are not opened in the editor with
+`set_workspace_entries`:
+
+```ts
+import { set_workspace_entries } from "tombi-wasm-lsp";
+
+set_workspace_entries([
+  {
+    uri: "file:///workspace/tombi.toml",
+    text: "[format]\nnewline = \"lf\"\n",
+  },
+]);
+```
+
+Use `kind: "directory"` for directory entries; file entries default to
+`kind: "file"`.
+
+## Run in a Web Worker
+
+For a browser editor, run the Language Server in a Web Worker so parsing and
+diagnostics do not block the UI thread:
+
+```ts
+const worker = new Worker(
+  new URL("tombi-wasm-lsp/worker", import.meta.url),
+  { type: "module" },
+);
+
+worker.addEventListener("message", (event) => {
+  if (event.data.type === "ready") {
+    // Send LSP JSON-RPC messages with worker.postMessage(...).
+  }
+});
+```
+
+The worker forwards messages through `postMessage` and emits `{ type: "ready" }`
+after the WASM module and Language Server have started. It accepts standard LSP
+JSON-RPC messages and mirrors opened `file:` documents into the in-memory workspace.
