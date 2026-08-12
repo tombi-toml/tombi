@@ -36,6 +36,7 @@ jobs:
             extensions/**
             rust/serde_tombi/**
             rust/tombi-wasm/**
+            typescript/@tombi-toml/wasm-lsp/**
             .github/actions/relevant-changes/**
             .node-version
             .npmrc

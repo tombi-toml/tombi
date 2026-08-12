@@ -11,8 +11,10 @@ The package provides two entry points so applications only load the capabilities
 Build both variants and run their smoke tests with:
 
 ```sh
-pnpm --dir rust/tombi-wasm build
-pnpm --dir rust/tombi-wasm test
+pnpm --dir typescript/@tombi-toml/wasm-lib build
+pnpm --dir typescript/@tombi-toml/wasm-lsp build
+pnpm --dir typescript/@tombi-toml/wasm-lib test
+pnpm --dir typescript/@tombi-toml/wasm-lsp test
 ```
 
 The worker accepts standard LSP JSON-RPC messages only. Browser hosts represent their workspace by
