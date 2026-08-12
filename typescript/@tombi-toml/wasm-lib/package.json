@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist && cd ../../../rust/tombi-wasm && wasm-pack build --locked --target web --out-dir ../../typescript/@tombi-toml/wasm-lib/dist --out-name tombi_wasm -- --no-default-features --features lib && cp ../../typescript/@tombi-toml/wasm-lib/types.d.ts ../../typescript/@tombi-toml/wasm-lib/dist/index.d.ts",
+    "build": "rm -rf dist && cd ../../../rust/tombi-wasm && wasm-pack build --locked --target web --out-dir ../../typescript/@tombi-toml/wasm-lib/dist --out-name tombi_wasm -- --no-default-features --features lib && rm ../../typescript/@tombi-toml/wasm-lib/dist/.gitignore && cp ../../typescript/@tombi-toml/wasm-lib/types.d.ts ../../typescript/@tombi-toml/wasm-lib/dist/index.d.ts",
     "test": "pnpm run build && node ../../../rust/tombi-wasm/tests/lib-smoke.mjs",
     "clean": "rm -rf dist"
   },
