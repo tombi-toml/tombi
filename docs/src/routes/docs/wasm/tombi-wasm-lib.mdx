@@ -34,7 +34,7 @@ try {
     console.error(diagnostic.message);
   }
 } catch (error) {
-  console.error(error as TombiWasmError);
+  console.error((error as TombiWasmError).message);
 }
 ```
 
@@ -75,7 +75,7 @@ try {
   }
 } catch (error) {
   // Configuration and execution errors reject the Promise.
-  console.error(error as TombiWasmError);
+  console.error((error as TombiWasmError).message);
 }
 ```
 
