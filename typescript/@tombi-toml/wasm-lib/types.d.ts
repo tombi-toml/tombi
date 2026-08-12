@@ -39,10 +39,10 @@ export type LintResult = {
 
 /**
  * An in-memory `tombi.toml` configuration.
- * When a string is provided, it is treated as the configuration context and
+ * When a string is provided, it is treated as the configuration content and
  * `tombi.toml` is assumed to exist next to `sourcePath`.
  */
-export type Config = { context: string; path: string } | string;
+export type Config = { content: string; path: string } | string;
 
 /** Options shared by the formatter and linter. */
 export interface Options {

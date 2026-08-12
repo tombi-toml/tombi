@@ -21,7 +21,7 @@ assert.deepEqual(
 );
 const formattedWithConfig = await format("[package]\nname=1", "Cargo.toml", {
   config: {
-    context: `
+    content: `
 [format.rules]
 indent-table-key-value-pairs = true
 indent-width = 4
@@ -33,7 +33,7 @@ assert.equal(formattedWithConfig.formatted, "[package]\n    name = 1\n");
 
 const formatDisabledByOverride = await format("key=1", "/workspace/generated/output.toml", {
   config: {
-    context: `
+    content: `
 [[overrides]]
 files.include = ["generated/*.toml"]
 
@@ -46,7 +46,7 @@ enabled = false
 assert.deepEqual(formatDisabledByOverride, { formatted: "key=1", diagnostics: undefined });
 
 const formatError = await format("key =", "playground.toml", {
-  config: { context: 'toml-version = "v1.1.0"', path: "tombi.toml" },
+  config: { content: 'toml-version = "v1.1.0"', path: "tombi.toml" },
 });
 assert.equal(formatError.formatted, undefined);
 assert.ok(Object.hasOwn(formatError, "formatted"));
@@ -55,7 +55,7 @@ assert.ok(formatError.diagnostics.length > 0);
 
 assert.deepEqual(await lint("key = 1", "playground.toml"), {});
 const { diagnostics } = await lint("key =", "playground.toml", {
-  config: { context: 'toml-version = "v1.1.0"', path: "tombi.toml" },
+  config: { content: 'toml-version = "v1.1.0"', path: "tombi.toml" },
 });
 assert.ok(Array.isArray(diagnostics));
 assert.ok(diagnostics.length > 0);

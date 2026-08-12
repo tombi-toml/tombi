@@ -85,7 +85,7 @@ automatically discovered `tombi.toml` configuration:
 
 ```ts
 const config = {
-  context: `
+  content: `
 toml-version = "v1.1.0"
 
 [format.rules]
@@ -97,13 +97,13 @@ indent-width = 4
 await format(source, "Cargo.toml", { config });
 await lint(source, "Cargo.toml", { config });
 
-// The configuration context can be passed as a string shorthand. Its path
+// The configuration content can be passed as a string shorthand. Its path
 // defaults to `tombi.toml` next to `sourcePath`.
-await format(source, "Cargo.toml", { config: config.context });
+await format(source, "Cargo.toml", { config: config.content });
 ```
 
 The `config` property is optional. When omitted, Tombi discovers `tombi.toml`
-as before. When an object is provided, `config.context` replaces the discovered
+as before. When an object is provided, `config.content` replaces the discovered
 configuration and `config.path` supplies the base path for relative schema paths
 and `[[overrides]]`. A string is shorthand for the configuration text, with a
 path of `tombi.toml` next to `sourcePath`. If the TOML version is not configured,

@@ -14,7 +14,7 @@ struct Options {
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum ConfigInput {
-    File { context: String, path: String },
+    File { content: String, path: String },
     Text(String),
 }
 
@@ -56,17 +56,17 @@ fn load_config(
     source_path: &std::path::Path,
 ) -> Result<(tombi_config::Config, Option<std::path::PathBuf>), String> {
     if let Some(config) = options.config {
-        let (config_context, config_path) = match config {
-            ConfigInput::File { context, path } => (context, std::path::PathBuf::from(path)),
-            ConfigInput::Text(context) => (
-                context,
+        let (config_content, config_path) = match config {
+            ConfigInput::File { content, path } => (content, std::path::PathBuf::from(path)),
+            ConfigInput::Text(content) => (
+                content,
                 source_path
                     .parent()
                     .unwrap_or_else(|| std::path::Path::new(""))
                     .join(tombi_config::TOMBI_TOML_FILENAME),
             ),
         };
-        let config = serde_tombi::config::from_str(&config_context, &config_path)
+        let config = serde_tombi::config::from_str(&config_content, &config_path)
             .map_err(|error| error.to_string())?;
         Ok((config, Some(config_path)))
     } else {
