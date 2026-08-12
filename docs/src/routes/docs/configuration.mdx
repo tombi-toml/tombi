@@ -184,6 +184,7 @@ key-quote-style = "double"
 key-value-equals-sign-alignment = false
 key-value-equals-sign-space-width = 1
 line-ending = "lf"
+# Omit line-width for no line-width limit.
 line-width = 80
 string-quote-style = "double"
 table-blank-lines = 1
@@ -632,9 +633,10 @@ The type of line ending.
 
 ### format.rules.line-width
 
-The maximum line width.
+The maximum line width. If omitted, the formatter does not apply a line-width limit.
 
-The formatter will try to keep lines within this width.
+When specified, the formatter will try to keep lines within this width. Explicit multiline
+hints, such as a trailing comma, are still respected without a line-width setting.
 
 - Type: `Number`
 - Default: no limit
