@@ -78,7 +78,6 @@ await format(source, "Cargo.toml", "v1.1.0");
 await lint(source, "Cargo.toml", "v1.0.0");
 ```
 
-The version uses the same notation as `toml-version` in `tombi.toml`. If omitted,
-Tombi uses the matching configuration value, or `v1.0.0` when it is not configured.
-An explicitly passed version takes precedence. Supported values are `v1.0.0`,
-`v1.1.0-preview`, and `v1.1.0`.
+If the TOML version is not specified, Tombi reads it from the matching
+`tombi.toml`. If it is not configured there either, Tombi uses the default
+version `v1.0.0`.
