@@ -1,0 +1,60 @@
+# `tombi-wasm-lib`
+
+`tombi-wasm-lib` provides Tombi's formatter and linter for browsers and other
+JavaScript environments.
+
+## Install
+
+```sh
+pnpm add tombi-wasm-lib
+```
+
+## Use the formatter and linter
+
+Initialize the WASM module before calling `format` or `lint`:
+
+```ts
+import init, { format, lint } from "tombi-wasm-lib";
+
+await init();
+
+const source = '[package]\nname="example"\n';
+const formatted = await format(source, "Cargo.toml");
+
+try {
+  const diagnostics = await lint(formatted, "Cargo.toml");
+
+  if (!diagnostics) {
+    console.log("No diagnostics");
+  } else {
+    console.error(diagnostics);
+  }
+} catch (error) {
+  // Configuration and execution errors are rejected.
+  console.error(error);
+}
+```
+
+Both functions return a Promise. The optional file path selects matching
+configuration and formatter/linter options. The optional third argument selects the
+TOML version. It uses the same `v1.x.x` notation as `toml-version` in `tombi.toml`:
+
+```ts
+await format(source, "Cargo.toml", "v1.1.0");
+await lint(source, "Cargo.toml", "v1.0.0");
+```
+
+If omitted, Tombi uses `toml-version` from the matching `tombi.toml`; when it is
+not configured, the default is `v1.0.0`. An explicitly passed third argument takes
+precedence. The supported values are `v1.0.0`, `v1.1.0-preview`, and `v1.1.0`.
+
+The equivalent `tombi.toml` setting is:
+
+```toml
+toml-version = "v1.1.0"
+```
+
+`lint` resolves to `undefined` when there are no diagnostics, or to a `diagnostics`
+array when the TOML contains problems. Configuration and execution errors reject the
+Promise. `format` rejects when formatting diagnostics prevent it from producing a
+formatted result.
