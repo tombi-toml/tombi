@@ -89,7 +89,13 @@ fn set_package_json_versions(sh: &Shell, version: &str) -> anyhow::Result<()> {
             let package_json = path.join("package.json");
             if package_json.exists() {
                 let mut patch = Patch::new(sh, &package_json)?;
-                patch.replace(&format!(r#""{DEV_VERSION}""#), &format!(r#""{version}""#));
+                // The npm publish preparation derives optional dependency versions from the
+                // root package version. Replacing every occurrence here would make the
+                // workspace manifest disagree with pnpm-lock.yaml before `pnpm run`/`exec`.
+                patch.replace(
+                    &format!(r#""version": "{DEV_VERSION}""#),
+                    &format!(r#""version": "{version}""#),
+                );
                 patch.commit(sh)?;
             }
         }

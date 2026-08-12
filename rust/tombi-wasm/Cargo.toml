@@ -10,6 +10,9 @@ license.workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O", "--enable-bulk-memory"]
+
 [dependencies]
 console_error_panic_hook.workspace = true
 futures = { workspace = true, optional = true }
