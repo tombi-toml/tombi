@@ -151,6 +151,7 @@ export default function Playground() {
   const [monaco, setMonaco] = createSignal<Monaco>();
   const [codeEditor, setCodeEditor] =
     createSignal<MonacoEditor.IStandaloneCodeEditor>();
+  const [isMounted, setIsMounted] = createSignal(false);
   const [editorLoading, setEditorLoading] = createSignal(true);
   const [editorError, setEditorError] = createSignal<string>();
   const [formatShortcut, setFormatShortcut] = createSignal("Ctrl S");
@@ -198,6 +199,10 @@ export default function Playground() {
     visit("", 0);
     return flattened;
   });
+
+  const isPlaygroundReady = createMemo(
+    () => isMounted() && !editorLoading() && runState() !== "loading",
+  );
 
   const setFailure = (message: string) => {
     setRunState("error");
@@ -679,6 +684,8 @@ export default function Playground() {
     );
   });
 
+  onMount(() => setIsMounted(true));
+
   onMount(() => {
     let disposed = false;
     let editor: MonacoEditor.IStandaloneCodeEditor | undefined;
@@ -927,10 +934,13 @@ export default function Playground() {
         og_url={`${DEFAULT_URL}playground`}
       />
 
-      <div class="playground-shell">
+      <div class="playground-shell" aria-busy={!isPlaygroundReady()}>
         <section
           class="playground-workspace"
           aria-label="Tombi WASM LSP playground"
+          aria-hidden={!isPlaygroundReady()}
+          classList={{ "is-initializing": !isPlaygroundReady() }}
+          hidden={!isMounted()}
         >
           <div class="playground-toolbar">
             <div class="playground-runtime-label">
@@ -1182,6 +1192,17 @@ export default function Playground() {
             </Show>
           </section>
         </section>
+
+        <Show when={!isPlaygroundReady()}>
+          <output
+            class="playground-workspace playground-initial-loading"
+            classList={{ "is-overlay": isMounted() }}
+            aria-live="polite"
+          >
+            <TbLoader2 class="playground-spinner" aria-hidden="true" />
+            <span>Loading playground…</span>
+          </output>
+        </Show>
 
         <Show when={treeContextMenu()}>
           {(menu) => (

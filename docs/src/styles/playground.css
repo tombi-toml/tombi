@@ -3,7 +3,34 @@
   --playground-muted: #667085;
   --playground-panel: #ffffff;
   --playground-editor: #f8fafc;
+  position: relative;
   padding: 2.5rem 0 4rem;
+}
+
+.playground-workspace.is-initializing {
+  visibility: hidden;
+}
+
+.playground-initial-loading {
+  display: grid;
+  min-height: 42rem;
+  color: var(--playground-muted);
+  font-size: 0.9rem;
+  font-weight: 650;
+  gap: 0.65rem;
+  place-content: center;
+}
+
+.playground-initial-loading.is-overlay {
+  position: absolute;
+  inset: 2.5rem 0 4rem;
+  min-height: 0;
+}
+
+.playground-initial-loading svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-inline: auto;
 }
 
 .playground-workspace {
