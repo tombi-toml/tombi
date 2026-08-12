@@ -31,7 +31,11 @@ try {
   }
 
   for (const diagnostic of diagnostics) {
-    console.error(diagnostic.message);
+    if (diagnostic.level === "error") {
+      console.error(diagnostic.message);
+    } else {
+      console.warn(diagnostic.message);
+    }
   }
 } catch (error) {
   console.error((error as TombiWasmError).message);
