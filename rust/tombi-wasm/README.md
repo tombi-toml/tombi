@@ -5,8 +5,8 @@ as separate npm packages so applications do not download capabilities they do no
 
 The package provides two entry points so applications only load the capabilities they use:
 
-- `tombi-wasm-lib` contains the formatter and linter.
-- `tombi-wasm-lsp` contains the Language Server and its Web Worker adapter.
+- `@tombi-toml/wasm-lib` contains the formatter and linter.
+- `@tombi-toml/wasm-lsp` contains the Language Server and its Web Worker adapter.
 
 Build both variants and run their smoke tests with:
 

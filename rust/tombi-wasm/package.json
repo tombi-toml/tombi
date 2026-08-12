@@ -4,16 +4,16 @@
   "version": "0.0.0",
   "description": "Tombi formatter, linter, and language server for WebAssembly",
   "scripts": {
-    "build:lib": "pnpm --dir ../tombi-wasm-lib build",
-    "build:lsp": "pnpm --dir ../tombi-wasm-lsp build",
-    "build:docs": "pnpm --dir ../tombi-wasm-lsp build:docs",
-    "build:copy": "rm -rf dist && mkdir -p dist/lib dist/lsp && cp -r ../tombi-wasm-lib/dist/* dist/lib/ && cp -r ../tombi-wasm-lsp/dist/* dist/lsp/ && cp src/lsp-worker.js dist/lsp/worker.js && cp -r www/* dist/",
+    "build:lib": "pnpm --dir ../../typescript/@tombi-toml/wasm-lib build",
+    "build:lsp": "pnpm --dir ../../typescript/@tombi-toml/wasm-lsp build",
+    "build:docs": "pnpm --dir ../../typescript/@tombi-toml/wasm-lsp build:docs",
+    "build:copy": "rm -rf dist && mkdir -p dist/lib dist/lsp && cp -r ../../typescript/@tombi-toml/wasm-lib/dist/* dist/lib/ && cp -r ../../typescript/@tombi-toml/wasm-lsp/dist/* dist/lsp/ && cp src/lsp-worker.js dist/lsp/worker.js && cp -r www/* dist/",
     "build": "pnpm run build:lib && pnpm run build:lsp && pnpm run build:copy",
-    "test:lib": "pnpm --dir ../tombi-wasm-lib test",
-    "test:lsp": "pnpm --dir ../tombi-wasm-lsp test",
+    "test:lib": "pnpm --dir ../../typescript/@tombi-toml/wasm-lib test",
+    "test:lsp": "pnpm --dir ../../typescript/@tombi-toml/wasm-lsp test",
     "test": "pnpm run test:lib && pnpm run test:lsp",
     "dev": "pnpm run build && serve dist",
-    "clean": "pnpm --dir ../tombi-wasm-lib clean && pnpm --dir ../tombi-wasm-lsp clean"
+    "clean": "pnpm --dir ../../typescript/@tombi-toml/wasm-lib clean && pnpm --dir ../../typescript/@tombi-toml/wasm-lsp clean"
   },
   "devDependencies": {
     "serve": "^14.2.6",

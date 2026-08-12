@@ -8,10 +8,6 @@ members = [
   "toml-test",
   "xtask",
 ]
-exclude = [
-  "rust/tombi-wasm-lib",
-  "rust/tombi-wasm-lsp",
-]
 default-members = [
   "crates/*",
   "editors/zed",

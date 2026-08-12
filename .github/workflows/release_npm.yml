@@ -209,6 +209,28 @@ jobs:
             echo publish ${package}@${TOMBI_VERSION}
           done
 
+      - name: Publish unscoped WASM package aliases
+        run: |
+          set -e
+          for package in wasm-lib wasm-lsp; do
+            scoped_package="@tombi-toml/${package}"
+            unscoped_package="tombi-${package}"
+            if npm view ${unscoped_package}@${TOMBI_VERSION} version > /dev/null 2>&1; then
+              echo "${unscoped_package}@${TOMBI_VERSION} is already published. Skipping publish."
+              continue
+            fi
+
+            temp_dir=$(mktemp -d)
+            cp -Lr "typescript/@tombi-toml/${package}"/* "$temp_dir/"
+            cd "$temp_dir"
+            jq --arg name "$unscoped_package" '.name = $name' package.json > package.json.tmp
+            mv package.json.tmp package.json
+            npm publish --tag latest --access public --provenance
+            echo "Published ${unscoped_package}@${TOMBI_VERSION} (alias of ${scoped_package})"
+            cd -
+            rm -rf "$temp_dir"
+          done
+
       - name: Publish 'tombi' npm package
         run: |
           set -e

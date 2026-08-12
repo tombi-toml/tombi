@@ -85,7 +85,11 @@ fn set_package_json_versions(sh: &Shell, version: &str) -> anyhow::Result<()> {
             .unwrap()
             .to_string_lossy()
             .starts_with("cli-");
-        if path.is_dir() && (is_main || is_cli) {
+        let is_wasm = matches!(
+            path.file_name().and_then(|name| name.to_str()),
+            Some("wasm-lib" | "wasm-lsp")
+        );
+        if path.is_dir() && (is_main || is_cli || is_wasm) {
             let package_json = path.join("package.json");
             if package_json.exists() {
                 let mut patch = Patch::new(sh, &package_json)?;

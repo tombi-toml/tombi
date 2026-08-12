@@ -1,5 +1,5 @@
 {
-  "name": "tombi-wasm-lib",
+  "name": "@tombi-toml/wasm-lib",
   "version": "0.0.0",
   "description": "Tombi formatter and linter for WebAssembly",
   "type": "module",
@@ -13,8 +13,8 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist && cd ../tombi-wasm && wasm-pack build --locked --target web --out-dir ../tombi-wasm-lib/dist --out-name tombi_wasm -- --no-default-features --features lib",
-    "test": "pnpm run build && node ../tombi-wasm/tests/lib-smoke.mjs",
+    "build": "rm -rf dist && cd ../../../rust/tombi-wasm && wasm-pack build --locked --target web --out-dir ../../typescript/@tombi-toml/wasm-lib/dist --out-name tombi_wasm -- --no-default-features --features lib",
+    "test": "pnpm run build && node ../../../rust/tombi-wasm/tests/lib-smoke.mjs",
     "clean": "rm -rf dist"
   },
   "devDependencies": {

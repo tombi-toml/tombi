@@ -180,13 +180,13 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
 
-  rust/tombi-wasm-lib:
+  typescript/@tombi-toml/wasm-lib:
     devDependencies:
       wasm-pack:
         specifier: ^0.15.0
         version: 0.15.0
 
-  rust/tombi-wasm-lsp:
+  typescript/@tombi-toml/wasm-lsp:
     devDependencies:
       wasm-pack:
         specifier: ^0.15.0
