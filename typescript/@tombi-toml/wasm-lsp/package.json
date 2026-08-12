@@ -1,6 +1,6 @@
 {
   "name": "@tombi-toml/wasm-lsp",
-  "version": "0.0.0",
+  "version": "0.0.0-dev",
   "description": "Tombi Language Server for WebAssembly",
   "type": "module",
   "files": [

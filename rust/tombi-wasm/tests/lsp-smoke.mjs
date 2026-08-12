@@ -5,7 +5,7 @@ import init, {
   ServerConfig,
   serve,
   set_workspace_files,
-} from "../../tombi-wasm-lsp/dist/tombi_lsp_wasm.js";
+} from "../../../typescript/@tombi-toml/wasm-lsp/dist/tombi_lsp_wasm.js";
 
 class AsyncByteQueue {
   #closed = false;
@@ -48,7 +48,7 @@ function encode(message) {
   return encoder.encode(`Content-Length: ${encoder.encode(body).byteLength}\r\n\r\n${body}`);
 }
 
-const wasm = await readFile(new URL("../../tombi-wasm-lsp/dist/tombi_lsp_wasm_bg.wasm", import.meta.url));
+const wasm = await readFile(new URL("../../../typescript/@tombi-toml/wasm-lsp/dist/tombi_lsp_wasm_bg.wasm", import.meta.url));
 await init({ module_or_path: wasm });
 
 set_workspace_files([
