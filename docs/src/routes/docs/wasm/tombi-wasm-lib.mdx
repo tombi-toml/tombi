@@ -49,16 +49,22 @@ name = "example"
 `;
 
 try {
-  await lint(source, "Cargo.toml");
-  console.log("No diagnostics");
+  const diagnostics = await lint(source, "Cargo.toml");
+
+  if (diagnostics) {
+    console.error(diagnostics);
+  } else {
+    console.log("No diagnostics");
+  }
 } catch (error: unknown) {
+  // Configuration and execution errors reject the Promise.
   console.error(error);
 }
 ```
 
-`lint` resolves to `undefined` when there are no diagnostics. When the TOML contains
-problems, the diagnostics array is provided as the Promise rejection value.
-Configuration errors also reject the Promise.
+`lint` resolves to a diagnostics array when the TOML contains problems, or to
+`undefined` when there are no diagnostics. Configuration and execution errors reject
+the Promise.
 
 For both functions, the optional file path selects matching configuration and
 formatter/linter options. The optional third argument selects the TOML version. It
