@@ -1,4 +1,4 @@
-use js_sys::{Object, Promise, Reflect};
+use js_sys::{Error, Object, Promise, Reflect};
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::Serializer;
 use tombi_diagnostic::Diagnostic;
@@ -27,6 +27,12 @@ fn serialize(value: &impl Serialize) -> JsValue {
     value
         .serialize(&Serializer::json_compatible())
         .expect("WASM values must be serializable")
+}
+
+fn tombi_wasm_error(message: &str) -> JsValue {
+    let error = Error::new(message);
+    error.set_name("TombiWasmError");
+    error.into()
 }
 
 fn serialize_format_result(result: FormatResult) -> JsValue {
@@ -79,19 +85,14 @@ fn load_config(
 
 #[wasm_bindgen]
 pub fn format(source: String, source_path: String, options: JsValue) -> Promise {
-    #[derive(serde::Serialize, Debug)]
-    struct FormatError {
-        error: String,
-    }
-
     async fn inner_format(
         source: String,
         source_path: String,
         options: JsValue,
-    ) -> Result<FormatResult, FormatError> {
+    ) -> Result<FormatResult, String> {
         let source_path = std::path::PathBuf::from(source_path);
-        let options = deserialize_options(options).map_err(|error| FormatError { error })?;
-        let (config, config_path) = load_config(options).map_err(|error| FormatError { error })?;
+        let options = deserialize_options(options)?;
+        let (config, config_path) = load_config(options)?;
         let toml_version = config.toml_version.unwrap_or_default();
 
         let schema_options = config.schema.as_ref();
@@ -102,13 +103,10 @@ pub fn format(source: String, source_path: String, options: JsValue) -> Promise 
                 cache: None,
             });
 
-        if let Err(error) = schema_store
+        schema_store
             .load_config(&config, config_path.as_deref())
             .await
-            .map_err(|e| e.to_string())
-        {
-            return Err(FormatError { error });
-        }
+            .map_err(|error| error.to_string())?;
 
         // Get format options with override support
         let Some(format_options) =
@@ -135,7 +133,7 @@ pub fn format(source: String, source_path: String, options: JsValue) -> Promise 
     future_to_promise(async move {
         match inner_format(source, source_path, options).await {
             Ok(result) => Ok(serialize_format_result(result)),
-            Err(error) => Err(serialize(&error)),
+            Err(error) => Err(tombi_wasm_error(&error)),
         }
     })
 }
@@ -147,19 +145,14 @@ pub fn lint(source: String, source_path: String, options: JsValue) -> Promise {
         diagnostics: Vec<Diagnostic>,
     }
 
-    #[derive(serde::Serialize, Debug)]
-    struct LintError {
-        error: String,
-    }
-
     async fn inner_lint(
         source: String,
         source_path: String,
         options: JsValue,
-    ) -> Result<LintResult, LintError> {
+    ) -> Result<LintResult, String> {
         let source_path = std::path::PathBuf::from(source_path);
-        let options = deserialize_options(options).map_err(|error| LintError { error })?;
-        let (config, config_path) = load_config(options).map_err(|error| LintError { error })?;
+        let options = deserialize_options(options)?;
+        let (config, config_path) = load_config(options)?;
         let toml_version = config.toml_version.unwrap_or_default();
 
         let schema_options = config.schema.as_ref();
@@ -170,13 +163,10 @@ pub fn lint(source: String, source_path: String, options: JsValue) -> Promise {
                 cache: None,
             });
 
-        if let Err(error) = schema_store
+        schema_store
             .load_config(&config, config_path.as_deref())
             .await
-            .map_err(|e| e.to_string())
-        {
-            return Err(LintError { error });
-        }
+            .map_err(|error| error.to_string())?;
 
         // Get lint options with override support
         let Some(lint_options) =
@@ -207,7 +197,7 @@ pub fn lint(source: String, source_path: String, options: JsValue) -> Promise {
     future_to_promise(async move {
         match inner_lint(source, source_path, options).await {
             Ok(result) => Ok(serialize(&result)),
-            Err(error) => Err(serialize(&error)),
+            Err(error) => Err(tombi_wasm_error(&error)),
         }
     })
 }

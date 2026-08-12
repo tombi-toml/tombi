@@ -83,6 +83,19 @@ assert.ok(warningResult.diagnostics.length > 0);
 assert.ok(warningResult.diagnostics.every((diagnostic) => diagnostic.level === "warning"));
 
 await assert.rejects(format("key = 1", "playground.toml", { config: "invalid =" }), (error) => {
-  assert.equal(typeof error.error, "string");
+  assert.ok(error instanceof Error);
+  assert.equal(error.name, "TombiWasmError");
+  assert.equal(typeof error.message, "string");
+  assert.ok(error.message.length > 0);
+  assert.equal(Object.hasOwn(error, "error"), false);
+  return true;
+});
+
+await assert.rejects(lint("key = 1", "playground.toml", { config: "invalid =" }), (error) => {
+  assert.ok(error instanceof Error);
+  assert.equal(error.name, "TombiWasmError");
+  assert.equal(typeof error.message, "string");
+  assert.ok(error.message.length > 0);
+  assert.equal(Object.hasOwn(error, "error"), false);
   return true;
 });

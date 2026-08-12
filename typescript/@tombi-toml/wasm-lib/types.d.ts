@@ -59,6 +59,6 @@ export function lint(
 ): Promise<LintResult>;
 
 /** An error reported when an operation cannot be executed. */
-export interface TombiWasmError {
-  error: string;
+export interface TombiWasmError extends Error {
+  readonly name: "TombiWasmError";
 }
