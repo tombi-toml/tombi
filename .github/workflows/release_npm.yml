@@ -185,6 +185,10 @@ jobs:
           pattern: cli-*
           merge-multiple: true
 
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          run_install: false
+
       - uses: ./.github/actions/set-version
       - name: Install Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -192,6 +196,17 @@ jobs:
           # Node 24 includes a compatible npm for trusted publishing.
           node-version: 24
           registry-url: "https://registry.npmjs.org"
+
+      - name: Install WASM target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build WASM packages
+        run: |
+          pnpm --dir typescript/@tombi-toml/wasm-lib build
+          pnpm --dir typescript/@tombi-toml/wasm-lsp build
 
       - name: Generate npm package
         run: node typescript/@tombi-toml/tombi/scripts/generate-packages.mjs
