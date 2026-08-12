@@ -48,18 +48,11 @@ const source = `
 name = "example"
 `;
 
-type Diagnostic = {
-  message: string;
-  range: {
-    start: { line: number; column: number };
-  };
-};
-
 try {
   const diagnostics = await lint(source, "Cargo.toml");
 
   if (diagnostics) {
-    for (const diagnostic of diagnostics as Diagnostic[]) {
+    for (const diagnostic of diagnostics) {
       console.error(
         `${diagnostic.message} (${diagnostic.range.start.line}:${diagnostic.range.start.column})`,
       );
