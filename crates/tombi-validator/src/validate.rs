@@ -192,7 +192,10 @@ pub fn project_current_schema_for_value(
     ) && !current_schema
         .semantic_schema
         .as_deref()
-        .is_some_and(|schema| schema.has_direct_constraints_for_type(instance_type))
+        .is_some_and(|schema| {
+            schema.has_direct_type_assertion()
+                || schema.has_direct_constraints_for_type(instance_type)
+        })
     {
         return None;
     }
@@ -527,7 +530,12 @@ where
     if diagnostics.is_empty() {
         Ok(crate::Valid::new())
     } else {
-        Err(diagnostics.into())
+        Err(crate::Invalid {
+            assertion_failed: false,
+            match_evidence: Default::default(),
+            diagnostics,
+            local_evaluated_locations: Default::default(),
+        })
     }
 }
 
@@ -672,7 +680,9 @@ where
         if current_schema
             .semantic_schema
             .as_deref()
-            .is_some_and(|schema| !schema.has_type_assertion())
+            .is_some_and(|schema| {
+                !schema.has_type_assertion() && !schema.has_direct_literal_assertion()
+            })
         {
             let (one_of, any_of, all_of, not) = current_schema.schema_view.adjacent_applicators();
             validate_adjacent_applicators(
@@ -865,6 +875,22 @@ mod tests {
         };
         assert!(is_assertion_success(&Ok(crate::Valid::new())));
         assert!(is_assertion_success(&Err(warning_only_invalid)));
+    }
+
+    #[test]
+    fn assertion_success_is_independent_of_diagnostic_level() {
+        let lint_only_error = crate::Invalid {
+            assertion_failed: false,
+            match_evidence: Default::default(),
+            diagnostics: vec![tombi_diagnostic::Diagnostic::new_error(
+                "lint error",
+                "lint-code",
+                tombi_text::Range::default(),
+            )],
+            local_evaluated_locations: crate::Valid::default(),
+        };
+
+        assert!(is_assertion_success(&Err(lint_only_error)));
     }
 
     #[test]

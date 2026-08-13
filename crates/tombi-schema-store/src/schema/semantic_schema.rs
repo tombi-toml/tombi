@@ -140,6 +140,14 @@ impl SemanticSchema {
         matches!(self, Self::Object(object) if object.type_assertion.is_some())
     }
 
+    /// Returns whether this schema object itself contains a finite, generic
+    /// literal assertion. Unlike type-specific keywords, `const` and `enum`
+    /// constrain every instance and therefore safely determine presentation
+    /// types even when `type` is absent.
+    pub fn has_direct_literal_assertion(&self) -> bool {
+        matches!(self, Self::Object(object) if object.assertions.const_value.is_some() || object.assertions.enum_values.is_some())
+    }
+
     /// Returns whether an instance type is admitted by the schema's explicit
     /// `type` assertion. Keywords for other types never imply a type here.
     pub fn accepts_instance_type(&self, instance_type: SchemaType) -> bool {
@@ -388,12 +396,20 @@ impl SemanticSchema {
             return Some(super::SchemaView::Null);
         }
         match schemas.len() {
-            0 => None,
+            // An object schema can be valid while admitting no instance, for
+            // example `{ "type": "string", "const": true }` or
+            // `{ "enum": [] }`. Keep that semantic result as an explicit
+            // false view instead of dropping the schema from its parent.
+            0 => Some(super::SchemaView::Nothing(self.range())),
             1 => schemas.into_iter().next().and_then(|schema| match schema {
                 super::Referable::Resolved { value, .. } => std::sync::Arc::try_unwrap(value).ok(),
                 super::Referable::Ref { .. } => None,
             }),
-            _ => Some(super::SchemaView::OneOf(super::OneOfSchema {
+            // A set of admitted presentation types is inclusive. In
+            // particular, a JSON integer is also a JSON number, so projecting
+            // this as `oneOf` would incorrectly require exactly one type view
+            // to validate.
+            _ => Some(super::SchemaView::AnyOf(super::AnyOfSchema {
                 schemas: std::sync::Arc::new(tokio::sync::RwLock::new(schemas)),
                 ..Default::default()
             })),

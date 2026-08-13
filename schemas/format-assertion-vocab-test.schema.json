@@ -15,6 +15,13 @@
     "ipv4_addr": {
       "type": "string",
       "format": "ipv4"
+    },
+    "ipv4_branch": {
+      "oneOf": [
+        { "type": "string", "format": "ipv4" },
+        { "type": "string" },
+        { "type": "boolean" }
+      ]
     }
   },
   "additionalProperties": false

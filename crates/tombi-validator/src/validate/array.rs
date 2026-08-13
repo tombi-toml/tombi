@@ -99,7 +99,7 @@ impl Validate for tombi_document_tree::Array {
                         )
                         .await
                     }
-                    SchemaView::Null => return Ok(crate::Valid::new()),
+                    SchemaView::Null => handle_nothing_schema(self),
                     SchemaView::Anything(_) => handle_anything_schema(self),
                     SchemaView::Nothing(_) => handle_nothing_schema(self),
                     _ => {
@@ -152,6 +152,11 @@ async fn validate_array(
         )
         .await
     {
+        assertion_failed |= error.assertion_failed;
+        validation_result
+            .match_evidence
+            .merge_from(*error.match_evidence);
+        validation_result.merge_from(error.local_evaluated_locations);
         total_diagnostics.extend(error.diagnostics);
     }
 
@@ -715,9 +720,6 @@ async fn validate_array(
         }
     }
 
-    assertion_failed |= total_diagnostics
-        .iter()
-        .any(|diagnostic| diagnostic.level() == tombi_diagnostic::Level::ERROR);
     let base_result = if total_diagnostics.is_empty() && !assertion_failed {
         Ok(validation_result)
     } else {
@@ -753,10 +755,18 @@ async fn validate_array_without_schema(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Result<crate::Valid, crate::Invalid> {
     let mut total_diagnostics = vec![];
+    let mut assertion_failed = false;
+    let mut match_evidence = Box::<crate::MatchEvidence>::default();
+    let mut local_evaluated_locations = crate::Valid::new();
 
     // Validate without schema
     for (index, value) in array_value.values().iter().enumerate() {
-        if let Err(crate::Invalid { diagnostics, .. }) = value
+        if let Err(crate::Invalid {
+            assertion_failed: child_assertion_failed,
+            match_evidence: child_match_evidence,
+            diagnostics,
+            local_evaluated_locations: child_evaluated_locations,
+        }) = value
             .validate(
                 &accessors
                     .iter()
@@ -768,14 +778,22 @@ async fn validate_array_without_schema(
             )
             .await
         {
+            assertion_failed |= child_assertion_failed;
+            match_evidence.merge_descendant_from(&child_match_evidence);
+            local_evaluated_locations.merge_from(child_evaluated_locations);
             total_diagnostics.extend(diagnostics);
         }
     }
 
-    if total_diagnostics.is_empty() {
-        Ok(crate::Valid::new())
+    if total_diagnostics.is_empty() && !assertion_failed {
+        Ok(local_evaluated_locations)
     } else {
-        Err(total_diagnostics.into())
+        Err(crate::Invalid {
+            assertion_failed,
+            match_evidence,
+            diagnostics: total_diagnostics,
+            local_evaluated_locations,
+        })
     }
 }
 

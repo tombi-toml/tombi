@@ -60,7 +60,13 @@ where
             &mut diagnostics,
         );
 
-        return Err(diagnostics.into());
+        return Err(crate::Invalid {
+            // `not` is an assertion independently of whether its diagnostic is enabled.
+            assertion_failed: true,
+            match_evidence: Default::default(),
+            diagnostics,
+            local_evaluated_locations: Default::default(),
+        });
     } else if common_rules
         .and_then(|rules| rules.not_schema_match.as_ref())
         .and_then(|rules| rules.disabled)
