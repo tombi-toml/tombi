@@ -7,11 +7,11 @@ description = "Tombi formatter, linter, and language server for WebAssembly"
 repository.workspace = true
 license.workspace = true
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-O", "--enable-bulk-memory", "--enable-nontrapping-float-to-int"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 console_error_panic_hook.workspace = true

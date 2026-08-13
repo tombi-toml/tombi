@@ -117,9 +117,7 @@ tombi-schema-type = { path = "crates/tombi-schema-type" }
 tombi-severity-level = { path = "crates/tombi-severity-level" }
 tombi-syntax = { path = "crates/tombi-syntax" }
 tombi-test-lib = { path = "crates/tombi-test-lib" }
-tombi-text = { path = "crates/tombi-text", default-features = false, features = [
-  "serde"
-] }
+tombi-text = { path = "crates/tombi-text", default-features = false, features = ["serde"] }
 tombi-toml-text = { path = "crates/tombi-toml-text" }
 tombi-toml-version = { path = "crates/tombi-toml-version" }
 tombi-uri = { path = "crates/tombi-uri" }
