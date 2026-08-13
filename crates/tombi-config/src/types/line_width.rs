@@ -12,12 +12,6 @@ impl LineWidth {
     }
 }
 
-impl Default for LineWidth {
-    fn default() -> Self {
-        Self(NonZeroU8::new(80).unwrap())
-    }
-}
-
 impl TryFrom<u8> for LineWidth {
     type Error = &'static str;
 
