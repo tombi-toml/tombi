@@ -30,6 +30,8 @@ mod min_max_contains_test_schema;
 mod non_schema;
 #[path = "integration/not_schema.rs"]
 mod not_schema;
+#[path = "integration/numeric_bounds_test_schema.rs"]
+mod numeric_bounds_test_schema;
 #[path = "integration/other_schema.rs"]
 mod other_schema;
 #[path = "integration/prefix_items_test_schema.rs"]
