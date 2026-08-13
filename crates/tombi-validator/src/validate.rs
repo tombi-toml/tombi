@@ -90,6 +90,26 @@ pub trait Validate {
     ) -> BoxFuture<'b, Result<crate::Valid, crate::Invalid>>;
 }
 
+#[inline]
+fn check_maximum<T: PartialOrd>(value: &T, maximum: &T) -> bool {
+    value <= maximum
+}
+
+#[inline]
+fn check_minimum<T: PartialOrd>(value: &T, minimum: &T) -> bool {
+    value >= minimum
+}
+
+#[inline]
+fn check_exclusive_maximum<T: PartialOrd>(value: &T, exclusive_maximum: &T) -> bool {
+    value < exclusive_maximum
+}
+
+#[inline]
+fn check_exclusive_minimum<T: PartialOrd>(value: &T, exclusive_minimum: &T) -> bool {
+    value > exclusive_minimum
+}
+
 pub fn project_current_schema_for_value(
     value: &impl tombi_document_tree::ValueImpl,
     current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,

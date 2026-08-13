@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "integer_maximum": {
+      "type": "integer",
+      "maximum": 10
+    },
+    "integer_minimum": {
+      "type": "integer",
+      "minimum": 10
+    },
+    "integer_exclusive_maximum": {
+      "type": "integer",
+      "exclusiveMaximum": -9223372036854775808
+    },
+    "integer_exclusive_minimum": {
+      "type": "integer",
+      "exclusiveMinimum": 9223372036854775807
+    },
+    "integer_exclusive_maximum_normal": {
+      "type": "integer",
+      "exclusiveMaximum": 10
+    },
+    "integer_exclusive_minimum_normal": {
+      "type": "integer",
+      "exclusiveMinimum": 10
+    },
+    "float_maximum": {
+      "type": "number",
+      "maximum": 10
+    },
+    "float_minimum": {
+      "type": "number",
+      "minimum": 10
+    },
+    "float_exclusive_maximum": {
+      "type": "number",
+      "exclusiveMaximum": 10
+    },
+    "float_exclusive_minimum": {
+      "type": "number",
+      "exclusiveMinimum": 10
+    }
+  }
+}

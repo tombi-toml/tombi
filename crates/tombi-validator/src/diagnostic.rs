@@ -75,32 +75,32 @@ pub enum DiagnosticKind {
         actual: String,
     },
 
-    #[error("The value must be < {maximum}, but found {actual}")]
+    #[error("The value must be ≤ {maximum}, but found {actual}")]
     IntegerMaximum { maximum: i64, actual: i64 },
 
-    #[error("The value must be > {minimum}, but found {actual}")]
+    #[error("The value must be ≥ {minimum}, but found {actual}")]
     IntegerMinimum { minimum: i64, actual: i64 },
 
-    #[error("The value must be ≤ {maximum}, but found {actual}")]
-    IntegerExclusiveMaximum { maximum: i64, actual: i64 },
+    #[error("The value must be < {exclusive_maximum}, but found {actual}")]
+    IntegerExclusiveMaximum { exclusive_maximum: i64, actual: i64 },
 
-    #[error("The value must be ≥ {minimum}, but found {actual}")]
-    IntegerExclusiveMinimum { minimum: i64, actual: i64 },
+    #[error("The value must be > {exclusive_minimum}, but found {actual}")]
+    IntegerExclusiveMinimum { exclusive_minimum: i64, actual: i64 },
 
     #[error("The value {actual} is not a multiple of {multiple_of}")]
     IntegerMultipleOf { multiple_of: i64, actual: i64 },
 
-    #[error("The value must be < {maximum}, but found {actual}")]
+    #[error("The value must be ≤ {maximum}, but found {actual}")]
     FloatMaximum { maximum: f64, actual: f64 },
 
-    #[error("The value must be > {minimum}, but found {actual}")]
+    #[error("The value must be ≥ {minimum}, but found {actual}")]
     FloatMinimum { minimum: f64, actual: f64 },
 
-    #[error("The value must be ≤ {maximum}, but found {actual}")]
-    FloatExclusiveMaximum { maximum: f64, actual: f64 },
+    #[error("The value must be < {exclusive_maximum}, but found {actual}")]
+    FloatExclusiveMaximum { exclusive_maximum: f64, actual: f64 },
 
-    #[error("The value must be ≥ {minimum}, but found {actual}")]
-    FloatExclusiveMinimum { minimum: f64, actual: f64 },
+    #[error("The value must be > {exclusive_minimum}, but found {actual}")]
+    FloatExclusiveMinimum { exclusive_minimum: f64, actual: f64 },
 
     #[error("The value {actual} is not a multiple of {multiple_of}")]
     FloatMultipleOf { multiple_of: f64, actual: f64 },

@@ -7,6 +7,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
     validate::{
+        check_exclusive_maximum, check_exclusive_minimum, check_maximum, check_minimum,
         handle_anything_schema, handle_deprecated_value, handle_nothing_schema, handle_unused_noqa,
         is_multiple_of_with_tolerance, validate_adjacent_applicators,
     },
@@ -215,7 +216,7 @@ async fn validate_integer_schema(
     }
 
     if let Some(maximum) = &integer_schema.maximum
-        && value > *maximum
+        && !check_maximum(&value, maximum)
     {
         let level = lint_rules
             .map(|rules| &rules.value)
@@ -249,7 +250,7 @@ async fn validate_integer_schema(
     }
 
     if let Some(minimum) = &integer_schema.minimum
-        && value < *minimum
+        && !check_minimum(&value, minimum)
     {
         let level = lint_rules
             .map(|rules| &rules.value)
@@ -283,7 +284,7 @@ async fn validate_integer_schema(
     }
 
     if let Some(exclusive_maximum) = &integer_schema.exclusive_maximum
-        && value >= *exclusive_maximum
+        && !check_exclusive_maximum(&value, exclusive_maximum)
     {
         let level = lint_rules
             .map(|rules| &rules.value)
@@ -297,7 +298,7 @@ async fn validate_integer_schema(
 
         crate::Diagnostic {
             kind: Box::new(crate::DiagnosticKind::IntegerExclusiveMaximum {
-                maximum: *exclusive_maximum - 1,
+                exclusive_maximum: *exclusive_maximum,
                 actual: value,
             }),
             range,
@@ -317,7 +318,7 @@ async fn validate_integer_schema(
     }
 
     if let Some(exclusive_minimum) = &integer_schema.exclusive_minimum
-        && value <= *exclusive_minimum
+        && !check_exclusive_minimum(&value, exclusive_minimum)
     {
         let level = lint_rules
             .map(|rules| &rules.value)
@@ -331,7 +332,7 @@ async fn validate_integer_schema(
 
         crate::Diagnostic {
             kind: Box::new(crate::DiagnosticKind::IntegerExclusiveMinimum {
-                minimum: *exclusive_minimum + 1,
+                exclusive_minimum: *exclusive_minimum,
                 actual: value,
             }),
             range,
@@ -476,7 +477,7 @@ async fn validate_float_schema_for_integer(
     }
 
     if let Some(maximum) = &float_schema.maximum
-        && value > *maximum
+        && !check_maximum(&value, maximum)
     {
         let level = lint_rules
             .map(|rules| &rules.value)
@@ -499,7 +500,7 @@ async fn validate_float_schema_for_integer(
     }
 
     if let Some(minimum) = &float_schema.minimum
-        && value < *minimum
+        && !check_minimum(&value, minimum)
     {
         let level = lint_rules
             .map(|rules| &rules.value)
@@ -522,7 +523,7 @@ async fn validate_float_schema_for_integer(
     }
 
     if let Some(exclusive_maximum) = &float_schema.exclusive_maximum
-        && value >= *exclusive_maximum
+        && !check_exclusive_maximum(&value, exclusive_maximum)
     {
         let level = lint_rules
             .map(|rules| &rules.value)
@@ -536,7 +537,7 @@ async fn validate_float_schema_for_integer(
 
         crate::Diagnostic {
             kind: Box::new(crate::DiagnosticKind::IntegerExclusiveMaximum {
-                maximum: (*exclusive_maximum as i64) - 1,
+                exclusive_maximum: *exclusive_maximum as i64,
                 actual: value as i64,
             }),
             range,
@@ -545,7 +546,7 @@ async fn validate_float_schema_for_integer(
     }
 
     if let Some(exclusive_minimum) = &float_schema.exclusive_minimum
-        && value <= *exclusive_minimum
+        && !check_exclusive_minimum(&value, exclusive_minimum)
     {
         let level = lint_rules
             .map(|rules| &rules.value)
@@ -559,7 +560,7 @@ async fn validate_float_schema_for_integer(
 
         crate::Diagnostic {
             kind: Box::new(crate::DiagnosticKind::IntegerExclusiveMinimum {
-                minimum: (*exclusive_minimum as i64) + 1,
+                exclusive_minimum: *exclusive_minimum as i64,
                 actual: value as i64,
             }),
             range,
