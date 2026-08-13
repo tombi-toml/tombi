@@ -300,7 +300,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         let Ok(pattern) = tombi_regex::Regex::new(&property_key)
                                         else {
                                             log::warn!(
-                                                "Invalid regex pattern property: {}",
+                                                "invalid regex pattern property: {}",
                                                 property_key
                                             );
                                             continue;

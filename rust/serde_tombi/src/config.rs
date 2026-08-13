@@ -129,9 +129,9 @@ pub fn load_with_path_and_level(
                 current_dir.join(TOMBI_TOML_FILENAME),
                 current_dir.join(".config").join(TOMBI_TOML_FILENAME),
             ] {
-                log::trace!("Checking config file at {:?}", config_path);
+                log::trace!("checking config file at {:?}", config_path);
                 if tombi_fs::is_file(&config_path) {
-                    log::debug!("Project config found at {:?}", config_path);
+                    log::debug!("project config found at {:?}", config_path);
 
                     match try_from_path(&config_path) {
                         Ok(Some(config)) => {
@@ -149,7 +149,7 @@ pub fn load_with_path_and_level(
             }
 
             let pyproject_toml_path = current_dir.join(PYPROJECT_TOML_FILENAME);
-            log::trace!("Checking pyproject.toml file at {:?}", pyproject_toml_path);
+            log::trace!("checking pyproject.toml file at {:?}", pyproject_toml_path);
             if tombi_fs::is_file(&pyproject_toml_path) {
                 log::debug!(
                     "\"{}\" found at {:?}",
@@ -162,7 +162,7 @@ pub fn load_with_path_and_level(
                         return Ok((config, Some(pyproject_toml_path), ConfigLevel::Project));
                     }
                     None => {
-                        log::debug!("No [tool.tombi] found in {:?}", pyproject_toml_path);
+                        log::debug!("no [tool.tombi] found in {:?}", pyproject_toml_path);
                     }
                 };
             }

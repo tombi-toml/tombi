@@ -141,17 +141,17 @@ async fn fetch_remote_content(url: &Url) -> Result<String, tower_lsp::jsonrpc::E
 
     let client = tombi_schema_store::DefaultHttpClient::new();
     let bytes = client.get_bytes(url.as_str()).await.map_err(|error| {
-        log::error!("Failed to fetch content: {error}");
+        log::error!("failed to fetch content: {error}");
         tower_lsp::jsonrpc::Error::new(tower_lsp::jsonrpc::ErrorCode::InternalError)
     })?;
     let content = String::from_utf8(bytes.to_vec()).map_err(|error| {
-        log::error!("Remote content is not valid UTF-8: {error}");
+        log::error!("remote content is not valid UTF-8: {error}");
         tower_lsp::jsonrpc::Error::new(tower_lsp::jsonrpc::ErrorCode::InternalError)
     })?;
 
     // Check if the content is valid JSON
     tombi_json::ValueNode::from_str(&content).map_err(|e| {
-        log::error!("Failed to parse {url} content: {}", e);
+        log::error!("failed to parse {url} content: {}", e);
         tower_lsp::jsonrpc::Error::new(tower_lsp::jsonrpc::ErrorCode::InternalError)
     })?;
 

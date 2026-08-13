@@ -210,11 +210,11 @@ impl SchemaStore {
             } {
                 schema_uri
             } else {
-                log::warn!("Invalid schema path: {}", schema.path());
+                log::warn!("invalid schema path: {}", schema.path());
                 return;
             };
 
-            log::debug!("Load schema from config: {}", schema_uri);
+            log::debug!("load schema from config: {}", schema_uri);
 
             self.schemas.write().await.push(crate::Schema {
                 title: None,
@@ -433,7 +433,7 @@ impl SchemaStore {
                 let file = std::fs::File::open(&schema_path)
                     .map_err(|_| crate::Error::SchemaFileReadFailed { schema_path })?;
 
-                log::debug!("fetch schema from file: {}", schema_uri);
+                log::debug!("load schema from file: {}", schema_uri);
 
                 Ok(Some(tombi_json::ValueNode::from_reader(file).map_err(
                     |err| crate::Error::SchemaFileParseFailed {
@@ -511,7 +511,7 @@ impl SchemaStore {
                     });
                 };
 
-                log::debug!("fetch schema from embedded file: {}", schema_uri);
+                log::trace!("load schema from embedded file: {}", schema_uri);
 
                 Ok(Some(tombi_json::ValueNode::from_str(content).map_err(
                     |err| crate::Error::SchemaFileParseFailed {
@@ -1023,13 +1023,13 @@ impl SchemaStore {
                 },
                 Ok(None) => {
                     log::warn!(
-                        "Failed to find document schema: {}",
+                        "failed to find document schema: {}",
                         matching_schema.schema_uri
                     );
                 }
                 Err(err) => {
                     log::warn!(
-                        "Failed to get document schema for {url}: {err}",
+                        "failed to get document schema for {url}: {err}",
                         url = matching_schema.schema_uri,
                     );
                 }
@@ -1289,7 +1289,7 @@ async fn load_json_schema_from_cache(
     if let Some(schema_cache_content) =
         read_from_cache(Some(schema_cache_path), cache_options).await?
     {
-        log::debug!("load schema from cache: {}", schema_uri);
+        log::trace!("load schema from cache: {}", schema_uri);
 
         return Ok(Some(
             tombi_json::ValueNode::from_str(&schema_cache_content).map_err(|err| {

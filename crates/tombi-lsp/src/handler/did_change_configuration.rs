@@ -21,14 +21,14 @@ pub async fn handle_did_change_configuration(
     if let Some(tombi_settings) = settings.get("tombi") {
         match serde_json::from_value::<tombi_config::Config>(tombi_settings.clone()) {
             Ok(config) => {
-                log::info!("Updating editor config: {:?}", config);
+                log::info!("updating editor config: {:?}", config);
                 backend.config_manager.update_editor_config(config).await;
             }
             Err(err) => {
-                log::error!("Failed to parse editor config: {}", err);
+                log::error!("failed to parse editor config: {}", err);
             }
         }
     } else {
-        log::debug!("No tombi settings found in didChangeConfiguration");
+        log::debug!("no tombi settings found in didChangeConfiguration");
     }
 }

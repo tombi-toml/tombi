@@ -160,7 +160,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                             }
                                         } else {
                                             log::warn!(
-                                                "Invalid regex pattern property: {}",
+                                                "invalid regex pattern property: {}",
                                                 property_key
                                             );
                                         };

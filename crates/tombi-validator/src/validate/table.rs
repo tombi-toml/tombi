@@ -246,7 +246,7 @@ async fn validate_table(
                 .collect_vec();
             for pattern_key in pattern_keys {
                 let Ok(pattern) = tombi_regex::Regex::new(&pattern_key) else {
-                    log::warn!("Invalid regex pattern property: {}", pattern_key);
+                    log::warn!("invalid regex pattern property: {}", pattern_key);
                     continue;
                 };
                 if pattern.is_match(accessor_raw_text) {
@@ -1047,7 +1047,7 @@ fn collect_evaluated_properties_from_table_schema<'a>(
             .filter_map(|pattern_key| match tombi_regex::Regex::new(pattern_key) {
                 Ok(pattern) => Some(pattern),
                 Err(_) => {
-                    log::warn!("Invalid regex pattern property: {}", pattern_key);
+                    log::warn!("invalid regex pattern property: {}", pattern_key);
                     None
                 }
             })

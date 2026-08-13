@@ -598,7 +598,7 @@ pub(crate) fn validate_raw_string<'a>(
 
     if let Some(pattern) = &string_schema.pattern
         && let Ok(regex) =
-            Regex::new(pattern).inspect_err(|_| log::warn!("Invalid regex pattern: {:?}", pattern))
+            Regex::new(pattern).inspect_err(|_| log::warn!("invalid regex pattern: {:?}", pattern))
         && !regex.is_match(value)
     {
         assertion_failed = true;

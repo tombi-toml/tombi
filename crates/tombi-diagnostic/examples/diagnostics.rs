@@ -31,11 +31,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let source_file = source_file();
 
     let warning = Diagnostic::new_warning(
-        "Some warning occured.",
+        "some warning occured.",
         "tombi-diagnostic",
         ((2, 1), (2, 3)),
     );
-    let error = Diagnostic::new_error("Some error occured.", "tombi-diagnostic", ((2, 1), (2, 3)));
+    let error = Diagnostic::new_error("some error occured.", "tombi-diagnostic", ((2, 1), (2, 3)));
 
     warning.print(&mut Pretty {
         use_ansi_color: true,

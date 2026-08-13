@@ -29,7 +29,7 @@ pub(crate) fn parse_requirement(dependency: &str) -> Option<Requirement<Verbatim
         Ok(requirement) => Some(requirement),
         Err(e) => {
             log::debug!(
-                "Failed to parse PEP 508 dependency string: dependency={:?}, error={:?}",
+                "failed to parse PEP 508 dependency string: dependency={:?}, error={:?}",
                 dependency,
                 e
             );

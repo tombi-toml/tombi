@@ -144,7 +144,7 @@ orange.color = "orange"
         assert!(
             diagnostics
                 .iter()
-                .all(|d| d.message() == "Defining dotted keys out-of-order is discouraged")
+                .all(|d| d.message() == "defining dotted keys out-of-order is discouraged")
         );
     }
 
@@ -200,7 +200,7 @@ lsp.formatting.enabled = true
         assert!(
             diagnostics
                 .iter()
-                .all(|d| d.message() == "Defining dotted keys out-of-order is discouraged")
+                .all(|d| d.message() == "defining dotted keys out-of-order is discouraged")
         );
     }
 
@@ -254,7 +254,7 @@ lsp.formatting.enabled = true
         assert!(
             diagnostics
                 .iter()
-                .all(|d| d.message() == "Defining dotted keys out-of-order is discouraged")
+                .all(|d| d.message() == "defining dotted keys out-of-order is discouraged")
         );
     }
 }

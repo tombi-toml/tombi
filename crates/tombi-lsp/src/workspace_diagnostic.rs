@@ -59,7 +59,7 @@ pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tomb
             && &workspace_config.workspace_folder_path == home_dir
         {
             log::debug!(
-                "Skip diagnostics for workspace folder matching $HOME: {:?}",
+                "skip diagnostics for workspace folder matching $HOME: {:?}",
                 workspace_config.workspace_folder_path
             );
             continue;
@@ -116,7 +116,7 @@ async fn publish_workspace_diagnostics(
 
     if !options.include_open_files && version.is_some() {
         log::debug!(
-            "Skip publishing workspace diagnostics because version is some: {text_document_uri}"
+            "skip publishing workspace diagnostics because version is some: {text_document_uri}"
         );
         return;
     }
@@ -131,14 +131,14 @@ pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_
     let text_document_path = match text_document_uri.to_file_path() {
         Ok(text_document_path) => text_document_path,
         Err(_) => {
-            log::warn!("Watcher event for non-file URI: {text_document_uri}");
+            log::warn!("watcher event for non-file URI: {text_document_uri}");
             return false;
         }
     };
 
     let Ok(content) = tombi_fs::read_to_string_async(&text_document_path).await else {
         log::warn!(
-            "Failed to read file for diagnostics: {:?}",
+            "failed to read file for diagnostics: {:?}",
             text_document_path
         );
         return false;
@@ -153,7 +153,7 @@ pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_
         let mut document_sources = backend.document_sources.write().await;
         if let Some(source) = document_sources.get_mut(&text_document_uri) {
             if source.version.is_some() {
-                log::debug!("Skip diagnostics for open document: {text_document_uri}");
+                log::debug!("skip diagnostics for open document: {text_document_uri}");
                 return true;
             }
 

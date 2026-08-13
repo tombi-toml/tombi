@@ -14,15 +14,15 @@ pub async fn handle_refresh_cache(
 
     match backend.config_manager.refresh_cache().await {
         Ok(true) => {
-            log::info!("Cache refreshed");
+            log::info!("cache refreshed");
             Ok(true)
         }
         Ok(false) => {
-            log::info!("No cache to refresh");
+            log::info!("no cache to refresh");
             Ok(false)
         }
         Err(err) => {
-            log::error!("Failed to refresh cache: {err}");
+            log::error!("failed to refresh cache: {err}");
             Err(tower_lsp::jsonrpc::Error {
                 code: tower_lsp::jsonrpc::ErrorCode::InternalError,
 

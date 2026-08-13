@@ -62,7 +62,7 @@ impl ConfigManager {
             match serde_tombi::config::load_with_path(std::env::current_dir().ok()) {
                 Ok((config, config_path)) => (config, config_path),
                 Err(err) => {
-                    log::error!("Failed to load default config: {err}");
+                    log::error!("failed to load default config: {err}");
                     (Config::default(), None)
                 }
             };
@@ -144,7 +144,7 @@ impl ConfigManager {
                         });
 
                     if schema_store.is_empty().await {
-                        log::info!("Add new SchemaStore for {config_path_buf:?}");
+                        log::info!("add new SchemaStore for {config_path_buf:?}");
                         let associated_schemas = self.associated_schemas.read().await;
                         if let Err(err) = load_schema_store_with_associations(
                             schema_store,
@@ -154,7 +154,7 @@ impl ConfigManager {
                         )
                         .await
                         {
-                            log::error!("Failed to load schema store: {err}");
+                            log::error!("failed to load schema store: {err}");
                         }
                     }
 
@@ -216,7 +216,7 @@ impl ConfigManager {
             )
             .await
             {
-                log::error!("Failed to load default schema store: {err}");
+                log::error!("failed to load default schema store: {err}");
             }
 
             let config_schema_store = ConfigSchemaStore::new(config, None, schema_store);
@@ -363,7 +363,7 @@ impl ConfigManager {
             load_schema_store_with_associations(&schema_store, &config, None, &associated_schemas)
                 .await
         {
-            log::error!("Failed to load editor config schema store: {err}");
+            log::error!("failed to load editor config schema store: {err}");
         }
 
         let config_schema_store = ConfigSchemaStore::new(config, None, schema_store);

@@ -30,7 +30,7 @@ impl Range {
                 end
             } else {
                 log::warn!(
-                    "Invalid tombi_text::Range: start: {:?} > end: {:?}",
+                    "invalid tombi_text::Range: start: {:?} > end: {:?}",
                     start,
                     end
                 );

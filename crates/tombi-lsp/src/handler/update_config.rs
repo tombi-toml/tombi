@@ -21,12 +21,12 @@ pub async fn handle_update_config(
                 {
                     Ok(_) => {
                         backend.workspace_diagnostics_cache.write().await.reset();
-                        log::info!("Updated config: {}", text_document_uri);
+                        log::info!("updated config: {}", text_document_uri);
                         return Ok(true);
                     }
                     Err(err) => {
                         log::error!(
-                            "Failed to update config for {config_path}: {err}",
+                            "failed to update config for {config_path}: {err}",
                             config_path = config_path.display()
                         );
                     }
@@ -35,7 +35,7 @@ pub async fn handle_update_config(
             Ok(None) => {}
             Err(err) => {
                 log::error!(
-                    "Failed to load config for update for {config_path}: {err}",
+                    "failed to load config for update for {config_path}: {err}",
                     config_path = config_path.display()
                 );
             }

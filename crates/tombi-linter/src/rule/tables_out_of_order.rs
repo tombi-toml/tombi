@@ -176,7 +176,7 @@ color = "orange"
         assert!(
             diagnostics
                 .iter()
-                .all(|d| d.message() == "Defining tables out-of-order is discouraged")
+                .all(|d| d.message() == "defining tables out-of-order is discouraged")
         );
     }
 
@@ -236,7 +236,7 @@ name = "Nail"
         assert!(
             diagnostics
                 .iter()
-                .all(|d| d.message() == "Defining tables out-of-order is discouraged")
+                .all(|d| d.message() == "defining tables out-of-order is discouraged")
         );
     }
 
@@ -273,7 +273,7 @@ name = "orange"
         assert!(
             diagnostics
                 .iter()
-                .all(|d| d.message() == "Defining tables out-of-order is discouraged")
+                .all(|d| d.message() == "defining tables out-of-order is discouraged")
         );
     }
 }

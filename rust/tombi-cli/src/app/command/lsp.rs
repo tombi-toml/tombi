@@ -16,14 +16,14 @@ pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
 
     runtime.block_on(async move {
         log::info!(
-            "Tombi Language Server version \"{}\" will start.",
+            "starting Tombi Language Server version \"{}\".",
             env!("CARGO_PKG_VERSION")
         );
 
         let (service, socket) = tombi_lsp::lsp_service(args.common.offline, args.common.no_cache);
         serve(tokio::io::stdin(), tokio::io::stdout(), socket, service).await;
 
-        log::info!("Tombi LSP Server did shut down.");
+        log::info!("stopped Tombi LSP server.");
     });
 
     runtime.shutdown_timeout(std::time::Duration::from_secs(1));

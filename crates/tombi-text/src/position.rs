@@ -114,7 +114,7 @@ impl Sub<Position> for Position {
     fn sub(self, rhs: Position) -> Self::Output {
         if rhs > self {
             log::warn!(
-                "Invalid tombi_text::Position: rhs: {:?} > self: {:?}",
+                "invalid tombi_text::Position: rhs: {:?} > self: {:?}",
                 rhs,
                 self
             );
