@@ -962,6 +962,9 @@ async fn validate_table(
         )
         .await
     {
+        assertion_failed |= error.assertion_failed;
+        match_evidence.merge_from(*error.match_evidence);
+        evaluated_locations.merge_from(error.local_evaluated_locations);
         total_diagnostics.extend(error.diagnostics);
     }
 
@@ -969,9 +972,6 @@ async fn validate_table(
         .comment_directives()
         .map(|directives| directives.cloned().collect_vec());
     evaluated_locations.match_evidence = match_evidence.clone();
-    assertion_failed |= total_diagnostics
-        .iter()
-        .any(|diagnostic| diagnostic.level() == tombi_diagnostic::Level::ERROR);
     let base_result = if total_diagnostics.is_empty() && !assertion_failed {
         Ok(evaluated_locations)
     } else {
@@ -1440,16 +1440,31 @@ async fn validate_table_without_schema(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Result<crate::Valid, crate::Invalid> {
     let mut total_diagnostics = vec![];
+    let mut assertion_failed = false;
+    let mut match_evidence = Box::<crate::MatchEvidence>::default();
+    let mut local_evaluated_locations = crate::Valid::new();
 
     // Validate without schema
     for (key, value) in table_value.key_values() {
-        if let Err(crate::Invalid { diagnostics, .. }) =
-            key.validate(accessors, None, schema_context).await
+        if let Err(crate::Invalid {
+            assertion_failed: child_assertion_failed,
+            match_evidence: child_match_evidence,
+            diagnostics,
+            local_evaluated_locations: child_evaluated_locations,
+        }) = key.validate(accessors, None, schema_context).await
         {
+            assertion_failed |= child_assertion_failed;
+            match_evidence.merge_descendant_from(&child_match_evidence);
+            local_evaluated_locations.merge_from(child_evaluated_locations);
             total_diagnostics.extend(diagnostics);
         }
 
-        if let Err(crate::Invalid { diagnostics, .. }) = value
+        if let Err(crate::Invalid {
+            assertion_failed: child_assertion_failed,
+            match_evidence: child_match_evidence,
+            diagnostics,
+            local_evaluated_locations: child_evaluated_locations,
+        }) = value
             .validate(
                 &accessors
                     .iter()
@@ -1461,14 +1476,22 @@ async fn validate_table_without_schema(
             )
             .await
         {
+            assertion_failed |= child_assertion_failed;
+            match_evidence.merge_descendant_from(&child_match_evidence);
+            local_evaluated_locations.merge_from(child_evaluated_locations);
             total_diagnostics.extend(diagnostics);
         }
     }
 
-    if total_diagnostics.is_empty() {
-        Ok(crate::Valid::new())
+    if total_diagnostics.is_empty() && !assertion_failed {
+        Ok(local_evaluated_locations)
     } else {
-        Err(total_diagnostics.into())
+        Err(crate::Invalid {
+            assertion_failed,
+            match_evidence,
+            diagnostics: total_diagnostics,
+            local_evaluated_locations,
+        })
     }
 }
 

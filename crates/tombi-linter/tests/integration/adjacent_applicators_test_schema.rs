@@ -536,3 +536,219 @@ test_lint! {
         SchemaPath(schema_path()),
     ) -> Ok(_)
 }
+
+test_lint! {
+    #[test]
+    fn test_disabled_boolean_const_does_not_change_one_of_result(
+        r#"
+        disabled_boolean_const_branch = false # tombi: lint.rules.const-value.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_boolean_enum_does_not_change_one_of_result(
+        r#"
+        disabled_boolean_enum_branch = false # tombi: lint.rules.enum.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_integer_const_does_not_change_one_of_result(
+        r#"
+        disabled_integer_const_branch = 2 # tombi: lint.rules.const-value.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_integer_enum_does_not_change_one_of_result(
+        r#"
+        disabled_integer_enum_branch = 2 # tombi: lint.rules.enum.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_float_const_does_not_change_one_of_result(
+        r#"
+        disabled_float_const_branch = 2.5 # tombi: lint.rules.const-value.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_float_enum_does_not_change_one_of_result(
+        r#"
+        disabled_float_enum_branch = 2.5 # tombi: lint.rules.enum.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_number_const_with_integer_does_not_change_one_of_result(
+        r#"
+        disabled_number_const_integer_branch = 2 # tombi: lint.rules.const-value.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_float_const_uses_exact_json_number_equality(
+        r#"
+        exact_float_const = 0.3
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::Const {
+        expected: "0.30000000000000004".to_string(),
+        actual: "0.3".to_string(),
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_string_min_length_does_not_change_one_of_result(
+        r#"
+        disabled_string_min_branch = "x" # tombi: lint.rules.string-min-length.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_integer_maximum_does_not_change_one_of_result(
+        r#"
+        disabled_integer_maximum_branch = 2 # tombi: lint.rules.integer-maximum.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_float_maximum_does_not_change_one_of_result(
+        r#"
+        disabled_float_maximum_branch = 2.5 # tombi: lint.rules.float-maximum.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_offset_date_time_const_does_not_change_one_of_result(
+        r#"
+        disabled_offset_date_time_const_branch = 2024-01-02T00:00:00Z # tombi: lint.rules.const-value.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_local_date_time_const_does_not_change_one_of_result(
+        r#"
+        disabled_local_date_time_const_branch = 2024-01-02T00:00:00 # tombi: lint.rules.const-value.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_local_date_const_does_not_change_one_of_result(
+        r#"
+        disabled_local_date_const_branch = 2024-01-02 # tombi: lint.rules.const-value.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_local_time_const_does_not_change_one_of_result(
+        r#"
+        disabled_local_time_const_branch = 00:00:01 # tombi: lint.rules.const-value.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_array_min_items_does_not_change_one_of_result(
+        r#"
+        disabled_array_min_branch = [1] # tombi: lint.rules.array-min-values.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_table_min_properties_does_not_change_one_of_result(
+        r#"
+        # tombi: lint.rules.table-min-keys.disabled = true
+        disabled_table_min_branch = {}
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_disabled_not_diagnostic_does_not_change_one_of_result(
+        r#"
+        disabled_not_branch = true # tombi: lint.rules.not-schema-match.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Ok(_)
+}

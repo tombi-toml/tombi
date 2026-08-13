@@ -149,30 +149,35 @@ async fn validate_integer_schema(
     lint_rules: Option<&IntegerCommonLintRules>,
 ) -> Result<crate::Valid, crate::Invalid> {
     let mut diagnostics = vec![];
+    let mut assertion_failed = false;
+    let mut match_evidence = Box::<crate::MatchEvidence>::default();
     let value = integer_value.value();
     let range = integer_value.range();
 
-    if let Some(const_value) = &integer_schema.const_value
-        && value != *const_value
-    {
-        let level = lint_rules
-            .map(|rules| &rules.common)
-            .and_then(|rules| {
-                rules
-                    .const_value
-                    .as_ref()
-                    .map(SeverityLevelDefaultError::from)
-            })
-            .unwrap_or_default();
+    if let Some(const_value) = &integer_schema.const_value {
+        let matched = value == *const_value;
+        match_evidence.mark_root_value_assertion(matched, true);
+        if !matched {
+            assertion_failed = true;
+            let level = lint_rules
+                .map(|rules| &rules.common)
+                .and_then(|rules| {
+                    rules
+                        .const_value
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
+                .unwrap_or_default();
 
-        crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::Const {
-                expected: const_value.to_string(),
-                actual: value.to_string(),
-            }),
-            range,
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Const {
+                    expected: const_value.to_string(),
+                    actual: value.to_string(),
+                }),
+                range,
+            }
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
-        .push_diagnostic_with_level(level, &mut diagnostics);
     } else if lint_rules
         .and_then(|rules| rules.common.const_value.as_ref())
         .and_then(|rules| rules.disabled)
@@ -186,22 +191,25 @@ async fn validate_integer_schema(
         );
     }
 
-    if let Some(r#enum) = &integer_schema.r#enum
-        && !r#enum.contains(&value)
-    {
-        let level = lint_rules
-            .map(|rules| &rules.common)
-            .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
-            .unwrap_or_default();
+    if let Some(r#enum) = &integer_schema.r#enum {
+        let matched = r#enum.contains(&value);
+        match_evidence.mark_root_value_assertion(matched, r#enum.len() == 1);
+        if !matched {
+            assertion_failed = true;
+            let level = lint_rules
+                .map(|rules| &rules.common)
+                .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
+                .unwrap_or_default();
 
-        crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::Enum {
-                expected: r#enum.iter().map(ToString::to_string).collect(),
-                actual: value.to_string(),
-            }),
-            range,
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Enum {
+                    expected: r#enum.iter().map(ToString::to_string).collect(),
+                    actual: value.to_string(),
+                }),
+                range,
+            }
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
-        .push_diagnostic_with_level(level, &mut diagnostics);
     } else if lint_rules
         .and_then(|rules| rules.common.r#enum())
         .and_then(|rules| rules.disabled)
@@ -218,6 +226,7 @@ async fn validate_integer_schema(
     if let Some(maximum) = &integer_schema.maximum
         && !check_maximum(&value, maximum)
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -252,6 +261,7 @@ async fn validate_integer_schema(
     if let Some(minimum) = &integer_schema.minimum
         && !check_minimum(&value, minimum)
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -286,6 +296,7 @@ async fn validate_integer_schema(
     if let Some(exclusive_maximum) = &integer_schema.exclusive_maximum
         && !check_exclusive_maximum(&value, exclusive_maximum)
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -320,6 +331,7 @@ async fn validate_integer_schema(
     if let Some(exclusive_minimum) = &integer_schema.exclusive_minimum
         && !check_exclusive_minimum(&value, exclusive_minimum)
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -354,6 +366,7 @@ async fn validate_integer_schema(
     if let Some(multiple_of) = &integer_schema.multiple_of
         && value % *multiple_of != 0
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -398,10 +411,17 @@ async fn validate_integer_schema(
         );
     }
 
-    let base_result = if diagnostics.is_empty() {
-        Ok(crate::Valid::new())
+    let base_result = if diagnostics.is_empty() && !assertion_failed {
+        let mut valid = crate::Valid::new();
+        valid.match_evidence = match_evidence;
+        Ok(valid)
     } else {
-        Err(diagnostics.into())
+        Err(crate::Invalid {
+            assertion_failed,
+            match_evidence,
+            diagnostics,
+            local_evaluated_locations: Default::default(),
+        })
     };
 
     crate::validate::merge_validation_results(
@@ -432,53 +452,62 @@ async fn validate_float_schema_for_integer(
     lint_rules: Option<&IntegerCommonLintRules>,
 ) -> Result<crate::Valid, crate::Invalid> {
     let mut diagnostics = vec![];
+    let mut assertion_failed = false;
+    let mut match_evidence = Box::<crate::MatchEvidence>::default();
     let value = integer_value.value() as f64;
     let range = integer_value.range();
 
-    if let Some(const_value) = &float_schema.const_value
-        && (value - *const_value).abs() > f64::EPSILON
-    {
-        let level = lint_rules
-            .map(|rules| &rules.common)
-            .and_then(|rules| {
-                rules
-                    .const_value
-                    .as_ref()
-                    .map(SeverityLevelDefaultError::from)
-            })
-            .unwrap_or_default();
+    if let Some(const_value) = &float_schema.const_value {
+        let matched = value == *const_value;
+        match_evidence.mark_root_value_assertion(matched, true);
+        if !matched {
+            assertion_failed = true;
+            let level = lint_rules
+                .map(|rules| &rules.common)
+                .and_then(|rules| {
+                    rules
+                        .const_value
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
+                .unwrap_or_default();
 
-        crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::Const {
-                expected: const_value.to_string(),
-                actual: value.to_string(),
-            }),
-            range,
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Const {
+                    expected: const_value.to_string(),
+                    actual: value.to_string(),
+                }),
+                range,
+            }
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
-        .push_diagnostic_with_level(level, &mut diagnostics);
     }
 
-    if let Some(r#enum) = &float_schema.r#enum
-        && !r#enum.contains(&value)
-    {
-        let level = lint_rules
-            .map(|rules| &rules.common)
-            .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
-            .unwrap_or_default();
+    if let Some(r#enum) = &float_schema.r#enum {
+        let matched = r#enum.contains(&value);
+        match_evidence.mark_root_value_assertion(matched, r#enum.len() == 1);
+        if !matched {
+            assertion_failed = true;
+            let level = lint_rules
+                .map(|rules| &rules.common)
+                .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
+                .unwrap_or_default();
 
-        crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::Enum {
-                expected: r#enum.iter().map(ToString::to_string).collect(),
-                actual: value.to_string(),
-            }),
-            range,
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Enum {
+                    expected: r#enum.iter().map(ToString::to_string).collect(),
+                    actual: value.to_string(),
+                }),
+                range,
+            }
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
-        .push_diagnostic_with_level(level, &mut diagnostics);
     }
 
     if let Some(maximum) = &float_schema.maximum
         && !check_maximum(&value, maximum)
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -502,6 +531,7 @@ async fn validate_float_schema_for_integer(
     if let Some(minimum) = &float_schema.minimum
         && !check_minimum(&value, minimum)
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -525,6 +555,7 @@ async fn validate_float_schema_for_integer(
     if let Some(exclusive_maximum) = &float_schema.exclusive_maximum
         && !check_exclusive_maximum(&value, exclusive_maximum)
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -548,6 +579,7 @@ async fn validate_float_schema_for_integer(
     if let Some(exclusive_minimum) = &float_schema.exclusive_minimum
         && !check_exclusive_minimum(&value, exclusive_minimum)
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -572,6 +604,7 @@ async fn validate_float_schema_for_integer(
         && *multiple_of > 0.0
         && !is_multiple_of_with_tolerance(value, *multiple_of)
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -605,10 +638,17 @@ async fn validate_float_schema_for_integer(
         );
     }
 
-    let base_result = if diagnostics.is_empty() {
-        Ok(crate::Valid::new())
+    let base_result = if diagnostics.is_empty() && !assertion_failed {
+        let mut valid = crate::Valid::new();
+        valid.match_evidence = match_evidence;
+        Ok(valid)
     } else {
-        Err(diagnostics.into())
+        Err(crate::Invalid {
+            assertion_failed,
+            match_evidence,
+            diagnostics,
+            local_evaluated_locations: Default::default(),
+        })
     };
 
     crate::validate::merge_validation_results(

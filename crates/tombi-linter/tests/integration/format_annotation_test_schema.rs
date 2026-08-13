@@ -62,3 +62,15 @@ test_lint! {
         SchemaPath(format_assertion_vocab_test_schema_path()),
     ) -> Ok(_)
 }
+
+test_lint! {
+    #[test]
+    fn test_disabled_format_assertion_does_not_change_one_of_result(
+        r#"
+        ipv4_branch = "not-an-ip" # tombi: lint.rules.string-format.disabled = true
+        "#,
+        SchemaPath(format_assertion_vocab_test_schema_path()),
+    ) -> Diagnostics([
+        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+    ])
+}

@@ -252,6 +252,128 @@
           { "const": true }
         ]
       }
+    },
+    "disabled_boolean_const_branch": {
+      "oneOf": [
+        { "const": true },
+        { "type": "boolean" },
+        { "type": "string" }
+      ]
+    },
+    "disabled_boolean_enum_branch": {
+      "oneOf": [
+        { "enum": [true] },
+        { "type": "boolean" },
+        { "type": "string" }
+      ]
+    },
+    "disabled_integer_const_branch": {
+      "oneOf": [
+        { "const": 1 },
+        { "type": "integer" },
+        { "type": "string" }
+      ]
+    },
+    "disabled_integer_enum_branch": {
+      "oneOf": [
+        { "enum": [1] },
+        { "type": "integer" },
+        { "type": "string" }
+      ]
+    },
+    "disabled_float_const_branch": {
+      "oneOf": [
+        { "const": 1.5 },
+        { "type": "number" },
+        { "type": "string" }
+      ]
+    },
+    "disabled_float_enum_branch": {
+      "oneOf": [
+        { "enum": [1.5] },
+        { "type": "number" },
+        { "type": "string" }
+      ]
+    },
+    "disabled_number_const_integer_branch": {
+      "oneOf": [
+        { "type": "number", "const": 1.5 },
+        { "type": "integer" },
+        { "type": "string" }
+      ]
+    },
+    "disabled_string_min_branch": {
+      "oneOf": [
+        { "type": "string", "minLength": 3 },
+        { "type": "string" },
+        { "type": "boolean" }
+      ]
+    },
+    "disabled_integer_maximum_branch": {
+      "oneOf": [
+        { "type": "integer", "maximum": 1 },
+        { "type": "integer" },
+        { "type": "string" }
+      ]
+    },
+    "disabled_float_maximum_branch": {
+      "oneOf": [
+        { "type": "number", "maximum": 1.5 },
+        { "type": "number" },
+        { "type": "string" }
+      ]
+    },
+    "disabled_offset_date_time_const_branch": {
+      "oneOf": [
+        { "type": "string", "format": "date-time", "const": "2024-01-01T00:00:00Z" },
+        { "type": "string", "format": "date-time" },
+        { "type": "boolean" }
+      ]
+    },
+    "disabled_local_date_time_const_branch": {
+      "oneOf": [
+        { "type": "string", "format": "partial-date-time", "const": "2024-01-01T00:00:00" },
+        { "type": "string", "format": "partial-date-time" },
+        { "type": "boolean" }
+      ]
+    },
+    "disabled_local_date_const_branch": {
+      "oneOf": [
+        { "type": "string", "format": "date", "const": "2024-01-01" },
+        { "type": "string", "format": "date" },
+        { "type": "boolean" }
+      ]
+    },
+    "disabled_local_time_const_branch": {
+      "oneOf": [
+        { "type": "string", "format": "partial-time", "const": "00:00:00" },
+        { "type": "string", "format": "partial-time" },
+        { "type": "boolean" }
+      ]
+    },
+    "disabled_array_min_branch": {
+      "oneOf": [
+        { "type": "array", "minItems": 2 },
+        { "type": "array" },
+        { "type": "string" }
+      ]
+    },
+    "disabled_table_min_branch": {
+      "oneOf": [
+        { "type": "object", "minProperties": 1 },
+        { "type": "object" },
+        { "type": "string" }
+      ]
+    },
+    "disabled_not_branch": {
+      "oneOf": [
+        { "not": { "const": true } },
+        { "const": true },
+        { "type": "string" }
+      ]
+    },
+    "exact_float_const": {
+      "const": 0.30000000000000004
     }
   },
   "additionalProperties": false
