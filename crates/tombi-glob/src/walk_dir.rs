@@ -9,6 +9,16 @@ use tombi_config::FilesOptions;
 #[cfg(test)]
 use fast_glob::glob_match;
 
+const VCS_METADATA_DIR_NAMES: &[&str] = &[".git", ".hg", ".svn", ".bzr", ".jj", ".sl"];
+
+fn is_vcs_metadata_dir(path: &Path) -> bool {
+    path.file_name().is_some_and(|name| {
+        VCS_METADATA_DIR_NAMES
+            .iter()
+            .any(|candidate| name == *candidate)
+    })
+}
+
 /// WalkDir-like structure for parallel async directory walking
 pub struct WalkDir {
     root: PathBuf,
@@ -48,6 +58,9 @@ impl WalkDir {
                 path: root_path.to_path_buf(),
             });
         }
+        if is_vcs_metadata_dir(root_path) {
+            return Ok(Vec::new());
+        }
 
         let results = Arc::new(Mutex::new(Vec::new()));
 
@@ -61,6 +74,12 @@ impl WalkDir {
             .git_ignore(respect_ignore_files)
             .git_exclude(respect_ignore_files)
             .git_global(false)
+            .filter_entry(|entry| {
+                !entry
+                    .file_type()
+                    .is_some_and(|file_type| file_type.is_dir())
+                    || !is_vcs_metadata_dir(entry.path())
+            })
             .threads(rayon::current_num_threads());
 
         builder.build_parallel().run(|| {
@@ -127,6 +146,9 @@ impl WalkDir {
         if !tombi_fs::is_dir(&root_path) {
             return Err(crate::Error::RootPathNotDirectory { path: root_path });
         }
+        if is_vcs_metadata_dir(&root_path) {
+            return Ok(Vec::new());
+        }
 
         let include_patterns = self.options.include.unwrap_or_default();
         let exclude_patterns = self.options.exclude.unwrap_or_default();
@@ -142,7 +164,9 @@ impl WalkDir {
             for entry in entries {
                 let path = entry.path().to_path_buf();
                 if entry.is_dir() {
-                    directories.push(path);
+                    if !is_vcs_metadata_dir(&path) {
+                        directories.push(path);
+                    }
                     continue;
                 }
 
@@ -420,6 +444,67 @@ mod tests {
         );
         let result = walker.walk().await;
         assert!(result.is_ok());
+    }
+
+    macro_rules! test_walkdir_excludes_vcs_metadata_dirs {
+        ($name:ident, $respect_ignore_files:literal) => {
+            #[tokio::test]
+            async fn $name() {
+                let tempdir = tempdir().unwrap();
+                let root = tempdir.path();
+                write_file(&root.join("visible.toml"), "key = 1\n");
+                write_file(&root.join(".hidden.toml"), "key = 2\n");
+                write_file(&root.join(".claude/settings.toml"), "key = 3\n");
+                for name in VCS_METADATA_DIR_NAMES {
+                    write_file(&root.join(name).join("metadata.toml"), "not TOML\n");
+                }
+
+                let walker = WalkDir::new_with_options(
+                    root,
+                    FilesOptions {
+                        include: Some(vec!["**/*.toml".into()]),
+                        exclude: None,
+                        respect_ignore_files: $respect_ignore_files.into(),
+                    },
+                );
+
+                let result = walker.walk().await.unwrap();
+                assert!(result.iter().any(|path| path.ends_with("visible.toml")));
+                assert!(result.iter().any(|path| path.ends_with(".hidden.toml")));
+                assert!(
+                    result
+                        .iter()
+                        .any(|path| path.ends_with(".claude/settings.toml"))
+                );
+                for name in VCS_METADATA_DIR_NAMES {
+                    assert!(
+                        !result
+                            .iter()
+                            .any(|path| path.ends_with(Path::new(name).join("metadata.toml"))),
+                        "{name} must not be traversed"
+                    );
+                }
+            }
+        };
+    }
+
+    test_walkdir_excludes_vcs_metadata_dirs!(
+        test_walkdir_excludes_vcs_metadata_dirs_when_respecting_ignore_files,
+        true
+    );
+    test_walkdir_excludes_vcs_metadata_dirs!(
+        test_walkdir_excludes_vcs_metadata_dirs_when_ignoring_ignore_files,
+        false
+    );
+
+    #[tokio::test]
+    async fn test_walkdir_does_not_traverse_vcs_metadata_dir_as_root() {
+        let tempdir = tempdir().unwrap();
+        let root = tempdir.path().join(".git");
+        write_file(&root.join("metadata.toml"), "not TOML\n");
+
+        let result = WalkDir::new(root).walk().await.unwrap();
+        assert!(result.is_empty());
     }
 
     #[test]
