@@ -934,13 +934,16 @@ export default function Playground() {
         og_url={`${DEFAULT_URL}playground`}
       />
 
-      <div class="playground-shell" aria-busy={!isPlaygroundReady()}>
+      <div
+        class="playground-shell"
+        aria-busy={!isPlaygroundReady()}
+        style={{ position: "relative", padding: "2.5rem 0 4rem" }}
+      >
         <section
           class="playground-workspace"
           aria-label="Tombi WASM LSP playground"
           aria-hidden={!isPlaygroundReady()}
-          classList={{ "is-initializing": !isPlaygroundReady() }}
-          hidden={!isMounted()}
+          style={{ display: isPlaygroundReady() ? undefined : "none" }}
         >
           <div class="playground-toolbar">
             <div class="playground-runtime-label">
@@ -1196,10 +1199,31 @@ export default function Playground() {
         <Show when={!isPlaygroundReady()}>
           <output
             class="playground-workspace playground-initial-loading"
-            classList={{ "is-overlay": isMounted() }}
             aria-live="polite"
+            style={{
+              display: "grid",
+              "min-height": "42rem",
+              color: "var(--playground-muted, #667085)",
+              "font-size": "0.9rem",
+              "font-weight": 650,
+              gap: "0.65rem",
+              "place-content": "center",
+              overflow: "hidden",
+              border: "1px solid var(--playground-border, #d9dee9)",
+              "border-radius": "1rem",
+              background: "var(--playground-panel, #fff)",
+              "box-shadow": "0 18px 45px rgb(15 23 42 / 8%)",
+            }}
           >
-            <TbLoader2 class="playground-spinner" aria-hidden="true" />
+            <TbLoader2
+              class="playground-spinner animate-spin"
+              aria-hidden="true"
+              style={{
+                width: "1.4rem",
+                height: "1.4rem",
+                "margin-inline": "auto",
+              }}
+            />
             <span>Loading playground…</span>
           </output>
         </Show>
