@@ -2,6 +2,11 @@
   "name": "@tombi-toml/wasm-lsp",
   "version": "0.0.0-dev",
   "description": "Tombi Language Server for WebAssembly",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tombi-toml/tombi.git",
+    "directory": "typescript/@tombi-toml/wasm-lsp"
+  },
   "type": "module",
   "files": [
     "dist"
