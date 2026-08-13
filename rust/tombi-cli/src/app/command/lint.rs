@@ -114,7 +114,7 @@ where
         .enable_all()
         .build()
     else {
-        log::error!("Failed to create tokio runtime");
+        log::error!("failed to create tokio runtime");
         std::process::exit(1);
     };
 
@@ -138,7 +138,7 @@ where
                 let Some(lint_options) =
                     tombi_glob::get_lint_options(&config, stdin_path, config_path.as_deref())
                 else {
-                    log::debug!("Linting disabled for stdin by override");
+                    log::debug!("linting disabled for stdin by override");
                     summary.success_num += 1;
                     return Ok(summary);
                 };
@@ -173,7 +173,7 @@ where
                                 Some(source_path.as_ref()),
                                 config_path.as_deref(),
                             ) else {
-                                log::debug!("Linting disabled for {:?} by override", source_path);
+                                log::debug!("linting disabled for {:?} by override", source_path);
                                 summary.success_num += 1;
                                 continue;
                             };
@@ -229,7 +229,7 @@ where
                             }
                         }
                         Err(e) => {
-                            log::error!("Task failed {}", e);
+                            log::error!("task failed {}", e);
                             summary.error_num += 1;
                         }
                     }

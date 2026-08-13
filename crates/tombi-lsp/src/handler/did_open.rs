@@ -79,7 +79,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         backend.spawn_background_task(async move {
             let should_refresh_inlay_hint = cache_warming.await;
             if should_refresh_inlay_hint && let Err(err) = client.inlay_hint_refresh().await {
-                log::debug!("Failed to request warmed inlay hint refresh: {err}");
+                log::debug!("failed to request warmed inlay hint refresh: {err}");
             }
         });
     }

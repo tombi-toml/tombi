@@ -292,7 +292,7 @@ impl XTombiArrayValuesOrder {
                 match ArrayValuesOrder::try_from(string.value.as_ref()) {
                     Ok(val) => return Some(XTombiArrayValuesOrder::All(val)),
                     Err(_) => {
-                        log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}", string.value);
+                        log::warn!("invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}", string.value);
                     }
                 }
             }
@@ -310,7 +310,7 @@ impl XTombiArrayValuesOrder {
                                         Some(val) => orders.push(val),
                                         None => {
                                             log::warn!(
-                                                "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
+                                                "invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
                                                 group_orders
                                             );
                                         }
@@ -332,7 +332,7 @@ impl XTombiArrayValuesOrder {
                                         Some(val) => orders.push(val),
                                         None => {
                                             log::warn!(
-                                                "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
+                                                "invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
                                                 group_orders
                                             );
                                         }
@@ -345,7 +345,7 @@ impl XTombiArrayValuesOrder {
                         }
                         _ => {
                             log::warn!(
-                                "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} group: {}",
+                                "invalid {X_TOMBI_ARRAY_VALUES_ORDER} group: {}",
                                 group_name.value
                             );
                         }

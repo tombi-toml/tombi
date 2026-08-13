@@ -77,11 +77,11 @@ impl<'a> Formatter<'a> {
             }) {
                 Some(source_url_or_path) => {
                     log::info!(
-                        "Skip formatting for \"{source_url_or_path}\" due to `format.disable`"
+                        "skip formatting for \"{source_url_or_path}\" due to `format.disable`"
                     );
                 }
                 None => {
-                    log::info!("Skip formatting for stdin due to `format.disable`");
+                    log::info!("skip formatting for stdin due to `format.disable`");
                 }
             }
             return Ok(source.to_string());
@@ -106,7 +106,7 @@ impl<'a> Formatter<'a> {
         let (root, errors) = parsed.into_root_and_errors();
 
         if !errors.is_empty() {
-            log::trace!("TOML AST with parsing errors: {:#?}", root);
+            log::trace!("parsed TOML AST with errors: {:#?}", root);
 
             let mut diagnostics = vec![];
             for error in errors {
@@ -156,7 +156,7 @@ impl<'a> Formatter<'a> {
         .edit()
         .await;
 
-        log::trace!("TOML AST after editing: {:#?}", root);
+        log::trace!("edited TOML AST: {:#?}", root);
 
         let line_ending = {
             root.format(&mut self).unwrap();

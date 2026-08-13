@@ -1,10 +1,10 @@
 #[derive(thiserror::Error, Debug)]
 pub enum DiagnosticKind {
-    #[error("Defining dotted keys out-of-order is discouraged")]
+    #[error("defining dotted keys out-of-order is discouraged")]
     DottedKeysOutOfOrder,
-    #[error("Defining tables out-of-order is discouraged")]
+    #[error("defining tables out-of-order is discouraged")]
     TablesOutOfOrder,
-    #[error("Trailing comma after key-value is not allowed")]
+    #[error("trailing comma after key-value is not allowed")]
     ForbiddenKeyValueTrailingComma,
     #[error("inline table must be single line in TOML v1.0.0 or earlier")]
     InlineTableMustSingleLine,

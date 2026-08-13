@@ -78,12 +78,12 @@ pub async fn handle_hover(
     }
 
     let Some((keys, range)) = get_hover_keys_with_range(&root, position, toml_version).await else {
-        log::debug!("Failed to get hover keys with range");
+        log::debug!("failed to get hover keys with range");
         return Ok(None);
     };
 
     if keys.is_empty() && range.is_none() {
-        log::debug!("Keys and range are empty");
+        log::debug!("keys and range are empty");
         return Ok(None);
     }
 

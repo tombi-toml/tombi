@@ -117,7 +117,7 @@ where
         if FileInputType::from(args.files.as_ref()) == FileInputType::Stdin
             && let Err(error) = std::io::copy(&mut std::io::stdin(), &mut std::io::stdout())
         {
-            log::error!("Failed to copy stdin to stdout: {}", error);
+            log::error!("failed to copy stdin to stdout: {}", error);
         }
     })?;
 
@@ -137,7 +137,7 @@ where
         .enable_all()
         .build()
     else {
-        log::error!("Failed to create tokio runtime");
+        log::error!("failed to create tokio runtime");
         std::process::exit(1);
     };
 
@@ -154,7 +154,7 @@ where
 
         match input {
             FileSearch::Stdin => {
-                log::debug!("Formatting... stdin input");
+                log::debug!("formatting... stdin input");
                 let stdin_path = args.stdin_filename.as_ref().map(std::path::PathBuf::from);
 
                 // Get format options with override support
@@ -163,7 +163,7 @@ where
                     stdin_path.as_deref(),
                     config_path.as_deref(),
                 ) else {
-                    log::debug!("Formatting disabled for stdin by override");
+                    log::debug!("formatting disabled for stdin by override");
                     summary.not_needed_num += 1;
                     return Ok(summary);
                 };
@@ -190,7 +190,7 @@ where
                 for file in files {
                     match file {
                         FileSearchEntry::Found(source_path) => {
-                            log::debug!("Formatting... {:?}", source_path);
+                            log::debug!("formatting... {:?}", source_path);
 
                             // Get format options with override support
                             let Some(format_options) = tombi_glob::get_format_options(
@@ -199,7 +199,7 @@ where
                                 config_path.as_deref(),
                             ) else {
                                 log::debug!(
-                                    "Formatting disabled for {:?} by override",
+                                    "formatting disabled for {:?} by override",
                                     source_path
                                 );
                                 summary.not_needed_num += 1;
@@ -262,7 +262,7 @@ where
                             summary.error_num += 1;
                         }
                         Err(e) => {
-                            log::error!("Task failed {}", e);
+                            log::error!("task failed {}", e);
                             summary.error_num += 1;
                         }
                     }
@@ -315,7 +315,7 @@ where
         Ok(formatted) => {
             let has_diff = source != formatted;
             if has_diff && diff {
-                log::info!("Found format changes in stdin");
+                log::info!("found format changes in stdin");
                 eprint_diff(&source, &formatted);
             }
             if check {
@@ -367,7 +367,7 @@ where
         Ok(formatted) => {
             if source != formatted {
                 if diff {
-                    log::info!("Found format changes in {:?}", source_path);
+                    log::info!("found format changes in {:?}", source_path);
                     eprint_diff(&source, &formatted);
                 }
                 if check {

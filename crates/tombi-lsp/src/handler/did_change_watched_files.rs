@@ -22,7 +22,7 @@ pub async fn handle_did_change_watched_files(
     for change in params.changes {
         let uri: tombi_uri::Uri = change.uri.clone().into();
 
-        log::debug!("Detected {:?} via watcher: {}", change.typ, uri);
+        log::debug!("detected {:?} via watcher: {}", change.typ, uri);
 
         match change.typ {
             FileChangeType::DELETED => {
@@ -85,7 +85,7 @@ pub async fn handle_did_change_watched_files(
                 }
             }
             _ => {
-                log::debug!("Ignored file change type {:?} for URI: {}", change.typ, uri);
+                log::debug!("ignored file change type {:?} for URI: {}", change.typ, uri);
             }
         }
     }

@@ -164,11 +164,11 @@ impl TableSchema {
                     if let Ok(v) = ArrayValuesOrderBy::try_from(v) {
                         Some(v)
                     } else {
-                        log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {v}");
+                        log::warn!("invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {v}");
                         None
                     }
                 } else {
-                    log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {}", v);
+                    log::warn!("invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {}", v);
                     None
                 }
             });
@@ -617,7 +617,7 @@ impl XTombiTableKeysOrder {
                 match TableKeysOrder::try_from(order.as_str()) {
                     Ok(val) => Some(XTombiTableKeysOrder::All(val)),
                     Err(_) => {
-                        log::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {order}");
+                        log::warn!("invalid {X_TOMBI_TABLE_KEYS_ORDER}: {order}");
                         None
                     }
                 }
@@ -627,20 +627,20 @@ impl XTombiTableKeysOrder {
                 for (group_name, order) in &object_node.properties {
                     let Ok(target) = TableKeysOrderGroupKind::try_from(group_name.value.as_str())
                     else {
-                        log::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER} group: {group_name}");
+                        log::warn!("invalid {X_TOMBI_TABLE_KEYS_ORDER} group: {group_name}");
                         return None;
                     };
 
                     let Some(Ok(order)) = order.as_str().map(TableKeysOrder::try_from) else {
                         log::warn!(
-                            "Invalid {X_TOMBI_TABLE_KEYS_ORDER} {group_name} group: {order}"
+                            "invalid {X_TOMBI_TABLE_KEYS_ORDER} {group_name} group: {order}"
                         );
                         return None;
                     };
 
                     if order == TableKeysOrder::Schema && target != TableKeysOrderGroupKind::Keys {
                         log::warn!(
-                            "Invalid {X_TOMBI_TABLE_KEYS_ORDER} {group_name} group: {order}"
+                            "invalid {X_TOMBI_TABLE_KEYS_ORDER} {group_name} group: {order}"
                         );
                         return None;
                     }
@@ -650,7 +650,7 @@ impl XTombiTableKeysOrder {
                 Some(Self::Groups(sort_orders))
             }
             order => {
-                log::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order);
+                log::warn!("invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order);
                 None
             }
         }

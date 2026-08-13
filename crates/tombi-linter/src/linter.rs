@@ -73,11 +73,11 @@ impl<'a> Linter<'a> {
                 }) {
                     Some(source_url_or_path) => {
                         log::info!(
-                            "Skip linting for \"{source_url_or_path}\" due to `lint.disable`"
+                            "skip linting for \"{source_url_or_path}\" due to `lint.disable`"
                         );
                     }
                     None => {
-                        log::info!("Skip linting for stdin due to `lint.disable`");
+                        log::info!("skip linting for stdin due to `lint.disable`");
                     }
                 }
                 return Ok(());

@@ -16,7 +16,7 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
 
     for content_change in content_changes {
         if let Some(range) = content_change.range {
-            log::warn!("Range change is not supported: {:?}", range);
+            log::warn!("range change is not supported: {:?}", range);
         } else {
             latest_text = Some(content_change.text);
         }

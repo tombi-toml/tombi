@@ -210,11 +210,11 @@ impl SchemaStore {
             } {
                 schema_uri
             } else {
-                log::warn!("Invalid schema path: {}", schema.path());
+                log::warn!("invalid schema path: {}", schema.path());
                 return;
             };
 
-            log::debug!("Load schema from config: {}", schema_uri);
+            log::debug!("load schema from config: {}", schema_uri);
 
             self.schemas.write().await.push(crate::Schema {
                 title: None,
@@ -1023,13 +1023,13 @@ impl SchemaStore {
                 },
                 Ok(None) => {
                     log::warn!(
-                        "Failed to find document schema: {}",
+                        "failed to find document schema: {}",
                         matching_schema.schema_uri
                     );
                 }
                 Err(err) => {
                     log::warn!(
-                        "Failed to get document schema for {url}: {err}",
+                        "failed to get document schema for {url}: {err}",
                         url = matching_schema.schema_uri,
                     );
                 }

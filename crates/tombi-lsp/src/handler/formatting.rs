@@ -61,11 +61,11 @@ pub async fn handle_formatting(
         match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
-                log::info!("Skip {text_document_path:?} because it is not in config.files.include");
+                log::info!("skip {text_document_path:?} because it is not in config.files.include");
                 return Ok(None);
             }
             MatchResult::ExcludeMatched => {
-                log::info!("Skip {text_document_path:?} because it is in config.files.exclude");
+                log::info!("skip {text_document_path:?} because it is in config.files.exclude");
                 return Ok(None);
             }
         }
@@ -95,7 +95,7 @@ pub async fn handle_formatting(
         config_path.as_deref(),
     ) else {
         log::debug!(
-            "Formatting disabled for {:?} by override",
+            "formatting disabled for {:?} by override",
             text_document_path
         );
         return Ok(None);
@@ -136,7 +136,7 @@ pub async fn handle_formatting(
             }
         }
         Err(diagnostics) => {
-            log::error!("Failed to format");
+            log::error!("failed to format");
             backend
                 .client
                 .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {

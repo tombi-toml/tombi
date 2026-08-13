@@ -15,16 +15,16 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
 
     let startup_backend = backend.clone();
     backend.spawn_background_task(async move {
-        log::info!("Loading config in background...");
+        log::info!("loading config in background...");
         if let Err(error) = startup_backend.config_manager.load().await {
-            log::warn!("Failed to load config: {error}");
+            log::warn!("failed to load config: {error}");
             return;
         }
 
         let diagnostic_mode = startup_backend.capabilities.read().await.diagnostic_mode;
         match diagnostic_mode {
             DiagnosticMode::Pull => {
-                log::info!("Refreshing pull diagnostics after config load...");
+                log::info!("refreshing pull diagnostics after config load...");
                 startup_backend.refresh_pull_diagnostics().await;
             }
             DiagnosticMode::Push => {
@@ -40,7 +40,7 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
                     startup_backend.push_diagnostics(text_document_uri).await;
                 }
 
-                log::info!("Pushing workspace diagnostics after config load...");
+                log::info!("pushing workspace diagnostics after config load...");
                 if let Err(error) = push_workspace_diagnostics(
                     &startup_backend,
                     &WorkspaceDiagnosticOptions {
@@ -49,15 +49,15 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
                 )
                 .await
                 {
-                    log::warn!("Failed to push workspace diagnostics: {error}");
+                    log::warn!("failed to push workspace diagnostics: {error}");
                 }
             }
         }
     });
 
-    log::info!("Registering workspace TOML watchers...");
+    log::info!("registering workspace TOML watchers...");
     if let Err(error) = register_workspace_toml_watcher(backend).await {
-        log::warn!("Failed to register TOML file watchers: {error}");
+        log::warn!("failed to register TOML file watchers: {error}");
     }
 }
 

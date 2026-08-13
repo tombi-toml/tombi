@@ -413,7 +413,7 @@ async fn sort_targets<T>(
         }),
         TableKeysOrder::Schema => {
             let Some(table_schema) = table_schema else {
-                log::debug!("Table schema is not available, skipping schema sort");
+                log::debug!("table schema is not available, skipping schema sort");
                 return targets;
             };
             let mut new_targets = vec![];
@@ -501,7 +501,7 @@ async fn sort_table_targets<T>(
                     match tombi_regex::Regex::new(pattern_key) {
                         Ok(pattern) => pattern_regexes.push(pattern),
                         Err(_) => {
-                            log::warn!("Invalid regex pattern property: {}", pattern_key);
+                            log::warn!("invalid regex pattern property: {}", pattern_key);
                         }
                     }
                 }

@@ -33,7 +33,7 @@ pub async fn warm_remote_json_cache(
 
 async fn get_cached_remote_json_file_path(url: &str) -> Option<PathBuf> {
     let uri = tombi_uri::Uri::from_str(url)
-        .inspect_err(|err| log::warn!("Invalid URL for remote cache {url}: {err}"))
+        .inspect_err(|err| log::warn!("invalid URL for remote cache {url}: {err}"))
         .ok()?;
 
     get_cache_file_path(&uri).await
@@ -72,7 +72,7 @@ async fn fetch_cached_remote_json_from_path<T: DeserializeOwned>(
             {
                 return Some(cached_value);
             }
-            log::warn!("Failed to fetch remote metadata from {url}: {err}");
+            log::warn!("failed to fetch remote metadata from {url}: {err}");
             return None;
         }
     };
@@ -119,7 +119,7 @@ async fn warm_remote_json_cache_from_path(
             bytes
         }
         Err(err) => {
-            log::warn!("Failed to warm remote metadata cache from {url}: {err}");
+            log::warn!("failed to warm remote metadata cache from {url}: {err}");
             return false;
         }
     };
@@ -147,7 +147,7 @@ fn is_cache_fresh(cache_file_path: &Path, cache_options: Option<&tombi_cache::Op
         Ok(metadata) => metadata,
         Err(err) => {
             log::warn!(
-                "Failed to read cache metadata from {:?}: {err}",
+                "failed to read cache metadata from {:?}: {err}",
                 cache_file_path
             );
             return false;
@@ -158,7 +158,7 @@ fn is_cache_fresh(cache_file_path: &Path, cache_options: Option<&tombi_cache::Op
         Ok(modified) => modified,
         Err(err) => {
             log::warn!(
-                "Failed to read cache modified time from {:?}: {err}",
+                "failed to read cache modified time from {:?}: {err}",
                 cache_file_path
             );
             return false;
@@ -169,7 +169,7 @@ fn is_cache_fresh(cache_file_path: &Path, cache_options: Option<&tombi_cache::Op
         Ok(elapsed) => elapsed <= cache_ttl,
         Err(err) => {
             log::warn!(
-                "Failed to calculate cache age for {:?}: {err}",
+                "failed to calculate cache age for {:?}: {err}",
                 cache_file_path
             );
             false
@@ -189,7 +189,7 @@ async fn load_cached_json<T: DeserializeOwned>(
         }
         Ok(None) => None,
         Err(err) => {
-            log::warn!("Failed to read cached remote metadata from {url}: {err}");
+            log::warn!("failed to read cached remote metadata from {url}: {err}");
             None
         }
     }
@@ -213,7 +213,7 @@ fn parse_json<T: DeserializeOwned>(url: &str, bytes: &[u8]) -> Option<T> {
     match serde_json::from_slice(bytes) {
         Ok(value) => Some(value),
         Err(err) => {
-            log::warn!("Failed to parse remote metadata response from {url}: {err}");
+            log::warn!("failed to parse remote metadata response from {url}: {err}");
             None
         }
     }

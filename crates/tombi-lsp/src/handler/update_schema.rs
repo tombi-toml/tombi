@@ -40,7 +40,7 @@ pub async fn handle_update_schema(
                 )
                 .await
                 {
-                    log::warn!("Failed to push workspace diagnostics: {err}");
+                    log::warn!("failed to push workspace diagnostics: {err}");
                 }
             }
             Ok(is_updated)
