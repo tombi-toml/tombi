@@ -22,7 +22,7 @@ The fixture files are valid by default.
 In `crates/tombi-lsp/tests/test_diagnostic.rs`, diagnostics are asserted by opening each file path with injected text `name = false`.
 
 When glob association works correctly, both `product.toml` and `subdir/subproduct.toml` receive the same schema and both produce:
-- `Expected a value of type String, but found Boolean`
+- `expected a value of type String, but found Boolean`
 
 ## Before the Fix
 

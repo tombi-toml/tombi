@@ -46,7 +46,7 @@ mod diagnostic {
                 ConfigPath(fixture_path().join("tombi.toml")),
             ) -> Ok([
                 Diagnostic {
-                    message: "Expected a value of type String, but found Boolean",
+                    message: "expected a value of type String, but found Boolean",
                     range: ((0, 7), (0, 12)),
                 }
             ]);
@@ -60,7 +60,7 @@ mod diagnostic {
                 ConfigPath(fixture_path().join("tombi.toml")),
             ) -> Ok([
                 Diagnostic {
-                    message: "Expected a value of type String, but found Boolean",
+                    message: "expected a value of type String, but found Boolean",
                     range: ((0, 7), (0, 12)),
                 }
             ]);
@@ -85,7 +85,7 @@ mod diagnostic {
                 ConfigPath(fixture_path().join(".config/tombi.toml")),
             ) -> Ok([
                 Diagnostic {
-                    message: "Expected a value of type String, but found Boolean",
+                    message: "expected a value of type String, but found Boolean",
                     range: ((0, 7), (0, 12)),
                 }
             ]);
@@ -160,7 +160,7 @@ mod diagnostic {
                 ConfigPath(fixture_path().join("tombi.toml")),
             ) -> Ok([
                 Diagnostic {
-                    message: "The value must be one of [\"x\"], but found \"y\"",
+                    message: "the value must be one of [\"x\"], but found \"y\"",
                     range: ((1, 12), (1, 15)),
                 }
             ]);
