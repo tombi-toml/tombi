@@ -199,7 +199,7 @@ where
                         result
                     }
                 }
-                SchemaView::Null => return Ok(crate::Valid::new()),
+                SchemaView::Null => handle_nothing_schema(string_value),
                 SchemaView::Anything(_) => handle_anything_schema(string_value),
                 SchemaView::Nothing(_) => handle_nothing_schema(string_value),
                 // When the schema expects a TOML date/time type but the value is a string,
@@ -263,7 +263,7 @@ where
                 if total_diagnostics.is_empty() {
                     Ok(result)
                 } else {
-                    Err(total_diagnostics.into())
+                    crate::validate::with_lint_diagnostics(Ok(result), total_diagnostics)
                 }
             }
             Err(mut error) => {
@@ -308,7 +308,12 @@ where
     }
     .push_diagnostic_with_level(level, &mut diagnostics);
 
-    Err(diagnostics.into())
+    Err(crate::Invalid {
+        assertion_failed: false,
+        match_evidence: Default::default(),
+        diagnostics,
+        local_evaluated_locations: Default::default(),
+    })
 }
 
 async fn validate_string<T>(
@@ -352,7 +357,7 @@ where
             if diagnostics.is_empty() {
                 Ok(result)
             } else {
-                Err(diagnostics.into())
+                crate::validate::with_lint_diagnostics(Ok(result), diagnostics)
             }
         }
         Err(error) => Err(error),
@@ -474,6 +479,7 @@ pub(crate) fn validate_raw_string<'a>(
     if let Some(max_length) = &string_schema.max_length
         && length > *max_length
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -508,6 +514,7 @@ pub(crate) fn validate_raw_string<'a>(
     if let Some(min_length) = &string_schema.min_length
         && length < *min_length
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -557,6 +564,7 @@ pub(crate) fn validate_raw_string<'a>(
             StringFormat::JsonPointer => format::json_pointer::validate_format(value),
         }
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -593,6 +601,7 @@ pub(crate) fn validate_raw_string<'a>(
             Regex::new(pattern).inspect_err(|_| log::warn!("Invalid regex pattern: {:?}", pattern))
         && !regex.is_match(value)
     {
+        assertion_failed = true;
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -624,9 +633,6 @@ pub(crate) fn validate_raw_string<'a>(
         );
     }
 
-    assertion_failed |= diagnostics
-        .iter()
-        .any(|diagnostic| diagnostic.level() == tombi_diagnostic::Level::ERROR);
     if diagnostics.is_empty() && !assertion_failed {
         let mut valid = crate::Valid::new();
         valid.match_evidence = match_evidence;
@@ -685,6 +691,11 @@ fn validate_string_as_date_format(
         }
         .push_diagnostic_with_level(level, &mut diagnostics);
 
-        Err(diagnostics.into())
+        Err(crate::Invalid {
+            assertion_failed: true,
+            match_evidence: Default::default(),
+            diagnostics,
+            local_evaluated_locations: Default::default(),
+        })
     }
 }

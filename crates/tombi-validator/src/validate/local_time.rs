@@ -88,7 +88,7 @@ impl Validate for LocalTime {
                         )
                         .await
                     }
-                    SchemaView::Null => return Ok(crate::Valid::new()),
+                    SchemaView::Null => handle_nothing_schema(self),
                     SchemaView::Anything(_) => handle_anything_schema(self),
                     SchemaView::Nothing(_) => handle_nothing_schema(self),
                     _ => {
@@ -125,30 +125,35 @@ async fn validate_local_time(
     lint_rules: Option<&LocalTimeCommonLintRules>,
 ) -> Result<crate::Valid, crate::Invalid> {
     let mut diagnostics = vec![];
+    let mut assertion_failed = false;
+    let mut match_evidence = Box::<crate::MatchEvidence>::default();
     let value_string = local_time_value.value().to_string();
     let range = local_time_value.range();
 
-    if let Some(const_value) = &local_time_schema.const_value
-        && value_string != *const_value
-    {
-        let level = lint_rules
-            .map(|rules| &rules.common)
-            .and_then(|rules| {
-                rules
-                    .const_value
-                    .as_ref()
-                    .map(SeverityLevelDefaultError::from)
-            })
-            .unwrap_or_default();
+    if let Some(const_value) = &local_time_schema.const_value {
+        let matched = value_string == *const_value;
+        match_evidence.mark_root_value_assertion(matched, true);
+        if !matched {
+            assertion_failed = true;
+            let level = lint_rules
+                .map(|rules| &rules.common)
+                .and_then(|rules| {
+                    rules
+                        .const_value
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
+                .unwrap_or_default();
 
-        crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::Const {
-                expected: const_value.clone(),
-                actual: value_string.clone(),
-            }),
-            range,
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Const {
+                    expected: const_value.clone(),
+                    actual: value_string.clone(),
+                }),
+                range,
+            }
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
-        .push_diagnostic_with_level(level, &mut diagnostics);
     } else if lint_rules
         .and_then(|rules| rules.common.const_value.as_ref())
         .and_then(|rules| rules.disabled)
@@ -162,22 +167,25 @@ async fn validate_local_time(
         );
     }
 
-    if let Some(r#enum) = &local_time_schema.r#enum
-        && !r#enum.contains(&value_string)
-    {
-        let level = lint_rules
-            .map(|rules| &rules.common)
-            .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
-            .unwrap_or_default();
+    if let Some(r#enum) = &local_time_schema.r#enum {
+        let matched = r#enum.contains(&value_string);
+        match_evidence.mark_root_value_assertion(matched, r#enum.len() == 1);
+        if !matched {
+            assertion_failed = true;
+            let level = lint_rules
+                .map(|rules| &rules.common)
+                .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
+                .unwrap_or_default();
 
-        crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::Enum {
-                expected: r#enum.iter().map(ToString::to_string).collect(),
-                actual: value_string.clone(),
-            }),
-            range,
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Enum {
+                    expected: r#enum.iter().map(ToString::to_string).collect(),
+                    actual: value_string.clone(),
+                }),
+                range,
+            }
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
-        .push_diagnostic_with_level(level, &mut diagnostics);
     } else if lint_rules
         .and_then(|rules| rules.common.r#enum())
         .and_then(|rules| rules.disabled)
@@ -204,10 +212,17 @@ async fn validate_local_time(
         );
     }
 
-    let base_result = if diagnostics.is_empty() {
-        Ok(crate::Valid::new())
+    let base_result = if diagnostics.is_empty() && !assertion_failed {
+        let mut valid = crate::Valid::new();
+        valid.match_evidence = match_evidence;
+        Ok(valid)
     } else {
-        Err(diagnostics.into())
+        Err(crate::Invalid {
+            assertion_failed,
+            match_evidence,
+            diagnostics,
+            local_evaluated_locations: Default::default(),
+        })
     };
 
     crate::validate::merge_validation_results(

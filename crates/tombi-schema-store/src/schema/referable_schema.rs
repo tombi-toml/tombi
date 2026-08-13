@@ -190,10 +190,9 @@ impl Referable<SchemaView> {
             let semantic_schema = Some(Arc::new(super::SemanticSchema::from_object_node(
                 object, dialect,
             )));
-            let schema_view = if semantic_schema
-                .as_deref()
-                .is_some_and(super::SemanticSchema::has_type_assertion)
-            {
+            let schema_view = if semantic_schema.as_deref().is_some_and(|schema| {
+                schema.has_type_assertion() || schema.has_direct_literal_assertion()
+            }) {
                 semantic_schema.as_ref().and_then(|semantic_schema| {
                     semantic_schema.completion_projection_with_collectors(
                         string_formats,

@@ -1020,6 +1020,33 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn issue_2116_const_branch_hover_uses_literal_type(
+                r#"
+                issue_2116_mise_var = "v1.█0.0"
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok({
+                "Keys": "issue_2116_mise_var",
+                "Value": "(String ^ Integer ^ Boolean ^ Table)?",
+                "Enum": ["true"]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn overlapping_numeric_type_union_projects_integer_instance_once(
+                r#"
+                overlapping_numeric_type_union = █1
+                "#,
+                SchemaPath(adjacent_applicators_test_schema_path()),
+            ) -> Ok({
+                "Keys": "overlapping_numeric_type_union",
+                "Value": "Integer?"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn same_type_enum_one_of_hover_keeps_branch_values(
                 r#"
                 same_type_enum_one_of = "r█ed"
