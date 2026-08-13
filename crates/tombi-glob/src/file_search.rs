@@ -151,3 +151,28 @@ fn is_glob_pattern(path_str: &str) -> bool {
     }
     false
 }
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use tempfile::tempdir;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn explicit_file_in_vcs_metadata_dir_is_found() {
+        let tempdir = tempdir().unwrap();
+        let file = tempdir.path().join(".git/explicit.toml");
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(&file, "key = 1\n").unwrap();
+        let files = [file.to_string_lossy().into_owned()];
+
+        let search = FileSearch::new(&files, &Config::default(), None, ConfigLevel::Default).await;
+
+        let FileSearch::Files(entries) = search else {
+            panic!("explicit file search must return files");
+        };
+        assert!(matches!(entries.as_slice(), [FileSearchEntry::Found(path)] if path == &file));
+    }
+}
