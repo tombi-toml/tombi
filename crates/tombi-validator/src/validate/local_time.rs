@@ -88,7 +88,7 @@ impl Validate for LocalTime {
                         )
                         .await
                     }
-                    SchemaView::Null => return Ok(crate::Valid::new()),
+                    SchemaView::Null => handle_nothing_schema(self),
                     SchemaView::Anything(_) => handle_anything_schema(self),
                     SchemaView::Nothing(_) => handle_nothing_schema(self),
                     _ => {

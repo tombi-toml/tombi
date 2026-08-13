@@ -199,7 +199,7 @@ where
                         result
                     }
                 }
-                SchemaView::Null => return Ok(crate::Valid::new()),
+                SchemaView::Null => handle_nothing_schema(string_value),
                 SchemaView::Anything(_) => handle_anything_schema(string_value),
                 SchemaView::Nothing(_) => handle_nothing_schema(string_value),
                 // When the schema expects a TOML date/time type but the value is a string,

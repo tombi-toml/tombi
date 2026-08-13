@@ -192,7 +192,10 @@ pub fn project_current_schema_for_value(
     ) && !current_schema
         .semantic_schema
         .as_deref()
-        .is_some_and(|schema| schema.has_direct_constraints_for_type(instance_type))
+        .is_some_and(|schema| {
+            schema.has_direct_type_assertion()
+                || schema.has_direct_constraints_for_type(instance_type)
+        })
     {
         return None;
     }
@@ -672,7 +675,9 @@ where
         if current_schema
             .semantic_schema
             .as_deref()
-            .is_some_and(|schema| !schema.has_type_assertion())
+            .is_some_and(|schema| {
+                !schema.has_type_assertion() && !schema.has_direct_literal_assertion()
+            })
         {
             let (one_of, any_of, all_of, not) = current_schema.schema_view.adjacent_applicators();
             validate_adjacent_applicators(

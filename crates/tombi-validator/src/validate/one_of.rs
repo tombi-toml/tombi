@@ -173,6 +173,32 @@ where
 
             unreachable!("one_of_schema must have exactly one valid schema");
         } else {
+            if valid_count > 1 {
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::OneOfMultipleMatch {
+                        valid_count,
+                        total_count,
+                    }),
+                    range: value.range(),
+                }
+                .push_diagnostic_with_level(
+                    common_rules
+                        .and_then(|rules| rules.one_of_multiple_match.as_ref())
+                        .map(SeverityLevelDefaultError::from)
+                        .unwrap_or_default(),
+                    &mut total_diagnostics,
+                );
+
+                return Err(crate::Invalid {
+                    // `oneOf` cardinality is an assertion independently of
+                    // whether its diagnostic is enabled.
+                    assertion_failed: true,
+                    match_evidence: Default::default(),
+                    diagnostics: total_diagnostics,
+                    local_evaluated_locations: base_evaluated_locations,
+                });
+            }
+
             let mut error = each_results
                 .into_iter()
                 .fold(crate::Invalid::new(), |mut a, b| {
@@ -195,30 +221,11 @@ where
                 );
             }
 
-            if !error.assertion_failed && valid_count > 1 {
-                crate::Diagnostic {
-                    kind: Box::new(crate::DiagnosticKind::OneOfMultipleMatch {
-                        valid_count,
-                        total_count,
-                    }),
-                    range: value.range(),
-                }
-                .push_diagnostic_with_level(
-                    common_rules
-                        .and_then(|rules| rules.one_of_multiple_match.as_ref())
-                        .map(SeverityLevelDefaultError::from)
-                        .unwrap_or_default(),
-                    &mut total_diagnostics,
-                );
-
-                Err(total_diagnostics.into())
-            } else {
-                error.prepend_diagnostics(total_diagnostics);
-                error
-                    .local_evaluated_locations
-                    .merge_from(base_evaluated_locations);
-                Err(error)
-            }
+            error.prepend_diagnostics(total_diagnostics);
+            error
+                .local_evaluated_locations
+                .merge_from(base_evaluated_locations);
+            Err(error)
         }
     }
     .boxed()

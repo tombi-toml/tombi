@@ -420,3 +420,119 @@ test_lint! {
         },
     ])
 }
+
+test_lint! {
+    #[test]
+    fn test_issue_2116_const_true_branch_does_not_match_string(
+        r#"
+        issue_2116_mise_var = "v1.0.0"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_overlapping_numeric_type_union_accepts_integer_once(
+        r#"
+        overlapping_numeric_type_union = 1
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_null_schema_rejects_toml_value(
+        r#"
+        null_only = "not null"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+}
+
+test_lint! {
+    #[test]
+    fn test_null_schema_rejects_array(
+        r#"
+        null_only = []
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+}
+
+test_lint! {
+    #[test]
+    fn test_null_schema_rejects_table(
+        r#"
+        [null_only]
+        value = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+}
+
+test_lint! {
+    #[test]
+    fn test_const_null_schema_rejects_toml_value(
+        r#"
+        const_null_only = "not null"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+}
+
+test_lint! {
+    #[test]
+    fn test_enum_null_schema_rejects_toml_value(
+        r#"
+        enum_null_only = "not null"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+}
+
+test_lint! {
+    #[test]
+    fn test_one_of_reports_multiple_matches_despite_other_failed_branches(
+        r#"
+        mixed_branch_overlap = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::OneOfMultipleMatch {
+        valid_count: 2,
+        total_count: 3,
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_unsatisfiable_literal_additional_property_is_not_dropped(
+        r#"
+        [unsatisfiable_literal_properties]
+        value = "anything"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+}
+
+test_lint! {
+    #[test]
+    fn test_empty_enum_additional_property_is_not_dropped(
+        r#"
+        [unsatisfiable_empty_enum_properties]
+        value = "anything"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+}
+
+test_lint! {
+    #[test]
+    fn test_nested_one_of_failure_is_independent_of_disabled_diagnostic(
+        r#"
+        severity_independent_nested_one_of = true # tombi: lint.rules.one-of-multiple-match.disabled = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Ok(_)
+}

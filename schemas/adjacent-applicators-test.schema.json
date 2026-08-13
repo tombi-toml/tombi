@@ -203,6 +203,55 @@
     "enum_with_numeric_sibling": {
       "enum": [9, 12],
       "minimum": 10
+    },
+    "issue_2116_mise_var": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "integer" },
+        { "const": true },
+        { "type": "object" }
+      ]
+    },
+    "overlapping_numeric_type_union": {
+      "type": ["integer", "number"]
+    },
+    "null_only": {
+      "type": "null"
+    },
+    "const_null_only": {
+      "const": null
+    },
+    "enum_null_only": {
+      "enum": [null]
+    },
+    "mixed_branch_overlap": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "const": true },
+        { "type": "string" }
+      ]
+    },
+    "unsatisfiable_literal_properties": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "const": true
+      }
+    },
+    "unsatisfiable_empty_enum_properties": {
+      "type": "object",
+      "additionalProperties": {
+        "enum": []
+      }
+    },
+    "severity_independent_nested_one_of": {
+      "type": "boolean",
+      "not": {
+        "oneOf": [
+          { "type": "boolean" },
+          { "const": true }
+        ]
+      }
     }
   },
   "additionalProperties": false
