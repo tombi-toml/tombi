@@ -4,5 +4,5 @@ enabled = true
 [extensions]
 "tombi-toml/cargo" = {
   lsp.goto-definition.dependency.enabled = false,
-  lsp.references.dependency.enabled = true
+  lsp.references.dependency.enabled = true,
 }
