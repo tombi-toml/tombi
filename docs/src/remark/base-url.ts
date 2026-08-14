@@ -23,13 +23,14 @@ export function remarkBaseUrl() {
       node.url = processUrl(node.url);
     });
 
-    // Process URLs in images
+    // Process URLs in JSX links and images
     visit(tree, "mdxJsxFlowElement", (node: MdxJsxFlowElement) => {
-      if (node.name === "img") {
+      const urlAttribute = node.name === "a" ? "href" : "src";
+      if (node.name === "a" || node.name === "img") {
         for (const attr of node.attributes) {
           if (
             attr.type === "mdxJsxAttribute" &&
-            attr.name === "src" &&
+            attr.name === urlAttribute &&
             typeof attr.value === "string"
           ) {
             attr.value = processUrl(attr.value);
