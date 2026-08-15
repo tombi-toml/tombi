@@ -191,6 +191,8 @@ main {
 /* Table Styles */
 .mdx-content .mdx-table-shell {
   position: relative;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 .mdx-content .mdx-table-sticky-head {
