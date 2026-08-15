@@ -14,8 +14,7 @@
   "languages": {
     "TOML": {
       "formatter": {
-        "language_server": { "name": "tombi" },
-        "show_edit_predictions": false // https://github.com/tombi-toml/tombi/issues/1556
+        "language_server": { "name": "tombi" }
       }
     }
   }

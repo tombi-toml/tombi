@@ -1,18 +1,7 @@
-import { Warning } from "~/components/Highlight";
-
 # Zed Extension
 
-<Warning>
-Zed may send `goto type definition` requests on each key press while editing TOML files.
-To avoid unwanted `lsp edit` tabs, set the following in your `tombi.toml`:
-
-```toml
-[lsp]
-goto-type-definition.enabled = false
-```
-
-For context, see [#1556](https://github.com/tombi-toml/tombi/issues/1556).
-</Warning>
+The Tombi extension currently published in Zed's extension registry focuses on Language Server Protocol (LSP) features.
+Syntax highlighting and other syntax-related editor features are provided by the [TOML extension](https://github.com/zed-extensions/toml), which should be installed alongside the Tombi extension.
 
 ## Language Server Binary Priority
 
@@ -78,3 +67,15 @@ You can set offline mode in the Zed settings file.
   }
 }
 ```
+
+## Troubleshooting
+
+Zed v1.1.6 and later include a workaround for background type definition requests that could open unwanted `lsp edit` tabs.
+If you still encounter this behavior, you can temporarily disable Tombi's Go to Type Definition feature in `tombi.toml`:
+
+```toml
+[lsp]
+goto-type-definition.enabled = false
+```
+
+For details and alternative workarounds, see [#1556](https://github.com/tombi-toml/tombi/issues/1556).
