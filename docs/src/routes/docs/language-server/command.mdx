@@ -196,12 +196,10 @@ Update the configuration file. This command reloads the configuration from disk 
 #### Request
 
 ```typescript
-interface UpdateConfigParams {
-  textDocument: TextDocumentIdentifier;
-}
+type UpdateConfigParams = TextDocumentIdentifier;
 ```
 
-The `textDocument` should point to a Tombi configuration file (e.g., `tombi.toml`).
+The identifier should point to a Tombi configuration file (e.g., `tombi.toml`).
 
 #### Response
 
@@ -216,7 +214,7 @@ Returns `true` if the configuration was updated successfully, `false` otherwise.
 ```typescript
 // Update the configuration file
 const updated = await client.sendRequest("tombi/updateConfig", {
-  textDocument: { uri: "file:///path/to/project/tombi.toml" }
+  uri: "file:///path/to/project/tombi.toml"
 });
 
 if (updated) {

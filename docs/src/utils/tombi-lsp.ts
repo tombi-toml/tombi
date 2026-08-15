@@ -56,6 +56,11 @@ interface PendingRequest {
 }
 
 const WORKSPACE_URI = "file:///workspace";
+const TOMBI_CONFIG_FILENAMES = new Set([
+  ".tombi.toml",
+  "pyproject.toml",
+  "tombi.toml",
+]);
 
 function baseUrl(): string {
   return import.meta.env.SERVER_BASE_URL.endsWith("/")
@@ -229,6 +234,13 @@ export class TombiLspClient {
   }
 
   async format(path: string): Promise<LspTextEdit[]> {
+    const filename = path.slice(path.lastIndexOf("/") + 1);
+    if (TOMBI_CONFIG_FILENAMES.has(filename)) {
+      await this.request<boolean>("tombi/updateConfig", {
+        uri: workspaceFileUri(path),
+      });
+    }
+
     return (
       (await this.request<LspTextEdit[] | null>("textDocument/formatting", {
         options: { insertSpaces: true, tabSize: 2 },

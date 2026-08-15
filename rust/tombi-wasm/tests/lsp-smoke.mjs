@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import init, {
   ServerConfig,
   serve,
+  set_workspace_file,
   set_workspace_files,
 } from "../../../typescript/@tombi-toml/wasm-lsp/dist/tombi_lsp_wasm.js";
 
@@ -413,6 +414,59 @@ assert.equal(completionResponse?.error, undefined);
 assert.ok(
   (completionResponse?.result?.items ?? completionResponse?.result ?? []).length > 0,
   `WASM LSP completion should return candidates: ${JSON.stringify(completionResponse)}`,
+);
+
+const updatedConfig = `toml-version = "v1.1.0"
+
+[format.rules]
+group-blank-lines-limit = 5
+
+
+
+line-width = 100
+`;
+set_workspace_file("file:///workspace/tombi.toml", updatedConfig);
+input.push(
+  encode({
+    jsonrpc: "2.0",
+    method: "textDocument/didChange",
+    params: {
+      contentChanges: [{ text: updatedConfig }],
+      textDocument: { uri: "file:///workspace/tombi.toml", version: 2 },
+    },
+  }),
+);
+input.push(
+  encode({
+    jsonrpc: "2.0",
+    id: 8,
+    method: "tombi/updateConfig",
+    params: { uri: "file:///workspace/tombi.toml" },
+  }),
+);
+
+const updateConfigResponse = await waitForResponse(8);
+assert.equal(updateConfigResponse?.error, undefined);
+assert.equal(updateConfigResponse?.result, true);
+
+input.push(
+  encode({
+    jsonrpc: "2.0",
+    id: 9,
+    method: "textDocument/formatting",
+    params: {
+      options: { insertSpaces: true, tabSize: 2 },
+      textDocument: { uri: "file:///workspace/tombi.toml" },
+    },
+  }),
+);
+
+const configFormattingResponse = await waitForResponse(9);
+assert.equal(configFormattingResponse?.error, undefined);
+assert.equal(
+  configFormattingResponse?.result,
+  null,
+  "formatting tombi.toml should use its reloaded group-blank-lines-limit",
 );
 
 input.close();
