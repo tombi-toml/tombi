@@ -1,108 +1,106 @@
 ---
 name: github-pr-flow
-description: "Codex 専用。必要に応じて `github-pr-create`（または user-global `my-github-pr-create`）で PR を作成し、その後 `gh` で Copilot review を依頼し、統一 skill `github-pr-resolve` に待機と対応を委譲する。PR 作成手順そのものは PR-create skill を source of truth として利用する。トリガー: 'github-pr-flow', 'PR作成してCopilotレビュー依頼', 'PR作成からレビュー対応まで', '/github-pr-flow'"
-metadata:
-  short-description: PR作成からCopilot依頼、即時引き継ぎまで
+description: "現在のローカル差分を検証し、Codex または Claude Code の review-quality サブエージェントによる独立レビューを PR 作成前に完了してから、commit、push、GitHub PR 作成、CI と既存 review thread の対応まで進める。トリガー: 'github-pr-flow'、'PR作成からレビュー対応まで'、'ローカルレビューしてPR作成'、'/github-pr-flow'"
 ---
 
 # GitHub PR Flow
 
-現在のローカル差分をもとに、必要なら別 Skill で PR を作成し、その後の Copilot レビュー依頼を `gh pr edit --add-reviewer @copilot` で行い、待機とレビュー対応を統一 Skill [`../../github-pr-resolve/SKILL.md`](../../github-pr-resolve/SKILL.md) に委譲する Codex 専用 Skill。途中で simplify 系の別 Skill は実行しない。
+現在の変更をローカルで独立レビューしてから PR を作成し、作成後の CI と既存 review thread を [`../../github-pr-resolve/SKILL.md`](../../github-pr-resolve/SKILL.md) で処理する。GitHub 上の AI reviewer にはレビューを依頼しない。
 
-## Use This Skill When
-
-- 現在の差分から PR 作成と Copilot レビュー依頼をまとめて進めたい
-- 現在の差分で新規 PR を作り、その直後に Copilot へレビュー依頼したい
-- Copilot にレビュー依頼した後、そのまま待機と対応まで続けて進めたい
-- すべての review thread を解決した状態で PR を引き渡す
-
-## Do Not Use This Skill When
-
-- 新規 PR を作るだけでよい → `github-pr-create` または user-global `my-github-pr-create`
-- Copilot review を使わずに PR URL を返せば十分
-- 既存 PR の review 対応だけをしたい → [`../../github-pr-resolve/SKILL.md`](../../github-pr-resolve/SKILL.md)
-
-## Preconditions
+## 前提
 
 - `gh auth status` が成功する
 - push 権限がある
-- このリポジトリの `AGENTS.md` と対象領域の追加ルールを確認済み
-- `gh --version` で `gh >= 2.89.0` を満たしている
-- `@copilot` reviewer の可否確認は `gh pr edit <PR番号またはURL> --add-reviewer @copilot` を実行し、未対応ならその正確なエラー内容を確認できる
-- 対象リポジトリが `github.com` 上にある（GitHub Enterprise Server の `@copilot` reviewer は未対応）
+- リポジトリと変更対象領域の `AGENTS.md` / `.claude/rules/` を確認済みである
+- Codex または Claude Code のサブエージェント機能を利用できる
 - 非対話コマンドを使う
 
-## Workflow
+## ワークフロー
 
-### 1. 必要なら PR 作成 skill で PR URL 取得まで完了する
+### 1. PR に含める差分を確定する
 
-PR 作成そのものは別 skill に従う。優先順位:
+1. `git fetch origin main` を実行し、必要なら `origin/main` を取り込む
+2. `git rev-parse origin/main` の出力を review base OID として記録する
+3. [`../../workspace-check/SKILL.md`](../../workspace-check/SKILL.md) で変更面を分類し、必要なローカル検証を選択・実行して、実行済み項目と残るギャップを記録する
+4. PR に含めるファイルだけを stage する
+5. `git diff --cached --check` と `git status --short` で、意図しない差分や未追跡ファイルがないことを確認する
+6. `git diff --cached --binary origin/main | shasum -a 256` の出力を patch hash として記録し、`<review-base-oid>:<patch-hash>` を review fingerprint とする
 
-1. リポジトリ内に `github-pr-create` skill が存在すればそれを使う
-2. 無ければ user-global の `my-github-pr-create` を使う
-3. どちらも使えない場合は手動で:
-   - ブランチ命名（`<type>/<purpose-kebab>`）
-   - `git fetch origin main` と取り込み
-   - 必要な検証（tombi: `cargo fmt --all`、Rust 変更時は `cargo clippy --workspace --all-targets --locked -- -D warnings`、`cargo nextest run --workspace --locked --no-fail-fast`、`cargo test --workspace --doc --locked`）
-   - commit / `git push -u origin <branch>`
-   - `gh pr create --base main --head <branch> --title ... --body ... --label ...`
+差分が空なら PR を作成しない。未追跡ファイルは stage されるまでレビュー対象に含まれないため、必ず先に対象を確定する。
 
-PR URL がまだ無い場合は、この Skill の中で PR 作成まで進めてから戻る。
+### 2. ローカルの独立サブエージェントにレビューを依頼する
 
-この Step では PR 作成に必要な処理だけを行い、simplify 系の別 Skill を前処理として挟まない。
+実行中のハーネスに応じて、Codex または Claude Code のサブエージェント機能で `review-quality` エージェントを起動する。親エージェント自身の自己レビューだけで代替しない。
 
-### 2. `gh` で Copilot にレビュー依頼する
+サブエージェントには次を渡す。
 
-1. 対象 PR を PR 番号、PR URL、または head branch で特定する
-2. `gh pr edit <PR番号|URL|ブランチ名> --add-reviewer @copilot` を実行する
-3. reviewer 追加に成功したら、そのまま統一 Skill に委譲する
+- base: `origin/main`
+- review base OID
+- review fingerprint
+- 対象: `git diff --cached origin/main` と変更ファイルの関連実装・テスト
+- 実行済み検証と結果
+- 読み取り専用でレビューし、ファイルを変更しないこと
+- correctness、回帰、検証不足、source of truth の不整合を優先し、finding は file / line と根拠を付けること
 
-依頼できた場合:
+実装方針の正当化や期待する結論を先に教えない。サブエージェントが独立に差分と周辺コードを確認できる情報だけを渡す。
 
-- 以後の待機と review 対応は統一 Skill に委譲する
-- reviewer UI 確認のために browser を開かない
+### 3. finding を解消し、同じ差分を再確認する
 
-依頼できない場合:
+- actionable finding がなければ、review fingerprint が変わっていないことを確認して Step 4 へ進む
+- actionable finding があれば親エージェントが修正し、対象検証、stage、fingerprint 採取をやり直す
+- fingerprint が変わった場合、以前のレビュー結果を再利用せず、新しいサブエージェントで Step 2 をやり直す
+- 仕様判断が必要で解消できない finding は、PR を作成せずユーザーに確認する
 
-- `gh --version` が `2.89.0` 未満なら、先に `gh` を更新する。Homebrew 管理なら `brew upgrade gh` を使う
-- `gh auth status` が失敗する場合は認証を修復してから再試行する
-- `gh pr edit ... --add-reviewer @copilot` が機能未提供、権限不足、または Copilot code review 未有効を示す場合は、その正確なエラー内容をユーザーへ報告して止まる
-- 通常フローとして browser 操作へフォールバックしない。ユーザーが明示的に UI での手動依頼を選んだ場合だけ案内する
+レビュー結果が空、失敗、権限不足、タイムアウトなどで有効な判定を得られない場合も fail closed とし、PR を作成しない。
 
-### 3. 統一 Skill に直ちに委譲する
+### 4. PR を作成する
 
-Copilot へのレビュー依頼が終わったら、この Skill では待たずに統一 Skill [`../../github-pr-resolve/SKILL.md`](../../github-pr-resolve/SKILL.md) を使う。
+PR 作成そのものは次の優先順位で既存 skill に従う。
 
-- 入力は PR URL または PR番号を使う
-- Copilot review が未着なら最大 15 分ポーリングして待つ処理も、その Skill の責務とする
-- 採用 / 不採用 / 既対応の判断、必要な修正、CI 修正、全返信、thread resolve はその Skill の責務とする
-- この Skill 側では review 対応ロジックを重複実装しない
+1. リポジトリ内の `github-pr-create`
+2. user-global の `my-github-pr-create`
+3. どちらも使えない場合は、次の manual fallback を使う
 
-### 4. 最終状態を整理して終了する
+manual fallback では、現在 branch が `main` または detached HEAD でないことを確認する。該当する場合は `<type>/<purpose-kebab>` 形式の topic branch を作成してから commit する。push 先は現在の GitHub アカウントが書き込める明示的な remote とし、base repository の保護された `main` へ直接 push しない。
 
+```bash
+git commit -m '<type>: <summary>'
+git push -u <writable-remote> HEAD:refs/heads/<topic-branch>
+gh pr create \
+  --repo tombi-toml/tombi \
+  --base main \
+  --head '<owner>:<topic-branch>' \
+  --title '<title>' \
+  --body-file <body-file> \
+  --label '<label>'
+```
+
+`<writable-remote>` の URL と `<owner>` が同じ fork を指すこと、push 後の remote OID が local HEAD と一致することを確認する。引数なしの対話的な `gh pr create` は使わない。
+
+commit 直前に `git fetch origin main` を再実行し、`origin/main` の OID と staged patch hash が承認済み review fingerprint と一致することを確認する。commit 後は `git diff --binary origin/main HEAD | shasum -a 256` で同じ tree 差分であることに加え、`git status --porcelain` が空であることを確認する。commit hook、formatter、base drift のいずれかで fingerprint が変わるか未commit差分が残った場合は、Step 1 から検証とレビューをやり直す。
+
+`gh pr create` の直前にも `git ls-remote origin refs/heads/main` で remote base OID を直接確認する。承認済み review base OID と異なる場合は PR を作成せず、`origin/main` を更新して Step 1 からやり直す。
+
+PR 作成時は branch、検証結果、commit、PR URL、必要な label を記録する。GitHub 上の AI reviewer 追加コマンドは実行しない。
+
+### 5. 作成後の状態を確認する
+
+PR URL、承認済み review base OID、review fingerprint、commit 後の exact head OID を入力として [`../../github-pr-resolve/SKILL.md`](../../github-pr-resolve/SKILL.md) を使う。委譲先は現在の remote base、local / remote / PR head、full PR diff が渡された証拠と一致する場合だけ、そのレビュー結果を引き継ぐ。
+
+- CI の失敗を調査・修正する
+- 既に投稿された AI / 人間の review thread があれば通常どおり対応する
+- review request の追加や AI reviewer の応答待ちは行わない
 - PR はマージしない
-- PR URL、head branch、最終未解決 thread 数、残タスクの有無を記録する
-- 呼び出し元が連続フロー skill の場合、merge 待機と最終 merge 実行は呼び出し元の責務として継続する
-- merge や deploy などの最終判断は、この Skill 単体では扱わない
 
-## Notes
+PR 作成後の `main` 取り込み、CI 修正、review 対応などで head tree を変える場合は、push 前に新しい full PR diff を Step 1〜3 と同じ検証・fingerprint・独立サブエージェントレビューへ通す。以前の review fingerprint は再利用しない。
 
-- 使い分け:
-  - 新規 PR 作成だけなら `github-pr-create` / `my-github-pr-create`
-  - PR 作成後に Copilot review 依頼と thread 解決まで求められたら `github-pr-flow`
-- `github-pr-flow` は PR 作成機能も持つが、その手順は PR-create skill をそのまま利用する
-- Copilot レビュー依頼は `gh pr edit --add-reviewer @copilot` を通常フローとする
-- `gh --version` が `2.89.0` 未満なら先に更新し、未対応時は実コマンドのエラー内容で判断する
-- `@copilot` reviewer は `github.com` でのみ使う。GHES は対象外
-- review 対応は統一 Skill に集約し、`github-pr-flow` 側に重複手順を書かない
-- reviewer 追加や Copilot レビュー依頼のために browser を開かない
-- 連続フロー skill から呼ばれた場合でも、この Skill 自体は merge しない。呼び出し元は未マージを理由に終了せず、待機と merge を続ける
+最終 handoff 前に remote base OID を再取得する。base または head tree が最後に承認された fingerprint から変わっていれば、最新の組み合わせで検証と独立レビューをやり直す。その後、現在の head、CI、reviews、comments、全ページの review threads、mergeability を同じ状態で取り直す。
 
-## Output Checklist
+## 出力
 
-- 利用した PR-create skill 名と PR 作成時の必須項目（branch、検証、commit、PR URL、label）
-- Copilot レビュー依頼の成否
-- 返信した thread 数
-- 修正不要として解決した thread 数
-- 最終未解決 thread 数
-- PR は未マージのまま引き渡したこと
+- 利用したローカル review subagent
+- 承認済み review base OID、review fingerprint、finding の有無
+- 実行した検証
+- branch、commit、PR URL、label
+- 対応した thread 数と最終未解決 thread 数
+- PR を未マージで引き渡したこと
