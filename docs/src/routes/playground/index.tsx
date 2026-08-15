@@ -756,9 +756,7 @@ export default function Playground() {
     })();
   });
 
-  createEffect(() => {
-    if (editorLoading() || editorError()) return;
-
+  onMount(() => {
     let disposed = false;
     let client: TombiLspClient | undefined;
     onCleanup(() => {
