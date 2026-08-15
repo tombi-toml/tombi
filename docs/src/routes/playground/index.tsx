@@ -165,7 +165,7 @@ export default function Playground() {
   const [treeContextMenu, setTreeContextMenu] = createSignal<TreeContextMenu>();
   const [runState, setRunState] = createSignal<RunState>("loading");
   const [statusMessage, setStatusMessage] = createSignal(
-    "Starting the Tombi WebAssembly language server…",
+    "Downloading tombi-wasm-lsp…",
   );
   const models = new Map<string, MonacoEditor.ITextModel>();
   let diagnosticSequence = 0;
@@ -200,8 +200,9 @@ export default function Playground() {
     return flattened;
   });
 
-  const isPlaygroundReady = createMemo(
-    () => isMounted() && !editorLoading() && runState() !== "loading",
+  const isPlaygroundVisible = createMemo(() => isMounted());
+  const isPlaygroundBusy = createMemo(
+    () => editorLoading() || runState() === "loading",
   );
 
   const setFailure = (message: string) => {
@@ -936,14 +937,14 @@ export default function Playground() {
 
       <div
         class="playground-shell"
-        aria-busy={!isPlaygroundReady()}
+        aria-busy={isPlaygroundBusy()}
         style={{ position: "relative", padding: "2.5rem 0 4rem" }}
       >
         <section
           class="playground-workspace"
           aria-label="Tombi WASM LSP playground"
-          aria-hidden={!isPlaygroundReady()}
-          style={{ display: isPlaygroundReady() ? undefined : "none" }}
+          aria-hidden={!isPlaygroundVisible()}
+          style={{ display: isPlaygroundVisible() ? undefined : "none" }}
         >
           <div class="playground-toolbar">
             <div class="playground-runtime-label">
@@ -1124,13 +1125,27 @@ export default function Playground() {
                 classList={{
                   "is-loading": editorLoading() || Boolean(editorError()),
                 }}
-                ref={editorContainer}
               >
+                <div
+                  class="playground-monaco-editor"
+                  ref={editorContainer}
+                  style={{
+                    visibility:
+                      editorLoading() || editorError() ? "hidden" : undefined,
+                  }}
+                />
                 <Show when={editorLoading()}>
-                  <div class="playground-editor-loading">
-                    <TbLoader2 class="playground-spinner" aria-hidden="true" />
-                    Loading editor…
-                  </div>
+                  <textarea
+                    class="playground-editor-fallback"
+                    aria-label="TOML editor"
+                    value={activeEntry()?.text ?? ""}
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck={false}
+                    onInput={(event) =>
+                      updateActiveFile(event.currentTarget.value)
+                    }
+                  />
                 </Show>
                 <Show when={editorError()}>
                   {(message) => (
@@ -1196,7 +1211,7 @@ export default function Playground() {
           </section>
         </section>
 
-        <Show when={!isPlaygroundReady()}>
+        <Show when={!isPlaygroundVisible()}>
           <output
             class="playground-workspace playground-initial-loading"
             aria-live="polite"
