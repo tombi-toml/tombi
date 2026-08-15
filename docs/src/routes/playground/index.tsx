@@ -35,6 +35,8 @@ import {
 import "~/styles/playground.css";
 
 const DEFAULT_PATH = "tombi.toml";
+const WORKSPACE_STORAGE_KEY = "tombi-playground-workspace-v1";
+let isInitialWorkspaceMount = true;
 const DEFAULT_SOURCE = `toml-version = "v1.1.0"
 
 [format.rules]
@@ -50,6 +52,10 @@ interface WorkspaceEntry {
   text: string;
   version: number;
 }
+
+type StoredWorkspaceEntry =
+  | { kind: "file"; path: string; text: string }
+  | { kind: "directory"; path: string };
 
 interface TreeItem extends WorkspaceEntry {
   depth: number;
@@ -122,6 +128,57 @@ function withParentDirectories(entries: WorkspaceEntry[]): WorkspaceEntry[] {
   return [...byPath.values()];
 }
 
+function isStoredWorkspaceEntry(value: unknown): value is StoredWorkspaceEntry {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("kind" in value) ||
+    !("path" in value) ||
+    typeof value.path !== "string" ||
+    normalizeWorkspacePath(value.path) !== value.path
+  ) {
+    return false;
+  }
+  return (
+    value.kind === "directory" ||
+    (value.kind === "file" && "text" in value && typeof value.text === "string")
+  );
+}
+
+function storedWorkspaceEntries(
+  entries: WorkspaceEntry[],
+): StoredWorkspaceEntry[] {
+  return entries.map((entry) =>
+    entry.kind === "file"
+      ? { kind: entry.kind, path: entry.path, text: entry.text }
+      : { kind: entry.kind, path: entry.path },
+  );
+}
+
+function restoreWorkspaceEntries(
+  value: string | null,
+): WorkspaceEntry[] | undefined {
+  try {
+    const storedEntries: unknown = JSON.parse(value ?? "");
+    if (
+      !Array.isArray(storedEntries) ||
+      !storedEntries.every(isStoredWorkspaceEntry)
+    ) {
+      return;
+    }
+
+    return withParentDirectories(
+      storedEntries.map((entry) => ({
+        ...entry,
+        text: entry.kind === "file" ? entry.text : "",
+        version: entry.kind === "file" ? 1 : 0,
+      })),
+    );
+  } catch {
+    return;
+  }
+}
+
 function markerSeverity(monaco: Monaco, diagnostic: LspDiagnostic): number {
   switch (diagnostic.severity) {
     case 2:
@@ -152,6 +209,8 @@ export default function Playground() {
   const [codeEditor, setCodeEditor] =
     createSignal<MonacoEditor.IStandaloneCodeEditor>();
   const [isMounted, setIsMounted] = createSignal(false);
+  const [isWorkspaceStorageReady, setIsWorkspaceStorageReady] =
+    createSignal(false);
   const [editorLoading, setEditorLoading] = createSignal(true);
   const [editorError, setEditorError] = createSignal<string>();
   const [formatShortcut, setFormatShortcut] = createSignal("Ctrl S");
@@ -638,6 +697,18 @@ export default function Playground() {
   };
 
   createEffect(() => {
+    if (!isWorkspaceStorageReady()) return;
+    try {
+      window.sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEY,
+        JSON.stringify(storedWorkspaceEntries(entries())),
+      );
+    } catch {
+      // The playground remains usable when storage is unavailable or full.
+    }
+  });
+
+  createEffect(() => {
     const client = lsp();
     const file = activeEntry();
     if (!client || !file) return;
@@ -685,7 +756,33 @@ export default function Playground() {
     );
   });
 
-  onMount(() => setIsMounted(true));
+  onMount(() => {
+    try {
+      if (isInitialWorkspaceMount) {
+        isInitialWorkspaceMount = false;
+        const navigation = window.performance.getEntriesByType(
+          "navigation",
+        )[0] as PerformanceNavigationTiming | undefined;
+        if (navigation?.type === "reload") {
+          window.sessionStorage.removeItem(WORKSPACE_STORAGE_KEY);
+        }
+      }
+      const restoredEntries = restoreWorkspaceEntries(
+        window.sessionStorage.getItem(WORKSPACE_STORAGE_KEY),
+      );
+      if (restoredEntries) {
+        setEntries(restoredEntries);
+        const firstFile = restoredEntries
+          .filter((entry) => entry.kind === "file")
+          .sort((left, right) => left.path.localeCompare(right.path))[0];
+        setActivePath(firstFile?.path ?? "");
+      }
+    } catch {
+      // Fall back to the default workspace when storage is unavailable.
+    }
+    setIsWorkspaceStorageReady(true);
+    setIsMounted(true);
+  });
 
   onMount(() => {
     let disposed = false;
@@ -714,7 +811,7 @@ export default function Playground() {
         };
 
         setMonaco(monacoApi);
-        const model = getOrCreateModel(DEFAULT_PATH);
+        const model = getOrCreateModel(activePath());
         const createdEditor = monacoApi.editor.create(editorContainer, {
           model,
           ariaLabel: "TOML editor",
