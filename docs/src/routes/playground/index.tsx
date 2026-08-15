@@ -200,7 +200,10 @@ export default function Playground() {
     return flattened;
   });
 
-  const isPlaygroundReady = createMemo(() => isMounted() && !editorLoading());
+  const isPlaygroundVisible = createMemo(() => isMounted());
+  const isPlaygroundBusy = createMemo(
+    () => editorLoading() || runState() === "loading",
+  );
 
   const setFailure = (message: string) => {
     setRunState("error");
@@ -934,14 +937,14 @@ export default function Playground() {
 
       <div
         class="playground-shell"
-        aria-busy={!isPlaygroundReady()}
+        aria-busy={isPlaygroundBusy()}
         style={{ position: "relative", padding: "2.5rem 0 4rem" }}
       >
         <section
           class="playground-workspace"
           aria-label="Tombi WASM LSP playground"
-          aria-hidden={!isPlaygroundReady()}
-          style={{ display: isPlaygroundReady() ? undefined : "none" }}
+          aria-hidden={!isPlaygroundVisible()}
+          style={{ display: isPlaygroundVisible() ? undefined : "none" }}
         >
           <div class="playground-toolbar">
             <div class="playground-runtime-label">
@@ -1194,7 +1197,7 @@ export default function Playground() {
           </section>
         </section>
 
-        <Show when={!isPlaygroundReady()}>
+        <Show when={!isPlaygroundVisible()}>
           <output
             class="playground-workspace playground-initial-loading"
             aria-live="polite"
