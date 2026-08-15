@@ -3,6 +3,7 @@
   --playground-muted: #667085;
   --playground-panel: #ffffff;
   --playground-editor: #f8fafc;
+  --playground-text: #101828;
   position: relative;
   padding: 2.5rem 0 4rem;
 }
@@ -396,6 +397,7 @@
 .playground-editor-fallback {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
   resize: none;
@@ -409,23 +411,6 @@
   font-size: 0.875rem;
   line-height: 1.5;
   tab-size: 2;
-}
-
-.playground-editor-loading {
-  position: absolute;
-  right: 1rem;
-  bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  border: 1px solid var(--playground-border);
-  border-radius: 0.45rem;
-  padding: 0.4rem 0.55rem;
-  background: var(--playground-panel);
-  color: var(--playground-muted);
-  font-size: 0.85rem;
-  font-weight: 650;
-  pointer-events: none;
 }
 
 .playground-editor-error {
@@ -564,6 +549,7 @@
   --playground-muted: #98a2b3;
   --playground-panel: #202b3a;
   --playground-editor: #182230;
+  --playground-text: #f2f4f7;
 }
 
 :root.dark .playground-workspace {

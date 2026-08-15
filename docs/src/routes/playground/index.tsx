@@ -1146,10 +1146,6 @@ export default function Playground() {
                       updateActiveFile(event.currentTarget.value)
                     }
                   />
-                  <output class="playground-editor-loading" aria-live="polite">
-                    <TbLoader2 class="playground-spinner" aria-hidden="true" />
-                    Loading enhanced editor…
-                  </output>
                 </Show>
                 <Show when={editorError()}>
                   {(message) => (
