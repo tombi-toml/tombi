@@ -1125,13 +1125,31 @@ export default function Playground() {
                 classList={{
                   "is-loading": editorLoading() || Boolean(editorError()),
                 }}
-                ref={editorContainer}
               >
+                <div
+                  class="playground-monaco-editor"
+                  ref={editorContainer}
+                  style={{
+                    visibility:
+                      editorLoading() || editorError() ? "hidden" : undefined,
+                  }}
+                />
                 <Show when={editorLoading()}>
-                  <div class="playground-editor-loading">
+                  <textarea
+                    class="playground-editor-fallback"
+                    aria-label="TOML editor"
+                    value={activeEntry()?.text ?? ""}
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck={false}
+                    onInput={(event) =>
+                      updateActiveFile(event.currentTarget.value)
+                    }
+                  />
+                  <output class="playground-editor-loading" aria-live="polite">
                     <TbLoader2 class="playground-spinner" aria-hidden="true" />
-                    Loading editor…
-                  </div>
+                    Loading enhanced editor…
+                  </output>
                 </Show>
                 <Show when={editorError()}>
                   {(message) => (
