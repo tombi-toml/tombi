@@ -165,7 +165,7 @@ export default function Playground() {
   const [treeContextMenu, setTreeContextMenu] = createSignal<TreeContextMenu>();
   const [runState, setRunState] = createSignal<RunState>("loading");
   const [statusMessage, setStatusMessage] = createSignal(
-    "Starting the Tombi WebAssembly language server…",
+    "Downloading tombi-wasm-lsp…",
   );
   const models = new Map<string, MonacoEditor.ITextModel>();
   let diagnosticSequence = 0;
@@ -200,9 +200,7 @@ export default function Playground() {
     return flattened;
   });
 
-  const isPlaygroundReady = createMemo(
-    () => isMounted() && !editorLoading() && runState() !== "loading",
-  );
+  const isPlaygroundReady = createMemo(() => isMounted() && !editorLoading());
 
   const setFailure = (message: string) => {
     setRunState("error");
@@ -758,7 +756,9 @@ export default function Playground() {
     })();
   });
 
-  onMount(() => {
+  createEffect(() => {
+    if (editorLoading() || editorError()) return;
+
     let disposed = false;
     let client: TombiLspClient | undefined;
     onCleanup(() => {
