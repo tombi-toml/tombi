@@ -12,16 +12,16 @@ use crate::{
 
 const PREFETCH_CONCURRENCY: usize = 10;
 
-pub async fn did_open(
+pub fn did_open(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &DocumentTree,
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&PyprojectExtensionFeatures>,
-) -> Result<Option<tombi_future::BoxFuture<'static, bool>>, tower_lsp::jsonrpc::Error> {
+) -> Option<tombi_future::BoxFuture<'static, ()>> {
     if !text_document_uri.path().ends_with("pyproject.toml") {
-        return Ok(None);
+        return None;
     }
 
     if !features
@@ -29,7 +29,7 @@ pub async fn did_open(
         .unwrap_or_default()
         .value()
     {
-        return Ok(None);
+        return None;
     }
 
     if !features
@@ -40,15 +40,15 @@ pub async fn did_open(
         .unwrap_or_default()
         .value()
     {
-        return Ok(None);
+        return None;
     }
 
     if warming_disabled(offline, cache_options) {
-        return Ok(None);
+        return None;
     }
 
     let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
-        return Ok(None);
+        return None;
     };
 
     let document_tree = document_tree.clone();
@@ -56,7 +56,7 @@ pub async fn did_open(
     let warm = async move {
         let urls = collect_prefetch_urls(&document_tree, &pyproject_toml_path, toml_version);
         if urls.is_empty() {
-            return false;
+            return;
         }
 
         let cache_options = cache_options.as_ref();
@@ -65,10 +65,9 @@ pub async fn did_open(
                 let _ = warm_remote_json_cache(&url, offline, cache_options).await;
             })
             .await;
-        true
     };
 
-    Ok(Some(warm.boxed()))
+    Some(warm.boxed())
 }
 
 fn warming_disabled(offline: bool, cache_options: Option<&tombi_cache::Options>) -> bool {
@@ -255,8 +254,8 @@ mod tests {
         assert_eq!(urls, vec!["https://pypi.org/pypi/pytest/json".to_string()]);
     }
 
-    #[tokio::test(flavor = "current_thread")]
-    async fn did_open_ignores_non_pyproject_documents() {
+    #[test]
+    fn did_open_ignores_non_pyproject_documents() {
         let document_tree = parse_document_tree("");
         let uri = tombi_uri::Uri::from_str("file:///tmp/Cargo.toml").unwrap();
 
@@ -267,9 +266,8 @@ mod tests {
             true,
             None,
             None,
-        )
-        .await;
+        );
 
-        assert!(result.is_ok());
+        assert!(result.is_none());
     }
 }

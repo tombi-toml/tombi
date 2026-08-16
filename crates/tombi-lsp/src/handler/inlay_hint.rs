@@ -1,4 +1,6 @@
-use tombi_text::FromLsp;
+use std::sync::Arc;
+
+use tombi_text::{FromLsp, LineIndex};
 use tower_lsp::lsp_types::InlayHintParams;
 
 use crate::{Backend, config_manager::ConfigSchemaStore};
@@ -6,7 +8,7 @@ use crate::{Backend, config_manager::ConfigSchemaStore};
 pub async fn handle_inlay_hint(
     backend: &Backend,
     params: InlayHintParams,
-) -> Result<Option<Vec<tombi_extension::InlayHint>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<(Vec<tombi_extension::InlayHint>, Arc<LineIndex>)>, tower_lsp::jsonrpc::Error> {
     log::info!("handle_inlay_hint");
     log::trace!("{:?}", params);
 
@@ -16,6 +18,7 @@ pub async fn handle_inlay_hint(
         ..
     } = params;
     let text_document_uri = text_document.uri.into();
+    backend.wait_for_document_open(&text_document_uri).await;
 
     let ConfigSchemaStore {
         config,
@@ -26,7 +29,7 @@ pub async fn handle_inlay_hint(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    let (document_tree, toml_version, visible_range) = {
+    let (document_tree, toml_version, visible_range, line_index) = {
         let Ok(document_sources) = backend.document_sources.try_read() else {
             return Ok(None);
         };
@@ -37,6 +40,7 @@ pub async fn handle_inlay_hint(
             document_source.document_tree(),
             document_source.toml_version,
             tombi_text::Range::from_lsp(range, document_source.line_index()),
+            document_source.line_index_arc(),
         )
     };
 
@@ -52,7 +56,7 @@ pub async fn handle_inlay_hint(
         )
         .await?
     {
-        return Ok(Some(hints));
+        return Ok(Some((hints, line_index)));
     }
 
     if config.pyproject_inlay_hint_enabled()
@@ -65,7 +69,7 @@ pub async fn handle_inlay_hint(
         )
         .await?
     {
-        return Ok(Some(hints));
+        return Ok(Some((hints, line_index)));
     }
 
     Ok(None)
