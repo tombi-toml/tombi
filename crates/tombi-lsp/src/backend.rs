@@ -52,6 +52,9 @@ pub struct Backend {
     pub background_tasks: Arc<std::sync::Mutex<Vec<tombi_future::TaskHandle>>>,
     pub document_sources:
         Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<tombi_uri::Uri, DocumentSource>>>,
+    opening_documents: Arc<
+        std::sync::Mutex<tombi_hashmap::HashMap<tombi_uri::Uri, tokio::sync::watch::Sender<bool>>>,
+    >,
     pub config_manager: Arc<ConfigManager>,
     pub workspace_diagnostics_cache: Arc<tokio::sync::RwLock<WorkspaceDiagnosticsCache>>,
 }
@@ -98,8 +101,42 @@ impl Backend {
             })),
             background_tasks: Default::default(),
             document_sources: Default::default(),
+            opening_documents: Default::default(),
             config_manager: Arc::new(ConfigManager::new(options)),
             workspace_diagnostics_cache: Default::default(),
+        }
+    }
+
+    pub(crate) fn begin_document_open(&self, text_document_uri: tombi_uri::Uri) {
+        let (ready, _) = tokio::sync::watch::channel(false);
+        self.opening_documents
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .insert(text_document_uri, ready);
+    }
+
+    pub(crate) fn finish_document_open(&self, text_document_uri: &tombi_uri::Uri) {
+        let ready = self
+            .opening_documents
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .remove(text_document_uri);
+        if let Some(ready) = ready {
+            ready.send_replace(true);
+        }
+    }
+
+    pub(crate) async fn wait_for_document_open(&self, text_document_uri: &tombi_uri::Uri) {
+        let ready = self
+            .opening_documents
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .get(text_document_uri)
+            .cloned();
+
+        if let Some(ready) = ready {
+            let mut ready = ready.subscribe();
+            let _ = ready.wait_for(|ready| *ready).await;
         }
     }
 
@@ -427,25 +464,16 @@ impl tower_lsp::LanguageServer for Backend {
         &self,
         params: InlayHintParams,
     ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
-        let text_document_uri = params.text_document.uri.as_ref();
-        let line_index = {
-            let Ok(document_sources) = self.document_sources.try_read() else {
-                return Ok(None);
-            };
-            let Some(document_source) = document_sources.get(text_document_uri) else {
-                return Ok(None);
-            };
-            document_source.line_index_arc()
+        let Some((hints, line_index)) = handle_inlay_hint(self, params).await? else {
+            return Ok(None);
         };
 
-        handle_inlay_hint(self, params).await.map(|response| {
-            response.map(|hints| {
-                hints
-                    .into_iter()
-                    .map(|hint| hint.into_lsp(line_index.as_ref()))
-                    .collect()
-            })
-        })
+        Ok(Some(
+            hints
+                .into_iter()
+                .map(|hint| hint.into_lsp(line_index.as_ref()))
+                .collect(),
+        ))
     }
 
     async fn folding_range(

@@ -126,7 +126,7 @@ async fn collect_inlay_hints_with_backend(
     let toml_file_url =
         Url::from_file_path(&source_path).expect("failed to convert source file path to URL");
 
-    handle_did_open(
+    let did_open = handle_did_open(
         backend,
         DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
@@ -136,18 +136,21 @@ async fn collect_inlay_hints_with_backend(
                 text: toml_text.clone(),
             },
         },
-    )
-    .await;
+    );
 
-    Ok(handle_inlay_hint(
+    let inlay_hint = handle_inlay_hint(
         backend,
         InlayHintParams {
             text_document: TextDocumentIdentifier { uri: toml_file_url },
             range: inlay_hint_range(&toml_text),
             work_done_progress_params: WorkDoneProgressParams::default(),
         },
-    )
-    .await?)
+    );
+
+    // LSP notifications and requests are received in order, but their futures
+    // can overlap after `didOpen` first yields.
+    let (_, result) = tokio::join!(biased; did_open, inlay_hint);
+    Ok(result?.map(|(hints, _)| hints))
 }
 
 async fn collect_inlay_hints(
