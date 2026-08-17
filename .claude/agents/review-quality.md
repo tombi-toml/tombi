@@ -16,6 +16,7 @@ PR 作成前ゲートとして呼び出された場合は読み取り専用で�
 - `.claude/rules/rust-workspace-practices.md`
 - `.claude/rules/polyglot-boundaries.md`
 - `.claude/rules/test-macro-policy.md`
+- `.claude/rules/minimal-change.md`
 
 ## 重点観点
 
@@ -23,10 +24,13 @@ PR 作成前ゲートとして呼び出された場合は読み取り専用で�
 - 既存テストや CI surface の取りこぼし
 - source of truth の逆転
 - 既存マクロや既存 workflow から外れた実装
+- 既存 helper / 標準ライブラリ / platform 機能を再実装した重複
+- 現在の要件に不要な abstraction、設定、dependency、将来用 scaffold
 
 ## 出力原則
 
 - findings を重要度順に並べる
 - file / line を可能な限り示す
 - 各 finding には失敗シナリオと根拠を示し、修正は親エージェントに委ねる
+- correctness と安全性を先に確認し、その後に削除・縮小できる差分を示す
 - 問題がなければその旨を明示し、残る検証ギャップだけ短く書く
