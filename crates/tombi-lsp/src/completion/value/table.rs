@@ -869,7 +869,27 @@ impl FindCompletionContents for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    _ => Vec::new(),
+                    _ => {
+                        let Some(mut projected_schema) = current_schema.for_instance_type(
+                            tombi_schema_store::SchemaType::Object,
+                            schema_context.string_formats(),
+                        ) else {
+                            return Vec::new();
+                        };
+                        if !matches!(projected_schema.schema_view.as_ref(), SchemaView::Table(_)) {
+                            return Vec::new();
+                        }
+                        projected_schema.semantic_schema = None;
+                        self.find_completion_contents(
+                            position,
+                            keys,
+                            accessors,
+                            Some(&projected_schema),
+                            schema_context,
+                            completion_hint,
+                        )
+                        .await
+                    }
                 }
             } else if let Some(key) = keys.first() {
                 if let Some(value) = self.get(key) {

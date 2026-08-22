@@ -4,6 +4,7 @@ use itertools::Itertools;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUri};
 
+use super::CompositeKind;
 use crate::{HoverContent, hover::display_value::GetEnum};
 
 use super::{
@@ -31,11 +32,7 @@ where
     log::trace!("schema_uri = {:?}", schema_uri);
 
     async move {
-        let mut title_description_set = tombi_hashmap::HashSet::new();
-        let mut value_type_set = tombi_hashmap::IndexSet::new();
-        let mut constraints = None;
-        let mut enum_values = Vec::new();
-        let mut result_accessors = tombi_schema_store::Accessors::from(accessors.to_vec());
+        let mut hover_value_contents = Vec::new();
 
         let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
             &all_of_schema.schemas,
@@ -49,23 +46,12 @@ where
         .await?;
 
         for resolved_schema in &resolved_schemas {
-            let projected_schema =
-                super::project_schema_for_value(value, resolved_schema, schema_context);
+            let projected_schema = crate::schema_resolver::project_schema_for_concrete_value(
+                value,
+                resolved_schema,
+                schema_context,
+            );
             let resolved_schema = projected_schema.as_ref().unwrap_or(resolved_schema);
-            if let Some(values) = resolved_schema
-                .schema_view
-                .as_ref()
-                .get_enum(
-                    &resolved_schema.schema_uri,
-                    &resolved_schema.definitions,
-                    resolved_schema.strict,
-                    schema_context,
-                )
-                .await
-            {
-                enum_values.extend(values);
-            }
-
             if let Some(hover_content) = value
                 .get_hover_content(
                     position,
@@ -77,27 +63,29 @@ where
                 .await
             {
                 match hover_content {
-                    HoverContent::Value(hover_value_content) => {
-                        if hover_value_content.title.is_some()
-                            || hover_value_content.description.is_some()
+                    HoverContent::Value(mut hover_value_content) => {
+                        if hover_value_content
+                            .constraints
+                            .as_ref()
+                            .is_none_or(|constraints| constraints.r#enum.is_none())
+                            && hover_value_content.accessors.as_ref() == accessors
+                            && let Some(enum_values) = resolved_schema
+                                .schema_view
+                                .as_ref()
+                                .get_enum(
+                                    &resolved_schema.schema_uri,
+                                    &resolved_schema.definitions,
+                                    resolved_schema.strict,
+                                    schema_context,
+                                )
+                                .await
                         {
-                            title_description_set.insert((
-                                hover_value_content.title.clone(),
-                                hover_value_content.description.clone(),
-                            ));
+                            hover_value_content
+                                .constraints
+                                .get_or_insert_default()
+                                .r#enum = Some(enum_values);
                         }
-                        value_type_set.insert(hover_value_content.value_type);
-
-                        if let Some(c) = hover_value_content.constraints {
-                            constraints = Some(c);
-                        }
-
-                        // Use the accessors from the successfully resolved schema if they're more specific
-                        if hover_value_content.accessors.as_ref().len()
-                            > result_accessors.as_ref().len()
-                        {
-                            result_accessors = hover_value_content.accessors;
-                        }
+                        hover_value_contents.push(hover_value_content);
                     }
                     HoverContent::Directive(hover_content) => {
                         return Some(HoverContent::Directive(hover_content));
@@ -109,39 +97,41 @@ where
             }
         }
 
-        let (mut title, mut description) = if title_description_set.len() == 1 {
-            title_description_set.into_iter().next().unwrap()
-        } else {
-            (None, None)
-        };
+        let mut hover_value_content = super::first_most_specific_hover_value_content(
+            hover_value_contents,
+            CompositeKind::All,
+        )
+        .unwrap_or_else(|| HoverValueContent {
+            title: None,
+            description: None,
+            accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+            value_type: value.value_type().into(),
+            constraints: None,
+            schema_uri: Some(super::schema_link_uri(schema_uri, all_of_schema.range)),
+            range: None,
+            schema_tooltip: None,
+        });
+        hover_value_content
+            .schema_uri
+            .get_or_insert_with(|| super::schema_link_uri(schema_uri, all_of_schema.range));
 
-        if title.is_none() && description.is_none() {
-            if let Some(t) = &all_of_schema.title {
-                title = Some(t.clone());
-            }
-            if let Some(d) = &all_of_schema.description {
-                description = Some(d.clone());
-            }
+        if hover_value_content.title.is_none() && hover_value_content.description.is_none() {
+            hover_value_content.title = all_of_schema.title.clone();
+            hover_value_content.description = all_of_schema.description.clone();
         }
 
-        let value_type = if value_type_set.len() == 1 {
-            value_type_set.into_iter().next().unwrap()
-        } else {
-            tombi_schema_store::ValueType::AllOf(value_type_set.into_iter().collect())
-        };
-
-        if result_accessors.as_ref().len() == accessors.len()
+        if hover_value_content.accessors.as_ref().len() == accessors.len()
             && let Some(default) = all_of_schema
                 .default
                 .as_ref()
                 .and_then(|default| DisplayValue::try_from(default).ok())
         {
-            if let Some(constraints) = constraints.as_mut() {
+            if let Some(constraints) = hover_value_content.constraints.as_mut() {
                 if constraints.default.is_none() {
                     constraints.default = Some(default);
                 }
             } else {
-                constraints = Some(ValueConstraints {
+                hover_value_content.constraints = Some(ValueConstraints {
                     default: Some(default),
                     ..Default::default()
                 });
@@ -155,14 +145,13 @@ where
                 .collect_vec();
 
             if !all_of_examples.is_empty() {
-                if let Some(constraints) = constraints.as_mut() {
-                    if let Some(examples) = constraints.examples.as_mut() {
-                        examples.extend(all_of_examples);
-                    } else {
-                        constraints.examples = Some(all_of_examples);
-                    }
+                if let Some(constraints) = hover_value_content.constraints.as_mut() {
+                    constraints.examples = super::merge_optional_vec(
+                        constraints.examples.take(),
+                        Some(all_of_examples),
+                    );
                 } else {
-                    constraints = Some(ValueConstraints {
+                    hover_value_content.constraints = Some(ValueConstraints {
                         examples: Some(all_of_examples),
                         ..Default::default()
                     });
@@ -170,26 +159,7 @@ where
             }
         }
 
-        if !enum_values.is_empty() {
-            if let Some(constraints) = constraints.as_mut() {
-                constraints.r#enum = Some(enum_values);
-            } else {
-                constraints = Some(ValueConstraints {
-                    r#enum: Some(enum_values),
-                    ..Default::default()
-                });
-            }
-        }
-
-        Some(HoverContent::Value(HoverValueContent {
-            title,
-            description,
-            accessors: result_accessors,
-            value_type,
-            constraints,
-            schema_uri: Some(schema_uri.to_owned()),
-            range: None,
-        }))
+        Some(HoverContent::Value(hover_value_content))
     }
     .boxed()
 }
@@ -208,10 +178,6 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 unreachable!("schema must be provided");
             };
 
-            let mut title_description_set = tombi_hashmap::HashSet::new();
-            let mut value_type_set = tombi_hashmap::IndexSet::new();
-            let mut enum_values = Vec::new();
-
             let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
                 &self.schemas,
                 current_schema.schema_uri.clone(),
@@ -223,65 +189,30 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
             )
             .await?;
 
-            for resolved_schema in &resolved_schemas {
-                if resolved_schema.schema_view.title().is_some()
-                    || resolved_schema.schema_view.description().is_some()
-                {
-                    title_description_set.insert((
-                        resolved_schema.schema_view.title().map(ToString::to_string),
-                        resolved_schema
-                            .schema_view
-                            .description()
-                            .map(ToString::to_string),
-                    ));
-                }
-                value_type_set.insert(resolved_schema.schema_view.value_type().await);
-
-                if let Some(values) = resolved_schema
+            let value_type = self.value_type().await;
+            let mut contents = Vec::new();
+            for schema in &resolved_schemas {
+                if let Some(HoverContent::Value(content)) = schema
                     .schema_view
-                    .as_ref()
-                    .get_enum(
-                        &resolved_schema.schema_uri,
-                        &resolved_schema.definitions,
-                        resolved_schema.strict,
-                        schema_context,
-                    )
+                    .get_hover_content(_position, _keys, accessors, Some(schema), schema_context)
                     .await
                 {
-                    enum_values.extend(values);
+                    contents.push(content);
                 }
             }
 
-            let (mut title, mut description) = if title_description_set.len() == 1 {
-                title_description_set.into_iter().next().unwrap()
-            } else {
-                (None, None)
-            };
-
-            if title.is_none() && description.is_none() {
-                if let Some(t) = &self.title {
-                    title = Some(t.clone());
-                }
-                if let Some(d) = &self.description {
-                    description = Some(d.clone());
-                }
-            }
-
-            let value_type: tombi_schema_store::ValueType = if value_type_set.len() == 1 {
-                value_type_set.into_iter().next().unwrap()
-            } else {
-                tombi_schema_store::ValueType::AllOf(value_type_set.into_iter().collect())
-            };
-
-            let mut hover_value_content = HoverValueContent {
-                title,
-                description,
-                accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                value_type,
-                constraints: None,
-                schema_uri: Some(current_schema.schema_uri.as_ref().to_owned()),
-                range: None,
-            };
+            let mut hover_value_content =
+                super::first_most_specific_hover_value_content(contents, CompositeKind::All)
+                    .unwrap_or_else(|| HoverValueContent {
+                        title: self.title.clone(),
+                        description: self.description.clone(),
+                        accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                        value_type,
+                        constraints: None,
+                        schema_uri: super::current_schema_link_uri(Some(current_schema)),
+                        range: None,
+                        schema_tooltip: None,
+                    });
 
             if let Some(default) = self
                 .default
@@ -308,28 +239,16 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
 
                 if !all_of_examples.is_empty() {
                     if let Some(constraints) = hover_value_content.constraints.as_mut() {
-                        if let Some(examples) = constraints.examples.as_mut() {
-                            examples.extend(all_of_examples);
-                        } else {
-                            constraints.examples = Some(all_of_examples);
-                        }
+                        constraints.examples = super::merge_optional_vec(
+                            constraints.examples.take(),
+                            Some(all_of_examples),
+                        );
                     } else {
                         hover_value_content.constraints = Some(ValueConstraints {
                             examples: Some(all_of_examples),
                             ..Default::default()
                         });
                     }
-                }
-            }
-
-            if !enum_values.is_empty() {
-                if let Some(constraints) = hover_value_content.constraints.as_mut() {
-                    constraints.r#enum = Some(enum_values);
-                } else {
-                    hover_value_content.constraints = Some(ValueConstraints {
-                        r#enum: Some(enum_values),
-                        ..Default::default()
-                    });
                 }
             }
 

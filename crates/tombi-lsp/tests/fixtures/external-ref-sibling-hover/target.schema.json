@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "string",
+  "title": "External reference target",
+  "description": "Metadata defined by the external target.",
+  "maxLength": 10
+}

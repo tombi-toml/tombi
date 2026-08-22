@@ -4,6 +4,7 @@ use tombi_schema_store::{Accessor, CurrentSchema};
 
 use crate::completion::{
     CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
+    dedup_composite_completion_contents, take_completion_schema_tooltip,
     tombi_json_value_to_completion_default_item, tombi_json_value_to_completion_example_item,
 };
 
@@ -41,7 +42,7 @@ where
         )
         .await
         else {
-            return completion_items;
+            return Vec::new();
         };
 
         for resolved_schema in &resolved_schemas {
@@ -56,8 +57,13 @@ where
                 )
                 .await;
 
-            completion_items.extend(schema_completions);
+            completion_items.extend(schema_completions.into_iter().map(|mut item| {
+                let tooltip = take_completion_schema_tooltip(&mut item, resolved_schema);
+                (item, tooltip)
+            }));
         }
+
+        let mut completion_items = dedup_composite_completion_contents(completion_items);
 
         let detail = all_of_schema
             .detail(
@@ -78,16 +84,20 @@ where
             )
             .await;
 
-        for completion_item in completion_items.iter_mut() {
-            if completion_item.detail.is_none() {
-                completion_item.detail = detail.clone();
-            }
-            if completion_item.documentation.is_none() {
-                completion_item.documentation = documentation.clone();
+        if keys.is_empty() {
+            for completion_item in completion_items.iter_mut() {
+                if completion_item.detail.is_none() {
+                    completion_item.detail = detail.clone();
+                }
+                if completion_item.documentation.is_none() {
+                    completion_item.documentation = documentation.clone();
+                }
             }
         }
 
-        if let Some(default) = &all_of_schema.default {
+        if keys.is_empty()
+            && let Some(default) = &all_of_schema.default
+        {
             let default_label = default.to_string();
             if let Some(completion_item) = completion_items
                 .iter_mut()
@@ -106,7 +116,9 @@ where
             }
         }
 
-        if let Some(examples) = &all_of_schema.examples {
+        if keys.is_empty()
+            && let Some(examples) = &all_of_schema.examples
+        {
             for example in examples {
                 let example_label = example.to_string();
                 if completion_items

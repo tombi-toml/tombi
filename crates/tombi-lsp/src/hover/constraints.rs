@@ -26,7 +26,11 @@ where
     }
 
     if let Some(r#enum) = r#enum {
-        enum_values.extend(r#enum.iter().filter_map(convert_fn));
+        for value in r#enum.iter().filter_map(convert_fn) {
+            if !enum_values.contains(&value) {
+                enum_values.push(value);
+            }
+        }
     }
 
     if enum_values.is_empty() {

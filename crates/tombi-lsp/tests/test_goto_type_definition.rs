@@ -6,6 +6,9 @@ mod goto_type_definition_tests {
         lsp_consistency_test_schema_path,
     };
 
+    struct ExpectedRange(tombi_text::Range);
+    struct ExpectedRanges(Vec<tombi_text::Range>);
+
     mod strict_priority {
         use super::*;
 
@@ -200,6 +203,22 @@ mod goto_type_definition_tests {
                 ]
                 "#,
                 SchemaPath(adjacent_one_of_hover_test_schema_path()),
+                ExpectedRange(((73, 8), (73, 12)).into()),
+            ) -> Ok(adjacent_one_of_hover_test_schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn adjacent_one_of_reversed_builtin_hook_id_value(
+                r#"
+                [[repos_reversed]]
+                repo = "builtin"
+                hooks = [
+                  { id = "█hook" }
+                ]
+                "#,
+                SchemaPath(adjacent_one_of_hover_test_schema_path()),
+                ExpectedRange(((73, 8), (73, 12)).into()),
             ) -> Ok(adjacent_one_of_hover_test_schema_path());
         );
     }
@@ -255,6 +274,147 @@ mod goto_type_definition_tests {
                 "#,
                 SchemaPath(adjacent_applicators_test_schema_path()),
             ) -> Ok(adjacent_applicators_test_schema_path());
+        );
+    }
+
+    mod lakefile_all_of_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            tombi_test_lib::project_root_path().join("schemas/lakefile-all-of-test.schema.json")
+        }
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn array_of_table_key(
+                r#"
+                name = "lean4-sample"
+
+                [[lean_█lib]]
+                name = "Lean4Sample"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((35, 8), (35, 18)).into()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn array_of_table_property_key(
+                r#"
+                name = "lean4-sample"
+
+                [[lean_lib]]
+                na█me = "Lean4Sample"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((18, 12), (18, 18)).into()),
+            ) -> Ok(schema_path());
+        );
+    }
+
+    mod composite_array_items_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/composite-array-items.schema.json")
+        }
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn all_of_item_property(
+                r#"
+                [[all_items]]
+                na█me = "value"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((173, 8), (173, 14)).into()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn one_of_item_property(
+                r#"
+                [[one_items]]
+                na█me = "value"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((173, 8), (173, 14)).into()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn any_of_item_property(
+                r#"
+                [[any_items]]
+                na█me = "value"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((173, 8), (173, 14)).into()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn any_of_returns_all_applicable_property_definitions(
+                r#"
+                [any_shared]
+                val█ue = "value"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRanges(vec![
+                    ((33, 12), (33, 19)).into(),
+                    ((38, 12), (38, 19)).into(),
+                ]),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn any_of_returns_all_property_definitions_when_no_branch_matches(
+                r#"
+                [any_shared]
+                val█ue = 42
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRanges(vec![
+                    ((33, 12), (33, 19)).into(),
+                    ((38, 12), (38, 19)).into(),
+                ]),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn one_of_returns_all_property_definitions_when_no_branch_matches(
+                r#"
+                [one_shared]
+                val█ue = 42
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRanges(vec![
+                    ((158, 12), (158, 19)).into(),
+                    ((163, 12), (163, 19)).into(),
+                ]),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn all_of_returns_all_property_definitions(
+                r#"
+                [all_shared]
+                val█ue = "value"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRanges(vec![
+                    ((118, 12), (118, 19)).into(),
+                    ((123, 12), (123, 19)).into(),
+                ]),
+            ) -> Ok(schema_path());
         );
     }
 
@@ -314,6 +474,51 @@ mod goto_type_definition_tests {
                     path: exact_index_string_test_schema_path(),
                 },
             ) -> Ok(exact_index_string_test_schema_path());
+        );
+    }
+
+    mod ref_sibling_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            tombi_test_lib::ref_sibling_annotations_test_schema_path()
+        }
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn sibling_property_definition(
+                r#"
+                [settings]
+                loc█al = "value"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn referenced_property_definition(
+                r#"
+                [settings]
+                bas█e = "value"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(schema_path());
+        );
+    }
+
+    mod recursive_schema {
+        use super::*;
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn recursive_ref_nested_property(
+                r#"
+                [metadata.nested]
+                ta█gs = []
+                "#,
+                SchemaPath(tombi_test_lib::recursive_schema_path()),
+            ) -> Ok(tombi_test_lib::recursive_schema_path());
         );
     }
 
@@ -676,6 +881,7 @@ mod goto_type_definition_tests {
                     schema_file_path: Option<std::path::PathBuf>,
                     subschemas: Vec<SubSchemaPath>,
                     backend_options: tombi_lsp::backend::Options,
+                    expected_ranges: Option<Vec<tombi_text::Range>>,
                 }
 
                 #[allow(unused)]
@@ -716,6 +922,18 @@ mod goto_type_definition_tests {
                 impl ApplyTestArg for tombi_lsp::backend::Options {
                     fn apply(self, args: &mut TestArgs) {
                         args.backend_options = self;
+                    }
+                }
+
+                impl ApplyTestArg for ExpectedRange {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.expected_ranges = Some(vec![self.0]);
+                    }
+                }
+
+                impl ApplyTestArg for ExpectedRanges {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.expected_ranges = Some(self.0);
                     }
                 }
 
@@ -881,6 +1099,19 @@ mod goto_type_definition_tests {
 
                 match result {
                     Some(definition_links) => {
+                        if let Some(expected_ranges) = args.expected_ranges {
+                            pretty_assertions::assert_eq!(
+                                definition_links.iter().map(|link| link.range).collect_vec(),
+                                expected_ranges,
+                            );
+                        } else {
+                            pretty_assertions::assert_eq!(
+                                definition_links.len(),
+                                1,
+                                "Existing cases must continue to return exactly one definition",
+                            );
+                        }
+                        let expected_count = definition_links.len();
                         let definition_urls = definition_links.into_iter().map(|mut link| {
                                 match link.uri.scheme() {
                                     "file" => link.uri.to_file_path().unwrap().into_path_string(),
@@ -896,7 +1127,7 @@ mod goto_type_definition_tests {
 
                         pretty_assertions::assert_eq!(
                             definition_urls,
-                            vec![expected_path.into_path_string()],
+                            vec![expected_path.into_path_string(); expected_count],
                         );},
                     None => {
                         panic!("No type definition link was returned, but expected path: {:?}", expected_path);

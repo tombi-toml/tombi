@@ -285,6 +285,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                             constraints: None,
                             schema_uri: None,
                             range: Some(self.range()),
+                            schema_tooltip: None,
                         }));
                     }
                     _ => {}
@@ -318,6 +319,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                 constraints: None,
                 schema_uri: None,
                 range: Some(self.range()),
+                schema_tooltip: None,
             }))
         }
         .boxed()
@@ -379,8 +381,9 @@ impl GetHoverContent for ArraySchema {
                     values_order: self.values_order.clone().map(Into::into),
                     ..Default::default()
                 }),
-                schema_uri: current_schema.map(|cs| cs.schema_uri.as_ref().clone()),
+                schema_uri: super::super::current_schema_link_uri(current_schema),
                 range: None,
+                schema_tooltip: None,
             }))
         }
         .boxed()

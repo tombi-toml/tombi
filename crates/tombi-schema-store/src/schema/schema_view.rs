@@ -35,6 +35,33 @@ pub enum SchemaView {
 }
 
 impl SchemaView {
+    /// Whether this view declares a type that the given instance type satisfies.
+    ///
+    /// Composite and unconstrained views (`oneOf`/`anyOf`/`allOf`/`Anything`/
+    /// `Nothing`) declare no type of their own, so they never match here;
+    /// callers decide how to treat them.
+    pub fn matches_instance_type(&self, instance_type: super::SchemaType) -> bool {
+        use super::SchemaType;
+
+        matches!(
+            (self, instance_type),
+            (Self::Null, SchemaType::Null)
+                | (Self::Boolean(_), SchemaType::Boolean)
+                | (Self::Integer(_), SchemaType::Integer)
+                | (Self::Float(_), SchemaType::Number | SchemaType::Integer)
+                | (Self::Array(_), SchemaType::Array)
+                | (Self::Table(_), SchemaType::Object)
+                | (
+                    Self::String(_)
+                        | Self::LocalDate(_)
+                        | Self::LocalDateTime(_)
+                        | Self::LocalTime(_)
+                        | Self::OffsetDateTime(_),
+                    SchemaType::String,
+                )
+        )
+    }
+
     pub fn adjacent_applicators(
         &self,
     ) -> (

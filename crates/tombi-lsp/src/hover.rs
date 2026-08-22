@@ -10,13 +10,21 @@ use std::{borrow::Cow, fmt::Debug, ops::Deref};
 
 pub use comment::get_document_comment_directive_hover_content;
 use constraints::ValueConstraints;
+use itertools::Itertools;
 
-use tombi_extension::get_tombi_github_uri;
+use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
 use tombi_schema_store::{
     Accessor, Accessors, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaUri,
     ValueType, get_schema_name,
 };
 use tombi_text::{FromLsp, IntoLsp};
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum CompositeKind {
+    Any,
+    One,
+    All,
+}
 
 pub async fn get_hover_content(
     tree: &tombi_document_tree::DocumentTree,
@@ -61,25 +69,18 @@ pub(super) trait GetHoverContent {
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>;
 }
 
-pub(super) fn project_schema_for_value(
-    value: &impl tombi_document_tree::ValueImpl,
-    schema: &CurrentSchema<'_>,
-    schema_context: &tombi_schema_store::SchemaContext<'_>,
-) -> Option<CurrentSchema<'static>> {
-    if !matches!(
-        schema.schema_view.as_ref(),
-        tombi_schema_store::SchemaView::Anything(_)
-    ) || schema
-        .semantic_schema
-        .as_deref()
-        .is_some_and(tombi_schema_store::SemanticSchema::has_references)
-    {
-        return None;
-    }
-    schema.for_instance_type(
-        tombi_schema_store::SchemaType::from_value_type(value.value_type())?,
-        schema_context.string_formats(),
-    )
+pub(super) fn schema_link_uri(
+    schema_uri: &SchemaUri,
+    schema_range: tombi_text::Range,
+) -> SchemaUri {
+    tombi_extension::get_schema_link_uri(schema_uri, schema_range.start).into()
+}
+
+pub(super) fn current_schema_link_uri(
+    current_schema: Option<&CurrentSchema<'_>>,
+) -> Option<SchemaUri> {
+    current_schema
+        .map(|schema| schema_link_uri(schema.schema_uri.as_ref(), schema.schema_view.range()))
 }
 
 fn merge_optional_vec<T: PartialEq>(
@@ -136,16 +137,110 @@ fn merge_constraints(
     }
 }
 
-fn merge_hover_value_content(
+pub(super) fn merge_hover_value_content(
     mut base: HoverValueContent,
-    adjacent: HoverValueContent,
+    mut adjacent: HoverValueContent,
 ) -> HoverValueContent {
+    base.schema_tooltip = match (base.schema_tooltip.take(), adjacent.schema_tooltip.take()) {
+        (Some(base), Some(adjacent)) => Some(base.combine(adjacent)),
+        (Some(tooltip), None) | (None, Some(tooltip)) => Some(tooltip),
+        (None, None) => None,
+    };
     base.title = base.title.or(adjacent.title);
     base.description = base.description.or(adjacent.description);
     base.constraints = merge_constraints(base.constraints, adjacent.constraints);
     base.schema_uri = base.schema_uri.or(adjacent.schema_uri);
     base.range = base.range.or(adjacent.range);
     base
+}
+
+pub(super) fn first_most_specific_hover_value_content(
+    contents: Vec<HoverValueContent>,
+    applicator: CompositeKind,
+) -> Option<HoverValueContent> {
+    let max_depth = contents
+        .iter()
+        .map(|content| content.accessors.as_ref().len())
+        .max()?;
+    let contents = contents
+        .into_iter()
+        .filter(|content| content.accessors.as_ref().len() == max_depth)
+        .collect_vec();
+    if contents.len() == 1 {
+        return contents.into_iter().next();
+    }
+
+    let value_types = contents
+        .iter()
+        .map(|content| content.value_type.clone())
+        .collect::<tombi_hashmap::IndexSet<_>>();
+    let tooltip_contents = if applicator == CompositeKind::All
+        && contents.iter().any(HoverValueContent::has_tooltip_details)
+    {
+        contents
+            .iter()
+            .filter(|content| content.has_tooltip_details())
+            .collect_vec()
+    } else {
+        contents.iter().collect_vec()
+    };
+
+    if tooltip_contents.len() == 1 {
+        let mut selected = tooltip_contents[0].clone();
+        if value_types.len() > 1 {
+            selected.value_type = ValueType::AllOf(value_types.into_iter().collect());
+        }
+        return Some(selected);
+    }
+
+    let tooltips = tooltip_contents
+        .into_iter()
+        .map(HoverValueContent::schema_tooltip)
+        .collect_vec();
+    let mut selected = None;
+    let mut schema_uri = None;
+    let mut range = None;
+    for mut content in contents {
+        schema_uri = schema_uri.or_else(|| content.schema_uri.take());
+        range = range.or(content.range);
+        selected.get_or_insert(content);
+    }
+
+    let mut selected = selected?;
+    selected.title = None;
+    selected.description = None;
+    selected.constraints = None;
+    selected.schema_uri = schema_uri;
+    selected.range = range;
+    if value_types.len() > 1 {
+        selected.value_type = match applicator {
+            CompositeKind::Any => ValueType::AnyOf(value_types.into_iter().collect()),
+            CompositeKind::One => ValueType::OneOf(value_types.into_iter().collect()),
+            CompositeKind::All => ValueType::AllOf(value_types.into_iter().collect()),
+        };
+    }
+    selected.schema_tooltip = SchemaTooltip::composite(tooltips);
+    Some(selected)
+}
+
+pub(super) fn inherit_matching_nullable_type(composite: &ValueType, value_type: &mut ValueType) {
+    if value_type.is_nullable() {
+        return;
+    }
+    let value_type_simplified = value_type.simplify();
+    let composite_simplified = composite.simplify();
+    let types = match &composite_simplified {
+        ValueType::OneOf(types) | ValueType::AnyOf(types) => types,
+        _ => return,
+    };
+    if types.iter().any(|candidate| {
+        !matches!(candidate, ValueType::Null) && candidate.simplify() == value_type_simplified
+    }) && types
+        .iter()
+        .any(|candidate| matches!(candidate, ValueType::Null))
+    {
+        value_type.set_nullable();
+    }
 }
 
 fn merge_hover_content(
@@ -302,6 +397,47 @@ pub struct HoverValueContent {
     pub constraints: Option<ValueConstraints>,
     pub schema_uri: Option<SchemaUri>,
     pub range: Option<tombi_text::Range>,
+    pub(super) schema_tooltip: Option<SchemaTooltip>,
+}
+
+impl HoverValueContent {
+    fn has_tooltip_details(&self) -> bool {
+        self.title.is_some()
+            || self.description.is_some()
+            || self
+                .constraints
+                .as_ref()
+                .is_some_and(|constraints| constraints != &ValueConstraints::default())
+            || self.schema_uri.is_some()
+            || self.schema_tooltip.is_some()
+    }
+
+    pub(crate) fn schema_tooltip(&self) -> SchemaTooltip {
+        let schema = self.schema_uri.as_ref().and_then(|schema_uri| {
+            get_schema_name(schema_uri).map(|name| format!("Schema: [{name}]({schema_uri})"))
+        });
+        let common = SchemaTooltipContent {
+            title: self.title.clone(),
+            description: self.description.clone(),
+            value_type: self.value_type.to_string(),
+            constraints: self.constraints.as_ref().and_then(|constraints| {
+                let constraints = constraints.to_string();
+                (!constraints.is_empty()).then_some(constraints)
+            }),
+            schema,
+        };
+        match self.schema_tooltip.clone() {
+            Some(tooltip)
+                if common.title.is_some()
+                    || common.description.is_some()
+                    || common.constraints.is_some() =>
+            {
+                tooltip.with_common_content(common)
+            }
+            Some(tooltip) => tooltip,
+            None => SchemaTooltip::Content(common),
+        }
+    }
 }
 
 impl PartialEq for HoverValueContent {
@@ -311,6 +447,7 @@ impl PartialEq for HoverValueContent {
             && self.accessors == other.accessors
             && self.value_type == other.value_type
             && self.constraints == other.constraints
+            && self.schema_tooltip == other.schema_tooltip
             && self.range == other.range
     }
 }
@@ -324,45 +461,15 @@ impl std::hash::Hash for HoverValueContent {
         self.accessors.hash(state);
         self.value_type.hash(state);
         self.constraints.hash(state);
+        self.schema_tooltip.hash(state);
         self.range.hash(state);
     }
 }
 
 impl std::fmt::Display for HoverValueContent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        const SECTION_SEPARATOR: &str = "-----";
-
-        if let Some(title) = &self.title {
-            writeln!(f, "#### {title}\n")?;
-        }
-
-        if let Some(description) = &self.description {
-            writeln!(f, "{description}\n")?;
-        }
-
-        if self.title.is_some() || self.description.is_some() {
-            writeln!(f, "{SECTION_SEPARATOR}\n")?;
-        }
-
-        if !self.accessors.is_empty() {
-            writeln!(f, "Keys: `{}`\n", self.accessors)?;
-        }
-        writeln!(f, "Value: `{}`\n", self.value_type)?;
-
-        if let Some(constraints) = &self.constraints {
-            writeln!(f, "{constraints}")?;
-        }
-
-        if let Some(schema_uri) = &self
-            .schema_uri
-            .as_ref()
-            .and_then(|url| get_tombi_github_uri(url))
-            && let Some(schema_filename) = get_schema_name(schema_uri)
-        {
-            writeln!(f, "Schema: [{schema_filename}]({schema_uri})\n",)?;
-        }
-
-        Ok(())
+        let keys = (!self.accessors.is_empty()).then(|| self.accessors.to_string());
+        f.write_str(&self.schema_tooltip().render(keys.as_deref()))
     }
 }
 

@@ -91,10 +91,31 @@ impl<'a> CurrentSchema<'a> {
         if !semantic_schema.accepts_instance_type(instance_type) {
             return None;
         }
+        if self.schema_view.matches_instance_type(instance_type)
+            && !self.requires_instance_projection(instance_type)
+        {
+            return Some(self.clone().into_owned());
+        }
         Some(self.with_projected_view(
             semantic_schema,
             semantic_schema.schema_view_for_type(instance_type, string_formats),
         ))
+    }
+
+    /// Returns whether the current presentation view omits constraints that
+    /// become relevant for this instance type.
+    pub fn requires_instance_projection(&self, instance_type: super::SchemaType) -> bool {
+        self.semantic_schema.as_deref().is_some_and(|semantic| {
+            semantic.accepts_instance_type(instance_type)
+                && (!self.schema_view.matches_instance_type(instance_type)
+                    || semantic.root_reference_has_projection_siblings(instance_type))
+        })
+    }
+
+    pub fn has_reference_projection_siblings(&self, instance_type: super::SchemaType) -> bool {
+        self.semantic_schema
+            .as_deref()
+            .is_some_and(|semantic| semantic.root_reference_has_projection_siblings(instance_type))
     }
 
     pub fn for_completion(
@@ -167,18 +188,25 @@ impl Referable<SchemaView> {
             (None, None, None) => (None, None),
         };
         let referable = if let (Some(kind), Some(reference)) = (reference_kind, reference_value) {
+            // Draft 7 treats a `$ref` object as a reference only. Newer drafts allow
+            // assertion and applicator siblings to participate in evaluation.
+            let supports_ref_siblings = dialect != Some(crate::JsonSchemaDialect::Draft07);
+            let semantic_schema = supports_ref_siblings
+                .then(|| Arc::new(super::SemanticSchema::from_object_node(object, dialect)))
+                .filter(|schema| has_reference_projection_siblings(schema));
             Some(Referable::Ref {
                 reference: reference.to_string(),
                 kind,
-                semantic_schema: Some(Arc::new(super::SemanticSchema::from_object_node(
-                    object, dialect,
-                ))),
+                semantic_schema,
+                // Keep annotation siblings for compatibility with existing Draft 7
+                // schemas. They do not affect validation, unlike assertion and
+                // applicator siblings, which remain disabled above.
                 title: object
                     .get("title")
-                    .and_then(|title| title.as_str().map(|s| s.to_string())),
+                    .and_then(|title| title.as_str().map(ToString::to_string)),
                 description: object
                     .get("description")
-                    .and_then(|description| description.as_str().map(|s| s.to_string())),
+                    .and_then(|description| description.as_str().map(ToString::to_string)),
                 default: object.get("default").cloned().map(Into::into),
                 examples: object
                     .get("examples")
@@ -462,6 +490,60 @@ impl Referable<SchemaView> {
                     )
                     .await?
                     {
+                        if ref_semantic_schema
+                            .as_deref()
+                            .is_some_and(has_reference_projection_siblings)
+                        {
+                            let source_schema_uri = schema_uri.as_ref().clone();
+                            let source_definitions = definitions.clone().into_owned();
+                            let local_semantic = ref_semantic_schema
+                                .clone()
+                                .expect("reference siblings have semantic schema");
+                            let range = local_semantic.range();
+                            let schemas = vec![
+                                Referable::Resolved {
+                                    schema_uri: Some(source_schema_uri),
+                                    value: Arc::new(SchemaView::Anything(super::AnythingSchema {
+                                        title: None,
+                                        description: None,
+                                        range,
+                                    })),
+                                    semantic_schema: Some(local_semantic),
+                                },
+                                Referable::Resolved {
+                                    schema_uri: Some(
+                                        resolved_reference.schema_uri.as_ref().clone(),
+                                    ),
+                                    value: resolved_reference.schema_view.clone(),
+                                    semantic_schema: resolved_reference.semantic_schema.clone(),
+                                },
+                            ];
+                            *self = Referable::Resolved {
+                                schema_uri: None,
+                                value: Arc::new(SchemaView::AllOf(super::AllOfSchema {
+                                    title: title.clone(),
+                                    description: description.clone(),
+                                    range,
+                                    schemas: Arc::new(tokio::sync::RwLock::new(schemas)),
+                                    default: default.clone(),
+                                    examples: examples.clone(),
+                                    deprecation: deprecation.clone(),
+                                    ..Default::default()
+                                })),
+                                semantic_schema: None,
+                            };
+
+                            return self
+                                .resolve_with_dynamic_scope(
+                                    schema_uri,
+                                    Cow::Owned(source_definitions),
+                                    strict,
+                                    schema_store,
+                                    dynamic_scope,
+                                )
+                                .await;
+                        }
+
                         let mut resolved_value = resolved_reference.schema_view.clone();
                         if title.is_some() || description.is_some() {
                             let schema_view = Arc::make_mut(&mut resolved_value);
@@ -668,6 +750,22 @@ fn combine_ref_semantics(
         (Some(schema), None) | (None, Some(schema)) => Some(schema),
         (None, None) => None,
     }
+}
+
+fn has_reference_projection_siblings(schema: &super::SemanticSchema) -> bool {
+    use super::SchemaType;
+
+    [
+        SchemaType::Null,
+        SchemaType::Boolean,
+        SchemaType::Object,
+        SchemaType::Array,
+        SchemaType::Number,
+        SchemaType::String,
+        SchemaType::Integer,
+    ]
+    .into_iter()
+    .any(|instance_type| schema.root_reference_has_projection_siblings(instance_type))
 }
 
 fn apply_ref_semantics(
@@ -1230,6 +1328,45 @@ mod test {
     };
 
     #[test]
+    fn ref_assertion_siblings_follow_dialect() {
+        let schema = tombi_json::ValueNode::from_str(
+            r##"{"$ref":"#/$defs/value","type":"string","minLength":3}"##,
+        )
+        .unwrap();
+        let object = schema.as_object().unwrap();
+
+        let draft_7 = Referable::new(
+            object,
+            None,
+            Some(crate::JsonSchemaDialect::Draft07),
+            None,
+            None,
+        );
+        std::assert_matches!(
+            draft_7,
+            Some(Referable::Ref {
+                semantic_schema: None,
+                ..
+            })
+        );
+
+        let draft_2020_12 = Referable::new(
+            object,
+            None,
+            Some(crate::JsonSchemaDialect::Draft2020_12),
+            None,
+            None,
+        );
+        std::assert_matches!(
+            draft_2020_12,
+            Some(Referable::Ref {
+                semantic_schema: Some(_),
+                ..
+            })
+        );
+    }
+
+    #[test]
     fn test_json_pointer_percent_decode() {
         use tombi_json::ValueNode;
 
@@ -1349,7 +1486,10 @@ mod test {
         };
 
         let value_type = referable.value_type().await;
-        std::assert_matches!(value_type, crate::ValueType::AnyOf(types) if types.is_empty());
+        std::assert_matches!(
+            value_type,
+            crate::ValueType::AnyOf(types) if types.is_empty()
+        );
     }
 
     #[tokio::test]
@@ -1542,13 +1682,105 @@ mod test {
         let _ = std::fs::remove_dir_all(temp_dir);
     }
 
+    #[tokio::test]
+    async fn external_ref_sibling_keeps_source_and_target_contexts() {
+        let temp_dir = std::env::temp_dir().join(format!(
+            "tombi_ref_sibling_context_{}_{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+        let main_path = temp_dir.join("main.json");
+        let target_path = temp_dir.join("target.json");
+        std::fs::write(
+            &main_path,
+            r##"{
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$defs": {
+                    "local": { "type": "string" },
+                    "combined": {
+                        "$ref": "./target.json#/$defs/base",
+                        "properties": {
+                            "local": { "$ref": "#/$defs/local" }
+                        }
+                    }
+                }
+            }"##,
+        )
+        .unwrap();
+        std::fs::write(
+            &target_path,
+            r##"{
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$defs": {
+                    "base": {
+                        "type": "object",
+                        "properties": { "remote": { "type": "integer" } }
+                    }
+                }
+            }"##,
+        )
+        .unwrap();
+
+        let source_uri = tombi_uri::SchemaUri::from_file_path(&main_path).unwrap();
+        let target_uri = tombi_uri::SchemaUri::from_file_path(&target_path).unwrap();
+        let schema_store = SchemaStore::new();
+        let document_schema = schema_store
+            .try_get_document_schema(&source_uri)
+            .await
+            .unwrap()
+            .unwrap();
+        let definitions = document_schema.definitions.clone();
+        let mut referable = {
+            let defs = definitions.read().await;
+            defs.get("#/$defs/combined").cloned().unwrap()
+        };
+
+        let resolved = referable
+            .resolve(
+                Cow::Owned(source_uri.clone()),
+                Cow::Owned(definitions),
+                None,
+                &schema_store,
+            )
+            .await
+            .unwrap()
+            .unwrap();
+        let SchemaView::AllOf(all_of) = resolved.schema_view.as_ref() else {
+            panic!("external $ref with structural siblings must resolve as allOf");
+        };
+        let branches = all_of.schemas.read().await;
+
+        std::assert_matches!(
+            branches.as_slice(),
+            [
+                Referable::Resolved {
+                    schema_uri: Some(local_uri),
+                    ..
+                },
+                Referable::Resolved {
+                    schema_uri: Some(remote_uri),
+                    ..
+                }
+            ] if local_uri == &source_uri && remote_uri == &target_uri
+        );
+        drop(branches);
+        std::fs::remove_dir_all(temp_dir).unwrap();
+    }
+
     #[test]
     fn test_parse_dynamic_anchor_reference() {
         let local = parse_dynamic_anchor_reference("#rootDyn");
         assert_eq!(local, Some((None, "#rootDyn".to_string())));
 
         let remote = parse_dynamic_anchor_reference("https://example.com/schema.json#rootDyn");
-        std::assert_matches!(remote, Some((Some(_), anchor)) if anchor == "#rootDyn");
+        std::assert_matches!(
+            remote,
+            Some((Some(_), anchor)) if anchor == "#rootDyn"
+        );
 
         assert!(parse_dynamic_anchor_reference("#/defs/x").is_none());
     }
