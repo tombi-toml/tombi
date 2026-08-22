@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "all_items": {
+      "type": "array",
+      "allOf": [
+        {
+          "items": { "$ref": "#/$defs/item" }
+        }
+      ]
+    },
+    "one_items": {
+      "type": "array",
+      "oneOf": [
+        {
+          "items": { "$ref": "#/$defs/item" }
+        }
+      ]
+    },
+    "any_items": {
+      "type": "array",
+      "anyOf": [
+        {
+          "items": { "$ref": "#/$defs/item" }
+        }
+      ]
+    },
+    "any_shared": {
+      "type": "object",
+      "anyOf": [
+        {
+          "properties": {
+            "value": { "type": "string", "description": "first anyOf value" }
+          }
+        },
+        {
+          "properties": {
+            "value": { "type": "string", "description": "second anyOf value" }
+          }
+        }
+      ]
+    },
+    "any_enum_unconstrained": {
+      "type": "object",
+      "anyOf": [
+        {
+          "properties": {
+            "value": { "type": "string", "enum": ["value"] }
+          }
+        },
+        {
+          "properties": {
+            "value": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "any_enum_values": {
+      "type": "object",
+      "anyOf": [
+        {
+          "properties": {
+            "value": {
+              "type": "string",
+              "const": "red",
+              "description": "first enum value"
+            }
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "type": "string",
+              "enum": ["blue", "red"],
+              "description": "second enum value"
+            }
+          }
+        }
+      ]
+    },
+    "any_constraint_alternatives": {
+      "type": "object",
+      "anyOf": [
+        {
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            }
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          }
+        }
+      ]
+    },
+    "all_shared": {
+      "type": "object",
+      "allOf": [
+        {
+          "properties": {
+            "value": { "type": "string", "description": "first allOf value" }
+          }
+        },
+        {
+          "properties": {
+            "value": { "type": "string", "description": "second allOf value" }
+          }
+        }
+      ]
+    },
+    "all_constraints": {
+      "type": "object",
+      "allOf": [
+        {
+          "properties": {
+            "value": {
+              "type": "string",
+              "description": "first constrained value",
+              "enum": ["aa", "bbb", "cccc"],
+              "minLength": 2
+            }
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "type": "string",
+              "description": "second constrained value",
+              "enum": ["bbb", "cccc", "ddddd"],
+              "maxLength": 4
+            }
+          }
+        }
+      ]
+    },
+    "one_shared": {
+      "type": "object",
+      "oneOf": [
+        {
+          "properties": {
+            "value": { "type": "string", "description": "first oneOf value" }
+          }
+        },
+        {
+          "properties": {
+            "value": { "type": "string", "description": "second oneOf value" }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Composite array item name"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

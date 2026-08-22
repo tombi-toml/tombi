@@ -131,6 +131,7 @@ impl GetHoverContent for tombi_document_tree::Integer {
                     constraints: None,
                     schema_uri: None,
                     range: Some(self.range()),
+                    schema_tooltip: None,
                 }))
             }
         }
@@ -171,8 +172,9 @@ impl GetHoverContent for IntegerSchema {
                     multiple_of: self.multiple_of.map(DisplayValue::Integer),
                     ..Default::default()
                 }),
-                schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),
+                schema_uri: super::super::current_schema_link_uri(current_schema),
                 range: None,
+                schema_tooltip: None,
             }))
         }
         .boxed()

@@ -84,6 +84,73 @@ async fn write_cached_response(url: &str, body: &str) {
 mod hover_keys_value {
     use super::*;
 
+    test_hover_keys_value!(
+        #[tokio::test]
+        async fn cached_remote_schema_link_uses_local_file_position(
+            r#"
+            value = "█text"
+            "#,
+            UseTestCacheHome,
+            tombi_lsp::backend::Options {
+                offline: Some(true),
+                no_cache: Some(false),
+            },
+            SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                toml_version: None,
+                path: "https://example.com/cached-tooltip.schema.json".into(),
+                include: vec!["*.toml".into()],
+                exclude: None,
+                strict: None,
+                lint: None,
+                format: None,
+                overrides: None,
+            })),
+            CachedRemoteJson {
+                url: "https://example.com/cached-tooltip.schema.json",
+                body: r#"{
+  "properties": {
+    "value": {
+      "type": "string"
+    }
+  }
+}"#,
+            },
+        ) -> Ok({
+            "Keys": "value",
+            "Value": "String?",
+            "Hover Contains": [
+                "Schema: [cached-tooltip.schema.json](file://",
+                "cached-tooltip.schema.json#L3,"
+            ]
+        });
+    );
+
+    test_hover_keys_value!(
+        #[tokio::test]
+        async fn built_in_schema_hover_link_uses_github(
+            r#"
+            [lint.rules]
+            key-empty = "█warn"
+            "#,
+            SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                toml_version: None,
+                path: "tombi://www.schemastore.org/tombi.json".into(),
+                include: vec!["*.toml".into()],
+                exclude: None,
+                strict: None,
+                lint: None,
+                format: None,
+                overrides: None,
+            })),
+        ) -> Ok({
+            "Keys": "lint.rules.key-empty",
+            "Value": "String?",
+            "Hover Contains": [
+                "https://raw.githubusercontent.com/tombi-toml/tombi/main/www.schemastore.org/tombi.json"
+            ]
+        });
+    );
+
     mod strict_priority {
         use super::*;
 
@@ -330,9 +397,27 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "name",
                 "Value": "String?",
+                "Hover Contains": [
+                    "#### Ref Sibling Annotations\n\nString schema used to verify $ref sibling annotations.\n\nKeys: `name`",
+                ],
                 "Title": Some("Ref Sibling Annotations"),
                 "Default": "\"allow\"",
                 "Examples": ["\"warn\"", "\"deny\""]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn ref_sibling_structural_property_is_displayed(
+                r#"
+                [settings]
+                local = "█value"
+                "#,
+                SchemaPath(ref_sibling_annotations_test_schema_path()),
+            ) -> Ok({
+                "Keys": "settings.local",
+                "Value": "String?",
+                "Hover Contains": ["Property declared next to $ref."]
             });
         );
 
@@ -936,6 +1021,24 @@ mod hover_keys_value {
                 "Default": "\"builtin-hook\""
             });
         );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn adjacent_one_of_reversed_hover_prefers_valid_branch_nested_item_schema(
+                r#"
+                [[repos_reversed]]
+                repo = "builtin"
+                hooks = [
+                  { id = "█hook" }
+                ]
+                "#,
+                SchemaPath(adjacent_one_of_hover_test_schema_path()),
+            ) -> Ok({
+                "Keys": "repos_reversed[0].hooks[0].id",
+                "Value": "String",
+                "Default": "\"builtin-hook\""
+            });
+        );
     }
 
     mod any_of_schema {
@@ -1264,6 +1367,238 @@ mod hover_keys_value {
                 "Keys": "ignore",
                 "Value": "(Boolean | Integer | Float | String | LocalDate | LocalDateTime | LocalTime | OffsetDateTime | Array | Table)?",
                 "Description": Some("Annotation-only property schema that should still allow the key.")
+            });
+        );
+    }
+
+    mod composite_array_items_schema {
+        use super::*;
+
+        fn schema_path() -> PathBuf {
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/composite-array-items.schema.json")
+        }
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn all_of_item_property_hover(
+                r#"
+                [[all_items]]
+                name = "va█lue"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "all_items[0].name",
+                "Value": "String?",
+                "Schema": true,
+                "Description": Some("Composite array item name".to_string())
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn one_of_item_property_hover(
+                r#"
+                [[one_items]]
+                name = "va█lue"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "one_items[0].name",
+                "Value": "String?",
+                "Schema": true,
+                "Description": Some("Composite array item name".to_string())
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn any_of_item_property_hover(
+                r#"
+                [[any_items]]
+                name = "va█lue"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "any_items[0].name",
+                "Value": "String?",
+                "Schema": true,
+                "Description": Some("Composite array item name".to_string())
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn any_of_multiple_valid_branches_separate_metadata(
+                r#"
+                [any_shared]
+                value = "va█lue"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "any_shared.value",
+                "Value": "String?",
+                "Schema": true,
+                "Hover Contains": [
+                    "first anyOf value\n\nKeys: `any_shared.value`\n\nValue: `String?`",
+                    "second anyOf value\n\nKeys: `any_shared.value`\n\nValue: `String?`",
+                    "\n---\n",
+                ],
+                "Hover Counts": [("Keys: `any_shared.value`", 2)]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn any_of_with_unconstrained_branch_does_not_claim_enum(
+                r#"
+                [any_enum_unconstrained]
+                value = "va█lue"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "any_enum_unconstrained.value",
+                "Value": "String?",
+                "Schema": true,
+                "Hover Contains": ["Enum Values:", "\n---\n"]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn any_of_merges_const_and_enum_values_in_definition_order(
+                r#"
+                [any_enum_values]
+                value = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "any_enum_values.value",
+                "Value": "String?",
+                "Schema": true,
+                "Hover Contains": ["first enum value", "second enum value", "`\"red\"`", "`\"blue\"`", "\n---\n"]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn any_of_deduplicates_identical_branches_in_definition_order(
+                r#"
+                [any_constraint_alternatives]
+                value = 3█
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "any_constraint_alternatives.value",
+                "Value": "Integer?",
+                "Schema": true,
+                "Hover Contains": ["Minimum: `1`", "Maximum: `5`", "Maximum: `6`", "\n---\n"],
+                "Hover Counts": [
+                    ("Minimum: `1`", 2),
+                    ("Maximum: `5`", 1),
+                    ("Maximum: `6`", 1),
+                ]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn all_of_hover_separates_branch_metadata_and_constraints(
+                r#"
+                [all_constraints]
+                value = "b█bb"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "all_constraints.value",
+                "Value": "String?",
+                "Schema": true,
+                "Hover Contains": ["first constrained value", "second constrained value", "Min Length: `2`", "Max Length: `4`", "`\"bbb\"`", "`\"cccc\"`", "\n---\n"]
+            });
+        );
+    }
+
+    mod one_of_composite_hover_schema {
+        use super::*;
+
+        fn schema_path() -> PathBuf {
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/one-of-composite-hover.schema.json")
+        }
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn unmatched_scalar_branches_keep_metadata_and_constraints(
+                r#"
+                scalar = █0
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "scalar",
+                "Value": "Integer?",
+                "Schema": true,
+                "Hover Contains": [
+                    "#### Positive branch",
+                    "Requires a positive value.",
+                    "Minimum: `1`",
+                    "#### Negative branch",
+                    "Requires a negative value.",
+                    "Maximum: `-1`",
+                    "\n---\n",
+                ]
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn array_item_branches_keep_all_metadata(
+                r#"
+                array = [{ name = "va█lue" }]
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "array[0].name",
+                "Value": "String?",
+                "Schema": true,
+                "Hover Contains": [
+                    "#### First array item",
+                    "First array item description.",
+                    "#### Second array item",
+                    "Second array item description.",
+                    "\n---\n",
+                ]
+            });
+        );
+    }
+
+    mod external_ref_sibling_hover_schema {
+        use super::*;
+
+        fn schema_path() -> PathBuf {
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/external-ref-sibling-hover/root.schema.json")
+        }
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn semantic_less_composite_keeps_schema_metadata(
+                r#"
+                external = "va█lue"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "external",
+                "Value": "String?",
+                "Schema": true,
+                "Hover Contains": [
+                    "#### Local reference sibling",
+                    "Metadata defined next to the external reference.",
+                    "Min Length: `2`",
+                    "#### External reference target",
+                    "Metadata defined by the external target.",
+                    "Max Length: `10`",
+                    "\n---\n",
+                ]
             });
         );
     }
@@ -2141,6 +2476,7 @@ mod hover_keys_value {
             $(, "Values Order": $values_order:expr)?
             $(, "Disabled Values Order": $disabled_values_order:expr)?
             $(, "Hover Contains": [$($hover_contains:expr),* $(,)?])?
+            $(, "Hover Counts": [$(($hover_count_text:expr, $hover_count:expr)),* $(,)?])?
             $(, "Title": $title:expr)?
             $(, "Description": $description:expr)?
             $(, "Enum": [$($enum_values:expr),* $(,)?])?
@@ -2561,6 +2897,18 @@ mod hover_keys_value {
                     )*
                 )?
                 $(
+                    let rendered_hover = hover_content.to_string();
+                    $(
+                        pretty_assertions::assert_eq!(
+                            rendered_hover.matches($hover_count_text).count(),
+                            $hover_count,
+                            "Rendered hover occurrence count differs for {:?}\nrendered: {}",
+                            $hover_count_text,
+                            rendered_hover,
+                        );
+                    )*
+                )?
+                $(
                     let expected_title = $title;
                     pretty_assertions::assert_eq!(
                         hover_content.title.as_deref(),
@@ -2577,7 +2925,7 @@ mod hover_keys_value {
                     );
                 )?
                 $(
-                    let expected_enum = vec![$($enum_values),*];
+                    let expected_enum: Vec<&str> = vec![$($enum_values),*];
                     pretty_assertions::assert_eq!(
                         hover_content
                             .constraints
