@@ -770,6 +770,8 @@ impl SchemaStore {
         Ok(Some(source_schema))
     }
 
+    // Preserve the existing tuple error API without boxing every failure.
+    #[allow(clippy::result_large_err)]
     pub async fn resolve_source_schema_from_ast(
         &self,
         root: &tombi_ast::Root,
