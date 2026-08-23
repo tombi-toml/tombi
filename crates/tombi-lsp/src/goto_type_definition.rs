@@ -23,8 +23,12 @@ pub async fn get_type_definition(
     position: tombi_text::Position,
     keys: &[tombi_document_tree::Key],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-) -> Option<TypeDefinition> {
-    let source = TypeDefinitionSource::new(document_tree, position, keys, schema_context).await?;
+) -> Vec<TypeDefinition> {
+    let Some(source) =
+        TypeDefinitionSource::new(document_tree, position, keys, schema_context).await
+    else {
+        return Vec::new();
+    };
 
     match source {
         TypeDefinitionSource::Root {
@@ -48,7 +52,10 @@ pub async fn get_type_definition(
             accessors,
             current_schema,
         } => {
-            let (_, value) = tombi_document_tree::dig_accessors(document_tree, &accessors)?;
+            let Some((_, value)) = tombi_document_tree::dig_accessors(document_tree, &accessors)
+            else {
+                return Vec::new();
+            };
             value
                 .get_type_definition(
                     position,
@@ -127,6 +134,18 @@ pub struct TypeDefinition {
     pub range: tombi_text::Range,
 }
 
+pub(crate) fn location_key(
+    schema_uri: &SchemaUri,
+    range: tombi_text::Range,
+) -> (&str, tombi_text::Range) {
+    let uri = schema_uri.as_str();
+    if range == tombi_text::Range::default() {
+        (uri, range)
+    } else {
+        (uri.split_once('#').map_or(uri, |(base, _)| base), range)
+    }
+}
+
 impl TypeDefinition {
     pub fn update_range(
         mut self,
@@ -140,6 +159,17 @@ impl TypeDefinition {
     }
 }
 
+fn prefer_type_definitions(
+    type_definitions: Vec<TypeDefinition>,
+    fallback: Vec<TypeDefinition>,
+) -> Vec<TypeDefinition> {
+    if type_definitions.is_empty() {
+        fallback
+    } else {
+        type_definitions
+    }
+}
+
 pub(super) trait GetTypeDefinition {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
@@ -148,7 +178,7 @@ pub(super) trait GetTypeDefinition {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>>;
+    ) -> tombi_future::BoxFuture<'b, Vec<TypeDefinition>>;
 }
 
 pub(super) async fn adjacent_type_definition<
@@ -168,11 +198,13 @@ pub(super) async fn adjacent_type_definition<
     one_of_schema: Option<&OneOfSchema>,
     any_of_schema: Option<&AnyOfSchema>,
     all_of_schema: Option<&AllOfSchema>,
-) -> Option<TypeDefinition> {
-    let current_schema = current_schema?;
+) -> Vec<TypeDefinition> {
+    let Some(current_schema) = current_schema else {
+        return Vec::new();
+    };
 
     if let Some(one_of_schema) = one_of_schema
-        && let Some(type_definition) = one_of::get_one_of_type_definition(
+        && let type_definitions = one_of::get_one_of_type_definition(
             value,
             position,
             keys,
@@ -184,11 +216,12 @@ pub(super) async fn adjacent_type_definition<
             schema_context,
         )
         .await
+        && !type_definitions.is_empty()
     {
-        return Some(type_definition);
+        return type_definitions;
     }
     if let Some(any_of_schema) = any_of_schema
-        && let Some(type_definition) = any_of::get_any_of_type_definition(
+        && let type_definitions = any_of::get_any_of_type_definition(
             value,
             position,
             keys,
@@ -200,11 +233,12 @@ pub(super) async fn adjacent_type_definition<
             schema_context,
         )
         .await
+        && !type_definitions.is_empty()
     {
-        return Some(type_definition);
+        return type_definitions;
     }
     if let Some(all_of_schema) = all_of_schema
-        && let Some(type_definition) = all_of::get_all_of_type_definition(
+        && let type_definitions = all_of::get_all_of_type_definition(
             value,
             position,
             keys,
@@ -216,11 +250,12 @@ pub(super) async fn adjacent_type_definition<
             schema_context,
         )
         .await
+        && !type_definitions.is_empty()
     {
-        return Some(type_definition);
+        return type_definitions;
     }
 
-    None
+    Vec::new()
 }
 
 pub(super) fn schema_type_definition(
@@ -235,5 +270,35 @@ pub(super) fn schema_type_definition(
         schema_uri,
         schema_accessors: accessors.iter().map(Into::into).collect_vec(),
         range: tombi_text::Range::default(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::location_key;
+
+    #[test]
+    fn location_key_preserves_fragment_when_range_is_unknown() {
+        let first = tombi_schema_store::SchemaUri::from_str("file:///schema.json#L1").unwrap();
+        let second = tombi_schema_store::SchemaUri::from_str("file:///schema.json#L2").unwrap();
+
+        assert_ne!(
+            location_key(&first, tombi_text::Range::default()),
+            location_key(&second, tombi_text::Range::default()),
+        );
+    }
+
+    #[test]
+    fn location_key_ignores_fragment_when_range_identifies_the_location() {
+        let first = tombi_schema_store::SchemaUri::from_str("file:///schema.json#L1").unwrap();
+        let second = tombi_schema_store::SchemaUri::from_str("file:///schema.json#L2").unwrap();
+        let range = tombi_text::Range::new(
+            tombi_text::Position::new(2, 3),
+            tombi_text::Position::new(2, 8),
+        );
+
+        assert_eq!(location_key(&first, range), location_key(&second, range));
     }
 }

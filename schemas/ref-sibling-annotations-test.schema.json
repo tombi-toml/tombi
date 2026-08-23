@@ -6,6 +6,16 @@
       "$ref": "#/$defs/name",
       "default": "allow",
       "examples": ["warn", "deny"]
+    },
+    "settings": {
+      "$ref": "#/$defs/baseSettings",
+      "properties": {
+        "local": {
+          "type": "string",
+          "description": "Property declared next to $ref."
+        }
+      },
+      "additionalProperties": true
     }
   },
   "$defs": {
@@ -13,6 +23,15 @@
       "type": "string",
       "title": "Ref Sibling Annotations",
       "description": "String schema used to verify $ref sibling annotations."
+    },
+    "baseSettings": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
     }
   }
 }

@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "definitions": {
+    "baseConfig": {
+      "properties": {
+        "buildType": {
+          "type": "string"
+        }
+      }
+    },
+    "leanLibConfig": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/baseConfig"
+        },
+        {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/definitions/baseConfig"
+    },
+    {
+      "properties": {
+        "lean_lib": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/leanLibConfig"
+          }
+        }
+      }
+    }
+  ]
+}

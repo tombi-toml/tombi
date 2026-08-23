@@ -12,6 +12,7 @@ mod location;
 mod references;
 mod remote_file;
 mod schema_resolver;
+mod schema_tooltip;
 mod semantic_tokens;
 mod workspace_config;
 mod workspace_diagnostic;

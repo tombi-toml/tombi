@@ -506,6 +506,33 @@ impl SemanticSchema {
         }
     }
 
+    /// Returns whether a node-local reference also has semantic siblings that
+    /// must participate in the typed projection. Reference annotations are
+    /// already applied to the resolved view and therefore do not count here.
+    pub(crate) fn root_reference_has_projection_siblings(&self, instance_type: SchemaType) -> bool {
+        match self {
+            Self::Boolean(_) => false,
+            Self::Composite(composite) => composite
+                .schemas
+                .iter()
+                .any(|schema| schema.root_reference_has_projection_siblings(instance_type)),
+            Self::Object(object) => {
+                object.references.primary().is_some()
+                    && (object.type_assertion.is_some()
+                        || object.assertions.const_value.is_some()
+                        || object.assertions.enum_values.is_some()
+                        || self.has_direct_constraints_for_type(instance_type)
+                        || !object.applicators.all_of.is_empty()
+                        || !object.applicators.any_of.is_empty()
+                        || !object.applicators.one_of.is_empty()
+                        || object.applicators.not.is_some()
+                        || object.applicators.if_schema.is_some()
+                        || object.applicators.then_schema.is_some()
+                        || object.applicators.else_schema.is_some())
+            }
+        }
+    }
+
     /// Returns values that satisfy exactly one `oneOf` branch when every branch
     /// has a finite `const`/`enum` domain. Keeping the domains per branch until
     /// this point avoids incorrectly suggesting a value shared by two branches.
@@ -1247,10 +1274,10 @@ mod tests {
             Some(0)
         );
         assert_eq!(schema.constraints.string.min_length.unwrap().value, 1);
-        assert!(matches!(
+        std::assert_matches!(
             schema.constraints.object.unevaluated_properties.as_deref(),
             Some(SemanticSchema::Boolean(Spanned { value: false, .. }))
-        ));
+        );
     }
 
     #[test]
@@ -1279,10 +1306,10 @@ mod tests {
         };
         assert_eq!(number.minimum, Some(10.0));
 
-        assert!(matches!(
+        std::assert_matches!(
             schema.schema_view_for_type(SchemaType::String, None),
             Some(SchemaView::String(_))
-        ));
+        );
         let SchemaView::Table(object) = schema
             .schema_view_for_type(SchemaType::Object, None)
             .unwrap()
@@ -1295,6 +1322,24 @@ mod tests {
                 .blocking_read()
                 .contains_key(&crate::SchemaAccessor::Key("name".into()))
         );
+    }
+
+    #[test]
+    fn root_reference_projection_requires_structural_siblings() {
+        let root_reference =
+            SemanticSchema::Object(Box::new(parse(r##"{"$ref":"#/$defs/item"}"##)));
+        let nested_reference =
+            SemanticSchema::Object(Box::new(parse(r##"{"items":{"$ref":"#/$defs/item"}}"##)));
+
+        assert!(root_reference.has_references());
+        assert!(!root_reference.root_reference_has_projection_siblings(SchemaType::Object));
+        assert!(nested_reference.has_references());
+        assert!(!nested_reference.root_reference_has_projection_siblings(SchemaType::Array));
+
+        let sibling_reference = SemanticSchema::Object(Box::new(parse(
+            r##"{"$ref":"#/$defs/item","properties":{"local":{"type":"string"}}}"##,
+        )));
+        assert!(sibling_reference.root_reference_has_projection_siblings(SchemaType::Object));
     }
 
     #[test]
@@ -1343,17 +1388,17 @@ mod tests {
             }"#,
         );
 
-        assert!(matches!(
+        std::assert_matches!(
             schema.constraints.object.unevaluated_properties.as_deref(),
             Some(SemanticSchema::Boolean(Spanned { value: false, .. }))
-        ));
+        );
         let SemanticSchema::Object(branch) = &schema.applicators.one_of[0] else {
             panic!("branch must be an object schema");
         };
-        assert!(matches!(
+        std::assert_matches!(
             branch.constraints.object.unevaluated_properties.as_deref(),
             Some(SemanticSchema::Boolean(Spanned { value: true, .. }))
-        ));
+        );
     }
 
     #[test]

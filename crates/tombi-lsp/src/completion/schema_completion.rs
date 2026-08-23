@@ -2,6 +2,8 @@ use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaView};
 use tombi_x_keyword::StringFormat;
 
+use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
+
 use super::{
     CompletionContent, CompletionHint, FindCompletionContents,
     merge_adjacent_schema_completion_items, tombi_json_value_to_completion_enum_item,
@@ -9,6 +11,21 @@ use super::{
         find_all_of_completion_items, find_any_of_completion_items, find_one_of_completion_items,
     },
 };
+
+fn set_schema_link_uri(
+    completion_items: &mut [CompletionContent],
+    current_schema: &CurrentSchema<'_>,
+) {
+    let schema_uri = tombi_extension::get_schema_link_uri(
+        current_schema.schema_uri.as_ref(),
+        current_schema.schema_view.range().start,
+    );
+    for item in completion_items {
+        if item.schema_uri.as_ref() == Some(current_schema.schema_uri.as_ref()) {
+            item.schema_uri = Some(schema_uri.clone().into());
+        }
+    }
+}
 
 /// A tag data that indicates that only schema information is used for completion.
 #[derive(Debug)]
@@ -81,24 +98,32 @@ impl FindCompletionContents for SchemaCompletion {
                     .as_deref()
                     .and_then(|schema| schema.finite_literal_candidates())
             {
-                let completion_items = candidates
+                let detail = current_schema.schema_view.title().map(ToString::to_string);
+                let documentation = current_schema
+                    .schema_view
+                    .description()
+                    .map(ToString::to_string);
+                let mut completion_items = candidates
                     .iter()
                     .filter_map(|value| {
                         tombi_json_value_to_completion_enum_item(
                             value,
                             position,
+                            detail.clone(),
+                            documentation.clone(),
                             Some(current_schema.schema_uri.as_ref()),
                             completion_hint,
                         )
                     })
                     .collect::<Vec<_>>();
+                set_schema_link_uri(&mut completion_items, current_schema);
                 return completion_items;
             }
 
             let projected_schema = current_schema.for_completion(schema_context.string_formats());
             let current_schema = projected_schema.as_ref().unwrap_or(current_schema);
 
-            match current_schema.schema_view.as_ref() {
+            let mut completion_items = match current_schema.schema_view.as_ref() {
                 SchemaView::Boolean(boolean_schema) => {
                     boolean_schema
                         .find_completion_contents(
@@ -272,7 +297,41 @@ impl FindCompletionContents for SchemaCompletion {
                     .await
                 }
                 SchemaView::Anything(_) | SchemaView::Nothing(_) | SchemaView::Null => Vec::new(),
+            };
+
+            let needs_documentation = |item: &CompletionContent| {
+                item.documentation.is_none()
+                    && matches!(
+                        item.priority,
+                        tombi_extension::CompletionContentPriority::TypeHint
+                            | tombi_extension::CompletionContentPriority::TypeHintTrue
+                            | tombi_extension::CompletionContentPriority::TypeHintFalse
+                    )
+            };
+
+            if completion_items.iter().any(needs_documentation) {
+                let documentation = SchemaTooltip::Content(SchemaTooltipContent {
+                    title: current_schema.schema_view.title().map(ToString::to_string),
+                    description: current_schema
+                        .schema_view
+                        .description()
+                        .map(ToString::to_string),
+                    value_type: current_schema.schema_view.value_type().await.to_string(),
+                    constraints: None,
+                    schema: None,
+                })
+                .to_string();
+
+                for item in &mut completion_items {
+                    if needs_documentation(item) {
+                        item.documentation = Some(documentation.clone());
+                    }
+                }
             }
+
+            set_schema_link_uri(&mut completion_items, current_schema);
+
+            completion_items
         }
         .boxed()
     }

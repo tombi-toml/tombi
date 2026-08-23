@@ -2,7 +2,7 @@ mod completion_edit;
 mod completion_hint;
 mod completion_kind;
 
-use std::{ops::Deref, path::Path};
+use std::path::Path;
 
 pub use completion_edit::{CompletionEdit, CompletionTextEdit, InsertReplaceEdit};
 pub use completion_hint::{AddLeadingComma, AddTrailingComma, CommaHint, CompletionHint};
@@ -10,8 +10,6 @@ pub use completion_kind::CompletionKind;
 use tombi_document_tree::dig_accessors;
 use tombi_schema_store::{Accessor, SchemaUri, get_schema_name};
 use tombi_text::{FromLsp, IntoLsp};
-
-use crate::get_tombi_github_uri;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
@@ -510,25 +508,26 @@ impl FromLsp<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
         source: CompletionContent,
         line_index: &tombi_text::LineIndex,
     ) -> tower_lsp::lsp_types::CompletionItem {
-        const SECTION_SEPARATOR: &str = "-----";
-
         let sorted_text = format!("{}_{}", source.priority.as_prefix(), source.label);
+        let omit_detail = source.documentation.is_some()
+            && matches!(
+                &source.priority,
+                CompletionContentPriority::TypeHint
+                    | CompletionContentPriority::TypeHintTrue
+                    | CompletionContentPriority::TypeHintFalse
+            );
 
         let mut schema_text = None;
-        if let Some(schema_uri) = &source.schema_uri {
-            let schema_uri = match get_tombi_github_uri(schema_uri) {
-                Some(schema_uri) => schema_uri,
-                None => schema_uri.deref().clone(),
-            };
-            if let Some(schema_filename) = get_schema_name(&schema_uri) {
-                schema_text = Some(format!("Schema: [{schema_filename}]({schema_uri})\n"));
-            }
+        if let Some(schema_uri) = &source.schema_uri
+            && let Some(schema_filename) = get_schema_name(schema_uri)
+        {
+            schema_text = Some(format!("Schema: [{schema_filename}]({schema_uri})\n"));
         }
         let documentation = match source.documentation {
             Some(documentation) => {
-                let mut documentation = documentation;
+                let mut documentation = documentation.trim_end().to_string();
                 if let Some(schema_text) = schema_text {
-                    documentation.push_str(&format!("\n\n{SECTION_SEPARATOR}\n\n"));
+                    documentation.push_str("\n\n");
                     documentation.push_str(&schema_text);
                 }
                 Some(documentation)
@@ -633,13 +632,17 @@ impl FromLsp<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
             label: source.label,
             label_details,
             kind: Some(source.kind.into()),
-            detail: source.detail.map(|detail| {
-                if let Some(emoji_icon) = source.emoji_icon {
-                    format!("{emoji_icon} {detail}")
-                } else {
-                    detail
-                }
-            }),
+            detail: if omit_detail {
+                None
+            } else {
+                source.detail.map(|detail| {
+                    if let Some(emoji_icon) = source.emoji_icon {
+                        format!("{emoji_icon} {detail}")
+                    } else {
+                        detail
+                    }
+                })
+            },
             documentation: documentation.map(|documentation| {
                 tower_lsp::lsp_types::Documentation::MarkupContent(
                     tower_lsp::lsp_types::MarkupContent {

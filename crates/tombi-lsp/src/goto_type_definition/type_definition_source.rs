@@ -55,8 +55,7 @@ impl<'a> TypeDefinitionSource<'a> {
 
         if remaining_keys(keys, &accessors).is_empty()
             && matches!(accessors.last(), Some(Accessor::Key(_)))
-            && tombi_document_tree::dig_accessors(document_tree, &accessors)
-                .is_some_and(|(_, value)| value.is_scalar())
+            && tombi_document_tree::dig_accessors(document_tree, &accessors).is_some()
         {
             let parent_accessors = accessors[..accessors.len().saturating_sub(1)].to_vec();
             let (resolved_parent_accessors, resolved_parent_schema) =

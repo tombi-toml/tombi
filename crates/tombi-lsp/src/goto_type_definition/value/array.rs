@@ -22,7 +22,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
+    ) -> tombi_future::BoxFuture<'b, Vec<TypeDefinition>> {
         log::trace!("self = {:?}", self);
         log::trace!("keys = {:?}", keys);
         log::trace!("accessors = {:?}", accessors);
@@ -31,13 +31,14 @@ impl GetTypeDefinition for tombi_document_tree::Array {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
                 get_array_comment_directive_content_with_schema_uri(self, position, accessors)
-                && let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
+                && let hover_content = get_tombi_value_comment_directive_type_definition(
                     comment_directive_context,
                     schema_uri,
                 )
                 .await
+                && !hover_content.is_empty()
             {
-                return Some(hover_content);
+                return hover_content;
             }
 
             if let Some(Ok(current_schema)) = schema_context
@@ -58,6 +59,28 @@ impl GetTypeDefinition for tombi_document_tree::Array {
             if let Some(current_schema) = current_schema {
                 match current_schema.schema_view.as_ref() {
                     SchemaView::Array(array_schema) => {
+                        if keys.is_empty()
+                            && matches!(
+                                self.kind(),
+                                tombi_document_tree::ArrayKind::ArrayOfTable
+                                    | tombi_document_tree::ArrayKind::ParentArrayOfTable
+                            )
+                            && self.values().iter().any(|value| {
+                                tombi_document_tree::ValueImpl::range(value).start.line
+                                    == position.line
+                            })
+                        {
+                            return array_schema
+                                .get_type_definition(
+                                    position,
+                                    keys,
+                                    accessors,
+                                    Some(current_schema),
+                                    schema_context,
+                                )
+                                .await;
+                        }
+
                         for (index, value) in self.values().iter().enumerate() {
                             if value.contains(position) {
                                 let accessor = Accessor::Index(index);
@@ -85,7 +108,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                                         .await;
                                 }
 
-                                if let Some(type_definition) = adjacent_type_definition(
+                                let type_definitions = adjacent_type_definition(
                                     self,
                                     position,
                                     keys,
@@ -96,9 +119,9 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                                     array_schema.any_of.as_deref(),
                                     array_schema.all_of.as_deref(),
                                 )
-                                .await
-                                {
-                                    return Some(type_definition);
+                                .await;
+                                if !type_definitions.is_empty() {
+                                    return type_definitions;
                                 }
 
                                 return value
@@ -191,7 +214,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                 }
             }
 
-            None
+            Vec::new()
         }
         .boxed()
     }
@@ -205,17 +228,17 @@ impl GetTypeDefinition for ArraySchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
+    ) -> tombi_future::BoxFuture<'b, Vec<TypeDefinition>> {
         async move {
-            current_schema.map(|schema| {
+            current_schema.map_or_else(Vec::new, |schema| {
                 let mut schema_uri = schema.schema_uri.as_ref().clone();
                 schema_uri.set_fragment(Some(&format!("L{}", self.range.start.line + 1)));
 
-                TypeDefinition {
+                vec![TypeDefinition {
                     schema_uri,
                     schema_accessors: accessors.iter().map(Into::into).collect_vec(),
                     range: schema.schema_view.range(),
-                }
+                }]
             })
         }
         .boxed()

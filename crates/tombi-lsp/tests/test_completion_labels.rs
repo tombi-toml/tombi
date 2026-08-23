@@ -4,12 +4,73 @@ use tombi_test_lib::{
     adjacent_one_of_additional_properties_test_schema_path, adjacent_one_of_hover_test_schema_path,
     dot_config_project_root_fixture_path, exact_index_string_test_schema_path,
     issue_1895_rustfmt_like_schema_path, lsp_consistency_test_schema_path, project_root_path,
-    string_format_test_schema_path, today_local_date, today_local_date_time, today_local_time,
-    today_offset_date_time,
+    ref_sibling_annotations_test_schema_path, string_format_test_schema_path, today_local_date,
+    today_local_date_time, today_local_time, today_offset_date_time,
 };
 
 mod completion_labels {
     use super::*;
+
+    test_completion_labels! {
+        #[tokio::test]
+        async fn cached_remote_schema_completion_link_uses_local_file_position(
+            "value = █",
+            SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                toml_version: None,
+                path: "https://example.com/cached-completion.schema.json".into(),
+                include: vec!["*.toml".into()],
+                exclude: None,
+                strict: None,
+                lint: None,
+                format: None,
+                overrides: None,
+            })),
+            CachedResponse::new(
+                "https://example.com/cached-completion.schema.json",
+                r#"{
+  "properties": {
+    "value": {
+      "type": "string"
+    }
+  }
+}"#,
+            ),
+            tombi_lsp::backend::Options {
+                offline: Some(true),
+                no_cache: Some(false),
+            },
+        ) -> Ok([
+            {
+                "label": "\"\"",
+                "documentation": "cached-completion.schema.json#L3,"
+            },
+        ]);
+    }
+
+    test_completion_labels! {
+        #[tokio::test]
+        async fn built_in_schema_completion_link_uses_github(
+            r#"
+            [lint.rules]
+            key-empty = █
+            "#,
+            SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                toml_version: None,
+                path: "tombi://www.schemastore.org/tombi.json".into(),
+                include: vec!["*.toml".into()],
+                exclude: None,
+                strict: None,
+                lint: None,
+                format: None,
+                overrides: None,
+            })),
+        ) -> Ok([
+            {
+                "label": "\"warn\"",
+                "documentation": "https://raw.githubusercontent.com/tombi-toml/tombi/main/www.schemastore.org/tombi.json"
+            },
+        ]);
+    }
 
     mod tombi_schema {
         use tombi_test_lib::tombi_schema_path;
@@ -40,6 +101,22 @@ mod completion_labels {
                 "# █",
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_files_exclude_array_type_hint_uses_property_documentation(
+                r#"
+                [files]
+                exclude = █
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                {
+                    "label": "[]",
+                    "documentation": "#### File patterns to exclude\n\nThe file match pattern to exclude from formatting and linting.\nSupports glob pattern.\n\nValue: `Array`\n\nSchema:",
+                },
+            ]);
         }
 
         test_completion_labels! {
@@ -1020,6 +1097,20 @@ mod completion_labels {
                 SchemaPath(adjacent_one_of_hover_test_schema_path()),
             ) -> Ok(["\"builtin-hook\"", "\"\"", "\"\"\"\"\"\"", "''", "''''''"]);
         }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_one_of_reversed_builtin_hook_id_value_completion(
+                r#"
+                [[repos_reversed]]
+                repo = "builtin"
+                hooks = [
+                  { id = █ }
+                ]
+                "#,
+                SchemaPath(adjacent_one_of_hover_test_schema_path()),
+            ) -> Ok(["\"builtin-hook\"", "\"\"", "\"\"\"\"\"\"", "''", "''''''"]);
+        }
     }
 
     mod adjacent_applicators_schema {
@@ -1112,6 +1203,135 @@ mod completion_labels {
                 "#,
                 SchemaPath(adjacent_applicators_test_schema_path()),
             ) -> Ok(["bar", "baz", "foo"]);
+        }
+    }
+
+    mod composite_array_items_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/composite-array-items.schema.json")
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_item_property_completion(
+                r#"
+                [[all_items]]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["name"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn one_of_item_property_completion(
+                r#"
+                [[one_items]]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["name"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn any_of_item_property_completion(
+                r#"
+                [[any_items]]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["name"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn any_of_same_property_merges_documentation(
+                r#"
+                [any_shared]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                {
+                    "label": "value",
+                    "documentation": "first anyOf value\n\nSchema: [composite-array-items.schema.json](file://",
+                },
+                {
+                    "label": "value",
+                    "documentation": ")\n---\n\nsecond anyOf value",
+                },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn any_of_const_and_enum_values_merge_documentation(
+                r#"
+                [any_enum_values]
+                value = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                {
+                    "label": "\"red\"",
+                    "documentation": "first enum value\n\nSchema: [composite-array-items.schema.json](file://",
+                },
+                {
+                    "label": "\"red\"",
+                    "documentation": ")\n---\n\nsecond enum value",
+                },
+                {
+                    "label": "\"blue\"",
+                    "documentation": "second enum value",
+                },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_enum_completion_intersects_values_and_merges_documentation(
+                r#"
+                [all_constraints]
+                value = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                {
+                    "label": "\"bbb\"",
+                    "documentation": "first constrained value\n\nSchema: [composite-array-items.schema.json](file://",
+                },
+                {
+                    "label": "\"bbb\"",
+                    "documentation": ")\n---\n\nsecond constrained value",
+                },
+                {
+                    "label": "\"cccc\"",
+                    "documentation": "first constrained value\n\nSchema: [composite-array-items.schema.json](file://",
+                },
+                {
+                    "label": "\"cccc\"",
+                    "documentation": ")\n---\n\nsecond constrained value",
+                },
+            ]);
+        }
+    }
+
+    mod ref_sibling_schema {
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn ref_target_and_sibling_properties_are_merged(
+                r#"
+                [settings]
+                █
+                "#,
+                SchemaPath(ref_sibling_annotations_test_schema_path()),
+            ) -> Ok(["base", "local"]);
         }
     }
 
@@ -1658,6 +1878,21 @@ mod completion_labels {
                     "documentation": "Date that selects the Workers runtime version.",
                 },
             ]);
+        }
+    }
+
+    mod recursive_schema {
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn recursive_ref_nested_table(
+                r#"
+                [metadata.nested]
+                █
+                "#,
+                SchemaPath(tombi_test_lib::recursive_schema_path()),
+            ) -> Ok(["nested", "tags"]);
         }
     }
 
@@ -2987,6 +3222,7 @@ mod completion_labels {
                 pub struct TestArgs {
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
+                    schema_items: Vec<tombi_config::SchemaItem>,
                     subschemas: Vec<SubSchema>,
                     cached_responses: Vec<CachedResponse>,
                     preselected_labels: Option<Vec<String>>,
@@ -3013,6 +3249,15 @@ mod completion_labels {
                 impl ApplyTestArg for SchemaPath {
                     fn apply(self, args: &mut TestArgs) {
                         args.schema_file_path = Some(self.0);
+                    }
+                }
+
+                #[allow(unused)]
+                struct SchemaItemArg(tombi_config::SchemaItem);
+
+                impl ApplyTestArg for SchemaItemArg {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.schema_items.push(self.0);
                     }
                 }
 
@@ -3076,7 +3321,7 @@ mod completion_labels {
                 let (service, _) =
                     LspService::new(|client| Backend::new(client, &args.backend_options));
                 let backend = service.inner();
-                let mut schema_items = Vec::new();
+                let mut schema_items = args.schema_items.clone();
 
                 if let Some(schema_file_path) = args.schema_file_path.as_ref() {
                     let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
@@ -3271,14 +3516,19 @@ mod completion_labels {
                     vec![$(($doc_label.to_string(), $documentation.to_string())),*];
 
                 for (expected_label, expected_documentation) in expected_documentation_pairs {
-                    let item = completion_items
+                    let matching_items = completion_items
                         .iter()
-                        .find(|item| item.label == expected_label)
-                        .ok_or_else(|| {
+                        .filter(|item| item.label == expected_label)
+                        .collect_vec();
+                    let [item] = matching_items.as_slice() else {
+                        return Err(
                             format!(
-                                "failed to find completion item {expected_label:?}: {labels:?}"
+                                "expected exactly one completion item {expected_label:?}, found {}: {labels:?}",
+                                matching_items.len()
                             )
-                        })?;
+                            .into(),
+                        );
+                    };
 
                     let documentation = match &item.documentation {
                         Some(tower_lsp::lsp_types::Documentation::String(value)) => {

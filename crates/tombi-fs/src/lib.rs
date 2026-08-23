@@ -1,5 +1,24 @@
 use std::path::{Component, Path, PathBuf};
 
+#[derive(Debug)]
+pub struct RunBlockingError {
+    #[cfg(not(target_family = "wasm"))]
+    source: tokio::task::JoinError,
+}
+
+impl std::fmt::Display for RunBlockingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("blocking task failed")
+    }
+}
+
+impl std::error::Error for RunBlockingError {
+    #[cfg(not(target_family = "wasm"))]
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.source)
+    }
+}
+
 #[cfg(not(target_family = "wasm"))]
 pub fn home_dir() -> Option<PathBuf> {
     dirs::home_dir()
@@ -178,14 +197,16 @@ pub fn canonicalize(path: &Path) -> std::io::Result<PathBuf> {
         .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "virtual path not found"))
 }
 
-pub async fn run_blocking<F, R>(function: F) -> Result<R, ()>
+pub async fn run_blocking<F, R>(function: F) -> Result<R, RunBlockingError>
 where
     F: FnOnce() -> R + Send + 'static,
     R: Send + 'static,
 {
     #[cfg(not(target_family = "wasm"))]
     {
-        tokio::task::spawn_blocking(function).await.map_err(|_| ())
+        tokio::task::spawn_blocking(function)
+            .await
+            .map_err(|source| RunBlockingError { source })
     }
     #[cfg(target_family = "wasm")]
     {

@@ -7,6 +7,12 @@
       "items": {
         "$ref": "#/definitions/Repo"
       }
+    },
+    "repos_reversed": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/RepoReversed"
+      }
     }
   },
   "required": ["repos"],
@@ -71,6 +77,17 @@
         }
       },
       "required": ["id"]
+    },
+    "RepoReversed": {
+      "type": "object",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/BuiltinRepo"
+        },
+        {
+          "$ref": "#/definitions/RemoteRepo"
+        }
+      ]
     }
   }
 }

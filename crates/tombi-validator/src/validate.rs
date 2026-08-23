@@ -179,11 +179,27 @@ pub fn project_current_schema_for_value(
         tombi_schema_store::SchemaView::Anything(_) | tombi_schema_store::SchemaView::Nothing(_)
             if is_boolean_schema
     );
-    if matches_instance {
+    let instance_type = tombi_schema_store::SchemaType::from_value_type(value.value_type())?;
+    if current_schema.has_reference_projection_siblings(instance_type)
+        && let Some(semantic_schema) = current_schema
+            .semantic_schema
+            .as_deref()
+            .filter(|schema| !schema.accepts_instance_type(instance_type))
+    {
+        return Some(tombi_schema_store::CurrentSchema {
+            schema_view: std::sync::Arc::new(tombi_schema_store::SchemaView::Nothing(
+                semantic_schema.range(),
+            )),
+            semantic_schema: None,
+            schema_uri: Cow::Owned(current_schema.schema_uri.as_ref().clone()),
+            definitions: Cow::Owned(current_schema.definitions.as_ref().clone()),
+            strict: current_schema.strict,
+        });
+    }
+    if matches_instance && !current_schema.requires_instance_projection(instance_type) {
         return None;
     }
 
-    let instance_type = tombi_schema_store::SchemaType::from_value_type(value.value_type())?;
     if matches!(
         current_schema.schema_view.as_ref(),
         tombi_schema_store::SchemaView::OneOf(_)
@@ -199,7 +215,12 @@ pub fn project_current_schema_for_value(
     {
         return None;
     }
-    current_schema.for_instance_type(instance_type, schema_context.string_formats())
+    let mut projected_schema =
+        current_schema.for_instance_type(instance_type, schema_context.string_formats())?;
+    // This node has already been materialized for the observed value. Nested
+    // schemas retain their own semantic sources when they are resolved.
+    projected_schema.semantic_schema = None;
+    Some(projected_schema)
 }
 
 fn resolve_deprecated_lint_level(

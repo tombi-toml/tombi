@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "scalar": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "title": "Positive branch",
+          "description": "Requires a positive value.",
+          "minimum": 1
+        },
+        {
+          "type": "integer",
+          "title": "Negative branch",
+          "description": "Requires a negative value.",
+          "maximum": -1
+        }
+      ]
+    },
+    "array": {
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "title": "First array item",
+                "description": "First array item description."
+              }
+            }
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "title": "Second array item",
+                "description": "Second array item description."
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

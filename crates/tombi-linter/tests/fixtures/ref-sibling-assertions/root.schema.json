@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "internal_type": {
+      "$ref": "#/$defs/integer",
+      "type": "string"
+    },
+    "internal_const": {
+      "$ref": "#/$defs/integer",
+      "const": "only"
+    },
+    "internal_enum": {
+      "$ref": "#/$defs/integer",
+      "enum": ["only"]
+    },
+    "external_type": {
+      "$ref": "target.schema.json",
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "integer": {
+      "type": "integer"
+    }
+  }
+}

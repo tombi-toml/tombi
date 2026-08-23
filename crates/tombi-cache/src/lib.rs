@@ -6,25 +6,7 @@ pub const CACHE_INDEX_FILE_NAME: &str = "__index__.json";
 
 #[cfg(not(target_arch = "wasm32"))]
 pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
-    if let Some(tombi_cache_home) = std::env::var_os("TOMBI_CACHE_HOME") {
-        return ensure_cache_dir(std::path::PathBuf::from(tombi_cache_home)).await;
-    }
-
-    if let Some(xdg_cache_home) = std::env::var_os("XDG_CACHE_HOME") {
-        let mut cache_dir_path = std::path::PathBuf::from(xdg_cache_home);
-        cache_dir_path.push("tombi");
-
-        return ensure_cache_dir(cache_dir_path).await;
-    }
-
-    if let Some(home_dir) = dirs::home_dir() {
-        let mut cache_dir_path = home_dir;
-        cache_dir_path.push(".cache");
-        cache_dir_path.push("tombi");
-        return ensure_cache_dir(cache_dir_path).await;
-    }
-
-    None
+    ensure_cache_dir(tombi_cache_dir_path()?).await
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -33,29 +15,74 @@ pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub async fn get_cache_file_path(cache_file_uri: &tombi_uri::Uri) -> Option<std::path::PathBuf> {
-    get_tombi_cache_dir_path().await.map(|mut dir_path| {
-        dir_path.push(cache_file_uri.scheme());
-        if let Some(host) = cache_file_uri.host() {
-            dir_path.push(host.to_string());
-        }
-        if let Some(path_segments) = cache_file_uri.path_segments() {
-            for segment in path_segments {
-                dir_path.push(segment)
-            }
-        }
-        if matches!(cache_file_uri.scheme(), "http" | "https")
-            && !cache_file_uri.path().ends_with(".json")
-        {
-            dir_path.push(CACHE_INDEX_FILE_NAME);
-        }
+fn tombi_cache_dir_path() -> Option<std::path::PathBuf> {
+    if let Some(tombi_cache_home) = std::env::var_os("TOMBI_CACHE_HOME") {
+        return Some(std::path::PathBuf::from(tombi_cache_home));
+    }
 
-        dir_path
-    })
+    if let Some(xdg_cache_home) = std::env::var_os("XDG_CACHE_HOME") {
+        let mut cache_dir_path = std::path::PathBuf::from(xdg_cache_home);
+        cache_dir_path.push("tombi");
+
+        return Some(cache_dir_path);
+    }
+
+    if let Some(home_dir) = dirs::home_dir() {
+        let mut cache_dir_path = home_dir;
+        cache_dir_path.push(".cache");
+        cache_dir_path.push("tombi");
+        return Some(cache_dir_path);
+    }
+
+    None
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub async fn get_cache_file_path(cache_file_uri: &tombi_uri::Uri) -> Option<std::path::PathBuf> {
+    Some(cache_file_path(
+        get_tombi_cache_dir_path().await?,
+        cache_file_uri,
+    ))
 }
 
 #[cfg(target_arch = "wasm32")]
 pub async fn get_cache_file_path(_cache_file_uri: &tombi_uri::Uri) -> Option<std::path::PathBuf> {
+    None
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn cache_file_path(
+    mut cache_dir_path: std::path::PathBuf,
+    cache_file_uri: &tombi_uri::Uri,
+) -> std::path::PathBuf {
+    cache_dir_path.push(cache_file_uri.scheme());
+    if let Some(host) = cache_file_uri.host() {
+        cache_dir_path.push(host.to_string());
+    }
+    if let Some(path_segments) = cache_file_uri.path_segments() {
+        for segment in path_segments {
+            cache_dir_path.push(segment);
+        }
+    }
+    if matches!(cache_file_uri.scheme(), "http" | "https")
+        && !cache_file_uri.path().ends_with(".json")
+    {
+        cache_dir_path.push(CACHE_INDEX_FILE_NAME);
+    }
+
+    cache_dir_path
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn get_existing_cache_file_path(cache_file_uri: &tombi_uri::Uri) -> Option<std::path::PathBuf> {
+    let cache_file_path = cache_file_path(tombi_cache_dir_path()?, cache_file_uri);
+    cache_file_path.is_file().then_some(cache_file_path)
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn get_existing_cache_file_path(
+    _cache_file_uri: &tombi_uri::Uri,
+) -> Option<std::path::PathBuf> {
     None
 }
 

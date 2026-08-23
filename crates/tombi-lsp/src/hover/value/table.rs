@@ -135,10 +135,11 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                     key_patterns,
                                                     ..Default::default()
                                                 }),
-                                                schema_uri: Some(
-                                                    current_schema.schema_uri.as_ref().clone(),
+                                                schema_uri: super::super::current_schema_link_uri(
+                                                    Some(&current_schema),
                                                 ),
                                                 range: None,
+                                                schema_tooltip: None,
                                             }));
                                         }
 
@@ -721,6 +722,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                     constraints: None,
                     schema_uri: None,
                     range: Some(self.range()),
+                    schema_tooltip: None,
                 }))
             }
         }
@@ -788,8 +790,9 @@ impl GetHoverContent for TableSchema {
                     array_values_order_by: self.array_values_order_by.clone(),
                     ..Default::default()
                 }),
-                schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),
+                schema_uri: super::super::current_schema_link_uri(current_schema),
                 range: None,
+                schema_tooltip: None,
             }))
         }
         .boxed()

@@ -8,9 +8,32 @@ use crate::{
     config_manager::ConfigSchemaStore,
     goto_type_definition::{
         TypeDefinition, get_tombi_document_comment_directive_type_definition, get_type_definition,
+        location_key,
     },
     handler::hover::get_hover_keys_with_range,
 };
+
+fn type_definition_locations(
+    type_definitions: Vec<TypeDefinition>,
+) -> Vec<tombi_extension::Location> {
+    let mut unique_type_definitions: Vec<TypeDefinition> =
+        Vec::with_capacity(type_definitions.len());
+    for type_definition in type_definitions {
+        if !unique_type_definitions.iter().any(|existing| {
+            location_key(&existing.schema_uri, existing.range)
+                == location_key(&type_definition.schema_uri, type_definition.range)
+        }) {
+            unique_type_definitions.push(type_definition);
+        }
+    }
+    unique_type_definitions
+        .into_iter()
+        .map(|type_definition| tombi_extension::Location {
+            uri: type_definition.schema_uri.into(),
+            range: type_definition.range,
+        })
+        .collect()
+}
 
 pub async fn handle_goto_type_definition(
     backend: &Backend,
@@ -64,13 +87,10 @@ pub async fn handle_goto_type_definition(
 
     let position = position.into_lsp(line_index);
 
-    if let Some(type_definition) =
-        get_tombi_document_comment_directive_type_definition(&root, position).await
-    {
-        return Ok(Some(vec![tombi_extension::Location {
-            uri: type_definition.schema_uri.into(),
-            range: type_definition.range,
-        }]));
+    let type_definitions =
+        get_tombi_document_comment_directive_type_definition(&root, position).await;
+    if !type_definitions.is_empty() {
+        return Ok(Some(type_definition_locations(type_definitions)));
     }
 
     let source_schema = schema_store
@@ -97,22 +117,16 @@ pub async fn handle_goto_type_definition(
         strict,
     );
 
-    Ok(
-        match get_type_definition(
-            &document_source.document_tree(),
-            position,
-            &keys,
-            &schema_context,
-        )
-        .await
-        {
-            Some(TypeDefinition {
-                schema_uri, range, ..
-            }) => Some(vec![tombi_extension::Location {
-                uri: schema_uri.into(),
-                range,
-            }]),
-            _ => Default::default(),
-        },
+    let type_definitions = get_type_definition(
+        &document_source.document_tree(),
+        position,
+        &keys,
+        &schema_context,
     )
+    .await;
+    if type_definitions.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(type_definition_locations(type_definitions)))
+    }
 }

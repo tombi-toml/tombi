@@ -13,15 +13,18 @@ use tombi_config::TomlVersion;
 use tombi_document_tree::{IntoDocumentTreeAndErrors, TryIntoDocumentTree};
 use tombi_extension::CompletionContentPriority;
 use tombi_extension::{
-    CommaHint, CommentContext, CompletionContent, CompletionEdit, CompletionHint,
+    CommaHint, CommentContext, CompletionContent, CompletionEdit, CompletionHint, CompletionKind,
 };
 use tombi_future::Boxable;
 use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
     Accessor, AccessorKeyKind, AllOfSchema, AnyOfSchema, CompositeSchema, CurrentSchema,
     KeyContext, OneOfSchema, SchemaDefinitions, SchemaStore, SchemaUri, SchemaView,
+    get_schema_name,
 };
 use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
+
+use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
 
 pub fn get_comment_context(
     root: &tombi_ast::Root,
@@ -246,7 +249,7 @@ pub async fn find_completion_contents(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
-    match CompletionSource::new(
+    let completion_items = match CompletionSource::new(
         document_tree,
         position,
         keys,
@@ -310,23 +313,8 @@ pub async fn find_completion_contents(
                 .await
         }
         None => Vec::new(),
-    }
-    .into_iter()
-    .fold(
-        tombi_hashmap::IndexMap::new(),
-        |mut acc: tombi_hashmap::IndexMap<_, Vec<_>>, content| {
-            acc.entry(content.label.clone()).or_default().push(content);
-            acc
-        },
-    )
-    .into_iter()
-    .filter_map(|(_, contents)| {
-        contents
-            .into_iter()
-            .sorted_by(|a, b| a.priority.cmp(&b.priority))
-            .next()
-    })
-    .collect()
+    };
+    dedup_completion_contents(completion_items)
 }
 
 pub trait FindCompletionContents {
@@ -342,15 +330,12 @@ pub trait FindCompletionContents {
 }
 
 fn dedup_completion_contents(completion_items: Vec<CompletionContent>) -> Vec<CompletionContent> {
-    let mut deduped_items: tombi_hashmap::IndexMap<String, CompletionContent> =
-        tombi_hashmap::IndexMap::new();
+    let mut deduped_items = tombi_hashmap::IndexMap::with_capacity(completion_items.len());
 
     for item in completion_items {
-        match deduped_items.entry(item.label.clone()) {
+        match deduped_items.entry(completion_content_key(&item)) {
             tombi_hashmap::map::Entry::Occupied(mut entry) => {
-                if item.priority < entry.get().priority {
-                    entry.insert(item);
-                }
+                merge_completion_content(entry.get_mut(), item);
             }
             tombi_hashmap::map::Entry::Vacant(entry) => {
                 entry.insert(item);
@@ -359,6 +344,82 @@ fn dedup_completion_contents(completion_items: Vec<CompletionContent>) -> Vec<Co
     }
 
     deduped_items.into_values().collect()
+}
+
+pub(super) fn dedup_composite_completion_contents(
+    completion_items: Vec<(CompletionContent, Option<SchemaTooltip>)>,
+) -> Vec<CompletionContent> {
+    let mut deduped_items = tombi_hashmap::IndexMap::with_capacity(completion_items.len());
+
+    for (mut item, tooltip) in completion_items {
+        match deduped_items.entry(completion_content_key(&item)) {
+            tombi_hashmap::map::Entry::Occupied(mut entry) => {
+                let (existing, tooltips): &mut (CompletionContent, Vec<SchemaTooltip>) =
+                    entry.get_mut();
+                merge_completion_content(existing, item);
+                if let Some(tooltip) = tooltip {
+                    tooltips.push(tooltip);
+                }
+            }
+            tombi_hashmap::map::Entry::Vacant(entry) => {
+                let tooltips = tooltip.into_iter().collect();
+                item.documentation = None;
+                entry.insert((item, tooltips));
+            }
+        }
+    }
+
+    deduped_items
+        .into_values()
+        .map(|(mut item, tooltips)| {
+            if let Some(tooltip) = SchemaTooltip::composite(tooltips) {
+                item.documentation = Some(tooltip.to_string());
+            }
+            item
+        })
+        .collect()
+}
+
+pub(super) fn take_completion_schema_tooltip(
+    item: &mut CompletionContent,
+    current_schema: &CurrentSchema<'_>,
+) -> Option<SchemaTooltip> {
+    if item.schema_uri.as_ref() == Some(current_schema.schema_uri.as_ref()) {
+        item.schema_uri = Some(
+            tombi_extension::get_schema_link_uri(
+                current_schema.schema_uri.as_ref(),
+                current_schema.schema_view.range().start,
+            )
+            .into(),
+        );
+    }
+    let mut markdown = item.documentation.take().unwrap_or_default();
+    if let Some(schema_uri) = item.schema_uri.take()
+        && let Some(schema_name) = get_schema_name(&schema_uri)
+    {
+        if !markdown.is_empty() && !markdown.ends_with("\n\n") {
+            if markdown.ends_with('\n') {
+                markdown.push('\n');
+            } else {
+                markdown.push_str("\n\n");
+            }
+        }
+        markdown.push_str(&format!("Schema: [{schema_name}]({schema_uri})\n"));
+    }
+
+    (!markdown.is_empty()).then_some(SchemaTooltip::Markdown(markdown))
+}
+
+fn completion_content_key(item: &CompletionContent) -> (String, Option<CompletionKind>) {
+    // Literal candidates with the same label are merged regardless of their literal kind.
+    let non_literal_kind = (!item.kind.is_literal()).then_some(item.kind);
+    (item.label.clone(), non_literal_kind)
+}
+
+fn merge_completion_content(existing: &mut CompletionContent, item: CompletionContent) {
+    if item.priority < existing.priority {
+        *existing = item;
+    }
 }
 
 fn is_generic_literal_type_hint(completion_item: &CompletionContent) -> bool {
@@ -383,6 +444,10 @@ pub(super) async fn merge_adjacent_schema_completion_items(
     any_of_schema: Option<&AnyOfSchema>,
     all_of_schema: Option<&AllOfSchema>,
 ) -> Vec<CompletionContent> {
+    if one_of_schema.is_none() && any_of_schema.is_none() && all_of_schema.is_none() {
+        return base_completion_items;
+    }
+
     let Some(current_schema) = current_schema else {
         return base_completion_items;
     };
@@ -486,7 +551,15 @@ pub(super) async fn merge_adjacent_schema_completion_items(
     completion_items.extend(base_completion_items.into_iter().filter(|completion_item| {
         !has_concrete_adjacent_values || !is_generic_literal_type_hint(completion_item)
     }));
-    dedup_completion_contents(completion_items)
+    dedup_composite_completion_contents(
+        completion_items
+            .into_iter()
+            .map(|mut item| {
+                let tooltip = take_completion_schema_tooltip(&mut item, current_schema);
+                (item, tooltip)
+            })
+            .collect(),
+    )
 }
 
 pub trait CompletionCandidate {
@@ -554,7 +627,7 @@ fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
     completion_hint: Option<CompletionHint>,
 ) -> tombi_future::BoxFuture<'b, Option<String>> {
     async move {
-        let mut candidates = tombi_hashmap::HashSet::new();
+        let mut candidates = tombi_hashmap::IndexSet::new();
         let schema_visits = tombi_schema_store::SchemaVisits::default();
 
         if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
@@ -609,7 +682,7 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
     completion_hint: Option<CompletionHint>,
 ) -> tombi_future::BoxFuture<'b, Option<String>> {
     async move {
-        let mut candidates = tombi_hashmap::HashSet::new();
+        let mut contents = Vec::new();
         let schema_visits = tombi_schema_store::SchemaVisits::default();
 
         if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
@@ -628,7 +701,7 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
                     continue;
                 }
 
-                if let Some(candidate) = CompletionCandidate::description(
+                let title = CompletionCandidate::title(
                     current_schema.schema_view.as_ref(),
                     &current_schema.schema_uri,
                     &current_schema.definitions,
@@ -636,15 +709,28 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
                     schema_store,
                     completion_hint,
                 )
-                .await
-                {
-                    candidates.insert(candidate.to_string());
-                }
+                .await;
+                let description = CompletionCandidate::description(
+                    current_schema.schema_view.as_ref(),
+                    &current_schema.schema_uri,
+                    &current_schema.definitions,
+                    current_schema.strict,
+                    schema_store,
+                    completion_hint,
+                )
+                .await;
+                contents.push(SchemaTooltip::Content(SchemaTooltipContent {
+                    title,
+                    description,
+                    value_type: current_schema.schema_view.value_type().await.to_string(),
+                    constraints: None,
+                    schema: None,
+                }));
             }
         }
 
-        if candidates.len() == 1 {
-            return candidates.into_iter().next();
+        if let Some(tooltip) = SchemaTooltip::composite(contents) {
+            return Some(tooltip.to_string());
         }
 
         composite_schema
@@ -760,6 +846,8 @@ fn tombi_json_value_to_completion_example_item(
 fn tombi_json_value_to_completion_enum_item(
     value: &tombi_json::Value,
     position: tombi_text::Position,
+    detail: Option<String>,
+    documentation: Option<String>,
     schema_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,
 ) -> Option<CompletionContent> {
@@ -773,7 +861,12 @@ fn tombi_json_value_to_completion_enum_item(
     let label = value.to_string();
     let edit = CompletionEdit::new_literal(&label, position, completion_hint);
     Some(CompletionContent::new_enum_value(
-        label, None, None, edit, schema_uri, None,
+        label,
+        detail,
+        documentation,
+        edit,
+        schema_uri,
+        None,
     ))
 }
 
