@@ -1,6 +1,7 @@
 mod cursor;
 mod error;
 mod lexed;
+mod scanner;
 mod token;
 
 pub use cursor::Cursor;
@@ -189,7 +190,18 @@ impl Cursor<'_> {
     fn line_comment(&mut self) -> Result<Token, crate::Error> {
         debug_assert!(self.current() == '#');
 
-        self.eat_while(|c| !matches!(c, '\n' | '\r'));
+        if !scanner::is_long_line(self.remaining().as_bytes()) {
+            self.eat_while(|c| !matches!(c, '\n' | '\r'));
+            return Ok(Token::new(SyntaxKind::COMMENT, self.pop_span_range()));
+        }
+
+        let len = scanner::ascii_before_line_break(self.remaining().as_bytes());
+        if len > 0 {
+            self.eat_ascii_bytes(len);
+        }
+        if !self.is_eof() && !matches!(self.peek(1), '\n' | '\r') {
+            self.eat_while(|c| !matches!(c, '\n' | '\r'));
+        }
         Ok(Token::new(SyntaxKind::COMMENT, self.pop_span_range()))
     }
 

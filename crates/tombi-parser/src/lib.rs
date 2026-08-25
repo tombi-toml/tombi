@@ -43,7 +43,7 @@ fn build_syntax_tape(
     synthetic_tokens: &[tombi_lexer::Token],
     events: &[crate::event::Event],
 ) -> SyntaxNode {
-    let mut builder = tombi_ast_syntax::SyntaxTreeBuilder::new(source);
+    let mut builder = tombi_ast_syntax::SyntaxTreeBuilder::with_capacity(source, events.len());
     let mut offset = tombi_text::Offset::default();
 
     builder::intersperse_trivia(tokens, synthetic_tokens, events, |step| match step {

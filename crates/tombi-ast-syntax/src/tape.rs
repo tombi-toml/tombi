@@ -205,10 +205,8 @@ impl PositionIndex {
     fn new(source: &str) -> Self {
         let mut starts = Vec::new();
         starts.push(0);
-        for (index, byte) in source.bytes().enumerate() {
-            if byte == b'\n' {
-                starts.push((index + 1) as u32);
-            }
+        for index in memchr::memchr_iter(b'\n', source.as_bytes()) {
+            starts.push((index + 1) as u32);
         }
 
         let mut unicode_lines = Vec::new();
@@ -397,15 +395,21 @@ impl Tree {
 pub struct SyntaxTreeBuilder {
     source: Arc<Box<str>>,
     entries: Vec<Entry>,
+    token_ids: Vec<u32>,
     open: Vec<u32>,
     last_child: Vec<u32>,
 }
 
 impl SyntaxTreeBuilder {
     pub fn new(source: impl Into<Box<str>>) -> Self {
+        Self::with_capacity(source, 0)
+    }
+
+    pub fn with_capacity(source: impl Into<Box<str>>, capacity: usize) -> Self {
         Self {
             source: Arc::new(source.into()),
-            entries: Vec::new(),
+            entries: Vec::with_capacity(capacity),
+            token_ids: Vec::with_capacity(capacity / 2),
             open: Vec::new(),
             last_child: Vec::new(),
         }
@@ -452,6 +456,7 @@ impl SyntaxTreeBuilder {
             kind,
             tag: EntryTag::token(needs_decode),
         });
+        self.token_ids.push(id);
     }
 
     pub fn finish_node(&mut self, offset: tombi_text::Offset) {
@@ -468,12 +473,7 @@ impl SyntaxTreeBuilder {
         assert!(!self.entries.is_empty(), "syntax tape has no root");
         let tree = Arc::new(Tree {
             source: self.source,
-            token_ids: self
-                .entries
-                .iter()
-                .enumerate()
-                .filter_map(|(id, entry)| entry.is_token().then_some(id as u32))
-                .collect(),
+            token_ids: self.token_ids.into_boxed_slice(),
             entries: self.entries.into_boxed_slice(),
             position_index: OnceLock::new(),
         });

@@ -27,21 +27,19 @@ impl LineIndex {
         let mut start: usize = 0;
         let bytes = text.as_bytes();
 
-        for (idx, ch) in text.char_indices() {
-            if ch == '\n' {
-                let line_end = if idx > start && bytes.get(idx - 1) == Some(&b'\r') {
-                    idx - 1
-                } else {
-                    idx
-                };
+        for idx in memchr::memchr_iter(b'\n', bytes) {
+            let line_end = if idx > start && bytes.get(idx - 1) == Some(&b'\r') {
+                idx - 1
+            } else {
+                idx
+            };
 
-                lines.push(Span::new(
-                    offset_from_usize(start),
-                    offset_from_usize(line_end),
-                ));
+            lines.push(Span::new(
+                offset_from_usize(start),
+                offset_from_usize(line_end),
+            ));
 
-                start = idx + ch.len_utf8();
-            }
+            start = idx + 1;
         }
 
         let final_end = text.len();
