@@ -1,4 +1,4 @@
-use tombi_syntax::{SyntaxKind::*, T};
+use tombi_ast_syntax::{SyntaxKind::*, T};
 
 use super::{Parse, TS_LINE_END};
 use crate::{
@@ -7,13 +7,13 @@ use crate::{
     support::{leading_comments, trailing_comment},
 };
 
-impl Parse for tombi_ast::KeyValue {
+impl Parse for tombi_ast_syntax::KeyValue {
     fn parse(p: &mut Parser) {
         let m = p.start();
 
         leading_comments(p);
 
-        tombi_ast::Keys::parse(p);
+        tombi_ast_syntax::Keys::parse(p);
 
         if !p.eat(T![=]) {
             p.error(crate::Error::new(ExpectedEqual, p.current_range()));
@@ -26,7 +26,7 @@ impl Parse for tombi_ast::KeyValue {
             p.invalid_token();
             p.error(crate::Error::new(ExpectedValue, p.previous_range()));
         } else {
-            tombi_ast::Value::parse(p);
+            tombi_ast_syntax::Value::parse(p);
         }
 
         trailing_comment(p);
@@ -38,6 +38,190 @@ impl Parse for tombi_ast::KeyValue {
 #[cfg(test)]
 mod test {
     use crate::{ErrorKind::*, test_parser};
+
+    test_parser! {
+        #[test]
+        fn escaped_key_text_is_decoded_on_demand(r#""\u006b" = 1"#) -> Assert(|parsed| {
+            use std::borrow::Cow;
+
+            let key = parsed
+                .root()
+                .key_values()
+                .next()
+                .unwrap()
+                .keys()
+                .unwrap()
+                .keys()
+                .next()
+                .unwrap();
+            let first = key
+                .try_to_content(tombi_toml_version::TomlVersion::V1_0_0)
+                .unwrap();
+            let second = key
+                .try_to_content(tombi_toml_version::TomlVersion::V1_0_0)
+                .unwrap();
+
+            first == "k"
+                && second == "k"
+                && matches!(first, Cow::Owned(_))
+                && matches!(second, Cow::Owned(_))
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn decoded_key_text_is_versioned(r#""\e" = 1"#) -> Assert(|parsed| {
+            let key = parsed
+                .root()
+                .key_values()
+                .next()
+                .unwrap()
+                .keys()
+                .unwrap()
+                .keys()
+                .next()
+                .unwrap();
+
+            key.try_to_content(tombi_toml_version::TomlVersion::V1_0_0)
+                .is_err()
+                && key
+                    .try_to_content(tombi_toml_version::TomlVersion::V1_1_0)
+                    .is_ok_and(|content| content == "\u{1b}")
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn escaped_value_text_is_decoded_on_demand(r#"key = "a\tb""#) -> Assert(|parsed| {
+            use std::borrow::Cow;
+            use tombi_ast::ValueNode as _;
+
+            let value = parsed
+                .root()
+                .key_values()
+                .next()
+                .unwrap()
+                .value()
+                .unwrap();
+            match (
+                value.value(tombi_toml_version::TomlVersion::V1_0_0),
+                value.value(tombi_toml_version::TomlVersion::V1_0_0),
+            ) {
+                (
+                    Some(tombi_ast::Value::String(first)),
+                    Some(tombi_ast::Value::String(second)),
+                ) => {
+                    first == "a\tb"
+                        && second == "a\tb"
+                        && matches!(first, Cow::Owned(_))
+                        && matches!(second, Cow::Owned(_))
+                }
+                _ => false,
+            }
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn basic_quoted_text_without_escape_conversion_borrows_source(
+            r#""key" = "value""#
+        ) -> Assert(|parsed| {
+            use tombi_ast::{Node as _, ValueNode as _};
+            use tombi_ast_syntax::AstNode as _;
+
+            let key_value = parsed.root().key_values().next().unwrap();
+            let key = key_value.keys().unwrap().keys().next().unwrap();
+            let key_text = key.text();
+            let key_content = key
+                .try_to_content(tombi_toml_version::TomlVersion::V1_0_0)
+                .unwrap();
+            let value = key_value.value().unwrap();
+            let value_text = value.syntax().text();
+
+            match value.value(tombi_toml_version::TomlVersion::V1_0_0) {
+                Some(tombi_ast::Value::String(value_content)) => {
+                    key_content == "key"
+                        && value_content == "value"
+                        && key_content.as_ptr() == key_text[1..key_text.len() - 1].as_ptr()
+                        && value_content.as_ptr() == value_text[1..value_text.len() - 1].as_ptr()
+                }
+                _ => false,
+            }
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn literal_quoted_text_without_escape_conversion_borrows_source(
+            r#"'a\b' = 'c\d'"#
+        ) -> Assert(|parsed| {
+            use tombi_ast::{Node as _, ValueNode as _};
+            use tombi_ast_syntax::AstNode as _;
+
+            let key_value = parsed.root().key_values().next().unwrap();
+            let key = key_value.keys().unwrap().keys().next().unwrap();
+            let key_text = key.text();
+            let key_content = key
+                .try_to_content(tombi_toml_version::TomlVersion::V1_0_0)
+                .unwrap();
+            let value = key_value.value().unwrap();
+            let value_text = value.syntax().text();
+
+            match value.value(tombi_toml_version::TomlVersion::V1_0_0) {
+                Some(tombi_ast::Value::String(value_content)) => {
+                    key_content == r#"a\b"#
+                        && value_content == r#"c\d"#
+                        && key_content.as_ptr() == key_text[1..key_text.len() - 1].as_ptr()
+                        && value_content.as_ptr() == value_text[1..value_text.len() - 1].as_ptr()
+                }
+                _ => false,
+            }
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn document_tree_borrows_decoded_text(r#""\u006b" = "a\tb""#) -> Assert(|parsed| {
+            use std::borrow::Cow;
+            use tombi_document_tree_syntax::IntoDocumentTreeAndErrors as _;
+            use tombi_ast_syntax::AstNode as _;
+
+            let root = parsed.root();
+            let key_value = root.key_values().next().unwrap();
+            let syntax_key_node = key_value
+                .keys()
+                .unwrap()
+                .keys()
+                .next()
+                .unwrap();
+            let syntax_key = syntax_key_node
+                .try_to_content(tombi_toml_version::TomlVersion::V1_0_0)
+                .unwrap();
+            let syntax_value_node = key_value.value().unwrap();
+            let syntax_value = syntax_value_node
+                .syntax()
+                .try_to_content(tombi_toml_version::TomlVersion::V1_0_0)
+                .unwrap();
+            let document_tree = root
+                .into_document_tree_and_errors(tombi_toml_version::TomlVersion::V1_0_0)
+                .tree;
+            let cloned_tree = document_tree.clone();
+            let document_key = document_tree.keys().next().unwrap();
+            let cloned_key = cloned_tree.keys().next().unwrap();
+            match document_tree.get("k") {
+                Some(tombi_document_tree_syntax::Value::String(document_value)) => {
+                    syntax_key == "k"
+                        && syntax_value == "a\tb"
+                        && matches!(syntax_key, Cow::Owned(_))
+                        && matches!(syntax_value, Cow::Owned(_))
+                        && document_key.value() == "k"
+                        && document_value.value() == "a\tb"
+                        && std::ptr::eq(document_key.value(), cloned_key.value())
+                }
+                _ => false,
+            }
+        })
+    }
 
     test_parser! {
         #[test]

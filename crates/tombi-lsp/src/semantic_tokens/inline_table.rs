@@ -1,8 +1,8 @@
-use tombi_ast::{AstNode, DanglingCommentGroupOr};
+use tombi_ast_syntax::{AstNode, DanglingCommentGroupOr};
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder};
 
-impl AppendSemanticTokens for tombi_ast::InlineTable {
+impl AppendSemanticTokens for tombi_ast_syntax::InlineTable {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         if let Some(trailing_comment) = self.brace_start_trailing_comment() {
             trailing_comment.append_semantic_tokens(builder);

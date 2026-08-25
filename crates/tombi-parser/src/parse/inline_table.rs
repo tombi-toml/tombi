@@ -1,4 +1,4 @@
-use tombi_syntax::{SyntaxKind::*, T};
+use tombi_ast_syntax::{SyntaxKind::*, T};
 
 use crate::{
     ErrorKind::*,
@@ -8,7 +8,7 @@ use crate::{
     token_set::TS_INLINE_TABLE_END,
 };
 
-impl Parse for tombi_ast::InlineTable {
+impl Parse for tombi_ast_syntax::InlineTable {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 
@@ -23,14 +23,14 @@ impl Parse for tombi_ast::InlineTable {
         loop {
             while p.eat(LINE_BREAK) {}
 
-            Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
+            Vec::<tombi_ast_syntax::DanglingCommentGroup>::parse(p);
 
             let n = peek_leading_comments(p);
             if p.nth_at_ts(n, TS_INLINE_TABLE_END) {
                 break;
             }
 
-            tombi_ast::KeyValueWithCommaGroup::parse(p);
+            tombi_ast_syntax::KeyValueWithCommaGroup::parse(p);
         }
 
         if !p.eat(T!['}']) {
@@ -254,7 +254,7 @@ mod test {
                 .and_then(|group| group.key_values().next())
                 .and_then(|key_value| key_value.value())
                 .and_then(|value| match value {
-                    tombi_ast::Value::InlineTable(table) => Some(table),
+                    tombi_ast_syntax::Value::InlineTable(table) => Some(table),
                     _ => None,
                 })
                 .unwrap();
@@ -296,7 +296,7 @@ mod test {
                 .and_then(|group| group.key_values().next())
                 .and_then(|key_value| key_value.value())
                 .and_then(|value| match value {
-                    tombi_ast::Value::InlineTable(table) => Some(table),
+                    tombi_ast_syntax::Value::InlineTable(table) => Some(table),
                     _ => None,
                 })
                 .unwrap();

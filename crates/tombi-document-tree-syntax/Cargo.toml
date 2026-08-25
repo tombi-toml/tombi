@@ -1,0 +1,28 @@
+[package]
+name = "tombi-document-tree-syntax"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+chrono.workspace = true
+itertools.workspace = true
+thiserror.workspace = true
+tombi-accessor.workspace = true
+tombi-date-time.workspace = true
+tombi-diagnostic = { workspace = true, optional = true }
+tombi-document-tree.workspace = true
+tombi-hashmap.workspace = true
+tombi-ast-syntax.workspace = true
+tombi-text.workspace = true
+tombi-toml-text.workspace = true
+tombi-toml-version.workspace = true
+
+[features]
+default = ["diagnostic"]
+diagnostic = ["dep:tombi-diagnostic"]
+
+[lints]
+workspace = true

@@ -3,9 +3,8 @@ mod error;
 pub use error::Error;
 use itertools::Either;
 use serde::de::DeserializeOwned;
-use tombi_ast::AstNode;
 use tombi_document::IntoDocument;
-use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 use tombi_schema_store::SchemaStore;
 use tombi_toml_version::TomlVersion;
 use typed_builder::TypedBuilder;
@@ -97,7 +96,7 @@ impl Deserializer<'_> {
             return Err(parsed.errors.into());
         }
 
-        let root = tombi_ast::Root::cast(parsed.syntax_node()).expect("AST Root must be present");
+        let root = parsed.root();
         let toml_version = self.get_toml_version(&root).await?;
         from_document(self.try_to_document(root, toml_version)?)
     }
@@ -114,7 +113,7 @@ impl Deserializer<'_> {
 
     async fn get_toml_version(
         &self,
-        root: &tombi_ast::Root,
+        root: &tombi_ast_syntax::Root,
     ) -> Result<TomlVersion, crate::de::Error> {
         // 1. Check comment directive first (highest priority)
         if let Some(directive) =
@@ -180,7 +179,7 @@ impl Deserializer<'_> {
 
     pub(crate) fn try_to_document(
         &self,
-        root: tombi_ast::Root,
+        root: tombi_ast_syntax::Root,
         toml_version: TomlVersion,
     ) -> Result<tombi_document::Document, crate::de::Error> {
         // Convert the AST to a document tree

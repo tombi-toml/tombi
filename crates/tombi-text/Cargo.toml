@@ -8,9 +8,14 @@ license.workspace = true
 [dependencies]
 log.workspace = true
 serde = { workspace = true, optional = true }
-tower-lsp = { workspace = true, optional = true }
 unicode-segmentation.workspace = true
 wasm-bindgen = { workspace = true, optional = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tower-lsp = { workspace = true, optional = true, features = ["runtime-tokio"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+tower-lsp = { workspace = true, optional = true, features = ["runtime-agnostic"] }
 
 [dev-dependencies]
 pretty_assertions.workspace = true

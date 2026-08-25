@@ -1,4 +1,3 @@
-use tombi_ast::AstNode;
 use tombi_config::{
     CONFIG_TOML_FILENAME, Config, ConfigLevel, DOT_TOMBI_TOML_FILENAME, PYPROJECT_TOML_FILENAME,
     TOMBI_CONFIG_TOML_VERSION, TOMBI_TOML_FILENAME, TomlVersion,
@@ -21,7 +20,7 @@ pub fn from_str(
         .build();
 
     let parsed = tombi_parser::parse(toml_text);
-    let root = tombi_ast::Root::cast(parsed.syntax_node()).expect("AST Root must be present");
+    let root = parsed.root();
     // Check if there are any parsing errors
     if !parsed.errors.is_empty() {
         return Err(parsed.errors.into());
@@ -43,7 +42,7 @@ impl PyProjectToml {
             .build();
 
         let parsed = tombi_parser::parse(toml_text);
-        let root = tombi_ast::Root::cast(parsed.syntax_node()).expect("AST Root must be present");
+        let root = parsed.root();
         // Check if there are any parsing errors
         if !parsed.errors.is_empty() {
             return Err(parsed.errors.into());

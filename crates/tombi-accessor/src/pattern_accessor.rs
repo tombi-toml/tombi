@@ -110,7 +110,7 @@ fn parse_quoted_key(chars: &[char], start: usize) -> Option<(String, usize)> {
                 '\'' => tombi_toml_text::try_from_literal_string(&quoted).ok()?,
                 _ => return None,
             };
-            return Some((parsed, end));
+            return Some((parsed.into_owned(), end));
         }
         escaped = false;
         end += 1;

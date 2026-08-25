@@ -1,4 +1,4 @@
-use tombi_syntax::{SyntaxKind, SyntaxKind::*, T};
+use tombi_ast_syntax::{SyntaxKind, SyntaxKind::*, T};
 
 pub(crate) const TS_LINE_END: TokenSet = TokenSet::new(&[LINE_BREAK, EOF]);
 pub(crate) const TS_COMMEMT_OR_LINE_END: TokenSet = TokenSet::new(&[COMMENT, LINE_BREAK, EOF]);

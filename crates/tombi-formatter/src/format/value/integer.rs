@@ -1,25 +1,25 @@
 use super::LiteralNode;
 
-impl LiteralNode for tombi_ast::IntegerBin {
-    fn token(&self) -> Option<tombi_syntax::SyntaxToken> {
+impl LiteralNode for tombi_ast_syntax::IntegerBin {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
         self.token()
     }
 }
 
-impl LiteralNode for tombi_ast::IntegerHex {
-    fn token(&self) -> Option<tombi_syntax::SyntaxToken> {
+impl LiteralNode for tombi_ast_syntax::IntegerHex {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
         self.token()
     }
 }
 
-impl LiteralNode for tombi_ast::IntegerDec {
-    fn token(&self) -> Option<tombi_syntax::SyntaxToken> {
+impl LiteralNode for tombi_ast_syntax::IntegerDec {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
         self.token()
     }
 }
 
-impl LiteralNode for tombi_ast::IntegerOct {
-    fn token(&self) -> Option<tombi_syntax::SyntaxToken> {
+impl LiteralNode for tombi_ast_syntax::IntegerOct {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
         self.token()
     }
 }

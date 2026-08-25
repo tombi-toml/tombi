@@ -18,14 +18,14 @@ use tombi_comment_directive::{
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
-use tombi_document_tree::{ArrayKind, IntoDocumentTreeAndErrors, TableKind};
+use tombi_document_tree_syntax::{ArrayKind, IntoDocumentTreeAndErrors, TableKind};
 use tombi_schema_store::{Accessor, SchemaUri};
 
 use crate::comment_directive::into_directive_diagnostic;
 
 pub async fn get_tombi_value_comment_directive_and_diagnostics<'a, FormatRules, LintRules>(
     comment_directives: Option<
-        impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+        impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     >,
 ) -> (
     Option<TombiValueDirectiveContent<FormatRules, LintRules>>,
@@ -60,7 +60,7 @@ where
 }
 
 pub async fn get_tombi_array_comment_directive_and_diagnostics(
-    array: &tombi_document_tree::Array,
+    array: &tombi_document_tree_syntax::Array,
     accessors: &[tombi_schema_store::Accessor],
 ) -> (
     Option<ArrayCommonLintRules>,
@@ -140,7 +140,7 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
 }
 
 pub async fn get_tombi_table_comment_directive_and_diagnostics(
-    table: &tombi_document_tree::Table,
+    table: &tombi_document_tree_syntax::Table,
     accessors: &[tombi_schema_store::Accessor],
 ) -> (
     Option<TableCommonLintRules>,
@@ -287,7 +287,7 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
 
 pub async fn get_tombi_key_rules_and_diagnostics<'a>(
     comment_directives: Option<
-        impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+        impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     >,
 ) -> (
     Option<KeyCommonExtensibleLintRules>,
@@ -301,7 +301,7 @@ pub async fn get_tombi_key_rules_and_diagnostics<'a>(
 
 pub async fn get_tombi_value_rules_and_diagnostics<'a, FormatRules, LintRules>(
     comment_directives: Option<
-        impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+        impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     >,
 ) -> (Option<LintRules>, Vec<tombi_diagnostic::Diagnostic>)
 where
@@ -325,7 +325,7 @@ where
 
 pub async fn get_tombi_key_value_rules_and_diagnostics<'a, FormatRules, LintRules>(
     comment_directives: Option<
-        impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+        impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     >,
     accessors: &[tombi_schema_store::Accessor],
 ) -> (Option<LintRules>, Vec<tombi_diagnostic::Diagnostic>)
@@ -359,7 +359,7 @@ where
 
 pub async fn get_tombi_key_table_value_rules_and_diagnostics<'a, FormatRules, LintRules>(
     comment_directives: Option<
-        impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+        impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     >,
     accessors: &[tombi_schema_store::Accessor],
 ) -> (Option<LintRules>, Vec<tombi_diagnostic::Diagnostic>)
@@ -392,14 +392,14 @@ where
 }
 
 pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
-    comment_directives: impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    comment_directives: impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     schema_uri: SchemaUri,
 ) -> (
-    Option<tombi_document_tree::Table>,
+    Option<tombi_document_tree_syntax::Table>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
     let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
-    let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
+    let mut total_document_tree_table: Option<tombi_document_tree_syntax::Table> = None;
     let mut total_diagnostics = Vec::new();
     let schema_store = tombi_comment_directive_store::schema_store().await;
 
@@ -428,7 +428,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
         strict: None,
     };
 
-    for tombi_ast::TombiValueCommentDirective {
+    for tombi_ast_syntax::TombiValueCommentDirective {
         content,
         content_range,
         ..

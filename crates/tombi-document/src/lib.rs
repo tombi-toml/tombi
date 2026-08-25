@@ -57,9 +57,9 @@ pub trait IntoDocument<T> {
     fn into_document(self, toml_version: TomlVersion) -> T;
 }
 
-impl IntoDocument<Document> for tombi_document_tree::DocumentTree {
+impl IntoDocument<Document> for tombi_document_tree_syntax::DocumentTree {
     fn into_document(self, toml_version: TomlVersion) -> Document {
-        Document(tombi_document_tree::Table::from(self).into_document(toml_version))
+        Document(tombi_document_tree_syntax::Table::from(self).into_document(toml_version))
     }
 }
 
@@ -113,8 +113,7 @@ macro_rules! test_deserialize {
         #[cfg(feature = "serde")]
         #[test]
         fn $name() {
-            use tombi_ast::AstNode;
-            use tombi_document_tree::IntoDocumentTreeAndErrors;
+            use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
             use $crate::IntoDocument;
 
             tombi_test_lib::init_log();
@@ -122,7 +121,7 @@ macro_rules! test_deserialize {
             let source = textwrap::dedent($source);
             let p = tombi_parser::parse(&source.trim());
             pretty_assertions::assert_eq!(p.errors, Vec::<tombi_parser::Error>::new());
-            let root = tombi_ast::Root::cast(p.into_syntax_node()).unwrap();
+            let root = p.into_root();
             let (document_tree, errors) = root.into_document_tree_and_errors($toml_version).into();
             pretty_assertions::assert_eq!(errors, vec![]);
             let document: $crate::Document = document_tree.into_document($toml_version);
@@ -139,9 +138,8 @@ macro_rules! test_deserialize {
         #[cfg(feature = "serde")]
         #[test]
         fn $name() {
-            use tombi_ast::AstNode;
             use itertools::Itertools;
-            use tombi_document_tree::IntoDocumentTreeAndErrors;
+            use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 
             let source = textwrap::dedent($source);
             let p = tombi_parser::parse(&source.trim());
@@ -159,7 +157,7 @@ macro_rules! test_deserialize {
                     expected_errors,
                 );
             }
-            let root = tombi_ast::Root::cast(p.into_syntax_node()).unwrap();
+            let root = p.into_root();
             let (_, errs) = root.into_document_tree_and_errors($toml_version).into();
             pretty_assertions::assert_eq!(
                 errs

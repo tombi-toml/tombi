@@ -2,7 +2,7 @@ use std::{collections::BTreeSet, path::Path};
 
 use futures::stream::{self, StreamExt};
 use tombi_config::{PyprojectExtensionFeatures, TomlVersion};
-use tombi_document_tree::{DocumentTree, Table, Value, dig_keys};
+use tombi_document_tree_syntax::{DocumentTree, Table, Value, dig_keys};
 use tombi_extension::remote_cache::warm_remote_json_cache;
 use tombi_future::Boxable;
 
@@ -149,13 +149,12 @@ fn has_source_override(sources: Option<&Table>, package_name: &str) -> bool {
 mod tests {
     use std::str::FromStr;
 
-    use tombi_ast::AstNode;
-    use tombi_document_tree::TryIntoDocumentTree;
+    use tombi_document_tree_syntax::TryIntoDocumentTree;
 
     use super::*;
 
     fn parse_document_tree(source: &str) -> DocumentTree {
-        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node()).unwrap();
+        let root = tombi_parser::parse(source).into_root();
         root.try_into_document_tree(TomlVersion::default()).unwrap()
     }
 

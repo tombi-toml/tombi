@@ -2,7 +2,7 @@ use std::path::Path;
 
 use itertools::Itertools;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{Value, dig_accessors, dig_keys};
+use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
 use tombi_extension::fetch_cached_remote_json;
 use tombi_extension::{HoverMetadata, HoverTextChange, append_latest_version};
 use tombi_hashmap::HashMap;
@@ -20,7 +20,7 @@ use crate::{
 
 pub async fn hover(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     position: tombi_text::Position,
     toml_version: TomlVersion,
@@ -171,7 +171,7 @@ struct DependencyFeatureMetadata {
 }
 
 async fn feature_key_hover_metadata(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     position: tombi_text::Position,
     cargo_toml_path: &Path,
@@ -202,7 +202,7 @@ async fn feature_key_hover_metadata(
 }
 
 fn render_feature_usage_links(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     usage_locations: &[crate::CargoTargetLocation],
     toml_version: TomlVersion,
@@ -227,7 +227,7 @@ fn render_feature_usage_links(
 }
 
 fn feature_usage_project_root(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> std::path::PathBuf {
@@ -270,7 +270,7 @@ fn format_feature_usage_label(project_root: &Path, cargo_toml_path: &Path, line:
 }
 
 async fn dependency_features_hover_metadata(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     _position: tombi_text::Position,
     cargo_toml_path: &Path,
@@ -377,7 +377,7 @@ fn dependency_features_parent_accessors(accessors: &[Accessor]) -> Option<&[Acce
 }
 
 async fn try_get_dependency_feature_metadata(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_key: &str,
     dependency_value: &Value,
     cargo_toml_path: &Path,
@@ -475,7 +475,7 @@ async fn try_get_dependency_feature_metadata(
 }
 
 fn hovered_dependency_feature_name(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
 ) -> Option<String> {
     if !matches!(
@@ -528,7 +528,7 @@ async fn registry_dependency_feature_metadata(
     }))
 }
 
-fn dependency_table_default_features_disabled(table: &tombi_document_tree::Table) -> bool {
+fn dependency_table_default_features_disabled(table: &tombi_document_tree_syntax::Table) -> bool {
     table
         .get("default-features")
         .is_some_and(|value| match value {
@@ -585,7 +585,7 @@ fn format_dependency_features_hover_tooltip(
 }
 
 fn get_dependency_feature_metadata(
-    dependency_document_tree: &tombi_document_tree::DocumentTree,
+    dependency_document_tree: &tombi_document_tree_syntax::DocumentTree,
 ) -> Option<DependencyFeatureMetadata> {
     let (_, Value::Table(features)) = dig_keys(dependency_document_tree, &["features"])? else {
         return None;
@@ -604,7 +604,7 @@ fn get_dependency_feature_metadata(
                 _ => None,
             })
             .collect::<Vec<_>>();
-        feature_dependencies_map.insert(feature_key.value.to_string(), feature_dependencies);
+        feature_dependencies_map.insert(feature_key.value().to_string(), feature_dependencies);
     }
 
     let default_features = feature_dependencies_map
@@ -647,7 +647,7 @@ fn is_dependency_version_accessor(accessors: &[Accessor]) -> bool {
 }
 
 fn is_hovering_dependency_key(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_accessors: &[Accessor],
     position: tombi_text::Position,
 ) -> bool {
@@ -666,7 +666,7 @@ fn is_hovering_dependency_key(
 }
 
 fn is_hovering_dependency_version(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     version_accessors: &[Accessor],
     position: tombi_text::Position,
 ) -> bool {
@@ -685,7 +685,7 @@ fn is_hovering_dependency_version(
 }
 
 fn is_hovering_string_dependency_version(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_accessors: &[Accessor],
     position: tombi_text::Position,
 ) -> bool {
@@ -696,7 +696,7 @@ fn is_hovering_string_dependency_version(
 }
 
 fn resolve_local_dependency_metadata(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_accessors: &[Accessor],
     dependency_key: &str,
     dependency_value: &Value,
@@ -728,7 +728,7 @@ fn resolve_local_dependency_metadata(
 }
 
 fn resolve_workspace_dependency_metadata(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_accessors: &[Accessor],
     dependency_key: &str,
     cargo_toml_path: &Path,
@@ -814,8 +814,7 @@ fn load_package_metadata(
 
 #[cfg(test)]
 mod tests {
-    use tombi_ast::AstNode;
-    use tombi_document_tree::TryIntoDocumentTree;
+    use tombi_document_tree_syntax::TryIntoDocumentTree;
 
     use super::*;
     use crate::crates_io::CratesIoCrateResponse;
@@ -871,7 +870,7 @@ mod tests {
     #[test]
     fn hovering_dependency_value_does_not_count_as_hovering_key() {
         let source = "[dependencies]\nserde = \"1.0\"\n";
-        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node()).unwrap();
+        let root = tombi_parser::parse(source).into_root();
         let document_tree = root.try_into_document_tree(TomlVersion::V1_0_0).unwrap();
         let dependency_accessors = [
             Accessor::Key("dependencies".into()),
@@ -898,7 +897,7 @@ mod tests {
     #[test]
     fn hovering_dependency_version_value_counts_as_hover_target() {
         let source = "[dependencies]\nserde = { version = \"1.0\" }\n";
-        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node()).unwrap();
+        let root = tombi_parser::parse(source).into_root();
         let document_tree = root.try_into_document_tree(TomlVersion::V1_0_0).unwrap();
         let version_accessors = [
             Accessor::Key("dependencies".into()),
@@ -919,7 +918,7 @@ mod tests {
     #[tokio::test]
     async fn dependency_features_hover_metadata_skips_disabled_default_features() {
         let source = "[dependencies]\nserde = { version = \"1.0\", default-features = false, features = [\"derive\"] }\n";
-        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node()).unwrap();
+        let root = tombi_parser::parse(source).into_root();
         let document_tree = root.try_into_document_tree(TomlVersion::V1_0_0).unwrap();
         let accessors = [
             Accessor::Key("dependencies".into()),

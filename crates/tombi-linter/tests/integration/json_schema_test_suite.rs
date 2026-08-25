@@ -328,7 +328,7 @@ mod draft7_dependencies {
                 tombi_validator::Diagnostic::new(
                     tombi_validator::DiagnosticKind::TypeMismatch {
                         expected: tombi_schema_store::ValueType::Integer,
-                        actual: tombi_document_tree::ValueType::String
+                        actual: tombi_document_tree_syntax::ValueType::String
                     },
                     ((0, 6), (0, 12))
                 ),
@@ -346,7 +346,7 @@ mod draft7_dependencies {
                 tombi_validator::Diagnostic::new(
                     tombi_validator::DiagnosticKind::TypeMismatch {
                         expected: tombi_schema_store::ValueType::Integer,
-                        actual: tombi_document_tree::ValueType::String
+                        actual: tombi_document_tree_syntax::ValueType::String
                     },
                     ((1, 6), (1, 12))
                 ),
@@ -364,14 +364,14 @@ mod draft7_dependencies {
                 tombi_validator::Diagnostic::new(
                     tombi_validator::DiagnosticKind::TypeMismatch {
                         expected: tombi_schema_store::ValueType::Integer,
-                        actual: tombi_document_tree::ValueType::String
+                        actual: tombi_document_tree_syntax::ValueType::String
                     },
                     ((0, 6), (0, 12))
                 ),
                 tombi_validator::Diagnostic::new(
                     tombi_validator::DiagnosticKind::TypeMismatch {
                         expected: tombi_schema_store::ValueType::Integer,
-                        actual: tombi_document_tree::ValueType::String
+                        actual: tombi_document_tree_syntax::ValueType::String
                     },
                     ((1, 6), (1, 12))
                 ),
@@ -1508,7 +1508,7 @@ mod draft2020_12_dependent_schemas {
                 tombi_validator::Diagnostic::new(
                     tombi_validator::DiagnosticKind::TypeMismatch {
                         expected: tombi_schema_store::ValueType::Integer,
-                        actual: tombi_document_tree::ValueType::String
+                        actual: tombi_document_tree_syntax::ValueType::String
                     },
                     ((0, 6), (0, 12))
                 ),
@@ -1526,7 +1526,7 @@ mod draft2020_12_dependent_schemas {
                 tombi_validator::Diagnostic::new(
                     tombi_validator::DiagnosticKind::TypeMismatch {
                         expected: tombi_schema_store::ValueType::Integer,
-                        actual: tombi_document_tree::ValueType::String
+                        actual: tombi_document_tree_syntax::ValueType::String
                     },
                     ((1, 6), (1, 12))
                 ),
@@ -1544,14 +1544,14 @@ mod draft2020_12_dependent_schemas {
                 tombi_validator::Diagnostic::new(
                     tombi_validator::DiagnosticKind::TypeMismatch {
                         expected: tombi_schema_store::ValueType::Integer,
-                        actual: tombi_document_tree::ValueType::String
+                        actual: tombi_document_tree_syntax::ValueType::String
                     },
                     ((0, 6), (0, 12))
                 ),
                 tombi_validator::Diagnostic::new(
                     tombi_validator::DiagnosticKind::TypeMismatch {
                         expected: tombi_schema_store::ValueType::Integer,
-                        actual: tombi_document_tree::ValueType::String
+                        actual: tombi_document_tree_syntax::ValueType::String
                     },
                     ((1, 6), (1, 12))
                 ),

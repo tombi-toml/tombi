@@ -1,4 +1,4 @@
-use tombi_ast::{
+use tombi_ast_syntax::{
     SchemaDocumentCommentDirective, TombiDocumentCommentDirective, TombiValueCommentDirective,
 };
 use tombi_comment_directive::{
@@ -11,7 +11,7 @@ use tombi_comment_directive::{
         TombiValueDirectiveContent, WithKeyFormatRules, WithKeyLintRules, WithKeyTableLintRules,
     },
 };
-use tombi_document_tree::{ArrayKind, TableKind};
+use tombi_document_tree_syntax::{ArrayKind, TableKind};
 use tombi_schema_store::Accessor;
 
 pub const DOCUMENT_SCHEMA_DIRECTIVE_TITLE: &str = "Schema Document Directive";
@@ -155,7 +155,7 @@ impl GetCommentDirectiveContext<String> for Vec<TombiDocumentCommentDirective> {
 
 pub fn get_key_value_comment_directive_content_and_schema_uri<'a, FormatRules, LintRules>(
     comment_directives: Option<
-        impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+        impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     >,
     position: tombi_text::Position,
     accessors: &[tombi_schema_store::Accessor],
@@ -186,7 +186,7 @@ where
 
 pub fn get_key_table_value_comment_directive_content_and_schema_uri<'a, FormatRules, LintRules>(
     comment_directives: Option<
-        impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+        impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     >,
     position: tombi_text::Position,
     accessors: &[tombi_schema_store::Accessor],
@@ -216,7 +216,7 @@ where
 }
 
 pub fn get_array_comment_directive_content_with_schema_uri(
-    array: &tombi_document_tree::Array,
+    array: &tombi_document_tree_syntax::Array,
     position: tombi_text::Position,
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)> {
@@ -270,7 +270,7 @@ pub fn get_array_comment_directive_content_with_schema_uri(
 }
 
 pub fn get_table_comment_directive_content_with_schema_uri(
-    table: &tombi_document_tree::Table,
+    table: &tombi_document_tree_syntax::Table,
     position: tombi_text::Position,
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)> {

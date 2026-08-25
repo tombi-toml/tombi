@@ -72,13 +72,6 @@ pub fn generate_syntax_kind() -> Result<String, anyhow::Error> {
             }
         }
 
-        impl From<SyntaxKind> for tombi_rg_tree::SyntaxKind {
-            #[inline]
-            fn from(k: SyntaxKind) -> Self {
-                Self(k as u16)
-            }
-        }
-
         impl From<u16> for SyntaxKind {
             #[inline]
             fn from(d: u16) -> SyntaxKind {

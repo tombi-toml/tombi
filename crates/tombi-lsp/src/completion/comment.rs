@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-use tombi_ast::{AstToken, SchemaDocumentCommentDirective};
+use tombi_ast_syntax::{AstToken, SchemaDocumentCommentDirective};
 use tombi_comment_directive::{
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
     document::TombiDocumentDirectiveContent,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
-use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 use tombi_extension::get_file_path_completions;
 use tombi_uri::{SchemaUri, Uri};
 
@@ -21,8 +21,8 @@ use crate::{
 use super::{CompletionContent, CompletionEdit};
 
 pub async fn get_document_comment_directive_completion_contents(
-    root: &tombi_ast::Root,
-    comment: &tombi_ast::Comment,
+    root: &tombi_ast_syntax::Root,
+    comment: &tombi_ast_syntax::Comment,
     position: tombi_text::Position,
     text_document_uri: &Uri,
 ) -> Option<Vec<CompletionContent>> {
@@ -88,7 +88,7 @@ pub async fn get_document_comment_directive_completion_contents(
 }
 
 fn document_comment_directive_completion_contents(
-    root: &tombi_ast::Root,
+    root: &tombi_ast_syntax::Root,
     position: tombi_text::Position,
     comment_range: tombi_text::Range,
     text_document_uri: &Uri,

@@ -62,12 +62,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "allocator-api2"
-version = "0.2.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
-
-[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -456,12 +450,6 @@ name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
-
-[[package]]
-name = "countme"
-version = "3.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7704b5fdd17b18ae31c4c1da5a2e0305a2bf17b5249300a9ee9ed7b72114c636"
 
 [[package]]
 name = "cpufeatures"
@@ -945,8 +933,6 @@ version = "0.15.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
 dependencies = [
- "allocator-api2",
- "equivalent",
  "foldhash",
 ]
 
@@ -2268,11 +2254,11 @@ dependencies = [
  "textwrap",
  "thiserror 2.0.12",
  "tokio",
- "tombi-ast",
+ "tombi-ast-syntax",
  "tombi-config",
  "tombi-date-time",
  "tombi-document",
- "tombi-document-tree",
+ "tombi-document-tree-syntax",
  "tombi-formatter",
  "tombi-fs",
  "tombi-hashmap",
@@ -2624,38 +2610,26 @@ dependencies = [
 name = "tombi-ast"
 version = "0.0.0-dev"
 dependencies = [
+ "tombi-date-time",
+ "tombi-text",
+ "tombi-toml-version",
+]
+
+[[package]]
+name = "tombi-ast-syntax"
+version = "0.0.0-dev"
+dependencies = [
  "itertools 0.14.0",
  "pretty_assertions",
  "tempfile",
  "thiserror 2.0.12",
  "tombi-accessor",
- "tombi-syntax",
+ "tombi-ast",
  "tombi-text",
  "tombi-toml-text",
  "tombi-toml-version",
  "tombi-uri",
-]
-
-[[package]]
-name = "tombi-ast-editor"
-version = "0.0.0-dev"
-dependencies = [
- "itertools 0.14.0",
- "log",
- "thiserror 2.0.12",
- "tombi-ast",
- "tombi-comment-directive",
- "tombi-comment-directive-serde",
- "tombi-document-tree",
- "tombi-future",
- "tombi-hashmap",
- "tombi-parser",
- "tombi-regex",
- "tombi-schema-store",
- "tombi-syntax",
- "tombi-validator",
- "tombi-version-sort",
- "tombi-x-keyword",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -2727,10 +2701,10 @@ name = "tombi-comment-directive-serde"
 version = "0.0.0-dev"
 dependencies = [
  "serde",
- "tombi-ast",
+ "tombi-ast-syntax",
  "tombi-comment-directive",
  "tombi-document",
- "tombi-document-tree",
+ "tombi-document-tree-syntax",
  "tombi-parser",
 ]
 
@@ -2794,9 +2768,9 @@ dependencies = [
  "serde_json",
  "textwrap",
  "thiserror 2.0.12",
- "tombi-ast",
  "tombi-date-time",
  "tombi-document-tree",
+ "tombi-document-tree-syntax",
  "tombi-hashmap",
  "tombi-parser",
  "tombi-test-lib",
@@ -2808,15 +2782,24 @@ dependencies = [
 name = "tombi-document-tree"
 version = "0.0.0-dev"
 dependencies = [
+ "tombi-accessor",
+ "tombi-date-time",
+ "tombi-text",
+]
+
+[[package]]
+name = "tombi-document-tree-syntax"
+version = "0.0.0-dev"
+dependencies = [
  "chrono",
  "itertools 0.14.0",
  "thiserror 2.0.12",
  "tombi-accessor",
- "tombi-ast",
+ "tombi-ast-syntax",
  "tombi-date-time",
  "tombi-diagnostic",
+ "tombi-document-tree",
  "tombi-hashmap",
- "tombi-syntax",
  "tombi-text",
  "tombi-toml-text",
  "tombi-toml-version",
@@ -2840,7 +2823,6 @@ dependencies = [
  "tombi-text",
  "tombi-toml-text",
  "tombi-uri",
- "tower-lsp",
 ]
 
 [[package]]
@@ -2855,10 +2837,10 @@ dependencies = [
  "serde_json",
  "tempfile",
  "tokio",
- "tombi-ast",
+ "tombi-ast-syntax",
  "tombi-cache",
  "tombi-config",
- "tombi-document-tree",
+ "tombi-document-tree-syntax",
  "tombi-extension",
  "tombi-extension-manifest",
  "tombi-fs",
@@ -2894,10 +2876,10 @@ dependencies = [
  "serde_json",
  "tempfile",
  "tokio",
- "tombi-ast",
+ "tombi-ast-syntax",
  "tombi-cache",
  "tombi-config",
- "tombi-document-tree",
+ "tombi-document-tree-syntax",
  "tombi-extension",
  "tombi-extension-manifest",
  "tombi-fs",
@@ -2917,7 +2899,7 @@ name = "tombi-extension-tombi"
 version = "0.0.0-dev"
 dependencies = [
  "tombi-config",
- "tombi-document-tree",
+ "tombi-document-tree-syntax",
  "tombi-extension",
  "tombi-schema-store",
  "tombi-text",
@@ -2937,18 +2919,25 @@ dependencies = [
  "serde",
  "serde_tombi",
  "textwrap",
+ "thiserror 2.0.12",
  "tokio",
- "tombi-ast",
- "tombi-ast-editor",
+ "tombi-ast-syntax",
+ "tombi-comment-directive",
+ "tombi-comment-directive-serde",
  "tombi-config",
  "tombi-diagnostic",
+ "tombi-document-tree-syntax",
+ "tombi-future",
+ "tombi-hashmap",
  "tombi-parser",
+ "tombi-regex",
  "tombi-schema-store",
- "tombi-syntax",
  "tombi-test-lib",
  "tombi-text",
  "tombi-uri",
  "tombi-validator",
+ "tombi-version-sort",
+ "tombi-x-keyword",
  "unicode-segmentation",
 ]
 
@@ -3027,9 +3016,6 @@ dependencies = [
 [[package]]
 name = "tombi-json-syntax"
 version = "0.0.0-dev"
-dependencies = [
- "tombi-rg-tree",
-]
 
 [[package]]
 name = "tombi-json-value"
@@ -3047,8 +3033,8 @@ dependencies = [
  "itertools 0.14.0",
  "pretty_assertions",
  "textwrap",
+ "tombi-ast-syntax",
  "tombi-regex",
- "tombi-syntax",
  "tombi-test-lib",
  "tombi-text",
 ]
@@ -3066,12 +3052,12 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tombi-accessor",
- "tombi-ast",
+ "tombi-ast-syntax",
  "tombi-comment-directive",
  "tombi-comment-directive-serde",
  "tombi-config",
  "tombi-diagnostic",
- "tombi-document-tree",
+ "tombi-document-tree-syntax",
  "tombi-future",
  "tombi-hashmap",
  "tombi-parser",
@@ -3100,7 +3086,7 @@ dependencies = [
  "tempfile",
  "textwrap",
  "tokio",
- "tombi-ast",
+ "tombi-ast-syntax",
  "tombi-cache",
  "tombi-comment-directive",
  "tombi-comment-directive-serde",
@@ -3108,7 +3094,7 @@ dependencies = [
  "tombi-config",
  "tombi-date-time",
  "tombi-diagnostic",
- "tombi-document-tree",
+ "tombi-document-tree-syntax",
  "tombi-extension",
  "tombi-extension-cargo",
  "tombi-extension-pyproject",
@@ -3122,10 +3108,8 @@ dependencies = [
  "tombi-linter",
  "tombi-parser",
  "tombi-regex",
- "tombi-rg-tree",
  "tombi-schema-store",
  "tombi-schema-type",
- "tombi-syntax",
  "tombi-test-lib",
  "tombi-text",
  "tombi-toml-text",
@@ -3147,12 +3131,13 @@ dependencies = [
  "textwrap",
  "thiserror 2.0.12",
  "tombi-ast",
+ "tombi-ast-syntax",
  "tombi-diagnostic",
+ "tombi-document-tree-syntax",
  "tombi-lexer",
- "tombi-rg-tree",
- "tombi-syntax",
  "tombi-test-lib",
  "tombi-text",
+ "tombi-toml-version",
 ]
 
 [[package]]
@@ -3161,18 +3146,6 @@ version = "0.0.0-dev"
 dependencies = [
  "fancy-regex",
  "regex",
-]
-
-[[package]]
-name = "tombi-rg-tree"
-version = "0.0.0-dev"
-dependencies = [
- "countme",
- "hashbrown 0.15.5",
- "itertools 0.14.0",
- "pretty_assertions",
- "rustc-hash",
- "tombi-text",
 ]
 
 [[package]]
@@ -3192,11 +3165,11 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tombi-accessor",
- "tombi-ast",
+ "tombi-ast-syntax",
  "tombi-cache",
  "tombi-config",
  "tombi-diagnostic",
- "tombi-document-tree",
+ "tombi-document-tree-syntax",
  "tombi-future",
  "tombi-hashmap",
  "tombi-json",
@@ -3222,14 +3195,6 @@ version = "0.0.0-dev"
 dependencies = [
  "schemars",
  "serde",
-]
-
-[[package]]
-name = "tombi-syntax"
-version = "0.0.0-dev"
-dependencies = [
- "thiserror 2.0.12",
- "tombi-rg-tree",
 ]
 
 [[package]]
@@ -3294,12 +3259,12 @@ dependencies = [
  "serde",
  "thiserror 2.0.12",
  "tombi-accessor",
- "tombi-ast",
+ "tombi-ast-syntax",
  "tombi-comment-directive",
  "tombi-comment-directive-store",
  "tombi-diagnostic",
  "tombi-document",
- "tombi-document-tree",
+ "tombi-document-tree-syntax",
  "tombi-future",
  "tombi-hashmap",
  "tombi-json-value",
@@ -3368,9 +3333,8 @@ dependencies = [
  "serde_json",
  "textwrap",
  "tokio",
- "tombi-ast",
  "tombi-config",
- "tombi-document-tree",
+ "tombi-document-tree-syntax",
  "tombi-hashmap",
  "tombi-linter",
  "tombi-parser",

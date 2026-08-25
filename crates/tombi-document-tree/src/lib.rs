@@ -1,184 +1,288 @@
-mod error;
-mod key;
-mod literal_value;
-mod root;
-pub mod support;
-mod value;
-mod value_type;
+//! Stable, implementation-independent operations over a semantic TOML document tree.
+//!
+//! This crate owns no parser, syntax tree, decoded-text pool, or document storage.
+//! Tombi's source-backed implementation lives in `tombi-document-tree-syntax`.
 
-pub use error::Error;
-pub use key::{Key, KeyKind};
-pub use literal_value::LiteralValueRef;
-pub use root::DocumentTree;
-use tombi_ast::TombiValueCommentDirective;
-use tombi_toml_version::TomlVersion;
-pub use value::{
-    Array, ArrayKind, Boolean, Float, Integer, IntegerKind, LocalDate, LocalDateTime, LocalTime,
-    OffsetDateTime, String, StringKind, Table, TableKind, Value,
-};
-pub use value_type::ValueType;
+use tombi_text::Range;
 
-/// A structure that holds an incomplete tree and errors that are the reason for the incompleteness.
-///
-/// [DocumentTree](crate::Root) needs to hold an incomplete tree and errors at the same time because it allows incomplete values.
-/// If there are no errors, the tree is considered complete and can be converted to a [Document](tombi_document::Document).
-pub struct DocumentTreeAndErrors<T> {
-    pub tree: T,
-    pub errors: Vec<crate::Error>,
-}
+pub use tombi_date_time::{LocalDate, LocalDateTime, LocalTime, OffsetDateTime};
 
-impl<T> DocumentTreeAndErrors<T> {
-    pub fn ok(self) -> Result<T, Vec<crate::Error>> {
-        if self.errors.is_empty() {
-            Ok(self.tree)
-        } else {
-            Err(self.errors)
-        }
-    }
-}
+/// Common source-location operations for semantic document nodes.
+pub trait Node {
+    fn range(&self) -> Range;
 
-impl<T> From<DocumentTreeAndErrors<T>> for (T, Vec<crate::Error>) {
-    fn from(result: DocumentTreeAndErrors<T>) -> Self {
-        (result.tree, result.errors)
-    }
-}
-
-pub trait ValueImpl {
-    fn value_type(&self) -> ValueType;
-
-    fn range(&self) -> tombi_text::Range;
-}
-
-pub trait LikeString {
-    fn value(&self) -> &str;
-
-    fn comment_directives(&self) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_>;
-}
-
-/// A structure that holds an incomplete tree and errors that are the reason for the incompleteness.
-pub trait IntoDocumentTreeAndErrors<T> {
-    fn into_document_tree_and_errors(self, toml_version: TomlVersion) -> DocumentTreeAndErrors<T>;
-}
-
-/// Get a complete tree or errors for incomplete reasons.
-pub trait TryIntoDocumentTree<T> {
-    fn try_into_document_tree(self, toml_version: TomlVersion) -> Result<T, Vec<crate::Error>>;
-}
-
-impl<T, U> TryIntoDocumentTree<T> for U
-where
-    U: IntoDocumentTreeAndErrors<T>,
-{
     #[inline]
-    fn try_into_document_tree(self, toml_version: TomlVersion) -> Result<T, Vec<crate::Error>> {
-        self.into_document_tree_and_errors(toml_version).ok()
+    fn symbol_range(&self) -> Range {
+        self.range()
     }
 }
 
-/// Follows the given keys in order and retrieves the value if it exists.
-///
-/// NOTE: You cannot follow indices. Use `tombi_accessor::dig_accessors` for that.
-pub fn dig_keys<'a, K>(
-    table: &'a crate::Table,
-    keys: &[&K],
-) -> Option<(&'a crate::Key, &'a crate::Value)>
-where
-    K: ?Sized + std::hash::Hash + tombi_hashmap::Equivalent<Key>,
-{
-    if keys.is_empty() {
-        return None;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KeyKind {
+    BareKey,
+    BasicString,
+    LiteralString,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StringKind {
+    BasicString,
+    LiteralString,
+    MultiLineBasicString,
+    MultiLineLiteralString,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IntegerKind {
+    Binary,
+    Octal,
+    Decimal,
+    Hexadecimal,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArrayKind {
+    ArrayOfTable,
+    ParentArrayOfTable,
+    Array,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TableKind {
+    Root,
+    Table,
+    ParentTable,
+    InlineTable { has_comment: bool },
+    ParentKey,
+    KeyValue,
+}
+
+macro_rules! copy_value {
+    ($name:ident, $value:ty) => {
+        #[derive(Debug, Clone, Copy, PartialEq)]
+        pub struct $name {
+            value: $value,
+            range: Range,
+        }
+
+        impl $name {
+            #[doc(hidden)]
+            #[inline]
+            pub fn new(value: $value, range: Range) -> Self {
+                Self { value, range }
+            }
+
+            #[inline]
+            pub fn value(self) -> $value {
+                self.value
+            }
+        }
+
+        impl Node for $name {
+            #[inline]
+            fn range(&self) -> Range {
+                self.range
+            }
+        }
+    };
+}
+
+copy_value!(BooleanValue, bool);
+copy_value!(FloatValue, f64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct IntegerValue {
+    kind: IntegerKind,
+    value: i64,
+    range: Range,
+}
+
+impl IntegerValue {
+    #[doc(hidden)]
+    #[inline]
+    pub fn new(kind: IntegerKind, value: i64, range: Range) -> Self {
+        Self { kind, value, range }
     }
-    let (mut key, mut value) = table.get_key_value(keys[0])?;
-    for k in keys[1..].iter() {
-        let crate::Value::Table(table) = value else {
-            return None;
+
+    #[inline]
+    pub fn kind(self) -> IntegerKind {
+        self.kind
+    }
+
+    #[inline]
+    pub fn value(self) -> i64 {
+        self.value
+    }
+}
+
+impl Node for IntegerValue {
+    #[inline]
+    fn range(&self) -> Range {
+        self.range
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StringValue<'a> {
+    kind: StringKind,
+    content: &'a str,
+    range: Range,
+}
+
+impl<'a> StringValue<'a> {
+    #[doc(hidden)]
+    #[inline]
+    pub fn new(kind: StringKind, content: &'a str, range: Range) -> Self {
+        Self {
+            kind,
+            content,
+            range,
+        }
+    }
+
+    #[inline]
+    pub fn kind(self) -> StringKind {
+        self.kind
+    }
+
+    #[inline]
+    pub fn content(self) -> &'a str {
+        self.content
+    }
+
+    #[inline]
+    pub fn unquoted_range(self) -> Range {
+        let mut range = self.range;
+        let quote_width = match self.kind {
+            StringKind::BasicString | StringKind::LiteralString => 1,
+            StringKind::MultiLineBasicString | StringKind::MultiLineLiteralString => 3,
         };
-
-        let (next_key, next_value) = table.get_key_value(*k)?;
-
-        key = next_key;
-        value = next_value;
+        range.start.column += quote_width;
+        range.end.column -= quote_width;
+        range
     }
-
-    Some((key, value))
 }
 
-pub fn dig_accessors<'a>(
-    document_tree: &'a crate::DocumentTree,
-    accessors: &'a [tombi_accessor::Accessor],
-) -> Option<(&'a tombi_accessor::Accessor, &'a crate::Value)> {
-    if accessors.is_empty() {
-        return None;
+impl Node for StringValue<'_> {
+    #[inline]
+    fn range(&self) -> Range {
+        self.range
     }
-    let first_key = accessors[0].as_key()?;
-    let mut value = document_tree.get(first_key)?;
+}
+
+macro_rules! borrowed_value {
+    ($name:ident, $value:ty) => {
+        #[derive(Debug, Clone, Copy, PartialEq)]
+        pub struct $name<'a> {
+            value: &'a $value,
+            range: Range,
+        }
+
+        impl<'a> $name<'a> {
+            #[doc(hidden)]
+            #[inline]
+            pub fn new(value: &'a $value, range: Range) -> Self {
+                Self { value, range }
+            }
+
+            #[inline]
+            pub fn value(self) -> &'a $value {
+                self.value
+            }
+        }
+
+        impl Node for $name<'_> {
+            #[inline]
+            fn range(&self) -> Range {
+                self.range
+            }
+        }
+    };
+}
+
+borrowed_value!(OffsetDateTimeValue, OffsetDateTime);
+borrowed_value!(LocalDateTimeValue, LocalDateTime);
+borrowed_value!(LocalDateValue, LocalDate);
+borrowed_value!(LocalTimeValue, LocalTime);
+
+/// A semantic value that can be matched without exposing its storage.
+#[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
+pub enum Value<'a, A, T> {
+    Boolean(BooleanValue),
+    Integer(IntegerValue),
+    Float(FloatValue),
+    String(StringValue<'a>),
+    OffsetDateTime(OffsetDateTimeValue<'a>),
+    LocalDateTime(LocalDateTimeValue<'a>),
+    LocalDate(LocalDateValue<'a>),
+    LocalTime(LocalTimeValue<'a>),
+    Array(&'a A),
+    Table(&'a T),
+    Incomplete { range: Range },
+}
+
+pub trait DocumentTree {
+    type Table: Table;
+
+    fn root(&self) -> &Self::Table;
+}
+
+pub trait Key: Node {
+    fn kind(&self) -> KeyKind;
+    fn content(&self) -> &str;
+    fn unquoted_range(&self) -> Range;
+}
+
+pub trait Array: Node {
+    type Value: ValueNode;
+
+    fn kind(&self) -> ArrayKind;
+    fn get(&self, index: usize) -> Option<&Self::Value>;
+    fn values(&self) -> impl Iterator<Item = &Self::Value> + '_;
+}
+
+pub trait Table: Node {
+    type Key: Key;
+    type Value: ValueNode;
+
+    fn kind(&self) -> TableKind;
+    fn get(&self, key: &str) -> Option<&Self::Value>;
+    fn get_key_value(&self, key: &str) -> Option<(&Self::Key, &Self::Value)>;
+    fn entries(&self) -> impl Iterator<Item = (&Self::Key, &Self::Value)> + '_;
+}
+
+pub trait ValueNode: Node {
+    type Array: Array<Value = Self>;
+    type Table: Table<Value = Self>;
+
+    fn value(&self) -> Value<'_, Self::Array, Self::Table>;
+}
+
+/// Follow semantic key/index accessors without exposing the tree's storage.
+pub fn dig_accessors<'document, 'accessor, D>(
+    document: &'document D,
+    accessors: &'accessor [tombi_accessor::Accessor],
+) -> Option<(
+    &'accessor tombi_accessor::Accessor,
+    &'document <<D as DocumentTree>::Table as Table>::Value,
+)>
+where
+    D: DocumentTree,
+    <D::Table as Table>::Value: ValueNode<Table = D::Table>,
+{
+    let first_key = accessors.first()?.as_key()?;
     let mut current_accessor = &accessors[0];
-    for accessor in accessors[1..].iter() {
-        match (accessor, value) {
-            (tombi_accessor::Accessor::Key(key), crate::Value::Table(table)) => {
-                let next_value = table.get(key)?;
-                current_accessor = accessor;
-                value = next_value;
-            }
-            (tombi_accessor::Accessor::Index(index), crate::Value::Array(array)) => {
-                let next_value = array.get(*index)?;
-                current_accessor = accessor;
-                value = next_value;
-            }
+    let mut value = document.root().get(first_key);
+
+    for accessor in &accessors[1..] {
+        value = match (accessor, value?.value()) {
+            (tombi_accessor::Accessor::Key(key), Value::Table(table)) => table.get(key.as_str()),
+            (tombi_accessor::Accessor::Index(index), Value::Array(array)) => array.get(*index),
             _ => return None,
-        }
+        };
+        current_accessor = accessor;
     }
 
-    Some((current_accessor, value))
-}
-
-pub fn get_accessors(
-    document_tree: &crate::DocumentTree,
-    keys: &[crate::Key],
-    position: tombi_text::Position,
-) -> Vec<tombi_accessor::Accessor> {
-    let mut accessors = Vec::new();
-    let mut current_value: &crate::Value = document_tree.into();
-
-    for key in keys {
-        current_value = find_value_in_current(current_value, key, &mut accessors, position);
-        accessors.push(tombi_accessor::Accessor::Key(key.value.clone()));
-    }
-
-    if let crate::Value::Array(array) = current_value {
-        for (index, value) in array.values().iter().enumerate() {
-            if value.contains(position) {
-                accessors.push(tombi_accessor::Accessor::Index(index));
-                break;
-            }
-        }
-    }
-
-    accessors
-}
-
-fn find_value_in_current<'a>(
-    current_value: &'a crate::Value,
-    key: &crate::Key,
-    accessors: &mut Vec<tombi_accessor::Accessor>,
-    position: tombi_text::Position,
-) -> &'a crate::Value {
-    match current_value {
-        crate::Value::Array(array) => {
-            for (index, value) in array.values().iter().enumerate() {
-                if value.contains(position) {
-                    accessors.push(tombi_accessor::Accessor::Index(index));
-                    return find_value_in_current(value, key, accessors, position);
-                }
-            }
-        }
-        crate::Value::Table(table) => {
-            if let Some(value) = table.get(key) {
-                return value;
-            }
-        }
-        _ => {}
-    }
-
-    current_value
+    Some((current_accessor, value?))
 }

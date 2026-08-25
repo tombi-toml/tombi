@@ -9,10 +9,9 @@ use pep508_rs::{
     pep440_rs::{Operator, Version},
 };
 use serde::{Deserialize, Serialize};
-use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{TryIntoDocumentTree, Value, dig_keys};
-use tombi_extension::{InlayHint, file_cache_version, get_or_load_json};
+use tombi_document_tree_syntax::{TryIntoDocumentTree, Value, dig_keys};
+use tombi_extension::{InlayHint, InlayHintKind, file_cache_version, get_or_load_json};
 use tombi_hashmap::{HashMap, HashSet};
 
 use crate::{UV_DEPENDENCY_KEYS, parse_dependency_requirement};
@@ -78,14 +77,14 @@ enum DependencyHintResolution {
 }
 
 struct PyprojectDependencyHint<'a> {
-    dependency: &'a tombi_document_tree::String,
+    dependency: &'a tombi_document_tree_syntax::String,
     requirement: pep508_rs::Requirement<VerbatimUrl>,
     resolution: DependencyHintResolution,
 }
 
 pub async fn inlay_hint(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     visible_range: tombi_text::Range,
     toml_version: TomlVersion,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
@@ -118,7 +117,7 @@ pub async fn inlay_hint(
 }
 
 fn inlay_hint_impl(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     visible_range: tombi_text::Range,
     uv_lock_cache: Option<UvLockInlayCacheData>,
 ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
@@ -160,7 +159,7 @@ fn inlay_hint_impl(
             Some(InlayHint {
                 position: hint.dependency.range().end,
                 label,
-                kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
+                kind: Some(InlayHintKind::TYPE),
                 tooltip: Some(RESOLVED_VERSION_TOOLTIP.to_string()),
                 padding_left: Some(true),
                 padding_right: Some(false),
@@ -180,7 +179,9 @@ struct CurrentPackage {
     version: String,
 }
 
-fn current_package(document_tree: &tombi_document_tree::DocumentTree) -> Option<CurrentPackage> {
+fn current_package(
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
+) -> Option<CurrentPackage> {
     let (_, Value::String(name)) = dig_keys(document_tree, &["project", "name"])? else {
         return None;
     };
@@ -195,7 +196,7 @@ fn current_package(document_tree: &tombi_document_tree::DocumentTree) -> Option<
 }
 
 fn collect_dependency_hints<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
 ) -> Vec<PyprojectDependencyHint<'a>> {
     let mut hints = Vec::new();
 
@@ -241,7 +242,7 @@ fn collect_dependency_hints<'a>(
 }
 
 fn collect_dependency_hints_from_array_path<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     path: &[&str],
     resolution: DependencyHintResolution,
     hints: &mut Vec<PyprojectDependencyHint<'a>>,
@@ -256,7 +257,7 @@ fn collect_dependency_hints_from_array_path<'a>(
 }
 
 fn collect_dependency_hints_from_table_arrays_path<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     path: &[&str],
     resolution: DependencyHintResolution,
     hints: &mut Vec<PyprojectDependencyHint<'a>>,
@@ -275,7 +276,7 @@ fn collect_dependency_hints_from_table_arrays_path<'a>(
 }
 
 fn pyproject_dependency_hint(
-    value: &tombi_document_tree::Value,
+    value: &tombi_document_tree_syntax::Value,
     resolution: DependencyHintResolution,
 ) -> Option<PyprojectDependencyHint<'_>> {
     let Value::String(dependency) = value else {
@@ -364,7 +365,7 @@ fn parse_uv_lock_cache_json(
     uv_lock_text: String,
     toml_version: TomlVersion,
 ) -> Option<serde_json::Value> {
-    let root = tombi_ast::Root::cast(tombi_parser::parse(&uv_lock_text).into_syntax_node())?;
+    let root = tombi_parser::parse(&uv_lock_text).into_root();
     let document_tree = root.try_into_document_tree(toml_version).ok()?;
     let uv_lock = UvLock::from_document_tree(&document_tree)?;
 
@@ -379,7 +380,9 @@ fn uv_lock_cache_key(uv_lock_path: &Path) -> String {
 }
 
 impl UvLock {
-    fn from_document_tree(document_tree: &tombi_document_tree::DocumentTree) -> Option<Self> {
+    fn from_document_tree(
+        document_tree: &tombi_document_tree_syntax::DocumentTree,
+    ) -> Option<Self> {
         let (_, Value::Array(packages)) = dig_keys(document_tree, &["package"])? else {
             return None;
         };

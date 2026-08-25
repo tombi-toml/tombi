@@ -5,17 +5,17 @@ use crate::schema_resolver::{remaining_keys, resolve_accessors_for_document_or_s
 
 pub(super) enum CompletionSource<'a> {
     Root {
-        remaining_keys: &'a [tombi_document_tree::Key],
+        remaining_keys: &'a [tombi_document_tree_syntax::Key],
         accessors: Vec<Accessor>,
         current_schema: Option<CurrentSchema<'static>>,
     },
     Value {
-        remaining_keys: &'a [tombi_document_tree::Key],
+        remaining_keys: &'a [tombi_document_tree_syntax::Key],
         accessors: Vec<Accessor>,
         current_schema: Option<CurrentSchema<'static>>,
     },
     Schema {
-        remaining_keys: &'a [tombi_document_tree::Key],
+        remaining_keys: &'a [tombi_document_tree_syntax::Key],
         accessors: Vec<Accessor>,
         current_schema: CurrentSchema<'static>,
     },
@@ -23,13 +23,13 @@ pub(super) enum CompletionSource<'a> {
 
 impl<'a> CompletionSource<'a> {
     pub(super) async fn new(
-        document_tree: &'a tombi_document_tree::DocumentTree,
+        document_tree: &'a tombi_document_tree_syntax::DocumentTree,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         schema_context: &tombi_schema_store::SchemaContext<'_>,
         completion_hint: Option<CompletionHint>,
     ) -> Option<Self> {
-        let accessors = tombi_document_tree::get_accessors(document_tree, keys, position);
+        let accessors = tombi_document_tree_syntax::get_accessors(document_tree, keys, position);
         let (mut accessors, mut current_schema) =
             resolve_accessors_for_document_or_schema(document_tree, accessors, schema_context)
                 .await;
@@ -40,8 +40,8 @@ impl<'a> CompletionSource<'a> {
         ) && !keys.is_empty()
             && remaining_keys(keys, &accessors).is_empty()
             && matches!(
-                tombi_document_tree::dig_accessors(document_tree, &accessors),
-                Some((_, tombi_document_tree::Value::Incomplete { .. }))
+                tombi_document_tree_syntax::dig_accessors(document_tree, &accessors),
+                Some((_, tombi_document_tree_syntax::Value::Incomplete { .. }))
             )
             && matches!(accessors.last(), Some(Accessor::Key(_)))
         {
@@ -64,7 +64,7 @@ impl<'a> CompletionSource<'a> {
             });
         }
 
-        if tombi_document_tree::dig_accessors(document_tree, &accessors).is_some() {
+        if tombi_document_tree_syntax::dig_accessors(document_tree, &accessors).is_some() {
             return Some(Self::Value {
                 remaining_keys,
                 accessors,

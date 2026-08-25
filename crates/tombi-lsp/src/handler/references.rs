@@ -59,7 +59,7 @@ pub async fn handle_references(
     };
 
     let document_tree = document_source.document_tree();
-    let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
+    let accessors = tombi_document_tree_syntax::get_accessors(&document_tree, &keys, position);
 
     let locations = if config.cargo_extension_enabled()
         && let Some(locations) = tombi_extension_cargo::references(

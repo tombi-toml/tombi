@@ -6,7 +6,7 @@ use std::{
 use itertools::Itertools;
 use tokio::sync::RwLock;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{ValueImpl, dig_accessors};
+use tombi_document_tree_syntax::{ValueImpl, dig_accessors};
 use tombi_extension::file_cache_version;
 use tombi_hashmap::HashMap;
 use tombi_schema_store::matches_accessors;
@@ -22,7 +22,7 @@ const MAX_DID_OPEN_CARGO_TOML_CACHE_ENTRIES: usize = 128;
 #[derive(Clone)]
 struct CachedCargoToml {
     version: Option<u64>,
-    document_tree: tombi_document_tree::DocumentTree,
+    document_tree: tombi_document_tree_syntax::DocumentTree,
 }
 
 #[derive(Clone)]
@@ -55,7 +55,7 @@ fn insert_bounded<V>(cache: &mut HashMap<PathBuf, V>, path: PathBuf, value: V) {
 pub(crate) async fn load_cargo_toml_document_tree(
     cargo_toml_path: PathBuf,
     toml_version: TomlVersion,
-) -> Option<(PathBuf, tombi_document_tree::DocumentTree)> {
+) -> Option<(PathBuf, tombi_document_tree_syntax::DocumentTree)> {
     let canonicalized_path = canonicalize_or_original(cargo_toml_path);
     let version = file_cache_version(&canonicalized_path);
 
@@ -98,7 +98,11 @@ pub(crate) fn find_workspace_cargo_toml(
     cargo_toml_path: &Path,
     workspace_path: Option<&str>,
     toml_version: TomlVersion,
-) -> Option<(PathBuf, tombi_ast::Root, tombi_document_tree::DocumentTree)> {
+) -> Option<(
+    PathBuf,
+    tombi_ast_syntax::Root,
+    tombi_document_tree_syntax::DocumentTree,
+)> {
     if let Some(workspace_path) = workspace_path {
         let workspace_cargo_toml_path = tombi_extension_manifest::resolve_manifest_path(
             cargo_toml_path,
@@ -130,7 +134,7 @@ pub(crate) async fn load_workspace_cargo_toml(
     cargo_toml_path: &Path,
     workspace_path: Option<&str>,
     toml_version: TomlVersion,
-) -> Option<(PathBuf, tombi_document_tree::DocumentTree)> {
+) -> Option<(PathBuf, tombi_document_tree_syntax::DocumentTree)> {
     let cache_key = canonicalize_or_original(cargo_toml_path.to_path_buf());
     let cache_version = file_cache_version(&cache_key);
 
@@ -203,11 +207,11 @@ pub(crate) async fn load_workspace_cargo_toml(
 /// See: https://doc.rust-lang.org/cargo/reference/manifest.html#the-workspace-field
 #[inline]
 pub(crate) fn get_workspace_cargo_toml_path(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
 ) -> Option<&str> {
-    tombi_document_tree::dig_keys(document_tree, &["package", "workspace"]).and_then(
+    tombi_document_tree_syntax::dig_keys(document_tree, &["package", "workspace"]).and_then(
         |(_, workspace)| {
-            if let tombi_document_tree::Value::String(workspace_path) = workspace {
+            if let tombi_document_tree_syntax::Value::String(workspace_path) = workspace {
                 Some(workspace_path.value())
             } else {
                 None
@@ -259,7 +263,7 @@ pub(crate) fn goto_workspace(
         sanitized_keys
     };
 
-    let Some((key, value)) = tombi_document_tree::dig_keys(
+    let Some((key, value)) = tombi_document_tree_syntax::dig_keys(
         &workspace_cargo_toml_document_tree,
         &std::iter::once("workspace")
             .chain(keys[..keys.len() - 1].iter().copied())
@@ -273,15 +277,15 @@ pub(crate) fn goto_workspace(
             keys.first(),
             Some(key) if *key == "dependencies" || *key == "dev-dependencies" || *key == "build-dependencies"
         )
-        && let tombi_document_tree::Value::Table(table) = value
-        && let Some(tombi_document_tree::Value::String(subcrate_path)) = table.get("path")
+        && let tombi_document_tree_syntax::Value::Table(table) = value
+        && let Some(tombi_document_tree_syntax::Value::String(subcrate_path)) = table.get("path")
         && let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) = find_cargo_toml(
             &workspace_cargo_toml_path,
             std::path::Path::new(subcrate_path.value()),
             toml_version,
         )
-        && let Some((_, tombi_document_tree::Value::String(package_name))) =
-            tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
+        && let Some((_, tombi_document_tree_syntax::Value::String(package_name))) =
+            tombi_document_tree_syntax::dig_keys(&subcrate_document_tree, &["package", "name"])
     {
         let Ok(subcrate_cargo_toml_uri) = tombi_uri::Uri::from_file_path(&subcrate_cargo_toml_path)
         else {
@@ -307,7 +311,7 @@ pub(crate) fn goto_workspace(
 
 /// Get the location of the crate path in the workspace.
 pub(crate) fn goto_dependency_crates(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     workspace_cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -324,14 +328,14 @@ pub(crate) fn goto_dependency_crates(
     let is_workspace_cargo_toml =
         matches_accessors!(accessors[..accessors.len().min(1)], ["workspace"]);
     let mut locations = Vec::new();
-    if let tombi_document_tree::Value::Table(table) = crate_value {
-        if let Some(tombi_document_tree::Value::String(subcrate_path)) = table.get("path") {
+    if let tombi_document_tree_syntax::Value::Table(table) = crate_value {
+        if let Some(tombi_document_tree_syntax::Value::String(subcrate_path)) = table.get("path") {
             if let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) = find_cargo_toml(
                 workspace_cargo_toml_path,
                 std::path::Path::new(subcrate_path.value()),
                 toml_version,
-            ) && let Some((_, tombi_document_tree::Value::String(package_name))) =
-                tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
+            ) && let Some((_, tombi_document_tree_syntax::Value::String(package_name))) =
+                tombi_document_tree_syntax::dig_keys(&subcrate_document_tree, &["package", "name"])
                 && let Ok(subcrate_cargo_toml_uri) =
                     tombi_uri::Uri::from_file_path(&subcrate_cargo_toml_path)
             {
@@ -340,7 +344,7 @@ pub(crate) fn goto_dependency_crates(
                     range: package_name.unquoted_range(),
                 });
             }
-        } else if let Some(tombi_document_tree::Value::Boolean(has_workspace)) =
+        } else if let Some(tombi_document_tree_syntax::Value::Boolean(has_workspace)) =
             table.get("workspace")
             && has_workspace.value()
         {
@@ -369,7 +373,7 @@ pub(crate) fn goto_dependency_crates(
 }
 
 pub(crate) fn workspace_dependency_usage_locations(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     workspace_cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -400,28 +404,29 @@ pub(crate) fn workspace_dependency_usage_locations(
         };
 
         for dependency_kind in ["dependencies", "dev-dependencies", "build-dependencies"] {
-            if let Some((crate_key, _)) =
-                tombi_document_tree::dig_keys(&crate_document_tree, &[dependency_kind, crate_name])
-                && let Some(mut definition_location) =
-                    Option::<tombi_extension::Location>::from(crate_location.clone())
+            if let Some((crate_key, _)) = tombi_document_tree_syntax::dig_keys(
+                &crate_document_tree,
+                &[dependency_kind, crate_name],
+            ) && let Some(mut definition_location) =
+                Option::<tombi_extension::Location>::from(crate_location.clone())
             {
                 definition_location.range = crate_key.unquoted_range();
                 locations.push(definition_location);
             }
         }
 
-        if let Some((_, tombi_document_tree::Value::Table(targets))) =
-            tombi_document_tree::dig_keys(&crate_document_tree, &["target"])
+        if let Some((_, tombi_document_tree_syntax::Value::Table(targets))) =
+            tombi_document_tree_syntax::dig_keys(&crate_document_tree, &["target"])
         {
             for target_value in targets.values() {
-                let tombi_document_tree::Value::Table(target_table) = target_value else {
+                let tombi_document_tree_syntax::Value::Table(target_table) = target_value else {
                     continue;
                 };
                 for dependency_kind in ["dependencies", "dev-dependencies", "build-dependencies"] {
                     let Some((crate_key, _)) = target_table
                         .get_key_value(dependency_kind)
                         .and_then(|(_, value)| match value {
-                            tombi_document_tree::Value::Table(dependencies) => {
+                            tombi_document_tree_syntax::Value::Table(dependencies) => {
                                 dependencies.get_key_value(crate_name)
                             }
                             _ => None,
@@ -444,7 +449,7 @@ pub(crate) fn workspace_dependency_usage_locations(
 }
 
 pub(crate) fn goto_crate_package(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     workspace_cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -458,9 +463,9 @@ pub(crate) fn goto_crate_package(
         return Ok(None);
     };
 
-    if value.value_type() == tombi_document_tree::ValueType::String {
+    if value.value_type() == tombi_document_tree_syntax::ValueType::String {
         let subcrate_path = match value {
-            tombi_document_tree::Value::String(path) => path,
+            tombi_document_tree_syntax::Value::String(path) => path,
             _ => unreachable!(),
         };
 
@@ -468,8 +473,8 @@ pub(crate) fn goto_crate_package(
             workspace_cargo_toml_path,
             std::path::Path::new(subcrate_path.value()),
             toml_version,
-        ) && let Some((_, tombi_document_tree::Value::String(package_name))) =
-            tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
+        ) && let Some((_, tombi_document_tree_syntax::Value::String(package_name))) =
+            tombi_document_tree_syntax::dig_keys(&subcrate_document_tree, &["package", "name"])
         {
             let Ok(subcrate_cargo_toml_uri) =
                 tombi_uri::Uri::from_file_path(&subcrate_cargo_toml_path)
@@ -488,13 +493,13 @@ pub(crate) fn goto_crate_package(
 }
 
 pub(crate) fn goto_bin_path_target(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     cargo_toml_path: &std::path::Path,
 ) -> Result<Option<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     debug_assert!(matches_accessors!(accessors, ["bin", _, "path"]));
 
-    let Some((_, tombi_document_tree::Value::String(path_value))) =
+    let Some((_, tombi_document_tree_syntax::Value::String(path_value))) =
         dig_accessors(document_tree, accessors)
     else {
         return Ok(None);
@@ -522,23 +527,28 @@ pub(crate) fn sanitize_dependency_key(key: &str) -> &str {
 }
 
 pub(crate) fn extract_member_patterns<'a>(
-    workspace_document_tree: &'a tombi_document_tree::DocumentTree,
+    workspace_document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     accessors: &'a [tombi_schema_store::Accessor],
     members_key: &'static str,
-) -> Vec<&'a tombi_document_tree::String> {
+) -> Vec<&'a tombi_document_tree_syntax::String> {
     if matches_accessors!(accessors, ["workspace", members_key, _]) {
-        let Some((_, tombi_document_tree::Value::String(member))) =
+        let Some((_, tombi_document_tree_syntax::Value::String(member))) =
             dig_accessors(workspace_document_tree, accessors)
         else {
             return vec![];
         };
         vec![member]
     } else {
-        match tombi_document_tree::dig_keys(workspace_document_tree, &["workspace", members_key]) {
-            Some((_, tombi_document_tree::Value::Array(members))) => members
+        match tombi_document_tree_syntax::dig_keys(
+            workspace_document_tree,
+            &["workspace", members_key],
+        ) {
+            Some((_, tombi_document_tree_syntax::Value::Array(members))) => members
                 .iter()
                 .filter_map(|member| match member {
-                    tombi_document_tree::Value::String(member_pattern) => Some(member_pattern),
+                    tombi_document_tree_syntax::Value::String(member_pattern) => {
+                        Some(member_pattern)
+                    }
                     _ => None,
                 })
                 .collect_vec(),
@@ -548,13 +558,13 @@ pub(crate) fn extract_member_patterns<'a>(
 }
 
 pub(crate) fn extract_exclude_patterns(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
-) -> Vec<&tombi_document_tree::String> {
-    match tombi_document_tree::dig_keys(workspace_document_tree, &["workspace", "exclude"]) {
-        Some((_, tombi_document_tree::Value::Array(exclude))) => exclude
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+) -> Vec<&tombi_document_tree_syntax::String> {
+    match tombi_document_tree_syntax::dig_keys(workspace_document_tree, &["workspace", "exclude"]) {
+        Some((_, tombi_document_tree_syntax::Value::Array(exclude))) => exclude
             .iter()
             .filter_map(|member| match member {
-                tombi_document_tree::Value::String(member_pattern) => Some(member_pattern),
+                tombi_document_tree_syntax::Value::String(member_pattern) => Some(member_pattern),
                 _ => None,
             })
             .collect_vec(),
@@ -563,10 +573,10 @@ pub(crate) fn extract_exclude_patterns(
 }
 
 pub(crate) fn find_package_cargo_toml_paths<'a>(
-    member_patterns: &'a [&'a tombi_document_tree::String],
-    exclude_patterns: &'a [&'a tombi_document_tree::String],
+    member_patterns: &'a [&'a tombi_document_tree_syntax::String],
+    exclude_patterns: &'a [&'a tombi_document_tree_syntax::String],
     workspace_dir_path: &'a std::path::Path,
-) -> impl Iterator<Item = (&'a tombi_document_tree::String, std::path::PathBuf)> + 'a {
+) -> impl Iterator<Item = (&'a tombi_document_tree_syntax::String, std::path::PathBuf)> + 'a {
     let exclude_patterns = exclude_patterns
         .iter()
         .filter_map(|pattern| glob::Pattern::new(pattern.value()).ok())
@@ -613,7 +623,7 @@ pub(crate) fn find_package_cargo_toml_paths<'a>(
 }
 
 pub(crate) fn goto_definition_for_workspace_cargo_toml(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     workspace_cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -663,7 +673,7 @@ pub(crate) fn goto_definition_for_workspace_cargo_toml(
 }
 
 pub(crate) fn goto_workspace_managed_dependency_locations(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -700,7 +710,7 @@ pub(crate) fn goto_workspace_managed_dependency_locations(
 }
 
 pub(crate) fn goto_workspace_member_crates(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     workspace_cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -726,8 +736,8 @@ pub(crate) fn goto_workspace_member_crates(
             continue;
         };
 
-        let Some((_, tombi_document_tree::Value::String(package_name))) =
-            tombi_document_tree::dig_keys(&member_document_tree, &["package", "name"])
+        let Some((_, tombi_document_tree_syntax::Value::String(package_name))) =
+            tombi_document_tree_syntax::dig_keys(&member_document_tree, &["package", "name"])
         else {
             continue;
         };
@@ -750,8 +760,7 @@ mod tests {
         time::Duration,
     };
 
-    use tombi_ast::AstNode;
-    use tombi_document_tree::TryIntoDocumentTree;
+    use tombi_document_tree_syntax::TryIntoDocumentTree;
 
     use super::*;
 
@@ -760,18 +769,15 @@ mod tests {
         LOCK.get_or_init(|| Mutex::new(()))
     }
 
-    fn test_document_tree() -> tombi_document_tree::DocumentTree {
-        let root = tombi_ast::Root::cast(
-            tombi_parser::parse(
-                r#"
+    fn test_document_tree() -> tombi_document_tree_syntax::DocumentTree {
+        let root = tombi_parser::parse(
+            r#"
                 [package]
                 name = "example"
                 version = "0.1.0"
                 "#,
-            )
-            .into_syntax_node(),
         )
-        .expect("expected root");
+        .into_root();
         root.try_into_document_tree(TomlVersion::default())
             .expect("expected document tree")
     }

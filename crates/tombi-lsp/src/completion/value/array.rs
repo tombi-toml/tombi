@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use tombi_document_tree::{ArrayKind, LiteralValueRef};
+use tombi_document_tree_syntax::{ArrayKind, LiteralValueRef};
 use tombi_extension::{AddLeadingComma, AddTrailingComma, CompletionKind};
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, SchemaUri, SchemaView};
@@ -18,11 +18,11 @@ use crate::{
     schema_resolver::resolve_array_item_schema,
 };
 
-impl FindCompletionContents for tombi_document_tree::Array {
+impl FindCompletionContents for tombi_document_tree_syntax::Array {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -378,9 +378,9 @@ impl FindCompletionContents for tombi_document_tree::Array {
                     }
                     if value.contains(position) {
                         // Array of tables
-                        if let tombi_document_tree::Value::Table(table) = value
+                        if let tombi_document_tree_syntax::Value::Table(table) = value
                             && keys.len() == 1
-                            && table.kind() == tombi_document_tree::TableKind::KeyValue
+                            && table.kind() == tombi_document_tree_syntax::TableKind::KeyValue
                             && !matches!(
                                 completion_hint,
                                 Some(
@@ -391,7 +391,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                         {
                             let key = &keys.first().unwrap();
                             return vec![CompletionContent::new_type_hint_key(
-                                &key.value,
+                                key.value(),
                                 key.range(),
                                 None,
                                 Some(CompletionHint::InArray {
@@ -469,7 +469,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
 }
 
 fn new_item_completion_hint(
-    array: &tombi_document_tree::Array,
+    array: &tombi_document_tree_syntax::Array,
     new_item_index: usize,
     new_item_start_position: Option<tombi_text::Position>,
     completion_hint: Option<CompletionHint>,
@@ -520,7 +520,7 @@ impl FindCompletionContents for ArraySchema {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext<'a>,

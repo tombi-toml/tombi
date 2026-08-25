@@ -10,17 +10,18 @@ drop_bomb.workspace = true
 itertools.workspace = true
 log.workspace = true
 thiserror.workspace = true
-tombi-ast.workspace = true
 tombi-diagnostic = { workspace = true, optional = true }
 tombi-lexer.workspace = true
-tombi-rg-tree.workspace = true
-tombi-syntax.workspace = true
+tombi-ast-syntax.workspace = true
 tombi-text.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true
 textwrap.workspace = true
+tombi-ast.workspace = true
+tombi-document-tree-syntax.workspace = true
 tombi-test-lib.workspace = true
+tombi-toml-version.workspace = true
 
 [features]
 default = ["diagnostic"]

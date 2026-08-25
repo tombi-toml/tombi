@@ -102,7 +102,7 @@ For example, suppose you have a `Cargo.toml` like the one below:
 ```toml
 [dependencies]
 serde = { workspace = true }
-tombi-ast = { workspace = true }
+tombi-ast-syntax = { workspace = true }
 ```
 
 In this case, when your cursor is on `workspace`, executing "Go to Definition" will navigate you to the corresponding entry in the workspace's `Cargo.toml`.
@@ -110,7 +110,7 @@ In this case, when your cursor is on `workspace`, executing "Go to Definition" w
 When your cursor is on the dependency key itself, Tombi first checks whether the workspace-managed dependency resolves to a local crate:
 
 - `serde` has no local `Cargo.toml`, so "Go to Definition" jumps to `workspace.dependencies.serde` in the workspace `Cargo.toml`.
-- `tombi-ast` resolves to a local workspace crate, so "Go to Definition" jumps to that crate's `Cargo.toml` and lands on the `package.name` value.
+- `tombi-ast-syntax` resolves to a local workspace crate, so "Go to Definition" jumps to that crate's `Cargo.toml` and lands on the `package.name` value.
 
 <Note>
 "Go to Declaration" always uses the matching entry in the workspace `Cargo.toml` for `workspace = true`.
@@ -119,7 +119,7 @@ When your cursor is on the dependency key itself, Tombi first checks whether the
 #### Go to crate definition from `workspace.dependencies`
 ```toml
 [workspace.dependencies]
-tombi-ast = { path = "crates/tombi-ast" }
+tombi-ast-syntax = { path = "crates/tombi-ast-syntax" }
 ```
 
 In this case, when your cursor is on the dependency key, executing "Go to Definition" navigates to the target crate's `Cargo.toml` and lands on its `package.name` value when the workspace dependency resolves to a member or local path.
@@ -129,7 +129,7 @@ When your cursor is on `path`, executing "Go to Definition" will navigate you to
 ```toml
 [dependencies]
 serde = { workspace = true }
-tombi-ast = { workspace = true }
+tombi-ast-syntax = { workspace = true }
 ```
 
 In this case, when your cursor is on `workspace`, executing "Go to Declaration" will navigate you to the corresponding entry in the workspace's `Cargo.toml`.

@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use std::path::Path;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{Value, dig_accessors, dig_keys};
+use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::Accessor;
 
 use crate::{
@@ -22,7 +22,7 @@ use crate::{
 
 pub async fn goto_definition(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
@@ -91,7 +91,7 @@ pub async fn goto_definition(
 }
 
 fn goto_definition_for_project_name(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     text_document_uri: &tombi_uri::Uri,
 ) -> Vec<tombi_extension::Location> {
     let Some((_, Value::String(project_name))) = dig_keys(document_tree, &["project", "name"])
@@ -106,7 +106,7 @@ fn goto_definition_for_project_name(
 }
 
 fn goto_definition_for_dependency_group_name(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
 ) -> Vec<tombi_extension::Location> {
@@ -133,7 +133,7 @@ fn is_workspace_root_pyproject(pyproject_toml_path: &Path, toml_version: TomlVer
 }
 
 fn should_stay_on_dependency_string(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
@@ -176,7 +176,7 @@ fn should_stay_on_dependency_string(
 }
 
 fn source_is_workspace_managed(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
 ) -> bool {
     let source_accessors = if is_uv_source_workspace_accessors(accessors) {
@@ -196,7 +196,7 @@ fn source_is_workspace_managed(
 }
 
 fn goto_definition_for_relative_package(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
@@ -211,7 +211,7 @@ fn goto_definition_for_relative_package(
 }
 
 fn goto_definition_for_relative_file(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     pyproject_toml_path: &Path,
 ) -> Vec<tombi_extension::Location> {
@@ -251,7 +251,7 @@ fn pyproject_goto_definition_enabled(
 }
 
 fn goto_definition_for_dependency_package(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
     pyproject_toml_path: &std::path::Path,
@@ -336,7 +336,7 @@ fn goto_definition_for_dependency_package(
 }
 
 fn goto_definition_for_dependency_string(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
     pyproject_toml_path: &Path,
@@ -362,7 +362,7 @@ fn goto_definition_for_dependency_string(
 }
 
 fn goto_definition_for_include_group(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     pyproject_toml_path: &std::path::Path,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
@@ -445,7 +445,7 @@ pub(crate) fn get_workspace_member_package_definition(
 }
 
 pub(crate) fn get_workspace_member_dependency_definitions(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     workspace_pyproject_toml_path: &std::path::Path,
     package_name: &str,
     toml_version: TomlVersion,

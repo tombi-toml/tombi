@@ -10,7 +10,8 @@ use crate::{
 };
 use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
-use tombi_ast::SchemaDocumentCommentDirective;
+#[cfg(feature = "ast-syntax")]
+use tombi_ast_syntax::SchemaDocumentCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
 use tombi_config::{SchemaItem, SchemaOverviewOptions, TomlVersion, config_base_dir};
 use tombi_future::{BoxFuture, Boxable};
@@ -699,6 +700,7 @@ impl SchemaStore {
     }
 
     #[inline]
+    #[cfg(feature = "ast-syntax")]
     async fn try_get_source_schema_from_remote_url(
         &self,
         schema_uri: &SchemaUri,
@@ -770,11 +772,12 @@ impl SchemaStore {
         Ok(Some(source_schema))
     }
 
+    #[cfg(feature = "ast-syntax")]
     // Preserve the existing tuple error API without boxing every failure.
     #[allow(clippy::result_large_err)]
     pub async fn resolve_source_schema_from_ast(
         &self,
-        root: &tombi_ast::Root,
+        root: &tombi_ast_syntax::Root,
         source_uri_or_path: Option<Either<&tombi_uri::Uri, &std::path::Path>>,
     ) -> Result<Option<SourceSchema>, (crate::Error, tombi_text::Range)> {
         let source_path = match source_uri_or_path {
@@ -1076,7 +1079,7 @@ impl SchemaStore {
         }
     }
 
-    pub(crate) async fn resolve_source_schema(
+    pub async fn resolve_source_schema(
         &self,
         source_uri_or_path: Either<&tombi_uri::Uri, &std::path::Path>,
     ) -> Result<Option<SourceSchema>, crate::Error> {

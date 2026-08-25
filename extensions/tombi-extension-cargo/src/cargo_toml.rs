@@ -1,8 +1,7 @@
 use std::path::Path;
 
-use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::TryIntoDocumentTree;
+use tombi_document_tree_syntax::TryIntoDocumentTree;
 
 #[derive(Debug, Clone)]
 pub(crate) struct CrateLocation {
@@ -26,9 +25,12 @@ impl From<CrateLocation> for Option<tombi_extension::Location> {
 pub(crate) fn load_cargo_toml(
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
-) -> Option<(tombi_ast::Root, tombi_document_tree::DocumentTree)> {
+) -> Option<(
+    tombi_ast_syntax::Root,
+    tombi_document_tree_syntax::DocumentTree,
+)> {
     let toml_text = tombi_fs::read_to_string(cargo_toml_path).ok()?;
-    let root = tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
+    let root = tombi_parser::parse(&toml_text).into_root();
 
     Some((
         root.clone(),
@@ -42,8 +44,8 @@ pub(crate) fn find_cargo_toml(
     toml_version: TomlVersion,
 ) -> Option<(
     std::path::PathBuf,
-    tombi_ast::Root,
-    tombi_document_tree::DocumentTree,
+    tombi_ast_syntax::Root,
+    tombi_document_tree_syntax::DocumentTree,
 )> {
     let crate_cargo_toml_path =
         tombi_extension_manifest::resolve_manifest_path(cargo_toml_path, crate_path, "Cargo.toml")?;
@@ -55,11 +57,11 @@ pub(crate) fn find_cargo_toml(
 
 pub(crate) fn dependency_package_name<'a>(
     dependency_key: &'a str,
-    dependency_value: &'a tombi_document_tree::Value,
+    dependency_value: &'a tombi_document_tree_syntax::Value,
 ) -> &'a str {
     match dependency_value {
-        tombi_document_tree::Value::Table(table) => match table.get("package") {
-            Some(tombi_document_tree::Value::String(package)) => package.value(),
+        tombi_document_tree_syntax::Value::Table(table) => match table.get("package") {
+            Some(tombi_document_tree_syntax::Value::String(package)) => package.value(),
             _ => dependency_key,
         },
         _ => dependency_key,

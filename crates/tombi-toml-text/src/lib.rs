@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use tombi_toml_version::TomlVersion;
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -39,66 +41,60 @@ pub enum ParseError {
     UnicodeKey,
 }
 
-pub fn try_from_bare_key(value: &str) -> Result<String, ParseError> {
-    if value.chars().any(|c| matches!(c, '+')) {
-        return Err(ParseError::PlusCharacter);
-    }
-
+pub fn try_from_bare_key(value: &str) -> Result<Cow<'_, str>, ParseError> {
     // TODO: In toml `v1.1.0`, bare key unicode support was not merged and will likely be deferred for discussion in `v1.2.0`.
     //       See: https://github.com/toml-lang/toml/issues/954#issuecomment-1932268939
-    if
-    // toml_version >= TomlVersion::V1_1_0_Preview ||
-    value.chars().all(|c| {
-        matches!(
-            c,
+    for character in value.chars() {
+        if character == '+' {
+            return Err(ParseError::PlusCharacter);
+        }
+        if !matches!(
+            character,
+            // toml_version >= TomlVersion::V1_1_0_Preview ||
             'a'..='z' | 'A'..='Z' | '0'..='9' | '_' | '-'
             // FIXME: This code can be removed if we can handle keys of floats correctly.
             | '.'
-        )
-    }) {
-        Ok(value.to_string())
-    } else {
-        Err(ParseError::UnicodeKey)
+        ) {
+            return Err(ParseError::UnicodeKey);
+        }
     }
+    Ok(Cow::Borrowed(value))
 }
 
-pub fn try_from_basic_string(value: &str, toml_version: TomlVersion) -> Result<String, ParseError> {
+pub fn try_from_basic_string(
+    value: &str,
+    toml_version: TomlVersion,
+) -> Result<Cow<'_, str>, ParseError> {
     parse_basic_string(&value[1..value.len() - 1], toml_version, false)
 }
 
-pub fn try_from_literal_string(value: &str) -> Result<String, ParseError> {
+pub fn try_from_literal_string(value: &str) -> Result<Cow<'_, str>, ParseError> {
     parse_literal_string(&value[1..value.len() - 1], false)
 }
 
 pub fn try_from_multi_line_basic_string(
     value: &str,
     toml_version: TomlVersion,
-) -> Result<String, ParseError> {
-    parse_basic_string(
-        &value[3..value.len() - 3]
-            .chars()
-            .skip_while(|c| matches!(c, '\n'))
-            .collect::<String>(),
-        toml_version,
-        true,
-    )
+) -> Result<Cow<'_, str>, ParseError> {
+    let content = value[3..value.len() - 3].trim_start_matches('\n');
+    parse_basic_string(content, toml_version, true)
 }
 
-pub fn try_from_multi_line_literal_string(value: &str) -> Result<String, ParseError> {
-    parse_literal_string(
-        &value[3..value.len() - 3]
-            .chars()
-            .skip_while(|c| matches!(c, '\n'))
-            .collect::<String>(),
-        true,
-    )
+pub fn try_from_multi_line_literal_string(value: &str) -> Result<Cow<'_, str>, ParseError> {
+    let content = value[3..value.len() - 3].trim_start_matches('\n');
+    parse_literal_string(content, true)
 }
 
 pub fn parse_basic_string(
     input: &str,
     toml_version: TomlVersion,
     is_multi_line: bool,
-) -> Result<String, ParseError> {
+) -> Result<Cow<'_, str>, ParseError> {
+    if !input.contains('\\') {
+        parse_literal_string(input, is_multi_line)?;
+        return Ok(Cow::Borrowed(input));
+    }
+
     let mut output = String::with_capacity(input.len());
     let mut chars = input.chars().peekable();
     let mut unicode_buf = String::new();
@@ -251,20 +247,18 @@ pub fn parse_basic_string(
             }
         }
     }
-    Ok(output)
+    Ok(Cow::Owned(output))
 }
 
-pub fn parse_literal_string(input: &str, is_multi_line: bool) -> Result<String, ParseError> {
-    let mut output = String::with_capacity(input.len());
+pub fn parse_literal_string(input: &str, is_multi_line: bool) -> Result<Cow<'_, str>, ParseError> {
     let mut chars = input.chars().peekable();
 
     while let Some(c) = chars.next() {
         match c {
             '\r' | '\n' if is_multi_line => {
-                output.push(c);
                 if c == '\r' {
                     if let Some(&'\n') = chars.peek() {
-                        output.push(chars.next().unwrap());
+                        chars.next();
                     } else {
                         return Err(ParseError::InvalidLineBreak);
                     }
@@ -273,12 +267,10 @@ pub fn parse_literal_string(input: &str, is_multi_line: bool) -> Result<String, 
             '\u{0000}'..='\u{0008}' | '\u{000A}'..='\u{001F}' | '\u{007F}' => {
                 return Err(ParseError::InvalidControlCharacter);
             }
-            _ => {
-                output.push(c);
-            }
+            _ => {}
         }
     }
-    Ok(output)
+    Ok(Cow::Borrowed(input))
 }
 
 pub fn to_basic_string(value: &str) -> String {

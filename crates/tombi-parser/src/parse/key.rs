@@ -1,9 +1,9 @@
-use tombi_syntax::{SyntaxKind::*, T};
+use tombi_ast_syntax::{SyntaxKind::*, T};
 
 use super::Parse;
 use crate::{ErrorKind::*, parser::Parser, token_set::TS_KEY_FIRST};
 
-impl Parse for tombi_ast::Keys {
+impl Parse for tombi_ast_syntax::Keys {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
         if eat_keys(p) {

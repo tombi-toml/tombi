@@ -1,8 +1,7 @@
 use std::path::Path;
 
-use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{TryIntoDocumentTree, dig_keys};
+use tombi_document_tree_syntax::{TryIntoDocumentTree, dig_keys};
 
 #[derive(Debug, Clone)]
 pub(crate) struct PackageLocation {
@@ -26,7 +25,7 @@ impl From<PackageLocation> for Option<tombi_extension::Location> {
 pub(crate) fn load_pyproject_toml_document_tree(
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
-) -> Option<tombi_document_tree::DocumentTree> {
+) -> Option<tombi_document_tree_syntax::DocumentTree> {
     let (_, document_tree) = load_pyproject_toml(pyproject_toml_path, toml_version)?;
     Some(document_tree)
 }
@@ -36,11 +35,12 @@ pub(crate) fn find_workspace_pyproject_toml(
     toml_version: TomlVersion,
 ) -> Option<(
     std::path::PathBuf,
-    tombi_ast::Root,
-    tombi_document_tree::DocumentTree,
+    tombi_ast_syntax::Root,
+    tombi_document_tree_syntax::DocumentTree,
 )> {
     if let Some((root, document_tree)) = load_pyproject_toml(pyproject_toml_path, toml_version)
-        && tombi_document_tree::dig_keys(&document_tree, &["tool", "uv", "workspace"]).is_some()
+        && tombi_document_tree_syntax::dig_keys(&document_tree, &["tool", "uv", "workspace"])
+            .is_some()
     {
         return Some((pyproject_toml_path.to_path_buf(), root, document_tree));
     }
@@ -50,17 +50,19 @@ pub(crate) fn find_workspace_pyproject_toml(
             pyproject_toml_path,
             "pyproject.toml",
             |path| load_pyproject_toml(path, toml_version),
-            |(_, tree)| tombi_document_tree::dig_keys(tree, &["tool", "uv", "workspace"]).is_some(),
+            |(_, tree)| {
+                tombi_document_tree_syntax::dig_keys(tree, &["tool", "uv", "workspace"]).is_some()
+            },
         )?;
 
     Some((workspace_pyproject_toml_path, root, document_tree))
 }
 
 pub(crate) fn get_project_name(
-    document_tree: &tombi_document_tree::DocumentTree,
-) -> Option<&tombi_document_tree::String> {
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
+) -> Option<&tombi_document_tree_syntax::String> {
     match dig_keys(document_tree, &["project", "name"]) {
-        Some((_, tombi_document_tree::Value::String(name))) => Some(name),
+        Some((_, tombi_document_tree_syntax::Value::String(name))) => Some(name),
         _ => None,
     }
 }
@@ -94,9 +96,12 @@ pub(crate) fn resolve_relative_path_uri(
 fn load_pyproject_toml(
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
-) -> Option<(tombi_ast::Root, tombi_document_tree::DocumentTree)> {
+) -> Option<(
+    tombi_ast_syntax::Root,
+    tombi_document_tree_syntax::DocumentTree,
+)> {
     let toml_text = tombi_fs::read_to_string(pyproject_toml_path).ok()?;
-    let root = tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
+    let root = tombi_parser::parse(&toml_text).into_root();
 
     Some((
         root.clone(),

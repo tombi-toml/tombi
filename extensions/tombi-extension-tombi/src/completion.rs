@@ -4,14 +4,14 @@ use tombi_extension::{
 };
 use tombi_schema_store::{Accessor, matches_accessors};
 
-pub async fn completion(
+pub async fn completion<C>(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     position: tombi_text::Position,
     accessors: &[Accessor],
     _toml_version: TomlVersion,
     _completion_hint: Option<CompletionHint>,
-    comment_context: Option<&CommentContext>,
+    comment_context: Option<&CommentContext<C>>,
     features: Option<&tombi_config::TombiExtensionFeatures>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     if comment_context.is_some() {

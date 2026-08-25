@@ -1,10 +1,10 @@
 use std::fmt::Write;
 
-use tombi_ast::{AstNode, DanglingCommentGroupOr, LeadingComment, TrailingComment};
+use tombi_ast_syntax::{AstNode, DanglingCommentGroupOr, LeadingComment, TrailingComment};
 
-use super::{Format, blank_lines_before};
+use super::Format;
 
-impl Format for tombi_ast::DanglingCommentGroup {
+impl Format for tombi_ast_syntax::DanglingCommentGroup {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if f.skip_comment() {
             return Ok(());
@@ -21,7 +21,7 @@ impl Format for tombi_ast::DanglingCommentGroup {
     }
 }
 
-impl Format for Vec<tombi_ast::DanglingCommentGroup> {
+impl Format for Vec<tombi_ast_syntax::DanglingCommentGroup> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if f.skip_comment() {
             return Ok(());
@@ -31,7 +31,7 @@ impl Format for Vec<tombi_ast::DanglingCommentGroup> {
 
         for group in self {
             if has_written_group {
-                let blank_lines = blank_lines_before(group).min(f.group_blank_lines_limit());
+                let blank_lines = group.blank_lines_before().min(f.group_blank_lines_limit());
                 if blank_lines == 0 {
                     f.write_line_ending()?;
                 } else {
@@ -59,7 +59,7 @@ impl<T: Format + AstNode> Format for Vec<DanglingCommentGroupOr<T>> {
                     }
                     if has_written_group {
                         let blank_lines =
-                            blank_lines_before(group).min(f.group_blank_lines_limit());
+                            group.blank_lines_before().min(f.group_blank_lines_limit());
                         if blank_lines == 0 {
                             f.write_line_ending()?;
                         } else {
@@ -73,7 +73,7 @@ impl<T: Format + AstNode> Format for Vec<DanglingCommentGroupOr<T>> {
                 DanglingCommentGroupOr::ItemGroup(item_group) => {
                     if has_written_group {
                         let blank_lines =
-                            blank_lines_before(group).min(f.group_blank_lines_limit());
+                            group.blank_lines_before().min(f.group_blank_lines_limit());
                         if blank_lines == 0 {
                             f.write_line_ending()?;
                         } else {
@@ -124,7 +124,7 @@ impl Format for TrailingComment {
 
 fn format_comment(
     f: &mut crate::Formatter,
-    comment: &tombi_ast::Comment,
+    comment: &tombi_ast_syntax::Comment,
     strip_leading_spaces: bool,
 ) -> Result<(), std::fmt::Error> {
     let comment_string = comment.to_string();
@@ -196,7 +196,6 @@ fn format_comment(
 #[cfg(test)]
 mod tests {
     use itertools::Itertools;
-    use tombi_ast::AstNode;
     use tombi_config::{CommentStyle, FormatRules};
 
     use crate::{Formatter, test_format};
@@ -367,7 +366,7 @@ mod tests {
         .trim()
         .to_string();
 
-        let root = tombi_ast::Root::cast(tombi_parser::parse(&source).into_syntax_node()).unwrap();
+        let root = tombi_parser::parse(&source).into_root();
         let groups = root.key_value_groups().collect_vec();
 
         let schema_store = tombi_schema_store::SchemaStore::new();

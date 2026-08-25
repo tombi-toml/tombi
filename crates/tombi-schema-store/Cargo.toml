@@ -19,11 +19,11 @@ serde_json.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["sync"] }
 tombi-accessor.workspace = true
-tombi-ast.workspace = true
+tombi-ast-syntax = { workspace = true, optional = true }
 tombi-cache.workspace = true
 tombi-config.workspace = true
 tombi-diagnostic.workspace = true
-tombi-document-tree = { workspace = true, optional = true }
+tombi-document-tree-syntax = { workspace = true, optional = true }
 tombi-future.workspace = true
 tombi-hashmap = { workspace = true, features = ["serde"] }
 tombi-json.workspace = true
@@ -41,7 +41,8 @@ tombi-test-lib.workspace = true
 
 [features]
 default = ["native"]
-document-tree = ["dep:tombi-document-tree"]
+ast-syntax = ["dep:tombi-ast-syntax"]
+document-tree = ["dep:tombi-document-tree-syntax"]
 gloo-net = ["dep:gloo-net"]
 gloo-net06 = ["gloo-net"]
 native = ["reqwest", "tombi-future/native"]

@@ -14,11 +14,11 @@ use crate::{
     },
 };
 
-impl GetTypeDefinition for tombi_document_tree::Integer {
+impl GetTypeDefinition for tombi_document_tree_syntax::Integer {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
@@ -135,7 +135,7 @@ impl GetTypeDefinition for tombi_schema_store::IntegerSchema {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         _position: tombi_text::Position,
-        _keys: &'a [tombi_document_tree::Key],
+        _keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,

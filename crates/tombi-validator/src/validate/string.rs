@@ -1,8 +1,8 @@
 use itertools::Itertools;
-use tombi_ast::TombiValueCommentDirective;
+use tombi_ast_syntax::TombiValueCommentDirective;
 use tombi_comment_directive::value::KeyLinkRules;
 use tombi_comment_directive::value::{StringCommonFormatRules, StringCommonLintRules};
-use tombi_document_tree::{LikeString, ValueImpl};
+use tombi_document_tree_syntax::{LikeString, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_regex::Regex;
 use tombi_schema_store::SchemaView;
@@ -22,7 +22,7 @@ use crate::{
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
 
-impl Validate for tombi_document_tree::String {
+impl Validate for tombi_document_tree_syntax::String {
     fn validate<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::Accessor],
@@ -33,7 +33,7 @@ impl Validate for tombi_document_tree::String {
     }
 }
 
-impl Validate for tombi_document_tree::Key {
+impl Validate for tombi_document_tree_syntax::Key {
     fn validate<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::Accessor],

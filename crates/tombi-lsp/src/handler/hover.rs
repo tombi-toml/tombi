@@ -1,6 +1,6 @@
 use itertools::{Either, Itertools};
-use tombi_ast::{AstNode, DanglingCommentGroupOr, algo::ancestors_at_position};
-use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_ast_syntax::{AstNode, DanglingCommentGroupOr};
+use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 use tombi_extension::{HoverMetadata, HoverTextChange};
 use tombi_schema_store::SchemaContext;
 use tombi_text::IntoLsp;
@@ -103,7 +103,7 @@ pub async fn handle_hover(
     if let Some(HoverContent::Value(hover_value_content)) = &mut hover_content {
         hover_value_content.range = range;
 
-        let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
+        let accessors = tombi_document_tree_syntax::get_accessors(&document_tree, &keys, position);
         let offline = schema_store.offline();
         let cache_options = schema_store.cache_options();
         let tombi_hover_enabled = config
@@ -229,15 +229,18 @@ fn apply_hover_text_change(target: &mut Option<String>, change: Option<HoverText
 }
 
 pub async fn get_hover_keys_with_range(
-    root: &tombi_ast::Root,
+    root: &tombi_ast_syntax::Root,
     position: tombi_text::Position,
     toml_version: tombi_config::TomlVersion,
-) -> Option<(Vec<tombi_document_tree::Key>, Option<tombi_text::Range>)> {
+) -> Option<(
+    Vec<tombi_document_tree_syntax::Key>,
+    Option<tombi_text::Range>,
+)> {
     let mut keys_vec = vec![];
     let mut hover_range = None;
 
-    for node in ancestors_at_position(root.syntax(), position) {
-        if let Some(array) = tombi_ast::Array::cast(node.to_owned()) {
+    for node in root.nodes_at_position(position) {
+        if let tombi_ast_syntax::TomlNode::Array(array) = &node {
             let on_leading_comment = array
                 .leading_comments()
                 .any(|comment| comment.syntax().range().contains(position));
@@ -251,10 +254,7 @@ pub async fn get_hover_keys_with_range(
             if hover_range.is_none() && (on_leading_comment || on_bracket_start_trailing_comment) {
                 hover_range = Some(array.syntax().range());
             } else if hover_range.is_none() && on_trailing_comment {
-                hover_range = Some(key_value_parent_or_self_range(
-                    &array,
-                    array.syntax().range(),
-                ));
+                hover_range = Some(key_value_parent_or_self_range(root, array.syntax().range()));
             } else {
                 for groups in array.value_with_comma_groups() {
                     match groups {
@@ -288,7 +288,7 @@ pub async fn get_hover_keys_with_range(
                     }
                 }
             }
-        } else if let Some(inline_table) = tombi_ast::InlineTable::cast(node.to_owned()) {
+        } else if let tombi_ast_syntax::TomlNode::InlineTable(inline_table) = &node {
             let on_leading_comment = inline_table
                 .leading_comments()
                 .any(|comment| comment.syntax().range().contains(position));
@@ -303,7 +303,7 @@ pub async fn get_hover_keys_with_range(
                 hover_range = Some(inline_table.syntax().range());
             } else if hover_range.is_none() && on_trailing_comment {
                 hover_range = Some(key_value_parent_or_self_range(
-                    &inline_table,
+                    root,
                     inline_table.syntax().range(),
                 ));
             } else {
@@ -338,10 +338,10 @@ pub async fn get_hover_keys_with_range(
             }
         };
 
-        let keys = if let Some(kv) = tombi_ast::KeyValue::cast(node.to_owned()) {
+        let keys = if let tombi_ast_syntax::TomlNode::KeyValue(kv) = node {
             if hover_range.is_none() {
                 hover_range = Some(
-                    append_comma_range_if_exists(&kv, position)
+                    kv.item_range_with_comma(position)
                         .or_else(|| {
                             kv.leading_comments()
                                 .next()
@@ -353,7 +353,7 @@ pub async fn get_hover_keys_with_range(
                 );
             }
             kv.keys()
-        } else if let Some(table) = tombi_ast::Table::cast(node.to_owned()) {
+        } else if let tombi_ast_syntax::TomlNode::Table(table) = node {
             let header = table.header();
             if let Some(header) = &header
                 && hover_range.is_none()
@@ -398,7 +398,7 @@ pub async fn get_hover_keys_with_range(
             }
 
             header
-        } else if let Some(array_of_table) = tombi_ast::ArrayOfTable::cast(node.to_owned()) {
+        } else if let tombi_ast_syntax::TomlNode::ArrayOfTable(array_of_table) = node {
             let header = array_of_table.header();
             if let Some(header) = &header
                 && hover_range.is_none()
@@ -445,7 +445,7 @@ pub async fn get_hover_keys_with_range(
             }
 
             header
-        } else if let Some(root) = tombi_ast::Root::cast(node.to_owned()) {
+        } else if let tombi_ast_syntax::TomlNode::Root(root) = node {
             if hover_range.is_none()
                 && (root.dangling_comment_groups().any(|comment_group| {
                     comment_group
@@ -512,37 +512,32 @@ pub async fn get_hover_keys_with_range(
     ))
 }
 
-fn key_value_parent_or_self_range<N: AstNode>(
-    node: &N,
+fn key_value_parent_or_self_range(
+    root: &tombi_ast_syntax::Root,
     fallback_range: tombi_text::Range,
 ) -> tombi_text::Range {
-    node.syntax()
-        .parent()
-        .and_then(|parent| {
-            tombi_ast::KeyValue::cast(parent.clone())
-                .or_else(|| parent.parent().and_then(tombi_ast::KeyValue::cast))
-        })
+    root.enclosing_key_value(fallback_range.start)
         .map_or(fallback_range, |key_value| key_value.range())
 }
 
 #[inline]
 fn array_value_hover_range(
-    value_or_key_value: &tombi_ast::ValueOrKeyValue,
-    comma: Option<&tombi_ast::Comma>,
+    value_or_key_value: &tombi_ast_syntax::ValueOrKeyValue,
+    comma: Option<&tombi_ast_syntax::Comma>,
 ) -> Option<tombi_text::Range> {
     let start = value_or_key_value
         .leading_comments()
         .next()
         .map(|comment| comment.syntax().range().start)
         .or_else(|| match value_or_key_value {
-            tombi_ast::ValueOrKeyValue::Value(value) => Some(value.token_range().start),
-            tombi_ast::ValueOrKeyValue::KeyValue(key_value) => {
+            tombi_ast_syntax::ValueOrKeyValue::Value(value) => Some(value.token_range().start),
+            tombi_ast_syntax::ValueOrKeyValue::KeyValue(key_value) => {
                 key_value.keys().map(|keys| keys.range().start)
             }
         })?;
     let end = match value_or_key_value {
-        tombi_ast::ValueOrKeyValue::Value(value) => value.range().end,
-        tombi_ast::ValueOrKeyValue::KeyValue(key_value) => key_value
+        tombi_ast_syntax::ValueOrKeyValue::Value(value) => value.range().end,
+        tombi_ast_syntax::ValueOrKeyValue::KeyValue(key_value) => key_value
             .value()
             .map(|value| value.range().end)
             .unwrap_or(key_value.range().end),
@@ -553,8 +548,8 @@ fn array_value_hover_range(
 
 #[inline]
 fn inline_table_key_value_hover_range(
-    key_value: &tombi_ast::KeyValue,
-    comma: Option<&tombi_ast::Comma>,
+    key_value: &tombi_ast_syntax::KeyValue,
+    comma: Option<&tombi_ast_syntax::Comma>,
 ) -> Option<tombi_text::Range> {
     let start = key_value
         .leading_comments()
@@ -573,69 +568,13 @@ fn inline_table_key_value_hover_range(
 fn with_comma_item_hover_range(
     start: tombi_text::Position,
     end: tombi_text::Position,
-    comma: Option<&tombi_ast::Comma>,
+    comma: Option<&tombi_ast_syntax::Comma>,
 ) -> tombi_text::Range {
     let mut range = tombi_text::Range::new(start, end);
     if let Some(comma) = comma {
         range += comma.range();
     }
     range
-}
-
-fn append_comma_range_if_exists(
-    node: &impl AstNode,
-    position: tombi_text::Position,
-) -> Option<tombi_text::Range> {
-    let node_key_value = tombi_ast::KeyValue::cast(node.syntax().clone());
-
-    for syntax_node in node.syntax().ancestors() {
-        if let Some(group) = tombi_ast::KeyValueWithCommaGroup::cast(syntax_node.clone()) {
-            if let Some(target_key_value) = node_key_value.as_ref() {
-                for (item, comma) in group.key_values_with_comma() {
-                    if item.syntax() == target_key_value.syntax() {
-                        return inline_table_key_value_hover_range(&item, comma.as_ref());
-                    }
-                }
-            }
-
-            if let Some(range) = with_comma_item_range_contains_position(
-                group
-                    .key_values_with_comma()
-                    .map(|(item, comma)| (item.range(), comma.map(|comma| comma.range()))),
-                position,
-            ) {
-                return Some(range);
-            }
-        } else if let Some(group) = tombi_ast::ValueWithCommaGroup::cast(syntax_node)
-            && let Some(range) = with_comma_item_range_contains_position(
-                group
-                    .value_or_key_values_with_comma()
-                    .map(|(item, comma)| (item.range(), comma.map(|comma| comma.range()))),
-                position,
-            )
-        {
-            return Some(range);
-        }
-    }
-
-    None
-}
-
-fn with_comma_item_range_contains_position<I>(
-    items_with_comma: I,
-    position: tombi_text::Position,
-) -> Option<tombi_text::Range>
-where
-    I: IntoIterator<Item = (tombi_text::Range, Option<tombi_text::Range>)>,
-{
-    for (item_range, comma_range) in items_with_comma {
-        let range = comma_range.map_or(item_range, |comma_range| item_range + comma_range);
-        if range.contains(position) {
-            return Some(range);
-        }
-    }
-
-    None
 }
 
 #[cfg(test)]
@@ -648,13 +587,13 @@ mod tests {
 
     fn parse_root_and_position_with_marker(
         source_with_marker: &str,
-    ) -> (tombi_ast::Root, Position) {
+    ) -> (tombi_ast_syntax::Root, Position) {
         let marker = '█';
         let mut source = dedent(source_with_marker).trim().to_string();
         let marker_index = source.find(marker).unwrap();
         source.remove(marker_index);
 
-        let root = tombi_ast::Root::cast(parse(&source).into_syntax_node()).unwrap();
+        let root = parse(&source).into_root();
         let position = Position::default() + RelativePosition::of(&source[..marker_index]);
 
         (root, position)

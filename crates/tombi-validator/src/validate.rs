@@ -39,14 +39,14 @@ pub use any_of::validate_any_of;
 use itertools::Itertools;
 pub use one_of::validate_one_of;
 use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
-use tombi_document_tree::{TryIntoDocumentTree, dig_keys};
+use tombi_document_tree_syntax::{TryIntoDocumentTree, dig_keys};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_text::RelativePosition;
 
 pub fn validate<'a: 'b, 'b>(
-    tree: tombi_document_tree::DocumentTree,
+    tree: tombi_document_tree_syntax::DocumentTree,
     source_schema: Option<&'a tombi_schema_store::SourceSchema>,
     schema_context: &'a tombi_schema_store::SchemaContext,
 ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
@@ -111,7 +111,7 @@ fn check_exclusive_minimum<T: PartialOrd>(value: &T, exclusive_minimum: &T) -> b
 }
 
 pub fn project_current_schema_for_value(
-    value: &impl tombi_document_tree::ValueImpl,
+    value: &impl tombi_document_tree_syntax::ValueImpl,
     current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Option<tombi_schema_store::CurrentSchema<'static>> {
@@ -121,23 +121,23 @@ pub fn project_current_schema_for_value(
         Some(tombi_schema_store::SemanticSchema::Boolean(_))
     );
     let matches_instance = match value.value_type() {
-        tombi_document_tree::ValueType::Boolean => {
+        tombi_document_tree_syntax::ValueType::Boolean => {
             matches!(
                 current_schema.schema_view.as_ref(),
                 tombi_schema_store::SchemaView::Boolean(_)
             )
         }
-        tombi_document_tree::ValueType::Integer => matches!(
+        tombi_document_tree_syntax::ValueType::Integer => matches!(
             current_schema.schema_view.as_ref(),
             tombi_schema_store::SchemaView::Integer(_) | tombi_schema_store::SchemaView::Float(_)
         ),
-        tombi_document_tree::ValueType::Float => {
+        tombi_document_tree_syntax::ValueType::Float => {
             matches!(
                 current_schema.schema_view.as_ref(),
                 tombi_schema_store::SchemaView::Float(_)
             )
         }
-        tombi_document_tree::ValueType::String => matches!(
+        tombi_document_tree_syntax::ValueType::String => matches!(
             current_schema.schema_view.as_ref(),
             tombi_schema_store::SchemaView::String(_)
                 | tombi_schema_store::SchemaView::LocalDate(_)
@@ -145,35 +145,35 @@ pub fn project_current_schema_for_value(
                 | tombi_schema_store::SchemaView::LocalTime(_)
                 | tombi_schema_store::SchemaView::OffsetDateTime(_)
         ),
-        tombi_document_tree::ValueType::OffsetDateTime => matches!(
+        tombi_document_tree_syntax::ValueType::OffsetDateTime => matches!(
             current_schema.schema_view.as_ref(),
             tombi_schema_store::SchemaView::OffsetDateTime(_)
         ),
-        tombi_document_tree::ValueType::LocalDateTime => matches!(
+        tombi_document_tree_syntax::ValueType::LocalDateTime => matches!(
             current_schema.schema_view.as_ref(),
             tombi_schema_store::SchemaView::LocalDateTime(_)
         ),
-        tombi_document_tree::ValueType::LocalDate => matches!(
+        tombi_document_tree_syntax::ValueType::LocalDate => matches!(
             current_schema.schema_view.as_ref(),
             tombi_schema_store::SchemaView::LocalDate(_)
         ),
-        tombi_document_tree::ValueType::LocalTime => matches!(
+        tombi_document_tree_syntax::ValueType::LocalTime => matches!(
             current_schema.schema_view.as_ref(),
             tombi_schema_store::SchemaView::LocalTime(_)
         ),
-        tombi_document_tree::ValueType::Array => {
+        tombi_document_tree_syntax::ValueType::Array => {
             matches!(
                 current_schema.schema_view.as_ref(),
                 tombi_schema_store::SchemaView::Array(_)
             )
         }
-        tombi_document_tree::ValueType::Table => {
+        tombi_document_tree_syntax::ValueType::Table => {
             matches!(
                 current_schema.schema_view.as_ref(),
                 tombi_schema_store::SchemaView::Table(_)
             )
         }
-        tombi_document_tree::ValueType::Incomplete => true,
+        tombi_document_tree_syntax::ValueType::Incomplete => true,
     } || matches!(
         current_schema.schema_view.as_ref(),
         tombi_schema_store::SchemaView::Anything(_) | tombi_schema_store::SchemaView::Nothing(_)
@@ -248,11 +248,11 @@ pub fn handle_deprecated<'a, T>(
     current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<
-        impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+        impl IntoIterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) where
-    T: tombi_document_tree::ValueImpl,
+    T: tombi_document_tree_syntax::ValueImpl,
 {
     if let Some(deprecation) = deprecation {
         let level =
@@ -289,11 +289,11 @@ pub fn handle_deprecated_value<'a, T>(
     current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<
-        impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+        impl IntoIterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) where
-    T: tombi_document_tree::ValueImpl + ToString,
+    T: tombi_document_tree_syntax::ValueImpl + ToString,
 {
     if let Some(deprecation) = deprecation {
         let level =
@@ -330,7 +330,7 @@ pub fn handle_deprecated_value<'a, T>(
 #[allow(clippy::result_large_err)]
 fn handle_type_mismatch(
     expected: tombi_schema_store::ValueType,
-    actual: tombi_document_tree::ValueType,
+    actual: tombi_document_tree_syntax::ValueType,
     range: tombi_text::Range,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) -> Result<crate::Valid, crate::Invalid> {
@@ -365,7 +365,7 @@ fn handle_type_mismatch(
 #[inline]
 pub(crate) fn handle_anything_schema<T>(_value: &T) -> Result<crate::Valid, crate::Invalid>
 where
-    T: tombi_document_tree::ValueImpl,
+    T: tombi_document_tree_syntax::ValueImpl,
 {
     Ok(crate::Valid::new())
 }
@@ -373,7 +373,7 @@ where
 #[allow(clippy::result_large_err)]
 pub(crate) fn handle_nothing_schema<T>(value: &T) -> Result<crate::Valid, crate::Invalid>
 where
-    T: tombi_document_tree::ValueImpl,
+    T: tombi_document_tree_syntax::ValueImpl,
 {
     let mut diagnostics = vec![];
     crate::Diagnostic {
@@ -387,7 +387,7 @@ where
 fn handle_unused_noqa<'a>(
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
     comment_directives: Option<
-        impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+        impl IntoIterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
     rule_name: &'static str,
@@ -404,7 +404,7 @@ fn handle_unused_noqa<'a>(
         return;
     }
 
-    for tombi_ast::TombiValueCommentDirective {
+    for tombi_ast_syntax::TombiValueCommentDirective {
         content,
         content_range,
         ..
@@ -529,12 +529,12 @@ fn validate_deprecated<'a, T>(
     current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<
-        impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+        impl IntoIterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) -> Result<crate::Valid, crate::Invalid>
 where
-    T: tombi_document_tree::ValueImpl,
+    T: tombi_document_tree_syntax::ValueImpl,
 {
     let mut diagnostics = Vec::with_capacity(1);
     handle_deprecated(
@@ -609,11 +609,11 @@ pub fn validate_adjacent_applicators<'a: 'b, 'b, T>(
     not_schema: Option<&'a tombi_schema_store::NotSchema>,
     current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    comment_directives: Option<&'a [tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<&'a [tombi_ast_syntax::TombiValueCommentDirective]>,
     common_rules: Option<&'a tombi_comment_directive::value::CommonLintRules>,
 ) -> BoxFuture<'b, Result<crate::Valid, crate::Invalid>>
 where
-    T: Validate + tombi_document_tree::ValueImpl + Sync + Send + std::fmt::Debug,
+    T: Validate + tombi_document_tree_syntax::ValueImpl + Sync + Send + std::fmt::Debug,
 {
     async move {
         if one_of_schema.is_none()
@@ -691,11 +691,11 @@ pub fn validate_mismatched_schema<'a: 'b, 'b, T>(
     accessors: &'a [tombi_schema_store::Accessor],
     current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    comment_directives: Option<&'a [tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<&'a [tombi_ast_syntax::TombiValueCommentDirective]>,
     common_rules: Option<&'a tombi_comment_directive::value::CommonLintRules>,
 ) -> BoxFuture<'b, Result<crate::Valid, crate::Invalid>>
 where
-    T: Validate + tombi_document_tree::ValueImpl + Sync + Send + std::fmt::Debug,
+    T: Validate + tombi_document_tree_syntax::ValueImpl + Sync + Send + std::fmt::Debug,
 {
     async move {
         if current_schema
@@ -736,11 +736,11 @@ pub fn validate_resolved_schema<'a: 'b, 'b, T>(
     accessors: &'a [tombi_schema_store::Accessor],
     resolved_schema: &'a tombi_schema_store::CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    comment_directives: Option<&'a [tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<&'a [tombi_ast_syntax::TombiValueCommentDirective]>,
     common_rules: Option<&'a tombi_comment_directive::value::CommonLintRules>,
 ) -> BoxFuture<'b, Option<Result<crate::Valid, crate::Invalid>>>
 where
-    T: Validate + tombi_document_tree::ValueImpl + Sync + Send + std::fmt::Debug,
+    T: Validate + tombi_document_tree_syntax::ValueImpl + Sync + Send + std::fmt::Debug,
 {
     async move {
         let _cycle_guard = schema_context
@@ -749,34 +749,46 @@ where
 
         match (value.value_type(), resolved_schema.schema_view.as_ref()) {
             (
-                tombi_document_tree::ValueType::Boolean,
+                tombi_document_tree_syntax::ValueType::Boolean,
                 tombi_schema_store::SchemaView::Boolean(_),
             )
             | (
-                tombi_document_tree::ValueType::Integer,
+                tombi_document_tree_syntax::ValueType::Integer,
                 tombi_schema_store::SchemaView::Integer(_)
                 | tombi_schema_store::SchemaView::Float(_),
             )
-            | (tombi_document_tree::ValueType::Float, tombi_schema_store::SchemaView::Float(_))
-            | (tombi_document_tree::ValueType::String, tombi_schema_store::SchemaView::String(_))
             | (
-                tombi_document_tree::ValueType::OffsetDateTime,
+                tombi_document_tree_syntax::ValueType::Float,
+                tombi_schema_store::SchemaView::Float(_),
+            )
+            | (
+                tombi_document_tree_syntax::ValueType::String,
+                tombi_schema_store::SchemaView::String(_),
+            )
+            | (
+                tombi_document_tree_syntax::ValueType::OffsetDateTime,
                 tombi_schema_store::SchemaView::OffsetDateTime(_),
             )
             | (
-                tombi_document_tree::ValueType::LocalDateTime,
+                tombi_document_tree_syntax::ValueType::LocalDateTime,
                 tombi_schema_store::SchemaView::LocalDateTime(_),
             )
             | (
-                tombi_document_tree::ValueType::LocalDate,
+                tombi_document_tree_syntax::ValueType::LocalDate,
                 tombi_schema_store::SchemaView::LocalDate(_),
             )
             | (
-                tombi_document_tree::ValueType::LocalTime,
+                tombi_document_tree_syntax::ValueType::LocalTime,
                 tombi_schema_store::SchemaView::LocalTime(_),
             )
-            | (tombi_document_tree::ValueType::Table, tombi_schema_store::SchemaView::Table(_))
-            | (tombi_document_tree::ValueType::Array, tombi_schema_store::SchemaView::Array(_)) => {
+            | (
+                tombi_document_tree_syntax::ValueType::Table,
+                tombi_schema_store::SchemaView::Table(_),
+            )
+            | (
+                tombi_document_tree_syntax::ValueType::Array,
+                tombi_schema_store::SchemaView::Array(_),
+            ) => {
                 let result = value
                     .validate(accessors, Some(resolved_schema), schema_context)
                     .await;

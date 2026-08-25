@@ -1,4 +1,4 @@
-use tombi_ast::DanglingCommentGroupOr;
+use tombi_ast_syntax::DanglingCommentGroupOr;
 use tombi_config::SeverityLevel;
 
 use crate::{Diagnostic, DiagnosticKind, Rule};
@@ -6,7 +6,7 @@ use crate::{Diagnostic, DiagnosticKind, Rule};
 pub struct TrailingCommaRule;
 
 fn check_key_value_groups(
-    groups: impl Iterator<Item = DanglingCommentGroupOr<tombi_ast::KeyValueGroup>>,
+    groups: impl Iterator<Item = DanglingCommentGroupOr<tombi_ast_syntax::KeyValueGroup>>,
     l: &mut crate::Linter<'_>,
 ) {
     for group in groups {
@@ -30,20 +30,20 @@ fn check_key_value_groups(
     }
 }
 
-impl Rule<tombi_ast::Root> for TrailingCommaRule {
-    async fn check(node: &tombi_ast::Root, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::Root> for TrailingCommaRule {
+    async fn check(node: &tombi_ast_syntax::Root, l: &mut crate::Linter<'_>) {
         check_key_value_groups(node.key_value_groups(), l);
     }
 }
 
-impl Rule<tombi_ast::Table> for TrailingCommaRule {
-    async fn check(node: &tombi_ast::Table, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::Table> for TrailingCommaRule {
+    async fn check(node: &tombi_ast_syntax::Table, l: &mut crate::Linter<'_>) {
         check_key_value_groups(node.key_value_groups(), l);
     }
 }
 
-impl Rule<tombi_ast::ArrayOfTable> for TrailingCommaRule {
-    async fn check(node: &tombi_ast::ArrayOfTable, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::ArrayOfTable> for TrailingCommaRule {
+    async fn check(node: &tombi_ast_syntax::ArrayOfTable, l: &mut crate::Linter<'_>) {
         check_key_value_groups(node.key_value_groups(), l);
     }
 }

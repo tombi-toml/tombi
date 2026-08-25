@@ -1,4 +1,4 @@
-use tombi_syntax::{SyntaxKind::*, T};
+use tombi_ast_syntax::{SyntaxKind::*, T};
 
 use crate::{
     parse::{Parse, is_group_separator},
@@ -7,7 +7,7 @@ use crate::{
     token_set::{TS_INLINE_TABLE_END, TS_KEY_FIRST},
 };
 
-impl Parse for tombi_ast::KeyValueWithCommaGroup {
+impl Parse for tombi_ast_syntax::KeyValueWithCommaGroup {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 
@@ -16,11 +16,11 @@ impl Parse for tombi_ast::KeyValueWithCommaGroup {
                 break;
             }
 
-            tombi_ast::KeyValue::parse(p);
+            tombi_ast_syntax::KeyValue::parse(p);
 
             let n = peek_leading_comments(p);
             if p.nth_at(n, T![,]) {
-                tombi_ast::Comma::parse(p);
+                tombi_ast_syntax::Comma::parse(p);
             } else if p.nth_at_ts(n, TS_INLINE_TABLE_END) {
                 break;
             }

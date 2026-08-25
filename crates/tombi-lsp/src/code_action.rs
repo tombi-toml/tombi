@@ -1,5 +1,4 @@
-use tombi_ast::AstNode;
-use tombi_document_tree::{TableKind, dig_accessors};
+use tombi_document_tree_syntax::{TableKind, dig_accessors};
 use tombi_schema_store::{Accessor, AccessorContext, AccessorKeyKind};
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
@@ -28,8 +27,8 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
 pub fn dot_keys_to_inline_table_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
-    _root: &tombi_ast::Root,
-    document_tree: &tombi_document_tree::DocumentTree,
+    _root: &tombi_ast_syntax::Root,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
 ) -> Option<CodeAction> {
@@ -44,7 +43,7 @@ pub fn dot_keys_to_inline_table_code_action(
     let (accessor, value) = dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
 
     match (accessor, value) {
-        (Accessor::Key(parent_key), tombi_document_tree::Value::Table(table))
+        (Accessor::Key(parent_key), tombi_document_tree_syntax::Value::Table(table))
             if table.len() == 1
                 && matches!(
                     parent_key_context.kind,
@@ -74,7 +73,7 @@ pub fn dot_keys_to_inline_table_code_action(
                                 new_text: format!(
                                     "{} = {{ {}{}",
                                     parent_key,
-                                    key.value,
+                                    key.value(),
                                     if table.kind() == TableKind::KeyValue {
                                         " = "
                                     } else {
@@ -101,8 +100,8 @@ pub fn dot_keys_to_inline_table_code_action(
 pub fn inline_table_to_dot_keys_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
-    root: &tombi_ast::Root,
-    document_tree: &tombi_document_tree::DocumentTree,
+    root: &tombi_ast_syntax::Root,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
 ) -> Option<CodeAction> {
@@ -117,7 +116,7 @@ pub fn inline_table_to_dot_keys_code_action(
     let (_, value) = dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
 
     match value {
-        tombi_document_tree::Value::Table(table)
+        tombi_document_tree_syntax::Value::Table(table)
             if table.len() == 1
                 && matches!(table.kind(), TableKind::InlineTable { has_comment: false }) =>
         {
@@ -166,16 +165,9 @@ pub fn inline_table_to_dot_keys_code_action(
 }
 
 fn get_ast_inline_table_node(
-    root: &tombi_ast::Root,
-    table: &tombi_document_tree::Table,
-) -> Option<tombi_ast::InlineTable> {
+    root: &tombi_ast_syntax::Root,
+    table: &tombi_document_tree_syntax::Table,
+) -> Option<tombi_ast_syntax::InlineTable> {
     let target_range = table.range();
-    for node in root.syntax().descendants() {
-        if let Some(inline_table) = tombi_ast::InlineTable::cast(node)
-            && inline_table.range() == target_range
-        {
-            return Some(inline_table);
-        }
-    }
-    None
+    root.inline_table_at_range(target_range)
 }

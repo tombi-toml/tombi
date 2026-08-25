@@ -2,7 +2,7 @@ use std::{collections::BTreeSet, path::Path};
 
 use futures::stream::{self, StreamExt};
 use tombi_config::{CargoExtensionFeatures, TomlVersion};
-use tombi_document_tree::{DocumentTree, Table, Value, dig_keys};
+use tombi_document_tree_syntax::{DocumentTree, Table, Value, dig_keys};
 use tombi_extension::remote_cache::warm_remote_json_cache;
 use tombi_future::Boxable;
 
@@ -344,7 +344,7 @@ fn collect_registry_dependencies_from_table(
 ) {
     for (dependency_key, dependency_value) in dependencies.key_values() {
         if let Some(dependency) = registry_dependency(
-            dependency_key.value.as_str(),
+            dependency_key.value(),
             dependency_value,
             dependency_kind,
             workspace_document_tree,
@@ -461,19 +461,18 @@ fn dependency_table_default_features_disabled(table: &Table) -> bool {
 mod tests {
     use std::str::FromStr;
 
-    use tombi_ast::AstNode;
     use tombi_config::{
         BoolDefaultTrue, CargoCompletionFeatureTree, CargoCompletionFeatures,
         CargoExtensionFeatureTree, CargoExtensionFeatures, CargoHoverFeatureTree,
         CargoHoverFeatures, CargoInlayHintFeatureTree, CargoInlayHintFeatures, CargoLspFeatureTree,
         CargoLspFeatures, ToggleFeatureDefaultTrue,
     };
-    use tombi_document_tree::TryIntoDocumentTree;
+    use tombi_document_tree_syntax::TryIntoDocumentTree;
 
     use super::*;
 
     fn parse_document_tree(source: &str) -> DocumentTree {
-        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node()).unwrap();
+        let root = tombi_parser::parse(source).into_root();
         root.try_into_document_tree(TomlVersion::default()).unwrap()
     }
 

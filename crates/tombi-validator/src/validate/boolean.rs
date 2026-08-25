@@ -14,7 +14,7 @@ use crate::{
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
 
-impl Validate for tombi_document_tree::Boolean {
+impl Validate for tombi_document_tree_syntax::Boolean {
     fn validate<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::Accessor],
@@ -127,12 +127,12 @@ impl Validate for tombi_document_tree::Boolean {
 }
 
 async fn validate_boolean(
-    boolean_value: &tombi_document_tree::Boolean,
+    boolean_value: &tombi_document_tree_syntax::Boolean,
     accessors: &[tombi_schema_store::Accessor],
     boolean_schema: &tombi_schema_store::BooleanSchema,
     current_schema: &tombi_schema_store::CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<&[tombi_ast_syntax::TombiValueCommentDirective]>,
     lint_rules: Option<&BooleanCommonLintRules>,
 ) -> Result<crate::Valid, crate::Invalid> {
     let mut diagnostics = vec![];

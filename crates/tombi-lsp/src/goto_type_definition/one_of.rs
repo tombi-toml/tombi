@@ -9,7 +9,7 @@ use super::{GetTypeDefinition, TypeDefinition, schema_type_definition};
 pub fn get_one_of_type_definition<'a: 'b, 'b, T>(
     value: &'a T,
     position: tombi_text::Position,
-    keys: &'a [tombi_document_tree::Key],
+    keys: &'a [tombi_document_tree_syntax::Key],
     accessors: &'a [tombi_schema_store::Accessor],
     one_of_schema: &'a tombi_schema_store::OneOfSchema,
     schema_uri: &'a SchemaUri,
@@ -19,7 +19,7 @@ pub fn get_one_of_type_definition<'a: 'b, 'b, T>(
 ) -> tombi_future::BoxFuture<'b, Vec<TypeDefinition>>
 where
     T: GetTypeDefinition
-        + tombi_document_tree::ValueImpl
+        + tombi_document_tree_syntax::ValueImpl
         + tombi_validator::Validate
         + Sync
         + Send
@@ -54,9 +54,9 @@ where
         )
         .await;
         let applicable_count = evaluation.applicable_count();
-        let is_property_key = keys
-            .first()
-            .is_some_and(|key| tombi_document_tree::ValueImpl::range(key).contains(position));
+        let is_property_key = keys.first().is_some_and(|key| {
+            tombi_document_tree_syntax::ValueImpl::range(key).contains(position)
+        });
         let mut result = Vec::new();
 
         for (resolved_schema, branch) in resolved_schemas.iter().zip(&evaluation.branches) {
@@ -102,7 +102,7 @@ impl GetTypeDefinition for tombi_schema_store::OneOfSchema {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         _position: tombi_text::Position,
-        _keys: &'a [tombi_document_tree::Key],
+        _keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,

@@ -348,6 +348,23 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_unclosed_empty_bracket(
+                "[█",
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "extensions",
+                "files",
+                "format",
+                "lint",
+                "lsp",
+                "overrides",
+                "schema",
+                "schemas",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_empty_bracket2(
                 r#"
                 toml-version = "v1.0.0"
@@ -417,6 +434,23 @@ mod completion_labels {
             #[tokio::test]
             async fn tombi_empty_double_bracket(
                 "[[█]]",
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "extensions",
+                "files",
+                "format",
+                "lint",
+                "lsp",
+                "overrides",
+                "schema",
+                "schemas",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_unclosed_empty_double_bracket(
+                "[[█",
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
                 "extensions",
@@ -3206,13 +3240,14 @@ mod completion_labels {
                 use std::io::Write;
                 use tower_lsp::{
                     lsp_types::{
-                        CompletionItem, CompletionParams, DidOpenTextDocumentParams,
+                        CompletionParams, DidOpenTextDocumentParams,
                         PartialResultParams, TextDocumentIdentifier, TextDocumentItem,
                         TextDocumentPositionParams, Url, WorkDoneProgressParams,
                     },
                     LspService,
                 };
                 use tombi_lsp::handler::handle_did_open;
+                use tombi_lsp::extension::IntoLsp as _;
                 use tombi_text::IntoLsp;
 
                 tombi_test_lib::init_log();
@@ -3479,7 +3514,7 @@ mod completion_labels {
 
                 let completion_items = completions
                     .into_iter()
-                    .map(|content| IntoLsp::<CompletionItem>::into_lsp(content, &line_index))
+                    .map(|content| content.into_lsp_type(&line_index))
                     .sorted_by(|a, b| {
                         a.sort_text
                             .as_ref()

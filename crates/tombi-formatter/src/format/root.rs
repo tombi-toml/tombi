@@ -1,11 +1,9 @@
 use itertools::Itertools;
-use tombi_ast::DanglingCommentGroupOr;
-
-use crate::format::blank_lines_before;
+use tombi_ast_syntax::{AstNode, DanglingCommentGroupOr};
 
 use super::Format;
 
-impl Format for tombi_ast::Root {
+impl Format for tombi_ast_syntax::Root {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         f.reset();
 
@@ -31,7 +29,8 @@ impl Format for tombi_ast::Root {
         {
             if key_value_groups_is_empty {
                 f.write_blank_lines(
-                    blank_lines_before(&table_or_array_of_tables[0])
+                    table_or_array_of_tables[0]
+                        .blank_lines_before()
                         .min(f.group_blank_lines_limit()),
                 )?;
             } else {
@@ -44,7 +43,7 @@ impl Format for tombi_ast::Root {
     }
 }
 
-impl Format for Vec<tombi_ast::TableOrArrayOfTable> {
+impl Format for Vec<tombi_ast_syntax::TableOrArrayOfTable> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let mut header = Header::Root;
         for (i, table_or_array_of_table) in self.iter().enumerate() {
@@ -52,8 +51,8 @@ impl Format for Vec<tombi_ast::TableOrArrayOfTable> {
                 f.write_line_ending()?;
             }
             match table_or_array_of_table {
-                tombi_ast::TableOrArrayOfTable::Table(table) => {
-                    let header_keys = table.header().unwrap().keys();
+                tombi_ast_syntax::TableOrArrayOfTable::Table(table) => {
+                    let header_keys = table.header().unwrap();
                     let key_value_size = table.key_values().count();
                     let has_dangling_comments = table.dangling_comment_groups().next().is_some();
 
@@ -88,8 +87,8 @@ impl Format for Vec<tombi_ast::TableOrArrayOfTable> {
                         has_dangling_comments,
                     };
                 }
-                tombi_ast::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
-                    let header_keys = array_of_table.header().unwrap().keys();
+                tombi_ast_syntax::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
+                    let header_keys = array_of_table.header().unwrap();
                     let key_value_size = array_of_table.key_values().count();
                     let has_dangling_comments =
                         array_of_table.dangling_comment_groups().next().is_some();
@@ -148,13 +147,13 @@ enum Header {
     Root,
 
     Table {
-        header_keys: tombi_ast::AstChildren<tombi_ast::Key>,
+        header_keys: tombi_ast_syntax::Keys,
         key_value_size: usize,
         has_dangling_comments: bool,
     },
 
     ArrayOfTable {
-        header_keys: tombi_ast::AstChildren<tombi_ast::Key>,
+        header_keys: tombi_ast_syntax::Keys,
         key_value_size: usize,
         has_dangling_comments: bool,
     },

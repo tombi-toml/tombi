@@ -1,38 +1,46 @@
-pub(crate) fn table_to_json_object(table: &tombi_document_tree::Table) -> tombi_json_value::Object {
+pub(crate) fn table_to_json_object(
+    table: &tombi_document_tree_syntax::Table,
+) -> tombi_json_value::Object {
     let mut object = tombi_json_value::Object::new();
     for (key, value) in table.key_values() {
-        object.insert(key.value.clone(), value_to_json_value(value));
+        object.insert(key.value().to_owned(), value_to_json_value(value));
     }
     object
 }
 
-pub(crate) fn value_to_json_value(value: &tombi_document_tree::Value) -> tombi_json_value::Value {
+pub(crate) fn value_to_json_value(
+    value: &tombi_document_tree_syntax::Value,
+) -> tombi_json_value::Value {
     match value {
-        tombi_document_tree::Value::Boolean(b) => tombi_json_value::Value::Bool(b.value()),
-        tombi_document_tree::Value::Integer(i) => tombi_json_value::Value::Number(i.value().into()),
-        tombi_document_tree::Value::Float(f) => tombi_json_value::Value::Number(f.value().into()),
-        tombi_document_tree::Value::String(s) => {
+        tombi_document_tree_syntax::Value::Boolean(b) => tombi_json_value::Value::Bool(b.value()),
+        tombi_document_tree_syntax::Value::Integer(i) => {
+            tombi_json_value::Value::Number(i.value().into())
+        }
+        tombi_document_tree_syntax::Value::Float(f) => {
+            tombi_json_value::Value::Number(f.value().into())
+        }
+        tombi_document_tree_syntax::Value::String(s) => {
             tombi_json_value::Value::String(s.value().to_string())
         }
-        tombi_document_tree::Value::OffsetDateTime(dt) => {
+        tombi_document_tree_syntax::Value::OffsetDateTime(dt) => {
             tombi_json_value::Value::String(dt.value().to_string())
         }
-        tombi_document_tree::Value::LocalDateTime(dt) => {
+        tombi_document_tree_syntax::Value::LocalDateTime(dt) => {
             tombi_json_value::Value::String(dt.value().to_string())
         }
-        tombi_document_tree::Value::LocalDate(d) => {
+        tombi_document_tree_syntax::Value::LocalDate(d) => {
             tombi_json_value::Value::String(d.value().to_string())
         }
-        tombi_document_tree::Value::LocalTime(t) => {
+        tombi_document_tree_syntax::Value::LocalTime(t) => {
             tombi_json_value::Value::String(t.value().to_string())
         }
-        tombi_document_tree::Value::Array(a) => {
+        tombi_document_tree_syntax::Value::Array(a) => {
             tombi_json_value::Value::Array(a.values().iter().map(value_to_json_value).collect())
         }
-        tombi_document_tree::Value::Table(t) => {
+        tombi_document_tree_syntax::Value::Table(t) => {
             tombi_json_value::Value::Object(table_to_json_object(t))
         }
-        tombi_document_tree::Value::Incomplete { .. } => tombi_json_value::Value::Null,
+        tombi_document_tree_syntax::Value::Incomplete { .. } => tombi_json_value::Value::Null,
     }
 }
 
@@ -40,13 +48,13 @@ pub(crate) fn value_to_json_value(value: &tombi_document_tree::Value) -> tombi_j
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
-    use tombi_document_tree::TryIntoDocumentTree;
+    use tombi_document_tree_syntax::TryIntoDocumentTree;
 
-    fn parse_toml_to_table(source: &str) -> tombi_document_tree::Table {
+    fn parse_toml_to_table(source: &str) -> tombi_document_tree_syntax::Table {
         let root = tombi_parser::parse(source)
             .try_into_root()
             .expect("TOML parse error");
-        let tree: tombi_document_tree::DocumentTree = root
+        let tree: tombi_document_tree_syntax::DocumentTree = root
             .try_into_document_tree(Default::default())
             .expect("document tree error");
         tree.into()

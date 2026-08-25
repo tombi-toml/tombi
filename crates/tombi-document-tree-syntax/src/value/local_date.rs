@@ -1,0 +1,92 @@
+use tombi_ast_syntax::TombiValueCommentDirective;
+
+use crate::{
+    DocumentTreeAndErrors, IntoDocumentTreeWithContext, ValueImpl, ValueType,
+    support::chrono::try_new_local_date, value::collect_comment_directives_and_errors,
+};
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct LocalDate {
+    value: tombi_date_time::LocalDate,
+    range: tombi_text::Range,
+    pub(crate) comment_directives: Option<Vec<TombiValueCommentDirective>>,
+}
+
+impl LocalDate {
+    #[inline]
+    pub fn value(&self) -> &tombi_date_time::LocalDate {
+        &self.value
+    }
+
+    #[inline]
+    pub fn range(&self) -> tombi_text::Range {
+        self.range
+    }
+
+    #[inline]
+    pub fn comment_directives(
+        &self,
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        self.comment_directives.as_deref().map(|d| d.iter())
+    }
+}
+
+impl std::fmt::Display for LocalDate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl ValueImpl for LocalDate {
+    fn value_type(&self) -> ValueType {
+        ValueType::LocalDate
+    }
+
+    fn range(&self) -> tombi_text::Range {
+        self.range
+    }
+}
+
+impl From<crate::LocalDate> for tombi_date_time::LocalDate {
+    fn from(node: crate::LocalDate) -> Self {
+        node.value
+    }
+}
+
+impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::LocalDate {
+    fn into_document_tree_with_context(
+        self,
+        context: &crate::DocumentTreeContext,
+    ) -> DocumentTreeAndErrors<crate::Value> {
+        let range = self.range();
+        let (comment_directives, mut errors) = collect_comment_directives_and_errors(&self);
+
+        let Some(token) = self.token() else {
+            errors.push(crate::Error::IncompleteNode { range });
+
+            return DocumentTreeAndErrors {
+                tree: crate::Value::Incomplete { range },
+                errors,
+            };
+        };
+
+        match try_new_local_date(&self, context.toml_version) {
+            Ok(value) => DocumentTreeAndErrors {
+                tree: crate::Value::LocalDate(crate::LocalDate {
+                    value,
+                    range: token.range(),
+                    comment_directives,
+                }),
+                errors,
+            },
+            Err(error) => {
+                errors.push(error);
+
+                DocumentTreeAndErrors {
+                    tree: crate::Value::Incomplete { range },
+                    errors,
+                }
+            }
+        }
+    }
+}

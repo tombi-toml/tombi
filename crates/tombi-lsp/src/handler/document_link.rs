@@ -1,8 +1,8 @@
-use tombi_ast::SchemaDocumentCommentDirective;
+use tombi_ast_syntax::SchemaDocumentCommentDirective;
 use tombi_extension::get_tombi_github_uri;
-use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{DocumentLink, DocumentLinkParams};
 
+use crate::extension::IntoLsp as _;
 use crate::{Backend, config_manager::ConfigSchemaStore};
 
 pub async fn handle_document_link(
@@ -58,7 +58,7 @@ pub async fn handle_document_link(
                 target: get_tombi_github_uri(&schema_uri).unwrap_or(schema_uri.into()),
                 tooltip,
             }
-            .into_lsp(line_index),
+            .into_lsp_type(line_index),
         );
     }
 
@@ -76,7 +76,7 @@ pub async fn handle_document_link(
         document_links.extend(
             locations
                 .into_iter()
-                .map(|location| location.into_lsp(line_index)),
+                .map(|location| location.into_lsp_type(line_index)),
         );
     }
 
@@ -92,7 +92,7 @@ pub async fn handle_document_link(
         document_links.extend(
             locations
                 .into_iter()
-                .map(|location| location.into_lsp(line_index)),
+                .map(|location| location.into_lsp_type(line_index)),
         );
     }
 
@@ -108,7 +108,7 @@ pub async fn handle_document_link(
         document_links.extend(
             locations
                 .into_iter()
-                .map(|location| location.into_lsp(line_index)),
+                .map(|location| location.into_lsp_type(line_index)),
         );
     }
 

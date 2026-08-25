@@ -26,22 +26,13 @@
       "path": "crates/tombi-lexer"
     },
     {
-      "path": "crates/tombi-rg-tree"
-    },
-    {
-      "path": "crates/tombi-syntax"
-    },
-    {
-      "path": "crates/tombi-ast"
-    },
-    {
-      "path": "crates/tombi-ast-editor"
+      "path": "crates/tombi-ast-syntax"
     },
     {
       "path": "crates/tombi-parser"
     },
     {
-      "path": "crates/tombi-document-tree"
+      "path": "crates/tombi-document-tree-syntax"
     },
     {
       "path": "crates/tombi-document"

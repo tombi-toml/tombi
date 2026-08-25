@@ -1,7 +1,7 @@
 use drop_bomb::DropBomb;
-use tombi_syntax::SyntaxKind;
+use tombi_ast_syntax::SyntaxKind;
 
-use crate::{Event, parser::Parser};
+use crate::parser::Parser;
 
 pub(crate) struct Marker {
     event_index: u32,
@@ -20,12 +20,7 @@ impl Marker {
     pub(crate) fn complete(mut self, p: &mut Parser<'_>, kind: SyntaxKind) {
         self.bomb.defuse();
         let idx = self.event_index as usize;
-        match &mut p.events[idx] {
-            Event::Start { kind: slot, .. } => {
-                *slot = kind;
-            }
-            _ => unreachable!(),
-        }
-        p.push_event(Event::Finish);
+        p.events[idx].set_kind(kind);
+        p.push_event(crate::event::Event::exit());
     }
 }

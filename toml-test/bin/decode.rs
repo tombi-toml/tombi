@@ -1,8 +1,7 @@
 use std::io::Read;
 
 use clap::Parser;
-use tombi_ast::AstNode;
-use tombi_document_tree::TryIntoDocumentTree;
+use tombi_document_tree_syntax::TryIntoDocumentTree;
 use tombi_toml_version::TomlVersion;
 use toml_test::{INVALID_MESSAGE, IntoValue, Value};
 
@@ -56,10 +55,7 @@ fn decode(source: &str, toml_version: TomlVersion) -> Result<Value, anyhow::Erro
         return Err(anyhow::anyhow!(INVALID_MESSAGE));
     }
 
-    let Some(root) = tombi_ast::Root::cast(p.into_syntax_node()) else {
-        eprintln!("ast root cast failed");
-        return Err(anyhow::anyhow!(INVALID_MESSAGE));
-    };
+    let root = p.into_root();
 
     let root = match root.try_into_document_tree(toml_version) {
         Ok(root) => root,

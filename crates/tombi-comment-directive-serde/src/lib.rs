@@ -4,19 +4,19 @@ use tombi_comment_directive::{
     value::TombiValueDirectiveContent,
 };
 use tombi_document::IntoDocument;
-use tombi_document_tree::TryIntoDocumentTree;
+use tombi_document_tree_syntax::TryIntoDocumentTree;
 
 pub fn get_comment_directive_content<FormatRules, LintRules>(
-    comment_directives: impl IntoIterator<Item = tombi_ast::TombiValueCommentDirective>,
+    comment_directives: impl IntoIterator<Item = tombi_ast_syntax::TombiValueCommentDirective>,
 ) -> Option<TombiValueDirectiveContent<FormatRules, LintRules>>
 where
     FormatRules: serde::de::DeserializeOwned,
     LintRules: serde::de::DeserializeOwned,
     TombiValueDirectiveContent<FormatRules, LintRules>: TombiCommentDirectiveImpl,
 {
-    let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
+    let mut total_document_tree_table: Option<tombi_document_tree_syntax::Table> = None;
 
-    for tombi_ast::TombiValueCommentDirective { content, .. } in comment_directives {
+    for tombi_ast_syntax::TombiValueCommentDirective { content, .. } in comment_directives {
         let root = tombi_parser::parse(&content).try_into_root().ok()?;
 
         let document_tree = root

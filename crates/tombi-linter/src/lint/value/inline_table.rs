@@ -2,7 +2,7 @@ use tombi_future::Boxable;
 
 use crate::{Lint, rule::Rule};
 
-impl Lint for tombi_ast::InlineTable {
+impl Lint for tombi_ast_syntax::InlineTable {
     fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
         async move {
             crate::rule::MissingCommaRule::check(self, l).await;

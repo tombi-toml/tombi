@@ -20,6 +20,7 @@ use tower_lsp::lsp_types::{
     },
 };
 
+use crate::extension::IntoLsp as _;
 use crate::{
     config_manager::{ConfigManager, ConfigSchemaStore, DefaultConfigSource},
     document::DocumentSource,
@@ -46,7 +47,6 @@ use tombi_text::EncodingKind;
 
 #[derive(Debug, Clone)]
 pub struct Backend {
-    #[allow(dead_code)]
     pub client: tower_lsp::Client,
     pub capabilities: Arc<tokio::sync::RwLock<BackendCapabilities>>,
     pub background_tasks: Arc<std::sync::Mutex<Vec<tombi_future::TaskHandle>>>,
@@ -226,29 +226,24 @@ impl Backend {
             .config_schema_store_for_uri(text_document_uri)
             .await;
 
-        let source_schema = if let Some(parsed) =
-            tombi_parser::parse(text).cast::<tombi_ast::Root>()
+        let parsed = tombi_parser::parse(text);
+        let root = parsed.root();
+        if let Some(TombiDocumentDirectiveContent {
+            toml_version: Some(toml_version),
+            ..
+        }) =
+            tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await
         {
-            let root = parsed.tree();
-            if let Some(TombiDocumentDirectiveContent {
-                toml_version: Some(toml_version),
-                ..
-            }) = tombi_validator::comment_directive::get_tombi_document_comment_directive(&root)
-                .await
-            {
-                return (toml_version, TomlVersionSource::Comment);
-            }
+            return (toml_version, TomlVersionSource::Comment);
+        }
 
-            match schema_store
-                .resolve_source_schema_from_ast(&root, Some(Either::Left(text_document_uri)))
-                .await
-            {
-                Ok(Some(schema)) => Some(schema),
-                Ok(None) => None,
-                Err(_) => None,
-            }
-        } else {
-            None
+        let source_schema = match schema_store
+            .resolve_source_schema_from_ast(&root, Some(Either::Left(text_document_uri)))
+            .await
+        {
+            Ok(Some(schema)) => Some(schema),
+            Ok(None) => None,
+            Err(_) => None,
         };
 
         if let Some(toml_version) = source_schema
@@ -410,7 +405,7 @@ impl tower_lsp::LanguageServer for Backend {
                 CompletionResponse::Array(
                     items
                         .into_iter()
-                        .map(|item| item.into_lsp(document_source.line_index()))
+                        .map(|item| item.into_lsp_type(document_source.line_index()))
                         .collect(),
                 )
             })
@@ -471,7 +466,7 @@ impl tower_lsp::LanguageServer for Backend {
         Ok(Some(
             hints
                 .into_iter()
-                .map(|hint| hint.into_lsp(line_index.as_ref()))
+                .map(|hint| hint.into_lsp_type(line_index.as_ref()))
                 .collect(),
         ))
     }

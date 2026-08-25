@@ -7,12 +7,12 @@ use tombi_comment_directive::{
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
-use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 
 use crate::comment_directive::into_directive_diagnostic;
 
 pub async fn get_tombi_document_comment_directive(
-    root: &tombi_ast::Root,
+    root: &tombi_ast_syntax::Root,
 ) -> Option<TombiDocumentDirectiveContent> {
     get_tombi_document_comment_directive_and_diagnostics(root)
         .await
@@ -20,14 +20,14 @@ pub async fn get_tombi_document_comment_directive(
 }
 
 pub async fn get_tombi_document_comment_directive_and_diagnostics(
-    root: &tombi_ast::Root,
+    root: &tombi_ast_syntax::Root,
 ) -> (
     Option<TombiDocumentDirectiveContent>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
     use serde::Deserialize;
 
-    let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
+    let mut total_document_tree_table: Option<tombi_document_tree_syntax::Table> = None;
     let mut total_diagnostics = Vec::new();
     let mut tombi_directive_iter = root.tombi_document_comment_directives().peekable();
 
@@ -63,7 +63,7 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
             strict: None,
         };
 
-        for tombi_ast::TombiDocumentCommentDirective {
+        for tombi_ast_syntax::TombiDocumentCommentDirective {
             content,
             content_range,
             ..

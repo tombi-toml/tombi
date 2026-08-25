@@ -23,8 +23,8 @@ impl String {
     }
 }
 
-impl From<tombi_document_tree::String> for crate::String {
-    fn from(node: tombi_document_tree::String) -> Self {
+impl From<tombi_document_tree_syntax::String> for crate::String {
+    fn from(node: tombi_document_tree_syntax::String) -> Self {
         Self {
             kind: node.kind(),
             value: node.value().to_owned(),

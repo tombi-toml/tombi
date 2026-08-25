@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use itertools::Itertools;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{Value, dig_accessors, dig_keys};
+use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
@@ -123,9 +123,9 @@ pub(crate) fn parse_cargo_feature_ref(value: &str) -> CargoFeatureRef<'_> {
 }
 
 pub(crate) fn resolve_feature_table_string(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
-    feature_string: &tombi_document_tree::String,
+    feature_string: &tombi_document_tree_syntax::String,
     toml_version: TomlVersion,
 ) -> Option<CargoTargetLocation> {
     resolve_feature_table_string_target(
@@ -138,10 +138,10 @@ pub(crate) fn resolve_feature_table_string(
 }
 
 pub(crate) fn resolve_dependency_feature_string(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     dependency_accessors: &[Accessor],
-    feature_string: &tombi_document_tree::String,
+    feature_string: &tombi_document_tree_syntax::String,
     toml_version: TomlVersion,
 ) -> Option<CargoTargetLocation> {
     resolve_dependency_feature_string_target(
@@ -155,7 +155,7 @@ pub(crate) fn resolve_dependency_feature_string(
 }
 
 pub(crate) fn find_local_feature(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     feature_name: &str,
 ) -> Option<CargoTargetLocation> {
@@ -167,7 +167,7 @@ pub(crate) fn find_local_feature(
 }
 
 pub(crate) fn find_optional_dependency(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     dep_key: &str,
 ) -> Option<CargoTargetLocation> {
@@ -188,7 +188,7 @@ pub(crate) fn find_optional_dependency(
 }
 
 pub(crate) async fn collect_feature_usage_locations(
-    current_document_tree: &tombi_document_tree::DocumentTree,
+    current_document_tree: &tombi_document_tree_syntax::DocumentTree,
     current_cargo_toml_path: &Path,
     target: &CargoFeatureUsageTarget,
     toml_version: TomlVersion,
@@ -242,7 +242,7 @@ fn sort_and_dedup_feature_usage_locations(
 }
 
 pub(crate) fn collect_feature_usage_locations_in_manifest(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     target: &CargoFeatureUsageTarget,
     toml_version: TomlVersion,
@@ -259,9 +259,9 @@ pub(crate) fn collect_feature_usage_locations_in_manifest(
 }
 
 pub(crate) fn feature_table_string_at_accessors<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     accessors: &'a [Accessor],
-) -> Option<&'a tombi_document_tree::String> {
+) -> Option<&'a tombi_document_tree_syntax::String> {
     if !matches_accessors!(accessors, ["features", _, _]) {
         return None;
     }
@@ -290,9 +290,9 @@ pub(crate) fn feature_usage_target_for_feature_key(
 }
 
 pub(crate) fn dependency_feature_string_context<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     accessors: &'a [Accessor],
-) -> Option<(&'a tombi_document_tree::String, Vec<Accessor>)> {
+) -> Option<(&'a tombi_document_tree_syntax::String, Vec<Accessor>)> {
     let dependency_accessors =
         if matches_accessors!(accessors, ["workspace", "dependencies", _, "features", _]) {
             accessors[..3].to_vec()
@@ -323,9 +323,9 @@ pub(crate) fn dependency_feature_string_context<'a>(
 }
 
 pub(crate) fn feature_key_at_accessors<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
-) -> Option<&'a tombi_document_tree::Key> {
+) -> Option<&'a tombi_document_tree_syntax::Key> {
     if !matches_accessors!(accessors, ["features", _]) {
         return None;
     }
@@ -336,7 +336,7 @@ pub(crate) fn feature_key_at_accessors<'a>(
 }
 
 pub(crate) fn is_optional_dependency<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     accessors: &'a [Accessor],
 ) -> bool {
     let Some(dependency_accessors) = dependency_optional_accessors(accessors) else {
@@ -387,11 +387,11 @@ pub(crate) fn dependency_optional_accessors(accessors: &[Accessor]) -> Option<&[
 
 struct ResolvedDependency {
     cargo_toml_path: PathBuf,
-    document_tree: tombi_document_tree::DocumentTree,
+    document_tree: tombi_document_tree_syntax::DocumentTree,
 }
 
 fn resolve_named_dependency(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     dependency_accessors: &[Accessor],
     toml_version: TomlVersion,
@@ -450,7 +450,7 @@ fn load_resolved_dependency(
 }
 
 fn has_explicit_dep_feature(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dep_key: &str,
 ) -> bool {
     let Some((_, Value::Table(features_table))) = dig_keys(document_tree, &["features"]) else {
@@ -475,7 +475,7 @@ fn has_explicit_dep_feature(
 }
 
 fn find_non_workspace_dependency_entry(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dep_key: &str,
 ) -> Option<Vec<Accessor>> {
     for dependency_kind in ["dependencies", "dev-dependencies", "build-dependencies"] {
@@ -506,7 +506,7 @@ fn find_non_workspace_dependency_entry(
             {
                 return Some(vec![
                     Accessor::Key("target".to_string()),
-                    Accessor::Key(target_key.value.to_string()),
+                    Accessor::Key(target_key.value().to_string()),
                     Accessor::Key(dependency_kind.to_string()),
                     Accessor::Key(dep_key.to_string()),
                 ]);
@@ -518,7 +518,7 @@ fn find_non_workspace_dependency_entry(
 }
 
 fn collect_feature_table_usage_locations(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     target: &CargoFeatureUsageTarget,
     toml_version: TomlVersion,
@@ -556,7 +556,7 @@ fn collect_feature_table_usage_locations(
 }
 
 fn collect_dependency_feature_usage_locations(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     target: &CargoFeatureUsageTarget,
     toml_version: TomlVersion,
@@ -597,9 +597,9 @@ fn collect_dependency_feature_usage_locations(
 }
 
 fn resolve_feature_table_string_target(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
-    feature_string: &tombi_document_tree::String,
+    feature_string: &tombi_document_tree_syntax::String,
     toml_version: TomlVersion,
 ) -> Option<ResolvedCargoFeatureTarget> {
     match parse_cargo_feature_ref(feature_string.value()) {
@@ -648,10 +648,10 @@ fn resolve_feature_table_string_target(
 }
 
 fn resolve_dependency_feature_string_target(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     dependency_accessors: &[Accessor],
-    feature_string: &tombi_document_tree::String,
+    feature_string: &tombi_document_tree_syntax::String,
     toml_version: TomlVersion,
 ) -> Option<ResolvedCargoFeatureTarget> {
     resolve_named_dependency(
@@ -674,8 +674,8 @@ fn resolve_dependency_feature_string_target(
 }
 
 fn dependency_entries(
-    document_tree: &tombi_document_tree::DocumentTree,
-) -> Vec<(Vec<Accessor>, &tombi_document_tree::Value)> {
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
+) -> Vec<(Vec<Accessor>, &tombi_document_tree_syntax::Value)> {
     let mut entries = Vec::new();
 
     if let Some((_, Value::Table(workspace_dependencies))) =
@@ -686,7 +686,7 @@ fn dependency_entries(
                 vec![
                     Accessor::Key("workspace".to_string()),
                     Accessor::Key("dependencies".to_string()),
-                    Accessor::Key(dependency_key.value.to_string()),
+                    Accessor::Key(dependency_key.value().to_string()),
                 ],
                 dependency_value,
             ));
@@ -699,7 +699,7 @@ fn dependency_entries(
                 entries.push((
                     vec![
                         Accessor::Key(dependency_kind.to_string()),
-                        Accessor::Key(dependency_key.value.to_string()),
+                        Accessor::Key(dependency_key.value().to_string()),
                     ],
                     dependency_value,
                 ));
@@ -720,9 +720,9 @@ fn dependency_entries(
                     entries.push((
                         vec![
                             Accessor::Key("target".to_string()),
-                            Accessor::Key(target_key.value.to_string()),
+                            Accessor::Key(target_key.value().to_string()),
                             Accessor::Key(dependency_kind.to_string()),
-                            Accessor::Key(dependency_key.value.to_string()),
+                            Accessor::Key(dependency_key.value().to_string()),
                         ],
                         dependency_value,
                     ));
@@ -735,7 +735,7 @@ fn dependency_entries(
 }
 
 async fn workspace_manifest_paths(
-    current_document_tree: &tombi_document_tree::DocumentTree,
+    current_document_tree: &tombi_document_tree_syntax::DocumentTree,
     current_cargo_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Vec<PathBuf> {
@@ -767,7 +767,7 @@ async fn workspace_manifest_paths(
 }
 
 fn collect_workspace_paths(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     workspace_cargo_toml_path: &Path,
     paths: &mut Vec<PathBuf>,
 ) {

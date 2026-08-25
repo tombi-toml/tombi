@@ -14,11 +14,11 @@ use crate::{
     schema_resolver::resolve_array_item_schema,
 };
 
-impl GetTypeDefinition for tombi_document_tree::Array {
+impl GetTypeDefinition for tombi_document_tree_syntax::Array {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
@@ -62,11 +62,13 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                         if keys.is_empty()
                             && matches!(
                                 self.kind(),
-                                tombi_document_tree::ArrayKind::ArrayOfTable
-                                    | tombi_document_tree::ArrayKind::ParentArrayOfTable
+                                tombi_document_tree_syntax::ArrayKind::ArrayOfTable
+                                    | tombi_document_tree_syntax::ArrayKind::ParentArrayOfTable
                             )
                             && self.values().iter().any(|value| {
-                                tombi_document_tree::ValueImpl::range(value).start.line
+                                tombi_document_tree_syntax::ValueImpl::range(value)
+                                    .start
+                                    .line
                                     == position.line
                             })
                         {
@@ -224,7 +226,7 @@ impl GetTypeDefinition for ArraySchema {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         _position: tombi_text::Position,
-        _keys: &'a [tombi_document_tree::Key],
+        _keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,

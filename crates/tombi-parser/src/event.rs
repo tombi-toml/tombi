@@ -1,87 +1,138 @@
-use tombi_syntax::SyntaxKind::{self, *};
+use tombi_ast_syntax::SyntaxKind;
 
-use crate::output::Output;
+/// A compact parser event.
+///
+/// The TOML grammar always starts a parent before parsing its children, so it
+/// does not need the `forward_parent` machinery used by more general event
+/// parsers. Token events refer either to the lexer's token array or to the
+/// parser's small synthetic-token array.
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub(crate) struct Event(u64);
 
-#[derive(Debug, Clone)]
-pub enum Event {
-    Start {
-        kind: tombi_syntax::SyntaxKind,
-        forward_parent: Option<u32>,
-    },
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum TokenSource {
+    Input { index: u32, count: u8 },
+    Synthetic { index: u32 },
+}
 
-    Finish,
-
-    /// Produce a single leaf-element.
-    /// `n_raw_tokens` is used to glue complex contextual tokens.
-    /// For example, lexer tokenizes `>>` as `>`, `>`, and
-    /// `n_raw_tokens = 2` is used to produced a single `>>`.
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum Step {
     Token {
         kind: SyntaxKind,
-        n_raw_tokens: u8,
+        source: TokenSource,
     },
-
-    Error {
-        error: crate::Error,
+    Enter {
+        kind: SyntaxKind,
     },
+    Exit,
 }
 
 impl Event {
+    const TAG_MASK: u64 = 0x0000_0000_0000_0003;
+    const KIND_MASK: u64 = 0x0000_0000_0000_00FC;
+    const TOKEN_INDEX_MASK: u64 = 0x0000_00FF_FFFF_FF00;
+    const TOKEN_COUNT_MASK: u64 = 0x0000_FF00_0000_0000;
+    const SYNTHETIC_TOKEN_MASK: u64 = 0x0001_0000_0000_0000;
+
+    const TAG_SHIFT: u32 = Self::TAG_MASK.trailing_zeros();
+    const KIND_SHIFT: u32 = Self::KIND_MASK.trailing_zeros();
+    const TOKEN_INDEX_SHIFT: u32 = Self::TOKEN_INDEX_MASK.trailing_zeros();
+    const TOKEN_COUNT_SHIFT: u32 = Self::TOKEN_COUNT_MASK.trailing_zeros();
+
+    const ENTER_EVENT: u64 = 0;
+    const EXIT_EVENT: u64 = 1;
+    const TOKEN_EVENT: u64 = 2;
+
+    #[inline]
     pub(crate) fn tombstone() -> Self {
-        Event::Start {
-            kind: TOMBSTONE,
-            forward_parent: None,
+        Self::enter(SyntaxKind::TOMBSTONE)
+    }
+
+    #[inline]
+    pub(crate) fn enter(kind: SyntaxKind) -> Self {
+        debug_assert!((kind as u16) < 1 << 6);
+        Self(((kind as u16 as u64) << Self::KIND_SHIFT) | Self::ENTER_EVENT)
+    }
+
+    #[inline]
+    pub(crate) const fn exit() -> Self {
+        Self(Self::EXIT_EVENT)
+    }
+
+    #[inline]
+    pub(crate) fn input_token(kind: SyntaxKind, index: usize, count: u8) -> Self {
+        debug_assert!((kind as u16) < 1 << 6);
+        let index = u32::try_from(index).expect("too many lexer tokens");
+        Self(
+            ((kind as u16 as u64) << Self::KIND_SHIFT)
+                | ((u64::from(index)) << Self::TOKEN_INDEX_SHIFT)
+                | ((count as u64) << Self::TOKEN_COUNT_SHIFT)
+                | Self::TOKEN_EVENT,
+        )
+    }
+
+    #[inline]
+    pub(crate) fn synthetic_token(kind: SyntaxKind, index: usize) -> Self {
+        debug_assert!((kind as u16) < 1 << 6);
+        let index = u32::try_from(index).expect("too many synthetic tokens");
+        Self(
+            ((kind as u16 as u64) << Self::KIND_SHIFT)
+                | ((u64::from(index)) << Self::TOKEN_INDEX_SHIFT)
+                | Self::SYNTHETIC_TOKEN_MASK
+                | Self::TOKEN_EVENT,
+        )
+    }
+
+    #[inline]
+    pub(crate) fn set_kind(&mut self, kind: SyntaxKind) {
+        debug_assert_eq!(self.0 & Self::TAG_MASK, Self::ENTER_EVENT);
+        debug_assert!((kind as u16) < 1 << 6);
+        self.0 = (self.0 & !Self::KIND_MASK) | ((kind as u16 as u64) << Self::KIND_SHIFT);
+    }
+
+    #[inline]
+    fn step(self) -> Step {
+        let kind = || (((self.0 & Self::KIND_MASK) >> Self::KIND_SHIFT) as u16).into();
+        match (self.0 & Self::TAG_MASK) >> Self::TAG_SHIFT {
+            Self::ENTER_EVENT => Step::Enter { kind: kind() },
+            Self::EXIT_EVENT => Step::Exit,
+            Self::TOKEN_EVENT => {
+                let index = ((self.0 & Self::TOKEN_INDEX_MASK) >> Self::TOKEN_INDEX_SHIFT) as u32;
+                let source = if self.0 & Self::SYNTHETIC_TOKEN_MASK == 0 {
+                    TokenSource::Input {
+                        index,
+                        count: ((self.0 & Self::TOKEN_COUNT_MASK) >> Self::TOKEN_COUNT_SHIFT) as u8,
+                    }
+                } else {
+                    TokenSource::Synthetic { index }
+                };
+                Step::Token {
+                    kind: kind(),
+                    source,
+                }
+            }
+            _ => unreachable!(),
         }
     }
 }
 
-/// Generate the syntax tree with the control of events.
-pub(super) fn process(mut events: Vec<Event>) -> Output {
-    let mut output = Output::default();
-    let mut forward_parents = Vec::new();
+const _: () = assert!(std::mem::size_of::<Event>() == std::mem::size_of::<u64>());
+const _: () = assert!((SyntaxKind::__LAST as u16) < 1 << 6);
 
-    for i in 0..events.len() {
-        match std::mem::replace(&mut events[i], Event::tombstone()) {
-            Event::Start {
-                kind,
-                forward_parent,
-            } => {
-                // For events[A, B, C], B is A's forward_parent, C is B's forward_parent,
-                // in the normal control flow, the parent-child relation: `A -> B -> C`,
-                // while with the magic forward_parent, it writes: `C <- B <- A`.
-
-                // append `A` into parents.
-                forward_parents.push(kind);
-                let mut idx = i;
-                let mut fp = forward_parent;
-                while let Some(fwd) = fp {
-                    idx += fwd as usize;
-                    // append `A`'s forward_parent `B`
-                    fp = match std::mem::replace(&mut events[idx], Event::tombstone()) {
-                        Event::Start {
-                            kind,
-                            forward_parent,
-                        } => {
-                            forward_parents.push(kind);
-                            forward_parent
-                        }
-                        _ => unreachable!(),
-                    };
-                    // append `B`'s forward_parent `C` in the next stage.
-                }
-
-                for kind in forward_parents.drain(..).rev() {
-                    if kind != TOMBSTONE {
-                        output.enter_node(kind);
-                    }
-                }
+/// Consume parser events in syntax-tree order without materializing another
+/// event vector.
+#[inline]
+pub(super) fn process(events: &[Event], mut sink: impl FnMut(Step)) {
+    for &event in events {
+        let step = event.step();
+        if !matches!(
+            step,
+            Step::Enter {
+                kind: SyntaxKind::TOMBSTONE
             }
-            Event::Finish => output.leave_node(),
-            Event::Token { kind, n_raw_tokens } => {
-                output.token(kind, n_raw_tokens);
-            }
-            Event::Error { error } => output.error(error),
+        ) {
+            sink(step);
         }
     }
-
-    output
 }

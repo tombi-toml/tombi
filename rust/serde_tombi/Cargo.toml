@@ -20,16 +20,16 @@ serde_tombi_macros.workspace = true
 textwrap.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
-tombi-ast.workspace = true
+tombi-ast-syntax.workspace = true
 tombi-config.workspace = true
 tombi-date-time.workspace = true
 tombi-document.workspace = true
-tombi-document-tree.workspace = true
+tombi-document-tree-syntax.workspace = true
 tombi-formatter.workspace = true
 tombi-fs.workspace = true
 tombi-hashmap = { workspace = true, features = ["serde"] }
 tombi-parser.workspace = true
-tombi-schema-store.workspace = true
+tombi-schema-store = { workspace = true, features = ["ast-syntax"] }
 tombi-toml-text.workspace = true
 tombi-toml-version.workspace = true
 tombi-validator.workspace = true

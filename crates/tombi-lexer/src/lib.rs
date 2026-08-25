@@ -8,7 +8,7 @@ use error::ErrorKind::*;
 pub use error::{Error, ErrorKind};
 pub use lexed::Lexed;
 pub use token::Token;
-use tombi_syntax::{SyntaxKind, T};
+use tombi_ast_syntax::{SyntaxKind, T};
 use tombi_text::LineEnding;
 
 macro_rules! regex {
@@ -35,6 +35,8 @@ regex!(
 );
 
 pub fn lex(source: &str) -> Lexed {
+    let source_len = tombi_text::Offset::try_from(source.len())
+        .expect("TOML source length exceeds the supported u32 offset range");
     let mut lexed = Lexed::default();
     let mut was_joint = false;
     let mut last_offset = tombi_text::Offset::default();
@@ -61,7 +63,7 @@ pub fn lex(source: &str) -> Lexed {
     lexed.tokens.push(crate::Token::new(
         SyntaxKind::EOF,
         (
-            tombi_text::Span::new(last_offset, tombi_text::Offset::new(source.len() as u32)),
+            tombi_text::Span::new(last_offset, source_len),
             tombi_text::Range::new(
                 last_position,
                 last_position + tombi_text::RelativePosition::of(&source[last_offset.into()..]),

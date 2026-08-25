@@ -1,9 +1,9 @@
-use tombi_ast::Boolean;
+use tombi_ast_syntax::Boolean;
 
 use super::LiteralNode;
 
 impl LiteralNode for Boolean {
-    fn token(&self) -> Option<tombi_syntax::SyntaxToken> {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
         self.token()
     }
 }

@@ -1,6 +1,6 @@
 use itertools::Itertools;
+use tombi_ast_syntax::SyntaxKind::*;
 use tombi_lexer::{Cursor, ErrorKind::*, Token, tokenize};
-use tombi_syntax::SyntaxKind::*;
 
 macro_rules! test_lex_tokens {
     {#[test]fn $name:ident($source:expr) -> [

@@ -2,7 +2,7 @@ use tombi_future::Boxable;
 
 use crate::Lint;
 
-impl Lint for tombi_ast::OffsetDateTime {
+impl Lint for tombi_ast_syntax::OffsetDateTime {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,
@@ -11,7 +11,7 @@ impl Lint for tombi_ast::OffsetDateTime {
     }
 }
 
-impl Lint for tombi_ast::LocalDateTime {
+impl Lint for tombi_ast_syntax::LocalDateTime {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,
@@ -20,7 +20,7 @@ impl Lint for tombi_ast::LocalDateTime {
     }
 }
 
-impl Lint for tombi_ast::LocalDate {
+impl Lint for tombi_ast_syntax::LocalDate {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,
@@ -29,7 +29,7 @@ impl Lint for tombi_ast::LocalDate {
     }
 }
 
-impl Lint for tombi_ast::LocalTime {
+impl Lint for tombi_ast_syntax::LocalTime {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,

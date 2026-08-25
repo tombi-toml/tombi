@@ -61,7 +61,7 @@ pub async fn handle_goto_definition(
     };
 
     let document_tree = document_source.document_tree();
-    let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
+    let accessors = tombi_document_tree_syntax::get_accessors(&document_tree, &keys, position);
 
     if config.cargo_extension_enabled()
         && let Some(locations) = tombi_extension_cargo::goto_definition(
@@ -106,7 +106,7 @@ pub async fn handle_goto_definition(
 }
 
 fn resolve_schema_location(
-    root: &tombi_ast::Root,
+    root: &tombi_ast_syntax::Root,
     text_document_uri: &tombi_uri::Uri,
     position: tombi_text::Position,
 ) -> Option<tombi_extension::Location> {

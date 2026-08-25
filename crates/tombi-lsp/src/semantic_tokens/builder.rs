@@ -1,4 +1,4 @@
-use tombi_ast::AstToken;
+use tombi_ast_syntax::AstToken;
 use tombi_text::FromLsp;
 use tower_lsp::lsp_types::SemanticToken;
 use unicode_segmentation::UnicodeSegmentation;
@@ -22,8 +22,7 @@ impl<'a> SemanticTokensBuilder<'a> {
         }
     }
 
-    pub fn add_token(&mut self, token_type: TokenType, elem: tombi_syntax::SyntaxElement) {
-        let range: tombi_text::Range = elem.range();
+    pub fn add_token(&mut self, token_type: TokenType, range: tombi_text::Range) {
         let (delta_line, delta_start) =
             delta_line_and_start(self.last_range.start, range.start, self.line_index);
 
@@ -41,7 +40,7 @@ impl<'a> SemanticTokensBuilder<'a> {
 
     pub fn add_comment_directive(
         &mut self,
-        comment: impl AsRef<tombi_ast::Comment>,
+        comment: impl AsRef<tombi_ast_syntax::Comment>,
         directive_range: tombi_text::Range,
     ) {
         let comment_range = comment.as_ref().syntax().range();

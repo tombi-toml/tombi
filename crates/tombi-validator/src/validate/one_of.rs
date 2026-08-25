@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
-use tombi_ast::TombiValueCommentDirective;
+use tombi_ast_syntax::TombiValueCommentDirective;
 use tombi_comment_directive::value::CommonLintRules;
-use tombi_document_tree::ValueImpl;
+use tombi_document_tree_syntax::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, OneOfSchema};
 use tombi_severity_level::SeverityLevelDefaultError;

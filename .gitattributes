@@ -8,8 +8,8 @@ pnpm-lock.yaml -text -eol
 
 # Generated artifacts should preserve their generators' output.
 .github/workflows/release_pypi.yml -text -eol
-crates/tombi-ast/src/generated/** -text -eol
-crates/tombi-syntax/src/generated/** -text -eol
+crates/tombi-ast-syntax/src/ast/generated/** -text -eol
+crates/tombi-ast-syntax/src/generated/** -text -eol
 editors/intellij/gradlew -text -eol
 schemas/type-test.schema.json -text -eol
 www.schemastore.org/cargo.json -text -eol

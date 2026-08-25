@@ -1,19 +1,19 @@
 use std::fmt::Write;
 
 use itertools::Itertools;
-use tombi_ast::{AstNode, DanglingCommentGroupOr};
+use tombi_ast_syntax::{AstNode, DanglingCommentGroupOr};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
 
-impl Format for tombi_ast::Array {
+impl Format for tombi_ast_syntax::Array {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         WithAlignmentHint::new(self).format(f)
     }
 }
 
-impl Format for WithAlignmentHint<&tombi_ast::Array> {
+impl Format for WithAlignmentHint<&tombi_ast_syntax::Array> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if !f.single_line_mode()
             && (self.value.should_be_multiline(f.toml_version())
@@ -27,7 +27,7 @@ impl Format for WithAlignmentHint<&tombi_ast::Array> {
 }
 
 pub(crate) fn exceeds_line_width(
-    node: &tombi_ast::Array,
+    node: &tombi_ast_syntax::Array,
     f: &mut crate::Formatter,
 ) -> Result<bool, std::fmt::Error> {
     let mut length = f.current_line_width();
@@ -36,17 +36,17 @@ pub(crate) fn exceeds_line_width(
     let mut first = true;
 
     for group in node.value_with_comma_groups() {
-        let tombi_ast::DanglingCommentGroupOr::ItemGroup(item_group) = group else {
+        let tombi_ast_syntax::DanglingCommentGroupOr::ItemGroup(item_group) = group else {
             continue;
         };
 
         for value in item_group.values() {
             // Check if nested value should be multiline
             let should_be_multiline = match &value {
-                tombi_ast::Value::Array(array) => {
+                tombi_ast_syntax::Value::Array(array) => {
                     array.should_be_multiline(f.toml_version()) || exceeds_line_width(array, f)?
                 }
-                tombi_ast::Value::InlineTable(table) => {
+                tombi_ast_syntax::Value::InlineTable(table) => {
                     table.should_be_multiline(f.toml_version())
                         || crate::format::value::inline_table::exceeds_line_width(table, f)?
                 }
@@ -83,7 +83,7 @@ fn format_multiline_array(
         value: array,
         trailing_comment_alignment_width,
         ..
-    }: &WithAlignmentHint<&tombi_ast::Array>,
+    }: &WithAlignmentHint<&tombi_ast_syntax::Array>,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
     array.leading_comments().collect_vec().format(f)?;
@@ -136,7 +136,7 @@ fn format_singleline_array(
         value: array,
         trailing_comment_alignment_width,
         ..
-    }: &WithAlignmentHint<&tombi_ast::Array>,
+    }: &WithAlignmentHint<&tombi_ast_syntax::Array>,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
     array.leading_comments().collect_vec().format(f)?;
@@ -175,7 +175,7 @@ fn format_singleline_array(
     Ok(())
 }
 
-impl Format for WithAlignmentHint<&tombi_ast::ValueWithCommaGroup> {
+impl Format for WithAlignmentHint<&tombi_ast_syntax::ValueWithCommaGroup> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let WithAlignmentHint {
             value: value_group,
@@ -223,7 +223,7 @@ impl Format for WithAlignmentHint<&tombi_ast::ValueWithCommaGroup> {
     }
 }
 
-impl Format for WithAlignmentHint<tombi_ast::ValueWithCommaGroup> {
+impl Format for WithAlignmentHint<tombi_ast_syntax::ValueWithCommaGroup> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         WithAlignmentHint {
             value: &self.value,
@@ -239,7 +239,6 @@ mod tests {
     use rstest::rstest;
     use tombi_config::{StringQuoteStyle, format::FormatRules};
 
-    use super::*;
     use crate::{Formatter, test_format};
 
     test_format! {
@@ -668,10 +667,19 @@ mod tests {
     #[case("[1, 2, 3,]", true)]
     #[case("[1, 2, 3]", false)]
     fn has_last_value_trailing_comma(#[case] source: &str, #[case] expected: bool) {
-        let p = tombi_parser::parse_as::<tombi_ast::Array>(source);
+        let p = tombi_parser::parse(&format!("value = {source}"));
         pretty_assertions::assert_eq!(p.errors, Vec::<tombi_parser::Error>::new());
 
-        let ast = tombi_ast::Array::cast(p.syntax_node()).unwrap();
+        let ast = p
+            .root()
+            .key_values()
+            .next()
+            .and_then(|key_value| key_value.value())
+            .and_then(|value| match value {
+                tombi_ast_syntax::Value::Array(array) => Some(array),
+                _ => None,
+            })
+            .unwrap();
         pretty_assertions::assert_eq!(ast.has_last_value_trailing_comma(), expected);
     }
 

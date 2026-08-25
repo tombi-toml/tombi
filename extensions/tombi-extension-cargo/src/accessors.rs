@@ -1,4 +1,4 @@
-use tombi_document_tree::{Value, dig_accessors};
+use tombi_document_tree_syntax::{Value, dig_accessors};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 #[inline]
@@ -90,7 +90,7 @@ pub(crate) fn is_workspace_flag_accessor(accessors: &[Accessor]) -> bool {
 
 #[inline]
 pub(crate) fn is_workspace_managed_dependency_accessor(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
 ) -> bool {
     is_dependency_accessor(accessors)

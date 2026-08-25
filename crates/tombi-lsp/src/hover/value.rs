@@ -9,7 +9,7 @@ mod offset_date_time;
 mod string;
 mod table;
 
-use tombi_document_tree::ValueImpl;
+use tombi_document_tree_syntax::ValueImpl;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaType, SchemaView};
 
@@ -17,11 +17,11 @@ use crate::HoverContent;
 
 use super::GetHoverContent;
 
-impl GetHoverContent for tombi_document_tree::Value {
+impl GetHoverContent for tombi_document_tree_syntax::Value {
     fn get_hover_content<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
@@ -215,7 +215,7 @@ impl GetHoverContent for SchemaView {
     fn get_hover_content<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,

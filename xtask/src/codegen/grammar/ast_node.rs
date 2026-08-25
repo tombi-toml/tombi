@@ -9,6 +9,7 @@ fn is_excluded_auto_generated_method(node_name: &str, method_name: &str) -> bool
     matches!(
         (node_name, method_name),
         ("Array", "values")
+            | ("Root", "items")
             | ("Root", "key_values")
             | ("Table", "key_values")
             | ("ArrayOfTable", "key_values")
@@ -25,7 +26,7 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
             let kind = format_ident!("{}", node.name.to_case(Case::UpperSnake));
             let traits = node.traits.iter().map(|trait_name| {
                 let trait_name = format_ident!("{}", trait_name);
-                quote!(impl tombi_ast::#trait_name for #name {})
+                quote!(impl tombi_ast_syntax::#trait_name for #name {})
             });
 
             let methods = node.fields.iter().filter_map(|field| {
@@ -39,8 +40,8 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
                 if field.is_many() {
                     Some(quote! {
                         #[inline]
-                        pub fn #method_name(&self) -> AstChildren<#ty> {
-                            support::node::children(&self.syntax)
+                        pub fn #method_name(&self) -> impl Iterator<Item = #ty> + use<> {
+                            self.syntax.child_nodes().filter_map(#ty::cast)
                         }
                     })
                 } else if let Some(token_kind) = field.token_kind() {
@@ -112,7 +113,7 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
                 .collect();
             let traits = en.traits.iter().sorted().map(|trait_name| {
                 let trait_name = format_ident!("{}", trait_name);
-                quote!(impl tombi_ast::#trait_name for #name {})
+                quote!(impl tombi_ast_syntax::#trait_name for #name {})
             });
 
             let ast_node = quote! {
@@ -188,12 +189,12 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
                     pub struct #name {
                         pub(crate) syntax: SyntaxNode,
                     }
-                    impl tombi_ast::#trait_name for #name {}
+                    impl tombi_ast_syntax::#trait_name for #name {}
                 },
                 quote! {
                     impl #name {
                         #[inline]
-                        pub fn new<T: tombi_ast::#trait_name>(node: T) -> #name {
+                        pub fn new<T: tombi_ast_syntax::#trait_name>(node: T) -> #name {
                             #name {
                                 syntax: node.syntax().clone()
                             }
@@ -246,9 +247,8 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
     reformat(
         quote! {
             use crate::AstNode;
-            use tombi_syntax::{SyntaxKind, SyntaxKind::*, SyntaxNode, SyntaxToken, T};
+            use tombi_ast_syntax::{SyntaxKind, SyntaxKind::*, SyntaxNode, SyntaxToken, T};
             use crate::support;
-            use crate::AstChildren;
 
             #(#node_defs)*
             #(#enum_defs)*

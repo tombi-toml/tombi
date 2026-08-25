@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
 use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion, config_base_dir};
-use tombi_document_tree::dig_accessors;
+use tombi_document_tree_syntax::dig_accessors;
 use tombi_schema_store::matches_accessors;
 
 pub async fn goto_definition(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     _toml_version: TomlVersion,
     features: Option<&tombi_config::TombiExtensionFeatures>,
@@ -42,7 +42,7 @@ pub async fn goto_definition(
         .value()
     {
         if accessors.last() == Some(&tombi_schema_store::Accessor::Key("path".to_string()))
-            && let Some((_, tombi_document_tree::Value::String(path))) =
+            && let Some((_, tombi_document_tree_syntax::Value::String(path))) =
                 dig_accessors(document_tree, accessors)
             && let Some(uri) = get_definition_link(path.value(), &tombi_toml_path)
         {
@@ -54,7 +54,7 @@ pub async fn goto_definition(
 
         if matches!(accessors.len(), 3 | 4)
             && matches_accessors!(accessors[..3], ["schema", "catalog", "paths"])
-            && let Some((_, tombi_document_tree::Value::Array(paths))) =
+            && let Some((_, tombi_document_tree_syntax::Value::Array(paths))) =
                 dig_accessors(document_tree, &accessors[..3])
         {
             let index = (accessors.len() == 4)
@@ -62,7 +62,7 @@ pub async fn goto_definition(
                 .flatten();
 
             for (i, path) in paths.iter().enumerate() {
-                let tombi_document_tree::Value::String(path) = path else {
+                let tombi_document_tree_syntax::Value::String(path) = path else {
                     continue;
                 };
                 if index.is_some() && index != Some(i) {

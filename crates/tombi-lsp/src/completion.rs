@@ -8,28 +8,26 @@ use std::{borrow::Cow, ops::Deref, sync::Arc};
 pub use comment::get_document_comment_directive_completion_contents;
 use completion_source::CompletionSource;
 use itertools::Itertools;
-use tombi_ast::{AstNode, AstToken, algo::ancestors_at_position};
+use tombi_ast_syntax::{AstNode, AstToken};
 use tombi_config::TomlVersion;
-use tombi_document_tree::{IntoDocumentTreeAndErrors, TryIntoDocumentTree};
+use tombi_document_tree_syntax::{IntoDocumentTreeAndErrors, TryIntoDocumentTree};
 use tombi_extension::CompletionContentPriority;
 use tombi_extension::{
     CommaHint, CommentContext, CompletionContent, CompletionEdit, CompletionHint, CompletionKind,
 };
 use tombi_future::Boxable;
-use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
     Accessor, AccessorKeyKind, AllOfSchema, AnyOfSchema, CompositeSchema, CurrentSchema,
     KeyContext, OneOfSchema, SchemaDefinitions, SchemaStore, SchemaUri, SchemaView,
     get_schema_name,
 };
-use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
 
 use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
 
 pub fn get_comment_context(
-    root: &tombi_ast::Root,
+    root: &tombi_ast_syntax::Root,
     position: tombi_text::Position,
-) -> Option<CommentContext> {
+) -> Option<CommentContext<tombi_ast_syntax::Comment>> {
     if let Some(comment_group) = root.dangling_comment_groups().next() {
         for comment in comment_group.comments() {
             if comment.syntax().range().contains(position)
@@ -51,7 +49,7 @@ pub fn get_comment_context(
         })
     {
         for leading_comment in leading_comments {
-            let comment: tombi_ast::Comment = leading_comment.into();
+            let comment: tombi_ast_syntax::Comment = leading_comment.into();
             if comment.syntax().range().contains(position)
                 && comment.syntax().text()[1..].trim_start().starts_with(":")
             {
@@ -60,29 +58,16 @@ pub fn get_comment_context(
         }
     }
 
-    match root.syntax().token_at_position(position) {
-        TokenAtOffset::Single(token) if token.kind() == SyntaxKind::COMMENT => {
-            if let Some(comment) = tombi_ast::Comment::cast(token) {
-                return _get_comment_context(comment);
-            }
-        }
-        TokenAtOffset::Between(token1, token2)
-            if token1.kind() == SyntaxKind::COMMENT || token2.kind() == SyntaxKind::COMMENT =>
-        {
-            if let Some(comment) = tombi_ast::Comment::cast(token1) {
-                return _get_comment_context(comment);
-            }
-            if let Some(comment) = tombi_ast::Comment::cast(token2) {
-                return _get_comment_context(comment);
-            }
-        }
-        _ => {}
+    if let Some(comment) = root.comment_at_position(position) {
+        return _get_comment_context(comment);
     }
 
     None
 }
 
-fn _get_comment_context(comment: tombi_ast::Comment) -> Option<CommentContext> {
+fn _get_comment_context(
+    comment: tombi_ast_syntax::Comment,
+) -> Option<CommentContext<tombi_ast_syntax::Comment>> {
     if comment.get_tombi_value_directive().is_some() {
         Some(CommentContext::ValueDirective(comment))
     } else {
@@ -91,125 +76,112 @@ fn _get_comment_context(comment: tombi_ast::Comment) -> Option<CommentContext> {
 }
 
 pub fn extract_keys_and_hint(
-    root: &tombi_ast::Root,
+    root: &tombi_ast_syntax::Root,
     position: tombi_text::Position,
     toml_version: TomlVersion,
-    comment_context: Option<&CommentContext>,
-) -> Option<(Vec<tombi_document_tree::Key>, Option<CompletionHint>)> {
-    let mut keys: Vec<tombi_document_tree::Key> = vec![];
+    comment_context: Option<&CommentContext<tombi_ast_syntax::Comment>>,
+) -> Option<(Vec<tombi_document_tree_syntax::Key>, Option<CompletionHint>)> {
+    let mut keys: Vec<tombi_document_tree_syntax::Key> = vec![];
     let mut completion_hint = None;
     let is_tombi_value_comment_directive =
         matches!(comment_context, Some(CommentContext::ValueDirective(_)));
 
-    for (index, node) in ancestors_at_position(root.syntax(), position).enumerate() {
-        let ast_keys = if tombi_ast::Keys::cast(node.to_owned()).is_some() {
-            if let Some(SyntaxElement::Token(last_token)) = node.last_child_or_token()
-                && last_token.kind() == SyntaxKind::DOT
-            {
-                completion_hint = Some(CompletionHint::DotTrigger {
-                    range: last_token.range(),
-                    cleanup_range: tombi_text::Range {
-                        start: last_token.range().start,
-                        end: position,
-                    },
-                });
-            }
-            continue;
-        } else if let Some(kv) = tombi_ast::KeyValue::cast(node.to_owned()) {
-            let Some(kv_keys) = kv.keys() else { continue };
-            if comment_context.is_none() && kv_keys.range().start > position {
-                continue;
-            }
-            match (kv.eq(), kv.value()) {
-                (Some(_), Some(_)) => {}
-                (Some(eq), None) => {
-                    completion_hint = Some(CompletionHint::EqualTrigger {
-                        range: eq.range(),
+    for (index, node) in root.nodes_at_position(position).enumerate() {
+        let ast_keys = match node {
+            tombi_ast_syntax::TomlNode::Keys(keys) => {
+                if let Some(last_token) = keys.last_dot() {
+                    completion_hint = Some(CompletionHint::DotTrigger {
+                        range: last_token.range(),
                         cleanup_range: tombi_text::Range {
-                            start: kv_keys.range().end,
+                            start: last_token.range().start,
                             end: position,
                         },
                     });
                 }
-                (None, None) => {
-                    if let Some(last_dot) = kv_keys
-                        .syntax()
-                        .children_with_tokens()
-                        .filter(|node_or_token| match node_or_token {
-                            SyntaxElement::Token(token) => token.kind() == SyntaxKind::DOT,
-                            _ => false,
-                        })
-                        .last()
-                    {
-                        completion_hint = Some(CompletionHint::DotTrigger {
-                            range: last_dot.range(),
+                continue;
+            }
+            tombi_ast_syntax::TomlNode::KeyValue(kv) => {
+                let Some(kv_keys) = kv.keys() else { continue };
+                if comment_context.is_none() && kv_keys.range().start > position {
+                    continue;
+                }
+                match (kv.eq(), kv.value()) {
+                    (Some(_), Some(_)) => {}
+                    (Some(eq), None) => {
+                        completion_hint = Some(CompletionHint::EqualTrigger {
+                            range: eq.range(),
                             cleanup_range: tombi_text::Range {
-                                start: last_dot.range().start,
+                                start: kv_keys.range().end,
                                 end: position,
                             },
                         });
                     }
-                }
-                _ => {}
-            }
-            Some(kv_keys)
-        } else if let Some(table) = tombi_ast::Table::cast(node.to_owned()) {
-            let (bracket_start_range, bracket_end_range) =
-                match (table.bracket_start(), table.bracket_end()) {
-                    (Some(bracket_start), Some(blacket_end)) => {
-                        (bracket_start.range(), blacket_end.range())
+                    (None, None) => {
+                        if let Some(last_dot) = kv_keys.last_dot() {
+                            completion_hint = Some(CompletionHint::DotTrigger {
+                                range: last_dot.range(),
+                                cleanup_range: tombi_text::Range {
+                                    start: last_dot.range().start,
+                                    end: position,
+                                },
+                            });
+                        }
                     }
-                    _ => return None,
-                };
-            if !is_tombi_value_comment_directive
-                && (position < bracket_start_range.start
-                    || (bracket_end_range.end <= position
-                        && position.line == bracket_end_range.end.line))
-            {
-                return None;
-            } else {
-                if table.contains_header(position) {
-                    completion_hint = Some(CompletionHint::InTableHeader);
+                    _ => {}
                 }
-                table.header()
+                Some(kv_keys)
             }
-        } else if let Some(array_of_table) = tombi_ast::ArrayOfTable::cast(node.to_owned()) {
-            let (double_bracket_start_range, double_bracket_end_range) = {
-                match (
-                    array_of_table.double_bracket_start(),
-                    array_of_table.double_bracket_end(),
-                ) {
-                    (Some(double_bracket_start), Some(double_bracket_end)) => {
-                        (double_bracket_start.range(), double_bracket_end.range())
+            tombi_ast_syntax::TomlNode::Table(table) => {
+                let bracket_start_range = table.bracket_start()?.range();
+                let bracket_end_range = table.bracket_end().map(|bracket| bracket.range());
+                if !is_tombi_value_comment_directive
+                    && (position < bracket_start_range.start
+                        || bracket_end_range.is_some_and(|end| {
+                            end.end <= position && position.line == end.end.line
+                        }))
+                {
+                    return None;
+                } else {
+                    if table.contains_header(position) {
+                        completion_hint = Some(CompletionHint::InTableHeader);
                     }
-                    _ => return None,
-                }
-            };
-            if !is_tombi_value_comment_directive
-                && (position < double_bracket_start_range.start
-                    && (double_bracket_end_range.end <= position
-                        && position.line == double_bracket_end_range.end.line))
-            {
-                return None;
-            } else {
-                if array_of_table.contains_header(position) {
-                    completion_hint = Some(CompletionHint::InTableHeader);
-                }
-                array_of_table.header()
-            }
-        } else {
-            if index == 0 {
-                let leading_comma = get_leading_comma(&node, position);
-                let trailing_comma = get_trailing_comma(&node, position);
-                if leading_comma.is_some() || trailing_comma.is_some() {
-                    completion_hint = Some(CompletionHint::Comma {
-                        leading_comma,
-                        trailing_comma,
-                    });
+                    table.header()
                 }
             }
+            tombi_ast_syntax::TomlNode::ArrayOfTable(array_of_table) => {
+                let double_bracket_start_range = array_of_table.double_bracket_start()?.range();
+                let double_bracket_end_range = array_of_table
+                    .double_bracket_end()
+                    .map(|bracket| bracket.range());
+                if !is_tombi_value_comment_directive
+                    && (position < double_bracket_start_range.start
+                        || double_bracket_end_range.is_some_and(|end| {
+                            end.end <= position && position.line == end.end.line
+                        }))
+                {
+                    return None;
+                } else {
+                    if array_of_table.contains_header(position) {
+                        completion_hint = Some(CompletionHint::InTableHeader);
+                    }
+                    array_of_table.header()
+                }
+            }
+            _ => {
+                if index == 0 {
+                    let commas = root.adjacent_commas(position);
+                    let leading_comma = commas.before.map(|range| CommaHint { range });
+                    let trailing_comma = commas.after.map(|range| CommaHint { range });
+                    if leading_comma.is_some() || trailing_comma.is_some() {
+                        completion_hint = Some(CompletionHint::Comma {
+                            leading_comma,
+                            trailing_comma,
+                        });
+                    }
+                }
 
-            continue;
+                continue;
+            }
         };
 
         let Some(ast_keys) = ast_keys else { continue };
@@ -243,9 +215,9 @@ pub fn extract_keys_and_hint(
 }
 
 pub async fn find_completion_contents(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     position: tombi_text::Position,
-    keys: &[tombi_document_tree::Key],
+    keys: &[tombi_document_tree_syntax::Key],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
@@ -280,7 +252,8 @@ pub async fn find_completion_contents(
             accessors,
             current_schema,
         }) => {
-            if let Some((_, value)) = tombi_document_tree::dig_accessors(document_tree, &accessors)
+            if let Some((_, value)) =
+                tombi_document_tree_syntax::dig_accessors(document_tree, &accessors)
             {
                 value
                     .find_completion_contents(
@@ -321,7 +294,7 @@ pub trait FindCompletionContents {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -434,7 +407,7 @@ fn is_generic_literal_type_hint(completion_item: &CompletionContent) -> bool {
 
 pub(super) async fn merge_adjacent_schema_completion_items(
     position: tombi_text::Position,
-    keys: &[tombi_document_tree::Key],
+    keys: &[tombi_document_tree_syntax::Key],
     accessors: &[Accessor],
     current_schema: Option<&CurrentSchema<'_>>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
@@ -870,105 +843,16 @@ fn tombi_json_value_to_completion_enum_item(
     ))
 }
 
-fn get_leading_comma(node: &SyntaxNode, position: tombi_text::Position) -> Option<CommaHint> {
-    if let Some(child) = node.last_child()
-        && child.kind() == SyntaxKind::COMMA
-    {
-        return Some(CommaHint {
-            range: child.range(),
-        });
-    }
-    if let Some(sibling) = node
-        .siblings_with_tokens(Direction::Prev)
-        .find(|node_or_token| !node_or_token.range().contains(position))
-        && sibling.kind() == SyntaxKind::COMMA
-    {
-        return Some(CommaHint {
-            range: sibling.range(),
-        });
-    }
-    None
-}
-
-fn get_trailing_comma(node: &SyntaxNode, position: tombi_text::Position) -> Option<CommaHint> {
-    if let Some(sibling) = node.siblings_with_tokens(Direction::Next).next() {
-        match sibling.kind() {
-            SyntaxKind::COMMA => {
-                // Case like:
-                //
-                // ```toml
-                // key = ["value" █,]
-                // ```
-                return Some(CommaHint {
-                    range: sibling.range(),
-                });
-            }
-            SyntaxKind::INVALID_TOKEN => {
-                // Case like:
-                //
-                // ```toml
-                // key = [█, "value"]
-                // ```
-                if let NodeOrToken::Node(node) = sibling
-                    && let Some(SyntaxElement::Token(token)) = node.first_child_or_token()
-                    && token.kind() == SyntaxKind::COMMA
-                {
-                    return Some(CommaHint {
-                        range: token.range(),
-                    });
-                }
-            }
-            SyntaxKind::ARRAY => {
-                // Case like:
-                //
-                // ```toml
-                // [dependency-groups]
-                // dev = [  █   , "pytest"]
-                // ```
-
-                if let NodeOrToken::Node(node) = sibling
-                    && let Some(next_node_or_token) = node
-                        .children_with_tokens()
-                        .skip_while(|sibling| !sibling.range().contains(position))
-                        .nth(1)
-                {
-                    match next_node_or_token.kind() {
-                        SyntaxKind::COMMA => {
-                            return Some(CommaHint {
-                                range: next_node_or_token.range(),
-                            });
-                        }
-                        SyntaxKind::INVALID_TOKEN => {
-                            if let NodeOrToken::Node(node) = next_node_or_token
-                                && let Some(SyntaxElement::Token(token)) =
-                                    node.first_child_or_token()
-                                && token.kind() == SyntaxKind::COMMA
-                            {
-                                return Some(CommaHint {
-                                    range: token.range(),
-                                });
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-    None
-}
-
 pub async fn get_completion_keys_with_context(
-    root: &tombi_ast::Root,
+    root: &tombi_ast_syntax::Root,
     position: tombi_text::Position,
     toml_version: tombi_config::TomlVersion,
-) -> Option<(Vec<tombi_document_tree::Key>, Vec<KeyContext>)> {
+) -> Option<(Vec<tombi_document_tree_syntax::Key>, Vec<KeyContext>)> {
     let mut keys_vec = vec![];
     let mut key_contexts = vec![];
 
-    for node in ancestors_at_position(root.syntax(), position) {
-        if let Some(kv) = tombi_ast::KeyValue::cast(node.to_owned()) {
+    for node in root.nodes_at_position(position) {
+        if let tombi_ast_syntax::TomlNode::KeyValue(kv) = node {
             let keys = kv.keys()?;
             let keys = if keys.range().contains(position) {
                 keys.keys()
@@ -994,9 +878,9 @@ pub async fn get_completion_keys_with_context(
                     _ => return None,
                 }
             }
-        } else if let Some(table) = tombi_ast::Table::cast(node.to_owned()) {
+        } else if let tombi_ast_syntax::TomlNode::Table(table) = node {
             if let Some(header) = table.header() {
-                for key in header.keys().rev() {
+                for key in header.keys_rev() {
                     match key.try_into_document_tree(toml_version) {
                         Ok(Some(key_dt)) => {
                             keys_vec.push(key_dt.clone());
@@ -1009,10 +893,10 @@ pub async fn get_completion_keys_with_context(
                     }
                 }
             }
-        } else if let Some(array_of_table) = tombi_ast::ArrayOfTable::cast(node.to_owned())
+        } else if let tombi_ast_syntax::TomlNode::ArrayOfTable(array_of_table) = node
             && let Some(header) = array_of_table.header()
         {
-            for key in header.keys().rev() {
+            for key in header.keys_rev() {
                 match key.try_into_document_tree(toml_version) {
                     Ok(Some(key_dt)) => {
                         keys_vec.push(key_dt.clone());

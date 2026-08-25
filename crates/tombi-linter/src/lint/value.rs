@@ -10,7 +10,7 @@ use tombi_future::Boxable;
 
 use crate::Lint;
 
-impl Lint for tombi_ast::Value {
+impl Lint for tombi_ast_syntax::Value {
     fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
         async move {
             match self {

@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use tombi_comment_directive::value::CommonLintRules;
-use tombi_document_tree::ValueImpl;
+use tombi_document_tree_syntax::ValueImpl;
 use tombi_schema_store::CurrentSchema;
 
 use crate::Validate;

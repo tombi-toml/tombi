@@ -25,67 +25,67 @@ pub trait IntoValue {
     fn into_value(self, toml_version: TomlVersion) -> Value;
 }
 
-impl IntoValue for tombi_document_tree::Value {
+impl IntoValue for tombi_document_tree_syntax::Value {
     #[allow(clippy::only_used_in_recursion)]
     fn into_value(self, toml_version: TomlVersion) -> Value {
         match self {
-            tombi_document_tree::Value::Boolean(value) => Value::Literal {
+            tombi_document_tree_syntax::Value::Boolean(value) => Value::Literal {
                 r#type: Type::Bool,
                 value: value.value().to_string(),
             },
-            tombi_document_tree::Value::Integer(value) => Value::Literal {
+            tombi_document_tree_syntax::Value::Integer(value) => Value::Literal {
                 r#type: Type::Integer,
                 value: value.value().to_string(),
             },
-            tombi_document_tree::Value::Float(value) => Value::Literal {
+            tombi_document_tree_syntax::Value::Float(value) => Value::Literal {
                 r#type: Type::Float,
                 value: value.value().to_string(),
             },
-            tombi_document_tree::Value::String(value) => Value::Literal {
+            tombi_document_tree_syntax::Value::String(value) => Value::Literal {
                 r#type: Type::String,
                 value: value.value().to_string(),
             },
-            tombi_document_tree::Value::OffsetDateTime(value) => Value::Literal {
+            tombi_document_tree_syntax::Value::OffsetDateTime(value) => Value::Literal {
                 r#type: Type::Datetime,
                 value: value.value().to_string(),
             },
-            tombi_document_tree::Value::LocalDateTime(value) => Value::Literal {
+            tombi_document_tree_syntax::Value::LocalDateTime(value) => Value::Literal {
                 r#type: Type::DatetimeLocal,
                 value: value.value().to_string(),
             },
-            tombi_document_tree::Value::LocalDate(value) => Value::Literal {
+            tombi_document_tree_syntax::Value::LocalDate(value) => Value::Literal {
                 r#type: Type::DateLocal,
                 value: value.value().to_string(),
             },
-            tombi_document_tree::Value::LocalTime(value) => Value::Literal {
+            tombi_document_tree_syntax::Value::LocalTime(value) => Value::Literal {
                 r#type: Type::TimeLocal,
                 value: value.value().to_string(),
             },
-            tombi_document_tree::Value::Array(array) => Value::Array(
+            tombi_document_tree_syntax::Value::Array(array) => Value::Array(
                 array
                     .into_iter()
                     .map(|value| value.into_value(toml_version))
                     .collect(),
             ),
-            tombi_document_tree::Value::Table(value) => Value::Table(
+            tombi_document_tree_syntax::Value::Table(value) => Value::Table(
                 value
                     .into_iter()
-                    .map(|(k, v)| (k.value, v.into_value(toml_version)))
+                    .map(|(k, v)| (k.value().to_owned(), v.into_value(toml_version)))
                     .collect(),
             ),
-            tombi_document_tree::Value::Incomplete { .. } => {
+            tombi_document_tree_syntax::Value::Incomplete { .. } => {
                 unreachable!("Incomplete value should not be converted to Value.")
             }
         }
     }
 }
 
-impl IntoValue for tombi_document_tree::DocumentTree {
+impl IntoValue for tombi_document_tree_syntax::DocumentTree {
     fn into_value(self, toml_version: TomlVersion) -> Value {
         Value::Table(
-            tombi_document_tree::Table::from(self)
+            tombi_document_tree_syntax::Table::from(self)
                 .into_iter()
-                .map(|(k, v)| (k.value, v.into_value(toml_version)))
+                .map(|(k, v)| (k.value().to_owned(), v.into_value(toml_version)))
                 .collect(),
         )
     }
