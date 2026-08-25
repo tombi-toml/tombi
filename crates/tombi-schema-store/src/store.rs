@@ -1079,7 +1079,7 @@ impl SchemaStore {
         }
     }
 
-    pub async fn resolve_source_schema(
+    pub(crate) async fn resolve_source_schema(
         &self,
         source_uri_or_path: Either<&tombi_uri::Uri, &std::path::Path>,
     ) -> Result<Option<SourceSchema>, crate::Error> {

@@ -194,7 +194,7 @@ pub async fn handle_completion(
             &accessors,
             toml_version,
             completion_hint,
-            comment_context.as_ref(),
+            comment_context.is_some(),
             config.tombi_extension_features(),
         )
         .await?
@@ -209,7 +209,7 @@ pub async fn handle_completion(
             &accessors,
             toml_version,
             completion_hint,
-            comment_context.as_ref(),
+            comment_context.is_some(),
             offline,
             cache_options,
             config.cargo_extension_features(),
@@ -226,7 +226,7 @@ pub async fn handle_completion(
             &accessors,
             toml_version,
             completion_hint,
-            comment_context.as_ref(),
+            comment_context.is_some(),
             config.pyproject_extension_features(),
         )
         .await?

@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use tombi_config::TomlVersion;
 use tombi_document_tree_syntax::{dig_accessors, dig_keys};
-use tombi_extension::CommentContext;
 use tombi_extension::CompletionContent;
 use tombi_extension::CompletionContentPriority;
 use tombi_extension::CompletionEdit;
@@ -32,14 +31,14 @@ enum CargoCompletionFeature {
     Path,
 }
 
-pub async fn completion<C>(
+pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree_syntax::DocumentTree,
     position: tombi_text::Position,
     accessors: &[Accessor],
     toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
-    comment_context: Option<&CommentContext<C>>,
+    in_comment: bool,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
@@ -48,7 +47,7 @@ pub async fn completion<C>(
         return Ok(None);
     }
 
-    if comment_context.is_some() {
+    if in_comment {
         return Ok(None);
     }
 
