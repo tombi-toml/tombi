@@ -1,4 +1,4 @@
-use tombi_syntax::{SyntaxKind::*, T};
+use tombi_ast_syntax::{SyntaxKind::*, T};
 
 use super::Parse;
 use crate::parse::key::eat_keys;
@@ -9,7 +9,7 @@ use crate::{
     token_set::TS_COMMEMT_OR_LINE_END,
 };
 
-impl Parse for tombi_ast::Value {
+impl Parse for tombi_ast_syntax::Value {
     fn parse(p: &mut Parser<'_>) {
         let n = peek_leading_comments(p);
         match p.nth(n) {
@@ -27,8 +27,8 @@ impl Parse for tombi_ast::Value {
             | LOCAL_DATE_TIME
             | LOCAL_DATE
             | LOCAL_TIME => parse_literal_value(p),
-            T!('[') => parse_nested(p, <tombi_ast::Array as Parse>::parse),
-            T!('{') => parse_nested(p, <tombi_ast::InlineTable as Parse>::parse),
+            T!('[') => parse_nested(p, <tombi_ast_syntax::Array as Parse>::parse),
+            T!('{') => parse_nested(p, <tombi_ast_syntax::InlineTable as Parse>::parse),
             BARE_KEY => {
                 // NOTE: This is a hack to make code completion more comfortable.
 

@@ -1,20 +1,18 @@
 use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion, config_base_dir};
-use tombi_extension::{
-    CommentContext, CompletionContent, CompletionHint, completion_file_path_from_base_dir,
-};
+use tombi_extension::{CompletionContent, CompletionHint, completion_file_path_from_base_dir};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     position: tombi_text::Position,
     accessors: &[Accessor],
     _toml_version: TomlVersion,
     _completion_hint: Option<CompletionHint>,
-    comment_context: Option<&CommentContext>,
+    in_comment: bool,
     features: Option<&tombi_config::TombiExtensionFeatures>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
-    if comment_context.is_some() {
+    if in_comment {
         return Ok(None);
     }
 

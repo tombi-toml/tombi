@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use itertools::Either;
 use tombi_config::TomlVersion;
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
-use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 use tombi_severity_level::SeverityLevelDefaultWarn;
 
 use crate::lint::Lint;

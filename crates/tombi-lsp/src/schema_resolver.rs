@@ -1,6 +1,6 @@
 use std::{borrow::Cow, ops::Deref, sync::Arc};
 
-use tombi_document_tree::{DocumentTree, TableKind, Value, ValueImpl, dig_accessors};
+use tombi_document_tree_syntax::{DocumentTree, TableKind, Value, ValueImpl, dig_accessors};
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, ArraySchema, CurrentSchema, ReferableSchemaViews, SchemaAccessor, SchemaContext,
@@ -436,9 +436,9 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
 }
 
 pub(crate) fn remaining_keys<'a>(
-    keys: &'a [tombi_document_tree::Key],
+    keys: &'a [tombi_document_tree_syntax::Key],
     accessors: &[Accessor],
-) -> &'a [tombi_document_tree::Key] {
+) -> &'a [tombi_document_tree_syntax::Key] {
     let resolved_key_count = accessors
         .iter()
         .filter(|accessor| accessor.as_key().is_some())

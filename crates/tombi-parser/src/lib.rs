@@ -2,7 +2,6 @@ mod builder;
 mod error;
 mod event;
 mod marker;
-mod output;
 mod parse;
 mod parsed;
 mod parser;
@@ -10,83 +9,84 @@ mod support;
 mod token_set;
 
 pub use error::{Error, ErrorKind};
-pub use event::Event;
 use itertools::Itertools;
-use output::Output;
-use parse::Parse;
-pub use parsed::Parsed;
-pub use tombi_syntax::{SyntaxKind, SyntaxNode, SyntaxToken};
+pub use parsed::ParseResult;
+use tombi_ast_syntax::{SyntaxKind, SyntaxNode};
 
-pub fn parse(source: &str) -> Parsed<SyntaxNode> {
-    parse_as::<tombi_ast::Root>(source)
+pub fn parse(source: &str) -> ParseResult {
+    let (syntax, errors, line_ending) = parse_syntax::<tombi_ast_syntax::Root>(source);
+    ParseResult::new(syntax, errors, line_ending)
 }
 
-#[allow(private_bounds)]
-pub fn parse_as<P: Parse>(source: &str) -> Parsed<SyntaxNode> {
+fn parse_syntax<P: parse::Parse>(
+    source: &str,
+) -> (SyntaxNode, Vec<crate::Error>, tombi_text::LineEnding) {
     let lexed = tombi_lexer::lex(source);
     let mut p = crate::parser::Parser::new(source, &lexed.tokens);
 
     P::parse(&mut p);
 
-    let (tokens, events) = p.finish();
+    let (events, synthetic_tokens, errs) = p.finish();
 
-    let output = crate::event::process(events);
-
-    let (green_tree, errs) = build_green_tree(source, &tokens, output);
+    let syntax = build_syntax_tape(source, &lexed.tokens, &synthetic_tokens, &events);
 
     let mut errors = lexed.errors.into_iter().map(Into::into).collect_vec();
 
     errors.extend(errs);
 
-    Parsed::new(green_tree, errors, lexed.line_ending)
+    (syntax, errors, lexed.line_ending)
 }
 
-pub fn build_green_tree(
+fn build_syntax_tape(
     source: &str,
     tokens: &[tombi_lexer::Token],
-    parser_output: crate::Output,
-) -> (tombi_rg_tree::GreenNode, Vec<crate::Error>) {
-    let mut builder = tombi_syntax::SyntaxTreeBuilder::<crate::Error>::default();
+    synthetic_tokens: &[tombi_lexer::Token],
+    events: &[crate::event::Event],
+) -> SyntaxNode {
+    let mut builder = tombi_ast_syntax::SyntaxTreeBuilder::new(source);
+    let mut offset = tombi_text::Offset::default();
 
-    builder::intersperse_trivia(source, tokens, &parser_output, &mut |step| match step {
-        builder::Step::AddToken { kind, text } => {
-            builder.token(kind, text);
+    builder::intersperse_trivia(tokens, synthetic_tokens, events, |step| match step {
+        builder::Step::AddToken { kind, span } => {
+            builder.token(kind, span);
+            offset = span.end;
         }
         builder::Step::StartNode { kind } => {
-            builder.start_node(kind);
+            builder.start_node(kind, offset);
         }
-        builder::Step::FinishNode => builder.finish_node(),
-        builder::Step::Error { error } => builder.error(error),
+        builder::Step::FinishNode => builder.finish_node(offset),
     });
 
     builder.finish()
 }
 
-pub fn format_tree_as_macro(node: &SyntaxNode, base_indent: usize) -> String {
-    use tombi_rg_tree::NodeOrToken;
-    fn fmt_items(node: &SyntaxNode, indent: usize, out: &mut String) {
-        let children: Vec<_> = node.children_with_tokens().collect();
-        for (i, child) in children.iter().enumerate() {
-            let prefix = "    ".repeat(indent);
-            let comma = if i < children.len() - 1 { "," } else { "" };
-            match child {
-                NodeOrToken::Token(t) => {
-                    let kind = format!("{:?}", t.kind());
-                    let value = t.text().to_string();
-                    out.push_str(&format!("{}{}: {:?}{}\n", prefix, kind, value, comma));
-                }
-                NodeOrToken::Node(n) => {
-                    let kind = format!("{:?}", n.kind());
-                    out.push_str(&format!("{}{}: {{\n", prefix, kind));
-                    fmt_items(n, indent + 1, out);
-                    out.push_str(&format!("{}}}{}\n", prefix, comma));
-                }
+#[cfg(test)]
+#[derive(PartialEq, Eq)]
+enum TreePattern {
+    Token(String, String),
+    Node(String, Vec<TreePattern>),
+}
+
+#[cfg(test)]
+fn tree_patterns(node: &SyntaxNode) -> Vec<TreePattern> {
+    fn convert(tree: tombi_ast_syntax::DebugTree) -> TreePattern {
+        match tree {
+            tombi_ast_syntax::DebugTree::Node { kind, children } => TreePattern::Node(
+                format!("{kind:?}"),
+                children.into_iter().map(convert).collect(),
+            ),
+            tombi_ast_syntax::DebugTree::Token { kind, text } => {
+                TreePattern::Token(format!("{kind:?}"), text)
             }
         }
     }
-    let mut out = String::new();
-    fmt_items(node, base_indent, &mut out);
-    out
+
+    match node.debug_tree() {
+        tombi_ast_syntax::DebugTree::Node { children, .. } => {
+            children.into_iter().map(convert).collect()
+        }
+        tombi_ast_syntax::DebugTree::Token { .. } => unreachable!("the syntax root is a node"),
+    }
 }
 
 #[cfg(test)]
@@ -98,17 +98,15 @@ pub enum SyntaxTreePattern {
 
 #[cfg(test)]
 pub fn syntax_node_to_patterns(node: &SyntaxNode) -> Vec<SyntaxTreePattern> {
-    use tombi_rg_tree::NodeOrToken;
-    node.children_with_tokens()
-        .map(|child| match child {
-            NodeOrToken::Token(t) => {
-                SyntaxTreePattern::Token(format!("{:?}", t.kind()), t.text().to_string())
+    fn convert(pattern: TreePattern) -> SyntaxTreePattern {
+        match pattern {
+            TreePattern::Token(kind, text) => SyntaxTreePattern::Token(kind, text),
+            TreePattern::Node(kind, children) => {
+                SyntaxTreePattern::Node(kind, children.into_iter().map(convert).collect())
             }
-            NodeOrToken::Node(n) => {
-                SyntaxTreePattern::Node(format!("{:?}", n.kind()), syntax_node_to_patterns(&n))
-            }
-        })
-        .collect()
+        }
+    }
+    tree_patterns(node).into_iter().map(convert).collect()
 }
 
 #[cfg(test)]
@@ -190,7 +188,7 @@ macro_rules! test_parser {
 
             let p = $crate::parse(textwrap::dedent($source).trim());
 
-            log::debug!("syntax_node: {:#?}", p.syntax_node());
+            log::debug!("root: {:#?}", p.root());
 
             pretty_assertions::assert_eq!(
                 p.errors,
@@ -206,15 +204,17 @@ macro_rules! test_parser {
 
             let p = $crate::parse(textwrap::dedent($source).trim());
 
-            log::debug!("syntax_node: {:#?}", p.syntax_node());
+            let root = p.root();
+            log::debug!("root: {root:#?}");
 
             pretty_assertions::assert_eq!(
                 p.errors,
                 Vec::<$crate::Error>::new()
             );
 
+            use tombi_ast_syntax::AstNode as _;
             let expected = $crate::syntax_tree!($($expected)*);
-            let actual = $crate::syntax_node_to_patterns(&p.syntax_node());
+            let actual = $crate::syntax_node_to_patterns(root.syntax());
             pretty_assertions::assert_eq!(
                 $crate::format_tree(&actual, 0),
                 $crate::format_tree(&expected, 0),
@@ -229,16 +229,14 @@ macro_rules! test_parser {
 
             let p = $crate::parse(textwrap::dedent($source).trim());
 
-            log::debug!("syntax_node: {:#?}", p.syntax_node());
+            log::debug!("root: {:#?}", p.root());
 
             pretty_assertions::assert_eq!(
                 p.errors,
                 Vec::<$crate::Error>::new()
             );
 
-            use tombi_ast::AstNode as _;
-            let $root = tombi_ast::Root::cast(p.syntax_node())
-                .expect("parse result must contain ROOT syntax node");
+            let $root = p.root();
 
             assert!(
                 $assert_expr,
@@ -264,7 +262,7 @@ macro_rules! test_parser {
 
             let p = $crate::parse(textwrap::dedent($source).trim());
 
-            log::debug!("syntax_node: {:#?}", p.syntax_node());
+            log::debug!("root: {:#?}", p.root());
 
             pretty_assertions::assert_eq!(
                 p.errors,
@@ -279,6 +277,17 @@ macro_rules! test_parser {
             tombi_test_lib::init_log();
 
             let $parsed = $crate::parse(textwrap::dedent(&$source).trim());
+
+            assert!($assertion);
+        }
+    };
+
+    {#[test] fn $name:ident($source:expr) -> RawAssert(|$parsed:ident| $assertion:block)} => {
+        #[test]
+        fn $name() {
+            tombi_test_lib::init_log();
+
+            let $parsed = $crate::parse($source);
 
             assert!($assertion);
         }

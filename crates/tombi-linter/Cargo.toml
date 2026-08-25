@@ -9,16 +9,16 @@ license.workspace = true
 itertools.workspace = true
 log.workspace = true
 thiserror.workspace = true
-tombi-ast.workspace = true
+tombi-ast-syntax.workspace = true
 tombi-comment-directive.workspace = true
 tombi-comment-directive-serde.workspace = true
 tombi-config.workspace = true
 tombi-diagnostic.workspace = true
-tombi-document-tree.workspace = true
+tombi-document-tree-syntax.workspace = true
 tombi-future.workspace = true
 tombi-hashmap.workspace = true
 tombi-parser.workspace = true
-tombi-schema-store.workspace = true
+tombi-schema-store = { workspace = true, features = ["ast-syntax"] }
 tombi-severity-level.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true
@@ -32,7 +32,7 @@ textwrap.workspace = true
 tokio = { workspace = true, features = ["fs", "macros"] }
 tombi-accessor.workspace = true
 tombi-config.workspace = true
-tombi-schema-store = { workspace = true, features = ["native"] }
+tombi-schema-store = { workspace = true, features = ["ast-syntax", "native"] }
 tombi-test-lib.workspace = true
 tombi-x-keyword.workspace = true
 

@@ -5,6 +5,7 @@ mod completion;
 mod config_manager;
 mod diagnostic;
 mod document;
+pub mod extension;
 mod goto_definition;
 mod goto_type_definition;
 mod hover;

@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
-use tombi_document_tree::dig_keys;
+use tombi_document_tree_syntax::dig_keys;
 
 use crate::{
     dependency::UV_DEPENDENCY_KEYS, find_member_project_toml, find_workspace_pyproject_toml,
@@ -52,7 +52,7 @@ impl std::fmt::Display for DocumentLinkToolTip {
 
 pub async fn document_link(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     toml_version: TomlVersion,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
@@ -95,7 +95,7 @@ pub async fn document_link(
         .unwrap_or_default();
 
     if pyproject_toml_document_link_enabled.value()
-        && let Some((_, tombi_document_tree::Value::Table(workspace))) =
+        && let Some((_, tombi_document_tree_syntax::Value::Table(workspace))) =
             dig_keys(document_tree, &["tool", "uv", "workspace"])
     {
         document_links.extend(document_link_for_workspace_pyproject_toml(
@@ -107,7 +107,7 @@ pub async fn document_link(
     }
 
     // Collect tool.uv.sources information
-    let pyproject_sources = if let Some((_, tombi_document_tree::Value::Table(sources))) =
+    let pyproject_sources = if let Some((_, tombi_document_tree_syntax::Value::Table(sources))) =
         dig_keys(document_tree, &["tool", "uv", "sources"])
     {
         for (package_name_key, source) in sources.key_values() {
@@ -126,7 +126,7 @@ pub async fn document_link(
     };
 
     // Handle [project.dependencies] section
-    if let Some((_, tombi_document_tree::Value::Array(dependencies))) =
+    if let Some((_, tombi_document_tree_syntax::Value::Array(dependencies))) =
         dig_keys(document_tree, &["project", "dependencies"])
     {
         document_links.extend(document_link_for_project_dependencies(
@@ -140,7 +140,7 @@ pub async fn document_link(
     }
 
     // Handle [project.optional-dependencies] section
-    if let Some((_, tombi_document_tree::Value::Table(optional_dependencies))) =
+    if let Some((_, tombi_document_tree_syntax::Value::Table(optional_dependencies))) =
         dig_keys(document_tree, &["project", "optional-dependencies"])
     {
         document_links.extend(document_link_for_optional_dependencies(
@@ -154,7 +154,7 @@ pub async fn document_link(
     }
 
     // Handle [dependency-groups] section
-    if let Some((_, tombi_document_tree::Value::Table(dependency_groups))) =
+    if let Some((_, tombi_document_tree_syntax::Value::Table(dependency_groups))) =
         dig_keys(document_tree, &["dependency-groups"])
     {
         document_links.extend(document_link_for_dependency_groups(
@@ -168,7 +168,7 @@ pub async fn document_link(
     }
 
     // Handle [build-system] section
-    if let Some((_, tombi_document_tree::Value::Array(requires))) =
+    if let Some((_, tombi_document_tree_syntax::Value::Array(requires))) =
         dig_keys(document_tree, &["build-system", "requires"])
     {
         document_links.extend(document_link_for_project_dependencies(
@@ -198,18 +198,18 @@ pub async fn document_link(
 }
 
 fn document_link_for_workspace_pyproject_toml(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
-    workspace: &tombi_document_tree::Table,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    workspace: &tombi_document_tree_syntax::Table,
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
 ) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
-    let Some(tombi_document_tree::Value::Array(members)) = workspace.get("members") else {
+    let Some(tombi_document_tree_syntax::Value::Array(members)) = workspace.get("members") else {
         return Ok(Vec::new());
     };
 
     let mut total_document_links = vec![];
     for (index, member) in members.values().iter().enumerate() {
-        let tombi_document_tree::Value::String(member) = member else {
+        let tombi_document_tree_syntax::Value::String(member) = member else {
             continue;
         };
 
@@ -259,8 +259,8 @@ fn document_link_for_workspace_pyproject_toml(
 }
 
 fn document_link_for_member_pyproject_toml(
-    package_name_key: &tombi_document_tree::Key,
-    source: &tombi_document_tree::Value,
+    package_name_key: &tombi_document_tree_syntax::Key,
+    source: &tombi_document_tree_syntax::Value,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,
@@ -269,7 +269,7 @@ fn document_link_for_member_pyproject_toml(
         return Ok(Vec::new());
     }
 
-    let tombi_document_tree::Value::Table(source) = source else {
+    let tombi_document_tree_syntax::Value::Table(source) = source else {
         return Ok(Vec::new());
     };
 
@@ -286,11 +286,11 @@ fn document_link_for_member_pyproject_toml(
     };
 
     let mut document_links = vec![];
-    if let Some((workspace_key, tombi_document_tree::Value::Boolean(is_workspace))) =
+    if let Some((workspace_key, tombi_document_tree_syntax::Value::Boolean(is_workspace))) =
         source.get_key_value("workspace")
         && is_workspace.value()
         && let Some((package_location, _)) = find_member_project_toml(
-            &package_name_key.value,
+            package_name_key.value(),
             &workspace_pyproject_toml_document_tree,
             &workspace_pyproject_toml_path,
             toml_version,
@@ -316,8 +316,8 @@ fn document_link_for_member_pyproject_toml(
 }
 
 fn document_link_for_project_dependencies(
-    dependencies: &tombi_document_tree::Array,
-    pyproject_sources: Option<&tombi_document_tree::Table>,
+    dependencies: &tombi_document_tree_syntax::Array,
+    pyproject_sources: Option<&tombi_document_tree_syntax::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,
@@ -326,7 +326,7 @@ fn document_link_for_project_dependencies(
     let mut document_links = Vec::with_capacity(dependencies.len());
 
     for dep_value in dependencies.values() {
-        if let tombi_document_tree::Value::String(dep_spec) = dep_value {
+        if let tombi_document_tree_syntax::Value::String(dep_spec) = dep_value {
             // Parse the PEP 508 requirement specification
             if let Ok(requirement) = Requirement::<VerbatimUrl>::from_str(dep_spec.value()) {
                 // Extract package name from the requirement
@@ -386,8 +386,8 @@ fn document_link_for_project_dependencies(
 }
 
 fn document_link_for_dependency_groups(
-    dependency_groups: &tombi_document_tree::Table,
-    pyproject_sources: Option<&tombi_document_tree::Table>,
+    dependency_groups: &tombi_document_tree_syntax::Table,
+    pyproject_sources: Option<&tombi_document_tree_syntax::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,
@@ -397,7 +397,7 @@ fn document_link_for_dependency_groups(
 
     // Iterate through each dependency group
     for dependency_group in dependency_groups.values() {
-        if let tombi_document_tree::Value::Array(dependencies) = dependency_group {
+        if let tombi_document_tree_syntax::Value::Array(dependencies) = dependency_group {
             // Process each dependency in the group using the same logic as project.dependencies
             document_links.extend(document_link_for_project_dependencies(
                 dependencies,
@@ -414,8 +414,8 @@ fn document_link_for_dependency_groups(
 }
 
 fn document_link_for_optional_dependencies(
-    optional_dependencies: &tombi_document_tree::Table,
-    pyproject_sources: Option<&tombi_document_tree::Table>,
+    optional_dependencies: &tombi_document_tree_syntax::Table,
+    pyproject_sources: Option<&tombi_document_tree_syntax::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,
@@ -425,7 +425,7 @@ fn document_link_for_optional_dependencies(
 
     // Iterate through each optional dependency group
     for option in optional_dependencies.values() {
-        if let tombi_document_tree::Value::Array(dependencies) = option {
+        if let tombi_document_tree_syntax::Value::Array(dependencies) = option {
             // Process each dependency in the group using the same logic as project.dependencies
             document_links.extend(document_link_for_project_dependencies(
                 dependencies,
@@ -442,8 +442,8 @@ fn document_link_for_optional_dependencies(
 }
 
 fn document_link_for_tool_uv_dependencies(
-    document_tree: &tombi_document_tree::DocumentTree,
-    pyproject_sources: Option<&tombi_document_tree::Table>,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    pyproject_sources: Option<&tombi_document_tree_syntax::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,
@@ -452,7 +452,7 @@ fn document_link_for_tool_uv_dependencies(
     let mut document_links = Vec::new();
 
     for key in UV_DEPENDENCY_KEYS {
-        if let Some((_, tombi_document_tree::Value::Array(dependencies))) =
+        if let Some((_, tombi_document_tree_syntax::Value::Array(dependencies))) =
             dig_keys(document_tree, &["tool", "uv", key])
         {
             document_links.extend(document_link_for_project_dependencies(

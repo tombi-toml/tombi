@@ -1,3 +1,4 @@
+mod editor;
 mod format;
 pub mod formatter;
 mod types;

@@ -167,7 +167,7 @@ fn expected_hint(position: tombi_text::Position, label: &str, tooltip: &str) -> 
     InlayHint {
         position,
         label: label.to_string(),
-        kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
+        kind: Some(tombi_extension::InlayHintKind::TYPE),
         tooltip: Some(tooltip.to_string()),
         padding_left: Some(true),
         padding_right: Some(false),

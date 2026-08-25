@@ -1,9 +1,9 @@
-use tombi_syntax::T;
+use tombi_ast_syntax::T;
 
 use super::{Parse, Parser};
 use crate::support::{leading_comments, trailing_comment};
 
-impl Parse for tombi_ast::Comma {
+impl Parse for tombi_ast_syntax::Comma {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 

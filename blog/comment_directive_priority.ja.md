@@ -27,8 +27,8 @@ aaa = { bbb = { ccc = true } }
 aaa = { bbb.ccc = true }
 ```
 
-そのため、 Tombi では、TOML の表現構造を保持する tombi-ast と、
-TOML のデータ構造を保持する tombi-document-tree の2つの構造を利用することで、
+そのため、 Tombi では、TOML の表現構造を保持する tombi-ast-syntax の AST と、
+TOML のデータ構造を保持する tombi-document-tree-syntax の2つの構造を利用することで、
 様々な機能の提供を行っている。
 
 コメントディレクティブを利用することで、 Toml のバリデーションエラーを無視することができるが、
@@ -37,7 +37,7 @@ TOML のデータ構造を保持する tombi-document-tree の2つの構造を�
 この２種類の構造の表現力の違いが、コメントディレクティブの設計において問題を発生させる。
 
 ## テーブルの親キーにはどのコメントディレクティブを適用すべきか？
-tombi-ast は tombi-document-tree よりも多くのコメント情報を保持するため、
+tombi-ast-syntax の AST は tombi-document-tree-syntax よりも多くのコメント情報を保持するため、
 どのコメントが、どの document-node に適用されるかを判断する必要がある。
 
 この処理に複雑さが生じる。

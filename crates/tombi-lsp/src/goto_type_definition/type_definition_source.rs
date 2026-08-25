@@ -4,17 +4,17 @@ use crate::schema_resolver::{remaining_keys, resolve_accessors_for_document_or_s
 
 pub(super) enum TypeDefinitionSource<'a> {
     Root {
-        remaining_keys: &'a [tombi_document_tree::Key],
+        remaining_keys: &'a [tombi_document_tree_syntax::Key],
         accessors: Vec<Accessor>,
         current_schema: Option<CurrentSchema<'static>>,
     },
     Value {
-        remaining_keys: &'a [tombi_document_tree::Key],
+        remaining_keys: &'a [tombi_document_tree_syntax::Key],
         accessors: Vec<Accessor>,
         current_schema: Option<CurrentSchema<'static>>,
     },
     Schema {
-        remaining_keys: &'a [tombi_document_tree::Key],
+        remaining_keys: &'a [tombi_document_tree_syntax::Key],
         accessors: Vec<Accessor>,
         current_schema: CurrentSchema<'static>,
     },
@@ -22,12 +22,12 @@ pub(super) enum TypeDefinitionSource<'a> {
 
 impl<'a> TypeDefinitionSource<'a> {
     pub(super) async fn new(
-        document_tree: &'a tombi_document_tree::DocumentTree,
+        document_tree: &'a tombi_document_tree_syntax::DocumentTree,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         schema_context: &tombi_schema_store::SchemaContext<'_>,
     ) -> Option<Self> {
-        let accessors = tombi_document_tree::get_accessors(document_tree, keys, position);
+        let accessors = tombi_document_tree_syntax::get_accessors(document_tree, keys, position);
         let (mut accessors, mut current_schema) =
             resolve_accessors_for_document_or_schema(document_tree, accessors, schema_context)
                 .await;
@@ -44,8 +44,11 @@ impl<'a> TypeDefinitionSource<'a> {
                 )
                 .await;
             if resolved_parent_accessors.is_empty()
-                || tombi_document_tree::dig_accessors(document_tree, &resolved_parent_accessors)
-                    .is_some()
+                || tombi_document_tree_syntax::dig_accessors(
+                    document_tree,
+                    &resolved_parent_accessors,
+                )
+                .is_some()
                 || resolved_parent_schema.is_some()
             {
                 accessors = resolved_parent_accessors;
@@ -55,7 +58,7 @@ impl<'a> TypeDefinitionSource<'a> {
 
         if remaining_keys(keys, &accessors).is_empty()
             && matches!(accessors.last(), Some(Accessor::Key(_)))
-            && tombi_document_tree::dig_accessors(document_tree, &accessors).is_some()
+            && tombi_document_tree_syntax::dig_accessors(document_tree, &accessors).is_some()
         {
             let parent_accessors = accessors[..accessors.len().saturating_sub(1)].to_vec();
             let (resolved_parent_accessors, resolved_parent_schema) =
@@ -66,8 +69,11 @@ impl<'a> TypeDefinitionSource<'a> {
                 )
                 .await;
             if resolved_parent_accessors.is_empty()
-                || tombi_document_tree::dig_accessors(document_tree, &resolved_parent_accessors)
-                    .is_some()
+                || tombi_document_tree_syntax::dig_accessors(
+                    document_tree,
+                    &resolved_parent_accessors,
+                )
+                .is_some()
                 || resolved_parent_schema.is_some()
             {
                 accessors = resolved_parent_accessors;
@@ -85,7 +91,7 @@ impl<'a> TypeDefinitionSource<'a> {
             });
         }
 
-        if tombi_document_tree::dig_accessors(document_tree, &accessors).is_some() {
+        if tombi_document_tree_syntax::dig_accessors(document_tree, &accessors).is_some() {
             return Some(Self::Value {
                 remaining_keys,
                 accessors,

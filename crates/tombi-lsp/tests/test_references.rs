@@ -405,11 +405,11 @@ mod references_tests {
                 members = ["crates/*"]
 
                 [workspace.dependencies]
-                tombi-ast-editor█ = { path = "crates/tombi-ast-editor" }
+                tombi-formatter█ = { path = "crates/tombi-formatter" }
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([
-                project_root_path().join("crates/tombi-formatter/Cargo.toml"),
+                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
             ]);
         );
 

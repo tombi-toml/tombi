@@ -9,12 +9,12 @@ use crate::{
     resolve_feature_table_string,
 };
 use tombi_config::TomlVersion;
-use tombi_document_tree::{Value, dig_accessors, dig_keys};
+use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn goto_definition(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
     features: Option<&tombi_config::CargoExtensionFeatures>,
@@ -99,7 +99,7 @@ pub async fn goto_definition(
 }
 
 fn goto_definition_for_package_name(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
 ) -> Vec<tombi_extension::Location> {
@@ -117,7 +117,7 @@ fn goto_definition_for_package_name(
 }
 
 fn goto_definition_for_feature_key(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
 ) -> Vec<tombi_extension::Location> {
@@ -138,7 +138,7 @@ fn goto_definition_for_feature_key(
 }
 
 fn goto_definition_for_optional_dependency(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
 ) -> Vec<tombi_extension::Location> {
@@ -162,7 +162,7 @@ fn goto_definition_for_optional_dependency(
 }
 
 fn goto_workspace_definition_locations(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
     cargo_toml_path: &std::path::Path,
@@ -197,7 +197,7 @@ fn goto_workspace_definition_locations(
 }
 
 fn goto_workspace_dependency_locations(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -223,7 +223,7 @@ fn goto_workspace_dependency_locations(
 }
 
 fn goto_dependency_definition_locations(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,

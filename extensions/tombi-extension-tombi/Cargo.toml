@@ -8,7 +8,7 @@ license.workspace = true
 
 [dependencies]
 tombi-config.workspace = true
-tombi-document-tree.workspace = true
+tombi-document-tree-syntax.workspace = true
 tombi-extension.workspace = true
 tombi-schema-store.workspace = true
 tombi-text.workspace = true

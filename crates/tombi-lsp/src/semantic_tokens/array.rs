@@ -1,8 +1,8 @@
-use tombi_ast::{AstNode, DanglingCommentGroupOr};
+use tombi_ast_syntax::{AstNode, DanglingCommentGroupOr};
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder};
 
-impl AppendSemanticTokens for tombi_ast::Array {
+impl AppendSemanticTokens for tombi_ast_syntax::Array {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         if let Some(trailing_comment) = self.bracket_start_trailing_comment() {
             trailing_comment.append_semantic_tokens(builder);
@@ -25,10 +25,10 @@ impl AppendSemanticTokens for tombi_ast::Array {
                     for (value_or_key_value, comma) in value_group.value_or_key_values_with_comma()
                     {
                         match value_or_key_value {
-                            tombi_ast::ValueOrKeyValue::Value(value) => {
+                            tombi_ast_syntax::ValueOrKeyValue::Value(value) => {
                                 value.append_semantic_tokens(builder);
                             }
-                            tombi_ast::ValueOrKeyValue::KeyValue(key_value) => {
+                            tombi_ast_syntax::ValueOrKeyValue::KeyValue(key_value) => {
                                 key_value.append_semantic_tokens(builder);
                             }
                         }

@@ -4,8 +4,8 @@ use crate::{Diagnostic, DiagnosticKind, Rule};
 
 pub struct InlineTableTomlVersionRule;
 
-impl Rule<tombi_ast::InlineTable> for InlineTableTomlVersionRule {
-    async fn check(node: &tombi_ast::InlineTable, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::InlineTable> for InlineTableTomlVersionRule {
+    async fn check(node: &tombi_ast_syntax::InlineTable, l: &mut crate::Linter<'_>) {
         if l.toml_version() != TomlVersion::V1_0_0 {
             return;
         }

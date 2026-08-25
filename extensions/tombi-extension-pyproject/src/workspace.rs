@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use tombi_config::TomlVersion;
-use tombi_document_tree::dig_accessors;
+use tombi_document_tree_syntax::dig_accessors;
 use tombi_schema_store::matches_accessors;
 
 use crate::{
@@ -9,25 +9,27 @@ use crate::{
 };
 
 pub(crate) fn extract_member_patterns<'a>(
-    workspace_document_tree: &'a tombi_document_tree::DocumentTree,
+    workspace_document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     accessors: &'a [tombi_schema_store::Accessor],
-) -> Vec<&'a tombi_document_tree::String> {
+) -> Vec<&'a tombi_document_tree_syntax::String> {
     if matches_accessors!(accessors, ["tool", "uv", "workspace", "members", _]) {
-        let Some((_, tombi_document_tree::Value::String(member))) =
+        let Some((_, tombi_document_tree_syntax::Value::String(member))) =
             dig_accessors(workspace_document_tree, accessors)
         else {
             return vec![];
         };
         vec![member]
     } else {
-        match tombi_document_tree::dig_keys(
+        match tombi_document_tree_syntax::dig_keys(
             workspace_document_tree,
             &["tool", "uv", "workspace", "members"],
         ) {
-            Some((_, tombi_document_tree::Value::Array(members))) => members
+            Some((_, tombi_document_tree_syntax::Value::Array(members))) => members
                 .iter()
                 .filter_map(|member| match member {
-                    tombi_document_tree::Value::String(member_pattern) => Some(member_pattern),
+                    tombi_document_tree_syntax::Value::String(member_pattern) => {
+                        Some(member_pattern)
+                    }
                     _ => None,
                 })
                 .collect_vec(),
@@ -37,16 +39,16 @@ pub(crate) fn extract_member_patterns<'a>(
 }
 
 pub(crate) fn extract_exclude_patterns(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
-) -> Vec<&tombi_document_tree::String> {
-    match tombi_document_tree::dig_keys(
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+) -> Vec<&tombi_document_tree_syntax::String> {
+    match tombi_document_tree_syntax::dig_keys(
         workspace_document_tree,
         &["tool", "uv", "workspace", "exclude"],
     ) {
-        Some((_, tombi_document_tree::Value::Array(exclude))) => exclude
+        Some((_, tombi_document_tree_syntax::Value::Array(exclude))) => exclude
             .iter()
             .filter_map(|member| match member {
-                tombi_document_tree::Value::String(member_pattern) => Some(member_pattern),
+                tombi_document_tree_syntax::Value::String(member_pattern) => Some(member_pattern),
                 _ => None,
             })
             .collect_vec(),
@@ -55,10 +57,10 @@ pub(crate) fn extract_exclude_patterns(
 }
 
 pub(crate) fn find_pyproject_toml_paths<'a>(
-    member_patterns: &'a [&'a tombi_document_tree::String],
-    exclude_patterns: &'a [&'a tombi_document_tree::String],
+    member_patterns: &'a [&'a tombi_document_tree_syntax::String],
+    exclude_patterns: &'a [&'a tombi_document_tree_syntax::String],
     workspace_dir_path: &'a std::path::Path,
-) -> impl Iterator<Item = (&'a tombi_document_tree::String, std::path::PathBuf)> + 'a {
+) -> impl Iterator<Item = (&'a tombi_document_tree_syntax::String, std::path::PathBuf)> + 'a {
     let exclude_patterns = exclude_patterns
         .iter()
         .filter_map(|pattern| glob::Pattern::new(pattern.value()).ok())
@@ -105,7 +107,7 @@ pub(crate) fn find_pyproject_toml_paths<'a>(
 }
 
 pub(crate) fn goto_definition_for_member_pyproject_toml(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -130,7 +132,7 @@ pub(crate) fn goto_definition_for_member_pyproject_toml(
 }
 
 pub(crate) fn goto_definition_for_workspace_pyproject_toml(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -151,7 +153,7 @@ pub(crate) fn goto_definition_for_workspace_pyproject_toml(
 }
 
 pub(crate) fn goto_workspace_member(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -174,7 +176,7 @@ pub(crate) fn goto_workspace_member(
         return Ok(None);
     };
     if accessors.len() == 4
-        && let Some((_, tombi_document_tree::Value::Table(table))) =
+        && let Some((_, tombi_document_tree_syntax::Value::Table(table))) =
             dig_accessors(document_tree, &accessors[..4])
         && !table.contains_key("workspace")
     {
@@ -216,7 +218,7 @@ pub(crate) fn goto_workspace_member(
 }
 
 pub(crate) fn goto_member_pyprojects(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -257,7 +259,7 @@ pub(crate) fn goto_member_pyprojects(
 
 pub(crate) fn find_member_project_toml(
     package_name: &str,
-    workspace_pyproject_toml_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_pyproject_toml_document_tree: &tombi_document_tree_syntax::DocumentTree,
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
 ) -> Option<(PackageLocation, tombi_text::Range)> {

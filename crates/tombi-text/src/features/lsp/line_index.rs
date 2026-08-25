@@ -8,7 +8,7 @@ use crate::{Offset, Span, features::lsp::EncodingKind};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LineIndex {
     text: Arc<str>,
-    lines: Vec<Span>,
+    lines: Arc<[Span]>,
     pub encoding_kind: EncodingKind,
 }
 
@@ -52,7 +52,7 @@ impl LineIndex {
 
         LineIndex {
             text,
-            lines,
+            lines: lines.into(),
             encoding_kind,
         }
     }

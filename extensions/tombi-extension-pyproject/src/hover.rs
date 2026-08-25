@@ -2,7 +2,7 @@ use std::path::Path;
 
 use pep508_rs::VersionOrUrl;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{Value, dig_accessors, dig_keys};
+use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
 use tombi_extension::{HoverMetadata, HoverTextChange, append_latest_version};
 use tombi_schema_store::{Accessor, matches_accessors};
 
@@ -14,7 +14,7 @@ use crate::{
 
 pub async fn hover(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     position: tombi_text::Position,
     toml_version: TomlVersion,
@@ -82,9 +82,9 @@ pub async fn hover(
 }
 
 fn resolve_pyproject_dependency_metadata_from_sources(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     package_name: &str,
-    current_document_tree: &tombi_document_tree::DocumentTree,
+    current_document_tree: &tombi_document_tree_syntax::DocumentTree,
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<HoverMetadata> {
@@ -95,7 +95,7 @@ fn resolve_pyproject_dependency_metadata_from_sources(
     let (package_key, source) = sources.get_key_value(package_name)?;
 
     resolve_source_value_metadata(
-        package_key.value.as_str(),
+        package_key.value(),
         source,
         current_document_tree,
         pyproject_toml_path,
@@ -104,7 +104,7 @@ fn resolve_pyproject_dependency_metadata_from_sources(
 }
 
 fn resolve_pyproject_source_metadata(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     source_accessors: &[Accessor],
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
@@ -126,7 +126,7 @@ fn resolve_pyproject_source_metadata(
 fn resolve_source_value_metadata(
     package_name: &str,
     source: &Value,
-    current_document_tree: &tombi_document_tree::DocumentTree,
+    current_document_tree: &tombi_document_tree_syntax::DocumentTree,
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<HoverMetadata> {
@@ -156,7 +156,7 @@ fn resolve_source_value_metadata(
 
 fn resolve_workspace_member_metadata(
     package_name: &str,
-    current_document_tree: &tombi_document_tree::DocumentTree,
+    current_document_tree: &tombi_document_tree_syntax::DocumentTree,
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<HoverMetadata> {

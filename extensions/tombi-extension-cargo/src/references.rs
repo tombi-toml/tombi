@@ -7,12 +7,12 @@ use crate::{
 };
 use itertools::Itertools;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{LikeString, Value, dig_accessors, dig_keys};
+use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn references(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
     features: Option<&tombi_config::CargoExtensionFeatures>,
@@ -65,7 +65,7 @@ pub async fn references(
 }
 
 pub(crate) async fn package_name_reference_locations(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -120,7 +120,7 @@ pub(crate) async fn package_name_reference_locations(
 
 fn collect_workspace_dependency_references(
     locations: &mut Vec<tombi_extension::Location>,
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     workspace_cargo_toml_path: &std::path::Path,
     package_name: &str,
 ) {
@@ -146,7 +146,7 @@ fn collect_workspace_dependency_references(
 
 fn collect_member_dependency_references(
     locations: &mut Vec<tombi_extension::Location>,
-    crate_document_tree: &tombi_document_tree::DocumentTree,
+    crate_document_tree: &tombi_document_tree_syntax::DocumentTree,
     crate_cargo_toml_path: &std::path::Path,
     package_name: &str,
 ) {
@@ -182,7 +182,7 @@ fn collect_member_dependency_references(
 fn collect_dependency_table_references(
     locations: &mut Vec<tombi_extension::Location>,
     uri: &tombi_uri::Uri,
-    dependencies: &tombi_document_tree::Table,
+    dependencies: &tombi_document_tree_syntax::Table,
     package_name: &str,
 ) {
     for (dependency_key, dependency_value) in dependencies.key_values() {

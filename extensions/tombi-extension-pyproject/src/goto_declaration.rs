@@ -1,5 +1,5 @@
 use tombi_config::TomlVersion;
-use tombi_document_tree::{Value, dig_accessors, dig_keys};
+use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::matches_accessors;
 
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
 
 pub async fn goto_declaration(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
@@ -62,7 +62,7 @@ pub async fn goto_declaration(
 }
 
 fn goto_declaration_for_dependency_package(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -94,7 +94,7 @@ fn goto_declaration_for_dependency_package(
 }
 
 fn dependency_source_declaration_locations(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     pyproject_toml_path: &std::path::Path,
     package_name: &str,
     toml_version: TomlVersion,
@@ -156,7 +156,7 @@ fn pyproject_goto_declaration_enabled(
 }
 
 pub fn get_current_declaration(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     pyproject_toml_uri: &tombi_uri::Uri,
 ) -> Option<tombi_extension::Location> {

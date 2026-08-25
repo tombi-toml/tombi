@@ -15,7 +15,7 @@ use crate::{
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
 
-impl Validate for tombi_document_tree::Array {
+impl Validate for tombi_document_tree_syntax::Array {
     fn validate<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::Accessor],
@@ -125,12 +125,12 @@ impl Validate for tombi_document_tree::Array {
 }
 
 async fn validate_array(
-    array_value: &tombi_document_tree::Array,
+    array_value: &tombi_document_tree_syntax::Array,
     accessors: &[tombi_schema_store::Accessor],
     array_schema: &tombi_schema_store::ArraySchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<&[tombi_ast_syntax::TombiValueCommentDirective]>,
     lint_rules: Option<&ArrayCommonLintRules>,
 ) -> Result<crate::Valid, crate::Invalid> {
     let mut total_diagnostics = vec![];
@@ -750,7 +750,7 @@ async fn validate_array(
 }
 
 async fn validate_array_without_schema(
-    array_value: &tombi_document_tree::Array,
+    array_value: &tombi_document_tree_syntax::Array,
     accessors: &[tombi_schema_store::Accessor],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Result<crate::Valid, crate::Invalid> {
@@ -798,7 +798,7 @@ async fn validate_array_without_schema(
 }
 
 fn get_duplicated_ranges(
-    array_value: &tombi_document_tree::Array,
+    array_value: &tombi_document_tree_syntax::Array,
 ) -> Option<Vec<tombi_text::Range>> {
     let values = array_value
         .values()

@@ -1,9 +1,18 @@
-use tower_lsp::lsp_types::InsertTextFormat;
-
 use crate::{
     TextEdit,
     completion::completion_hint::{AddLeadingComma, AddTrailingComma},
 };
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InsertTextFormat {
+    PlainText,
+    Snippet,
+}
+
+impl InsertTextFormat {
+    pub const PLAIN_TEXT: Self = Self::PlainText;
+    pub const SNIPPET: Self = Self::Snippet;
+}
 
 use super::CompletionHint;
 
@@ -572,36 +581,5 @@ fn head_comma_text_edits(
         }])
     } else {
         None
-    }
-}
-
-impl tombi_text::FromLsp<InsertReplaceEdit> for tower_lsp::lsp_types::InsertReplaceEdit {
-    fn from_lsp(
-        source: InsertReplaceEdit,
-        line_index: &tombi_text::LineIndex,
-    ) -> tower_lsp::lsp_types::InsertReplaceEdit {
-        tower_lsp::lsp_types::InsertReplaceEdit {
-            new_text: source.new_text,
-            insert: tombi_text::IntoLsp::into_lsp(source.insert, line_index),
-            replace: tombi_text::IntoLsp::into_lsp(source.replace, line_index),
-        }
-    }
-}
-
-impl tombi_text::FromLsp<CompletionTextEdit> for tower_lsp::lsp_types::CompletionTextEdit {
-    fn from_lsp(
-        source: CompletionTextEdit,
-        line_index: &tombi_text::LineIndex,
-    ) -> tower_lsp::lsp_types::CompletionTextEdit {
-        match source {
-            CompletionTextEdit::Edit(text_edit) => tower_lsp::lsp_types::CompletionTextEdit::Edit(
-                tombi_text::IntoLsp::into_lsp(text_edit, line_index),
-            ),
-            CompletionTextEdit::InsertAndReplace(insert_replace_edit) => {
-                tower_lsp::lsp_types::CompletionTextEdit::InsertAndReplace(
-                    tombi_text::IntoLsp::into_lsp(insert_replace_edit, line_index),
-                )
-            }
-        }
     }
 }

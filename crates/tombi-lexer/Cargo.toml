@@ -7,7 +7,7 @@ license.workspace = true
 
 [dependencies]
 tombi-regex.workspace = true
-tombi-syntax.workspace = true
+tombi-ast-syntax.workspace = true
 tombi-text.workspace = true
 
 [dev-dependencies]

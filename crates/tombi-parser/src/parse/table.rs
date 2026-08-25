@@ -1,5 +1,5 @@
-use tombi_syntax::SyntaxKind::*;
-use tombi_syntax::T;
+use tombi_ast_syntax::SyntaxKind::*;
+use tombi_ast_syntax::T;
 
 use crate::{
     ErrorKind::*,
@@ -9,7 +9,7 @@ use crate::{
     token_set::TS_NEXT_SECTION,
 };
 
-impl Parse for tombi_ast::Table {
+impl Parse for tombi_ast_syntax::Table {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 
@@ -19,7 +19,7 @@ impl Parse for tombi_ast::Table {
 
         p.eat(T!['[']);
 
-        tombi_ast::Keys::parse(p);
+        tombi_ast_syntax::Keys::parse(p);
 
         if !p.eat(T![']']) {
             invalid_line(p, ExpectedBracketEnd);
@@ -34,14 +34,14 @@ impl Parse for tombi_ast::Table {
         loop {
             while p.eat(LINE_BREAK) {}
 
-            Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
+            Vec::<tombi_ast_syntax::DanglingCommentGroup>::parse(p);
 
             let n = peek_leading_comments(p);
             if p.nth_at_ts(n, TS_NEXT_SECTION) {
                 break;
             }
 
-            tombi_ast::KeyValueGroup::parse(p);
+            tombi_ast_syntax::KeyValueGroup::parse(p);
 
             if !p.at_ts(TS_LINE_END) {
                 invalid_line(p, ExpectedLineBreak);
@@ -327,7 +327,7 @@ mod test {
             "#
         ) -> Ok(|root| -> {
             let table = root.items().find_map(|item| match item {
-                tombi_ast::RootItem::Table(table) => Some(table),
+                tombi_ast_syntax::RootItem::Table(table) => Some(table),
                 _ => None,
             });
 

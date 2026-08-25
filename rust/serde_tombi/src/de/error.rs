@@ -22,7 +22,7 @@ enum InnerError {
     Parser(Vec<tombi_parser::Error>),
 
     #[error("{}", .0.iter().map(|e| e.to_string()).collect_vec().join(", "))]
-    DocumentTree(Vec<tombi_document_tree::Error>),
+    DocumentTree(Vec<tombi_document_tree_syntax::Error>),
 }
 
 impl From<InnerError> for Error {
@@ -49,8 +49,8 @@ impl From<Vec<tombi_parser::Error>> for Error {
     }
 }
 
-impl From<Vec<tombi_document_tree::Error>> for Error {
-    fn from(errors: Vec<tombi_document_tree::Error>) -> Self {
+impl From<Vec<tombi_document_tree_syntax::Error>> for Error {
+    fn from(errors: Vec<tombi_document_tree_syntax::Error>) -> Self {
         Self(Box::new(InnerError::DocumentTree(errors)))
     }
 }

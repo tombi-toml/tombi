@@ -3,7 +3,6 @@ pub mod definitions;
 use std::fmt::Write;
 
 use itertools::Either;
-use tombi_ast::AstNode;
 use tombi_config::{IndentStyle, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use unicode_segmentation::UnicodeSegmentation;
@@ -52,20 +51,15 @@ impl<'a> Formatter<'a> {
     pub async fn format(mut self, source: &str) -> Result<String, Vec<Diagnostic>> {
         let parsed = tombi_parser::parse(source);
 
-        let (source_schema, tombi_document_comment_directive) =
-            if let Some(root) = tombi_ast::Root::cast(parsed.syntax_node()) {
-                (
-                    self.schema_store
-                        .resolve_source_schema_from_ast(&root, self.source_uri_or_path)
-                        .await
-                        .ok()
-                        .flatten(),
-                    tombi_validator::comment_directive::get_tombi_document_comment_directive(&root)
-                        .await,
-                )
-            } else {
-                (None, None)
-            };
+        let root = parsed.root();
+        let (source_schema, tombi_document_comment_directive) = (
+            self.schema_store
+                .resolve_source_schema_from_ast(&root, self.source_uri_or_path)
+                .await
+                .ok()
+                .flatten(),
+            tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await,
+        );
 
         if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive
             && let Some(format) = &tombi_document_comment_directive.format
@@ -121,7 +115,7 @@ impl<'a> Formatter<'a> {
             Either::Right(path) => Some(path.to_path_buf()),
         });
 
-        let root = tombi_ast_editor::Editor::new(
+        let root = crate::editor::edit(
             root,
             source_path.as_deref(),
             &tombi_schema_store::SchemaContext {
@@ -153,7 +147,6 @@ impl<'a> Formatter<'a> {
                     }),
             },
         )
-        .edit()
         .await;
 
         log::trace!("edited TOML AST: {:#?}", root);
@@ -266,7 +259,6 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    #[allow(dead_code)]
     #[inline]
     pub(crate) fn trailing_comment_alignment_width<'b, T: Format + Sized + 'b>(
         &mut self,
@@ -357,7 +349,7 @@ impl<'a> Formatter<'a> {
     #[inline]
     pub(crate) fn key_value_equal_alignment_width(
         &self,
-        key_values: impl Iterator<Item = &'a tombi_ast::KeyValue>,
+        key_values: impl Iterator<Item = &'a tombi_ast_syntax::KeyValue>,
     ) -> Option<AlignmentWidth> {
         if self.definitions.key_value_equal_alignment {
             key_values

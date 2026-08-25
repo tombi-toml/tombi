@@ -1,4 +1,4 @@
-use tombi_ast::DanglingCommentGroupOr;
+use tombi_ast_syntax::DanglingCommentGroupOr;
 use tombi_config::SeverityLevel;
 use tombi_text::Range;
 
@@ -6,8 +6,8 @@ use crate::{Diagnostic, DiagnosticKind, Rule};
 
 pub struct MissingCommaRule;
 
-impl Rule<tombi_ast::Array> for MissingCommaRule {
-    async fn check(node: &tombi_ast::Array, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::Array> for MissingCommaRule {
+    async fn check(node: &tombi_ast_syntax::Array, l: &mut crate::Linter<'_>) {
         let mut values_with_comma = vec![];
         for group in node.value_with_comma_groups() {
             if let DanglingCommentGroupOr::ItemGroup(value_group) = group {
@@ -28,8 +28,8 @@ impl Rule<tombi_ast::Array> for MissingCommaRule {
     }
 }
 
-impl Rule<tombi_ast::InlineTable> for MissingCommaRule {
-    async fn check(node: &tombi_ast::InlineTable, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::InlineTable> for MissingCommaRule {
+    async fn check(node: &tombi_ast_syntax::InlineTable, l: &mut crate::Linter<'_>) {
         let mut key_values_with_comma = vec![];
         for group in node.key_value_with_comma_groups() {
             if let DanglingCommentGroupOr::ItemGroup(key_value_group) = group {

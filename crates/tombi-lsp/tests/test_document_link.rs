@@ -442,14 +442,14 @@ mod document_link_tests {
                 version = "0.1.0"
 
                 [dependencies]
-                tombi-ast = { workspace = true }
+                tombi-ast-syntax = { workspace = true }
 
                 [workspace]
                 members = ["crates/*"]
 
                 [workspace.dependencies]
                 serde = "1.0"
-                tombi-ast = { path = "crates/tombi-ast" }
+                tombi-ast-syntax = { path = "crates/tombi-ast-syntax" }
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
                 ConfigPath(cargo_document_link_all_enabled_config_path()),
@@ -460,13 +460,13 @@ mod document_link_tests {
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
                 },
                 {
-                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
-                    range: 12:0..12:9,
+                    path: project_root_path().join("crates/tombi-ast-syntax/Cargo.toml"),
+                    range: 12:0..12:16,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
                 },
                 {
-                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
-                    range: 12:22..12:38,
+                    path: project_root_path().join("crates/tombi-ast-syntax/Cargo.toml"),
+                    range: 12:29..12:52,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::PathFile,
                 },
                 {
@@ -475,13 +475,13 @@ mod document_link_tests {
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoTomlFirstMember,
                 },
                 {
-                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
-                    range: 5:0..5:9,
+                    path: project_root_path().join("crates/tombi-ast-syntax/Cargo.toml"),
+                    range: 5:0..5:16,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
                 },
                 {
                     path: project_root_path().join("Cargo.toml"),
-                    range: 5:14..5:30,
+                    range: 5:21..5:37,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::WorkspaceCargoToml,
                 },
             ]));
@@ -555,19 +555,19 @@ mod document_link_tests {
                 name = "test"
 
                 [target.'cfg(unix)'.dependencies]
-                tombi-ast = { path = "../tombi-ast" }
+                tombi-ast-syntax = { path = "../tombi-ast-syntax" }
                 "#,
                 SourcePath(project_root_path().join("crates/tombi-lsp/Cargo.toml")),
                 ConfigPath(cargo_document_link_all_enabled_config_path()),
             ) -> Ok(Some(vec![
                 {
-                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
-                    range: 4:0..4:9,
+                    path: project_root_path().join("crates/tombi-ast-syntax/Cargo.toml"),
+                    range: 4:0..4:16,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
                 },
                 {
-                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
-                    range: 4:22..4:34,
+                    path: project_root_path().join("crates/tombi-ast-syntax/Cargo.toml"),
+                    range: 4:29..4:48,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::PathFile,
                 }
             ]));

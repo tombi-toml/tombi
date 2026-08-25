@@ -12,7 +12,7 @@ use super::branch_result::collect_branch_completions;
 pub fn find_any_of_completion_items<'a: 'b, 'b, T>(
     value: &'a T,
     position: tombi_text::Position,
-    keys: &'a [tombi_document_tree::Key],
+    keys: &'a [tombi_document_tree_syntax::Key],
     accessors: &'a [Accessor],
     any_of_schema: &'a tombi_schema_store::AnyOfSchema,
     current_schema: &'a CurrentSchema<'a>,

@@ -19,9 +19,9 @@ use crate::{Backend, remote_file::open_remote_file};
 use self::type_definition_source::TypeDefinitionSource;
 
 pub async fn get_type_definition(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     position: tombi_text::Position,
-    keys: &[tombi_document_tree::Key],
+    keys: &[tombi_document_tree_syntax::Key],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Vec<TypeDefinition> {
     let Some(source) =
@@ -52,7 +52,8 @@ pub async fn get_type_definition(
             accessors,
             current_schema,
         } => {
-            let Some((_, value)) = tombi_document_tree::dig_accessors(document_tree, &accessors)
+            let Some((_, value)) =
+                tombi_document_tree_syntax::dig_accessors(document_tree, &accessors)
             else {
                 return Vec::new();
             };
@@ -174,7 +175,7 @@ pub(super) trait GetTypeDefinition {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
@@ -185,13 +186,13 @@ pub(super) async fn adjacent_type_definition<
     T: GetTypeDefinition
         + Sync
         + Send
-        + tombi_document_tree::ValueImpl
+        + tombi_document_tree_syntax::ValueImpl
         + tombi_validator::Validate
         + std::fmt::Debug,
 >(
     value: &T,
     position: tombi_text::Position,
-    keys: &[tombi_document_tree::Key],
+    keys: &[tombi_document_tree_syntax::Key],
     accessors: &[Accessor],
     current_schema: Option<&CurrentSchema<'_>>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,

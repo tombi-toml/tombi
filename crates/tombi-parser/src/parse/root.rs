@@ -1,4 +1,4 @@
-use tombi_syntax::{SyntaxKind::*, T};
+use tombi_ast_syntax::{SyntaxKind::*, T};
 
 use super::{Parse, TS_LINE_END, invalid_line};
 use crate::{
@@ -8,21 +8,21 @@ use crate::{
     token_set::TS_NEXT_SECTION,
 };
 
-impl Parse for tombi_ast::Root {
+impl Parse for tombi_ast_syntax::Root {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 
         loop {
             while p.eat(LINE_BREAK) {}
 
-            Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
+            Vec::<tombi_ast_syntax::DanglingCommentGroup>::parse(p);
 
             let n = peek_leading_comments(p);
             if p.nth_at_ts(n, TS_NEXT_SECTION) {
                 break;
             }
 
-            tombi_ast::KeyValueGroup::parse(p);
+            tombi_ast_syntax::KeyValueGroup::parse(p);
 
             if !p.at_ts(TS_LINE_END) {
                 invalid_line(p, ExpectedLineBreak);
@@ -36,9 +36,9 @@ impl Parse for tombi_ast::Root {
             if p.nth_at(n, EOF) {
                 break;
             } else if p.nth_at(n, T!("[[")) {
-                tombi_ast::ArrayOfTable::parse(p);
+                tombi_ast_syntax::ArrayOfTable::parse(p);
             } else if p.nth_at(n, T!['[']) {
-                tombi_ast::Table::parse(p);
+                tombi_ast_syntax::Table::parse(p);
             } else {
                 unknwon_line(p);
             }
@@ -66,6 +66,130 @@ fn unknwon_line(p: &mut Parser<'_>) {
 #[cfg(test)]
 mod test {
     use crate::test_parser;
+
+    test_parser! {
+        #[test]
+        fn preserves_grapheme_columns_after_combining_character(
+            "\"e\u{301}\" = true"
+        ) -> Ok(|root| -> {
+            let value = root.key_values().next().unwrap().value().unwrap();
+            value.range()
+                == tombi_text::Range::new(
+                    tombi_text::Position::new(0, 6),
+                    tombi_text::Position::new(0, 10),
+                )
+                && matches!(
+                    root.nodes_at_position(tombi_text::Position::new(0, 6)).next(),
+                    Some(tombi_ast_syntax::TomlNode::Boolean(_))
+                )
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn preserves_grapheme_columns_after_zwj_emoji(
+            "\"👨‍👩‍👧‍👦\" = true"
+        ) -> Ok(|root| -> {
+            let value = root.key_values().next().unwrap().value().unwrap();
+            value.range()
+                == tombi_text::Range::new(
+                    tombi_text::Position::new(0, 6),
+                    tombi_text::Position::new(0, 10),
+                )
+                && matches!(
+                    root.nodes_at_position(tombi_text::Position::new(0, 6)).next(),
+                    Some(tombi_ast_syntax::TomlNode::Boolean(_))
+                )
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn preserves_grapheme_columns_after_unicode_checkpoint(
+            &format!("\"{}\" = true", "é".repeat(80))
+        ) -> Ok(|root| -> {
+            let value = root.key_values().next().unwrap().value().unwrap();
+            value.range()
+                == tombi_text::Range::new(
+                    tombi_text::Position::new(0, 85),
+                    tombi_text::Position::new(0, 89),
+                )
+                && matches!(
+                    root.nodes_at_position(tombi_text::Position::new(0, 85)).next(),
+                    Some(tombi_ast_syntax::TomlNode::Boolean(_))
+                )
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn resolves_end_of_64_grapheme_unicode_line(
+            &format!("é = \"{}\"", "a".repeat(58))
+        ) -> Ok(|root| -> {
+            root.key_values().next().unwrap().value().unwrap().range().end
+                == tombi_text::Position::new(0, 64)
+                && matches!(
+                    root.nodes_at_position(tombi_text::Position::new(0, 64)).next(),
+                    Some(tombi_ast_syntax::TomlNode::BasicString(_))
+                )
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn resolves_end_of_128_grapheme_unicode_line(
+            &format!("é = \"{}\"", "a".repeat(122))
+        ) -> Ok(|root| -> {
+            root.key_values().next().unwrap().value().unwrap().range().end
+                == tombi_text::Position::new(0, 128)
+                && matches!(
+                    root.nodes_at_position(tombi_text::Position::new(0, 128)).next(),
+                    Some(tombi_ast_syntax::TomlNode::BasicString(_))
+                )
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn root_items_include_top_level_key_values(
+            "a = 1\n[t]\nb = 2"
+        ) -> Ok(|root| -> {
+            let concrete: Vec<_> = root.items().map(|item| match item {
+                tombi_ast_syntax::RootItem::KeyValue(_) => "key-value",
+                tombi_ast_syntax::RootItem::Table(_) => "table",
+                tombi_ast_syntax::RootItem::ArrayOfTable(_) => "array-of-table",
+            }).collect();
+            let public: Vec<_> = tombi_ast::RootNode::items(&root).map(|item| match item {
+                tombi_ast_syntax::RootItem::KeyValue(_) => "key-value",
+                tombi_ast_syntax::RootItem::Table(_) => "table",
+                tombi_ast_syntax::RootItem::ArrayOfTable(_) => "array-of-table",
+            }).collect();
+
+            concrete == ["key-value", "table"] && public == concrete
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn resolves_ascii_eof_after_standalone_carriage_return(
+            "a\r"
+        ) -> RawAssert(|parsed| {
+            let root = parsed.root();
+            !parsed.errors.is_empty()
+                && root.nodes_at_position(root.range().end).next().is_some()
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn resolves_unicode_eof_after_standalone_carriage_return(
+            "é\r"
+        ) -> RawAssert(|parsed| {
+            let root = parsed.root();
+            !parsed.errors.is_empty()
+                && root.nodes_at_position(root.range().end).next().is_some()
+        })
+    }
 
     test_parser! {
         #[test]

@@ -76,11 +76,11 @@ impl From<Array> for Vec<Value> {
     }
 }
 
-impl IntoDocument<Array> for tombi_document_tree::Array {
+impl IntoDocument<Array> for tombi_document_tree_syntax::Array {
     fn into_document(self, toml_version: tombi_toml_version::TomlVersion) -> Array {
         Array {
             kind: self.kind().into(),
-            values: Vec::<tombi_document_tree::Value>::from(self.values())
+            values: Vec::<tombi_document_tree_syntax::Value>::from(self.values())
                 .into_iter()
                 .map(|value| value.into_document(toml_version))
                 .collect(),

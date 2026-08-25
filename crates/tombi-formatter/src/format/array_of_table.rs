@@ -1,18 +1,18 @@
 use std::fmt::Write;
 
 use itertools::Itertools;
-use tombi_ast::DanglingCommentGroupOr;
+use tombi_ast_syntax::DanglingCommentGroupOr;
 
 use crate::{Format, format::filter_map_unique_keys, types::WithAlignmentHint};
 
-impl Format for tombi_ast::ArrayOfTable {
+impl Format for tombi_ast_syntax::ArrayOfTable {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let header = self.header().unwrap();
         let toml_version = f.toml_version();
 
         if f.indent_sub_tables() {
             filter_map_unique_keys(
-                header.keys(),
+                header.clone(),
                 self.parent_table_or_array_of_table_keys(toml_version),
                 toml_version,
             )
@@ -51,7 +51,7 @@ impl Format for tombi_ast::ArrayOfTable {
 
         if f.indent_sub_tables() {
             filter_map_unique_keys(
-                header.keys(),
+                header,
                 self.parent_table_or_array_of_table_keys(toml_version),
                 toml_version,
             )

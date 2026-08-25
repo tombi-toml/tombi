@@ -1,9 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
-use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{TryIntoDocumentTree, Value, dig_keys};
+use tombi_document_tree_syntax::{TryIntoDocumentTree, Value, dig_keys};
 use tombi_extension::{file_cache_version, get_or_load_json};
 use tombi_hashmap::{HashMap, HashSet};
 
@@ -58,7 +57,7 @@ pub(crate) fn load_cargo_lock_from_path(
     toml_version: TomlVersion,
 ) -> Option<CargoLock> {
     let cargo_lock_text = tombi_fs::read_to_string(cargo_lock_path).ok()?;
-    let root = tombi_ast::Root::cast(tombi_parser::parse(&cargo_lock_text).into_syntax_node())?;
+    let root = tombi_parser::parse(&cargo_lock_text).into_root();
     let document_tree = root.try_into_document_tree(toml_version).ok()?;
 
     CargoLock::from_document_tree(&document_tree)
@@ -86,7 +85,9 @@ impl CargoLock {
         }
     }
 
-    fn from_document_tree(document_tree: &tombi_document_tree::DocumentTree) -> Option<Self> {
+    fn from_document_tree(
+        document_tree: &tombi_document_tree_syntax::DocumentTree,
+    ) -> Option<Self> {
         let (_, Value::Array(packages)) = dig_keys(document_tree, &["package"])? else {
             return None;
         };

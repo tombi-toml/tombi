@@ -1,4 +1,4 @@
-use tombi_syntax::{SyntaxKind::*, T};
+use tombi_ast_syntax::{SyntaxKind::*, T};
 
 use super::Parse;
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
     token_set::TS_NEXT_SECTION,
 };
 
-impl Parse for tombi_ast::ArrayOfTable {
+impl Parse for tombi_ast_syntax::ArrayOfTable {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 
@@ -19,7 +19,7 @@ impl Parse for tombi_ast::ArrayOfTable {
 
         p.eat(T!("[["));
 
-        tombi_ast::Keys::parse(p);
+        tombi_ast_syntax::Keys::parse(p);
 
         if !p.eat(T!("]]")) {
             invalid_line(p, ExpectedDoubleBracketEnd);
@@ -34,14 +34,14 @@ impl Parse for tombi_ast::ArrayOfTable {
         loop {
             while p.eat(LINE_BREAK) {}
 
-            Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
+            Vec::<tombi_ast_syntax::DanglingCommentGroup>::parse(p);
 
             let n = peek_leading_comments(p);
             if p.nth_at_ts(n, TS_NEXT_SECTION) {
                 break;
             }
 
-            tombi_ast::KeyValueGroup::parse(p);
+            tombi_ast_syntax::KeyValueGroup::parse(p);
 
             if !p.at_ts(TS_LINE_END) {
                 invalid_line(p, ExpectedLineBreak);

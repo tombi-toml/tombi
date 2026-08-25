@@ -3,21 +3,13 @@ name = "tombi-ast"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
+repository.workspace = true
 license.workspace = true
 
 [dependencies]
-itertools.workspace = true
-thiserror.workspace = true
-tombi-accessor.workspace = true
-tombi-syntax.workspace = true
+tombi-date-time.workspace = true
 tombi-text.workspace = true
-tombi-toml-text.workspace = true
 tombi-toml-version.workspace = true
-tombi-uri.workspace = true
-
-[dev-dependencies]
-pretty_assertions = { workspace = true }
-tempfile.workspace = true
 
 [lints]
 workspace = true

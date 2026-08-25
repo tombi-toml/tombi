@@ -6,7 +6,7 @@ use tombi_comment_directive::{
     document::TombiDocumentDirectiveContent,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
-use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 use tombi_uri::SchemaUri;
 
 use crate::{
@@ -21,7 +21,7 @@ use crate::{
 };
 
 pub async fn get_document_comment_directive_hover_content(
-    root: &tombi_ast::Root,
+    root: &tombi_ast_syntax::Root,
     position: tombi_text::Position,
     source_path: Option<&std::path::Path>,
 ) -> Option<HoverContent> {

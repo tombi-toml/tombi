@@ -37,11 +37,11 @@ use super::{
     schema_completion::SchemaCompletion,
 };
 
-impl FindCompletionContents for tombi_document_tree::Value {
+impl FindCompletionContents for tombi_document_tree_syntax::Value {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -71,7 +71,7 @@ impl FindCompletionContents for tombi_document_tree::Value {
             }
 
             let instance_type = tombi_schema_store::SchemaType::from_value_type(
-                tombi_document_tree::ValueImpl::value_type(self),
+                tombi_document_tree_syntax::ValueImpl::value_type(self),
             );
             let projected_schema = current_schema.and_then(|schema| {
                 instance_type.and_then(|instance_type| {
@@ -227,7 +227,7 @@ impl FindCompletionContents for tombi_document_tree::Value {
                                 if range.end < position =>
                             {
                                 vec![CompletionContent::new_type_hint_key(
-                                    &last_key.value,
+                                    last_key.value(),
                                     last_key.range(),
                                     None,
                                     completion_hint,
@@ -244,7 +244,7 @@ impl FindCompletionContents for tombi_document_tree::Value {
 }
 
 pub fn type_hint_value(
-    key: Option<&tombi_document_tree::Key>,
+    key: Option<&tombi_document_tree_syntax::Key>,
     position: tombi_text::Position,
     schema_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,
@@ -281,7 +281,7 @@ pub fn type_hint_value(
         };
         if need_key_hint {
             completion_contents.push(CompletionContent::new_type_hint_key(
-                &key.value,
+                key.value(),
                 key.range(),
                 schema_uri,
                 completion_hint,

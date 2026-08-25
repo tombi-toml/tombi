@@ -2,7 +2,7 @@ use itertools::Itertools;
 use tombi_comment_directive::value::{
     LocalDateTimeCommonFormatRules, LocalDateTimeCommonLintRules,
 };
-use tombi_document_tree::LocalDateTime;
+use tombi_document_tree_syntax::LocalDateTime;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::SchemaView;
 use tombi_severity_level::SeverityLevelDefaultError;
@@ -123,7 +123,7 @@ async fn validate_local_date_time(
     local_date_time_schema: &tombi_schema_store::LocalDateTimeSchema,
     current_schema: &tombi_schema_store::CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<&[tombi_ast_syntax::TombiValueCommentDirective]>,
     lint_rules: Option<&LocalDateTimeCommonLintRules>,
 ) -> Result<crate::Valid, crate::Invalid> {
     let mut diagnostics = vec![];

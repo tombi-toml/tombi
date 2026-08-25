@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use std::fmt::Write;
 
-use tombi_ast::AstNode;
+use tombi_ast_syntax::AstNode;
 
 use super::LiteralNode;
 use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
@@ -48,21 +48,21 @@ macro_rules! impl_date_time_format {
 }
 
 impl_date_time_format! {
-    impl Format for tombi_ast::OffsetDateTime;
+    impl Format for tombi_ast_syntax::OffsetDateTime;
 }
 
 impl_date_time_format! {
-    impl Format for tombi_ast::LocalDateTime;
+    impl Format for tombi_ast_syntax::LocalDateTime;
 }
 
-impl LiteralNode for tombi_ast::LocalDate {
-    fn token(&self) -> Option<tombi_syntax::SyntaxToken> {
+impl LiteralNode for tombi_ast_syntax::LocalDate {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
         self.token()
     }
 }
 
-impl LiteralNode for tombi_ast::LocalTime {
-    fn token(&self) -> Option<tombi_syntax::SyntaxToken> {
+impl LiteralNode for tombi_ast_syntax::LocalTime {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
         self.token()
     }
 }

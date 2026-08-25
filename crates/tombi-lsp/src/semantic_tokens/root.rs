@@ -1,8 +1,8 @@
-use tombi_ast::DanglingCommentGroupOr;
+use tombi_ast_syntax::DanglingCommentGroupOr;
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder};
 
-impl AppendSemanticTokens for tombi_ast::Root {
+impl AppendSemanticTokens for tombi_ast_syntax::Root {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         let source_path = builder.text_document_uri.to_file_path().ok();
         let schema_document_directive =
@@ -49,7 +49,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
     }
 }
 
-impl AppendSemanticTokens for tombi_ast::TableOrArrayOfTable {
+impl AppendSemanticTokens for tombi_ast_syntax::TableOrArrayOfTable {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         match self {
             Self::Table(table) => table.append_semantic_tokens(builder),

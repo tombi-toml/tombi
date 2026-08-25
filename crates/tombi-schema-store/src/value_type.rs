@@ -191,20 +191,20 @@ impl std::fmt::Display for ValueType {
 }
 
 #[cfg(feature = "document-tree")]
-impl From<tombi_document_tree::ValueType> for ValueType {
-    fn from(value_type: tombi_document_tree::ValueType) -> Self {
+impl From<tombi_document_tree_syntax::ValueType> for ValueType {
+    fn from(value_type: tombi_document_tree_syntax::ValueType) -> Self {
         match value_type {
-            tombi_document_tree::ValueType::Boolean => ValueType::Boolean,
-            tombi_document_tree::ValueType::Integer => ValueType::Integer,
-            tombi_document_tree::ValueType::Float => ValueType::Float,
-            tombi_document_tree::ValueType::String => ValueType::String,
-            tombi_document_tree::ValueType::OffsetDateTime => ValueType::OffsetDateTime,
-            tombi_document_tree::ValueType::LocalDateTime => ValueType::LocalDateTime,
-            tombi_document_tree::ValueType::LocalDate => ValueType::LocalDate,
-            tombi_document_tree::ValueType::LocalTime => ValueType::LocalTime,
-            tombi_document_tree::ValueType::Array => ValueType::Array,
-            tombi_document_tree::ValueType::Table => ValueType::Table,
-            tombi_document_tree::ValueType::Incomplete => unreachable!("incomplete value"),
+            tombi_document_tree_syntax::ValueType::Boolean => ValueType::Boolean,
+            tombi_document_tree_syntax::ValueType::Integer => ValueType::Integer,
+            tombi_document_tree_syntax::ValueType::Float => ValueType::Float,
+            tombi_document_tree_syntax::ValueType::String => ValueType::String,
+            tombi_document_tree_syntax::ValueType::OffsetDateTime => ValueType::OffsetDateTime,
+            tombi_document_tree_syntax::ValueType::LocalDateTime => ValueType::LocalDateTime,
+            tombi_document_tree_syntax::ValueType::LocalDate => ValueType::LocalDate,
+            tombi_document_tree_syntax::ValueType::LocalTime => ValueType::LocalTime,
+            tombi_document_tree_syntax::ValueType::Array => ValueType::Array,
+            tombi_document_tree_syntax::ValueType::Table => ValueType::Table,
+            tombi_document_tree_syntax::ValueType::Incomplete => unreachable!("incomplete value"),
         }
     }
 }

@@ -32,8 +32,8 @@ impl SchemaType {
     /// TOML date/time values are validated as strings, and `Incomplete` has no
     /// instance type yet.
     #[cfg(feature = "document-tree")]
-    pub fn from_value_type(value_type: tombi_document_tree::ValueType) -> Option<Self> {
-        use tombi_document_tree::ValueType;
+    pub fn from_value_type(value_type: tombi_document_tree_syntax::ValueType) -> Option<Self> {
+        use tombi_document_tree_syntax::ValueType;
 
         match value_type {
             ValueType::Boolean => Some(Self::Boolean),

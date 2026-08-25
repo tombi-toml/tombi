@@ -8,7 +8,7 @@ use super::{GetTypeDefinition, TypeDefinition, schema_type_definition};
 pub fn get_all_of_type_definition<'a: 'b, 'b, T>(
     value: &'a T,
     position: tombi_text::Position,
-    keys: &'a [tombi_document_tree::Key],
+    keys: &'a [tombi_document_tree_syntax::Key],
     accessors: &'a [tombi_schema_store::Accessor],
     all_of_schema: &'a tombi_schema_store::AllOfSchema,
     schema_uri: &'a SchemaUri,
@@ -17,7 +17,7 @@ pub fn get_all_of_type_definition<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Vec<TypeDefinition>>
 where
-    T: GetTypeDefinition + tombi_document_tree::ValueImpl + Sync + Send + std::fmt::Debug,
+    T: GetTypeDefinition + tombi_document_tree_syntax::ValueImpl + Sync + Send + std::fmt::Debug,
 {
     log::trace!("value: {:?}", value);
     log::trace!("keys: {:?}", keys);
@@ -70,7 +70,7 @@ impl GetTypeDefinition for tombi_schema_store::AllOfSchema {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         _position: tombi_text::Position,
-        _keys: &'a [tombi_document_tree::Key],
+        _keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,

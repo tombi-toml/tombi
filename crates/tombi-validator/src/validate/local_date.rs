@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use tombi_comment_directive::value::{LocalDateCommonFormatRules, LocalDateCommonLintRules};
-use tombi_document_tree::LocalDate;
+use tombi_document_tree_syntax::LocalDate;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::SchemaView;
 use tombi_severity_level::SeverityLevelDefaultError;
@@ -121,7 +121,7 @@ async fn validate_local_date(
     local_date_schema: &tombi_schema_store::LocalDateSchema,
     current_schema: &tombi_schema_store::CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<&[tombi_ast_syntax::TombiValueCommentDirective]>,
     lint_rules: Option<&LocalDateCommonLintRules>,
 ) -> Result<crate::Valid, crate::Invalid> {
     let mut diagnostics = vec![];

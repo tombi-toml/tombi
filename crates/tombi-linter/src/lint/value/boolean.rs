@@ -2,7 +2,7 @@ use tombi_future::Boxable;
 
 use crate::Lint;
 
-impl Lint for tombi_ast::Boolean {
+impl Lint for tombi_ast_syntax::Boolean {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,

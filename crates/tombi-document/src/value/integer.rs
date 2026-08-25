@@ -26,8 +26,8 @@ impl Integer {
     }
 }
 
-impl From<tombi_document_tree::Integer> for Integer {
-    fn from(node: tombi_document_tree::Integer) -> Self {
+impl From<tombi_document_tree_syntax::Integer> for Integer {
+    fn from(node: tombi_document_tree_syntax::Integer) -> Self {
         Self {
             kind: node.kind(),
             value: node.value(),

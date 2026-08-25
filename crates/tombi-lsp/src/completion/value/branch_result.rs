@@ -47,7 +47,7 @@ pub(super) async fn collect_branch_completions<'a, T>(
     applicator: tombi_validator::Applicator,
     value: &'a T,
     position: tombi_text::Position,
-    keys: &'a [tombi_document_tree::Key],
+    keys: &'a [tombi_document_tree_syntax::Key],
     accessors: &'a [Accessor],
     resolved_schemas: &'a [CurrentSchema<'a>],
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -56,8 +56,8 @@ pub(super) async fn collect_branch_completions<'a, T>(
 where
     T: FindCompletionContents + tombi_validator::Validate + Sync + Send + std::fmt::Debug,
 {
-    let first_key = (keys.len() == 1 && !keys[0].value.is_empty())
-        .then(|| SchemaAccessor::Key(keys[0].value.clone()));
+    let first_key = (keys.len() == 1 && !keys[0].value().is_empty())
+        .then(|| SchemaAccessor::Key(keys[0].value().to_owned()));
     let evaluation = tombi_validator::evaluate_applicator(
         applicator,
         value,

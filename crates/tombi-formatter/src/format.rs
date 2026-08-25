@@ -10,9 +10,7 @@ use std::borrow::Cow;
 use std::fmt::Write;
 
 use itertools::Itertools;
-use tombi_ast::{AstChildren, AstNode};
 use tombi_config::{StringQuoteStyle, TomlVersion};
-use tombi_syntax::SyntaxKind::{LINE_BREAK, WHITESPACE};
 
 use crate::types::AlignmentWidth;
 
@@ -57,31 +55,16 @@ fn write_trailing_comment_alignment_space(
 }
 
 fn filter_map_unique_keys<'a>(
-    header_keys: AstChildren<tombi_ast::Key>,
-    parent_header_keys: impl Iterator<Item = AstChildren<tombi_ast::Key>> + 'a,
+    header_keys: tombi_ast_syntax::Keys,
+    parent_header_keys: impl Iterator<Item = tombi_ast_syntax::Keys> + 'a,
     toml_version: TomlVersion,
 ) -> impl Iterator<Item = Vec<String>> + 'a {
     parent_header_keys
-        .filter(move |keys| keys.clone().count() < header_keys.clone().count())
-        .map(move |keys| keys.map(|key| key.to_raw_text(toml_version)).collect_vec())
+        .filter(move |keys| keys.keys().count() < header_keys.keys().count())
+        .map(move |keys| {
+            keys.keys()
+                .map(|key| key.content_lossy(toml_version))
+                .collect_vec()
+        })
         .unique()
-}
-
-pub(crate) fn blank_lines_before<T: AstNode>(node: &T) -> u8 {
-    let mut line_break_count = 0usize;
-    let mut current = node.syntax().prev_sibling_or_token();
-
-    while let Some(element) = current {
-        match element.kind() {
-            WHITESPACE => current = element.prev_sibling_or_token(),
-            LINE_BREAK => {
-                line_break_count += 1;
-                current = element.prev_sibling_or_token();
-            }
-            _ => break,
-        }
-    }
-
-    let blank_lines = line_break_count.saturating_sub(1);
-    u8::try_from(blank_lines).unwrap_or(u8::MAX)
 }

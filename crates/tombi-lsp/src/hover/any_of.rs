@@ -13,7 +13,7 @@ use super::{
 pub fn get_any_of_hover_content<'a: 'b, 'b, T>(
     value: &'a T,
     position: tombi_text::Position,
-    keys: &'a [tombi_document_tree::Key],
+    keys: &'a [tombi_document_tree_syntax::Key],
     accessors: &'a [tombi_schema_store::Accessor],
     any_of_schema: &'a tombi_schema_store::AnyOfSchema,
     schema_uri: &'a SchemaUri,
@@ -23,7 +23,7 @@ pub fn get_any_of_hover_content<'a: 'b, 'b, T>(
 ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>
 where
     T: GetHoverContent
-        + tombi_document_tree::ValueImpl
+        + tombi_document_tree_syntax::ValueImpl
         + tombi_validator::Validate
         + Sync
         + Send
@@ -183,7 +183,7 @@ impl GetHoverContent for tombi_schema_store::AnyOfSchema {
     fn get_hover_content<'a: 'b, 'b>(
         &'a self,
         _position: tombi_text::Position,
-        _keys: &'a [tombi_document_tree::Key],
+        _keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a SchemaContext,

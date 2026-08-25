@@ -21,7 +21,7 @@ use crate::{
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
 use crate::diagnostic::Patterns;
 
-impl Validate for tombi_document_tree::Table {
+impl Validate for tombi_document_tree_syntax::Table {
     fn validate<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::Accessor],
@@ -134,7 +134,7 @@ impl Validate for tombi_document_tree::Table {
 }
 
 async fn validate_table(
-    table_value: &tombi_document_tree::Table,
+    table_value: &tombi_document_tree_syntax::Table,
     accessors: &[tombi_schema_store::Accessor],
     table_schema: &tombi_schema_store::TableSchema,
     current_schema: &CurrentSchema<'_>,
@@ -166,12 +166,12 @@ async fn validate_table(
         let key_common_rules = key_rules.as_ref().map(|rules| &rules.common);
         let key_rules = key_rules.as_ref().map(|rules| &rules.value);
 
-        let accessor_raw_text = &key.value;
-        let accessor = Accessor::Key(accessor_raw_text.to_owned());
+        let accessor_text = key.value();
+        let accessor = Accessor::Key(accessor_text.to_owned());
         let new_accessors = accessors
             .iter()
             .cloned()
-            .chain(std::iter::once(Accessor::Key(accessor_raw_text.to_owned())))
+            .chain(std::iter::once(Accessor::Key(accessor_text.to_owned())))
             .collect_vec();
 
         let mut matched_key = false;
@@ -249,7 +249,7 @@ async fn validate_table(
                     log::warn!("invalid regex pattern property: {}", pattern_key);
                     continue;
                 };
-                if pattern.is_match(accessor_raw_text) {
+                if pattern.is_match(accessor_text) {
                     matched_key = true;
                     match table_schema
                         .resolve_pattern_property_schema(
@@ -418,7 +418,7 @@ async fn validate_table(
             // When it's absent, unevaluatedProperties must still run.
             let evaluated_by_additional_default = table_schema.additional_properties().is_some();
 
-            if !evaluated_properties.contains(accessor_raw_text)
+            if !evaluated_properties.contains(accessor_text)
                 && !validated_by_additional_schema
                 && !evaluated_by_additional_default
             {
@@ -475,7 +475,7 @@ async fn validate_table(
                 }
             }
 
-            if evaluated_properties.contains(accessor_raw_text)
+            if evaluated_properties.contains(accessor_text)
                 && table_schema.additional_properties() != Some(false)
             {
                 continue;
@@ -533,11 +533,11 @@ async fn validate_table(
         }
     }
 
-    let keys = table_value.keys().map(|key| &key.value).collect_vec();
+    let keys = table_value.keys().map(|key| key.value()).collect_vec();
 
     if let Some(required) = &table_schema.required {
         for required_key in required {
-            if !keys.contains(&required_key) {
+            if !keys.contains(&required_key.as_str()) {
                 assertion_failed = true;
                 let level = table_rules
                     .map(|rules| &rules.value)
@@ -654,14 +654,14 @@ async fn validate_table(
 
     if let Some(dependencies) = &table_schema.dependencies {
         for (dependent_key, dependency) in dependencies {
-            if !keys.contains(&dependent_key) {
+            if !keys.contains(&dependent_key.as_str()) {
                 continue;
             }
 
             match dependency {
                 tombi_schema_store::Dependency::Property(required_keys) => {
                     for required_key in required_keys {
-                        if !keys.contains(&required_key) {
+                        if !keys.contains(&required_key.as_str()) {
                             assertion_failed = true;
                             crate::Diagnostic {
                                 kind: Box::new(crate::DiagnosticKind::TableDependencyRequired {
@@ -735,12 +735,12 @@ async fn validate_table(
 
     if let Some(dependent_required) = &table_schema.dependent_required {
         for (dependent_key, required_keys) in dependent_required {
-            if !keys.contains(&dependent_key) {
+            if !keys.contains(&dependent_key.as_str()) {
                 continue;
             }
 
             for required_key in required_keys {
-                if !keys.contains(&required_key) {
+                if !keys.contains(&required_key.as_str()) {
                     assertion_failed = true;
                     crate::Diagnostic {
                         kind: Box::new(crate::DiagnosticKind::TableDependencyRequired {
@@ -760,7 +760,7 @@ async fn validate_table(
 
     if let Some(dependent_schemas) = &table_schema.dependent_schemas {
         for (dependent_key, schema_item) in dependent_schemas {
-            if !keys.contains(&dependent_key) {
+            if !keys.contains(&dependent_key.as_str()) {
                 continue;
             }
 
@@ -1003,7 +1003,7 @@ async fn validate_table(
 }
 
 fn collect_evaluated_properties_from_table_schema<'a>(
-    table_value: &'a tombi_document_tree::Table,
+    table_value: &'a tombi_document_tree_syntax::Table,
     accessors: &'a [tombi_schema_store::Accessor],
     table_schema: &'a tombi_schema_store::TableSchema,
     current_schema: &'a CurrentSchema<'a>,
@@ -1056,17 +1056,17 @@ fn collect_evaluated_properties_from_table_schema<'a>(
         for key in table_value.keys() {
             if property_keys
                 .iter()
-                .any(|property_key| property_key == &key.value)
+                .any(|property_key| property_key == key.value())
             {
-                result.mark_property(key.value.to_string());
+                result.mark_property(key.value().to_string());
                 continue;
             }
 
             if pattern_regexes
                 .iter()
-                .any(|pattern| pattern.is_match(&key.value))
+                .any(|pattern| pattern.is_match(key.value()))
             {
-                result.mark_property(key.value.to_string());
+                result.mark_property(key.value().to_string());
             }
         }
 
@@ -1074,13 +1074,13 @@ fn collect_evaluated_properties_from_table_schema<'a>(
             for key in table_value.keys() {
                 let matched_property = property_keys
                     .iter()
-                    .any(|property_key| property_key == &key.value);
+                    .any(|property_key| property_key == key.value());
                 let matched_pattern = pattern_regexes
                     .iter()
-                    .any(|pattern| pattern.is_match(&key.value));
+                    .any(|pattern| pattern.is_match(key.value()));
 
                 if !matched_property && !matched_pattern {
-                    result.mark_property(key.value.to_string());
+                    result.mark_property(key.value().to_string());
                 }
             }
         }
@@ -1198,7 +1198,7 @@ fn collect_evaluated_properties_from_table_schema<'a>(
             && table_schema.unevaluated_properties == Some(true)
         {
             for key in table_value.keys() {
-                result.mark_property(key.value.to_string());
+                result.mark_property(key.value().to_string());
             }
         }
 
@@ -1208,7 +1208,7 @@ fn collect_evaluated_properties_from_table_schema<'a>(
 }
 
 fn collect_evaluated_properties_from_schema_item<'a>(
-    table_value: &'a tombi_document_tree::Table,
+    table_value: &'a tombi_document_tree_syntax::Table,
     accessors: &'a [tombi_schema_store::Accessor],
     schema_item: &'a tombi_schema_store::SchemaItem,
     current_schema: &'a CurrentSchema<'a>,
@@ -1249,7 +1249,7 @@ fn collect_evaluated_properties_from_schema_item<'a>(
 }
 
 fn collect_evaluated_properties_from_referable_schemas<'a>(
-    table_value: &'a tombi_document_tree::Table,
+    table_value: &'a tombi_document_tree_syntax::Table,
     accessors: &'a [tombi_schema_store::Accessor],
     applicator: &'a (impl CompositeSchema + Sync),
     current_schema: &'a CurrentSchema<'a>,
@@ -1302,7 +1302,7 @@ fn collect_evaluated_properties_from_referable_schemas<'a>(
 }
 
 fn collect_evaluated_properties_from_schema_view<'a>(
-    table_value: &'a tombi_document_tree::Table,
+    table_value: &'a tombi_document_tree_syntax::Table,
     accessors: &'a [tombi_schema_store::Accessor],
     schema_view: &'a SchemaView,
     current_schema: &'a CurrentSchema<'a>,
@@ -1362,7 +1362,7 @@ fn collect_evaluated_properties_from_schema_view<'a>(
 }
 
 fn collect_evaluated_properties_from_if_then_else_schema<'a>(
-    table_value: &'a tombi_document_tree::Table,
+    table_value: &'a tombi_document_tree_syntax::Table,
     accessors: &'a [tombi_schema_store::Accessor],
     if_then_else_schema: &'a tombi_schema_store::IfThenElseSchema,
     current_schema: &'a CurrentSchema<'a>,
@@ -1435,7 +1435,7 @@ fn collect_evaluated_properties_from_if_then_else_schema<'a>(
 }
 
 async fn validate_table_without_schema(
-    table_value: &tombi_document_tree::Table,
+    table_value: &tombi_document_tree_syntax::Table,
     accessors: &[tombi_schema_store::Accessor],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Result<crate::Valid, crate::Invalid> {
@@ -1469,7 +1469,7 @@ async fn validate_table_without_schema(
                 &accessors
                     .iter()
                     .cloned()
-                    .chain(std::iter::once(Accessor::Key(key.value.clone())))
+                    .chain(std::iter::once(Accessor::Key(key.value().to_owned())))
                     .collect_vec(),
                 None,
                 schema_context,
@@ -1498,8 +1498,8 @@ async fn validate_table_without_schema(
 /// Convert deprecated diagnostics to warnings for the given value
 async fn convert_deprecated_diagnostics_range(
     current_schema: &CurrentSchema<'_>,
-    value: &tombi_document_tree::Value,
-    key: &tombi_document_tree::Key,
+    value: &tombi_document_tree_syntax::Value,
+    key: &tombi_document_tree_syntax::Key,
     schema_diagnostics: &mut [tombi_diagnostic::Diagnostic],
 ) {
     if current_schema.schema_view.deprecation().await.is_some() {

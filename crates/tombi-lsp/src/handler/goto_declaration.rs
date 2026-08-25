@@ -58,7 +58,7 @@ pub async fn handle_goto_declaration(
     };
 
     let document_tree = document_source.document_tree();
-    let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
+    let accessors = tombi_document_tree_syntax::get_accessors(&document_tree, &keys, position);
 
     if config.cargo_extension_enabled()
         && let Some(locations) = tombi_extension_cargo::goto_declaration(

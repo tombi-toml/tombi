@@ -63,7 +63,7 @@ pub enum DiagnosticKind {
     #[error("expected a value of type {expected}, but found {actual}")]
     TypeMismatch {
         expected: tombi_schema_store::ValueType,
-        actual: tombi_document_tree::ValueType,
+        actual: tombi_document_tree_syntax::ValueType,
     },
 
     #[error("the value must be const value \"{expected}\", but found \"{actual}\"")]

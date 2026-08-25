@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use std::fmt::Write;
 
-use tombi_ast::AstNode;
+use tombi_ast_syntax::AstNode;
 
 use super::LiteralNode;
 use crate::{
@@ -12,14 +12,14 @@ use crate::{
     types::WithAlignmentHint,
 };
 
-impl Format for tombi_ast::BasicString {
+impl Format for tombi_ast_syntax::BasicString {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         WithAlignmentHint::new(self).format(f)
     }
 }
 
-impl Format for WithAlignmentHint<&tombi_ast::BasicString> {
+impl Format for WithAlignmentHint<&tombi_ast_syntax::BasicString> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let value = self.value;
         value.leading_comments().collect_vec().format(f)?;
@@ -40,13 +40,13 @@ impl Format for WithAlignmentHint<&tombi_ast::BasicString> {
     }
 }
 
-impl Format for tombi_ast::LiteralString {
+impl Format for tombi_ast_syntax::LiteralString {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         WithAlignmentHint::new(self).format(f)
     }
 }
 
-impl Format for WithAlignmentHint<&tombi_ast::LiteralString> {
+impl Format for WithAlignmentHint<&tombi_ast_syntax::LiteralString> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let value = self.value;
         value.leading_comments().collect_vec().format(f)?;
@@ -66,14 +66,14 @@ impl Format for WithAlignmentHint<&tombi_ast::LiteralString> {
         Ok(())
     }
 }
-impl LiteralNode for tombi_ast::MultiLineBasicString {
-    fn token(&self) -> Option<tombi_syntax::SyntaxToken> {
+impl LiteralNode for tombi_ast_syntax::MultiLineBasicString {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
         self.token()
     }
 }
 
-impl LiteralNode for tombi_ast::MultiLineLiteralString {
-    fn token(&self) -> Option<tombi_syntax::SyntaxToken> {
+impl LiteralNode for tombi_ast_syntax::MultiLineLiteralString {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
         self.token()
     }
 }

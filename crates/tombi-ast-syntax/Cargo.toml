@@ -1,0 +1,24 @@
+[package]
+name = "tombi-ast-syntax"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+itertools.workspace = true
+thiserror.workspace = true
+tombi-accessor.workspace = true
+tombi-ast.workspace = true
+tombi-text.workspace = true
+tombi-toml-text.workspace = true
+tombi-toml-version.workspace = true
+tombi-uri.workspace = true
+unicode-segmentation.workspace = true
+
+[dev-dependencies]
+pretty_assertions.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

@@ -2,7 +2,7 @@ use tombi_future::Boxable;
 
 use crate::{Lint, rule::Rule};
 
-impl Lint for tombi_ast::Table {
+impl Lint for tombi_ast_syntax::Table {
     fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
         async move {
             crate::rule::DottedKeysOutOfOrderRule::check(self, l).await;

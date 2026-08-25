@@ -32,7 +32,7 @@ pub async fn handle_document_symbol(
 }
 
 fn create_symbols(
-    tree: &tombi_document_tree::DocumentTree,
+    tree: &tombi_document_tree_syntax::DocumentTree,
     line_index: &tombi_text::LineIndex,
 ) -> Vec<DocumentSymbol> {
     let mut symbols: Vec<DocumentSymbol> = vec![];
@@ -47,12 +47,12 @@ fn create_symbols(
 #[allow(deprecated)]
 fn symbols_for_value(
     mut name: String,
-    value: &tombi_document_tree::Value,
+    value: &tombi_document_tree_syntax::Value,
     parent_key_range: Option<tombi_text::Range>,
     line_index: &tombi_text::LineIndex,
     symbols: &mut Vec<DocumentSymbol>,
 ) {
-    use tombi_document_tree::Value::*;
+    use tombi_document_tree_syntax::Value::*;
 
     // If the key is empty, set the name to "\"\"" for avoiding the empty key error.
     // See: https://github.com/tombi-toml/tombi/pull/1090

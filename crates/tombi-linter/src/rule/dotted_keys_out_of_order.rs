@@ -6,33 +6,33 @@ use tombi_severity_level::SeverityLevelDefaultWarn;
 
 pub struct DottedKeysOutOfOrderRule;
 
-impl Rule<tombi_ast::Root> for DottedKeysOutOfOrderRule {
-    async fn check(root: &tombi_ast::Root, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::Root> for DottedKeysOutOfOrderRule {
+    async fn check(root: &tombi_ast_syntax::Root, l: &mut crate::Linter<'_>) {
         check_dotted_keys_out_of_order(root.key_values(), root.comment_directives(), l).await;
     }
 }
 
-impl Rule<tombi_ast::Table> for DottedKeysOutOfOrderRule {
-    async fn check(table: &tombi_ast::Table, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::Table> for DottedKeysOutOfOrderRule {
+    async fn check(table: &tombi_ast_syntax::Table, l: &mut crate::Linter<'_>) {
         check_dotted_keys_out_of_order(table.key_values(), table.comment_directives(), l).await;
     }
 }
 
-impl Rule<tombi_ast::ArrayOfTable> for DottedKeysOutOfOrderRule {
-    async fn check(table: &tombi_ast::ArrayOfTable, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::ArrayOfTable> for DottedKeysOutOfOrderRule {
+    async fn check(table: &tombi_ast_syntax::ArrayOfTable, l: &mut crate::Linter<'_>) {
         check_dotted_keys_out_of_order(table.key_values(), table.comment_directives(), l).await;
     }
 }
 
-impl Rule<tombi_ast::InlineTable> for DottedKeysOutOfOrderRule {
-    async fn check(table: &tombi_ast::InlineTable, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::InlineTable> for DottedKeysOutOfOrderRule {
+    async fn check(table: &tombi_ast_syntax::InlineTable, l: &mut crate::Linter<'_>) {
         check_dotted_keys_out_of_order(table.key_values(), table.comment_directives(), l).await;
     }
 }
 
 async fn check_dotted_keys_out_of_order(
-    key_values: impl Iterator<Item = tombi_ast::KeyValue>,
-    comment_directives: impl Iterator<Item = tombi_ast::TombiValueCommentDirective>,
+    key_values: impl Iterator<Item = tombi_ast_syntax::KeyValue>,
+    comment_directives: impl Iterator<Item = tombi_ast_syntax::TombiValueCommentDirective>,
     l: &mut crate::Linter<'_>,
 ) {
     let comment_directive = get_comment_directive_content::<
@@ -75,15 +75,21 @@ async fn check_dotted_keys_out_of_order(
 
     // Single pass to collect all data
     for (index, key_value) in key_values.enumerate() {
-        if let Some(key_text) = key_value
-            .keys()
-            .and_then(|keys| keys.keys().next())
-            .and_then(|key| key.try_to_raw_text(l.toml_version()).ok())
-        {
-            prefix_groups
-                .entry(key_text)
-                .or_default()
-                .push((index, key_value.range()));
+        let Some(keys) = key_value.keys() else {
+            continue;
+        };
+        let Some(key) = keys.keys().next() else {
+            continue;
+        };
+        let Ok(content) = key.try_to_content(l.toml_version()) else {
+            continue;
+        };
+        let position = (index, key_value.range());
+
+        if let Some(positions) = prefix_groups.get_mut(content.as_ref()) {
+            positions.push(position);
+        } else {
+            prefix_groups.insert(content.into_owned(), vec![position]);
         }
     }
 

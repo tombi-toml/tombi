@@ -2,7 +2,7 @@ use tombi_future::Boxable;
 
 use crate::Lint;
 
-impl Lint for tombi_ast::IntegerBin {
+impl Lint for tombi_ast_syntax::IntegerBin {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,
@@ -11,7 +11,7 @@ impl Lint for tombi_ast::IntegerBin {
     }
 }
 
-impl Lint for tombi_ast::IntegerOct {
+impl Lint for tombi_ast_syntax::IntegerOct {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,
@@ -20,7 +20,7 @@ impl Lint for tombi_ast::IntegerOct {
     }
 }
 
-impl Lint for tombi_ast::IntegerDec {
+impl Lint for tombi_ast_syntax::IntegerDec {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,
@@ -29,7 +29,7 @@ impl Lint for tombi_ast::IntegerDec {
     }
 }
 
-impl Lint for tombi_ast::IntegerHex {
+impl Lint for tombi_ast_syntax::IntegerHex {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,

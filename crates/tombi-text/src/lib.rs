@@ -10,10 +10,8 @@
 /// - [`Range`][crate::Range] is a struct that represents a range of text as `(Position, Position)`.
 /// - [`Span`][crate::Span] is a struct that represents a range of text as `(Offset, Offset)`.
 ///
-/// The biggest difference from Rust Analyzer's Red-Green Tree is that we preserve two representations,
-/// [`Position`][crate::Position] and [`Offset`][crate::Offset], in the tree.
-/// This increases the memory size of the tree,
-/// but makes it much easier to implement features that work with the tree.
+/// Both [`Position`][crate::Position] and [`Offset`][crate::Offset] are available so callers can
+/// choose the representation appropriate for their API.
 ///
 mod features;
 mod line_ending;

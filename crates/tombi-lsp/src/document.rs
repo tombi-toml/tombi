@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_text::{EncodingKind, LineIndex};
 
-use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 
 #[derive(Debug, Clone)]
 pub struct DocumentSource {
@@ -20,13 +20,13 @@ pub struct DocumentSource {
     pub toml_version: tombi_config::TomlVersion,
 
     /// Parsed AST (always exists, even with errors)
-    ast: Arc<tombi_ast::Root>,
+    ast: Arc<tombi_ast_syntax::Root>,
 
     /// AST generation errors (empty if no errors)
     ast_errors: Vec<tombi_diagnostic::Diagnostic>,
 
     /// Parsed DocumentTree (always exists)
-    document_tree: Arc<tombi_document_tree::DocumentTree>,
+    document_tree: Arc<tombi_document_tree_syntax::DocumentTree>,
 
     /// DocumentTree generation errors (empty if no errors)
     document_tree_errors: Vec<tombi_diagnostic::Diagnostic>,
@@ -120,7 +120,7 @@ impl DocumentSource {
     }
 
     /// Get the parsed AST (always exists)
-    pub fn ast(&self) -> Arc<tombi_ast::Root> {
+    pub fn ast(&self) -> Arc<tombi_ast_syntax::Root> {
         Arc::clone(&self.ast)
     }
 
@@ -130,7 +130,7 @@ impl DocumentSource {
     }
 
     /// Get the parsed DocumentTree (always exists)
-    pub fn document_tree(&self) -> Arc<tombi_document_tree::DocumentTree> {
+    pub fn document_tree(&self) -> Arc<tombi_document_tree_syntax::DocumentTree> {
         Arc::clone(&self.document_tree)
     }
 

@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use pep508_rs::{Requirement, VerbatimUrl, VersionOrUrl};
-use tombi_document_tree::{Value, dig_keys};
+use tombi_document_tree_syntax::{Value, dig_keys};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 pub(crate) const UV_DEPENDENCY_KEYS: &[&str] = &[
@@ -13,7 +13,7 @@ pub(crate) const UV_DEPENDENCY_KEYS: &[&str] = &[
 
 #[derive(Debug, Clone)]
 pub(crate) struct DependencyRequirement<'a> {
-    pub(crate) dependency: &'a tombi_document_tree::String,
+    pub(crate) dependency: &'a tombi_document_tree_syntax::String,
     pub(crate) requirement: Requirement<VerbatimUrl>,
 }
 
@@ -39,7 +39,7 @@ pub(crate) fn parse_requirement(dependency: &str) -> Option<Requirement<Verbatim
 }
 
 pub(crate) fn parse_dependency_requirement<'a>(
-    dependency: &'a tombi_document_tree::String,
+    dependency: &'a tombi_document_tree_syntax::String,
 ) -> Option<DependencyRequirement<'a>> {
     parse_requirement(dependency.value()).map(|requirement| DependencyRequirement {
         requirement,
@@ -48,7 +48,7 @@ pub(crate) fn parse_dependency_requirement<'a>(
 }
 
 pub(crate) fn collect_dependency_requirements_from_document_tree<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
 ) -> Vec<DependencyRequirement<'a>> {
     let mut dependency_requirements = Vec::new();
 
@@ -58,7 +58,7 @@ pub(crate) fn collect_dependency_requirements_from_document_tree<'a>(
 }
 
 pub(crate) fn collect_all_dependency_requirements_from_document_tree<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
 ) -> Vec<DependencyRequirement<'a>> {
     let mut dependency_requirements =
         collect_dependency_requirements_from_document_tree(document_tree);
@@ -99,7 +99,7 @@ fn is_uv_dependency_accessor(accessors: &[Accessor]) -> bool {
 }
 
 fn collect_standard_dependency_requirements<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     dependency_requirements: &mut Vec<DependencyRequirement<'a>>,
 ) {
     collect_dependency_requirements_from_array_path(
@@ -108,11 +108,11 @@ fn collect_standard_dependency_requirements<'a>(
         dependency_requirements,
     );
 
-    if let Some((_, tombi_document_tree::Value::Table(dep_group))) =
+    if let Some((_, tombi_document_tree_syntax::Value::Table(dep_group))) =
         dig_keys(document_tree, &["project", "optional-dependencies"])
     {
         for value in dep_group.values() {
-            if let tombi_document_tree::Value::Array(dep_array) = value {
+            if let tombi_document_tree_syntax::Value::Array(dep_array) = value {
                 dependency_requirements.extend(collect_dependency_requirements_from_values(
                     dep_array.iter(),
                 ));
@@ -120,11 +120,11 @@ fn collect_standard_dependency_requirements<'a>(
         }
     }
 
-    if let Some((_, tombi_document_tree::Value::Table(dep_group))) =
+    if let Some((_, tombi_document_tree_syntax::Value::Table(dep_group))) =
         dig_keys(document_tree, &["dependency-groups"])
     {
         for value in dep_group.values() {
-            if let tombi_document_tree::Value::Array(dep_array) = value {
+            if let tombi_document_tree_syntax::Value::Array(dep_array) = value {
                 dependency_requirements.extend(collect_dependency_requirements_from_values(
                     dep_array.iter(),
                 ));
@@ -134,11 +134,13 @@ fn collect_standard_dependency_requirements<'a>(
 }
 
 fn collect_dependency_requirements_from_array_path<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     path: &[&str],
     dependency_requirements: &mut Vec<DependencyRequirement<'a>>,
 ) {
-    if let Some((_, tombi_document_tree::Value::Array(dep_array))) = dig_keys(document_tree, path) {
+    if let Some((_, tombi_document_tree_syntax::Value::Array(dep_array))) =
+        dig_keys(document_tree, path)
+    {
         dependency_requirements.extend(collect_dependency_requirements_from_values(
             dep_array.iter(),
         ));
@@ -146,11 +148,11 @@ fn collect_dependency_requirements_from_array_path<'a>(
 }
 
 fn collect_dependency_requirements_from_values<'a>(
-    dependencies: impl Iterator<Item = &'a tombi_document_tree::Value>,
+    dependencies: impl Iterator<Item = &'a tombi_document_tree_syntax::Value>,
 ) -> Vec<DependencyRequirement<'a>> {
     dependencies
         .filter_map(|value| {
-            if let tombi_document_tree::Value::String(dep_str) = value {
+            if let tombi_document_tree_syntax::Value::String(dep_str) = value {
                 parse_requirement(dep_str.value()).map(|requirement| DependencyRequirement {
                     requirement,
                     dependency: dep_str,
@@ -163,9 +165,9 @@ fn collect_dependency_requirements_from_values<'a>(
 }
 
 pub(crate) fn find_dependency_group_key<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     group_name: &str,
-) -> Option<&'a tombi_document_tree::Key> {
+) -> Option<&'a tombi_document_tree_syntax::Key> {
     let (_, Value::Table(dependency_groups)) = dig_keys(document_tree, &["dependency-groups"])?
     else {
         return None;
@@ -176,7 +178,7 @@ pub(crate) fn find_dependency_group_key<'a>(
 }
 
 pub(crate) fn include_group_locations(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     pyproject_toml_path: &std::path::Path,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
@@ -198,9 +200,9 @@ pub(crate) fn include_group_locations(
 }
 
 pub(crate) fn collect_include_group_values<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     group_name: &str,
-) -> Vec<&'a tombi_document_tree::String> {
+) -> Vec<&'a tombi_document_tree_syntax::String> {
     let Some((_, Value::Table(dependency_groups))) =
         dig_keys(document_tree, &["dependency-groups"])
     else {
@@ -235,14 +237,13 @@ pub(crate) fn collect_include_group_values<'a>(
 
 #[cfg(test)]
 mod tests {
-    use tombi_ast::AstNode;
     use tombi_config::TomlVersion;
-    use tombi_document_tree::TryIntoDocumentTree;
+    use tombi_document_tree_syntax::TryIntoDocumentTree;
 
     use super::*;
 
-    fn parse_document_tree(source: &str) -> tombi_document_tree::DocumentTree {
-        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node()).unwrap();
+    fn parse_document_tree(source: &str) -> tombi_document_tree_syntax::DocumentTree {
+        let root = tombi_parser::parse(source).into_root();
         root.try_into_document_tree(TomlVersion::default()).unwrap()
     }
 
@@ -317,7 +318,7 @@ mod tests {
             .expect("expected dependency group key to exist");
         let include_group_values = collect_include_group_values(&document_tree, "ci");
 
-        assert_eq!(group_key.value, "ci");
+        assert_eq!(group_key.value(), "ci");
         assert_eq!(
             include_group_values
                 .into_iter()

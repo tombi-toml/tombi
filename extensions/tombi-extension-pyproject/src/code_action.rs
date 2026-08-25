@@ -2,15 +2,13 @@ use pep508_rs::{
     Requirement, VerbatimUrl, VersionOrUrl,
     pep440_rs::{Version, VersionSpecifier},
 };
-use tombi_ast::AstNode;
-use tombi_document_tree::dig_keys;
-use tombi_extension::CodeActionOrCommand;
-use tombi_schema_store::Accessor;
-use tombi_text::IntoLsp;
-use tower_lsp::lsp_types::{
-    CodeAction, CodeActionDisabled, CodeActionKind, DocumentChanges, OneOf,
+use tombi_ast_syntax::AstNode;
+use tombi_document_tree_syntax::dig_keys;
+use tombi_extension::{
+    CodeAction, CodeActionDisabled, CodeActionKind, CodeActionOrCommand, DocumentChanges, OneOf,
     OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
+use tombi_schema_store::Accessor;
 
 use crate::{
     DependencyRequirement, collect_dependency_requirements_from_document_tree, fetch_pypi_project,
@@ -102,8 +100,8 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
 
 pub async fn code_action(
     text_document_uri: &tombi_uri::Uri,
-    _root: &tombi_ast::Root,
-    document_tree: &tombi_document_tree::DocumentTree,
+    _root: &tombi_ast_syntax::Root,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     toml_version: tombi_config::TomlVersion,
     line_index: &tombi_text::LineIndex,
@@ -238,17 +236,18 @@ pub async fn code_action(
 async fn update_dependency_to_latest_version_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
 ) -> Result<Option<CodeAction>, tower_lsp::jsonrpc::Error> {
-    let Some((_, dependency_value)) = tombi_document_tree::dig_accessors(document_tree, accessors)
+    let Some((_, dependency_value)) =
+        tombi_document_tree_syntax::dig_accessors(document_tree, accessors)
     else {
         return Ok(None);
     };
 
-    let tombi_document_tree::Value::String(dep_str) = dependency_value else {
+    let tombi_document_tree_syntax::Value::String(dep_str) = dependency_value else {
         return Ok(None);
     };
 
@@ -282,27 +281,24 @@ async fn update_dependency_to_latest_version_code_action(
 
     Ok(Some(CodeAction {
         title: CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion.to_string(),
-        kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
-        diagnostics: None,
+        kind: Some(CodeActionKind::REFACTOR_REWRITE),
         edit: Some(WorkspaceEdit {
             changes: None,
             document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
                 text_document: OptionalVersionedTextDocumentIdentifier {
-                    uri: text_document_uri.to_owned().into(),
+                    uri: text_document_uri.to_owned(),
                     version: None,
                 },
+                line_index: line_index.clone(),
                 edits: vec![OneOf::Left(TextEdit {
-                    range: offset_range(dep_str.unquoted_range(), version_range)
-                        .into_lsp(line_index),
+                    range: offset_range(dep_str.unquoted_range(), version_range),
                     new_text: new_version_specifier,
                 })],
             }])),
-            change_annotations: None,
         }),
         disabled: already_latest.then(|| CodeActionDisabled {
             reason: "Already at latest version".to_string(),
         }),
-        ..Default::default()
     }))
 }
 
@@ -405,38 +401,29 @@ fn calculate_insertion_index(existing_package_names: &[&str], new_package_name: 
 /// Get AST array from document tree range
 /// First finds the range in document_tree, then locates the corresponding AST node
 fn get_ast_array_from_document_tree(
-    root: &tombi_ast::Root,
-    document_tree: &tombi_document_tree::DocumentTree,
+    root: &tombi_ast_syntax::Root,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
-) -> Option<tombi_ast::Array> {
+) -> Option<tombi_ast_syntax::Array> {
     // Get the value from document tree to find its range
-    let (_, value) = tombi_document_tree::dig_accessors(document_tree, accessors)?;
+    let (_, value) = tombi_document_tree_syntax::dig_accessors(document_tree, accessors)?;
 
-    let tombi_document_tree::Value::Array(doc_array) = value else {
+    let tombi_document_tree_syntax::Value::Array(doc_array) = value else {
         return None;
     };
 
     // Get the range of the array in the document tree
     let target_range = doc_array.range();
 
-    // Use descendants to find the Array with matching range
-    for node in root.syntax().descendants() {
-        if let Some(array) = tombi_ast::Array::cast(node)
-            && array.range() == target_range
-        {
-            return Some(array);
-        }
-    }
-
-    None
+    root.array_at_range(target_range)
 }
 
 /// Calculate insertion position and text for array insertion with comma handling
-/// Uses tombi_ast API to properly handle commas and formatting
+/// Uses tombi_ast_syntax API to properly handle commas and formatting
 fn calculate_array_insertion(
-    ast_array: &tombi_ast::Array,
+    ast_array: &tombi_ast_syntax::Array,
     insertion_index: usize,
-    new_element: &tombi_document_tree::String,
+    new_element: &tombi_document_tree_syntax::String,
 ) -> Option<(tombi_text::Position, String)> {
     let values_with_comma: Vec<_> = ast_array.value_or_key_values_with_comma().collect();
 
@@ -495,17 +482,18 @@ fn calculate_array_insertion(
 fn add_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     workspace_pyproject_toml_path: &std::path::Path,
     workspace_line_index: &tombi_text::LineIndex,
-    workspace_root: &tombi_ast::Root,
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_root: &tombi_ast_syntax::Root,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
 ) -> Option<CodeAction> {
     // Get the dependency string from member's document tree
-    let (_, dependency_value) = tombi_document_tree::dig_accessors(document_tree, accessors)?;
+    let (_, dependency_value) =
+        tombi_document_tree_syntax::dig_accessors(document_tree, accessors)?;
 
-    let tombi_document_tree::Value::String(dep_str) = dependency_value else {
+    let tombi_document_tree_syntax::Value::String(dep_str) = dependency_value else {
         return None;
     };
 
@@ -554,26 +542,26 @@ fn add_workspace_dependency_code_action(
         document_changes: Some(DocumentChanges::Edits(vec![
             TextDocumentEdit {
                 text_document: OptionalVersionedTextDocumentIdentifier {
-                    uri: workspace_uri.into(),
+                    uri: workspace_uri,
                     version: None,
                 },
+                line_index: workspace_line_index.clone(),
                 edits: vec![OneOf::Left(workspace_edit)],
             },
             TextDocumentEdit {
                 text_document: OptionalVersionedTextDocumentIdentifier {
-                    uri: text_document_uri.to_owned().into(),
+                    uri: text_document_uri.to_owned(),
                     version: None,
                 },
+                line_index: line_index.clone(),
                 edits: vec![OneOf::Left(member_edit)],
             },
         ])),
-        change_annotations: None,
     };
 
     Some(CodeAction {
         title: CodeActionRefactorRewriteName::AddToWorkspaceAndUseWorkspaceDependency.to_string(),
-        kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
-        diagnostics: None,
+        kind: Some(CodeActionKind::REFACTOR_REWRITE),
         edit: Some(workspace_edit_full),
         ..Default::default()
     })
@@ -582,13 +570,13 @@ fn add_workspace_dependency_code_action(
 /// Generate TextEdit for adding dependency to workspace [project.dependencies]
 fn generate_workspace_dependency_edit(
     accessors: &[Accessor],
-    workspace_line_index: &tombi_text::LineIndex,
-    workspace_root: &tombi_ast::Root,
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    _workspace_line_index: &tombi_text::LineIndex,
+    workspace_root: &tombi_ast_syntax::Root,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_requirement: &DependencyRequirement,
 ) -> Option<TextEdit> {
     // Get workspace.dependencies array from document tree
-    let (workspace_accessors, workspace_deps) = match tombi_document_tree::dig_accessors(
+    let (workspace_accessors, workspace_deps) = match tombi_document_tree_syntax::dig_accessors(
         workspace_document_tree,
         &accessors[..accessors.len() - 1],
     ) {
@@ -598,11 +586,15 @@ fn generate_workspace_dependency_edit(
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
             ],
-            tombi_document_tree::dig_keys(workspace_document_tree, &["project", "dependencies"])?.1,
+            tombi_document_tree_syntax::dig_keys(
+                workspace_document_tree,
+                &["project", "dependencies"],
+            )?
+            .1,
         ),
     };
 
-    let tombi_document_tree::Value::Array(deps_doc_array) = workspace_deps else {
+    let tombi_document_tree_syntax::Value::Array(deps_doc_array) = workspace_deps else {
         return None;
     };
 
@@ -617,7 +609,7 @@ fn generate_workspace_dependency_edit(
     let existing_package_names: Vec<String> = deps_doc_array
         .iter()
         .filter_map(|dep| {
-            if let tombi_document_tree::Value::String(dep_str) = dep {
+            if let tombi_document_tree_syntax::Value::String(dep_str) = dep {
                 parse_requirement(dep_str.value()).map(|req| req.name.to_string())
             } else {
                 None
@@ -641,7 +633,7 @@ fn generate_workspace_dependency_edit(
     )?;
 
     Some(TextEdit {
-        range: tombi_text::Range::at(insertion_range).into_lsp(workspace_line_index),
+        range: tombi_text::Range::at(insertion_range),
         new_text,
     })
 }
@@ -652,12 +644,12 @@ fn generate_member_dependency_edit(
         requirement,
         dependency,
     }: &DependencyRequirement,
-    line_index: &tombi_text::LineIndex,
+    _line_index: &tombi_text::LineIndex,
 ) -> Option<TextEdit> {
     let new_dep_str = format_dependency_without_version(requirement);
 
     Some(TextEdit {
-        range: dependency.range().into_lsp(line_index),
+        range: dependency.range(),
         new_text: format!("\"{}\"", new_dep_str),
     })
 }
@@ -665,9 +657,9 @@ fn generate_member_dependency_edit(
 fn use_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
 ) -> Option<CodeAction> {
     // Accessors should be at least: ["project", "dependencies", Index(n)]
     if accessors.len() < 3 {
@@ -675,9 +667,9 @@ fn use_workspace_dependency_code_action(
     }
 
     // Get the dependency string from member's document tree
-    let (_, dep_value) = tombi_document_tree::dig_accessors(document_tree, accessors)?;
+    let (_, dep_value) = tombi_document_tree_syntax::dig_accessors(document_tree, accessors)?;
 
-    let tombi_document_tree::Value::String(dep_str) = dep_value else {
+    let tombi_document_tree_syntax::Value::String(dep_str) = dep_value else {
         return None;
     };
 
@@ -703,25 +695,24 @@ fn use_workspace_dependency_code_action(
     let new_dep_str = format_dependency_without_version(workspace_requirement);
 
     // Use the string's range for replacement
-    let range = dep_str.range().into_lsp(line_index);
+    let range = dep_str.range();
 
     Some(CodeAction {
         title: CodeActionRefactorRewriteName::UseWorkspaceDependency.to_string(),
-        kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
-        diagnostics: None,
+        kind: Some(CodeActionKind::REFACTOR_REWRITE),
         edit: Some(WorkspaceEdit {
             changes: None,
             document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
                 text_document: OptionalVersionedTextDocumentIdentifier {
-                    uri: text_document_uri.to_owned().into(),
+                    uri: text_document_uri.to_owned(),
                     version: None,
                 },
+                line_index: line_index.clone(),
                 edits: vec![OneOf::Left(TextEdit {
                     range,
                     new_text: format!("\"{}\"", new_dep_str),
                 })],
             }])),
-            change_annotations: None,
         }),
         ..Default::default()
     })
@@ -732,8 +723,7 @@ mod tests {
     use std::{fs, str::FromStr};
 
     use super::*;
-    use tombi_ast::AstNode;
-    use tombi_document_tree::TryIntoDocumentTree;
+    use tombi_document_tree_syntax::TryIntoDocumentTree;
     use tombi_test_lib::TestCacheHome;
 
     async fn write_cached_response(url: &str, body: &str) {
@@ -759,9 +749,7 @@ mod tests {
             #[tokio::test]
             async fn $name() {
                 let uri = tombi_uri::Uri::from_file_path("/path/to/pyproject.toml").unwrap();
-                let root =
-                    tombi_ast::Root::cast(tombi_parser::parse($toml_text).into_syntax_node())
-                        .unwrap();
+                let root = tombi_parser::parse($toml_text).into_root();
                 let document_tree = root
                     .clone()
                     .try_into_document_tree(tombi_config::TomlVersion::default())
@@ -908,8 +896,7 @@ mod tests {
 [package]
 name = "test"
 "#;
-        let root =
-            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
+        let root = tombi_parser::parse(toml_text).into_root();
         let document_tree = root
             .clone()
             .try_into_document_tree(tombi_config::TomlVersion::default())
@@ -943,8 +930,7 @@ members = ["member1"]
 [project]
 dependencies = ["pydantic>=2.10"]
 "#;
-        let root =
-            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
+        let root = tombi_parser::parse(toml_text).into_root();
         let document_tree = root
             .clone()
             .try_into_document_tree(tombi_config::TomlVersion::default())
@@ -997,8 +983,7 @@ dependencies = ["pydantic>=2.10"]
 [project]
 name = "test"
 "#;
-        let root =
-            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
+        let root = tombi_parser::parse(toml_text).into_root();
         let document_tree = root
             .clone()
             .try_into_document_tree(tombi_config::TomlVersion::default())
@@ -1050,8 +1035,7 @@ dependencies = ["requests==2.33.1"]
 name = "member"
 dependencies = ["pydantic>=2.10,<3.0"]
 "#;
-        let document_root =
-            tombi_ast::Root::cast(tombi_parser::parse(member_toml).into_syntax_node()).unwrap();
+        let document_root = tombi_parser::parse(member_toml).into_root();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1064,8 +1048,7 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10,<3.0"]
 "#;
-        let workspace_root =
-            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
+        let workspace_root = tombi_parser::parse(workspace_toml).into_root();
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1100,8 +1083,7 @@ dependencies = ["pydantic>=2.10,<3.0"]
 name = "member"
 dependencies = ["pydantic[email,dotenv]>=2.10,<3.0"]
 "#;
-        let document_root =
-            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
+        let document_root = tombi_parser::parse(toml_text).into_root();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1113,8 +1095,7 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10"]
 "#;
-        let workspace_root =
-            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
+        let workspace_root = tombi_parser::parse(workspace_toml).into_root();
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1145,8 +1126,7 @@ dependencies = ["pydantic>=2.10"]
 name = "member"
 dependencies = ["pydantic"]
 "#;
-        let document_root =
-            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
+        let document_root = tombi_parser::parse(toml_text).into_root();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1158,8 +1138,7 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10"]
 "#;
-        let workspace_root =
-            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
+        let workspace_root = tombi_parser::parse(workspace_toml).into_root();
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1190,8 +1169,7 @@ dependencies = ["pydantic>=2.10"]
 name = "member"
 dependencies = ["requests>=2.28"]
 "#;
-        let document_root =
-            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
+        let document_root = tombi_parser::parse(toml_text).into_root();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1203,8 +1181,7 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10"]
 "#;
-        let workspace_root =
-            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
+        let workspace_root = tombi_parser::parse(workspace_toml).into_root();
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1269,8 +1246,7 @@ dependencies = ["pydantic>=2.10"]
 name = "member"
 dependencies = ["requests>=2.28"]
 "#;
-        let member_root =
-            tombi_ast::Root::cast(tombi_parser::parse(member_toml).into_syntax_node()).unwrap();
+        let member_root = tombi_parser::parse(member_toml).into_root();
         let member_tree = member_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1282,10 +1258,8 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10"]
 "#;
-        let workspace_root =
-            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
-        let workspace_root_for_tree =
-            tombi_ast::Root::cast(workspace_root.syntax().clone()).unwrap();
+        let workspace_root = tombi_parser::parse(workspace_toml).into_root();
+        let workspace_root_for_tree = workspace_root.clone();
         let workspace_tree = workspace_root_for_tree
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1329,8 +1303,7 @@ dependencies = ["pydantic>=2.10"]
 name = "member"
 dependencies = ["pydantic>=2.10"]
 "#;
-        let member_root =
-            tombi_ast::Root::cast(tombi_parser::parse(member_toml).into_syntax_node()).unwrap();
+        let member_root = tombi_parser::parse(member_toml).into_root();
         let member_tree = member_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1342,10 +1315,8 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10,<3.0"]
 "#;
-        let workspace_root =
-            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
-        let workspace_root_for_tree =
-            tombi_ast::Root::cast(workspace_root.syntax().clone()).unwrap();
+        let workspace_root = tombi_parser::parse(workspace_toml).into_root();
+        let workspace_root_for_tree = workspace_root.clone();
         let workspace_tree = workspace_root_for_tree
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1387,8 +1358,7 @@ dependencies = ["pydantic>=2.10,<3.0"]
 name = "member"
 dependencies = ["pydantic>=2.10"]
 "#;
-        let document_root =
-            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
+        let document_root = tombi_parser::parse(toml_text).into_root();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1400,10 +1370,8 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10,<3.0"]
 "#;
-        let workspace_root =
-            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
-        let workspace_root_for_tree =
-            tombi_ast::Root::cast(workspace_root.syntax().clone()).unwrap();
+        let workspace_root = tombi_parser::parse(workspace_toml).into_root();
+        let workspace_root_for_tree = workspace_root.clone();
         let workspace_tree = workspace_root_for_tree
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1455,8 +1423,7 @@ dependencies = ["pydantic>=2.10,<3.0"]
 name = "member"
 dependencies = ["requests>=2.28"]
 "#;
-        let document_root =
-            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
+        let document_root = tombi_parser::parse(toml_text).into_root();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1468,10 +1435,8 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10"]
 "#;
-        let workspace_root =
-            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
-        let workspace_root_for_tree =
-            tombi_ast::Root::cast(workspace_root.syntax().clone()).unwrap();
+        let workspace_root = tombi_parser::parse(workspace_toml).into_root();
+        let workspace_root_for_tree = workspace_root.clone();
         let workspace_tree = workspace_root_for_tree
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1523,8 +1488,7 @@ name = "member"
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
 "#;
-        let document_root =
-            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
+        let document_root = tombi_parser::parse(toml_text).into_root();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1536,8 +1500,7 @@ members = ["member"]
 [project]
 dependencies = ["pytest>=7.0,<8.0"]
 "#;
-        let workspace_root =
-            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
+        let workspace_root = tombi_parser::parse(workspace_toml).into_root();
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();

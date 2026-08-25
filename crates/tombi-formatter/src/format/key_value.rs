@@ -1,18 +1,18 @@
 use std::fmt::Write;
 
 use itertools::Itertools;
-use tombi_ast::AstNode;
+use tombi_ast_syntax::AstNode;
 
 use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
 
-impl Format for tombi_ast::KeyValue {
+impl Format for tombi_ast_syntax::KeyValue {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         WithAlignmentHint::new(self).format(f)
     }
 }
 
-impl Format for WithAlignmentHint<&tombi_ast::KeyValue> {
+impl Format for WithAlignmentHint<&tombi_ast_syntax::KeyValue> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let key_value = self.value;
         key_value.leading_comments().collect_vec().format(f)?;
@@ -46,7 +46,7 @@ impl Format for WithAlignmentHint<&tombi_ast::KeyValue> {
     }
 }
 
-impl Format for tombi_ast::KeyValueGroup {
+impl Format for tombi_ast_syntax::KeyValueGroup {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let key_values_with_comma = self.key_values_with_comma().collect_vec();
         let equal_alignment_width = f.key_value_equal_alignment_width(

@@ -21,11 +21,11 @@ use crate::{
     schema_resolver::resolve_table_unevaluated_property_schema,
 };
 
-impl FindCompletionContents for tombi_document_tree::Table {
+impl FindCompletionContents for tombi_document_tree_syntax::Table {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -53,7 +53,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
                 if !matches!(
                     self.kind(),
-                    tombi_document_tree::TableKind::InlineTable { .. }
+                    tombi_document_tree_syntax::TableKind::InlineTable { .. }
                 ) && completion_hint != Some(CompletionHint::InTableHeader)
                 {
                     // Skip if the cursor is the end space of key value like:
@@ -74,7 +74,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
             // At that point, completion should not behave as "inside inline table".
             if matches!(
                 self.kind(),
-                tombi_document_tree::TableKind::InlineTable { .. }
+                tombi_document_tree_syntax::TableKind::InlineTable { .. }
             ) && position >= self.range().end
             {
                 return Vec::new();
@@ -102,7 +102,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                         let mut completion_contents = Vec::new();
 
                         if let Some(key) = keys.first() {
-                            let accessor_str = &key.value;
+                            let accessor_str = key.value();
                             if let Some(value) = self.get(key) {
                                 let accessor: Accessor = Accessor::Key(accessor_str.to_string());
                                 let schema_accessor = SchemaAccessor::from(&accessor);
@@ -127,7 +127,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 {
                                     if matches!(
                                         value,
-                                        tombi_document_tree::Value::Incomplete { .. }
+                                        tombi_document_tree_syntax::Value::Incomplete { .. }
                                     ) && need_magic_trigger
                                     {
                                         return CompletionContent::new_magic_triggers(
@@ -923,7 +923,7 @@ impl FindCompletionContents for TableSchema {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -1092,10 +1092,10 @@ async fn count_table_or_array_schema(
 }
 
 fn get_property_value_completion_contents<'a: 'b, 'b>(
-    value: &'a tombi_document_tree::Value,
+    value: &'a tombi_document_tree_syntax::Value,
     position: tombi_text::Position,
-    key: &'a tombi_document_tree::Key,
-    keys: &'a [tombi_document_tree::Key],
+    key: &'a tombi_document_tree_syntax::Key,
+    keys: &'a [tombi_document_tree_syntax::Key],
     accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -1119,7 +1119,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                     if current_schema.is_none() {
                         if range.end <= key.range().start {
                             return vec![CompletionContent::new_type_hint_key(
-                                &key.value,
+                                key.value(),
                                 key.range(),
                                 None,
                                 completion_hint,
@@ -1137,12 +1137,12 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                     }
                 }
                 Some(CompletionHint::InArray { .. } | CompletionHint::Comma { .. }) | None => {
-                    if matches!(value, tombi_document_tree::Value::Incomplete { .. }) {
+                    if matches!(value, tombi_document_tree_syntax::Value::Incomplete { .. }) {
                         if current_schema.is_none()
                             && matches!(completion_hint, Some(CompletionHint::InArray { .. }))
                         {
                             return vec![CompletionContent::new_type_hint_key(
-                                &key.value,
+                                key.value(),
                                 key.range(),
                                 None,
                                 completion_hint,
@@ -1150,7 +1150,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                         }
 
                         return CompletionContent::new_magic_triggers(
-                            &key.value,
+                            key.value(),
                             position,
                             current_schema.map(|schema| schema.schema_uri.as_ref()),
                         );
@@ -1166,7 +1166,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                 &accessors
                     .iter()
                     .cloned()
-                    .chain(std::iter::once(Accessor::Key(key.value.clone())))
+                    .chain(std::iter::once(Accessor::Key(key.value().to_owned())))
                     .collect_vec(),
                 current_schema,
                 schema_context,
@@ -1178,42 +1178,42 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
 }
 
 fn check_used_table_value(
-    value: &tombi_document_tree::Value,
+    value: &tombi_document_tree_syntax::Value,
     is_root: bool,
     completion_hint: Option<CompletionHint>,
 ) -> bool {
     match value {
-        tombi_document_tree::Value::Boolean(_)
-        | tombi_document_tree::Value::Integer(_)
-        | tombi_document_tree::Value::Float(_)
-        | tombi_document_tree::Value::String(_)
-        | tombi_document_tree::Value::OffsetDateTime(_)
-        | tombi_document_tree::Value::LocalDateTime(_)
-        | tombi_document_tree::Value::LocalDate(_)
-        | tombi_document_tree::Value::LocalTime(_) => return true,
-        tombi_document_tree::Value::Array(array) => {
-            if array.kind() == tombi_document_tree::ArrayKind::Array {
+        tombi_document_tree_syntax::Value::Boolean(_)
+        | tombi_document_tree_syntax::Value::Integer(_)
+        | tombi_document_tree_syntax::Value::Float(_)
+        | tombi_document_tree_syntax::Value::String(_)
+        | tombi_document_tree_syntax::Value::OffsetDateTime(_)
+        | tombi_document_tree_syntax::Value::LocalDateTime(_)
+        | tombi_document_tree_syntax::Value::LocalDate(_)
+        | tombi_document_tree_syntax::Value::LocalTime(_) => return true,
+        tombi_document_tree_syntax::Value::Array(array) => {
+            if array.kind() == tombi_document_tree_syntax::ArrayKind::Array {
                 return true;
             }
         }
-        tombi_document_tree::Value::Table(table) => {
+        tombi_document_tree_syntax::Value::Table(table) => {
             if matches!(
                 table.kind(),
-                tombi_document_tree::TableKind::InlineTable { .. }
+                tombi_document_tree_syntax::TableKind::InlineTable { .. }
             ) || (is_root
                 && completion_hint.is_none()
-                && table.kind() == tombi_document_tree::TableKind::Table)
+                && table.kind() == tombi_document_tree_syntax::TableKind::Table)
             {
                 return true;
             }
         }
-        tombi_document_tree::Value::Incomplete { .. } => {}
+        tombi_document_tree_syntax::Value::Incomplete { .. } => {}
     }
     false
 }
 
 fn table_schema_has_remaining_key_completion<'a>(
-    table: &'a tombi_document_tree::Table,
+    table: &'a tombi_document_tree_syntax::Table,
     table_schema: &'a TableSchema,
     schema_uri: Cow<'a, tombi_schema_store::SchemaUri>,
     definitions: Cow<'a, tombi_schema_store::SchemaDefinitions>,
@@ -1241,7 +1241,7 @@ fn table_schema_has_remaining_key_completion<'a>(
                 return true;
             };
 
-            let tombi_document_tree::Value::Table(table) = value else {
+            let tombi_document_tree_syntax::Value::Table(table) = value else {
                 continue;
             };
 
@@ -1299,7 +1299,7 @@ fn table_schema_has_remaining_key_completion<'a>(
 }
 
 fn collect_table_key_completion_contents<'a: 'b, 'b>(
-    table: &'a tombi_document_tree::Table,
+    table: &'a tombi_document_tree_syntax::Table,
     key_name: &'a str,
     position: tombi_text::Position,
     replace_range: Option<tombi_text::Range>,
@@ -1359,7 +1359,8 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                     {
                         return None;
                     }
-                    if let Some(tombi_document_tree::Value::Table(table)) = table.get(key_name)
+                    if let Some(tombi_document_tree_syntax::Value::Table(table)) =
+                        table.get(key_name)
                         && !table_schema_has_remaining_key_completion(
                             table,
                             table_schema,
@@ -1500,7 +1501,7 @@ fn matching_subschema_completion_key<'a>(
 }
 
 fn current_editing_key_range(
-    keys: &[tombi_document_tree::Key],
+    keys: &[tombi_document_tree_syntax::Key],
     position: tombi_text::Position,
 ) -> Option<tombi_text::Range> {
     keys.last().and_then(|key| {

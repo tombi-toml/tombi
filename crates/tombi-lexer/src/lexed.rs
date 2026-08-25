@@ -1,4 +1,4 @@
-use tombi_syntax::SyntaxKind::*;
+use tombi_ast_syntax::SyntaxKind::*;
 use tombi_text::LineEnding;
 
 #[allow(non_camel_case_types)]

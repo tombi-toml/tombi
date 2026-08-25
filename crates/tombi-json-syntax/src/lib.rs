@@ -1,7 +1,3 @@
-mod language;
-
-pub use language::JsonLanguage;
-
 #[repr(u16)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[allow(non_camel_case_types)]
@@ -44,13 +40,6 @@ impl SyntaxKind {
     }
 }
 
-impl From<SyntaxKind> for tombi_rg_tree::SyntaxKind {
-    #[inline]
-    fn from(k: SyntaxKind) -> Self {
-        Self(k as u16)
-    }
-}
-
 impl From<u16> for SyntaxKind {
     #[inline]
     fn from(d: u16) -> SyntaxKind {
@@ -76,11 +65,3 @@ macro_rules! T {
     [,] => { $crate::SyntaxKind::COMMA };
     [:] => { $crate::SyntaxKind::COLON };
 }
-
-pub type SyntaxNode = tombi_rg_tree::RedNode<JsonLanguage>;
-pub type SyntaxToken = tombi_rg_tree::RedToken<JsonLanguage>;
-pub type SyntaxElement = tombi_rg_tree::RedElement<JsonLanguage>;
-pub type SyntaxNodePtr = tombi_rg_tree::RedNodePtr<JsonLanguage>;
-pub type SyntaxNodeChildren = tombi_rg_tree::RedNodeChildren<JsonLanguage>;
-pub type SyntaxElementChildren = tombi_rg_tree::RedElementChildren<JsonLanguage>;
-pub type PreorderWithTokens = tombi_rg_tree::RedPreorderWithTokens<JsonLanguage>;

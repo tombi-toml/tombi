@@ -1,5 +1,5 @@
 use tombi_config::TomlVersion;
-use tombi_document_tree::{Value, dig_accessors, dig_keys};
+use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
 
 pub async fn references(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
@@ -51,7 +51,9 @@ pub async fn references(
         let package_name = requirement.name.as_ref();
 
         let mut locations = Vec::new();
-        if tombi_document_tree::dig_keys(document_tree, &["tool", "uv", "workspace"]).is_some() {
+        if tombi_document_tree_syntax::dig_keys(document_tree, &["tool", "uv", "workspace"])
+            .is_some()
+        {
             locations.extend(get_workspace_member_dependency_definitions(
                 document_tree,
                 &pyproject_toml_path,
@@ -67,7 +69,7 @@ pub async fn references(
 }
 
 pub(crate) fn project_name_reference_locations(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -131,7 +133,7 @@ pub(crate) fn project_name_reference_locations(
 
 fn collect_project_name_references_in_manifest(
     locations: &mut Vec<tombi_extension::Location>,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     pyproject_toml_path: &std::path::Path,
     project_name: &str,
 ) {

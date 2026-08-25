@@ -1,4 +1,4 @@
-use tombi_syntax::{SyntaxKind::*, T};
+use tombi_ast_syntax::{SyntaxKind::*, T};
 
 use crate::{
     ErrorKind::*,
@@ -8,7 +8,7 @@ use crate::{
     token_set::TS_ARRAY_END,
 };
 
-impl Parse for tombi_ast::Array {
+impl Parse for tombi_ast_syntax::Array {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 
@@ -23,14 +23,14 @@ impl Parse for tombi_ast::Array {
         loop {
             while p.eat(LINE_BREAK) {}
 
-            Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
+            Vec::<tombi_ast_syntax::DanglingCommentGroup>::parse(p);
 
             let n = peek_leading_comments(p);
             if p.nth_at_ts(n, TS_ARRAY_END) {
                 break;
             }
 
-            tombi_ast::ValueWithCommaGroup::parse(p);
+            tombi_ast_syntax::ValueWithCommaGroup::parse(p);
         }
 
         if !p.eat(T![']']) {
@@ -167,7 +167,7 @@ mod test {
                 .and_then(|group| group.key_values().next())
                 .and_then(|key_value| key_value.value())
                 .and_then(|value| match value {
-                    tombi_ast::Value::Array(array) => Some(array),
+                    tombi_ast_syntax::Value::Array(array) => Some(array),
                     _ => None,
                 })
                 .unwrap();
@@ -209,7 +209,7 @@ mod test {
                 .and_then(|group| group.key_values().next())
                 .and_then(|key_value| key_value.value())
                 .and_then(|value| match value {
-                    tombi_ast::Value::Array(array) => Some(array),
+                    tombi_ast_syntax::Value::Array(array) => Some(array),
                     _ => None,
                 })
                 .unwrap();

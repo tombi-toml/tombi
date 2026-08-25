@@ -128,10 +128,10 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn dependencies_tombi_ast_workspace(
+            async fn dependencies_tombi_ast_syntax_workspace(
                 r#"
                 [dependencies]
-                tombi-ast = { workspace█ = true }
+                tombi-ast-syntax = { workspace█ = true }
                 "#,
                 SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
@@ -139,13 +139,13 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn dependencies_tombi_ast(
+            async fn dependencies_tombi_ast_syntax(
                 r#"
                 [dependencies]
-                tombi-ast█ = { workspace = true }
+                tombi-ast-syntax█ = { workspace = true }
                 "#,
                 SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
-            ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
+            ) -> Ok([project_root_path().join("crates/tombi-ast-syntax/Cargo.toml")]);
         );
 
         test_goto_definition!(
@@ -172,21 +172,21 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn dev_dependencies_tombi_ast_with_workspace(
+            async fn dev_dependencies_tombi_ast_syntax_with_workspace(
                 r#"
                 [dev-dependencies]
-                tombi-ast█ = { workspace = true }
+                tombi-ast-syntax█ = { workspace = true }
                 "#,
                 SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
-            ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
+            ) -> Ok([project_root_path().join("crates/tombi-ast-syntax/Cargo.toml")]);
         );
 
         test_goto_definition!(
             #[tokio::test]
-            async fn dev_dependencies_tombi_ast_workspace(
+            async fn dev_dependencies_tombi_ast_syntax_workspace(
                 r#"
                 [dev-dependencies]
-                tombi-ast = { workspace█ = true }
+                tombi-ast-syntax = { workspace█ = true }
                 "#,
                 SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
@@ -194,10 +194,10 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn build_dependencies_tombi_ast_workspace(
+            async fn build_dependencies_tombi_ast_syntax_workspace(
                 r#"
                 [build-dependencies]
-                tombi-ast = { workspace█ = true }
+                tombi-ast-syntax = { workspace█ = true }
                 "#,
                 SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
@@ -271,28 +271,28 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn workspace_dependencies_tombi_ast(
+            async fn workspace_dependencies_tombi_ast_syntax(
                 r#"
                 [workspace.dependencies]
-                tombi-ast = { path█ = "crates/tombi-ast" }
+                tombi-ast-syntax = { path█ = "crates/tombi-ast-syntax" }
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
-            ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
+            ) -> Ok([project_root_path().join("crates/tombi-ast-syntax/Cargo.toml")]);
         );
 
         test_goto_definition!(
             #[tokio::test]
-            async fn workspace_dependencies_tombi_ast_editor(
+            async fn workspace_dependencies_tombi_formatter(
                 r#"
                 [workspace]
                 resolver = "2"
                 members = ["crates/*"]
 
                 [workspace.dependencies]
-                tombi-ast-editor█ = { path = "crates/tombi-ast-editor" }
+                tombi-formatter█ = { path = "crates/tombi-formatter" }
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
-            ) -> Ok([project_root_path().join("crates/tombi-ast-editor/Cargo.toml")]);
+            ) -> Ok([project_root_path().join("crates/tombi-formatter/Cargo.toml")]);
         );
 
         test_goto_definition!(
@@ -325,15 +325,15 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn workspace_members_crate_tombi_ast(
+            async fn workspace_members_crate_tombi_ast_syntax(
                 r#"
                 [workspace]
                 members = [
-                    "crates/tombi-ast█"
+                    "crates/tombi-ast-syntax█"
                 ]
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
-            ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
+            ) -> Ok([project_root_path().join("crates/tombi-ast-syntax/Cargo.toml")]);
         );
 
         test_goto_definition!(
@@ -407,10 +407,10 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn target_dependencies_tombi_ast_workspace(
+            async fn target_dependencies_tombi_ast_syntax_workspace(
                 r#"
                 [target.'cfg(unix)'.dependencies]
-                tombi-ast = { workspace█ = true }
+                tombi-ast-syntax = { workspace█ = true }
                 "#,
                 SourcePath(project_root_path().join("crates/tombi-lsp/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
@@ -421,10 +421,10 @@ mod goto_definition_tests {
             async fn target_dependencies_path(
                 r#"
                 [target.'cfg(unix)'.dependencies]
-                tombi-ast = { path█ = "crates/tombi-ast" }
+                tombi-ast-syntax = { path█ = "crates/tombi-ast-syntax" }
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
-            ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
+            ) -> Ok([project_root_path().join("crates/tombi-ast-syntax/Cargo.toml")]);
         );
 
         test_goto_definition!(

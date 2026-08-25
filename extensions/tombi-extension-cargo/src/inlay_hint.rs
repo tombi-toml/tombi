@@ -5,10 +5,11 @@ use std::{
 
 use futures::{StreamExt, stream};
 use serde::{Deserialize, Serialize};
-use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{TryIntoDocumentTree, Value, dig_keys};
-use tombi_extension::{InlayHint, fetch_cached_remote_json, file_cache_version, get_or_load_json};
+use tombi_document_tree_syntax::{TryIntoDocumentTree, Value, dig_keys};
+use tombi_extension::{
+    InlayHint, InlayHintKind, fetch_cached_remote_json, file_cache_version, get_or_load_json,
+};
 use tombi_hashmap::{HashMap, HashSet};
 
 use crate::{
@@ -115,14 +116,14 @@ struct WorkspaceMemberPackage {
 
 #[derive(Default)]
 struct LocalCargoTomlCache {
-    cargo_tomls: HashMap<PathBuf, tombi_document_tree::DocumentTree>,
+    cargo_tomls: HashMap<PathBuf, tombi_document_tree_syntax::DocumentTree>,
     workspace_cargo_tomls: HashMap<PathBuf, Option<PathBuf>>,
     workspace_member_packages: HashMap<PathBuf, Vec<WorkspaceMemberPackage>>,
 }
 
 struct LocalCargoTomlData {
     cargo_toml_path: PathBuf,
-    document_tree: tombi_document_tree::DocumentTree,
+    document_tree: tombi_document_tree_syntax::DocumentTree,
 }
 
 #[derive(Default)]
@@ -132,12 +133,12 @@ struct LocalCargoTomlRequests {
 }
 
 enum WorkspaceDocumentTree<'a> {
-    Current(&'a tombi_document_tree::DocumentTree),
-    External(tombi_document_tree::DocumentTree),
+    Current(&'a tombi_document_tree_syntax::DocumentTree),
+    External(tombi_document_tree_syntax::DocumentTree),
 }
 
 impl WorkspaceDocumentTree<'_> {
-    fn as_tree(&self) -> &tombi_document_tree::DocumentTree {
+    fn as_tree(&self) -> &tombi_document_tree_syntax::DocumentTree {
         match self {
             Self::Current(document_tree) => document_tree,
             Self::External(document_tree) => document_tree,
@@ -147,7 +148,7 @@ impl WorkspaceDocumentTree<'_> {
 
 pub async fn inlay_hint(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     visible_range: tombi_text::Range,
     toml_version: TomlVersion,
     offline: bool,
@@ -252,7 +253,7 @@ pub async fn inlay_hint(
 
 fn inlay_hint_impl(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     visible_range: tombi_text::Range,
     cargo_lock_cache: Option<CargoLockInlayCacheData>,
     mut local_cargo_toml_cache: LocalCargoTomlCache,
@@ -328,7 +329,7 @@ fn inlay_hint_impl(
                 for dependency_key in ["dependencies", "dev-dependencies", "build-dependencies"] {
                     collect_dependency_inlay_hints(
                         document_tree,
-                        &["target", target_key.value.as_str(), dependency_key],
+                        &["target", target_key.value(), dependency_key],
                         &cargo_toml_path,
                         cargo_lock_cache.as_ref(),
                         &mut local_cargo_toml_cache,
@@ -352,7 +353,7 @@ fn inlay_hint_impl(
 }
 
 fn collect_workspace_value_inlay_hints(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
@@ -388,8 +389,8 @@ fn collect_workspace_value_inlay_hints(
 }
 
 fn collect_workspace_package_inlay_hints(
-    document_tree: &tombi_document_tree::DocumentTree,
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     visible_range: tombi_text::Range,
     hints: &mut Vec<InlayHint>,
 ) {
@@ -415,8 +416,8 @@ fn collect_workspace_package_inlay_hints(
 }
 
 fn collect_workspace_lints_inlay_hints(
-    document_tree: &tombi_document_tree::DocumentTree,
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     visible_range: tombi_text::Range,
     hints: &mut Vec<InlayHint>,
 ) {
@@ -437,7 +438,7 @@ fn collect_workspace_lints_inlay_hints(
 }
 
 fn has_visible_workspace_value_targets(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     visible_range: tombi_text::Range,
 ) -> bool {
     WORKSPACE_PACKAGE_ITEMS.iter().any(|package_item| {
@@ -456,7 +457,7 @@ fn has_visible_workspace_value_targets(
 }
 
 fn push_workspace_value_hint(
-    workspace: &tombi_document_tree::Boolean,
+    workspace: &tombi_document_tree_syntax::Boolean,
     workspace_value: &Value,
     visible_range: tombi_text::Range,
     hints: &mut Vec<InlayHint>,
@@ -472,7 +473,7 @@ fn push_workspace_value_hint(
     hints.push(InlayHint {
         position: workspace.range().end,
         label,
-        kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
+        kind: Some(InlayHintKind::TYPE),
         tooltip: Some(WORKSPACE_INHERITED_VALUE_TOOLTIP.to_string()),
         padding_left: Some(true),
         padding_right: Some(false),
@@ -480,7 +481,7 @@ fn push_workspace_value_hint(
 }
 
 fn collect_dependency_inlay_hints(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_keys: &[&str],
     cargo_toml_path: &Path,
     cargo_lock_cache: Option<&CargoLockInlayCacheData>,
@@ -501,7 +502,7 @@ fn collect_dependency_inlay_hints(
     for (dependency_key, dependency_value) in dependencies.key_values() {
         if dependency_version_enabled
             && let Some(version_hint) =
-                dependency_version_hint(&dependency_key.value, dependency_value)
+                dependency_version_hint(dependency_key.value(), dependency_value)
             && tombi_text::Range::at(version_hint.position).intersects(visible_range)
         {
             version_hints.push(version_hint);
@@ -510,7 +511,7 @@ fn collect_dependency_inlay_hints(
         if default_features_enabled
             && let Some(default_features_hint) = dependency_default_features_hint(
                 document_tree,
-                &dependency_key.value,
+                dependency_key.value(),
                 dependency_value,
                 cargo_toml_path,
                 local_cargo_toml_cache,
@@ -624,7 +625,7 @@ fn collect_dependency_inlay_hints(
         hints.push(InlayHint {
             position,
             label,
-            kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
+            kind: Some(InlayHintKind::TYPE),
             tooltip: Some(tooltip.to_string()),
             padding_left: Some(true),
             padding_right: Some(false),
@@ -634,7 +635,7 @@ fn collect_dependency_inlay_hints(
     hints.extend(default_feature_hints.into_iter().map(|hint| InlayHint {
         position: hint.position,
         label: hint.label,
-        kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
+        kind: Some(InlayHintKind::TYPE),
         tooltip: Some(hint.tooltip),
         padding_left: Some(true),
         padding_right: Some(false),
@@ -706,7 +707,7 @@ fn dependency_version_hint(
 }
 
 fn dependency_local_version(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     source: Option<&LocalVersionSource>,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
@@ -741,7 +742,7 @@ fn dependency_local_version(
 }
 
 fn workspace_path_dependency_version(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_key: &str,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
@@ -807,7 +808,7 @@ fn workspace_path_dependency_version(
 }
 
 fn dependency_default_features_hint(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_key: &str,
     dependency_value: &Value,
     cargo_toml_path: &Path,
@@ -843,7 +844,7 @@ fn dependency_default_features_hint(
 }
 
 fn dependency_default_features(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_key: &str,
     dependency_value: &Value,
     cargo_toml_path: &Path,
@@ -904,7 +905,7 @@ fn dependency_default_features(
 }
 
 async fn preload_local_cargo_toml_cache(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     visible_range: tombi_text::Range,
     toml_version: TomlVersion,
@@ -965,7 +966,7 @@ async fn preload_local_cargo_toml_cache(
 }
 
 fn collect_local_cargo_toml_requests(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     visible_range: tombi_text::Range,
     dependency_version_enabled: bool,
     default_features_enabled: bool,
@@ -1001,7 +1002,7 @@ fn collect_local_cargo_toml_requests(
             for dependency_key in ["dependencies", "dev-dependencies", "build-dependencies"] {
                 collect_local_cargo_toml_requests_from_keys(
                     document_tree,
-                    &["target", target_key.value.as_str(), dependency_key],
+                    &["target", target_key.value(), dependency_key],
                     visible_range,
                     dependency_version_enabled,
                     default_features_enabled,
@@ -1015,7 +1016,7 @@ fn collect_local_cargo_toml_requests(
 }
 
 fn collect_local_cargo_toml_requests_from_keys(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_keys: &[&str],
     visible_range: tombi_text::Range,
     dependency_version_enabled: bool,
@@ -1031,7 +1032,7 @@ fn collect_local_cargo_toml_requests_from_keys(
             continue;
         };
         if !needs_visible_local_cargo_toml_prefetch(
-            dependency_key.value.as_str(),
+            dependency_key.value(),
             dependency_value,
             visible_range,
             dependency_version_enabled,
@@ -1049,7 +1050,7 @@ fn collect_local_cargo_toml_requests_from_keys(
         {
             requests
                 .workspace_dependencies
-                .insert(dependency_key.value.to_string());
+                .insert(dependency_key.value().to_string());
         }
     }
 }
@@ -1119,7 +1120,7 @@ async fn load_local_cargo_toml_entries(
 }
 
 async fn load_workspace_cargo_toml_entries(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     workspace_cargo_toml_path: &Path,
     dependency_keys: HashSet<String>,
     toml_version: TomlVersion,
@@ -1163,10 +1164,10 @@ async fn load_workspace_cargo_toml_entries(
 }
 
 async fn load_workspace_document_tree_async(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
-) -> Option<(PathBuf, tombi_document_tree::DocumentTree)> {
+) -> Option<(PathBuf, tombi_document_tree_syntax::DocumentTree)> {
     if document_tree.contains_key("workspace") {
         return Some((cargo_toml_path.to_path_buf(), document_tree.clone()));
     }
@@ -1228,11 +1229,11 @@ fn canonicalize_or_original(path: PathBuf) -> PathBuf {
 async fn load_cargo_toml_async(
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
-) -> Option<tombi_document_tree::DocumentTree> {
+) -> Option<tombi_document_tree_syntax::DocumentTree> {
     let toml_text = tombi_fs::read_to_string_async(cargo_toml_path).await.ok()?;
 
     tombi_fs::run_blocking(move || {
-        let root = tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
+        let root = tombi_parser::parse(&toml_text).into_root();
         root.try_into_document_tree(toml_version).ok()
     })
     .await
@@ -1248,7 +1249,7 @@ fn load_cached_cargo_toml_document_tree(
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
-) -> Option<(PathBuf, tombi_document_tree::DocumentTree)> {
+) -> Option<(PathBuf, tombi_document_tree_syntax::DocumentTree)> {
     let canonicalized_path = canonicalize_or_original_sync(cargo_toml_path.to_path_buf());
     if let Some(document_tree) = local_cargo_toml_cache.cargo_tomls.get(&canonicalized_path) {
         return Some((canonicalized_path, document_tree.clone()));
@@ -1267,7 +1268,7 @@ fn load_local_dependency_document_tree_cached(
     cargo_toml_path: &Path,
     dependency_path: &str,
     toml_version: TomlVersion,
-) -> Option<(PathBuf, tombi_document_tree::DocumentTree)> {
+) -> Option<(PathBuf, tombi_document_tree_syntax::DocumentTree)> {
     let dependency_cargo_toml_path = tombi_extension_manifest::resolve_manifest_path(
         cargo_toml_path,
         Path::new(dependency_path),
@@ -1288,7 +1289,7 @@ fn find_workspace_cargo_toml_with_local_cache(
     cargo_toml_path: &Path,
     workspace_path: Option<&str>,
     toml_version: TomlVersion,
-) -> Option<(PathBuf, tombi_document_tree::DocumentTree)> {
+) -> Option<(PathBuf, tombi_document_tree_syntax::DocumentTree)> {
     let cache_key = canonicalize_or_original_sync(cargo_toml_path.to_path_buf());
 
     if let Some(cached_workspace_path) =
@@ -1358,7 +1359,7 @@ fn find_workspace_cargo_toml_with_local_cache(
 
 async fn registry_default_features_inlay_hints(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     visible_range: tombi_text::Range,
     toml_version: TomlVersion,
     offline: bool,
@@ -1412,7 +1413,7 @@ async fn registry_default_features_inlay_hints(
             for dependency_key in ["dependencies", "dev-dependencies", "build-dependencies"] {
                 collect_registry_default_features_inlay_hints(
                     document_tree,
-                    &["target", target_key.value.as_str(), dependency_key],
+                    &["target", target_key.value(), dependency_key],
                     &cargo_toml_path,
                     cargo_lock.as_ref(),
                     toml_version,
@@ -1430,7 +1431,7 @@ async fn registry_default_features_inlay_hints(
 }
 
 async fn collect_registry_default_features_inlay_hints(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_keys: &[&str],
     cargo_toml_path: &Path,
     cargo_lock: Option<&CargoLock>,
@@ -1447,7 +1448,7 @@ async fn collect_registry_default_features_inlay_hints(
     for (dependency_key, dependency_value) in dependencies.key_values() {
         let Some(hint) = registry_dependency_default_features_hint(
             document_tree,
-            dependency_key.value.as_str(),
+            dependency_key.value(),
             dependency_value,
             cargo_toml_path,
             cargo_lock,
@@ -1467,7 +1468,7 @@ async fn collect_registry_default_features_inlay_hints(
         hints.push(InlayHint {
             position: hint.position,
             label: hint.label,
-            kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
+            kind: Some(InlayHintKind::TYPE),
             tooltip: Some(hint.tooltip),
             padding_left: Some(true),
             padding_right: Some(false),
@@ -1478,7 +1479,7 @@ async fn collect_registry_default_features_inlay_hints(
 }
 
 async fn registry_dependency_default_features_hint(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     dependency_key: &str,
     dependency_value: &Value,
     cargo_toml_path: &Path,
@@ -1580,7 +1581,7 @@ async fn fetch_registry_crate_features(
     Some(resp.version.features)
 }
 
-fn collect_feature_names(features: &tombi_document_tree::Array) -> HashSet<String> {
+fn collect_feature_names(features: &tombi_document_tree_syntax::Array) -> HashSet<String> {
     features
         .values()
         .iter()
@@ -1591,7 +1592,7 @@ fn collect_feature_names(features: &tombi_document_tree::Array) -> HashSet<Strin
         .collect()
 }
 
-fn dependency_table_default_features_disabled(table: &tombi_document_tree::Table) -> bool {
+fn dependency_table_default_features_disabled(table: &tombi_document_tree_syntax::Table) -> bool {
     table
         .get("default-features")
         .is_some_and(|value| match value {
@@ -1647,7 +1648,7 @@ fn format_default_features_tooltip(default_features: &[String]) -> String {
 }
 
 fn package_default_features(
-    dependency_document_tree: &tombi_document_tree::DocumentTree,
+    dependency_document_tree: &tombi_document_tree_syntax::DocumentTree,
 ) -> Option<Vec<String>> {
     let (_, Value::Array(default_features)) =
         dig_keys(dependency_document_tree, &["features", "default"])?
@@ -1764,7 +1765,7 @@ fn workspace_dependency_lock_versions<'a>(
 }
 
 fn workspace_member_packages(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
@@ -1795,7 +1796,7 @@ fn workspace_member_packages(
 }
 
 fn workspace_document_tree<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
@@ -1815,7 +1816,7 @@ fn workspace_document_tree<'a>(
 }
 
 fn workspace_member_packages_for_workspace(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
     workspace_cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
@@ -1868,7 +1869,7 @@ fn workspace_member_packages_for_workspace(
 }
 
 fn current_package<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
@@ -1885,8 +1886,8 @@ fn current_package<'a>(
 }
 
 fn workspace_member_patterns(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
-) -> Vec<&tombi_document_tree::String> {
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+) -> Vec<&tombi_document_tree_syntax::String> {
     match dig_keys(workspace_document_tree, &["workspace", "members"]) {
         Some((_, Value::Array(members))) => members
             .iter()
@@ -1942,7 +1943,7 @@ fn cargo_lock_cache_key(cargo_lock_path: &Path) -> String {
 }
 
 fn package_version(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
@@ -1989,7 +1990,7 @@ fn package_version(
     }
 }
 
-fn current_package_name(document_tree: &tombi_document_tree::DocumentTree) -> Option<&str> {
+fn current_package_name(document_tree: &tombi_document_tree_syntax::DocumentTree) -> Option<&str> {
     let (_, Value::String(package_name)) = dig_keys(document_tree, &["package", "name"])? else {
         return None;
     };
@@ -2160,12 +2161,10 @@ mod tests {
 
     use super::*;
     use crate::cargo_lock::{CargoLockDependency, CargoLockPackage};
-    use tombi_ast::AstNode;
-    use tombi_document_tree::TryIntoDocumentTree;
+    use tombi_document_tree_syntax::TryIntoDocumentTree;
 
-    fn parse_document_tree(source: &str) -> tombi_document_tree::DocumentTree {
-        let root = tombi_ast::Root::cast(tombi_parser::parse(source).into_syntax_node())
-            .expect("expected root");
+    fn parse_document_tree(source: &str) -> tombi_document_tree_syntax::DocumentTree {
+        let root = tombi_parser::parse(source).into_root();
         root.try_into_document_tree(TomlVersion::default())
             .expect("expected document tree")
     }
@@ -2374,7 +2373,7 @@ mod tests {
             Some(vec![InlayHint {
                 position: tombi_text::Position::new(3, 40),
                 label: r#" → "0.0.0-dev""#.to_string(),
-                kind: Some(tower_lsp::lsp_types::InlayHintKind::TYPE),
+                kind: Some(InlayHintKind::TYPE),
                 tooltip: Some(WORKSPACE_INHERITED_VALUE_TOOLTIP.to_string()),
                 padding_left: Some(true),
                 padding_right: Some(false),

@@ -2,7 +2,7 @@ use tombi_future::Boxable;
 
 use crate::{Lint, Rule};
 
-impl Lint for tombi_ast::Root {
+impl Lint for tombi_ast_syntax::Root {
     fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
         async move {
             crate::rule::DottedKeysOutOfOrderRule::check(self, l).await;
@@ -21,7 +21,7 @@ impl Lint for tombi_ast::Root {
     }
 }
 
-impl Lint for tombi_ast::TableOrArrayOfTable {
+impl Lint for tombi_ast_syntax::TableOrArrayOfTable {
     fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
         async move {
             match self {
@@ -33,7 +33,7 @@ impl Lint for tombi_ast::TableOrArrayOfTable {
     }
 }
 
-impl Lint for tombi_ast::RootItem {
+impl Lint for tombi_ast_syntax::RootItem {
     fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
         async move {
             match self {
@@ -84,7 +84,7 @@ mod tests {
                 SchemaPath(type_test_schema_path()),
             ) -> Err([tombi_validator::DiagnosticKind::TypeMismatch {
                 expected: tombi_schema_store::ValueType::Integer,
-                actual: tombi_document_tree::ValueType::String,
+                actual: tombi_document_tree_syntax::ValueType::String,
             }])
         }
 

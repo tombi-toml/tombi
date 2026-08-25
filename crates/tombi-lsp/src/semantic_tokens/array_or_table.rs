@@ -1,25 +1,25 @@
-use tombi_ast::{AstNode, DanglingCommentGroupOr};
+use tombi_ast_syntax::DanglingCommentGroupOr;
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder, TokenType};
 
-impl AppendSemanticTokens for tombi_ast::ArrayOfTable {
+impl AppendSemanticTokens for tombi_ast_syntax::ArrayOfTable {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         for comment in self.header_leading_comments() {
             comment.append_semantic_tokens(builder);
         }
 
         if let Some(token) = self.double_bracket_start() {
-            builder.add_token(TokenType::OPERATOR, token.into());
+            builder.add_token(TokenType::OPERATOR, token.range());
         }
 
         if let Some(header) = self.header() {
             for key in header.keys() {
-                builder.add_token(TokenType::TABLE, key.syntax().clone().into());
+                builder.add_token(TokenType::TABLE, key.range());
             }
         }
 
         if let Some(token) = self.double_bracket_end() {
-            builder.add_token(TokenType::OPERATOR, token.into());
+            builder.add_token(TokenType::OPERATOR, token.range());
         }
 
         if let Some(comment) = self.header_trailing_comment() {

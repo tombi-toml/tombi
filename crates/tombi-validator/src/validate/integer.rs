@@ -15,7 +15,7 @@ use crate::{
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
 
-impl Validate for tombi_document_tree::Integer {
+impl Validate for tombi_document_tree_syntax::Integer {
     fn validate<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::Accessor],
@@ -140,12 +140,12 @@ impl Validate for tombi_document_tree::Integer {
 }
 
 async fn validate_integer_schema(
-    integer_value: &tombi_document_tree::Integer,
+    integer_value: &tombi_document_tree_syntax::Integer,
     accessors: &[tombi_schema_store::Accessor],
     integer_schema: &tombi_schema_store::IntegerSchema,
     current_schema: &tombi_schema_store::CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<&[tombi_ast_syntax::TombiValueCommentDirective]>,
     lint_rules: Option<&IntegerCommonLintRules>,
 ) -> Result<crate::Valid, crate::Invalid> {
     let mut diagnostics = vec![];
@@ -443,12 +443,12 @@ async fn validate_integer_schema(
 }
 
 async fn validate_float_schema_for_integer(
-    integer_value: &tombi_document_tree::Integer,
+    integer_value: &tombi_document_tree_syntax::Integer,
     accessors: &[tombi_schema_store::Accessor],
     float_schema: &tombi_schema_store::FloatSchema,
     current_schema: &tombi_schema_store::CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<&[tombi_ast_syntax::TombiValueCommentDirective]>,
     lint_rules: Option<&IntegerCommonLintRules>,
 ) -> Result<crate::Valid, crate::Invalid> {
     let mut diagnostics = vec![];

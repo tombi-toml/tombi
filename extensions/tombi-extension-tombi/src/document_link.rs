@@ -1,7 +1,7 @@
 use std::{borrow::Cow, str::FromStr};
 
 use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion, config_base_dir};
-use tombi_document_tree::dig_keys;
+use tombi_document_tree_syntax::dig_keys;
 use tombi_extension::get_tombi_github_uri;
 
 pub enum DocumentLinkToolTip {
@@ -38,7 +38,7 @@ impl std::fmt::Display for DocumentLinkToolTip {
 
 pub async fn document_link(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     _toml_version: TomlVersion,
     features: Option<&tombi_config::TombiExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
@@ -74,11 +74,11 @@ pub async fn document_link(
     {
         if let Some((_, path)) = dig_keys(document_tree, &["schema", "catalog", "path"]) {
             let paths = match path {
-                tombi_document_tree::Value::String(path) => vec![path],
-                tombi_document_tree::Value::Array(paths) => paths
+                tombi_document_tree_syntax::Value::String(path) => vec![path],
+                tombi_document_tree_syntax::Value::Array(paths) => paths
                     .iter()
                     .filter_map(|v| {
-                        if let tombi_document_tree::Value::String(s) = v {
+                        if let tombi_document_tree_syntax::Value::String(s) = v {
                             Some(s)
                         } else {
                             None
@@ -99,11 +99,11 @@ pub async fn document_link(
             }
         }
 
-        if let Some((_, tombi_document_tree::Value::Array(paths))) =
+        if let Some((_, tombi_document_tree_syntax::Value::Array(paths))) =
             dig_keys(document_tree, &["schema", "catalog", "paths"])
         {
             for path in paths.iter() {
-                let tombi_document_tree::Value::String(path) = path else {
+                let tombi_document_tree_syntax::Value::String(path) = path else {
                     continue;
                 };
                 // Convert the path to a URL
@@ -117,14 +117,15 @@ pub async fn document_link(
             }
         }
 
-        if let Some((_, tombi_document_tree::Value::Array(schemas))) =
+        if let Some((_, tombi_document_tree_syntax::Value::Array(schemas))) =
             dig_keys(document_tree, &["schemas"])
         {
             for schema in schemas.iter() {
-                let tombi_document_tree::Value::Table(table) = schema else {
+                let tombi_document_tree_syntax::Value::Table(table) = schema else {
                     continue;
                 };
-                let Some(tombi_document_tree::Value::String(path)) = table.get("path") else {
+                let Some(tombi_document_tree_syntax::Value::String(path)) = table.get("path")
+                else {
                     continue;
                 };
                 let Some(target) = get_document_link(path.value(), &tombi_toml_path) else {

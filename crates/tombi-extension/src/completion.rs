@@ -4,12 +4,13 @@ mod completion_kind;
 
 use std::path::Path;
 
-pub use completion_edit::{CompletionEdit, CompletionTextEdit, InsertReplaceEdit};
+pub use completion_edit::{
+    CompletionEdit, CompletionTextEdit, InsertReplaceEdit, InsertTextFormat,
+};
 pub use completion_hint::{AddLeadingComma, AddTrailingComma, CommaHint, CompletionHint};
 pub use completion_kind::CompletionKind;
-use tombi_document_tree::dig_accessors;
-use tombi_schema_store::{Accessor, SchemaUri, get_schema_name};
-use tombi_text::{FromLsp, IntoLsp};
+use tombi_document_tree::{Node as _, ValueNode as _, dig_accessors};
+use tombi_schema_store::{Accessor, SchemaUri};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
@@ -50,10 +51,10 @@ impl CompletionContentPriority {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CommentContext {
-    DocumentDirective(tombi_ast::Comment),
-    ValueDirective(tombi_ast::Comment),
-    Normal(tombi_ast::Comment),
+pub enum CommentContext<C> {
+    DocumentDirective(C),
+    ValueDirective(C),
+    Normal(C),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -503,167 +504,6 @@ impl CompletionContent {
     }
 }
 
-impl FromLsp<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
-    fn from_lsp(
-        source: CompletionContent,
-        line_index: &tombi_text::LineIndex,
-    ) -> tower_lsp::lsp_types::CompletionItem {
-        let sorted_text = format!("{}_{}", source.priority.as_prefix(), source.label);
-        let omit_detail = source.documentation.is_some()
-            && matches!(
-                &source.priority,
-                CompletionContentPriority::TypeHint
-                    | CompletionContentPriority::TypeHintTrue
-                    | CompletionContentPriority::TypeHintFalse
-            );
-
-        let mut schema_text = None;
-        if let Some(schema_uri) = &source.schema_uri
-            && let Some(schema_filename) = get_schema_name(schema_uri)
-        {
-            schema_text = Some(format!("Schema: [{schema_filename}]({schema_uri})\n"));
-        }
-        let documentation = match source.documentation {
-            Some(documentation) => {
-                let mut documentation = documentation.trim_end().to_string();
-                if let Some(schema_text) = schema_text {
-                    documentation.push_str("\n\n");
-                    documentation.push_str(&schema_text);
-                }
-                Some(documentation)
-            }
-            None => schema_text,
-        };
-
-        let (insert_text_format, text_edit, additional_text_edits) = match source.edit {
-            Some(edit) => (
-                edit.insert_text_format,
-                Some(edit.text_edit.into_lsp(line_index)),
-                edit.additional_text_edits.map(|edits| {
-                    edits
-                        .into_iter()
-                        .map(|edit| edit.into_lsp(line_index))
-                        .collect()
-                }),
-            ),
-            None => (None, None, None),
-        };
-
-        let label_details = match source.priority {
-            CompletionContentPriority::Custom(_) => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
-                    detail: None,
-                    description: source.detail.clone(),
-                })
-            }
-            CompletionContentPriority::Default => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
-                    detail: None,
-                    description: Some(match &source.detail {
-                        Some(detail) => format!("[Default] {detail}"),
-                        None => "Default".to_string(),
-                    }),
-                })
-            }
-            CompletionContentPriority::Const => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
-                    detail: None,
-                    description: Some(match &source.detail {
-                        Some(detail) => detail.to_string(),
-                        None => "Const".to_string(),
-                    }),
-                })
-            }
-            CompletionContentPriority::Enum => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
-                    detail: None,
-                    description: Some(match &source.detail {
-                        Some(detail) => detail.to_string(),
-                        None => "Enum".to_string(),
-                    }),
-                })
-            }
-            CompletionContentPriority::Example => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
-                    detail: None,
-                    description: Some(match &source.detail {
-                        Some(detail) => detail.to_string(),
-                        None => "Example".to_string(),
-                    }),
-                })
-            }
-            CompletionContentPriority::Key => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
-                    detail: None,
-                    description: source.detail.clone(),
-                })
-            }
-            CompletionContentPriority::OptionalKey | CompletionContentPriority::AdditionalKey => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
-                    detail: Some("?".to_string()),
-                    description: source.detail.clone(),
-                })
-            }
-            CompletionContentPriority::TypeHint
-            | CompletionContentPriority::TypeHintKey
-            | CompletionContentPriority::TypeHintTrue
-            | CompletionContentPriority::TypeHintFalse => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
-                    detail: None,
-                    description: Some(match &source.detail {
-                        Some(detail) if !detail.trim().is_empty() => detail.clone(),
-                        _ => "Type Hint".to_string(),
-                    }),
-                })
-            }
-        }
-        .map(|mut details| {
-            if let Some(emoji_icon) = source.emoji_icon {
-                details.description = Some(format!(
-                    "{} {}",
-                    emoji_icon,
-                    details.description.unwrap_or_default()
-                ));
-            }
-            details
-        });
-
-        tower_lsp::lsp_types::CompletionItem {
-            label: source.label,
-            label_details,
-            kind: Some(source.kind.into()),
-            detail: if omit_detail {
-                None
-            } else {
-                source.detail.map(|detail| {
-                    if let Some(emoji_icon) = source.emoji_icon {
-                        format!("{emoji_icon} {detail}")
-                    } else {
-                        detail
-                    }
-                })
-            },
-            documentation: documentation.map(|documentation| {
-                tower_lsp::lsp_types::Documentation::MarkupContent(
-                    tower_lsp::lsp_types::MarkupContent {
-                        kind: tower_lsp::lsp_types::MarkupKind::Markdown,
-                        value: documentation,
-                    },
-                )
-            }),
-            sort_text: Some(sorted_text),
-            filter_text: source.filter_text,
-            insert_text_format,
-            text_edit,
-            insert_text_mode: Some(tower_lsp::lsp_types::InsertTextMode::ADJUST_INDENTATION),
-            additional_text_edits,
-            preselect: source.preselect,
-            deprecated: source.deprecated,
-            ..Default::default()
-        }
-    }
-}
-
 /// Creates a new file path completion content.
 ///
 /// If `allowed_extensions` is `None`, all file extensions are allowed.
@@ -675,13 +515,18 @@ impl FromLsp<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
 /// [package.build]
 /// path = "src/█"
 /// ```
-pub fn completion_file_path_from_uri(
+pub fn completion_file_path_from_uri<D>(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &D,
     position: tombi_text::Position,
     accessors: &[Accessor],
     allowed_extensions: Option<&[&str]>,
-) -> Option<Vec<CompletionContent>> {
+) -> Option<Vec<CompletionContent>>
+where
+    D: tombi_document_tree::DocumentTree,
+    <D::Table as tombi_document_tree::Table>::Value:
+        tombi_document_tree::ValueNode<Table = D::Table>,
+{
     let Ok(source_path) = text_document_uri.to_file_path() else {
         return None;
     };
@@ -696,16 +541,20 @@ pub fn completion_file_path_from_uri(
     )
 }
 
-pub fn completion_file_path_from_base_dir(
+pub fn completion_file_path_from_base_dir<D>(
     base_dir: &std::path::Path,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &D,
     position: tombi_text::Position,
     accessors: &[Accessor],
     allowed_extensions: Option<&[&str]>,
-) -> Option<Vec<CompletionContent>> {
-    let Some((_, tombi_document_tree::Value::String(string))) =
-        dig_accessors(document_tree, accessors)
-    else {
+) -> Option<Vec<CompletionContent>>
+where
+    D: tombi_document_tree::DocumentTree,
+    <D::Table as tombi_document_tree::Table>::Value:
+        tombi_document_tree::ValueNode<Table = D::Table>,
+{
+    let (_, value) = dig_accessors(document_tree, accessors)?;
+    let tombi_document_tree::Value::String(string) = value.value() else {
         return None;
     };
 
@@ -715,7 +564,7 @@ pub fn completion_file_path_from_base_dir(
 
     let completions = get_file_path_completions(
         base_dir,
-        string.value(),
+        string.content(),
         string.unquoted_range(),
         allowed_extensions,
     );
@@ -737,12 +586,17 @@ pub fn completion_file_path_from_base_dir(
 /// [workspace]
 /// members = ["crates/█"]
 /// ```
-pub fn completion_directory_path(
+pub fn completion_directory_path<D>(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &D,
     position: tombi_text::Position,
     accessors: &[Accessor],
-) -> Option<Vec<CompletionContent>> {
+) -> Option<Vec<CompletionContent>>
+where
+    D: tombi_document_tree::DocumentTree,
+    <D::Table as tombi_document_tree::Table>::Value:
+        tombi_document_tree::ValueNode<Table = D::Table>,
+{
     completion_file_path_from_uri(
         text_document_uri,
         document_tree,

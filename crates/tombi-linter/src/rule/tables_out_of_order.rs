@@ -1,4 +1,4 @@
-use tombi_ast::AstNode;
+use tombi_ast_syntax::AstNode;
 use tombi_comment_directive::value::{RootTableCommonLintRules, TableCommonFormatRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_config::SeverityLevel;
@@ -8,8 +8,8 @@ use crate::Rule;
 
 pub struct TablesOutOfOrderRule;
 
-impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
-    async fn check(node: &tombi_ast::Root, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::Root> for TablesOutOfOrderRule {
+    async fn check(node: &tombi_ast_syntax::Root, l: &mut crate::Linter<'_>) {
         let comment_directive = get_comment_directive_content::<
             TableCommonFormatRules,
             RootTableCommonLintRules,
@@ -51,7 +51,7 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
         // Collect all table definitions
         for (position, item) in node.items().enumerate() {
             match item {
-                tombi_ast::RootItem::Table(table) => {
+                tombi_ast_syntax::RootItem::Table(table) => {
                     if let Some(header) = table.header() {
                         let key_parts = extract_key_parts(&header, source_text);
                         if !key_parts.is_empty() {
@@ -59,7 +59,7 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
                         }
                     }
                 }
-                tombi_ast::RootItem::ArrayOfTable(array_table) => {
+                tombi_ast_syntax::RootItem::ArrayOfTable(array_table) => {
                     if let Some(header) = array_table.header() {
                         let key_parts = extract_key_parts(&header, source_text);
                         if !key_parts.is_empty() {
@@ -121,18 +121,18 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
     }
 }
 
-fn extract_key_parts<'a>(keys: &tombi_ast::Keys, source_text: &'a str) -> Vec<&'a str> {
+fn extract_key_parts<'a>(keys: &tombi_ast_syntax::Keys, source_text: &'a str) -> Vec<&'a str> {
     keys.keys()
         .map(|key| match key {
-            tombi_ast::Key::BareKey(k) => &source_text[k.syntax().span()],
-            tombi_ast::Key::BasicString(k) => {
+            tombi_ast_syntax::Key::BareKey(k) => &source_text[k.syntax().span()],
+            tombi_ast_syntax::Key::BasicString(k) => {
                 let mut span = k.syntax().span();
                 // Remove quotes
                 span.start += 1;
                 span.end -= 1;
                 &source_text[span]
             }
-            tombi_ast::Key::LiteralString(k) => {
+            tombi_ast_syntax::Key::LiteralString(k) => {
                 let mut span = k.syntax().span();
                 // Remove quotes
                 span.start += 1;

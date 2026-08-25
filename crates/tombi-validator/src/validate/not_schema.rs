@@ -1,5 +1,5 @@
-use tombi_ast::TombiValueCommentDirective;
-use tombi_document_tree::ValueImpl;
+use tombi_ast_syntax::TombiValueCommentDirective;
+use tombi_document_tree_syntax::ValueImpl;
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 use tombi_severity_level::SeverityLevelDefaultError;
 

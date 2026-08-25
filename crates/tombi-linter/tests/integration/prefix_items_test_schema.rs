@@ -21,7 +21,7 @@ test_lint! {
     ) -> Err([
         tombi_validator::DiagnosticKind::TypeMismatch {
             expected: tombi_schema_store::ValueType::Float,
-            actual: tombi_document_tree::ValueType::String,
+            actual: tombi_document_tree_syntax::ValueType::String,
         },
     ])
 }
@@ -60,7 +60,7 @@ test_lint! {
     ) -> Err([
         tombi_validator::DiagnosticKind::TypeMismatch {
             expected: tombi_schema_store::ValueType::String,
-            actual: tombi_document_tree::ValueType::Integer,
+            actual: tombi_document_tree_syntax::ValueType::Integer,
         },
     ])
 }
@@ -156,7 +156,7 @@ test_lint! {
     ) -> Err([
         tombi_validator::DiagnosticKind::TypeMismatch {
             expected: tombi_schema_store::ValueType::String,
-            actual: tombi_document_tree::ValueType::Integer,
+            actual: tombi_document_tree_syntax::ValueType::Integer,
         },
     ])
 }

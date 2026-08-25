@@ -3,7 +3,7 @@ use tombi_extension::HoverMetadata;
 
 pub async fn hover(
     _text_document_uri: &tombi_uri::Uri,
-    _document_tree: &tombi_document_tree::DocumentTree,
+    _document_tree: &tombi_document_tree_syntax::DocumentTree,
     _accessors: &[tombi_schema_store::Accessor],
     _position: tombi_text::Position,
     _toml_version: TomlVersion,

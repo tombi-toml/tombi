@@ -3,12 +3,12 @@ use crate::{
     feature_key_at_accessors, goto_workspace_managed_dependency_locations, is_optional_dependency,
 };
 use tombi_config::TomlVersion;
-use tombi_document_tree::{Value, dig_accessors};
+use tombi_document_tree_syntax::{Value, dig_accessors};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn goto_declaration(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
     features: Option<&tombi_config::CargoExtensionFeatures>,
@@ -60,7 +60,7 @@ fn cargo_goto_declaration_enabled(
 }
 
 pub fn get_current_declaration(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     cargo_toml_uri: &tombi_uri::Uri,
 ) -> Option<tombi_extension::Location> {

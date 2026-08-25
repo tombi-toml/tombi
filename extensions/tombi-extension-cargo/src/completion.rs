@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{dig_accessors, dig_keys};
-use tombi_extension::CommentContext;
+use tombi_document_tree_syntax::{dig_accessors, dig_keys};
 use tombi_extension::CompletionContent;
 use tombi_extension::CompletionContentPriority;
 use tombi_extension::CompletionEdit;
@@ -10,13 +9,12 @@ use tombi_extension::CompletionKind;
 use tombi_extension::CompletionTextEdit;
 use tombi_extension::TextEdit;
 use tombi_extension::fetch_cached_remote_json;
-use tombi_extension::{completion_directory_path, completion_file_path_from_uri};
+use tombi_extension::{InsertTextFormat, completion_directory_path, completion_file_path_from_uri};
 use tombi_future::Boxable;
 use tombi_hashmap::HashSet;
 use tombi_schema_store::Accessor;
 use tombi_schema_store::matches_accessors;
 use tombi_version_sort::version_sort;
-use tower_lsp::lsp_types::InsertTextFormat;
 
 use crate::cargo_lock::{exact_crates_io_version, load_cached_cargo_lock};
 use crate::{
@@ -35,12 +33,12 @@ enum CargoCompletionFeature {
 
 pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     position: tombi_text::Position,
     accessors: &[Accessor],
     toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
-    comment_context: Option<&CommentContext>,
+    in_comment: bool,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
@@ -49,7 +47,7 @@ pub async fn completion(
         return Ok(None);
     }
 
-    if comment_context.is_some() {
+    if in_comment {
         return Ok(None);
     }
 
@@ -110,7 +108,7 @@ pub async fn completion(
 /// Tries directory-only completion, then .rs path completion, then any-file path completion.
 fn completion_cargo_file_path(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     position: tombi_text::Position,
     accessors: &[Accessor],
 ) -> Option<Vec<CompletionContent>> {
@@ -191,7 +189,7 @@ fn completion_cargo_file_path(
 }
 
 async fn completion_workspace(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &std::path::Path,
     position: tombi_text::Position,
     accessors: &[Accessor],
@@ -240,7 +238,7 @@ async fn completion_workspace(
         if !cargo_completion_enabled(features, CargoCompletionFeature::DependencyFeature) {
             return Ok(None);
         }
-        if let Some((_, tombi_document_tree::Value::Incomplete { .. })) =
+        if let Some((_, tombi_document_tree_syntax::Value::Incomplete { .. })) =
             dig_accessors(document_tree, accessors)
         {
             return Ok(None);
@@ -256,7 +254,7 @@ async fn completion_workspace(
             cache_options,
             accessors.get(4).and_then(|_| {
                 dig_accessors(document_tree, accessors).and_then(|(_, feature)| {
-                    if let tombi_document_tree::Value::String(feature_string) = feature {
+                    if let tombi_document_tree_syntax::Value::String(feature_string) = feature {
                         Some(feature_string)
                     } else {
                         None
@@ -270,7 +268,7 @@ async fn completion_workspace(
 }
 
 async fn completion_member(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &std::path::Path,
     position: tombi_text::Position,
     accessors: &[Accessor],
@@ -358,7 +356,7 @@ async fn completion_member(
         let offset = if is_target_dependency { 2 } else { 0 };
 
         if let Some(Accessor::Key(crate_name)) = accessors.get(1 + offset) {
-            if let Some((_, tombi_document_tree::Value::Incomplete { .. })) =
+            if let Some((_, tombi_document_tree_syntax::Value::Incomplete { .. })) =
                 dig_accessors(document_tree, accessors)
             {
                 return Ok(None);
@@ -374,7 +372,7 @@ async fn completion_member(
                 cache_options,
                 accessors.get(3 + offset).and_then(|_| {
                     dig_accessors(document_tree, accessors).and_then(|(_, feature)| {
-                        if let tombi_document_tree::Value::String(feature_string) = feature {
+                        if let tombi_document_tree_syntax::Value::String(feature_string) = feature {
                             Some(feature_string)
                         } else {
                             None
@@ -406,7 +404,7 @@ fn cargo_completion_enabled(
 }
 
 fn complete_workspace_dependency_inheritance(
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &std::path::Path,
     position: tombi_text::Position,
     accessors: &[Accessor],
@@ -419,14 +417,14 @@ fn complete_workspace_dependency_inheritance(
 
     let (dependency_table_accessors, dependency_name) = member_dependency_accessors(accessors)?;
 
-    let Some((_, tombi_document_tree::Value::Table(current_dependency_table))) =
+    let Some((_, tombi_document_tree_syntax::Value::Table(current_dependency_table))) =
         dig_accessors(document_tree, dependency_table_accessors)
     else {
         return None;
     };
 
     let completion_range = if let Some(Accessor::Key(dependency_name)) = dependency_name {
-        let Some((Accessor::Key(_), tombi_document_tree::Value::Incomplete { .. })) =
+        let Some((Accessor::Key(_), tombi_document_tree_syntax::Value::Incomplete { .. })) =
             dig_accessors(document_tree, accessors)
         else {
             return None;
@@ -446,7 +444,7 @@ fn complete_workspace_dependency_inheritance(
         toml_version,
     )?;
 
-    let Some((_, tombi_document_tree::Value::Table(workspace_dependencies))) =
+    let Some((_, tombi_document_tree_syntax::Value::Table(workspace_dependencies))) =
         dig_keys(&workspace_document_tree, &["workspace", "dependencies"])
     else {
         return None;
@@ -454,7 +452,7 @@ fn complete_workspace_dependency_inheritance(
 
     let existing_dependency_names = current_dependency_table
         .keys()
-        .map(|key| key.value.clone())
+        .map(|key| key.value().to_owned())
         .filter(|key| Some(key.as_str()) != dependency_name.and_then(|key| key.as_key()))
         .collect::<HashSet<_>>();
 
@@ -463,11 +461,11 @@ fn complete_workspace_dependency_inheritance(
         .unwrap_or_default();
     let completions = workspace_dependencies
         .keys()
-        .filter(|key| key.value.starts_with(dependency_prefix))
-        .filter(|key| !existing_dependency_names.contains(&key.value))
+        .filter(|key| key.value().starts_with(dependency_prefix))
+        .filter(|key| !existing_dependency_names.contains(key.value()))
         .enumerate()
         .map(|(index, key)| CompletionContent {
-            label: key.value.clone(),
+            label: key.value().to_owned(),
             kind: CompletionKind::Key,
             emoji_icon: Some('🦀'),
             priority: CompletionContentPriority::Custom(format!(
@@ -483,7 +481,7 @@ fn complete_workspace_dependency_inheritance(
             edit: Some(tombi_extension::CompletionEdit {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     range: completion_range,
-                    new_text: format!("{}.workspace = true", key.value),
+                    new_text: format!("{}.workspace = true", key.value()),
                 }),
                 insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
                 additional_text_edits: None,
@@ -528,7 +526,7 @@ fn member_dependency_accessors(accessors: &[Accessor]) -> Option<(&[Accessor], O
 
 async fn complete_crate_version(
     crate_name: &str,
-    document_tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree,
     accessors: &[Accessor],
     position: tombi_text::Position,
     completion_hint: Option<CompletionHint>,
@@ -539,8 +537,8 @@ async fn complete_crate_version(
         Some((_, value))
             if matches!(
                 value,
-                tombi_document_tree::Value::String(_)
-                    | tombi_document_tree::Value::Incomplete { .. }
+                tombi_document_tree_syntax::Value::String(_)
+                    | tombi_document_tree_syntax::Value::Incomplete { .. }
             ) =>
         {
             value
@@ -568,13 +566,13 @@ async fn complete_crate_version(
                 schema_uri: None,
                 deprecated: None,
                 edit: match version_value {
-                    tombi_document_tree::Value::String(value_string) => {
+                    tombi_document_tree_syntax::Value::String(value_string) => {
                         tombi_extension::CompletionEdit::new_string_literal_while_editing(
                             &format!("\"{version_str}\""),
                             value_string.range(),
                         )
                     }
-                    tombi_document_tree::Value::Incomplete { .. } => {
+                    tombi_document_tree_syntax::Value::Incomplete { .. } => {
                         Some(tombi_extension::CompletionEdit {
                             text_edit: CompletionTextEdit::Edit(tombi_extension::TextEdit {
                                 range: tombi_text::Range::at(position),
@@ -608,18 +606,18 @@ async fn complete_crate_version(
 
 fn complete_crate_feature<'a: 'b, 'b>(
     crate_name: &'a str,
-    document_tree: &'a tombi_document_tree::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
     cargo_toml_path: &'a std::path::Path,
     features_accessors: &'a [Accessor],
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&'a tombi_cache::Options>,
-    editing_feature_string: Option<&'a tombi_document_tree::String>,
+    editing_feature_string: Option<&'a tombi_document_tree_syntax::String>,
 ) -> tombi_future::BoxFuture<'b, Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error>>
 {
     async move {
         // Check if this is a path dependency
-        let features = if let Some((_, tombi_document_tree::Value::String(path_value))) =
+        let features = if let Some((_, tombi_document_tree_syntax::Value::String(path_value))) =
             dig_accessors(
                 document_tree,
                 &features_accessors[..features_accessors.len() - 1]
@@ -630,7 +628,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
             ) {
             // This is a path dependency - read features from local Cargo.toml
             fetch_local_crate_features(cargo_toml_path, path_value.value(), toml_version).await
-        } else if let Some((_, tombi_document_tree::Value::String(value_string))) = dig_accessors(
+        } else if let Some((_, tombi_document_tree_syntax::Value::String(value_string))) = dig_accessors(
             document_tree,
             &features_accessors[..features_accessors.len() - 1]
                 .iter()
@@ -652,7 +650,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
                 cache_options,
             )
             .await
-        } else if let Some((_, tombi_document_tree::Value::Boolean(boolean))) = dig_accessors(
+        } else if let Some((_, tombi_document_tree_syntax::Value::Boolean(boolean))) = dig_accessors(
             document_tree,
             &features_accessors[..features_accessors.len() - 1]
                 .iter()
@@ -698,11 +696,11 @@ fn complete_crate_feature<'a: 'b, 'b>(
         };
 
         let already_features: Vec<String> = match dig_accessors(document_tree, features_accessors) {
-            Some((_, tombi_document_tree::Value::Array(array))) => array
+            Some((_, tombi_document_tree_syntax::Value::Array(array))) => array
                 .values()
                 .iter()
                 .filter_map(|feature| {
-                    if let tombi_document_tree::Value::String(feature_string) = feature {
+                    if let tombi_document_tree_syntax::Value::String(feature_string) = feature {
                         Some(feature_string.value().to_string())
                     } else {
                         None
@@ -822,19 +820,19 @@ async fn fetch_local_crate_features(
     )?;
 
     // Extract features from [features] section
-    if let Some((_, tombi_document_tree::Value::Table(features_table))) =
-        tombi_document_tree::dig_keys(&subcrate_document_tree, &["features"])
+    if let Some((_, tombi_document_tree_syntax::Value::Table(features_table))) =
+        tombi_document_tree_syntax::dig_keys(&subcrate_document_tree, &["features"])
     {
         let features = features_table
             .key_values()
             .iter()
             .map(|(feature_name, feature_deps)| {
                 let deps = match feature_deps {
-                    tombi_document_tree::Value::Array(arr) => arr
+                    tombi_document_tree_syntax::Value::Array(arr) => arr
                         .values()
                         .iter()
                         .filter_map(|value| {
-                            if let tombi_document_tree::Value::String(string) = value {
+                            if let tombi_document_tree_syntax::Value::String(string) = value {
                                 Some(string.value().to_string())
                             } else {
                                 None
@@ -843,7 +841,7 @@ async fn fetch_local_crate_features(
                         .collect(),
                     _ => Vec::new(),
                 };
-                (feature_name.value.clone(), deps)
+                (feature_name.value().to_owned(), deps)
             })
             .collect::<tombi_hashmap::HashMap<_, _>>();
 

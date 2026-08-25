@@ -1,4 +1,4 @@
-use tombi_syntax::SyntaxKind::*;
+use tombi_ast_syntax::SyntaxKind::*;
 
 use crate::{
     parse::Parse,
@@ -6,7 +6,7 @@ use crate::{
     token_set::{TS_DANGLING_COMMENT_GROUP_END, TS_LINE_END},
 };
 
-impl Parse for Vec<tombi_ast::DanglingCommentGroup> {
+impl Parse for Vec<tombi_ast_syntax::DanglingCommentGroup> {
     fn parse(p: &mut Parser<'_>) {
         loop {
             while p.eat(LINE_BREAK) {}

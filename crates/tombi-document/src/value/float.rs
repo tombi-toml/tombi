@@ -15,8 +15,8 @@ impl Float {
     }
 }
 
-impl From<tombi_document_tree::Float> for Float {
-    fn from(node: tombi_document_tree::Float) -> Self {
+impl From<tombi_document_tree_syntax::Float> for Float {
+    fn from(node: tombi_document_tree_syntax::Float) -> Self {
         Self {
             value: node.value(),
         }

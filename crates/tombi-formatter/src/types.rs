@@ -45,16 +45,16 @@ impl<T> WithAlignmentHint<T> {
 
     #[inline]
     pub fn new_with_dangling_comment_group_or(
-        group: tombi_ast::DanglingCommentGroupOr<T>,
+        group: tombi_ast_syntax::DanglingCommentGroupOr<T>,
         equal_alignment_width: Option<AlignmentWidth>,
         trailing_comment_alignment_width: Option<AlignmentWidth>,
-    ) -> tombi_ast::DanglingCommentGroupOr<Self> {
+    ) -> tombi_ast_syntax::DanglingCommentGroupOr<Self> {
         match group {
-            tombi_ast::DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
-                tombi_ast::DanglingCommentGroupOr::DanglingCommentGroup(comment_group)
+            tombi_ast_syntax::DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
+                tombi_ast_syntax::DanglingCommentGroupOr::DanglingCommentGroup(comment_group)
             }
-            tombi_ast::DanglingCommentGroupOr::ItemGroup(item_group) => {
-                tombi_ast::DanglingCommentGroupOr::ItemGroup(Self {
+            tombi_ast_syntax::DanglingCommentGroupOr::ItemGroup(item_group) => {
+                tombi_ast_syntax::DanglingCommentGroupOr::ItemGroup(Self {
                     value: item_group,
                     equal_alignment_width,
                     trailing_comment_alignment_width,
@@ -64,9 +64,9 @@ impl<T> WithAlignmentHint<T> {
     }
 }
 
-impl<T: tombi_ast::AstNode> tombi_ast::AstNode for WithAlignmentHint<T> {
+impl<T: tombi_ast_syntax::AstNode> tombi_ast_syntax::AstNode for WithAlignmentHint<T> {
     #[inline]
-    fn can_cast(kind: tombi_syntax::SyntaxKind) -> bool
+    fn can_cast(kind: tombi_ast_syntax::SyntaxKind) -> bool
     where
         Self: Sized,
     {
@@ -74,7 +74,7 @@ impl<T: tombi_ast::AstNode> tombi_ast::AstNode for WithAlignmentHint<T> {
     }
 
     #[inline]
-    fn cast(syntax: tombi_syntax::SyntaxNode) -> Option<Self>
+    fn cast(syntax: tombi_ast_syntax::SyntaxNode) -> Option<Self>
     where
         Self: Sized,
     {
@@ -82,7 +82,7 @@ impl<T: tombi_ast::AstNode> tombi_ast::AstNode for WithAlignmentHint<T> {
     }
 
     #[inline]
-    fn syntax(&self) -> &tombi_syntax::SyntaxNode {
+    fn syntax(&self) -> &tombi_ast_syntax::SyntaxNode {
         self.value.syntax()
     }
 }

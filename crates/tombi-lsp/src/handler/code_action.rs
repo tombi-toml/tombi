@@ -1,10 +1,11 @@
+use crate::extension::IntoLsp as _;
 use crate::{
     Backend,
     code_action::{dot_keys_to_inline_table_code_action, inline_table_to_dot_keys_code_action},
     completion::get_completion_keys_with_context,
     config_manager::ConfigSchemaStore,
 };
-use tombi_document_tree::get_accessors;
+use tombi_document_tree_syntax::get_accessors;
 use tombi_schema_store::build_accessor_contexts;
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{CodeActionOrCommand, CodeActionParams};
@@ -108,7 +109,11 @@ pub async fn handle_code_action(
         )
         .await?
     {
-        code_actions.extend(extension_code_actions);
+        code_actions.extend(
+            extension_code_actions
+                .into_iter()
+                .map(|action| action.into_lsp_type(line_index)),
+        );
     }
 
     if config.pyproject_extension_enabled()
@@ -125,7 +130,11 @@ pub async fn handle_code_action(
         )
         .await?
     {
-        code_actions.extend(extension_code_actions);
+        code_actions.extend(
+            extension_code_actions
+                .into_iter()
+                .map(|action| action.into_lsp_type(line_index)),
+        );
     }
 
     if code_actions.is_empty() {
@@ -138,7 +147,6 @@ pub async fn handle_code_action(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tombi_ast::AstNode;
     use tombi_config::TomlVersion;
     use tombi_parser::parse;
     use tombi_schema_store::AccessorKeyKind;
@@ -149,7 +157,7 @@ mod tests {
             #[tokio::test]
             async fn $name() {
                 let src = $src.trim();
-                let root = tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
+                let root = parse(src).into_root();
                 let result =
                     get_completion_keys_with_context(&root, $pos, TomlVersion::V1_0_0).await;
 
@@ -161,7 +169,7 @@ mod tests {
             #[tokio::test]
             async fn $name() {
                 let src = $src.trim();
-                let root = tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
+                let root = parse(src).into_root();
                 let result =
                     get_completion_keys_with_context(&root, $pos, TomlVersion::V1_0_0).await;
 

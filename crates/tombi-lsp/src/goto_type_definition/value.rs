@@ -12,11 +12,11 @@ mod table;
 use super::{GetTypeDefinition, TypeDefinition, schema_type_definition};
 use tombi_future::Boxable;
 
-impl GetTypeDefinition for tombi_document_tree::Value {
+impl GetTypeDefinition for tombi_document_tree_syntax::Value {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
@@ -38,7 +38,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
             }
 
             let instance_type = tombi_schema_store::SchemaType::from_value_type(
-                tombi_document_tree::ValueImpl::value_type(self),
+                tombi_document_tree_syntax::ValueImpl::value_type(self),
             );
             let projected_schema = current_schema.and_then(|schema| {
                 instance_type.and_then(|instance_type| {
@@ -219,7 +219,7 @@ impl GetTypeDefinition for tombi_schema_store::SchemaView {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree_syntax::Key],
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,

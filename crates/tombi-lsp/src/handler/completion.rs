@@ -183,7 +183,7 @@ pub async fn handle_completion(
         }
     };
 
-    let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
+    let accessors = tombi_document_tree_syntax::get_accessors(&document_tree, &keys, position);
     let offline = schema_store.offline();
     let cache_options = schema_store.cache_options();
     if config.tombi_extension_enabled()
@@ -194,7 +194,7 @@ pub async fn handle_completion(
             &accessors,
             toml_version,
             completion_hint,
-            comment_context.as_ref(),
+            comment_context.is_some(),
             config.tombi_extension_features(),
         )
         .await?
@@ -209,7 +209,7 @@ pub async fn handle_completion(
             &accessors,
             toml_version,
             completion_hint,
-            comment_context.as_ref(),
+            comment_context.is_some(),
             offline,
             cache_options,
             config.cargo_extension_features(),
@@ -226,7 +226,7 @@ pub async fn handle_completion(
             &accessors,
             toml_version,
             completion_hint,
-            comment_context.as_ref(),
+            comment_context.is_some(),
             config.pyproject_extension_features(),
         )
         .await?
@@ -242,11 +242,11 @@ pub async fn handle_completion(
 }
 
 fn get_keys_and_completion_hint(
-    root: &tombi_ast::Root,
+    root: &tombi_ast_syntax::Root,
     position: tombi_text::Position,
     toml_version: tombi_config::TomlVersion,
-    comment_context: Option<&CommentContext>,
-) -> Option<(Vec<tombi_document_tree::Key>, Option<CompletionHint>)> {
+    comment_context: Option<&CommentContext<tombi_ast_syntax::Comment>>,
+) -> Option<(Vec<tombi_document_tree_syntax::Key>, Option<CompletionHint>)> {
     let Some((keys, completion_hint)) =
         extract_keys_and_hint(root, position, toml_version, comment_context)
     else {

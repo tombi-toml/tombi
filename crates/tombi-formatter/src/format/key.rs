@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use itertools::Itertools;
-use tombi_ast::AstNode;
+use tombi_ast_syntax::AstNode;
 
 use crate::{
     Format,
@@ -9,18 +9,18 @@ use crate::{
     types::{AlignmentWidth, WithAlignmentHint},
 };
 
-impl Format for WithAlignmentHint<&tombi_ast::Keys> {
+impl Format for WithAlignmentHint<&tombi_ast_syntax::Keys> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let keys = self.value;
         let mut keys_string = keys
             .keys()
             .map(|key| match key {
-                tombi_ast::Key::BareKey(it) => it.syntax().text().to_string(),
-                tombi_ast::Key::BasicString(it) => {
+                tombi_ast_syntax::Key::BareKey(it) => it.syntax().text().to_string(),
+                tombi_ast_syntax::Key::BasicString(it) => {
                     format_basic_string_quote_style(it.token().unwrap().text(), f.key_quote_style())
                         .into_owned()
                 }
-                tombi_ast::Key::LiteralString(it) => format_literal_string_quote_style(
+                tombi_ast_syntax::Key::LiteralString(it) => format_literal_string_quote_style(
                     it.token().unwrap().text(),
                     f.key_quote_style(),
                 )
@@ -38,13 +38,13 @@ impl Format for WithAlignmentHint<&tombi_ast::Keys> {
     }
 }
 
-impl Format for tombi_ast::BareKey {
+impl Format for tombi_ast_syntax::BareKey {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         write!(f, "{}", self.syntax().text())
     }
 }
 
-impl Format for tombi_ast::Key {
+impl Format for tombi_ast_syntax::Key {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         match self {
             Self::BareKey(it) => it.format(f),

@@ -1,9 +1,9 @@
-use tombi_syntax::{
+use tombi_ast_syntax::{
     SyntaxKind::{self, *},
     T,
 };
 
-use crate::{Event, marker::Marker, token_set::TokenSet};
+use crate::{event::Event, marker::Marker, token_set::TokenSet};
 
 /// Maximum nesting depth for arrays and inline tables.
 ///
@@ -18,8 +18,9 @@ pub(crate) struct Parser<'t> {
     input_tokens: &'t [tombi_lexer::Token],
     pos: usize,
     depth: usize,
-    pub tokens: Vec<tombi_lexer::Token>,
-    pub(crate) events: Vec<crate::Event>,
+    synthetic_tokens: Vec<tombi_lexer::Token>,
+    pub(crate) events: Vec<Event>,
+    errors: Vec<crate::Error>,
 }
 
 impl<'t> Parser<'t> {
@@ -29,8 +30,9 @@ impl<'t> Parser<'t> {
             input_tokens,
             pos: 0, // Start from the beginning to preserve leading trivia
             depth: 0,
-            tokens: Vec::new(),
-            events: Vec::new(),
+            synthetic_tokens: Vec::new(),
+            events: Vec::with_capacity(input_tokens.len().saturating_mul(2)),
+            errors: Vec::new(),
         }
     }
 
@@ -52,11 +54,8 @@ impl<'t> Parser<'t> {
         self.depth -= 1;
     }
 
-    pub(crate) fn finish(mut self) -> (Vec<tombi_lexer::Token>, Vec<crate::Event>) {
-        for i in self.pos..self.input_tokens.len() {
-            self.tokens.push(self.input_tokens[i]);
-        }
-        (self.tokens, self.events)
+    pub(crate) fn finish(self) -> (Vec<Event>, Vec<tombi_lexer::Token>, Vec<crate::Error>) {
+        (self.events, self.synthetic_tokens, self.errors)
     }
 
     #[inline]
@@ -241,11 +240,7 @@ impl<'t> Parser<'t> {
                     ),
                 ),
             );
-            self.tokens.push(token);
-            self.push_event(Event::Token {
-                kind: token.kind(),
-                n_raw_tokens: 1,
-            });
+            self.push_synthetic_token(token);
 
             m.complete(self, token.kind());
 
@@ -268,12 +263,7 @@ impl<'t> Parser<'t> {
                 ),
             );
 
-            self.tokens.push(token);
-
-            self.push_event(Event::Token {
-                kind: token.kind(),
-                n_raw_tokens: 1,
-            });
+            self.push_synthetic_token(token);
 
             m.complete(self, token.kind());
 
@@ -296,12 +286,7 @@ impl<'t> Parser<'t> {
                 ),
             );
 
-            self.tokens.push(token);
-
-            self.push_event(Event::Token {
-                kind: token.kind(),
-                n_raw_tokens: 1,
-            });
+            self.push_synthetic_token(token);
 
             m.complete(self, token.kind())
         }
@@ -309,11 +294,17 @@ impl<'t> Parser<'t> {
     }
 
     fn do_bump(&mut self, kind: SyntaxKind, n_raw_tokens: u8) {
-        self.push_event(Event::Token { kind, n_raw_tokens });
+        let token_index = self.nth_index(0);
+        self.push_event(Event::input_token(kind, token_index, n_raw_tokens));
         let nth_index = self.nth_index((n_raw_tokens) as usize);
-        self.tokens.extend(&self.input_tokens[self.pos..nth_index]);
-
         self.pos = nth_index;
+    }
+
+    #[inline]
+    fn push_synthetic_token(&mut self, token: tombi_lexer::Token) {
+        let token_index = self.synthetic_tokens.len();
+        self.synthetic_tokens.push(token);
+        self.push_event(Event::synthetic_token(token.kind(), token_index));
     }
 
     fn do_bump_kind(&mut self, kind: SyntaxKind) {
@@ -338,6 +329,6 @@ impl<'t> Parser<'t> {
     /// Emit error with the `message`
     #[inline]
     pub(crate) fn error(&mut self, error: crate::Error) {
-        self.push_event(Event::Error { error });
+        self.errors.push(error);
     }
 }
