@@ -23,6 +23,15 @@ pub(super) fn max_concurrency() -> usize {
         .unwrap_or(1)
 }
 
+pub(super) fn runtime(single_threaded: bool) -> std::io::Result<tokio::runtime::Runtime> {
+    let mut builder = if single_threaded {
+        tokio::runtime::Builder::new_current_thread()
+    } else {
+        tokio::runtime::Builder::new_multi_thread()
+    };
+    builder.enable_all().build()
+}
+
 pub(super) fn file_open_error(
     source_path: std::path::PathBuf,
     error: std::io::Error,

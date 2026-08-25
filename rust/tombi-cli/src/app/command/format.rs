@@ -154,9 +154,8 @@ where
             }),
         });
 
-    let Ok(runtime) = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
+    let Ok(runtime) =
+        super::runtime(FileInputType::from(args.files.as_ref()) == FileInputType::Stdin)
     else {
         log::error!("failed to create tokio runtime");
         std::process::exit(1);
