@@ -119,6 +119,27 @@ impl<'a> Cursor<'a> {
         self.chars.as_str().is_empty()
     }
 
+    #[inline]
+    pub(crate) fn remaining(&self) -> &str {
+        self.chars.as_str()
+    }
+
+    /// Consumes an ASCII prefix without decoding one character at a time.
+    /// SIMD scanners call this after locating a token boundary.
+    pub(crate) fn eat_ascii_bytes(&mut self, len: usize) {
+        debug_assert!(len > 0);
+        let remaining = self.chars.as_str();
+        let prefix = &remaining.as_bytes()[..len];
+        debug_assert!(prefix.is_ascii());
+        let current_char = prefix[len - 1] as char;
+        let rest = &remaining[len..];
+
+        self.current_offset += tombi_text::Offset::new(len as u32);
+        self.current_position += tombi_text::RelativePosition::from((0, len as u32));
+        self.current_char = current_char;
+        self.chars = rest.chars();
+    }
+
     /// Moves to the next character.
     pub(crate) fn bump(&mut self) -> Option<char> {
         if let Some(c) = self.chars.next() {

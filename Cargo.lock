@@ -2620,6 +2620,7 @@ name = "tombi-ast-syntax"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
+ "memchr",
  "pretty_assertions",
  "tempfile",
  "thiserror 2.0.12",
@@ -3031,6 +3032,7 @@ name = "tombi-lexer"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
+ "memchr",
  "pretty_assertions",
  "textwrap",
  "tombi-ast-syntax",
@@ -3212,6 +3214,7 @@ name = "tombi-text"
 version = "0.0.0-dev"
 dependencies = [
  "log",
+ "memchr",
  "pretty_assertions",
  "rstest",
  "serde",

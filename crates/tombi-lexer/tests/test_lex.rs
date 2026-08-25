@@ -144,6 +144,56 @@ test_lex_tokens! {
 
 test_lex_tokens! {
     #[test]
+    fn long_ascii_comment(
+        "# aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+    ) -> [
+        Token(COMMENT, "# aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+        Token(LINE_BREAK, "\n"),
+    ];
+}
+
+test_lex_tokens! {
+    #[test]
+    fn unicode_comment_after_ascii_prefix("# aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa日本語 comment\n") -> [
+        Token(COMMENT, "# aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa日本語 comment"),
+        Token(LINE_BREAK, "\n"),
+    ];
+}
+
+test_lex_tokens! {
+    #[test]
+    fn long_unicode_comment(
+        "# あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん\n"
+    ) -> [
+        Token(COMMENT, "# あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん"),
+        Token(LINE_BREAK, "\n"),
+    ];
+}
+
+test_lex_tokens! {
+    #[test]
+    fn many_short_comments("# a\n# b\n# c\n# d\n# e\n# f\n# g\n# h\n") -> [
+        Token(COMMENT, "# a"),
+        Token(LINE_BREAK, "\n"),
+        Token(COMMENT, "# b"),
+        Token(LINE_BREAK, "\n"),
+        Token(COMMENT, "# c"),
+        Token(LINE_BREAK, "\n"),
+        Token(COMMENT, "# d"),
+        Token(LINE_BREAK, "\n"),
+        Token(COMMENT, "# e"),
+        Token(LINE_BREAK, "\n"),
+        Token(COMMENT, "# f"),
+        Token(LINE_BREAK, "\n"),
+        Token(COMMENT, "# g"),
+        Token(LINE_BREAK, "\n"),
+        Token(COMMENT, "# h"),
+        Token(LINE_BREAK, "\n"),
+    ];
+}
+
+test_lex_tokens! {
+    #[test]
     fn tokens("{},.[]=") -> [
         Token(BRACE_START, "{"),
         Token(BRACE_END, "}"),
@@ -324,6 +374,25 @@ test_lex_token! {
 test_lex_token! {
     #[test]
     fn basic_string2(r#""Hello, \"Taro\"!""#) -> Ok(Token(BASIC_STRING, (0, 18)));
+}
+
+test_lex_tokens! {
+    #[test]
+    fn long_ascii_and_unicode_strings(
+        "long = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa日本語\"\nliteral = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb日本語'"
+    ) -> [
+        Token(BARE_KEY, "long"),
+        Token(WHITESPACE, " "),
+        Token(EQUAL, "="),
+        Token(WHITESPACE, " "),
+        Token(BASIC_STRING, "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa日本語\""),
+        Token(LINE_BREAK, "\n"),
+        Token(BARE_KEY, "literal"),
+        Token(WHITESPACE, " "),
+        Token(EQUAL, "="),
+        Token(WHITESPACE, " "),
+        Token(LITERAL_STRING, "'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb日本語'"),
+    ];
 }
 
 test_lex_token! {
