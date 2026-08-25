@@ -14,6 +14,7 @@ serde.workspace = true
 serde_json.workspace = true
 serde_tombi.workspace = true
 tokio = { workspace = true, features = ["rt", "sync"] }
+tombi-ast-syntax.workspace = true
 tombi-cache.workspace = true
 tombi-comment-directive.workspace = true
 tombi-comment-directive-serde.workspace = true
@@ -36,7 +37,6 @@ tombi-parser.workspace = true
 tombi-regex.workspace = true
 tombi-schema-store = { workspace = true, features = ["ast-syntax", "document-tree"] }
 tombi-schema-type.workspace = true
-tombi-ast-syntax.workspace = true
 tombi-text = { workspace = true, features = ["lsp"] }
 tombi-toml-text.workspace = true
 tombi-uri.workspace = true

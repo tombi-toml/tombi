@@ -7,8 +7,8 @@ license.workspace = true
 
 [dependencies]
 memchr.workspace = true
-tombi-regex.workspace = true
 tombi-ast-syntax.workspace = true
+tombi-regex.workspace = true
 tombi-text.workspace = true
 
 [dev-dependencies]

@@ -31,6 +31,67 @@ struct CachedDocumentSchema {
     document_schema: Result<Arc<DocumentSchema>, crate::Error>,
 }
 
+#[derive(Debug, Clone)]
+struct StoredSchema {
+    schema: crate::Schema,
+    patterns: SchemaPatterns,
+}
+
+#[derive(Debug, Clone)]
+struct SchemaPatterns {
+    include_patterns: Vec<glob::Pattern>,
+    exclude_patterns: Vec<glob::Pattern>,
+}
+
+impl StoredSchema {
+    fn new(schema: crate::Schema) -> Self {
+        let patterns = SchemaPatterns::new(&schema.include, schema.exclude.as_deref());
+
+        Self { schema, patterns }
+    }
+
+    fn matches(
+        &self,
+        path_for_matching: &std::path::Path,
+        absolute_source_path: &std::path::Path,
+    ) -> bool {
+        self.patterns
+            .matches(path_for_matching, absolute_source_path)
+    }
+}
+
+impl SchemaPatterns {
+    fn new(include: &[String], exclude: Option<&[String]>) -> Self {
+        Self {
+            include_patterns: compile_schema_patterns(include),
+            exclude_patterns: exclude.map(compile_schema_patterns).unwrap_or_default(),
+        }
+    }
+
+    fn matches(
+        &self,
+        path_for_matching: &std::path::Path,
+        absolute_source_path: &std::path::Path,
+    ) -> bool {
+        let matches_path = |pattern: &glob::Pattern| {
+            pattern.matches_path(path_for_matching)
+                || (path_for_matching != absolute_source_path
+                    && pattern.matches_path(absolute_source_path))
+        };
+
+        self.include_patterns.iter().any(matches_path)
+            && !self.exclude_patterns.iter().any(matches_path)
+    }
+}
+
+impl Deref for StoredSchema {
+    type Target = crate::Schema;
+
+    fn deref(&self) -> &Self::Target {
+        &self.schema
+    }
+}
+
 /// Options for associating a schema with file patterns
 #[derive(Debug, Clone, Default)]
 pub struct AssociateSchemaOptions {
@@ -45,7 +106,7 @@ pub struct AssociateSchemaOptions {
 pub struct SchemaStore {
     http_client: Arc<dyn HttpClient>,
     document_schemas: DocumentSchemas,
-    schemas: Arc<RwLock<Vec<crate::Schema>>>,
+    schemas: Arc<RwLock<Vec<StoredSchema>>>,
     options: crate::Options,
     base_dir_path: Arc<RwLock<Option<std::path::PathBuf>>>,
 }
@@ -217,21 +278,24 @@ impl SchemaStore {
 
             log::debug!("load schema from config: {}", schema_uri);
 
-            self.schemas.write().await.push(crate::Schema {
-                title: None,
-                description: None,
-                deprecated_lint_level: schema.deprecated_lint_level(),
-                format_rules: schema.format().and_then(|format| format.rules.clone()),
-                lint_rules: schema.lint().and_then(|lint| lint.rules.clone()),
-                overrides: schema_overrides(schema),
-                strict: schema.strict(),
-                schema_uri,
-                catalog_uri: None,
-                include: schema.include().to_vec(),
-                exclude: schema.exclude().map(|exclude| exclude.to_vec()),
-                toml_version: schema.toml_version(),
-                sub_root_accessors: schema.root().and_then(PatternAccessor::parse),
-            });
+            self.schemas
+                .write()
+                .await
+                .push(StoredSchema::new(crate::Schema {
+                    title: None,
+                    description: None,
+                    deprecated_lint_level: schema.deprecated_lint_level(),
+                    format_rules: schema.format().and_then(|format| format.rules.clone()),
+                    lint_rules: schema.lint().and_then(|lint| lint.rules.clone()),
+                    overrides: schema_overrides(schema),
+                    strict: schema.strict(),
+                    schema_uri,
+                    catalog_uri: None,
+                    include: schema.include().to_vec(),
+                    exclude: schema.exclude().map(|exclude| exclude.to_vec()),
+                    toml_version: schema.toml_version(),
+                    sub_root_accessors: schema.root().and_then(PatternAccessor::parse),
+                }));
         }))
         .await;
     }
@@ -364,7 +428,7 @@ impl SchemaStore {
                 .iter()
                 .any(|pattern| pattern.ends_with(".toml"))
             {
-                schemas.push(crate::Schema {
+                schemas.push(StoredSchema::new(crate::Schema {
                     title: Some(schema.name),
                     description: Some(schema.description),
                     deprecated_lint_level: None,
@@ -378,7 +442,7 @@ impl SchemaStore {
                     exclude: None,
                     toml_version: None,
                     sub_root_accessors: None,
-                });
+                }));
             }
         }
         Ok(())
@@ -845,14 +909,7 @@ impl SchemaStore {
         let schemas = self.schemas.read().await;
         let matching_schemas = schemas
             .iter()
-            .filter(|schema| {
-                matches_schema_patterns(
-                    &schema.include,
-                    schema.exclude.as_deref(),
-                    &path_for_matching,
-                    &canonicalized_source_path,
-                )
-            })
+            .filter(|schema| schema.matches(&path_for_matching, &canonicalized_source_path))
             .collect_vec();
 
         let mut source_schema: Option<SourceSchema> = None;
@@ -1133,15 +1190,20 @@ impl SchemaStore {
         let mut schemas = self.schemas.write().await;
         if options.force {
             // Insert at the beginning to force precedence
-            schemas.insert(0, new_schema);
+            schemas.insert(0, StoredSchema::new(new_schema));
         } else {
             // Append at the end
-            schemas.push(new_schema);
+            schemas.push(StoredSchema::new(new_schema));
         }
     }
 
     pub async fn list_schemas(&self) -> Vec<crate::Schema> {
-        self.schemas.read().await.clone()
+        self.schemas
+            .read()
+            .await
+            .iter()
+            .map(|schema| schema.schema.clone())
+            .collect()
     }
 }
 
@@ -1171,40 +1233,21 @@ async fn schema_cache_version(_schema_uri: &SchemaUri) -> Option<SchemaCacheVers
     None
 }
 
+fn compile_schema_patterns(patterns: &[String]) -> Vec<glob::Pattern> {
+    patterns
+        .iter()
+        .filter_map(|pattern| glob::Pattern::new(&glob_pattern_for_file_match(pattern)).ok())
+        .collect()
+}
+
+#[cfg(test)]
 fn matches_schema_patterns(
     include: &[String],
     exclude: Option<&[String]>,
     path_for_matching: &std::path::Path,
     absolute_source_path: &std::path::Path,
 ) -> bool {
-    let included = include.iter().any(|pat| {
-        let pattern = glob_pattern_for_file_match(pat);
-
-        glob::Pattern::new(&pattern)
-            .ok()
-            .map(|glob_pat| {
-                glob_pat.matches_path(path_for_matching)
-                    || (path_for_matching != absolute_source_path
-                        && glob_pat.matches_path(absolute_source_path))
-            })
-            .unwrap_or_default()
-    });
-
-    included
-        && !exclude.is_some_and(|exclude| {
-            exclude.iter().any(|pat| {
-                let pattern = glob_pattern_for_file_match(pat);
-
-                glob::Pattern::new(&pattern)
-                    .ok()
-                    .map(|glob_pat| {
-                        glob_pat.matches_path(path_for_matching)
-                            || (path_for_matching != absolute_source_path
-                                && glob_pat.matches_path(absolute_source_path))
-                    })
-                    .unwrap_or_default()
-            })
-        })
+    SchemaPatterns::new(include, exclude).matches(path_for_matching, absolute_source_path)
 }
 
 fn glob_pattern_for_file_match(pattern: &str) -> String {

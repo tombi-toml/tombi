@@ -79,6 +79,7 @@ time = { version = "0.3.47" }
 tokio = { version = "1.45.0", default-features = false }
 tombi-accessor = { path = "crates/tombi-accessor" }
 tombi-ast = { path = "crates/tombi-ast" }
+tombi-ast-syntax = { path = "crates/tombi-ast-syntax" }
 tombi-cache = { path = "crates/tombi-cache" }
 tombi-cli-options = { path = "crates/tombi-cli-options" }
 tombi-comment-directive = { path = "crates/tombi-comment-directive" }
@@ -112,7 +113,6 @@ tombi-regex = { path = "crates/tombi-regex" }
 tombi-schema-store = { path = "crates/tombi-schema-store", default-features = false }
 tombi-schema-type = { path = "crates/tombi-schema-type" }
 tombi-severity-level = { path = "crates/tombi-severity-level" }
-tombi-ast-syntax = { path = "crates/tombi-ast-syntax" }
 tombi-test-lib = { path = "crates/tombi-test-lib" }
 tombi-text = { path = "crates/tombi-text", default-features = false, features = ["serde"] }
 tombi-toml-text = { path = "crates/tombi-toml-text" }

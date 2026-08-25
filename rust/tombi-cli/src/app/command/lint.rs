@@ -44,6 +44,27 @@ struct LintRunSummary {
     error_num: usize,
 }
 
+fn record_task_result<P>(
+    result: Result<Result<bool, crate::Error>, tokio::task::JoinError>,
+    summary: &mut LintRunSummary,
+    printer: &mut P,
+) where
+    crate::Error: Print<P>,
+{
+    match result {
+        Ok(Ok(true)) => summary.success_num += 1,
+        Ok(Ok(false)) => summary.error_num += 1,
+        Ok(Err(error)) => {
+            error.print(printer);
+            summary.error_num += 1;
+        }
+        Err(err) => {
+            log::error!("task failed {err}");
+            summary.error_num += 1;
+        }
+    }
+}
+
 pub fn run(args: Args) -> Result<(), crate::Error> {
     let quiet = args.quiet;
     let LintRunSummary {
@@ -161,6 +182,7 @@ where
             }
             FileSearch::Files(files) => {
                 let mut tasks = tokio::task::JoinSet::new();
+                let concurrency = super::max_concurrency();
 
                 for file in files {
                     match file {
@@ -178,36 +200,32 @@ where
                                 continue;
                             };
 
-                            match tokio::fs::File::open(&source_path).await {
-                                Ok(file) => {
-                                    let printer = printer.clone();
-                                    let schema_store = schema_store.clone();
-
-                                    tasks.spawn(async move {
-                                        lint_file(
-                                            file,
-                                            printer,
-                                            Some(source_path.as_ref()),
-                                            toml_version,
-                                            &lint_options,
-                                            &schema_store,
-                                            args.error_on_warnings,
-                                        )
-                                        .await
-                                    });
-                                }
-                                Err(err) => {
-                                    if err.kind() == std::io::ErrorKind::NotFound {
-                                        crate::Error::TombiGlob(tombi_glob::Error::FileNotFound(
-                                            source_path,
-                                        ))
-                                        .print(&mut printer);
-                                    } else {
-                                        crate::Error::Io(err).print(&mut printer);
-                                    }
-                                    summary.error_num += 1;
+                            while tasks.len() >= concurrency {
+                                if let Some(result) = tasks.join_next().await {
+                                    record_task_result(result, &mut summary, &mut printer);
                                 }
                             }
+
+                            let printer = printer.clone();
+                            let schema_store = schema_store.clone();
+
+                            tasks.spawn(async move {
+                                let file =
+                                    tokio::fs::File::open(&source_path).await.map_err(|error| {
+                                        super::file_open_error(source_path.clone(), error)
+                                    })?;
+
+                                Ok(lint_file(
+                                    file,
+                                    printer,
+                                    Some(source_path.as_ref()),
+                                    toml_version,
+                                    &lint_options,
+                                    &schema_store,
+                                    args.error_on_warnings,
+                                )
+                                .await)
+                            });
                         }
                         FileSearchEntry::Skipped(_) => {
                             summary.skipped_num += 1;
@@ -220,19 +238,7 @@ where
                 }
 
                 while let Some(result) = tasks.join_next().await {
-                    match result {
-                        Ok(success) => {
-                            if success {
-                                summary.success_num += 1;
-                            } else {
-                                summary.error_num += 1;
-                            }
-                        }
-                        Err(e) => {
-                            log::error!("task failed {}", e);
-                            summary.error_num += 1;
-                        }
-                    }
+                    record_task_result(result, &mut summary, &mut printer);
                 }
             }
         }

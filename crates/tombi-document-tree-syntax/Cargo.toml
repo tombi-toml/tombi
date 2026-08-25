@@ -11,11 +11,11 @@ chrono.workspace = true
 itertools.workspace = true
 thiserror.workspace = true
 tombi-accessor.workspace = true
+tombi-ast-syntax.workspace = true
 tombi-date-time.workspace = true
 tombi-diagnostic = { workspace = true, optional = true }
 tombi-document-tree.workspace = true
 tombi-hashmap.workspace = true
-tombi-ast-syntax.workspace = true
 tombi-text.workspace = true
 tombi-toml-text.workspace = true
 tombi-toml-version.workspace = true
