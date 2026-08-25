@@ -37,6 +37,21 @@ pub(in crate::editor) async fn inline_table_keys_order<'a>(
         .as_ref()
         .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
 
+    let schema_override = schema_context.table_order_override(current_schema, accessors);
+    if schema_override.is_some_and(|override_item| override_item.disabled) {
+        return Vec::new();
+    }
+
+    let schema_order_enabled = schema_override.is_some_and(|override_item| !override_item.disabled)
+        || schema_context.schema_table_keys_order_enabled(current_schema);
+    if order.is_none() && !schema_order_enabled {
+        return Vec::new();
+    }
+
+    let old_order = key_values_with_comma
+        .iter()
+        .map(|(key_value, _)| key_value.syntax().range())
+        .collect_vec();
     let mut changes = vec![];
 
     let is_last_comma = key_values_with_comma
@@ -69,6 +84,13 @@ pub(in crate::editor) async fn inline_table_keys_order<'a>(
     else {
         return Vec::new();
     };
+
+    if old_order.into_iter().eq(sorted_key_values_with_comma
+        .iter()
+        .map(|(key_value, _)| key_value.syntax().range()))
+    {
+        return Vec::new();
+    }
 
     if let Some((_, comma)) = sorted_key_values_with_comma.last_mut()
         && !is_last_comma

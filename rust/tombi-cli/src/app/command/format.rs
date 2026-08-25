@@ -50,6 +50,27 @@ struct FormatRunSummary {
     error_num: usize,
 }
 
+fn record_task_result<P>(
+    result: Result<Result<bool, crate::Error>, tokio::task::JoinError>,
+    summary: &mut FormatRunSummary,
+    printer: &mut P,
+) where
+    crate::Error: Print<P>,
+{
+    match result {
+        Ok(Ok(true)) => summary.success_num += 1,
+        Ok(Ok(false)) => summary.not_needed_num += 1,
+        Ok(Err(error)) => {
+            error.print(printer);
+            summary.error_num += 1;
+        }
+        Err(err) => {
+            log::error!("task failed {err}");
+            summary.error_num += 1;
+        }
+    }
+}
+
 pub fn run(args: Args) -> Result<(), crate::Error> {
     let quiet = args.quiet;
     let FormatRunSummary {
@@ -186,7 +207,8 @@ where
             }
             FileSearch::Files(files) => {
                 let mut tasks = tokio::task::JoinSet::new();
-                let mut errors = Vec::new();
+                let concurrency = super::max_concurrency();
+
                 for file in files {
                     match file {
                         FileSearchEntry::Found(source_path) => {
@@ -206,37 +228,34 @@ where
                                 continue;
                             };
 
-                            match FormatFile::from_file(&source_path, args.check).await {
-                                Ok(file) => {
-                                    let printer = printer.clone();
-                                    let schema_store = schema_store.clone();
-
-                                    tasks.spawn(async move {
-                                        format_file(
-                                            file,
-                                            printer,
-                                            &source_path,
-                                            toml_version,
-                                            args.check,
-                                            args.diff,
-                                            &format_options,
-                                            &schema_store,
-                                        )
-                                        .await
-                                    });
-                                }
-                                Err(err) => {
-                                    if err.kind() == std::io::ErrorKind::NotFound {
-                                        crate::Error::TombiGlob(tombi_glob::Error::FileNotFound(
-                                            source_path,
-                                        ))
-                                        .print(&mut printer);
-                                    } else {
-                                        crate::Error::Io(err).print(&mut printer);
-                                    }
-                                    summary.error_num += 1;
+                            while tasks.len() >= concurrency {
+                                if let Some(result) = tasks.join_next().await {
+                                    record_task_result(result, &mut summary, &mut printer);
                                 }
                             }
+
+                            let printer = printer.clone();
+                            let schema_store = schema_store.clone();
+
+                            tasks.spawn(async move {
+                                let file = FormatFile::from_file(&source_path, args.check)
+                                    .await
+                                    .map_err(|error| {
+                                        super::file_open_error(source_path.clone(), error)
+                                    })?;
+
+                                format_file(
+                                    file,
+                                    printer,
+                                    &source_path,
+                                    toml_version,
+                                    args.check,
+                                    args.diff,
+                                    &format_options,
+                                    &schema_store,
+                                )
+                                .await
+                            });
                         }
                         FileSearchEntry::Skipped(_) => {
                             summary.skipped_num += 1;
@@ -249,29 +268,7 @@ where
                 }
 
                 while let Some(result) = tasks.join_next().await {
-                    match result {
-                        Ok(Ok(formatted)) => {
-                            if formatted {
-                                summary.success_num += 1;
-                            } else {
-                                summary.not_needed_num += 1;
-                            }
-                        }
-                        Ok(Err(error)) => {
-                            errors.push(error);
-                            summary.error_num += 1;
-                        }
-                        Err(e) => {
-                            log::error!("task failed {}", e);
-                            summary.error_num += 1;
-                        }
-                    }
-                }
-
-                if !errors.is_empty() {
-                    for error in errors {
-                        error.print(&mut printer);
-                    }
+                    record_task_result(result, &mut summary, &mut printer);
                 }
             }
         };

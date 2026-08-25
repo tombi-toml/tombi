@@ -47,6 +47,16 @@ pub(in crate::editor) async fn table_keys_order<'a>(
         return Vec::new();
     }
 
+    let schema_order_enabled = schema_override.is_some_and(|override_item| !override_item.disabled)
+        || schema_context.schema_table_keys_order_enabled(current_schema);
+    if comment_directive_order.is_none() && !schema_order_enabled {
+        return Vec::new();
+    }
+
+    let old_order = key_values_with_comma
+        .iter()
+        .map(|(key_value, _)| key_value.syntax().range())
+        .collect_vec();
     let old_first = key_values_with_comma.first().unwrap().0.syntax().clone();
     let (last_key_value, last_comma) = key_values_with_comma.last().unwrap();
     let old_last = last_comma.as_ref().map_or_else(
@@ -76,6 +86,13 @@ pub(in crate::editor) async fn table_keys_order<'a>(
     else {
         return Vec::new();
     };
+
+    if old_order.into_iter().eq(sorted_key_values_with_comma
+        .iter()
+        .map(|(key_value, _)| key_value.syntax().range()))
+    {
+        return Vec::new();
+    }
 
     let mut new = Vec::with_capacity(sorted_key_values_with_comma.len() * 2);
     for (value, comma) in &sorted_key_values_with_comma {

@@ -10,9 +10,9 @@ drop_bomb.workspace = true
 itertools.workspace = true
 log.workspace = true
 thiserror.workspace = true
+tombi-ast-syntax.workspace = true
 tombi-diagnostic = { workspace = true, optional = true }
 tombi-lexer.workspace = true
-tombi-ast-syntax.workspace = true
 tombi-text.workspace = true
 
 [dev-dependencies]

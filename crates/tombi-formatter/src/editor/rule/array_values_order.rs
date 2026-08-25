@@ -88,6 +88,10 @@ pub(in crate::editor) async fn array_values_order<'a>(
         return Vec::new();
     };
 
+    let old_order = values_with_comma
+        .iter()
+        .map(|(value, _)| value.syntax().range())
+        .collect_vec();
     let mut changes = vec![];
 
     let is_last_comma = values_with_comma
@@ -125,6 +129,13 @@ pub(in crate::editor) async fn array_values_order<'a>(
     let Some(mut sorted_values_with_comma) = sorted_values_with_comma else {
         return Vec::new();
     };
+
+    if old_order.into_iter().eq(sorted_values_with_comma
+        .iter()
+        .map(|(value, _)| value.syntax().range()))
+    {
+        return Vec::new();
+    }
 
     if let Some((_, comma)) = sorted_values_with_comma.last_mut()
         && !is_last_comma
