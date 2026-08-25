@@ -1,7 +1,7 @@
 use tokio::io::AsyncReadExt;
 use tombi_config::{LintOptions, TomlVersion};
 use tombi_diagnostic::{Diagnostic, Print};
-use tombi_glob::{FileSearch, FileSearchEntry};
+use tombi_glob::{FileInputType, FileSearch, FileSearchEntry};
 
 use crate::app::CommonArgs;
 
@@ -131,9 +131,8 @@ where
             }),
         });
 
-    let Ok(runtime) = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
+    let Ok(runtime) =
+        super::runtime(FileInputType::from(args.files.as_ref()) == FileInputType::Stdin)
     else {
         log::error!("failed to create tokio runtime");
         std::process::exit(1);
