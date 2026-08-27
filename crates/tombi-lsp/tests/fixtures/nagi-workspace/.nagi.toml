@@ -1,0 +1,8 @@
+[workspace]
+members = []
+
+[workspace.sources.postgres]
+dialect = "PostgreSQL"
+
+[sources.postgres]
+workspace = true

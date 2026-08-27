@@ -1,0 +1,5 @@
+[sources.analytics]
+workspace = true
+
+[sources.postgres]
+workspace = true

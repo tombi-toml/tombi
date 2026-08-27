@@ -76,6 +76,19 @@ pub async fn handle_goto_definition(
         return Ok(locations.into());
     }
 
+    if config.nagi_sql_extension_enabled()
+        && let Some(locations) = tombi_extension_nagi_sql::goto_definition(
+            &text_document_uri,
+            &document_tree,
+            &accessors,
+            toml_version,
+            config.nagi_sql_extension_features(),
+        )
+        .await?
+    {
+        return Ok(locations.into());
+    }
+
     if config.pyproject_extension_enabled()
         && let Some(locations) = tombi_extension_pyproject::goto_definition(
             &text_document_uri,

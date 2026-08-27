@@ -238,6 +238,119 @@ macro_rules! test_references {
 mod references_tests {
     use super::*;
 
+    mod nagi_sql_extension {
+        use super::*;
+
+        fn fixture_path() -> std::path::PathBuf {
+            project_root_path().join("crates/tombi-lsp/tests/fixtures/nagi-workspace")
+        }
+
+        fn references_disabled_config_path() -> std::path::PathBuf {
+            project_root_path().join(
+                "crates/tombi-lsp/tests/fixtures/extensions/nagi-sql-references-disabled/tombi.toml",
+            )
+        }
+
+        fn goto_definition_disabled_config_path() -> std::path::PathBuf {
+            project_root_path().join(
+                "crates/tombi-lsp/tests/fixtures/extensions/nagi-sql-goto-definition-disabled/tombi.toml",
+            )
+        }
+
+        test_references!(
+            #[tokio::test]
+            async fn workspace_source_lists_inheriting_member_source_keys(
+                r#"
+                [workspace]
+                members = ["members/*"]
+                exclude = ["members/excluded"]
+
+                [workspace.sources.postgres█]
+                dialect = "PostgreSQL"
+
+                [sources.postgres]
+                workspace = true
+                "#,
+                SourcePath(fixture_path().join("nagi.toml")),
+            ) -> Ok([
+                (
+                    fixture_path().join("nagi.toml"),
+                    ((7, 9), (7, 17))
+                ),
+                (
+                    fixture_path().join("members/app/nagi.toml"),
+                    ((0, 8), (0, 16))
+                ),
+                (
+                    fixture_path().join("members/worker/.nagi.toml"),
+                    ((3, 9), (3, 17))
+                ),
+                (
+                    fixture_path().join("outside/nagi.toml"),
+                    ((3, 9), (3, 17))
+                ),
+            ]);
+        );
+
+        test_references!(
+            #[tokio::test]
+            async fn hidden_references_setting_disables_nagi_sql_references(
+                r#"
+                [workspace]
+                members = ["members/*"]
+                exclude = ["members/excluded"]
+
+                [workspace.sources.postgres█]
+                dialect = "PostgreSQL"
+                "#,
+                SourcePath(fixture_path().join("nagi.toml")),
+                ConfigPath(references_disabled_config_path()),
+                IncludeDeclaration(true),
+            ) -> Ok([]);
+        );
+
+        test_references!(
+            #[tokio::test]
+            async fn include_declaration_is_independent_of_goto_definition_setting(
+                r#"
+                [workspace]
+                members = ["members/*"]
+                exclude = ["members/excluded"]
+
+                [workspace.sources.postgres█]
+                dialect = "PostgreSQL"
+
+                [sources.postgres]
+                workspace = true
+                "#,
+                SourcePath(fixture_path().join("nagi.toml")),
+                ConfigPath(goto_definition_disabled_config_path()),
+                IncludeDeclaration(true),
+            ) -> Ok([
+                (
+                    fixture_path().join("nagi.toml"),
+                    ((7, 9), (7, 17))
+                ),
+                (
+                    fixture_path().join("members/app/nagi.toml"),
+                    ((0, 8), (0, 16))
+                ),
+                (
+                    fixture_path().join("members/worker/.nagi.toml"),
+                    ((3, 9), (3, 17))
+                ),
+                (
+                    fixture_path().join("outside/nagi.toml"),
+                    ((3, 9), (3, 17))
+                ),
+                (
+                    fixture_path().join("nagi.toml"),
+                    ((4, 19), (4, 27))
+                ),
+            ]);
+        );
+    }
+
     mod cargo_schema {
         use super::*;
 

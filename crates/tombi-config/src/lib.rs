@@ -121,6 +121,20 @@ impl Config {
             .value()
     }
 
+    pub fn nagi_sql_extension_enabled(&self) -> bool {
+        self.extensions
+            .as_ref()
+            .map(|extensions| extensions.nagi_sql_enabled())
+            .unwrap_or_default()
+            .value()
+    }
+
+    pub fn nagi_sql_extension_features(&self) -> Option<&NagiSqlExtensionFeatures> {
+        self.extensions
+            .as_ref()
+            .and_then(Extensions::nagi_sql_features)
+    }
+
     pub fn pyproject_extension_enabled(&self) -> bool {
         self.extensions
             .as_ref()

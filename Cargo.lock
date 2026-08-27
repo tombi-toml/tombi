@@ -2865,6 +2865,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "tombi-extension-nagi-sql"
+version = "0.0.0-dev"
+dependencies = [
+ "tombi-config",
+ "tombi-document-tree-syntax",
+ "tombi-extension",
+ "tombi-fs",
+ "tombi-parser",
+ "tombi-schema-store",
+ "tombi-text",
+ "tombi-uri",
+ "tower-lsp",
+]
+
+[[package]]
 name = "tombi-extension-pyproject"
 version = "0.0.0-dev"
 dependencies = [
@@ -3099,6 +3114,7 @@ dependencies = [
  "tombi-document-tree-syntax",
  "tombi-extension",
  "tombi-extension-cargo",
+ "tombi-extension-nagi-sql",
  "tombi-extension-pyproject",
  "tombi-extension-tombi",
  "tombi-formatter",

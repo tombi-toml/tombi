@@ -1,0 +1,27 @@
+[package]
+name = "tombi-extension-nagi-sql"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description = "Tombi extension for Nagi SQL configuration"
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+tombi-config.workspace = true
+tombi-document-tree-syntax.workspace = true
+tombi-extension.workspace = true
+tombi-fs.workspace = true
+tombi-parser.workspace = true
+tombi-schema-store.workspace = true
+tombi-text = { workspace = true, features = ["lsp"] }
+tombi-uri.workspace = true
+tower-lsp.workspace = true
+
+[features]
+default = ["native"]
+native = ["tower-lsp/runtime-tokio"]
+wasm = ["tower-lsp/runtime-agnostic"]
+
+[lints]
+workspace = true

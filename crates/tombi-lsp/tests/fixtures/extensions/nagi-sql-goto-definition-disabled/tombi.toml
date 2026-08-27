@@ -1,0 +1,2 @@
+[extensions."tombi-toml/nagi-sql".lsp.goto-definition]
+enabled = false
