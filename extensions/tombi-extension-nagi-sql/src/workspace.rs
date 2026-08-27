@@ -77,27 +77,60 @@ pub(crate) fn workspace_source_reference_locations(
     let Ok(workspace_config_path) = text_document_uri.to_file_path() else {
         return Vec::new();
     };
-    let member_accessors = [
-        Accessor::Key("workspace".to_string()),
-        Accessor::Key("members".to_string()),
-    ];
+    let Some(workspace_root) = config_root(&workspace_config_path) else {
+        return Vec::new();
+    };
+    if find_config_path(workspace_root).as_deref() != Some(workspace_config_path.as_path()) {
+        return Vec::new();
+    }
 
     std::iter::once(workspace_config_path.clone())
-        .chain(member_config_paths(
-            workspace_document_tree,
-            &member_accessors,
-            &workspace_config_path,
-        ))
-        .into_iter()
+        .chain(
+            config_paths_under(workspace_root)
+                .into_iter()
+                .filter(|config_path| config_path != &workspace_config_path),
+        )
         .filter_map(|config_path| {
             if config_path == workspace_config_path {
                 source_reference_location(workspace_document_tree, &config_path, source_name)
             } else {
                 let document_tree = load_config(&config_path, toml_version)?;
+                if dig_keys(&document_tree, &["workspace"]).is_some()
+                    || !matches!(
+                        find_workspace_config(&config_path, toml_version),
+                        Some((authority_path, _)) if authority_path == workspace_config_path
+                    )
+                {
+                    return None;
+                }
                 source_reference_location(&document_tree, &config_path, source_name)
             }
         })
         .collect()
+}
+
+fn config_paths_under(root: &Path) -> BTreeSet<PathBuf> {
+    let mut config_paths = BTreeSet::new();
+    if let Some(config_path) = find_config_path(root) {
+        config_paths.insert(config_path);
+    }
+
+    for relative_path in CONFIG_PATHS {
+        let pattern = root.join("**").join(relative_path);
+        let Ok(candidates) = tombi_fs::glob(&pattern.to_string_lossy()) else {
+            continue;
+        };
+        for candidate in candidates {
+            let Some(candidate_root) = config_root(&candidate) else {
+                continue;
+            };
+            if let Some(config_path) = find_config_path(candidate_root) {
+                config_paths.insert(config_path);
+            }
+        }
+    }
+
+    config_paths
 }
 
 fn source_reference_location(
@@ -186,6 +219,11 @@ fn workspace_source_location(
     member_config_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<tombi_extension::Location> {
+    let member_root = config_root(member_config_path)?;
+    if find_config_path(member_root).is_some_and(|path| path != member_config_path) {
+        return None;
+    }
+
     let source_name = accessors.get(1)?.as_key()?;
     let (_, Value::Table(source)) = dig_keys(member_document_tree, &["sources", source_name])?
     else {
@@ -198,10 +236,9 @@ fn workspace_source_location(
         return None;
     }
 
-    if dig_keys(member_document_tree, &["workspace"]).is_some()
-        && let Some((source_key, _)) =
-            dig_keys(member_document_tree, &["workspace", "sources", source_name])
-    {
+    if dig_keys(member_document_tree, &["workspace"]).is_some() {
+        let (source_key, _) =
+            dig_keys(member_document_tree, &["workspace", "sources", source_name])?;
         return Some(tombi_extension::Location {
             uri: tombi_uri::Uri::from_file_path(member_config_path).ok()?,
             range: source_key.unquoted_range(),
@@ -228,21 +265,11 @@ fn find_workspace_config(
     let mut current_dir = config_root(member_config_path)?.parent();
 
     while let Some(dir) = current_dir {
-        for relative_path in CONFIG_PATHS {
-            let candidate = dir.join(relative_path);
-            let Some(document_tree) = load_config(&candidate, toml_version) else {
-                continue;
-            };
-            let member_accessors = [
-                Accessor::Key("workspace".to_string()),
-                Accessor::Key("members".to_string()),
-            ];
-            if dig_keys(&document_tree, &["workspace"]).is_some()
-                && member_config_paths(&document_tree, &member_accessors, &candidate)
-                    .contains(member_config_path)
-            {
-                return Some((candidate, document_tree));
-            }
+        if let Some(candidate) = find_config_path(dir)
+            && let Some(document_tree) = load_config(&candidate, toml_version)
+            && dig_keys(&document_tree, &["workspace"]).is_some()
+        {
+            return Some((candidate, document_tree));
         }
         current_dir = dir.parent();
     }
@@ -333,7 +360,7 @@ fn resolve_config_path(path: &Path) -> Option<PathBuf> {
         .flatten()
 }
 
-fn config_root(config_path: &Path) -> Option<&Path> {
+pub(crate) fn config_root(config_path: &Path) -> Option<&Path> {
     let parent = config_path.parent()?;
     if config_path.ends_with(Path::new(".config/nagi.toml")) {
         parent.parent().or(Some(parent))

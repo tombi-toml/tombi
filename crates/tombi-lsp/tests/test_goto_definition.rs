@@ -25,6 +25,7 @@ mod goto_definition_tests {
                 fixture_path().join("members/app/nagi.toml"),
                 fixture_path().join("members/configured/.config/nagi.toml"),
                 fixture_path().join("members/local/nagi.toml"),
+                fixture_path().join("members/nested/nagi.toml"),
                 fixture_path().join("members/worker/.nagi.toml"),
             ]);
         );
@@ -88,6 +89,17 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
+            async fn shadowed_config_does_not_resolve_workspace_source(
+                r#"
+                [sources.postgres█]
+                workspace = true
+                "#,
+                SourcePath(fixture_path().join(".nagi.toml")),
+            ) -> Ok([]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
             async fn similarly_named_non_nagi_config_has_no_nagi_definition(
                 r#"
                 [workspace.sources.postgres█]
@@ -112,13 +124,47 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn inherited_source_outside_workspace_members_has_no_target(
+            async fn nested_workspace_source_opens_its_own_definition(
+                r#"
+                [workspace]
+                members = []
+
+                [workspace.sources.postgres]
+                dialect = "PostgreSQL"
+
+                [sources.postgres█]
+                workspace = true
+                "#,
+                SourcePath(fixture_path().join("members/nested/nagi.toml")),
+            ) -> Ok([(
+                fixture_path().join("members/nested/nagi.toml"),
+                ((3, 19), (3, 27))
+            )]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn nested_workspace_without_source_does_not_fall_back_to_parent(
+                r#"
+                [workspace]
+                members = []
+
+                [sources.postgres█]
+                workspace = true
+                "#,
+                SourcePath(fixture_path().join("members/nested/nagi.toml")),
+            ) -> Ok([]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn inherited_source_outside_workspace_members_uses_ancestor_workspace(
                 r#"
                 [sources.analytics]
                 workspace█ = true
                 "#,
                 SourcePath(fixture_path().join("outside/nagi.toml")),
-            ) -> Ok([]);
+            ) -> Ok([fixture_path().join("nagi.toml")]);
         );
     }
 

@@ -1,7 +1,7 @@
-use tombi_extension::{CompletionContent, CompletionHint, completion_file_path_from_uri};
+use tombi_extension::{CompletionContent, CompletionHint, completion_file_path_from_base_dir};
 use tombi_schema_store::{Accessor, matches_accessors};
 
-use crate::workspace::is_nagi_config;
+use crate::workspace::{config_root, is_nagi_config};
 
 pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
@@ -27,13 +27,17 @@ pub async fn completion(
     }
 
     let completions = if is_path(accessors) {
-        completion_file_path_from_uri(
-            text_document_uri,
-            document_tree,
-            position,
-            accessors,
-            Some(&[]),
-        )
+        let source_path = text_document_uri.to_file_path().ok();
+        let base_dir = source_path.as_deref().and_then(config_root);
+        base_dir.and_then(|base_dir| {
+            completion_file_path_from_base_dir(
+                base_dir,
+                document_tree,
+                position,
+                accessors,
+                Some(&[]),
+            )
+        })
     } else {
         None
     };
@@ -42,7 +46,9 @@ pub async fn completion(
 }
 
 fn is_path(accessors: &[Accessor]) -> bool {
-    matches_accessors!(accessors, ["workspace", "members", _])
+    matches_accessors!(accessors, ["rules", "include", _])
+        || matches_accessors!(accessors, ["rules", "exclude", _])
+        || matches_accessors!(accessors, ["workspace", "members", _])
         || matches_accessors!(accessors, ["workspace", "exclude", _])
         || matches_accessors!(accessors, ["sources", _, "dbt", "project-root"])
         || matches_accessors!(accessors, ["sources", _, "manifest", "directory"])

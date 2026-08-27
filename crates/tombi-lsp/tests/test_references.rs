@@ -285,6 +285,10 @@ mod references_tests {
                     fixture_path().join("members/worker/.nagi.toml"),
                     ((3, 9), (3, 17))
                 ),
+                (
+                    fixture_path().join("outside/nagi.toml"),
+                    ((3, 9), (3, 17))
+                ),
             ]);
         );
 
@@ -333,6 +337,10 @@ mod references_tests {
                 ),
                 (
                     fixture_path().join("members/worker/.nagi.toml"),
+                    ((3, 9), (3, 17))
+                ),
+                (
+                    fixture_path().join("outside/nagi.toml"),
                     ((3, 9), (3, 17))
                 ),
                 (

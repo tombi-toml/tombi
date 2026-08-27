@@ -1480,6 +1480,51 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn nagi_rules_include_filesystem_path_completion(
+                r#"
+                [rules]
+                include = ["not█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/nagi-completion/.nagi.toml"
+                )),
+            ) -> Ok([
+                "notes.txt",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn nagi_rules_exclude_filesystem_path_completion(
+                r#"
+                [rules]
+                exclude = ["not█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/nagi-completion/.nagi.toml"
+                )),
+            ) -> Ok([
+                "notes.txt",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn dot_config_nagi_uses_project_root_for_path_completion(
+                r#"
+                [rules]
+                include = ["not█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/nagi-completion/.config/nagi.toml"
+                )),
+            ) -> Ok([
+                "notes.txt",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn nagi_workspace_member_config_file_completion(
                 r#"
                 [workspace]
