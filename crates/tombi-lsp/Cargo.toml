@@ -25,6 +25,7 @@ tombi-diagnostic = { workspace = true, features = ["lsp"] }
 tombi-document-tree-syntax.workspace = true
 tombi-extension.workspace = true
 tombi-extension-cargo.workspace = true
+tombi-extension-nagi-sql.workspace = true
 tombi-extension-pyproject.workspace = true
 tombi-extension-tombi.workspace = true
 tombi-formatter.workspace = true
@@ -56,6 +57,7 @@ tombi-test-lib.workspace = true
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 serde_tombi = { workspace = true, features = ["native"] }
 tombi-extension-cargo = { workspace = true, features = ["native"] }
+tombi-extension-nagi-sql = { workspace = true, features = ["native"] }
 tombi-extension-pyproject = { workspace = true, features = ["native"] }
 tombi-future = { workspace = true, features = ["native"] }
 tombi-schema-store = { workspace = true, features = ["native"] }
@@ -64,6 +66,7 @@ tower-lsp = { workspace = true, features = ["runtime-tokio"] }
 [target.'cfg(target_family = "wasm")'.dependencies]
 serde_tombi = { workspace = true, features = ["wasm"] }
 tombi-extension-cargo = { workspace = true, features = ["wasm"] }
+tombi-extension-nagi-sql = { workspace = true, features = ["wasm"] }
 tombi-extension-pyproject = { workspace = true, features = ["wasm"] }
 tombi-future = { workspace = true, features = ["wasm", "wasm-send"] }
 tombi-schema-store = { workspace = true, features = ["wasm"] }

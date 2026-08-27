@@ -1460,6 +1460,53 @@ mod completion_labels {
         }
     }
 
+    mod nagi_sql_extension {
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn nagi_source_include_filesystem_path_completion(
+                r#"
+                [sources.main]
+                include = ["not█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/nagi-completion/.nagi.toml"
+                )),
+            ) -> Ok([
+                "notes.txt",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn nagi_workspace_member_config_file_completion(
+                r#"
+                [workspace]
+                members = ["member/n█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/nagi-completion/.nagi.toml"
+                )),
+            ) -> Ok([
+                "member/nagi.toml",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn similarly_named_non_nagi_config_has_no_nagi_completion(
+                r#"
+                [sources.main]
+                include = ["not█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/nagi-completion/my-nagi.toml"
+                )),
+            ) -> Ok([]);
+        }
+    }
+
     mod pyproject_schema {
         use tombi_test_lib::pyproject_schema_path;
 

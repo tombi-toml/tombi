@@ -94,6 +94,7 @@ tombi-document-tree-syntax = { path = "crates/tombi-document-tree-syntax" }
 tombi-extension = { path = "crates/tombi-extension" }
 tombi-extension-cargo = { path = "extensions/tombi-extension-cargo", default-features = false }
 tombi-extension-manifest = { path = "crates/tombi-extension-manifest" }
+tombi-extension-nagi-sql = { path = "extensions/tombi-extension-nagi-sql", default-features = false }
 tombi-extension-pyproject = { path = "extensions/tombi-extension-pyproject", default-features = false }
 tombi-extension-tombi = { path = "extensions/tombi-extension-tombi" }
 tombi-formatter = { path = "crates/tombi-formatter" }

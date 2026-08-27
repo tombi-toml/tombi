@@ -1,6 +1,7 @@
 use crate::{BoolDefaultFalse, BoolDefaultTrue};
 
 pub const CARGO_EXTENSION_NAME: &str = "tombi-toml/cargo";
+pub const NAGI_SQL_EXTENSION_NAME: &str = "tombi-toml/nagi-sql";
 pub const PYPROJECT_EXTENSION_NAME: &str = "tombi-toml/pyproject";
 pub const TOMBI_EXTENSION_NAME: &str = "tombi-toml/tombi";
 
@@ -101,10 +102,12 @@ macro_rules! toggle_features {
 }
 
 mod cargo;
+mod nagi_sql;
 mod pyproject;
 mod tombi;
 
 pub use cargo::*;
+pub use nagi_sql::*;
 pub use pyproject::*;
 pub use tombi::*;
 
@@ -129,6 +132,13 @@ pub struct Extensions {
     /// Configure built-in support for `Cargo.toml`.
     pub cargo: Option<CargoExtensionFeatures>,
 
+    #[cfg_attr(feature = "serde", serde(rename = "tombi-toml/nagi-sql"))]
+    #[cfg_attr(feature = "jsonschema", schemars(skip))]
+    /// # Nagi SQL Extension
+    ///
+    /// Configure hidden built-in support for `nagi.toml`.
+    pub nagi_sql: Option<NagiSqlExtensionFeatures>,
+
     #[cfg_attr(feature = "serde", serde(rename = "tombi-toml/pyproject"))]
     /// # Pyproject Extension
     ///
@@ -152,6 +162,17 @@ impl Extensions {
 
     pub fn cargo_features(&self) -> Option<&CargoExtensionFeatures> {
         self.cargo.as_ref()
+    }
+
+    pub fn nagi_sql_enabled(&self) -> BoolDefaultTrue {
+        self.nagi_sql
+            .as_ref()
+            .map(|nagi_sql| nagi_sql.enabled())
+            .unwrap_or_default()
+    }
+
+    pub fn nagi_sql_features(&self) -> Option<&NagiSqlExtensionFeatures> {
+        self.nagi_sql.as_ref()
     }
 
     pub fn pyproject_enabled(&self) -> BoolDefaultTrue {

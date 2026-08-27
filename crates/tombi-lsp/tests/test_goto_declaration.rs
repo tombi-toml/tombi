@@ -3,6 +3,40 @@ use tombi_test_lib::{cargo_feature_navigation_fixture_path, project_root_path};
 mod goto_declaration_tests {
     use super::*;
 
+    mod nagi_workspace {
+        use super::*;
+
+        fn fixture_path() -> std::path::PathBuf {
+            project_root_path().join("crates/tombi-lsp/tests/fixtures/nagi-workspace")
+        }
+
+        test_goto_declaration!(
+            #[tokio::test]
+            async fn workspace_member_opens_member_config(
+                r#"
+                [workspace]
+                members = ["members/a█pp"]
+                "#,
+                SourcePath(fixture_path().join("nagi.toml")),
+            ) -> Ok([
+                fixture_path().join("members/app/nagi.toml"),
+            ]);
+        );
+
+        test_goto_declaration!(
+            #[tokio::test]
+            async fn inherited_source_opens_workspace_source_declaration(
+                r#"
+                [sources.analytics]
+                workspace█ = true
+                "#,
+                SourcePath(fixture_path().join("members/worker/.nagi.toml")),
+            ) -> Ok([
+                fixture_path().join("nagi.toml"),
+            ]);
+        );
+    }
+
     mod cargo_schema {
         use super::*;
 

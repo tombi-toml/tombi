@@ -1,0 +1,13 @@
+[workspace]
+members = ["members/*"]
+exclude = ["members/excluded"]
+
+[workspace.sources.analytics]
+dialect = "PostgreSQL"
+include = ["queries/**/*.sql"]
+
+[workspace.sources.postgres]
+dialect = "PostgreSQL"
+
+[sources.postgres]
+workspace = true

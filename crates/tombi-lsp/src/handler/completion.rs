@@ -218,6 +218,20 @@ pub async fn handle_completion(
     {
         completion_items.extend(items);
     }
+    if config.nagi_sql_extension_enabled()
+        && let Some(items) = tombi_extension_nagi_sql::completion(
+            &text_document_uri,
+            &document_tree,
+            position,
+            &accessors,
+            completion_hint,
+            comment_context.is_some(),
+            config.nagi_sql_extension_features(),
+        )
+        .await?
+    {
+        completion_items.extend(items);
+    }
     if config.pyproject_extension_enabled()
         && let Some(items) = tombi_extension_pyproject::completion(
             &text_document_uri,
