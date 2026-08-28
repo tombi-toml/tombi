@@ -304,6 +304,45 @@ test_token! {
     fn string_with_unicode(r#""\u00A9""#) -> Ok(Token(STRING, (0, 8)));
 }
 
+test_token! {
+    #[test]
+    fn string_long_ascii(
+        r#""abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ""#
+    ) -> Ok(Token(
+        STRING,
+        (
+            0,
+            r#""abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ""#.len() as u32
+        )
+    ));
+}
+
+test_token! {
+    #[test]
+    fn string_long_ascii_before_escape(
+        r#""abcdefghijklmnopqrstuvwxyz0123456789\"tail""#
+    ) -> Ok(Token(
+        STRING,
+        (
+            0,
+            r#""abcdefghijklmnopqrstuvwxyz0123456789\"tail""#.len() as u32
+        )
+    ));
+}
+
+test_token! {
+    #[test]
+    fn string_long_ascii_before_unicode(
+        r#""abcdefghijklmnopqrstuvwxyz0123456789🦅tail""#
+    ) -> Ok(Token(
+        STRING,
+        (
+            0,
+            r#""abcdefghijklmnopqrstuvwxyz0123456789🦅tail""#.len() as u32
+        )
+    ));
+}
+
 // Tests for single tokens - Other primitives
 test_token! {
     #[test]
@@ -381,6 +420,19 @@ test_tokens! {
 test_token! {
     #[test]
     fn error_unescaped_control_char("\"\u{0001}\"") -> Err(Token(ErrorKind::InvalidString, (0, 3)));
+}
+
+test_token! {
+    #[test]
+    fn error_long_ascii_before_unescaped_control_char(
+        "\"abcdefghijklmnopqrstuvwxyz0123456789\u{0001}\""
+    ) -> Err(Token(
+        ErrorKind::InvalidString,
+        (
+            0,
+            "\"abcdefghijklmnopqrstuvwxyz0123456789\u{0001}\"".len() as u32
+        )
+    ));
 }
 
 test_token! {
