@@ -3006,6 +3006,7 @@ name = "tombi-json"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
+ "memchr",
  "pretty_assertions",
  "serde",
  "thiserror 2.0.12",
@@ -3021,6 +3022,7 @@ name = "tombi-json-lexer"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
+ "memchr",
  "pretty_assertions",
  "textwrap",
  "tombi-json-syntax",

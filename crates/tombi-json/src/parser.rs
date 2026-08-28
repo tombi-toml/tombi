@@ -78,6 +78,13 @@ impl<'a> Parser<'a> {
                 // Remove the quotation marks
                 let content = &raw_str[1..raw_str.len() - 1];
 
+                if memchr::memchr(b'\\', content.as_bytes()).is_none() {
+                    return Ok(StringNode {
+                        value: content.to_owned(),
+                        range,
+                    });
+                }
+
                 // Process the string including escape sequences
                 let mut processed = String::with_capacity(content.len());
                 let mut chars = content.chars().peekable();
@@ -493,6 +500,24 @@ mod tests {
         assert!(value_node.is_string());
         pretty_assertions::assert_eq!(value_node.as_str(), Some("hello"));
     }
+
+    test_json_parser!(
+        long_unescaped_string_uses_copy_path,
+        r#""abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ""#,
+        |result| {
+            result.as_ref().ok().and_then(ValueNode::as_str)
+                == Some("abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        }
+    );
+
+    test_json_parser!(
+        escaped_string_preserves_decode_path,
+        r#""abcdefghijklmnopqrstuvwxyz0123456789\nend""#,
+        |result| {
+            result.as_ref().ok().and_then(ValueNode::as_str)
+                == Some("abcdefghijklmnopqrstuvwxyz0123456789\nend")
+        }
+    );
 
     #[test]
     fn test_parse_array() {

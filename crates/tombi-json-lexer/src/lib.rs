@@ -1,6 +1,7 @@
 mod cursor;
 mod error;
 mod lexed;
+mod scanner;
 mod token;
 
 use cursor::Cursor;
@@ -182,6 +183,7 @@ impl Cursor<'_> {
         debug_assert!(self.current() == '"');
 
         let mut first_error: Option<ErrorKind> = None;
+        self.eat_long_ascii_string_content();
         while let Some(c) = self.bump() {
             match c {
                 _ if c == '"' => {
@@ -230,6 +232,19 @@ impl Cursor<'_> {
         }
 
         Err(crate::Error::new(InvalidString, self.pop_span_range()))
+    }
+
+    #[inline]
+    fn eat_long_ascii_string_content(&mut self) {
+        let remaining = self.remaining().as_bytes();
+        if !scanner::is_long_string_content(remaining) {
+            return;
+        }
+
+        let len = scanner::ascii_before_quote_or_escape(remaining);
+        if len > 0 {
+            self.eat_ascii_bytes(len);
+        }
     }
 }
 
