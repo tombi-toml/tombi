@@ -9,7 +9,6 @@ license.workspace = true
 [dependencies]
 memchr.workspace = true
 tombi-json-syntax = { path = "../tombi-json-syntax" }
-tombi-regex.workspace = true
 tombi-text.workspace = true
 
 [dev-dependencies]

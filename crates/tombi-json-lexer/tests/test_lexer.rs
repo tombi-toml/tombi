@@ -25,17 +25,16 @@ macro_rules! test_tokens {
                 let text: &str = text;
                 let end_offset = start_offset + (text.len() as u32);
                 let end_position = start_position + tombi_text::RelativePosition::of(text);
-                acc.push(
-                    Ok(
-                        Token::new(
-                            kind,
-                            (
-                                (start_offset, end_offset).into(),
-                                (start_position, end_position).into()
-                            )
-                        )
-                    )
+                let span_range = (
+                    (start_offset, end_offset).into(),
+                    (start_position, end_position).into()
                 );
+                let token = if kind == STRING {
+                    Token::new_string(text.as_bytes().contains(&b'\\'), span_range)
+                } else {
+                    Token::new(kind, span_range)
+                };
+                acc.push(Ok(token));
                 (acc, (end_offset, end_position))
             });
             pretty_assertions::assert_eq!(tokens, expected);
@@ -56,7 +55,15 @@ macro_rules! test_token {
             pretty_assertions::assert_eq!(
                 tokens,
                 [
-                    Ok(
+                    Ok(if $kind == STRING {
+                        Token::new_string(
+                            source.as_bytes().contains(&b'\\'),
+                            (
+                                ($start_offset, $end_offset).into(),
+                                (start_position, end_position).into()
+                            )
+                        )
+                    } else {
                         Token::new(
                             $kind,
                             (
@@ -64,7 +71,7 @@ macro_rules! test_token {
                                 (start_position, end_position).into()
                             )
                         )
-                    )
+                    })
                 ]
             );
         }
@@ -464,6 +471,184 @@ test_token! {
 test_token! {
     #[test]
     fn error_number_trailing_decimal("10.") -> Err(Token(ErrorKind::InvalidNumber, (0, 3)));
+}
+
+test_token! {
+    #[test]
+    fn error_number_missing_exponent("1e") -> Err(Token(ErrorKind::InvalidNumber, (0, 2)));
+}
+
+test_token! {
+    #[test]
+    fn error_number_missing_signed_exponent("1e+") -> Err(Token(ErrorKind::InvalidNumber, (0, 3)));
+}
+
+test_token! {
+    #[test]
+    fn error_number_negative_leading_zero("-01") -> Err(Token(ErrorKind::InvalidNumber, (0, 3)));
+}
+
+test_token! {
+    #[test]
+    fn number_leading_zero_fraction_compatibility("01.2") -> Ok(Token(NUMBER, (0, 4)));
+}
+
+test_token! {
+    #[test]
+    fn number_leading_zero_exponent_compatibility("01e2") -> Ok(Token(NUMBER, (0, 4)));
+}
+
+test_token! {
+    #[test]
+    fn number_negative_leading_zero_fraction_compatibility("-01.2")
+        -> Ok(Token(NUMBER, (0, 5)));
+}
+
+test_token! {
+    #[test]
+    fn number_multiple_leading_zero_exponent_compatibility("00e1")
+        -> Ok(Token(NUMBER, (0, 4)));
+}
+
+test_token! {
+    #[test]
+    fn error_number_invalid_suffix("1.2x") -> Err(Token(ErrorKind::InvalidNumber, (0, 4)));
+}
+
+test_tokens! {
+    #[test]
+    fn numbers_followed_by_separators("[1,2] 3\n4") -> [
+        Token(BRACKET_START, "["),
+        Token(NUMBER, "1"),
+        Token(COMMA, ","),
+        Token(NUMBER, "2"),
+        Token(BRACKET_END, "]"),
+        Token(WHITESPACE, " "),
+        Token(NUMBER, "3"),
+        Token(LINE_BREAK, "\n"),
+        Token(NUMBER, "4"),
+    ];
+}
+
+// Exercise both sides of the 16-byte SIMD lane and 32-byte admission boundaries.
+test_token! {
+    #[test]
+    fn string_quote_at_15_bytes(concat!("\"", "aaaaaaaaaaaaaaa", "\""))
+        -> Ok(Token(STRING, (0, 17)));
+}
+
+test_token! {
+    #[test]
+    fn string_quote_at_16_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "\""))
+        -> Ok(Token(STRING, (0, 18)));
+}
+
+test_token! {
+    #[test]
+    fn string_quote_at_31_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaa", "\""))
+        -> Ok(Token(STRING, (0, 33)));
+}
+
+test_token! {
+    #[test]
+    fn string_quote_at_32_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaa", "\""))
+        -> Ok(Token(STRING, (0, 34)));
+}
+
+test_token! {
+    #[test]
+    fn string_quote_at_33_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaaa", "\""))
+        -> Ok(Token(STRING, (0, 35)));
+}
+
+test_token! {
+    #[test]
+    fn string_escape_at_15_bytes(concat!("\"", "aaaaaaaaaaaaaaa", "\\n", "tail\""))
+        -> Ok(Token(STRING, (0, 23)));
+}
+
+test_token! {
+    #[test]
+    fn string_escape_at_16_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "\\n", "tail\""))
+        -> Ok(Token(STRING, (0, 24)));
+}
+
+test_token! {
+    #[test]
+    fn string_escape_at_31_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaa", "\\n", "tail\""))
+        -> Ok(Token(STRING, (0, 39)));
+}
+
+test_token! {
+    #[test]
+    fn string_escape_at_32_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaa", "\\n", "tail\""))
+        -> Ok(Token(STRING, (0, 40)));
+}
+
+test_token! {
+    #[test]
+    fn string_escape_at_33_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaaa", "\\n", "tail\""))
+        -> Ok(Token(STRING, (0, 41)));
+}
+
+test_token! {
+    #[test]
+    fn string_unicode_at_15_bytes(concat!("\"", "aaaaaaaaaaaaaaa", "🦅tail\""))
+        -> Ok(Token(STRING, (0, 25)));
+}
+
+test_token! {
+    #[test]
+    fn string_unicode_at_16_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "🦅tail\""))
+        -> Ok(Token(STRING, (0, 26)));
+}
+
+test_token! {
+    #[test]
+    fn string_unicode_at_31_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaa", "🦅tail\""))
+        -> Ok(Token(STRING, (0, 41)));
+}
+
+test_token! {
+    #[test]
+    fn string_unicode_at_32_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaa", "🦅tail\""))
+        -> Ok(Token(STRING, (0, 42)));
+}
+
+test_token! {
+    #[test]
+    fn string_unicode_at_33_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaaa", "🦅tail\""))
+        -> Ok(Token(STRING, (0, 43)));
+}
+
+test_token! {
+    #[test]
+    fn error_string_control_at_15_bytes(concat!("\"", "aaaaaaaaaaaaaaa", "\u{0001}\""))
+        -> Err(Token(ErrorKind::InvalidString, (0, 18)));
+}
+
+test_token! {
+    #[test]
+    fn error_string_control_at_16_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "\u{0001}\""))
+        -> Err(Token(ErrorKind::InvalidString, (0, 19)));
+}
+
+test_token! {
+    #[test]
+    fn error_string_control_at_31_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaa", "\u{0001}\""))
+        -> Err(Token(ErrorKind::InvalidString, (0, 34)));
+}
+
+test_token! {
+    #[test]
+    fn error_string_control_at_32_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaa", "\u{0001}\""))
+        -> Err(Token(ErrorKind::InvalidString, (0, 35)));
+}
+
+test_token! {
+    #[test]
+    fn error_string_control_at_33_bytes(concat!("\"", "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaaa", "\u{0001}\""))
+        -> Err(Token(ErrorKind::InvalidString, (0, 36)));
 }
 
 test_tokens! {
