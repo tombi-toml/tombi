@@ -11,20 +11,6 @@ pub use lexed::Lexed;
 pub use token::Token;
 use tombi_json_syntax::{SyntaxKind, T};
 
-macro_rules! regex {
-    ($($var:ident = $re:expr);+;) => {
-        $(
-            static $var: std::sync::LazyLock<tombi_regex::Regex> =
-                std::sync::LazyLock::new(|| tombi_regex::Regex::new($re).unwrap());
-        )+
-    };
-}
-
-regex!(
-    REGEX_INTEGER_DEC = r"^-?(:?[1-9](:?[0-9])*|0)$";
-    REGEX_FLOAT = r"^-?[0-9]+(:?(:?\.[0-9]+)?[eE][+-]?[0-9]+|\.[0-9]+)$";
-);
-
 pub fn lex(source: &str) -> Lexed {
     let mut lexed = Lexed::default();
     let mut last_offset = tombi_text::Offset::default();
@@ -158,18 +144,9 @@ impl Cursor<'_> {
     }
 
     fn number(&mut self) -> Result<Token, crate::Error> {
-        let line = self.peek_with_current_while(|c| !is_token_separator(c));
-
-        if let Some(m) = REGEX_FLOAT.find(&line) {
-            debug_assert!(m.start() == 0);
-            if m.end() > 1 {
-                self.eat_n(m.end() - 1);
-            }
-            return Ok(Token::new(SyntaxKind::NUMBER, self.pop_span_range()));
-        } else if let Some(m) = REGEX_INTEGER_DEC.find(&line) {
-            debug_assert!(m.start() == 0);
-            if m.end() > 1 {
-                self.eat_n(m.end() - 1);
+        if let Some(len) = json_number_len(self.current(), self.remaining()) {
+            if len > 1 {
+                self.eat_ascii_bytes(len - 1);
             }
             return Ok(Token::new(SyntaxKind::NUMBER, self.pop_span_range()));
         }
@@ -183,6 +160,7 @@ impl Cursor<'_> {
         debug_assert!(self.current() == '"');
 
         let mut first_error: Option<ErrorKind> = None;
+        let mut contains_escape = false;
         self.eat_long_ascii_string_content();
         while let Some(c) = self.bump() {
             match c {
@@ -191,42 +169,45 @@ impl Cursor<'_> {
                         return Err(crate::Error::new(error_kind, self.pop_span_range()));
                     }
 
-                    return Ok(Token::new(SyntaxKind::STRING, self.pop_span_range()));
+                    return Ok(Token::new_string(contains_escape, self.pop_span_range()));
                 }
                 '\u{0000}'..='\u{001F}' if first_error.is_none() => {
                     first_error = Some(InvalidString);
                 }
-                '\\' => match self.bump() {
-                    Some(escape_char) => match escape_char {
-                        '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't' => {}
-                        'u' => {
-                            let mut valid_unicode = true;
-                            for _i in 0..4 {
-                                match self.bump() {
-                                    Some(hex_char) if hex_char.is_ascii_hexdigit() => {}
-                                    _ => {
-                                        valid_unicode = false;
-                                        break;
+                '\\' => {
+                    contains_escape = true;
+                    match self.bump() {
+                        Some(escape_char) => match escape_char {
+                            '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't' => {}
+                            'u' => {
+                                let mut valid_unicode = true;
+                                for _i in 0..4 {
+                                    match self.bump() {
+                                        Some(hex_char) if hex_char.is_ascii_hexdigit() => {}
+                                        _ => {
+                                            valid_unicode = false;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
 
-                            if !valid_unicode && first_error.is_none() {
-                                first_error = Some(InvalidString);
+                                if !valid_unicode && first_error.is_none() {
+                                    first_error = Some(InvalidString);
+                                }
                             }
-                        }
-                        _ => {
+                            _ => {
+                                if first_error.is_none() {
+                                    first_error = Some(InvalidString);
+                                }
+                            }
+                        },
+                        None => {
                             if first_error.is_none() {
                                 first_error = Some(InvalidString);
                             }
                         }
-                    },
-                    None => {
-                        if first_error.is_none() {
-                            first_error = Some(InvalidString);
-                        }
                     }
-                },
+                }
                 _ => {}
             }
         }
@@ -237,14 +218,76 @@ impl Cursor<'_> {
     #[inline]
     fn eat_long_ascii_string_content(&mut self) {
         let remaining = self.remaining().as_bytes();
-        if !scanner::is_long_string_content(remaining) {
+        if remaining.len() < scanner::MIN_SIMD_INPUT_LEN {
             return;
         }
 
-        let len = scanner::ascii_before_quote_or_escape(remaining);
-        if len > 0 {
+        let len = scanner::ordinary_ascii_prefix(remaining);
+        if len >= scanner::MIN_SIMD_INPUT_LEN {
             self.eat_ascii_bytes(len);
         }
+    }
+}
+
+#[inline]
+fn json_number_len(first: char, remaining: &str) -> Option<usize> {
+    let bytes = remaining.as_bytes();
+    let mut index = 0;
+
+    let integer_first = if first == '-' {
+        let digit = *bytes.get(index)?;
+        index += 1;
+        digit
+    } else {
+        first as u8
+    };
+
+    if !integer_first.is_ascii_digit() {
+        return None;
+    }
+
+    let mut integer_len = 1;
+    while bytes.get(index).is_some_and(u8::is_ascii_digit) {
+        index += 1;
+        integer_len += 1;
+    }
+
+    let mut has_fraction_or_exponent = false;
+    if bytes.get(index) == Some(&b'.') {
+        has_fraction_or_exponent = true;
+        index += 1;
+        if !bytes.get(index).is_some_and(u8::is_ascii_digit) {
+            return None;
+        }
+        while bytes.get(index).is_some_and(u8::is_ascii_digit) {
+            index += 1;
+        }
+    }
+
+    if matches!(bytes.get(index), Some(b'e' | b'E')) {
+        has_fraction_or_exponent = true;
+        index += 1;
+        if matches!(bytes.get(index), Some(b'+' | b'-')) {
+            index += 1;
+        }
+        if !bytes.get(index).is_some_and(u8::is_ascii_digit) {
+            return None;
+        }
+        while bytes.get(index).is_some_and(u8::is_ascii_digit) {
+            index += 1;
+        }
+    }
+
+    // Keep compatibility with the previous regexes: leading zeroes are
+    // rejected for integers but were accepted for fractions and exponents.
+    if integer_first == b'0' && integer_len > 1 && !has_fraction_or_exponent {
+        return None;
+    }
+
+    match remaining[index..].chars().next() {
+        None => Some(index + 1),
+        Some(next) if is_token_separator(next) => Some(index + 1),
+        Some(_) => None,
     }
 }
 

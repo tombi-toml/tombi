@@ -71,6 +71,7 @@ impl<'a> Parser<'a> {
             Some(token) if token.kind() == SyntaxKind::STRING => {
                 let span = token.span();
                 let range = token.range();
+                let contains_escape = token.contains_escape();
                 // Get the string and advance the position
                 let raw_str = &self.source[span.start.into()..span.end.into()];
                 self.advance();
@@ -78,7 +79,7 @@ impl<'a> Parser<'a> {
                 // Remove the quotation marks
                 let content = &raw_str[1..raw_str.len() - 1];
 
-                if memchr::memchr(b'\\', content.as_bytes()).is_none() {
+                if !contains_escape {
                     return Ok(StringNode {
                         value: content.to_owned(),
                         range,
@@ -344,10 +345,12 @@ impl<'a> Parser<'a> {
 
             let key = self.parse_string()?;
 
-            // Check for duplicate keys
-            if properties.contains_key(&key) {
-                return Err(Error::DuplicateKey(key.value));
-            }
+            let vacant_entry = match properties.as_inner_mut().entry(key) {
+                tombi_hashmap::map::Entry::Occupied(entry) => {
+                    return Err(Error::DuplicateKey(entry.key().value.clone()));
+                }
+                tombi_hashmap::map::Entry::Vacant(entry) => entry,
+            };
 
             // Expect colon
             self.expect(T![:])?;
@@ -355,8 +358,8 @@ impl<'a> Parser<'a> {
             // Parse value
             let value = self.parse_value(depth + 1)?;
 
-            // Store key and value
-            properties.insert(key, value);
+            // Store key and value without hashing the key a second time.
+            vacant_entry.insert(value);
 
             // Check for comma or closing brace
             match self.peek_kind() {

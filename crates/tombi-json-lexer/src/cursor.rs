@@ -39,20 +39,6 @@ impl<'a> Cursor<'a> {
             .unwrap_or(EOF_CHAR)
     }
 
-    pub fn peek_with_current_while(&self, mut predicate: impl FnMut(char) -> bool) -> String {
-        let iter = self.chars.clone();
-        let mut s = String::new();
-        s.push(self.current_char);
-        for c in iter {
-            if predicate(c) {
-                s.push(c);
-            } else {
-                break;
-            }
-        }
-        s
-    }
-
     /// Checks if the character at the current position is expected.
     pub fn matches(&self, expected: &str) -> bool {
         let mut iter = expected.chars();
