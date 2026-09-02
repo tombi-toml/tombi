@@ -1120,6 +1120,9 @@ mod draft2019_09_unevaluated_properties {
         fn schema() -> JsonValue {
             serde_json::json!({
                 "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "properties": {
+                    "foo": {"type": "string"}
+                },
                 "dependentSchemas": {
                     "foo": {
                         "properties": {
@@ -1200,6 +1203,12 @@ mod draft2019_09_unevaluated_properties {
             ) -> Err([
                 tombi_validator::Diagnostic::new(
                     tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "foo".to_string()
+                    },
+                    ((0, 0), (0, 15))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
                         key: "bar".to_string()
                     },
                     ((1, 0), (1, 10))
@@ -1210,6 +1219,39 @@ mod draft2019_09_unevaluated_properties {
                         actual: 2,
                     },
                     ((0, 0), (2, 0))
+                ),
+            ]);
+        );
+
+        fn dependent_required_schema() -> JsonValue {
+            serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "dependentRequired": {
+                    "foo": ["bar"]
+                },
+                "unevaluatedProperties": false
+            })
+        }
+
+        suite_test!(
+            #[tokio::test] async fn dependent_required_does_not_mark_properties_as_evaluated(
+                r#"
+                foo = "trigger"
+                bar = "ok"
+                "#,
+                JsonSchema(dependent_required_schema()),
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "foo".to_string()
+                    },
+                    ((0, 0), (0, 15))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "bar".to_string()
+                    },
+                    ((1, 0), (1, 10))
                 ),
             ]);
         );

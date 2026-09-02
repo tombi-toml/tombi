@@ -1079,32 +1079,14 @@ fn collect_evaluated_properties_from_table_schema<'a>(
 
         if let Some(dependencies) = &table_schema.dependencies {
             for (dependent_key, dependency) in dependencies {
-                result.mark_property(dependent_key.clone());
-                match dependency {
-                    tombi_schema_store::Dependency::Property(required_keys) => {
-                        for key in required_keys {
-                            result.mark_property(key.clone());
-                        }
-                    }
-                    tombi_schema_store::Dependency::Schema(schema_item) => {
-                        dependent_schema_items.push((dependent_key, schema_item));
-                    }
-                }
-            }
-        }
-
-        if let Some(dependent_required) = &table_schema.dependent_required {
-            for (dependent_key, required_keys) in dependent_required {
-                result.mark_property(dependent_key.clone());
-                for key in required_keys {
-                    result.mark_property(key.clone());
+                if let tombi_schema_store::Dependency::Schema(schema_item) = dependency {
+                    dependent_schema_items.push((dependent_key, schema_item));
                 }
             }
         }
 
         if let Some(dependent_schemas) = &table_schema.dependent_schemas {
             for (dependent_key, schema_item) in dependent_schemas {
-                result.mark_property(dependent_key.clone());
                 dependent_schema_items.push((dependent_key, schema_item));
             }
         }
