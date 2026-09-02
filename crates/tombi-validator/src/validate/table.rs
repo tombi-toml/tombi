@@ -964,7 +964,9 @@ async fn validate_table(
     {
         assertion_failed |= error.assertion_failed;
         match_evidence.merge_from(*error.match_evidence);
-        evaluated_locations.merge_from(error.local_evaluated_locations);
+        if !error.assertion_failed {
+            evaluated_locations.merge_from(error.local_evaluated_locations);
+        }
         total_diagnostics.extend(error.diagnostics);
     }
 
@@ -1361,6 +1363,44 @@ fn collect_evaluated_properties_from_schema_view<'a>(
     .boxed()
 }
 
+fn collect_evaluated_properties_from_applied_branch<'a>(
+    table_value: &'a tombi_document_tree_syntax::Table,
+    accessors: &'a [tombi_schema_store::Accessor],
+    schema_item: &'a tombi_schema_store::SchemaItem,
+    current_schema: &'a CurrentSchema<'a>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+) -> BoxFuture<'a, Option<crate::Valid>> {
+    async move {
+        let Ok(Some(branch_current_schema)) = tombi_schema_store::resolve_schema_item(
+            schema_item,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            current_schema.strict,
+            schema_context.store,
+        )
+        .await
+        .inspect_err(|err| log::warn!("{err}")) else {
+            return Some(crate::Valid::new());
+        };
+        let branch_current_schema = branch_current_schema
+            .for_instance_type(
+                tombi_schema_store::SchemaType::Object,
+                schema_context.string_formats(),
+            )
+            .unwrap_or(branch_current_schema);
+
+        match table_value
+            .validate(accessors, Some(&branch_current_schema), schema_context)
+            .await
+        {
+            Ok(evaluated_locations) => Some(evaluated_locations),
+            Err(error) if !error.assertion_failed => Some(error.local_evaluated_locations),
+            Err(_) => None,
+        }
+    }
+    .boxed()
+}
+
 fn collect_evaluated_properties_from_if_then_else_schema<'a>(
     table_value: &'a tombi_document_tree_syntax::Table,
     accessors: &'a [tombi_schema_store::Accessor],
@@ -1404,29 +1444,30 @@ fn collect_evaluated_properties_from_if_then_else_schema<'a>(
             .await;
 
             if let Some(then_schema) = &if_then_else_schema.then_schema {
-                result.merge_from(
-                    collect_evaluated_properties_from_schema_item(
-                        table_value,
-                        accessors,
-                        then_schema,
-                        current_schema,
-                        schema_context,
-                        visited_schema_values,
-                    )
-                    .await,
-                );
+                let Some(then_evaluated) = collect_evaluated_properties_from_applied_branch(
+                    table_value,
+                    accessors,
+                    then_schema,
+                    current_schema,
+                    schema_context,
+                )
+                .await
+                else {
+                    return crate::Valid::new();
+                };
+                result.merge_from(then_evaluated);
             }
             result
         } else if let Some(else_schema) = &if_then_else_schema.else_schema {
-            collect_evaluated_properties_from_schema_item(
+            collect_evaluated_properties_from_applied_branch(
                 table_value,
                 accessors,
                 else_schema,
                 current_schema,
                 schema_context,
-                visited_schema_values,
             )
             .await
+            .unwrap_or_default()
         } else {
             crate::Valid::new()
         }
