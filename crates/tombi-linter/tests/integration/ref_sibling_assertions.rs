@@ -166,3 +166,83 @@ test_lint! {
         },
     ])
 }
+
+test_lint! {
+    #[test]
+    fn ref_annotations_contribute_to_sibling_unevaluated_items(
+        r#"
+        ref_with_unevaluated_items = [1]
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn ref_sibling_unevaluated_items_rejects_unknown_item(
+        r#"
+        ref_with_unevaluated_items = [1, 2]
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::ArrayUnevaluatedItemNotAllowed {
+            index: 1,
+        },
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn ref_target_has_its_own_array_evaluation_scope(
+        r#"
+        ref_creates_array_evaluation_scope = [1]
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::ArrayUnevaluatedItemNotAllowed {
+            index: 0,
+        },
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn failed_all_of_does_not_contribute_to_unevaluated_items(
+        r#"
+        failed_all_of_with_unevaluated_items = [1, 2]
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::ArrayUnevaluatedItemNotAllowed {
+            index: 0,
+        },
+        tombi_validator::DiagnosticKind::ArrayUnevaluatedItemNotAllowed {
+            index: 1,
+        },
+        tombi_validator::DiagnosticKind::ArrayMinValues {
+            min_values: 5,
+            actual: 2,
+        },
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn failed_conditional_does_not_contribute_to_unevaluated_items(
+        r#"
+        failed_conditional_with_unevaluated_items = [1, 2]
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::ArrayMinValues {
+            min_values: 5,
+            actual: 2,
+        },
+        tombi_validator::DiagnosticKind::ArrayUnevaluatedItemNotAllowed {
+            index: 0,
+        },
+        tombi_validator::DiagnosticKind::ArrayUnevaluatedItemNotAllowed {
+            index: 1,
+        },
+    ])
+}

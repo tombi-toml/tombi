@@ -60,6 +60,46 @@
         }
       },
       "unevaluatedProperties": false
+    },
+    "ref_with_unevaluated_items": {
+      "$ref": "#/$defs/prefix_item",
+      "unevaluatedItems": false
+    },
+    "ref_creates_array_evaluation_scope": {
+      "$ref": "#/$defs/closed_array",
+      "prefixItems": [
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "failed_all_of_with_unevaluated_items": {
+      "allOf": [
+        {
+          "prefixItems": [
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        {
+          "minItems": 5
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "failed_conditional_with_unevaluated_items": {
+      "if": {
+        "prefixItems": [
+          {
+            "type": "integer"
+          }
+        ]
+      },
+      "then": {
+        "minItems": 5
+      },
+      "unevaluatedItems": false
     }
   },
   "$defs": {
@@ -86,6 +126,16 @@
           "type": "string"
         }
       }
+    },
+    "prefix_item": {
+      "prefixItems": [
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "closed_array": {
+      "unevaluatedItems": false
     },
     "settings": {
       "type": "object",
