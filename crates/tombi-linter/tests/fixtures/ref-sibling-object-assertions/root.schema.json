@@ -18,6 +18,10 @@
       "$ref": "#/$defs/required_table",
       "type": "object"
     },
+    "nested_sibling": {
+      "$ref": "#/$defs/nested_table",
+      "type": "object"
+    },
     "closed_sibling": {
       "$ref": "#/$defs/open_table",
       "type": "object",
@@ -71,6 +75,22 @@
         }
       },
       "required": ["required_known"]
+    },
+    "nested_table": {
+      "type": "object",
+      "properties": {
+        "known": {
+          "type": "boolean"
+        },
+        "child": {
+          "type": "object",
+          "properties": {
+            "ok": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
     }
   }
 }

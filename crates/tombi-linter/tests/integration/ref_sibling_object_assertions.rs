@@ -1,11 +1,11 @@
 //! `$ref` with sibling object assertions (regression guards for issue #2151).
 //!
-//! Tombi projects a `$ref` that carries assertion siblings into an internal
-//! `allOf` of the sibling-only schema and the reference target. The sibling-only
-//! branch declares no `properties`, so strict mode must not close it on its own.
-//! An explicit `additionalProperties: false` sibling, on the other hand, does
-//! close the table for every key, because `additionalProperties` only sees the
-//! `properties` of the schema object it appears in.
+//! A sibling `type` assertion is already represented by the resolved schema
+//! view, so it does not require rebuilding that view as a projected `allOf`.
+//! Other assertion siblings still need their own annotation scope. In
+//! particular, an explicit `additionalProperties: false` sibling closes the
+//! table for every key because it only sees `properties` from the schema object
+//! in which it appears.
 
 use tombi_diagnostic::Level;
 use tombi_linter::test_lint;
@@ -36,6 +36,38 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
+        { code: "table-strict-additional-keys", level: Level::WARNING },
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn type_sibling_keeps_warning_for_unknown_key_next_to_failing_key(
+        r#"
+        [type_sibling]
+        known = "not boolean"
+        unknown = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "type-mismatch", level: Level::ERROR },
+        { code: "table-strict-additional-keys", level: Level::WARNING },
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn type_sibling_keeps_warning_in_nested_table_when_parent_key_fails(
+        r#"
+        [nested_sibling]
+        known = "not boolean"
+
+        [nested_sibling.child]
+        unknown_child = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Diagnostics([
+        { code: "type-mismatch", level: Level::ERROR },
         { code: "table-strict-additional-keys", level: Level::WARNING },
     ])
 }
