@@ -510,12 +510,18 @@ impl SemanticSchema {
         }
     }
 
-    /// Includes `type`, which validation uses to reject incompatible instances.
+    /// Returns whether validation must preserve a root `$ref`'s sibling
+    /// assertions in a projection. This includes a sibling `type`: validation
+    /// still needs it to reject instances whose type is incompatible with the
+    /// referenced schema.
     pub(crate) fn root_reference_has_projection_siblings(&self, instance_type: SchemaType) -> bool {
         self.root_reference_has_projection_siblings_inner(instance_type, true)
     }
 
-    /// Excludes `type`, which alone does not require rebuilding the resolved view.
+    /// Returns whether the resolved view must be rebuilt as an instance-specific
+    /// projection. Unlike validation, this excludes a sibling `type` because the
+    /// resolved view already represents that type; only the other assertion
+    /// siblings require a separate projection and annotation scope.
     pub(crate) fn root_reference_requires_instance_projection(
         &self,
         instance_type: SchemaType,
