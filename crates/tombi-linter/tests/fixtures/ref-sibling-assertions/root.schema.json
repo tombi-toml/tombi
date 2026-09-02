@@ -17,11 +17,27 @@
     "external_type": {
       "$ref": "target.schema.json",
       "type": "string"
+    },
+    "settings": {
+      "$ref": "#/$defs/settings",
+      "type": "object"
     }
   },
   "$defs": {
     "integer": {
       "type": "integer"
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "minimum_release_age_excludes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "unevaluatedProperties": false
     }
   }
 }
