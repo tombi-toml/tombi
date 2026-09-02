@@ -400,6 +400,9 @@ impl Cursor<'_> {
                 }
                 '\\' if matches!(self.peek(1), '"' | '\\') => {
                     self.bump();
+                    if is_line_break(self.peek(1)) {
+                        break;
+                    }
                 }
                 _ if is_line_break(self.peek(1)) => break,
                 _ => (),
