@@ -58,6 +58,7 @@ proc-macro2 = "1.0.95"
 quote = "1.0.40"
 rayon = "1.10.0"
 reqwest = { version = "0.12.15", default-features = false, features = [
+  "gzip",
   "json",
   "rustls-tls-native-roots",
 ] }
