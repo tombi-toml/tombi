@@ -1157,6 +1157,62 @@ mod draft2019_09_unevaluated_properties {
                 ),
             ]);
         );
+
+        suite_test!(
+            #[tokio::test] async fn dependency_annotations_are_not_collected_without_trigger(
+                r#"
+                bar = "ok"
+                "#,
+                JsonSchema(schema()),
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "bar".to_string()
+                    },
+                    ((0, 0), (0, 10))
+                ),
+            ]);
+        );
+
+        fn failing_schema() -> JsonValue {
+            serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "dependentSchemas": {
+                    "foo": {
+                        "properties": {
+                            "foo": {"type": "string"},
+                            "bar": {"type": "string"}
+                        },
+                        "maxProperties": 1
+                    }
+                },
+                "unevaluatedProperties": false
+            })
+        }
+
+        suite_test!(
+            #[tokio::test] async fn failed_dependency_annotations_are_not_collected(
+                r#"
+                foo = "trigger"
+                bar = "ok"
+                "#,
+                JsonSchema(failing_schema()),
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "bar".to_string()
+                    },
+                    ((1, 0), (1, 10))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableMaxKeys {
+                        max_keys: 1,
+                        actual: 2,
+                    },
+                    ((0, 0), (2, 0))
+                ),
+            ]);
+        );
     }
 
     mod any_of_evaluated_properties {
