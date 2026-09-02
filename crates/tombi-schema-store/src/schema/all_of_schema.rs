@@ -19,6 +19,7 @@ pub struct AllOfSchema {
     pub keys_order: Option<TableKeysOrder>,
     pub not: Option<Box<NotSchema>>,
     pub if_then_else: Option<Box<IfThenElseSchema>>,
+    pub reference_siblings: bool,
 }
 
 impl AllOfSchema {
@@ -89,6 +90,7 @@ impl AllOfSchema {
                 dynamic_anchor_collector,
             )
             .map(Box::new),
+            reference_siblings: false,
         }
     }
 
