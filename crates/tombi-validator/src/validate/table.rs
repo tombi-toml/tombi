@@ -92,39 +92,21 @@ impl Validate for tombi_document_tree_syntax::Table {
                         )
                         .await
                     }
-                    SchemaView::AllOf(all_of_schema) => {
-                        let declared_locations = if schema_context.strict(Some(current_schema)) {
-                            collect_all_of_declared_properties(
-                                self,
-                                accessors,
-                                all_of_schema,
-                                current_schema,
-                                schema_context,
-                            )
-                            .await
-                        } else {
-                            crate::Valid::new()
-                        };
-                        validate_all_of(
-                            self,
-                            accessors,
-                            all_of_schema,
-                            current_schema,
-                            schema_context,
-                            self.comment_directives()
-                                .map(|directives| directives.cloned().collect_vec())
-                                .as_deref(),
-                            lint_rules.as_ref().map(|rules| &rules.common),
-                        )
-                        .await
-                        .or_else(|error| {
-                            filter_evaluated_table_strict_additional_diagnostics(
-                                self,
-                                &declared_locations,
-                                error,
-                            )
-                        })
-                    }
+                    SchemaView::AllOf(all_of_schema) => validate_all_of(
+                        self,
+                        accessors,
+                        all_of_schema,
+                        current_schema,
+                        schema_context,
+                        self.comment_directives()
+                            .map(|directives| directives.cloned().collect_vec())
+                            .as_deref(),
+                        lint_rules.as_ref().map(|rules| &rules.common),
+                    )
+                    .await
+                    .or_else(|error| {
+                        filter_evaluated_table_strict_additional_diagnostics(self, error)
+                    }),
                     SchemaView::Null => handle_nothing_schema(self),
                     SchemaView::Anything(_) => handle_anything_schema(self),
                     SchemaView::Nothing(_) => handle_nothing_schema(self),
@@ -155,42 +137,23 @@ impl Validate for tombi_document_tree_syntax::Table {
 #[allow(clippy::result_large_err)]
 fn filter_evaluated_table_strict_additional_diagnostics(
     table: &tombi_document_tree_syntax::Table,
-    declared_locations: &crate::Valid,
     mut error: crate::Invalid,
 ) -> Result<crate::Valid, crate::Invalid> {
-    // An allOf branch can report a key as additional even when another branch
-    // declares it (even if that branch fails another assertion) or rejects it
-    // with an explicit closure keyword. Keep strict warnings only when no branch
-    // has reached either conclusion for the key.
-    let mut concluded_ranges = table
+    let evaluated_ranges = table
         .key_values()
         .iter()
         .filter(|(key, _)| {
-            declared_locations.properties.contains(key.value())
-                || error
-                    .local_evaluated_locations
-                    .properties
-                    .contains(key.value())
+            error
+                .local_evaluated_locations
+                .properties
+                .contains(key.value())
         })
         .map(|(key, value)| key.range() + value.range())
         .collect::<HashSet<_>>();
 
-    concluded_ranges.extend(
-        error
-            .diagnostics
-            .iter()
-            .filter(|diagnostic| {
-                matches!(
-                    diagnostic.code(),
-                    "key-not-allowed" | "unevaluated-property-not-allowed"
-                )
-            })
-            .map(|diagnostic| diagnostic.range()),
-    );
-
     error.diagnostics.retain(|diagnostic| {
         diagnostic.code() != "table-strict-additional-keys"
-            || !concluded_ranges.contains(&diagnostic.range())
+            || !evaluated_ranges.contains(&diagnostic.range())
     });
 
     if error.diagnostics.is_empty() && !error.assertion_failed {
@@ -198,55 +161,6 @@ fn filter_evaluated_table_strict_additional_diagnostics(
     } else {
         Err(error)
     }
-}
-
-fn collect_all_of_declared_properties<'a>(
-    table: &'a tombi_document_tree_syntax::Table,
-    accessors: &'a [Accessor],
-    all_of_schema: &'a tombi_schema_store::AllOfSchema,
-    current_schema: &'a CurrentSchema<'a>,
-    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-) -> BoxFuture<'a, crate::Valid> {
-    async move {
-        let mut result = crate::Valid::new();
-        let Some(schemas) = tombi_schema_store::resolve_and_collect_schemas(
-            &all_of_schema.schemas,
-            current_schema.schema_uri.clone(),
-            current_schema.definitions.clone(),
-            current_schema.strict,
-            schema_context.store,
-            &schema_context.schema_visits,
-            accessors,
-        )
-        .await
-        else {
-            return result;
-        };
-        let mut visited_schema_values = HashSet::new();
-
-        for schema in schemas {
-            let schema = schema
-                .for_instance_type(
-                    tombi_schema_store::SchemaType::Object,
-                    schema_context.string_formats(),
-                )
-                .unwrap_or(schema);
-            result.merge_from(
-                collect_evaluated_properties_from_schema_view(
-                    table,
-                    accessors,
-                    schema.schema_view.as_ref(),
-                    &schema,
-                    schema_context,
-                    &mut visited_schema_values,
-                )
-                .await,
-            );
-        }
-
-        result
-    }
-    .boxed()
 }
 
 async fn validate_table(

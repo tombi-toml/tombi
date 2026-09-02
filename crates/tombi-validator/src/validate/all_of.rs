@@ -121,6 +121,11 @@ where
             }
         }
 
+        if assertion_failed && schema_context.strict(Some(current_schema)) {
+            total_diagnostics
+                .retain(|diagnostic| diagnostic.code() != "table-strict-additional-keys");
+        }
+
         if total_diagnostics.is_empty() && !assertion_failed {
             Ok(evaluated_locations)
         } else {
