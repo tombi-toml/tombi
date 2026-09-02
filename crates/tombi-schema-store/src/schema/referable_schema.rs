@@ -528,6 +528,7 @@ impl Referable<SchemaView> {
                                     default: default.clone(),
                                     examples: examples.clone(),
                                     deprecation: deprecation.clone(),
+                                    reference_siblings: true,
                                     ..Default::default()
                                 })),
                                 semantic_schema: None,
@@ -743,7 +744,7 @@ fn combine_ref_semantics(
 ) -> Option<Arc<super::SemanticSchema>> {
     match (local, target) {
         (Some(local), Some(target)) => Some(Arc::new(super::SemanticSchema::composite(
-            super::SemanticCompositeKind::AllOf,
+            super::SemanticCompositeKind::Reference,
             vec![local.as_ref().clone(), target.as_ref().clone()],
             local.range(),
         ))),

@@ -81,6 +81,7 @@ pub enum SemanticCompositeKind {
     OneOf,
     AnyOf,
     AllOf,
+    Reference,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -189,7 +190,7 @@ impl SemanticSchema {
                             .any(|schema| schema.accepts_instance_type(instance_type)))
             }
             Self::Composite(composite) => match composite.kind {
-                SemanticCompositeKind::AllOf => composite
+                SemanticCompositeKind::AllOf | SemanticCompositeKind::Reference => composite
                     .schemas
                     .iter()
                     .all(|schema| schema.accepts_instance_type(instance_type)),
@@ -302,10 +303,13 @@ impl SemanticSchema {
                     schemas,
                     ..Default::default()
                 }),
-                SemanticCompositeKind::AllOf => super::SchemaView::AllOf(super::AllOfSchema {
-                    schemas,
-                    ..Default::default()
-                }),
+                SemanticCompositeKind::AllOf | SemanticCompositeKind::Reference => {
+                    super::SchemaView::AllOf(super::AllOfSchema {
+                        schemas,
+                        reference_siblings: composite.kind == SemanticCompositeKind::Reference,
+                        ..Default::default()
+                    })
+                }
             });
         }
         let Self::Object(object) = self else {
@@ -672,7 +676,7 @@ impl SemanticSchema {
                     .schemas
                     .iter()
                     .any(|schema| schema.accepts_literal(value)),
-                SemanticCompositeKind::AllOf => composite
+                SemanticCompositeKind::AllOf | SemanticCompositeKind::Reference => composite
                     .schemas
                     .iter()
                     .all(|schema| schema.accepts_literal(value)),
@@ -689,7 +693,9 @@ impl SemanticCompositeSchema {
             .map(SemanticSchema::finite_literal_candidates)
             .collect::<Vec<_>>();
         let mut candidates = match self.kind {
-            SemanticCompositeKind::AllOf => domains.iter().find_map(Clone::clone)?,
+            SemanticCompositeKind::AllOf | SemanticCompositeKind::Reference => {
+                domains.iter().find_map(Clone::clone)?
+            }
             SemanticCompositeKind::AnyOf | SemanticCompositeKind::OneOf => {
                 if domains.iter().any(Option::is_none) {
                     return None;
@@ -718,7 +724,7 @@ impl SemanticCompositeSchema {
                 .schemas
                 .iter()
                 .any(|schema| schema.accepts_literal(value)),
-            SemanticCompositeKind::AllOf => self
+            SemanticCompositeKind::AllOf | SemanticCompositeKind::Reference => self
                 .schemas
                 .iter()
                 .all(|schema| schema.accepts_literal(value)),
