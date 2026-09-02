@@ -49,3 +49,120 @@ test_lint! {
         },
     ])
 }
+
+test_lint! {
+    #[test]
+    fn ref_applies_alongside_array_constraint(
+        r#"
+        ref_with_max_items = [1, 2, 3]
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::ArrayMaxValues {
+            max_values: 2,
+            actual: 3,
+        },
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn ref_target_has_its_own_evaluation_scope(
+        r#"
+        [ref_creates_evaluation_scope]
+        prop1 = "match"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+            key: "prop1".to_string(),
+        },
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn ref_annotations_contribute_to_sibling_unevaluated_properties(
+        r#"
+        [ref_with_unevaluated_properties]
+        foo = "foo"
+        bar = "bar"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn ref_sibling_unevaluated_properties_rejects_unknown_property(
+        r#"
+        [ref_with_unevaluated_properties]
+        foo = "foo"
+        bar = "bar"
+        baz = "baz"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+            key: "baz".to_string(),
+        },
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn external_ref_annotations_contribute_to_sibling_unevaluated_properties(
+        r#"
+        [external_ref_with_unevaluated_properties]
+        foo = "foo"
+        bar = "bar"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn external_ref_sibling_unevaluated_properties_rejects_unknown_property(
+        r#"
+        [external_ref_with_unevaluated_properties]
+        foo = "foo"
+        bar = "bar"
+        baz = "baz"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+            key: "baz".to_string(),
+        },
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn dynamic_ref_annotations_contribute_to_sibling_unevaluated_properties(
+        r#"
+        [dynamic_ref_with_unevaluated_properties]
+        foo = "foo"
+        bar = "bar"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn dynamic_ref_sibling_unevaluated_properties_rejects_unknown_property(
+        r#"
+        [dynamic_ref_with_unevaluated_properties]
+        foo = "foo"
+        bar = "bar"
+        baz = "baz"
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+            key: "baz".to_string(),
+        },
+    ])
+}

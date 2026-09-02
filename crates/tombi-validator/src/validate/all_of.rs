@@ -52,9 +52,8 @@ where
             crate::validate::schema_resolution_diagnostic(&err, value.range(), common_rules)
         }));
 
-        for resolved_schema in &resolved_schemas {
-            match value
-                .validate(accessors, Some(resolved_schema), schema_context)
+        if all_of_schema.reference_siblings {
+            match validate_reference_siblings(value, accessors, &resolved_schemas, schema_context)
                 .await
             {
                 Ok(result) => evaluated_locations.merge_from(result),
@@ -65,6 +64,23 @@ where
                     assertion_failed |= error.assertion_failed;
                     total_diagnostics.extend(error.diagnostics);
                     match_evidence.merge_from(*error.match_evidence);
+                }
+            }
+        } else {
+            for resolved_schema in &resolved_schemas {
+                match value
+                    .validate(accessors, Some(resolved_schema), schema_context)
+                    .await
+                {
+                    Ok(result) => evaluated_locations.merge_from(result),
+                    Err(error) => {
+                        if !error.assertion_failed {
+                            evaluated_locations.merge_from(error.local_evaluated_locations.clone());
+                        }
+                        assertion_failed |= error.assertion_failed;
+                        total_diagnostics.extend(error.diagnostics);
+                        match_evidence.merge_from(*error.match_evidence);
+                    }
                 }
             }
         }
@@ -132,6 +148,56 @@ where
                 local_evaluated_locations: evaluated_locations,
             })
         }
+    }
+    .boxed()
+}
+
+fn validate_reference_siblings<'a: 'b, 'b, T>(
+    value: &'a T,
+    accessors: &'a [tombi_schema_store::Accessor],
+    schemas: &'a [CurrentSchema<'a>],
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+) -> BoxFuture<'b, Result<crate::Valid, crate::Invalid>>
+where
+    T: Validate + ValueImpl + Sync + Send + Debug,
+{
+    async move {
+        let Some((local, targets)) = schemas.split_first() else {
+            return Ok(crate::Valid::new());
+        };
+        let Some(instance_type) =
+            tombi_schema_store::SchemaType::from_value_type(value.value_type())
+        else {
+            return value.validate(accessors, Some(local), schema_context).await;
+        };
+        let Some(local) = local.for_instance_type(instance_type, schema_context.string_formats())
+        else {
+            return value.validate(accessors, Some(local), schema_context).await;
+        };
+        let targets = targets
+            .iter()
+            .map(|target| tombi_schema_store::Referable::Resolved {
+                schema_uri: Some(target.schema_uri.as_ref().clone()),
+                value: target.schema_view.clone(),
+                semantic_schema: target.semantic_schema.clone(),
+            })
+            .collect();
+        let current_schema = CurrentSchema {
+            schema_view: std::sync::Arc::new(
+                local
+                    .schema_view
+                    .as_ref()
+                    .clone()
+                    .with_reference_targets(targets),
+            ),
+            semantic_schema: None,
+            schema_uri: local.schema_uri,
+            definitions: local.definitions,
+            strict: local.strict,
+        };
+        value
+            .validate(accessors, Some(&current_schema), schema_context)
+            .await
     }
     .boxed()
 }

@@ -21,11 +21,71 @@
     "settings": {
       "$ref": "#/$defs/settings",
       "type": "object"
+    },
+    "ref_with_max_items": {
+      "$ref": "#/$defs/array",
+      "maxItems": 2
+    },
+    "ref_creates_evaluation_scope": {
+      "$ref": "#/$defs/closed",
+      "properties": {
+        "prop1": {
+          "type": "string"
+        }
+      }
+    },
+    "ref_with_unevaluated_properties": {
+      "$ref": "#/$defs/bar_property",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "external_ref_with_unevaluated_properties": {
+      "$ref": "target.schema.json#/$defs/bar_property",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "dynamic_ref_with_unevaluated_properties": {
+      "$dynamicRef": "#dynamicBarProperty",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false
     }
   },
   "$defs": {
     "integer": {
       "type": "integer"
+    },
+    "array": {
+      "type": "array"
+    },
+    "closed": {
+      "unevaluatedProperties": false
+    },
+    "bar_property": {
+      "properties": {
+        "bar": {
+          "type": "string"
+        }
+      }
+    },
+    "dynamic_bar_property": {
+      "$dynamicAnchor": "dynamicBarProperty",
+      "properties": {
+        "bar": {
+          "type": "string"
+        }
+      }
     },
     "settings": {
       "type": "object",
