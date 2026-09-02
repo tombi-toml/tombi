@@ -92,21 +92,20 @@ impl Validate for tombi_document_tree_syntax::Table {
                         )
                         .await
                     }
-                    SchemaView::AllOf(all_of_schema) => validate_all_of(
-                        self,
-                        accessors,
-                        all_of_schema,
-                        current_schema,
-                        schema_context,
-                        self.comment_directives()
-                            .map(|directives| directives.cloned().collect_vec())
-                            .as_deref(),
-                        lint_rules.as_ref().map(|rules| &rules.common),
-                    )
-                    .await
-                    .or_else(|error| {
-                        filter_evaluated_table_strict_additional_diagnostics(self, error)
-                    }),
+                    SchemaView::AllOf(all_of_schema) => {
+                        validate_all_of(
+                            self,
+                            accessors,
+                            all_of_schema,
+                            current_schema,
+                            schema_context,
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
+                            lint_rules.as_ref().map(|rules| &rules.common),
+                        )
+                        .await
+                    }
                     SchemaView::Null => handle_nothing_schema(self),
                     SchemaView::Anything(_) => handle_anything_schema(self),
                     SchemaView::Nothing(_) => handle_nothing_schema(self),
@@ -131,35 +130,6 @@ impl Validate for tombi_document_tree_syntax::Table {
             crate::validate::with_lint_diagnostics(result, lint_rules_diagnostics)
         }
         .boxed()
-    }
-}
-
-#[allow(clippy::result_large_err)]
-fn filter_evaluated_table_strict_additional_diagnostics(
-    table: &tombi_document_tree_syntax::Table,
-    mut error: crate::Invalid,
-) -> Result<crate::Valid, crate::Invalid> {
-    let evaluated_ranges = table
-        .key_values()
-        .iter()
-        .filter(|(key, _)| {
-            error
-                .local_evaluated_locations
-                .properties
-                .contains(key.value())
-        })
-        .map(|(key, value)| key.range() + value.range())
-        .collect::<HashSet<_>>();
-
-    error.diagnostics.retain(|diagnostic| {
-        diagnostic.code() != "table-strict-additional-keys"
-            || !evaluated_ranges.contains(&diagnostic.range())
-    });
-
-    if error.diagnostics.is_empty() && !error.assertion_failed {
-        Ok(error.local_evaluated_locations)
-    } else {
-        Err(error)
     }
 }
 
