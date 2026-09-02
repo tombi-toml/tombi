@@ -42,6 +42,8 @@ mod recursive_anchor_ref_test_schema;
 mod recursive_defs_any_of_test_schema;
 #[path = "integration/ref_sibling_assertions.rs"]
 mod ref_sibling_assertions;
+#[path = "integration/ref_sibling_object_assertions.rs"]
+mod ref_sibling_object_assertions;
 #[path = "integration/schema_resolution_error.rs"]
 mod schema_resolution_error;
 #[path = "integration/string_format_test_schema.rs"]
