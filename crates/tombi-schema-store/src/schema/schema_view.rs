@@ -1,4 +1,4 @@
-use std::{borrow::Cow, str::FromStr};
+use std::{borrow::Cow, str::FromStr, sync::Arc};
 
 use futures::future::join_all;
 use tombi_future::{BoxFuture, Boxable};
@@ -8,7 +8,7 @@ use tombi_x_keyword::{StringFormat, TomlDateTimeType};
 use super::{
     AllOfSchema, AnchorCollector, AnyOfSchema, ArraySchema, BooleanSchema, Deprecation,
     DynamicAnchorCollector, FindSchemaCandidates, FloatSchema, IntegerSchema, LocalDateSchema,
-    LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema, OneOfSchema, SchemaUri,
+    LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema, OneOfSchema, Referable, SchemaUri,
     StringSchema, TableSchema,
 };
 use crate::{Accessor, SchemaDefinitions, SchemaStore, schema::any_schema::AnythingSchema};
@@ -99,6 +99,59 @@ impl SchemaView {
             | Self::Anything(_)
             | Self::Nothing(_) => (None, None, None, None),
         }
+    }
+
+    pub fn with_reference_targets(mut self, targets: Vec<Referable<SchemaView>>) -> Self {
+        fn attach(slot: &mut Option<Box<AllOfSchema>>, mut targets: Vec<Referable<SchemaView>>) {
+            if let Some(existing) = slot.take() {
+                targets.insert(
+                    0,
+                    Referable::Resolved {
+                        schema_uri: None,
+                        value: Arc::new(SchemaView::AllOf(*existing)),
+                        semantic_schema: None,
+                    },
+                );
+            }
+            *slot = Some(Box::new(AllOfSchema {
+                schemas: Arc::new(tokio::sync::RwLock::new(targets)),
+                ..Default::default()
+            }));
+        }
+
+        let all_of = match &mut self {
+            Self::Boolean(schema) => Some(&mut schema.all_of),
+            Self::Integer(schema) => Some(&mut schema.all_of),
+            Self::Float(schema) => Some(&mut schema.all_of),
+            Self::String(schema) => Some(&mut schema.all_of),
+            Self::LocalDate(schema) => Some(&mut schema.all_of),
+            Self::LocalDateTime(schema) => Some(&mut schema.all_of),
+            Self::LocalTime(schema) => Some(&mut schema.all_of),
+            Self::OffsetDateTime(schema) => Some(&mut schema.all_of),
+            Self::Array(schema) => Some(&mut schema.all_of),
+            Self::Table(schema) => Some(&mut schema.all_of),
+            Self::OneOf(_)
+            | Self::AnyOf(_)
+            | Self::AllOf(_)
+            | Self::Null
+            | Self::Anything(_)
+            | Self::Nothing(_) => None,
+        };
+        if let Some(all_of) = all_of {
+            attach(all_of, targets);
+            return self;
+        }
+
+        let mut schemas = vec![Referable::Resolved {
+            schema_uri: None,
+            value: Arc::new(self),
+            semantic_schema: None,
+        }];
+        schemas.extend(targets);
+        Self::AllOf(AllOfSchema {
+            schemas: Arc::new(tokio::sync::RwLock::new(schemas)),
+            ..Default::default()
+        })
     }
 
     pub(crate) fn new_single(
@@ -915,5 +968,47 @@ impl FindSchemaCandidates for SchemaView {
             .await
         }
         .boxed()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use super::{AllOfSchema, AnyOfSchema, Referable, SchemaView, StringSchema};
+
+    fn string_target() -> Referable<SchemaView> {
+        Referable::Resolved {
+            schema_uri: None,
+            value: Arc::new(SchemaView::String(StringSchema::default())),
+            semantic_schema: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn reference_targets_attach_to_typed_schema() {
+        let schema = SchemaView::String(StringSchema::default())
+            .with_reference_targets(vec![string_target()]);
+
+        let SchemaView::String(schema) = schema else {
+            panic!("expected string schema");
+        };
+        assert_eq!(schema.all_of.unwrap().schemas.read().await.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn reference_targets_wrap_composite_schema() {
+        let schema =
+            SchemaView::AnyOf(AnyOfSchema::default()).with_reference_targets(vec![string_target()]);
+
+        let SchemaView::AllOf(AllOfSchema { schemas, .. }) = schema else {
+            panic!("expected allOf schema");
+        };
+        let schemas = schemas.read().await;
+        assert_eq!(schemas.len(), 2);
+        assert!(matches!(
+            &schemas[0],
+            Referable::Resolved { value, .. } if matches!(value.as_ref(), SchemaView::AnyOf(_))
+        ));
     }
 }

@@ -81,6 +81,7 @@ pub enum SemanticCompositeKind {
     OneOf,
     AnyOf,
     AllOf,
+    Reference,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -189,7 +190,7 @@ impl SemanticSchema {
                             .any(|schema| schema.accepts_instance_type(instance_type)))
             }
             Self::Composite(composite) => match composite.kind {
-                SemanticCompositeKind::AllOf => composite
+                SemanticCompositeKind::AllOf | SemanticCompositeKind::Reference => composite
                     .schemas
                     .iter()
                     .all(|schema| schema.accepts_instance_type(instance_type)),
@@ -302,10 +303,13 @@ impl SemanticSchema {
                     schemas,
                     ..Default::default()
                 }),
-                SemanticCompositeKind::AllOf => super::SchemaView::AllOf(super::AllOfSchema {
-                    schemas,
-                    ..Default::default()
-                }),
+                SemanticCompositeKind::AllOf | SemanticCompositeKind::Reference => {
+                    super::SchemaView::AllOf(super::AllOfSchema {
+                        schemas,
+                        reference_siblings: composite.kind == SemanticCompositeKind::Reference,
+                        ..Default::default()
+                    })
+                }
             });
         }
         let Self::Object(object) = self else {
@@ -506,19 +510,41 @@ impl SemanticSchema {
         }
     }
 
-    /// Returns whether a node-local reference also has semantic siblings that
-    /// must participate in the typed projection. Reference annotations are
-    /// already applied to the resolved view and therefore do not count here.
+    /// Returns whether validation must preserve a root `$ref`'s sibling
+    /// assertions in a projection. This includes a sibling `type`: validation
+    /// still needs it to reject instances whose type is incompatible with the
+    /// referenced schema.
     pub(crate) fn root_reference_has_projection_siblings(&self, instance_type: SchemaType) -> bool {
+        self.root_reference_has_projection_siblings_inner(instance_type, true)
+    }
+
+    /// Returns whether the resolved view must be rebuilt as an instance-specific
+    /// projection. Unlike validation, this excludes a sibling `type` because the
+    /// resolved view already represents that type; only the other assertion
+    /// siblings require a separate projection and annotation scope.
+    pub(crate) fn root_reference_requires_instance_projection(
+        &self,
+        instance_type: SchemaType,
+    ) -> bool {
+        self.root_reference_has_projection_siblings_inner(instance_type, false)
+    }
+
+    fn root_reference_has_projection_siblings_inner(
+        &self,
+        instance_type: SchemaType,
+        include_type_assertion: bool,
+    ) -> bool {
         match self {
             Self::Boolean(_) => false,
-            Self::Composite(composite) => composite
-                .schemas
-                .iter()
-                .any(|schema| schema.root_reference_has_projection_siblings(instance_type)),
+            Self::Composite(composite) => composite.schemas.iter().any(|schema| {
+                schema.root_reference_has_projection_siblings_inner(
+                    instance_type,
+                    include_type_assertion,
+                )
+            }),
             Self::Object(object) => {
                 object.references.primary().is_some()
-                    && (object.type_assertion.is_some()
+                    && ((include_type_assertion && object.type_assertion.is_some())
                         || object.assertions.const_value.is_some()
                         || object.assertions.enum_values.is_some()
                         || self.has_direct_constraints_for_type(instance_type)
@@ -656,7 +682,7 @@ impl SemanticSchema {
                     .schemas
                     .iter()
                     .any(|schema| schema.accepts_literal(value)),
-                SemanticCompositeKind::AllOf => composite
+                SemanticCompositeKind::AllOf | SemanticCompositeKind::Reference => composite
                     .schemas
                     .iter()
                     .all(|schema| schema.accepts_literal(value)),
@@ -673,7 +699,9 @@ impl SemanticCompositeSchema {
             .map(SemanticSchema::finite_literal_candidates)
             .collect::<Vec<_>>();
         let mut candidates = match self.kind {
-            SemanticCompositeKind::AllOf => domains.iter().find_map(Clone::clone)?,
+            SemanticCompositeKind::AllOf | SemanticCompositeKind::Reference => {
+                domains.iter().find_map(Clone::clone)?
+            }
             SemanticCompositeKind::AnyOf | SemanticCompositeKind::OneOf => {
                 if domains.iter().any(Option::is_none) {
                     return None;
@@ -702,7 +730,7 @@ impl SemanticCompositeSchema {
                 .schemas
                 .iter()
                 .any(|schema| schema.accepts_literal(value)),
-            SemanticCompositeKind::AllOf => self
+            SemanticCompositeKind::AllOf | SemanticCompositeKind::Reference => self
                 .schemas
                 .iter()
                 .all(|schema| schema.accepts_literal(value)),

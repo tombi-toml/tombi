@@ -17,11 +17,137 @@
     "external_type": {
       "$ref": "target.schema.json",
       "type": "string"
+    },
+    "settings": {
+      "$ref": "#/$defs/settings",
+      "type": "object"
+    },
+    "ref_with_max_items": {
+      "$ref": "#/$defs/array",
+      "maxItems": 2
+    },
+    "ref_creates_evaluation_scope": {
+      "$ref": "#/$defs/closed",
+      "properties": {
+        "prop1": {
+          "type": "string"
+        }
+      }
+    },
+    "ref_with_unevaluated_properties": {
+      "$ref": "#/$defs/bar_property",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "external_ref_with_unevaluated_properties": {
+      "$ref": "target.schema.json#/$defs/bar_property",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "dynamic_ref_with_unevaluated_properties": {
+      "$dynamicRef": "#dynamicBarProperty",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "ref_with_unevaluated_items": {
+      "$ref": "#/$defs/prefix_item",
+      "unevaluatedItems": false
+    },
+    "ref_creates_array_evaluation_scope": {
+      "$ref": "#/$defs/closed_array",
+      "prefixItems": [
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "failed_all_of_with_unevaluated_items": {
+      "allOf": [
+        {
+          "prefixItems": [
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        {
+          "minItems": 5
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "failed_conditional_with_unevaluated_items": {
+      "if": {
+        "prefixItems": [
+          {
+            "type": "integer"
+          }
+        ]
+      },
+      "then": {
+        "minItems": 5
+      },
+      "unevaluatedItems": false
     }
   },
   "$defs": {
     "integer": {
       "type": "integer"
+    },
+    "array": {
+      "type": "array"
+    },
+    "closed": {
+      "unevaluatedProperties": false
+    },
+    "bar_property": {
+      "properties": {
+        "bar": {
+          "type": "string"
+        }
+      }
+    },
+    "dynamic_bar_property": {
+      "$dynamicAnchor": "dynamicBarProperty",
+      "properties": {
+        "bar": {
+          "type": "string"
+        }
+      }
+    },
+    "prefix_item": {
+      "prefixItems": [
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "closed_array": {
+      "unevaluatedItems": false
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "minimum_release_age_excludes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "unevaluatedProperties": false
     }
   }
 }

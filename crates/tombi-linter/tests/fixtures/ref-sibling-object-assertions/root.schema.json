@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "type_sibling": {
+      "$ref": "#/$defs/open_table",
+      "type": "object"
+    },
+    "type_sibling_closed_target": {
+      "$ref": "#/$defs/closed_table",
+      "type": "object"
+    },
+    "type_sibling_unevaluated_target": {
+      "$ref": "#/$defs/unevaluated_table",
+      "type": "object"
+    },
+    "type_sibling_required_target": {
+      "$ref": "#/$defs/required_table",
+      "type": "object"
+    },
+    "nested_sibling": {
+      "$ref": "#/$defs/nested_table",
+      "type": "object"
+    },
+    "closed_sibling": {
+      "$ref": "#/$defs/open_table",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "closed_sibling_closed_target": {
+      "$ref": "#/$defs/closed_table",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "closed_sibling_without_type": {
+      "$ref": "#/$defs/open_table",
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "open_table": {
+      "type": "object",
+      "properties": {
+        "known": {
+          "type": "boolean"
+        }
+      }
+    },
+    "closed_table": {
+      "type": "object",
+      "properties": {
+        "known": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "unevaluated_table": {
+      "type": "object",
+      "properties": {
+        "known": {
+          "type": "boolean"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "required_table": {
+      "type": "object",
+      "properties": {
+        "known": {
+          "type": "boolean"
+        },
+        "required_known": {
+          "type": "boolean"
+        }
+      },
+      "required": ["required_known"]
+    },
+    "nested_table": {
+      "type": "object",
+      "properties": {
+        "known": {
+          "type": "boolean"
+        },
+        "child": {
+          "type": "object",
+          "properties": {
+            "ok": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  }
+}
