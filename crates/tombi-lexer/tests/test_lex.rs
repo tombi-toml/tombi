@@ -4,7 +4,7 @@ use tombi_lexer::{Cursor, ErrorKind::*, Token, tokenize};
 
 macro_rules! test_lex_tokens {
     {#[test]fn $name:ident($source:expr) -> [
-        $( $item:ident ($kind:expr, $text:expr) ),* $(,)?
+        $($item:ident($kind:expr, $text:literal),)*
     ];} => {
         #[test]
         fn $name() {
@@ -36,10 +36,10 @@ macro_rules! test_lex_tokens {
         }
     };
 
-    (@item Token($kind:expr, $text:expr)) => {
+    (@item Token($kind:expr, $text:literal)) => {
         (Ok::<tombi_ast_syntax::SyntaxKind, tombi_lexer::ErrorKind>($kind), $text)
     };
-    (@item Error($kind:expr, $text:expr)) => {
+    (@item Error($kind:expr, $text:literal)) => {
         (Err::<tombi_ast_syntax::SyntaxKind, tombi_lexer::ErrorKind>($kind), $text)
     };
 }
@@ -382,8 +382,8 @@ test_lex_token! {
 
 test_lex_tokens! {
     #[test]
-    fn invalid_basic_string_newline_after_escaped_quote(concat!("\"", "\\\"", "\nb\"")) -> [
-        Error(InvalidBasicString, concat!("\"", "\\\"")),
+    fn invalid_basic_string_newline_after_escaped_quote("\"\\\"\nb\"") -> [
+        Error(InvalidBasicString, "\"\\\""),
         Token(LINE_BREAK, "\n"),
         Error(InvalidKey, "b\""),
     ];
@@ -391,9 +391,27 @@ test_lex_tokens! {
 
 test_lex_tokens! {
     #[test]
-    fn invalid_basic_string_newline_after_escaped_backslash(concat!("\"x", "\\\\", "\nb\"")) -> [
-        Error(InvalidBasicString, concat!("\"x", "\\\\")),
+    fn invalid_basic_string_crlf_after_escaped_quote("\"\\\"\r\nb\"") -> [
+        Error(InvalidBasicString, "\"\\\""),
+        Token(LINE_BREAK, "\r\n"),
+        Error(InvalidKey, "b\""),
+    ];
+}
+
+test_lex_tokens! {
+    #[test]
+    fn invalid_basic_string_newline_after_escaped_backslash("\"x\\\\\nb\"") -> [
+        Error(InvalidBasicString, "\"x\\\\"),
         Token(LINE_BREAK, "\n"),
+        Error(InvalidKey, "b\""),
+    ];
+}
+
+test_lex_tokens! {
+    #[test]
+    fn invalid_basic_string_crlf_after_escaped_backslash("\"x\\\\\r\nb\"") -> [
+        Error(InvalidBasicString, "\"x\\\\"),
+        Token(LINE_BREAK, "\r\n"),
         Error(InvalidKey, "b\""),
     ];
 }
