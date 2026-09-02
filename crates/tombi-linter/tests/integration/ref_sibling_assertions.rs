@@ -23,3 +23,29 @@ test_lint! {
         tombi_validator::DiagnosticKind::Nothing,
     ])
 }
+
+test_lint! {
+    #[test]
+    fn ref_sibling_type_allows_properties_declared_by_target_in_strict_mode(
+        r#"
+        [settings]
+        minimum_release_age_excludes = ["github:kjanat/actionlint"]
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn ref_sibling_type_still_rejects_undeclared_properties(
+        r#"
+        [settings]
+        unknown = true
+        "#,
+        SchemaPath(schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+            key: "unknown".to_string(),
+        },
+    ])
+}

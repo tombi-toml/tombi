@@ -506,19 +506,35 @@ impl SemanticSchema {
         }
     }
 
-    /// Returns whether a node-local reference also has semantic siblings that
-    /// must participate in the typed projection. Reference annotations are
-    /// already applied to the resolved view and therefore do not count here.
+    /// Includes `type`, which validation uses to reject incompatible instances.
     pub(crate) fn root_reference_has_projection_siblings(&self, instance_type: SchemaType) -> bool {
+        self.root_reference_has_projection_siblings_inner(instance_type, true)
+    }
+
+    /// Excludes `type`, which alone does not require rebuilding the resolved view.
+    pub(crate) fn root_reference_requires_instance_projection(
+        &self,
+        instance_type: SchemaType,
+    ) -> bool {
+        self.root_reference_has_projection_siblings_inner(instance_type, false)
+    }
+
+    fn root_reference_has_projection_siblings_inner(
+        &self,
+        instance_type: SchemaType,
+        include_type_assertion: bool,
+    ) -> bool {
         match self {
             Self::Boolean(_) => false,
-            Self::Composite(composite) => composite
-                .schemas
-                .iter()
-                .any(|schema| schema.root_reference_has_projection_siblings(instance_type)),
+            Self::Composite(composite) => composite.schemas.iter().any(|schema| {
+                schema.root_reference_has_projection_siblings_inner(
+                    instance_type,
+                    include_type_assertion,
+                )
+            }),
             Self::Object(object) => {
                 object.references.primary().is_some()
-                    && (object.type_assertion.is_some()
+                    && ((include_type_assertion && object.type_assertion.is_some())
                         || object.assertions.const_value.is_some()
                         || object.assertions.enum_values.is_some()
                         || self.has_direct_constraints_for_type(instance_type)
