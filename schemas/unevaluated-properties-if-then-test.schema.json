@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UnevaluatedPropertiesIfThenTest",
+  "type": "object",
+  "properties": {
+    "then_branch": {
+      "type": "object",
+      "if": {
+        "properties": { "kind": { "type": "string" } },
+        "required": ["kind"]
+      },
+      "then": {
+        "properties": {
+          "kind": { "type": "string" },
+          "value": { "type": "integer" }
+        },
+        "maxProperties": 2
+      },
+      "unevaluatedProperties": false
+    },
+    "else_branch": {
+      "type": "object",
+      "if": {
+        "properties": { "kind": { "type": "string" } },
+        "required": ["kind"]
+      },
+      "else": {
+        "properties": {
+          "other": { "type": "integer" }
+        },
+        "maxProperties": 1
+      },
+      "unevaluatedProperties": false
+    }
+  }
+}

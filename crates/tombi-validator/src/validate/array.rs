@@ -142,7 +142,7 @@ async fn validate_array(
         || array_schema.unevaluated_items == Some(false);
 
     if let Some(if_then_else_schema) = array_schema.if_then_else.as_ref() {
-        match validate_if_then_else(
+        let result = validate_if_then_else(
             array_value,
             accessors,
             if_then_else_schema,
@@ -150,19 +150,14 @@ async fn validate_array(
             schema_context,
             common_rules,
         )
-        .await
-        {
-            Ok(result) => validation_result.merge_from(result),
-            Err(error) => {
-                assertion_failed |= error.assertion_failed;
-                validation_result
-                    .match_evidence
-                    .merge_from(*error.match_evidence);
-                if !error.assertion_failed {
-                    validation_result.merge_from(error.local_evaluated_locations);
-                }
-                total_diagnostics.extend(error.diagnostics);
-            }
+        .await;
+
+        if let Some(error) = validation_result.merge_result_keeping_annotations(result) {
+            assertion_failed |= error.assertion_failed;
+            validation_result
+                .match_evidence
+                .merge_from(*error.match_evidence);
+            total_diagnostics.extend(error.diagnostics);
         }
     }
 

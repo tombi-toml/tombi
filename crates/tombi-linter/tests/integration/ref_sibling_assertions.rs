@@ -228,7 +228,7 @@ test_lint! {
 
 test_lint! {
     #[test]
-    fn failed_conditional_does_not_contribute_to_unevaluated_items(
+    fn failed_then_keeps_successful_if_annotations_for_unevaluated_items(
         r#"
         failed_conditional_with_unevaluated_items = [1, 2]
         "#,
@@ -237,9 +237,6 @@ test_lint! {
         tombi_validator::DiagnosticKind::ArrayMinValues {
             min_values: 5,
             actual: 2,
-        },
-        tombi_validator::DiagnosticKind::ArrayUnevaluatedItemNotAllowed {
-            index: 0,
         },
         tombi_validator::DiagnosticKind::ArrayUnevaluatedItemNotAllowed {
             index: 1,

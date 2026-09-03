@@ -474,6 +474,23 @@ pub(crate) fn schema_resolution_diagnostic(
     .then(|| error.to_warning_diagnostic(range))
 }
 
+/// Drops the annotations a subschema produced when its own assertions failed —
+/// such a subschema contributes nothing to `unevaluatedProperties` /
+/// `unevaluatedItems`. Annotations its successful siblings produced are
+/// untouched, so a parent applicator must apply this per subschema result
+/// rather than to the merged result of the whole applicator.
+///
+/// This resets the whole `local_evaluated_locations`, including the match
+/// evidence nested in it; callers that need the failure's own match evidence
+/// read it from `Invalid::match_evidence`.
+pub(crate) fn discard_failed_annotations(result: &mut Result<crate::Valid, crate::Invalid>) {
+    if let Err(error) = result
+        && error.assertion_failed
+    {
+        error.local_evaluated_locations = crate::Valid::new();
+    }
+}
+
 pub(crate) fn is_assertion_success(result: &Result<crate::Valid, crate::Invalid>) -> bool {
     match result {
         Ok(_) => true,
