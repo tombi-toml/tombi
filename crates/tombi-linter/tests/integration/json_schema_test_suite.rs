@@ -1177,6 +1177,37 @@ mod draft2019_09_unevaluated_properties {
             ]);
         );
 
+        fn trigger_key_only_schema() -> JsonValue {
+            serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "dependentSchemas": {
+                    "foo": {
+                        "properties": {
+                            "bar": {"type": "string"}
+                        }
+                    }
+                },
+                "unevaluatedProperties": false
+            })
+        }
+
+        suite_test!(
+            #[tokio::test] async fn successful_dependency_does_not_annotate_trigger_key(
+                r#"
+                foo = "x"
+                bar = "y"
+                "#,
+                JsonSchema(trigger_key_only_schema()),
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "foo".to_string()
+                    },
+                    ((0, 0), (0, 9))
+                ),
+            ]);
+        );
+
         fn failing_schema() -> JsonValue {
             serde_json::json!({
                 "$schema": "https://json-schema.org/draft/2019-09/schema",

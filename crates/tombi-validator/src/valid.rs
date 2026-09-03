@@ -18,6 +18,27 @@ impl Valid {
         self.match_evidence.merge_from(*other.match_evidence);
     }
 
+    /// Merges the annotations a subschema produced into `self` and returns
+    /// whatever failure is left for the caller to report.
+    ///
+    /// Annotations of a subschema whose assertions failed are discarded,
+    /// because a failing subschema contributes nothing to
+    /// `unevaluatedProperties` / `unevaluatedItems`.
+    pub fn merge_result(&mut self, result: Result<Self, crate::Invalid>) -> Option<crate::Invalid> {
+        match result {
+            Ok(local_evaluated_locations) => {
+                self.merge_from(local_evaluated_locations);
+                None
+            }
+            Err(mut error) => {
+                if !error.assertion_failed {
+                    self.merge_from(std::mem::take(&mut error.local_evaluated_locations));
+                }
+                Some(error)
+            }
+        }
+    }
+
     #[inline]
     pub fn mark_property(&mut self, key: impl Into<String>) {
         self.properties.insert(key.into());

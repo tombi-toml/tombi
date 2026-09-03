@@ -2,6 +2,7 @@ use itertools::Itertools;
 use tombi_accessor::MarkdownSchemaAccessors;
 use tombi_comment_directive::value::TableCommonLintRules;
 use tombi_future::{BoxFuture, Boxable};
+use tombi_hashmap::HashMap;
 use tombi_schema_store::{Accessor, CompositeSchema, CurrentSchema, SchemaAccessor, SchemaView};
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError};
 
@@ -12,13 +13,101 @@ use crate::{
     validate::{
         filter_table_strict_additional_diagnostics, handle_anything_schema, handle_deprecated,
         handle_deprecated_value, handle_nothing_schema, handle_unused_noqa,
-        if_then_else::validate_if_then_else, is_assertion_success, merge_validation_results,
+        if_then_else::validate_if_then_else, merge_validation_results,
         validate_adjacent_applicators,
     },
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
 use crate::diagnostic::Patterns;
+
+/// A dependency schema is an additional constraint layered on top of the parent
+/// table schema. Running strict mode here against the partial dependency schema
+/// causes false-positive additional key diagnostics for valid keys defined by
+/// the parent schema.
+fn dependency_schema_context<'a>(
+    schema_context: &tombi_schema_store::SchemaContext<'a>,
+) -> tombi_schema_store::SchemaContext<'a> {
+    tombi_schema_store::SchemaContext {
+        toml_version: schema_context.toml_version,
+        root_schema: schema_context.root_schema,
+        sub_schema_link_map: schema_context.sub_schema_link_map,
+        deprecated_lint_level: schema_context.deprecated_lint_level,
+        schema_format_rules: schema_context.schema_format_rules,
+        schema_lint_rules: schema_context.schema_lint_rules,
+        schema_overrides: schema_context.schema_overrides,
+        schema_visits: schema_context.schema_visits.clone(),
+        store: schema_context.store,
+        strict: Some(false.into()),
+    }
+}
+
+/// Validates every dependent schema whose trigger key is present, merging the
+/// annotations it produced into `evaluated_locations`.
+///
+/// `unevaluatedProperties` is decided while walking the keys, so these have to
+/// run before that walk; the failures they leave behind are returned so the
+/// caller can report them where the owning keyword is diagnosed, keeping the
+/// diagnostic order the keyword would have produced on its own. Only the
+/// diagnostics and `assertion_failed` of a returned failure are reported; its
+/// `match_evidence` does not propagate out of a dependent schema.
+async fn validate_dependent_schemas<'a>(
+    entries: &[(&'a str, &'a tombi_schema_store::SchemaItem)],
+    table_value: &tombi_document_tree_syntax::Table,
+    accessors: &[tombi_schema_store::Accessor],
+    keys: &[&str],
+    current_schema: &CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+    common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
+    evaluated_locations: &mut crate::Valid,
+) -> HashMap<&'a str, crate::Invalid> {
+    let dependency_context = dependency_schema_context(schema_context);
+    let mut failures = HashMap::new();
+
+    for (dependent_key, schema_item) in entries {
+        if !keys.contains(dependent_key) {
+            continue;
+        }
+
+        match tombi_schema_store::resolve_schema_item(
+            schema_item,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            current_schema.strict,
+            schema_context.store,
+        )
+        .await
+        {
+            Ok(Some(dependent_schema)) => {
+                let result = table_value
+                    .validate(accessors, Some(&dependent_schema), &dependency_context)
+                    .await;
+
+                if let Some(error) = evaluated_locations.merge_result(result) {
+                    failures.insert(*dependent_key, error);
+                }
+            }
+            Ok(None) => {}
+            Err(err) => {
+                if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
+                    &err,
+                    table_value.range(),
+                    common_rules,
+                ) {
+                    failures.insert(
+                        *dependent_key,
+                        crate::Invalid {
+                            diagnostics: vec![diagnostic],
+                            ..Default::default()
+                        },
+                    );
+                }
+            }
+        }
+    }
+
+    failures
+}
 
 impl Validate for tombi_document_tree_syntax::Table {
     fn validate<'a: 'b, 'b>(
@@ -144,6 +233,7 @@ async fn validate_table(
     let mut assertion_failed = false;
     let mut total_diagnostics = vec![];
     let common_rules = table_rules.map(|rules| &rules.common);
+    let keys = table_value.keys().map(|key| key.value()).collect_vec();
     let mut evaluated_locations = collect_evaluated_properties_from_table_schema(
         table_value,
         accessors,
@@ -152,6 +242,64 @@ async fn validate_table(
         schema_context,
     )
     .await;
+
+    let mut dependency_schema_failures = HashMap::new();
+    if let Some(dependencies) = &table_schema.dependencies {
+        let entries = dependencies
+            .iter()
+            .filter_map(|(key, dependency)| match dependency {
+                tombi_schema_store::Dependency::Schema(schema_item) => {
+                    Some((key.as_str(), schema_item))
+                }
+                tombi_schema_store::Dependency::Property(_) => None,
+            })
+            .collect_vec();
+        dependency_schema_failures = validate_dependent_schemas(
+            &entries,
+            table_value,
+            accessors,
+            &keys,
+            current_schema,
+            schema_context,
+            common_rules,
+            &mut evaluated_locations,
+        )
+        .await;
+    }
+
+    let mut dependent_schema_failures = HashMap::new();
+    if let Some(dependent_schemas) = &table_schema.dependent_schemas {
+        let entries = dependent_schemas
+            .iter()
+            .map(|(key, schema_item)| (key.as_str(), schema_item))
+            .collect_vec();
+        dependent_schema_failures = validate_dependent_schemas(
+            &entries,
+            table_value,
+            accessors,
+            &keys,
+            current_schema,
+            schema_context,
+            common_rules,
+            &mut evaluated_locations,
+        )
+        .await;
+    }
+
+    let if_then_else_error = if let Some(if_then_else_schema) = &table_schema.if_then_else {
+        let result = validate_if_then_else(
+            table_value,
+            accessors,
+            if_then_else_schema,
+            current_schema,
+            schema_context,
+            common_rules,
+        )
+        .await;
+        evaluated_locations.merge_result(result)
+    } else {
+        None
+    };
     let evaluated_properties = &evaluated_locations.properties;
 
     for (key, value) in table_value.key_values() {
@@ -528,8 +676,6 @@ async fn validate_table(
         }
     }
 
-    let keys = table_value.keys().map(|key| key.value()).collect_vec();
-
     if let Some(required) = &table_schema.required {
         for required_key in required {
             if !keys.contains(&required_key.as_str()) {
@@ -649,12 +795,12 @@ async fn validate_table(
 
     if let Some(dependencies) = &table_schema.dependencies {
         for (dependent_key, dependency) in dependencies {
-            if !keys.contains(&dependent_key.as_str()) {
-                continue;
-            }
-
             match dependency {
                 tombi_schema_store::Dependency::Property(required_keys) => {
+                    if !keys.contains(&dependent_key.as_str()) {
+                        continue;
+                    }
+
                     for required_key in required_keys {
                         if !keys.contains(&required_key.as_str()) {
                             assertion_failed = true;
@@ -672,56 +818,11 @@ async fn validate_table(
                         }
                     }
                 }
-                tombi_schema_store::Dependency::Schema(schema_item) => {
-                    match tombi_schema_store::resolve_schema_item(
-                        schema_item,
-                        current_schema.schema_uri.clone(),
-                        current_schema.definitions.clone(),
-                        current_schema.strict,
-                        schema_context.store,
-                    )
-                    .await
+                tombi_schema_store::Dependency::Schema(_) => {
+                    if let Some(failure) = dependency_schema_failures.remove(dependent_key.as_str())
                     {
-                        Ok(Some(dep_schema)) => {
-                            // A dependency schema is an additional constraint layered on top of
-                            // the parent table schema. Running strict mode here against the
-                            // partial dependency schema causes false-positive additional key
-                            // diagnostics for valid keys defined by the parent schema.
-                            let dependency_schema_context = tombi_schema_store::SchemaContext {
-                                toml_version: schema_context.toml_version,
-                                root_schema: schema_context.root_schema,
-                                sub_schema_link_map: schema_context.sub_schema_link_map,
-                                deprecated_lint_level: schema_context.deprecated_lint_level,
-                                schema_format_rules: schema_context.schema_format_rules,
-                                schema_lint_rules: schema_context.schema_lint_rules,
-                                schema_overrides: schema_context.schema_overrides,
-                                schema_visits: schema_context.schema_visits.clone(),
-                                store: schema_context.store,
-                                strict: Some(false.into()),
-                            };
-
-                            if let Err(crate::Invalid {
-                                assertion_failed: child_assertion_failed,
-                                diagnostics,
-                                ..
-                            }) = table_value
-                                .validate(accessors, Some(&dep_schema), &dependency_schema_context)
-                                .await
-                            {
-                                assertion_failed |= child_assertion_failed;
-                                total_diagnostics.extend(diagnostics);
-                            }
-                        }
-                        Ok(None) => {}
-                        Err(err) => {
-                            if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
-                                &err,
-                                table_value.range(),
-                                common_rules,
-                            ) {
-                                total_diagnostics.push(diagnostic);
-                            }
-                        }
+                        assertion_failed |= failure.assertion_failed;
+                        total_diagnostics.extend(failure.diagnostics);
                     }
                 }
             }
@@ -754,57 +855,12 @@ async fn validate_table(
     }
 
     if let Some(dependent_schemas) = &table_schema.dependent_schemas {
-        for (dependent_key, schema_item) in dependent_schemas {
-            if !keys.contains(&dependent_key.as_str()) {
-                continue;
-            }
-
-            match tombi_schema_store::resolve_schema_item(
-                schema_item,
-                current_schema.schema_uri.clone(),
-                current_schema.definitions.clone(),
-                current_schema.strict,
-                schema_context.store,
-            )
-            .await
-            {
-                Ok(Some(dep_schema)) => {
-                    // See the rationale in the `Dependency::Schema` branch above.
-                    let dependency_schema_context = tombi_schema_store::SchemaContext {
-                        toml_version: schema_context.toml_version,
-                        root_schema: schema_context.root_schema,
-                        sub_schema_link_map: schema_context.sub_schema_link_map,
-                        deprecated_lint_level: schema_context.deprecated_lint_level,
-                        schema_format_rules: schema_context.schema_format_rules,
-                        schema_lint_rules: schema_context.schema_lint_rules,
-                        schema_overrides: schema_context.schema_overrides,
-                        schema_visits: schema_context.schema_visits.clone(),
-                        store: schema_context.store,
-                        strict: Some(false.into()),
-                    };
-
-                    if let Err(crate::Invalid {
-                        assertion_failed: child_assertion_failed,
-                        diagnostics,
-                        ..
-                    }) = table_value
-                        .validate(accessors, Some(&dep_schema), &dependency_schema_context)
-                        .await
-                    {
-                        assertion_failed |= child_assertion_failed;
-                        total_diagnostics.extend(diagnostics);
-                    }
-                }
-                Ok(None) => {}
-                Err(err) => {
-                    if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
-                        &err,
-                        table_value.range(),
-                        common_rules,
-                    ) {
-                        total_diagnostics.push(diagnostic);
-                    }
-                }
+        // Walk the schema's own (insertion-ordered) map rather than draining the
+        // failures, so diagnostics keep the order the keywords are declared in.
+        for dependent_key in dependent_schemas.keys() {
+            if let Some(error) = dependent_schema_failures.remove(dependent_key.as_str()) {
+                assertion_failed |= error.assertion_failed;
+                total_diagnostics.extend(error.diagnostics);
             }
         }
     }
@@ -946,22 +1002,9 @@ async fn validate_table(
         );
     }
 
-    if let Some(if_then_else_schema) = table_schema.if_then_else.as_ref()
-        && let Err(error) = validate_if_then_else(
-            table_value,
-            accessors,
-            if_then_else_schema,
-            current_schema,
-            schema_context,
-            common_rules,
-        )
-        .await
-    {
+    if let Some(error) = if_then_else_error {
         assertion_failed |= error.assertion_failed;
         match_evidence.merge_from(*error.match_evidence);
-        if !error.assertion_failed {
-            evaluated_locations.merge_from(error.local_evaluated_locations);
-        }
         total_diagnostics.extend(error.diagnostics);
     }
 
@@ -1008,8 +1051,6 @@ fn collect_evaluated_properties_from_table_schema<'a>(
 ) -> BoxFuture<'a, crate::Valid> {
     async move {
         let mut result = crate::Valid::new();
-        let mut dependent_schema_items = Vec::new();
-
         let property_keys = table_schema
             .properties
             .read()
@@ -1077,81 +1118,6 @@ fn collect_evaluated_properties_from_table_schema<'a>(
             }
         }
 
-        if let Some(dependencies) = &table_schema.dependencies {
-            for (dependent_key, dependency) in dependencies {
-                if let tombi_schema_store::Dependency::Schema(schema_item) = dependency {
-                    dependent_schema_items.push((dependent_key, schema_item));
-                }
-            }
-        }
-
-        if let Some(dependent_schemas) = &table_schema.dependent_schemas {
-            for (dependent_key, schema_item) in dependent_schemas {
-                dependent_schema_items.push((dependent_key, schema_item));
-            }
-        }
-
-        if !dependent_schema_items.is_empty() {
-            let dependency_schema_context = tombi_schema_store::SchemaContext {
-                toml_version: schema_context.toml_version,
-                root_schema: schema_context.root_schema,
-                sub_schema_link_map: schema_context.sub_schema_link_map,
-                deprecated_lint_level: schema_context.deprecated_lint_level,
-                schema_format_rules: schema_context.schema_format_rules,
-                schema_lint_rules: schema_context.schema_lint_rules,
-                schema_overrides: schema_context.schema_overrides,
-                schema_visits: schema_context.schema_visits.clone(),
-                store: schema_context.store,
-                strict: Some(false.into()),
-            };
-            let comment_directives = table_value
-                .comment_directives()
-                .map(|directives| directives.cloned().collect_vec());
-
-            for (dependent_key, schema_item) in dependent_schema_items {
-                if !table_value.keys().any(|key| key.value() == dependent_key) {
-                    continue;
-                }
-
-                let Ok(Some(schema)) = tombi_schema_store::resolve_schema_item(
-                    schema_item,
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    current_schema.strict,
-                    schema_context.store,
-                )
-                .await
-                .inspect_err(|err| log::warn!("{err}")) else {
-                    continue;
-                };
-                let schema = schema
-                    .for_instance_type(
-                        tombi_schema_store::SchemaType::Object,
-                        schema_context.string_formats(),
-                    )
-                    .unwrap_or(schema);
-                let Some(validation_result) = crate::validate::validate_resolved_schema(
-                    table_value,
-                    accessors,
-                    &schema,
-                    &dependency_schema_context,
-                    comment_directives.as_deref(),
-                    None,
-                )
-                .await
-                else {
-                    continue;
-                };
-
-                if is_assertion_success(&validation_result) {
-                    match validation_result {
-                        Ok(evaluated_locations) => result.merge_from(evaluated_locations),
-                        Err(error) => result.merge_from(error.local_evaluated_locations),
-                    }
-                }
-            }
-        }
-
         if let Some(one_of_schema) = &table_schema.one_of {
             result.merge_from(
                 collect_evaluated_properties_from_referable_schemas(
@@ -1187,25 +1153,6 @@ fn collect_evaluated_properties_from_table_schema<'a>(
                 )
                 .await,
             );
-        }
-
-        if let Some(if_then_else_schema) = &table_schema.if_then_else {
-            let validation_result = validate_if_then_else(
-                table_value,
-                accessors,
-                if_then_else_schema,
-                current_schema,
-                schema_context,
-                None,
-            )
-            .await;
-
-            if is_assertion_success(&validation_result) {
-                match validation_result {
-                    Ok(evaluated_locations) => result.merge_from(evaluated_locations),
-                    Err(error) => result.merge_from(error.local_evaluated_locations),
-                }
-            }
         }
 
         // An `unevaluatedProperties: true` subschema succeeds for every
@@ -1247,16 +1194,17 @@ fn collect_evaluated_properties_from_referable_schemas<'a>(
             return result;
         };
 
+        let comment_directives = table_value
+            .comment_directives()
+            .map(|directives| directives.cloned().collect_vec());
+
         for schema in &schemas {
             let Some(validation_result) = crate::validate::validate_resolved_schema(
                 table_value,
                 accessors,
                 schema,
                 schema_context,
-                table_value
-                    .comment_directives()
-                    .map(|directives| directives.cloned().collect_vec())
-                    .as_deref(),
+                comment_directives.as_deref(),
                 None,
             )
             .await
