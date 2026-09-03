@@ -16,7 +16,7 @@ test_lint! {
 
 test_lint! {
     #[test]
-    fn test_then_branch_annotations_dropped_when_then_fails(
+    fn test_failed_then_keeps_successful_if_annotations(
         r#"
         #:tombi schema.strict = false
         [then_branch]
@@ -26,9 +26,6 @@ test_lint! {
         "#,
         SchemaPath(unevaluated_properties_if_then_test_schema_path()),
     ) -> Err([
-        tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
-            key: "kind".to_string(),
-        },
         tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
             key: "value".to_string(),
         },

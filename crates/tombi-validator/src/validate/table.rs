@@ -296,7 +296,7 @@ async fn validate_table(
             common_rules,
         )
         .await;
-        evaluated_locations.merge_result(result)
+        evaluated_locations.merge_result_keeping_annotations(result)
     } else {
         None
     };

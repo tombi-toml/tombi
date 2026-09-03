@@ -152,7 +152,7 @@ async fn validate_array(
         )
         .await;
 
-        if let Some(error) = validation_result.merge_result(result) {
+        if let Some(error) = validation_result.merge_result_keeping_annotations(result) {
             assertion_failed |= error.assertion_failed;
             validation_result
                 .match_evidence
