@@ -128,7 +128,7 @@ tower-lsp = { version = "0.20.0", default-features = false }
 typed-builder = "0.21.0"
 ungrammar.version = "1.16.1"
 unicode-segmentation = "1.12.0"
-uuid = { version = "1.18.0", default-features = false }
+uuid = { version = "1.18.0", default-features = false, features = ["std"] }
 wasi = { version = "0.14.7" }
 wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4.50"
