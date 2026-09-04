@@ -136,7 +136,7 @@ wasm-streams = "0.4.2"
 web-sys = "0.3.77"
 xshell.version = "0.2.7"
 zed_extension_api = "0.7.0"
-zip = { version = "2.3.0" }
+zip = { version = "2.3.0", default-features = false }
 
 [workspace.lints.clippy]
 collapsible_match = "warn"
