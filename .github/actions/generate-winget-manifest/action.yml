@@ -45,7 +45,7 @@ runs:
         $releaseDate = ([DateTimeOffset]$release.published_at).ToString("yyyy-MM-dd")
 
         $manifestDir = Join-Path $PWD $env:OUTPUT_DIR
-        & $env:WINGETCREATE_PATH update tombi-toml.tombi --urls "$x64InstallerUrl|x64" "$arm64InstallerUrl|arm64" -v $env:VERSION --release-date $releaseDate --release-notes-url $release.html_url --out $manifestDir
+        & $env:WINGETCREATE_PATH update tombi-toml.tombi --urls "$x64InstallerUrl|x64" "$arm64InstallerUrl|arm64" -v $env:VERSION --release-date $releaseDate --release-notes-url $release.html_url --out $manifestDir -t $env:GITHUB_TOKEN
 
         $installerManifest = Get-ChildItem -Path $manifestDir -Recurse -Filter "*.installer.yaml" | Select-Object -First 1
         if (-not $installerManifest) {
