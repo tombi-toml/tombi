@@ -49,28 +49,53 @@ runs:
           const fs = require("fs");
           const path = require("path");
 
-          const manifestRoot = path.resolve(process.env.MANIFEST_ROOT);
+          const requestedManifestRoot = path.resolve(process.env.MANIFEST_ROOT);
           const forkOwner = process.env.FORK_OWNER;
           const upstreamOwner = process.env.UPSTREAM_OWNER;
           const repo = process.env.REPOSITORY;
           const dryRun = process.env.DRY_RUN === "true";
 
-          function collectFiles(directory) {
+          function collectFiles(directory, root) {
             return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
               const entryPath = path.join(directory, entry.name);
-              return entry.isDirectory() ? collectFiles(entryPath) : [entryPath];
+              const stats = fs.lstatSync(entryPath);
+              if (stats.isSymbolicLink()) {
+                throw new Error(`Winget artifact must not contain symbolic links: ${entryPath}`);
+              }
+              if (stats.isDirectory()) {
+                return collectFiles(entryPath, root);
+              }
+              if (!stats.isFile()) {
+                throw new Error(`Winget artifact contains an unsupported entry: ${entryPath}`);
+              }
+
+              const realPath = fs.realpathSync(entryPath);
+              const relativeRealPath = path.relative(root, realPath);
+              if (
+                relativeRealPath === ".." ||
+                relativeRealPath.startsWith(`..${path.sep}`) ||
+                path.isAbsolute(relativeRealPath)
+              ) {
+                throw new Error(`Winget artifact entry is outside the manifest root: ${entryPath}`);
+              }
+              return [realPath];
             });
           }
 
-          if (!fs.existsSync(manifestRoot)) {
-            core.setFailed(`Winget manifest root does not exist: ${manifestRoot}`);
+          if (!fs.existsSync(requestedManifestRoot)) {
+            core.setFailed(`Winget manifest root does not exist: ${requestedManifestRoot}`);
             return;
           }
+          if (fs.lstatSync(requestedManifestRoot).isSymbolicLink()) {
+            core.setFailed(`Winget manifest root must not be a symbolic link: ${requestedManifestRoot}`);
+            return;
+          }
+          const manifestRoot = fs.realpathSync(requestedManifestRoot);
 
-          const files = collectFiles(manifestRoot);
+          const files = collectFiles(manifestRoot, manifestRoot);
           const installerManifest = files.find((file) => file.endsWith(".installer.yaml"));
           if (!installerManifest) {
-            core.setFailed("Winget installer manifest was not downloaded.");
+            core.setFailed("Winget installer manifest was not found.");
             return;
           }
 
