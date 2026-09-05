@@ -132,14 +132,9 @@ impl Cursor<'_> {
             if self.peek(1) == '\n' {
                 self.eat_n(1);
             } else {
-                return Err(crate::Error::new(InvalidLineBreak, self.pop_span_range()));
-            }
-        } else {
-            while self.peek(1) == '\r' {
-                self.eat_n(1);
+                return Ok(Token::new(SyntaxKind::WHITESPACE, self.pop_span_range()));
             }
         }
-
         Ok(Token::new(SyntaxKind::LINE_BREAK, self.pop_span_range()))
     }
 

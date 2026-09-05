@@ -414,12 +414,59 @@ test_token! {
 // Tests for whitespace handling
 test_tokens! {
     #[test]
-    fn whitespace_between_tokens("{ \t\n\r }") -> [
+    fn whitespace_between_tokens("{ \t\n }") -> [
         Token(BRACE_START, "{"),
         Token(WHITESPACE, " \t"),
-        Token(LINE_BREAK, "\n\r"),
+        Token(LINE_BREAK, "\n"),
         Token(WHITESPACE, " "),
         Token(BRACE_END, "}"),
+    ];
+}
+
+test_tokens! {
+    #[test]
+    fn crlf_line_break("[1,\r\n2]") -> [
+        Token(BRACKET_START, "["),
+        Token(NUMBER, "1"),
+        Token(COMMA, ","),
+        Token(LINE_BREAK, "\r\n"),
+        Token(NUMBER, "2"),
+        Token(BRACKET_END, "]"),
+    ];
+}
+
+test_tokens! {
+    #[test]
+    fn lf_followed_by_crlf_are_two_line_breaks("\n\r\n") -> [
+        Token(LINE_BREAK, "\n"),
+        Token(LINE_BREAK, "\r\n"),
+    ];
+}
+
+test_tokens! {
+    #[test]
+    fn lone_cr_whitespace("\r") -> [
+        Token(WHITESPACE, "\r"),
+    ];
+}
+
+test_tokens! {
+    #[test]
+    fn lone_cr_after_lf_is_valid("{ \t\n\r }") -> [
+        Token(BRACE_START, "{"),
+        Token(WHITESPACE, " \t"),
+        Token(LINE_BREAK, "\n"),
+        Token(WHITESPACE, "\r"),
+        Token(WHITESPACE, " "),
+        Token(BRACE_END, "}"),
+    ];
+}
+
+test_tokens! {
+    #[test]
+    fn consecutive_cr_and_crlf_are_separate_trivia("\r\r\n") -> [
+        Token(WHITESPACE, "\r"),
+        Token(LINE_BREAK, "\r\n"),
     ];
 }
 
