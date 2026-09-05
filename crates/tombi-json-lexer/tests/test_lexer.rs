@@ -445,8 +445,8 @@ test_tokens! {
 
 test_tokens! {
     #[test]
-    fn lone_cr_line_break("\r") -> [
-        Token(LINE_BREAK, "\r"),
+    fn lone_cr_whitespace("\r") -> [
+        Token(WHITESPACE, "\r"),
     ];
 }
 
@@ -456,7 +456,7 @@ test_tokens! {
         Token(BRACE_START, "{"),
         Token(WHITESPACE, " \t"),
         Token(LINE_BREAK, "\n"),
-        Token(LINE_BREAK, "\r"),
+        Token(WHITESPACE, "\r"),
         Token(WHITESPACE, " "),
         Token(BRACE_END, "}"),
     ];
@@ -464,8 +464,8 @@ test_tokens! {
 
 test_tokens! {
     #[test]
-    fn consecutive_cr_and_crlf_are_separate_line_breaks("\r\r\n") -> [
-        Token(LINE_BREAK, "\r"),
+    fn consecutive_cr_and_crlf_are_separate_trivia("\r\r\n") -> [
+        Token(WHITESPACE, "\r"),
         Token(LINE_BREAK, "\r\n"),
     ];
 }

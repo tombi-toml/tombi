@@ -128,8 +128,12 @@ impl Cursor<'_> {
     fn line_break(&mut self) -> Result<Token, crate::Error> {
         let c = self.current();
         debug_assert!(matches!(c, '\r' | '\n'));
-        if c == '\r' && self.peek(1) == '\n' {
-            self.eat_n(1);
+        if c == '\r' {
+            if self.peek(1) == '\n' {
+                self.eat_n(1);
+            } else {
+                return Ok(Token::new(SyntaxKind::WHITESPACE, self.pop_span_range()));
+            }
         }
         Ok(Token::new(SyntaxKind::LINE_BREAK, self.pop_span_range()))
     }
