@@ -5,7 +5,7 @@ use tombi_document_tree_syntax::ValueImpl;
 use tombi_schema_store::CurrentSchema;
 
 use crate::Validate;
-use crate::validate::{is_assertion_success, merge_validation_results};
+use crate::validate::{discard_failed_annotations, is_assertion_success, merge_validation_results};
 
 pub async fn validate_if_then_else<T>(
     value: &T,
@@ -18,10 +18,14 @@ pub async fn validate_if_then_else<T>(
 where
     T: Validate + ValueImpl + Sync + Send,
 {
+    // A failed `if`, `then` or `else` subschema drops its own annotations, but
+    // the ones its successful siblings produced survive, so the rule is applied
+    // per subschema result rather than to the merged result.
     #[allow(clippy::result_large_err)]
     let merge_if_result =
-        |branch_result: Result<crate::Valid, crate::Invalid>,
+        |mut branch_result: Result<crate::Valid, crate::Invalid>,
          if_result: Result<crate::Valid, crate::Invalid>| {
+            discard_failed_annotations(&mut branch_result);
             match if_result {
                 Ok(evaluated_locations) => {
                     merge_validation_results(Ok(evaluated_locations), branch_result)
@@ -106,9 +110,10 @@ where
             .await
             {
                 Ok(Some(else_current_schema)) => {
-                    return value
+                    let branch_result = value
                         .validate(accessors, Some(&else_current_schema), schema_context)
                         .await;
+                    return merge_if_result(branch_result, if_result);
                 }
                 Err(err) => {
                     if let Some(diagnostic) = crate::validate::schema_resolution_diagnostic(
@@ -116,7 +121,7 @@ where
                         value.range(),
                         common_rules,
                     ) {
-                        return Err(vec![diagnostic].into());
+                        return merge_if_result(Err(vec![diagnostic].into()), if_result);
                     }
                 }
                 Ok(None) => {}

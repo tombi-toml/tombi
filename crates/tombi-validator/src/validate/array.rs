@@ -141,8 +141,8 @@ async fn validate_array(
     let has_unevaluated_items = array_schema.unevaluated_items_schema.is_some()
         || array_schema.unevaluated_items == Some(false);
 
-    if let Some(if_then_else_schema) = array_schema.if_then_else.as_ref()
-        && let Err(error) = validate_if_then_else(
+    if let Some(if_then_else_schema) = array_schema.if_then_else.as_ref() {
+        let result = validate_if_then_else(
             array_value,
             accessors,
             if_then_else_schema,
@@ -150,14 +150,46 @@ async fn validate_array(
             schema_context,
             common_rules,
         )
-        .await
-    {
-        assertion_failed |= error.assertion_failed;
-        validation_result
-            .match_evidence
-            .merge_from(*error.match_evidence);
-        validation_result.merge_from(error.local_evaluated_locations);
-        total_diagnostics.extend(error.diagnostics);
+        .await;
+
+        if let Some(error) = validation_result.merge_result_keeping_annotations(result) {
+            assertion_failed |= error.assertion_failed;
+            validation_result
+                .match_evidence
+                .merge_from(*error.match_evidence);
+            total_diagnostics.extend(error.diagnostics);
+        }
+    }
+
+    let adjacent_result = validate_adjacent_applicators(
+        array_value,
+        accessors,
+        array_schema.one_of.as_deref(),
+        array_schema.any_of.as_deref(),
+        array_schema.all_of.as_deref(),
+        array_schema.not.as_deref(),
+        current_schema,
+        schema_context,
+        comment_directives,
+        lint_rules.map(|rules| &rules.common),
+    )
+    .await;
+    let adjacent_evaluated = match &adjacent_result {
+        Ok(result) => Some(result),
+        Err(error) if !error.assertion_failed => Some(&error.local_evaluated_locations),
+        Err(_) => None,
+    };
+    if let Some(adjacent_evaluated) = adjacent_evaluated {
+        for index in &adjacent_evaluated.indices {
+            if let Some(evaluated) = evaluated.get_mut(*index) {
+                *evaluated = true;
+            }
+        }
+    }
+    for index in &validation_result.indices {
+        if let Some(evaluated) = evaluated.get_mut(*index) {
+            *evaluated = true;
+        }
     }
 
     if let Some(prefix_items) = &array_schema.prefix_items {
@@ -731,22 +763,7 @@ async fn validate_array(
         })
     };
 
-    merge_validation_results(
-        base_result,
-        validate_adjacent_applicators(
-            array_value,
-            accessors,
-            array_schema.one_of.as_deref(),
-            array_schema.any_of.as_deref(),
-            array_schema.all_of.as_deref(),
-            array_schema.not.as_deref(),
-            current_schema,
-            schema_context,
-            comment_directives,
-            lint_rules.map(|rules| &rules.common),
-        )
-        .await,
-    )
+    merge_validation_results(base_result, adjacent_result)
 }
 
 async fn validate_array_without_schema(

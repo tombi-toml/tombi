@@ -102,13 +102,13 @@ impl<'a> CurrentSchema<'a> {
         ))
     }
 
-    /// Returns whether the current presentation view omits constraints that
-    /// become relevant for this instance type.
+    /// Returns whether the current view omits constraints for this instance type.
+    /// A compatible `$ref` sibling `type` is already represented by the resolved view.
     pub fn requires_instance_projection(&self, instance_type: super::SchemaType) -> bool {
         self.semantic_schema.as_deref().is_some_and(|semantic| {
             semantic.accepts_instance_type(instance_type)
                 && (!self.schema_view.matches_instance_type(instance_type)
-                    || semantic.root_reference_has_projection_siblings(instance_type))
+                    || semantic.root_reference_requires_instance_projection(instance_type))
         })
     }
 
@@ -528,6 +528,7 @@ impl Referable<SchemaView> {
                                     default: default.clone(),
                                     examples: examples.clone(),
                                     deprecation: deprecation.clone(),
+                                    reference_siblings: true,
                                     ..Default::default()
                                 })),
                                 semantic_schema: None,
@@ -743,7 +744,7 @@ fn combine_ref_semantics(
 ) -> Option<Arc<super::SemanticSchema>> {
     match (local, target) {
         (Some(local), Some(target)) => Some(Arc::new(super::SemanticSchema::composite(
-            super::SemanticCompositeKind::AllOf,
+            super::SemanticCompositeKind::Reference,
             vec![local.as_ref().clone(), target.as_ref().clone()],
             local.range(),
         ))),

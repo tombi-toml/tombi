@@ -1120,6 +1120,9 @@ mod draft2019_09_unevaluated_properties {
         fn schema() -> JsonValue {
             serde_json::json!({
                 "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "properties": {
+                    "foo": {"type": "string"}
+                },
                 "dependentSchemas": {
                     "foo": {
                         "properties": {
@@ -1152,6 +1155,132 @@ mod draft2019_09_unevaluated_properties {
                 tombi_validator::Diagnostic::new(
                     tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
                         key: "baz".to_string()
+                    },
+                    ((1, 0), (1, 10))
+                ),
+            ]);
+        );
+
+        suite_test!(
+            #[tokio::test] async fn dependency_annotations_are_not_collected_without_trigger(
+                r#"
+                bar = "ok"
+                "#,
+                JsonSchema(schema()),
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "bar".to_string()
+                    },
+                    ((0, 0), (0, 10))
+                ),
+            ]);
+        );
+
+        fn trigger_key_only_schema() -> JsonValue {
+            serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "dependentSchemas": {
+                    "foo": {
+                        "properties": {
+                            "bar": {"type": "string"}
+                        }
+                    }
+                },
+                "unevaluatedProperties": false
+            })
+        }
+
+        suite_test!(
+            #[tokio::test] async fn successful_dependency_does_not_annotate_trigger_key(
+                r#"
+                foo = "x"
+                bar = "y"
+                "#,
+                JsonSchema(trigger_key_only_schema()),
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "foo".to_string()
+                    },
+                    ((0, 0), (0, 9))
+                ),
+            ]);
+        );
+
+        fn failing_schema() -> JsonValue {
+            serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "dependentSchemas": {
+                    "foo": {
+                        "properties": {
+                            "foo": {"type": "string"},
+                            "bar": {"type": "string"}
+                        },
+                        "maxProperties": 1
+                    }
+                },
+                "unevaluatedProperties": false
+            })
+        }
+
+        suite_test!(
+            #[tokio::test] async fn failed_dependency_annotations_are_not_collected(
+                r#"
+                foo = "trigger"
+                bar = "ok"
+                "#,
+                JsonSchema(failing_schema()),
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "foo".to_string()
+                    },
+                    ((0, 0), (0, 15))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "bar".to_string()
+                    },
+                    ((1, 0), (1, 10))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableMaxKeys {
+                        max_keys: 1,
+                        actual: 2,
+                    },
+                    ((0, 0), (2, 0))
+                ),
+            ]);
+        );
+
+        fn dependent_required_schema() -> JsonValue {
+            serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "dependentRequired": {
+                    "foo": ["bar"]
+                },
+                "unevaluatedProperties": false
+            })
+        }
+
+        suite_test!(
+            #[tokio::test] async fn dependent_required_does_not_mark_properties_as_evaluated(
+                r#"
+                foo = "trigger"
+                bar = "ok"
+                "#,
+                JsonSchema(dependent_required_schema()),
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "foo".to_string()
+                    },
+                    ((0, 0), (0, 15))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "bar".to_string()
                     },
                     ((1, 0), (1, 10))
                 ),

@@ -4,7 +4,7 @@ use tombi_lexer::{Cursor, ErrorKind::*, Token, tokenize};
 
 macro_rules! test_lex_tokens {
     {#[test]fn $name:ident($source:expr) -> [
-        $(Token($kind:expr, $text:literal),)*
+        $($item:ident($kind:expr, $text:literal),)*
     ];} => {
         #[test]
         fn $name() {
@@ -14,29 +14,33 @@ macro_rules! test_lex_tokens {
             let tokens = tokenize(&mut cursor).collect_vec();
             let (expected, _) = [
                 $(
-                    ($kind, $text),
+                    test_lex_tokens!(@item $item($kind, $text)),
                 )*
             ]
             .into_iter()
-            .fold((vec![], (0, tombi_text::Position::MIN)), |(mut acc, (start_offset, start_position)), (kind, text)| {
+            .fold((vec![], (0, tombi_text::Position::MIN)), |(mut acc, (start_offset, start_position)), (result, text)| {
                 let text: &str = text;
                 let end_offset = start_offset + (text.len() as u32);
                 let end_position = start_position + tombi_text::RelativePosition::of(text);
-                acc.push(
-                    Ok(
-                        Token::new(
-                            kind,
-                            (
-                                (start_offset, end_offset).into(),
-                                (start_position, end_position).into()
-                            )
-                        )
-                    )
+                let span_range = (
+                    (start_offset, end_offset).into(),
+                    (start_position, end_position).into(),
                 );
+                acc.push(match result {
+                    Ok(kind) => Ok(Token::new(kind, span_range)),
+                    Err(kind) => Err(tombi_lexer::Error::new(kind, span_range)),
+                });
                 (acc, (end_offset, end_position))
             });
             pretty_assertions::assert_eq!(tokens, expected);
         }
+    };
+
+    (@item Token($kind:expr, $text:literal)) => {
+        (Ok::<tombi_ast_syntax::SyntaxKind, tombi_lexer::ErrorKind>($kind), $text)
+    };
+    (@item Error($kind:expr, $text:literal)) => {
+        (Err::<tombi_ast_syntax::SyntaxKind, tombi_lexer::ErrorKind>($kind), $text)
     };
 }
 
@@ -374,6 +378,42 @@ test_lex_token! {
 test_lex_token! {
     #[test]
     fn basic_string2(r#""Hello, \"Taro\"!""#) -> Ok(Token(BASIC_STRING, (0, 18)));
+}
+
+test_lex_tokens! {
+    #[test]
+    fn invalid_basic_string_newline_after_escaped_quote("\"\\\"\nb\"") -> [
+        Error(InvalidBasicString, "\"\\\""),
+        Token(LINE_BREAK, "\n"),
+        Error(InvalidKey, "b\""),
+    ];
+}
+
+test_lex_tokens! {
+    #[test]
+    fn invalid_basic_string_crlf_after_escaped_quote("\"\\\"\r\nb\"") -> [
+        Error(InvalidBasicString, "\"\\\""),
+        Token(LINE_BREAK, "\r\n"),
+        Error(InvalidKey, "b\""),
+    ];
+}
+
+test_lex_tokens! {
+    #[test]
+    fn invalid_basic_string_newline_after_escaped_backslash("\"x\\\\\nb\"") -> [
+        Error(InvalidBasicString, "\"x\\\\"),
+        Token(LINE_BREAK, "\n"),
+        Error(InvalidKey, "b\""),
+    ];
+}
+
+test_lex_tokens! {
+    #[test]
+    fn invalid_basic_string_crlf_after_escaped_backslash("\"x\\\\\r\nb\"") -> [
+        Error(InvalidBasicString, "\"x\\\\"),
+        Token(LINE_BREAK, "\r\n"),
+        Error(InvalidKey, "b\""),
+    ];
 }
 
 test_lex_tokens! {

@@ -42,6 +42,8 @@ mod recursive_anchor_ref_test_schema;
 mod recursive_defs_any_of_test_schema;
 #[path = "integration/ref_sibling_assertions.rs"]
 mod ref_sibling_assertions;
+#[path = "integration/ref_sibling_object_assertions.rs"]
+mod ref_sibling_object_assertions;
 #[path = "integration/schema_resolution_error.rs"]
 mod schema_resolution_error;
 #[path = "integration/string_format_test_schema.rs"]
@@ -56,6 +58,8 @@ mod tuple_items_test_schema;
 mod unevaluated_items_test_schema;
 #[path = "integration/unevaluated_properties_branch_additional_test_schema.rs"]
 mod unevaluated_properties_branch_additional_test_schema;
+#[path = "integration/unevaluated_properties_if_then_test_schema.rs"]
+mod unevaluated_properties_if_then_test_schema;
 #[path = "integration/unevaluated_properties_test_schema.rs"]
 mod unevaluated_properties_test_schema;
 #[path = "integration/union_best_match.rs"]
