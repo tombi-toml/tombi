@@ -1,0 +1,243 @@
+name: Submit winget manifest
+description: Submit a generated winget manifest from the tombi-toml organization fork.
+
+inputs:
+  github-token:
+    description: GitHub token with write access to the fork and permission to create the upstream pull request.
+    required: true
+  manifest-root:
+    description: Directory containing the generated manifests tree.
+    required: false
+    default: winget-manifests
+  fork-owner:
+    description: Owner of the organization-managed winget-pkgs fork.
+    required: false
+    default: tombi-toml
+  upstream-owner:
+    description: Owner of the upstream winget-pkgs repository.
+    required: false
+    default: microsoft
+  repository:
+    description: Name of the upstream and fork repositories.
+    required: false
+    default: winget-pkgs
+  dry-run:
+    description: Validate the manifest and fork without syncing or submitting.
+    required: false
+    default: "false"
+
+outputs:
+  pull-request-url:
+    description: URL of the created or existing pull request.
+    value: ${{ steps.submit.outputs.pull-request-url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Submit manifest from organization fork
+      id: submit
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+      env:
+        MANIFEST_ROOT: ${{ inputs.manifest-root }}
+        FORK_OWNER: ${{ inputs.fork-owner }}
+        UPSTREAM_OWNER: ${{ inputs.upstream-owner }}
+        REPOSITORY: ${{ inputs.repository }}
+        DRY_RUN: ${{ inputs.dry-run }}
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require("fs");
+          const path = require("path");
+
+          const requestedManifestRoot = path.resolve(process.env.MANIFEST_ROOT);
+          const forkOwner = process.env.FORK_OWNER;
+          const upstreamOwner = process.env.UPSTREAM_OWNER;
+          const repo = process.env.REPOSITORY;
+          const dryRun = process.env.DRY_RUN === "true";
+
+          function collectFiles(directory, root) {
+            return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+              const entryPath = path.join(directory, entry.name);
+              const stats = fs.lstatSync(entryPath);
+              if (stats.isSymbolicLink()) {
+                throw new Error(`Winget artifact must not contain symbolic links: ${entryPath}`);
+              }
+              if (stats.isDirectory()) {
+                return collectFiles(entryPath, root);
+              }
+              if (!stats.isFile()) {
+                throw new Error(`Winget artifact contains an unsupported entry: ${entryPath}`);
+              }
+
+              const realPath = fs.realpathSync(entryPath);
+              const relativeRealPath = path.relative(root, realPath);
+              if (
+                relativeRealPath === ".." ||
+                relativeRealPath.startsWith(`..${path.sep}`) ||
+                path.isAbsolute(relativeRealPath)
+              ) {
+                throw new Error(`Winget artifact entry is outside the manifest root: ${entryPath}`);
+              }
+              return [realPath];
+            });
+          }
+
+          if (!fs.existsSync(requestedManifestRoot)) {
+            core.setFailed(`Winget manifest root does not exist: ${requestedManifestRoot}`);
+            return;
+          }
+          if (fs.lstatSync(requestedManifestRoot).isSymbolicLink()) {
+            core.setFailed(`Winget manifest root must not be a symbolic link: ${requestedManifestRoot}`);
+            return;
+          }
+          const manifestRoot = fs.realpathSync(requestedManifestRoot);
+
+          const files = collectFiles(manifestRoot, manifestRoot);
+          const installerManifest = files.find((file) => file.endsWith(".installer.yaml"));
+          if (!installerManifest) {
+            core.setFailed("Winget installer manifest was not found.");
+            return;
+          }
+
+          const installerContent = fs.readFileSync(installerManifest, "utf8");
+          const identifier = installerContent.match(/^PackageIdentifier:\s*(\S+)\s*$/m)?.[1];
+          const version = installerContent.match(/^PackageVersion:\s*(\S+)\s*$/m)?.[1];
+          if (!identifier || !version) {
+            core.setFailed("Winget installer manifest is missing PackageIdentifier or PackageVersion.");
+            return;
+          }
+
+          const treeEntries = files.map((file) => ({
+            fullPath: file,
+            path: path.relative(manifestRoot, file).split(path.sep).join("/"),
+          }));
+          if (treeEntries.some((entry) => !entry.path.startsWith("manifests/") || !entry.path.endsWith(".yaml"))) {
+            core.setFailed("Winget artifact must contain only YAML files below the manifests directory.");
+            return;
+          }
+
+          const [{ data: fork }, { data: upstream }] = await Promise.all([
+            github.rest.repos.get({ owner: forkOwner, repo }),
+            github.rest.repos.get({ owner: upstreamOwner, repo }),
+          ]);
+          if (!fork.fork || fork.parent?.full_name !== `${upstreamOwner}/${repo}`) {
+            core.setFailed(`${forkOwner}/${repo} is not a fork of ${upstreamOwner}/${repo}.`);
+            return;
+          }
+
+          if (dryRun) {
+            core.info(`Validated ${treeEntries.length} manifest files for ${identifier} ${version}.`);
+            core.info(`Would submit from ${forkOwner}/${repo} to ${upstreamOwner}/${repo}.`);
+            return;
+          }
+
+          await github.request("POST /repos/{owner}/{repo}/merge-upstream", {
+            owner: forkOwner,
+            repo,
+            branch: fork.default_branch,
+          });
+
+          const { data: baseRef } = await github.rest.git.getRef({
+            owner: forkOwner,
+            repo,
+            ref: `heads/${fork.default_branch}`,
+          });
+          const baseSha = baseRef.object.sha;
+          const branch = `${identifier}-${version}`;
+
+          let branchExists = true;
+          try {
+            await github.rest.git.getRef({ owner: forkOwner, repo, ref: `heads/${branch}` });
+          } catch (error) {
+            if (error.status !== 404) {
+              throw error;
+            }
+            branchExists = false;
+          }
+
+          if (branchExists) {
+            const { data: existingPulls } = await github.rest.pulls.list({
+              owner: upstreamOwner,
+              repo,
+              state: "open",
+              head: `${forkOwner}:${branch}`,
+            });
+            if (existingPulls.length > 0) {
+              core.info(`Pull request already exists: ${existingPulls[0].html_url}`);
+              core.setOutput("pull-request-url", existingPulls[0].html_url);
+              return;
+            }
+          }
+
+          const { data: baseCommit } = await github.rest.git.getCommit({
+            owner: forkOwner,
+            repo,
+            commit_sha: baseSha,
+          });
+          const blobs = await Promise.all(treeEntries.map(async (entry) => {
+            const { data: blob } = await github.rest.git.createBlob({
+              owner: forkOwner,
+              repo,
+              content: fs.readFileSync(entry.fullPath).toString("base64"),
+              encoding: "base64",
+            });
+            return {
+              path: entry.path,
+              mode: "100644",
+              type: "blob",
+              sha: blob.sha,
+            };
+          }));
+          const { data: tree } = await github.rest.git.createTree({
+            owner: forkOwner,
+            repo,
+            base_tree: baseCommit.tree.sha,
+            tree: blobs,
+          });
+          const title = `${identifier} version ${version}`;
+          const { data: commit } = await github.rest.git.createCommit({
+            owner: forkOwner,
+            repo,
+            message: title,
+            tree: tree.sha,
+            parents: [baseSha],
+          });
+
+          if (branchExists) {
+            await github.rest.git.updateRef({
+              owner: forkOwner,
+              repo,
+              ref: `heads/${branch}`,
+              sha: commit.sha,
+              force: true,
+            });
+          } else {
+            await github.rest.git.createRef({
+              owner: forkOwner,
+              repo,
+              ref: `refs/heads/${branch}`,
+              sha: commit.sha,
+            });
+          }
+
+          const { data: template } = await github.rest.repos.getContent({
+            owner: upstreamOwner,
+            repo,
+            path: ".github/PULL_REQUEST_TEMPLATE.md",
+            ref: upstream.default_branch,
+          });
+          if (Array.isArray(template) || template.type !== "file" || !template.content) {
+            throw new Error("Upstream pull request template is not a file.");
+          }
+          const body = Buffer.from(template.content, "base64").toString("utf8");
+          const { data: pullRequest } = await github.rest.pulls.create({
+            owner: upstreamOwner,
+            repo,
+            title,
+            head: `${forkOwner}:${branch}`,
+            base: upstream.default_branch,
+            body,
+          });
+
+          core.info(`Created pull request: ${pullRequest.html_url}`);
+          core.setOutput("pull-request-url", pullRequest.html_url);

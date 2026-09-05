@@ -50,6 +50,7 @@ jobs:
             .github/actions/generate-winget-manifest/**
             .github/actions/relevant-changes/**
             .github/actions/set-version/**
+            .github/actions/submit-winget-manifest/**
             .github/scripts/install-cross.sh
             .node-version
             .npmrc
@@ -701,25 +702,9 @@ jobs:
           name: winget-manifests
           path: winget-manifests
 
-      - name: Setup wingetcreate
-        id: wingetcreate
-        if: steps.token.outputs.configured == 'true'
-        uses: ./.github/actions/setup-wingetcreate
-        with:
-          version: ${{ env.WINGETCREATE_VERSION }}
-
       - name: Submit winget manifest update
         if: steps.token.outputs.configured == 'true'
-        shell: pwsh
-        env:
-          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
-          WINGETCREATE_PATH: ${{ steps.wingetcreate.outputs.path }}
-        run: |
-          $manifestRoot = Join-Path $PWD "winget-manifests"
-          $installerManifest = Get-ChildItem -Path $manifestRoot -Recurse -Filter "*.installer.yaml" | Select-Object -First 1
-          if (-not $installerManifest) {
-            throw "winget installer manifest was not downloaded."
-          }
-
-          $manifestVersionDir = Split-Path -Parent $installerManifest.FullName
-          & $env:WINGETCREATE_PATH submit $manifestVersionDir -t $env:WINGET_TOKEN
+        uses: ./.github/actions/submit-winget-manifest
+        with:
+          github-token: ${{ secrets.WINGET_TOKEN }}
+          fork-owner: tombi-toml

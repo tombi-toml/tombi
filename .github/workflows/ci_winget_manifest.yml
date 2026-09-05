@@ -7,6 +7,7 @@ on:
     paths:
       - .github/actions/generate-winget-manifest/**
       - .github/actions/setup-wingetcreate/**
+      - .github/actions/submit-winget-manifest/**
       - .github/workflows/ci_winget_manifest.yml
       - .github/workflows/release_cli_vscode.yml
   workflow_dispatch:
@@ -62,3 +63,10 @@ jobs:
           version: ${{ steps.release.outputs.version }}
           wingetcreate-path: ${{ steps.wingetcreate.outputs.path }}
           github-token: ${{ github.token }}
+
+      - name: Test winget manifest submission
+        uses: ./.github/actions/submit-winget-manifest
+        with:
+          github-token: ${{ github.token }}
+          fork-owner: tombi-toml
+          dry-run: true
