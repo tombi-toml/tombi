@@ -522,6 +522,12 @@ mod tests {
         }
     );
 
+    test_json_parser!(
+        accepts_all_json_whitespace_characters,
+        " \t\n\r[1,\n\r2]\r\n",
+        |result| { result.is_ok() }
+    );
+
     #[test]
     fn test_parse_array() {
         let source = "[1, 2, 3]";

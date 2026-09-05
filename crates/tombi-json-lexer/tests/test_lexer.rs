@@ -8,7 +8,7 @@ use tombi_json_syntax::SyntaxKind::*;
 
 macro_rules! test_tokens {
     {#[test]fn $name:ident($source:expr) -> [
-        $($item:ident($kind:expr, $text:literal),)*
+        $(Token($kind:expr, $text:literal),)*
     ];} => {
         #[test]
         fn $name() {
@@ -17,11 +17,11 @@ macro_rules! test_tokens {
             let tokens = tokenize($source).collect_vec();
             let (expected, _) = [
                 $(
-                    test_tokens!(@item $item($kind, $text)),
+                    ($kind, $text),
                 )*
             ]
             .into_iter()
-            .fold((vec![], (0, tombi_text::Position::MIN)), |(mut acc, (start_offset, start_position)), (result, text)| {
+            .fold((vec![], (0, tombi_text::Position::MIN)), |(mut acc, (start_offset, start_position)), (kind, text)| {
                 let text: &str = text;
                 let end_offset = start_offset + (text.len() as u32);
                 let end_position = start_position + tombi_text::RelativePosition::of(text);
@@ -29,25 +29,16 @@ macro_rules! test_tokens {
                     (start_offset, end_offset).into(),
                     (start_position, end_position).into()
                 );
-                acc.push(match result {
-                    Ok(kind) => Ok(if kind == STRING {
-                        Token::new_string(text.as_bytes().contains(&b'\\'), span_range)
-                    } else {
-                        Token::new(kind, span_range)
-                    }),
-                    Err(kind) => Err(tombi_json_lexer::Error::new(kind, span_range)),
-                });
+                let token = if kind == STRING {
+                    Token::new_string(text.as_bytes().contains(&b'\\'), span_range)
+                } else {
+                    Token::new(kind, span_range)
+                };
+                acc.push(Ok(token));
                 (acc, (end_offset, end_position))
             });
             pretty_assertions::assert_eq!(tokens, expected);
         }
-    };
-
-    (@item Token($kind:expr, $text:literal)) => {
-        (Ok::<tombi_json_syntax::SyntaxKind, tombi_json_lexer::ErrorKind>($kind), $text)
-    };
-    (@item Error($kind:expr, $text:literal)) => {
-        (Err::<tombi_json_syntax::SyntaxKind, tombi_json_lexer::ErrorKind>($kind), $text)
     };
 }
 
@@ -454,13 +445,28 @@ test_tokens! {
 
 test_tokens! {
     #[test]
-    fn lone_cr_after_lf_is_invalid("{ \t\n\r }") -> [
+    fn lone_cr_line_break("\r") -> [
+        Token(LINE_BREAK, "\r"),
+    ];
+}
+
+test_tokens! {
+    #[test]
+    fn lone_cr_after_lf_is_valid("{ \t\n\r }") -> [
         Token(BRACE_START, "{"),
         Token(WHITESPACE, " \t"),
         Token(LINE_BREAK, "\n"),
-        Error(ErrorKind::InvalidLineBreak, "\r"),
+        Token(LINE_BREAK, "\r"),
         Token(WHITESPACE, " "),
         Token(BRACE_END, "}"),
+    ];
+}
+
+test_tokens! {
+    #[test]
+    fn consecutive_cr_and_crlf_are_separate_line_breaks("\r\r\n") -> [
+        Token(LINE_BREAK, "\r"),
+        Token(LINE_BREAK, "\r\n"),
     ];
 }
 
