@@ -15,6 +15,7 @@ mod not_schema;
 mod offset_date_time_schema;
 mod one_of_schema;
 mod referable_schema;
+mod resource_index;
 mod schema_context;
 mod schema_cycle_guard;
 mod schema_view;
@@ -42,10 +43,12 @@ pub use local_time_schema::LocalTimeSchema;
 pub use not_schema::NotSchema;
 pub use offset_date_time_schema::OffsetDateTimeSchema;
 pub use one_of_schema::OneOfSchema;
+pub(crate) use referable_schema::resolve_json_pointer_node;
 pub use referable_schema::{
     CurrentSchema, Referable, ReferenceKind, is_online_url, resolve_and_collect_schemas,
     resolve_and_collect_schemas_with_errors, resolve_json_pointer, resolve_schema_item,
 };
+pub(crate) use resource_index::{ResourceIndex, ResourceMetadata, ResourceTarget};
 pub use schema_context::{ResolvedFormatOrder, SchemaContext};
 pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};
 pub use schema_view::*;
@@ -139,7 +142,111 @@ pub type SchemaPatternProperties =
     Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<String, PropertySchema>>>;
 pub type SchemaItem = Arc<tokio::sync::RwLock<Referable<SchemaView>>>;
 pub type SchemaMap = tombi_hashmap::HashMap<String, Referable<SchemaView>>;
-pub type SchemaDefinitions = Arc<tokio::sync::RwLock<SchemaMap>>;
+
+/// Definitions together with the immutable, evaluation-specific dynamic scope.
+///
+/// Keeping the scope in the existing resolution environment lets every schema
+/// consumer preserve `$dynamicRef` state without enlarging `CurrentSchema` with
+/// duplicated URIs or introducing mutable global state.
+#[derive(Debug, Clone)]
+pub struct SchemaDefinitions {
+    values: Arc<tokio::sync::RwLock<SchemaMap>>,
+    context: Arc<SchemaResolutionContext>,
+}
+
+#[derive(Debug, Default)]
+struct SchemaResolutionContext {
+    dynamic_scope: Arc<Vec<DynamicScopeEntry>>,
+    source_schema_uri: Option<Arc<SchemaUri>>,
+    generation: Option<Arc<crate::store::SchemaGeneration>>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct DynamicScopeEntry {
+    pub(crate) schema_uri: SchemaUri,
+    pub(crate) generation: Option<Arc<crate::store::SchemaGeneration>>,
+}
+
+impl SchemaDefinitions {
+    pub fn new(values: tokio::sync::RwLock<SchemaMap>) -> Self {
+        Self {
+            values: Arc::new(values),
+            context: Arc::new(SchemaResolutionContext::default()),
+        }
+    }
+
+    pub(crate) fn with_dynamic_scope(&self, dynamic_scope: Vec<DynamicScopeEntry>) -> Self {
+        Self {
+            values: self.values.clone(),
+            context: Arc::new(SchemaResolutionContext {
+                dynamic_scope: Arc::new(dynamic_scope),
+                source_schema_uri: self.context.source_schema_uri.clone(),
+                generation: self.context.generation.clone(),
+            }),
+        }
+    }
+
+    pub(crate) fn dynamic_scope(&self) -> &[DynamicScopeEntry] {
+        &self.context.dynamic_scope
+    }
+
+    pub(crate) fn with_source_schema_uri(&self, source_schema_uri: SchemaUri) -> Self {
+        Self {
+            values: self.values.clone(),
+            context: Arc::new(SchemaResolutionContext {
+                dynamic_scope: self.context.dynamic_scope.clone(),
+                source_schema_uri: Some(Arc::new(source_schema_uri)),
+                generation: self.context.generation.clone(),
+            }),
+        }
+    }
+
+    pub(crate) fn source_schema_uri(&self) -> Option<&SchemaUri> {
+        self.context.source_schema_uri.as_deref()
+    }
+
+    pub(crate) fn with_generation(&self, generation: Arc<crate::store::SchemaGeneration>) -> Self {
+        Self {
+            values: self.values.clone(),
+            context: Arc::new(SchemaResolutionContext {
+                dynamic_scope: self.context.dynamic_scope.clone(),
+                source_schema_uri: self.context.source_schema_uri.clone(),
+                generation: Some(generation),
+            }),
+        }
+    }
+
+    pub(crate) fn generation(&self) -> Option<&Arc<crate::store::SchemaGeneration>> {
+        self.context.generation.as_ref()
+    }
+
+    /// Removes evaluation-local state before storing a compiled schema in its
+    /// generation. In particular, this prevents a strong-reference cycle from
+    /// `SchemaGeneration` back to itself.
+    pub(crate) fn without_runtime_context(&self) -> Self {
+        Self {
+            values: self.values.clone(),
+            context: Arc::new(SchemaResolutionContext {
+                dynamic_scope: Arc::new(Vec::new()),
+                source_schema_uri: self.context.source_schema_uri.clone(),
+                generation: None,
+            }),
+        }
+    }
+
+    pub(crate) fn effective_base(&self, position: tombi_text::Position) -> Option<&SchemaUri> {
+        self.generation()?.resource_index.effective_base(position)
+    }
+}
+
+impl std::ops::Deref for SchemaDefinitions {
+    type Target = tokio::sync::RwLock<SchemaMap>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.values
+    }
+}
+
 pub type SchemaAnchors = Arc<tokio::sync::RwLock<SchemaMap>>;
 pub type SchemaDynamicAnchors = Arc<tokio::sync::RwLock<SchemaMap>>;
 pub type AnchorCollector = SchemaMap;

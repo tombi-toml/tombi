@@ -19,6 +19,11 @@ fn nested_table_keys_order_schema_path() -> PathBuf {
         .join("crates/tombi-lsp/tests/fixtures/nested-table-keys-order.schema.json")
 }
 
+fn compound_schema_path() -> PathBuf {
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/compound-schema.schema.json")
+}
+
 fn array_values_order_schema_path() -> PathBuf {
     tombi_test_lib::project_root_path()
         .join("crates/tombi-lsp/tests/fixtures/array-values-order.schema.json")
@@ -83,6 +88,21 @@ async fn write_cached_response(url: &str, body: &str) {
 
 mod hover_keys_value {
     use super::*;
+
+    test_hover_keys_value!(
+        #[tokio::test]
+        async fn embedded_resource_uses_physical_schema_link(
+            "strict = █true",
+            SchemaPath(compound_schema_path()),
+        ) -> Ok({
+            "Keys": "strict",
+            "Value": "Boolean",
+            "Hover Contains": [
+                "Strict mode from an embedded schema resource.",
+                "compound-schema.schema.json"
+            ]
+        });
+    );
 
     test_hover_keys_value!(
         #[tokio::test]

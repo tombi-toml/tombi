@@ -1,10 +1,19 @@
-use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
+use std::{
+    borrow::Cow,
+    cell::RefCell,
+    ops::Deref,
+    str::FromStr,
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
+};
 
 use crate::resolve_json_pointer;
 use crate::{
     AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, PatternAccessor,
-    PatternAccessors, SchemaView, SourceSchema, SubSchemaLink, SubSchemaLinkMap,
-    get_tombi_schemastore_content,
+    PatternAccessors, ResourceIndex, SchemaAnchors, SchemaDynamicAnchors, SchemaMap, SchemaView,
+    SourceSchema, SubSchemaLink, SubSchemaLinkMap, get_tombi_schemastore_content,
     http_client::{DefaultHttpClient, HttpClient},
     json::JsonCatalog,
 };
@@ -17,7 +26,115 @@ use tombi_config::{SchemaItem, SchemaOverviewOptions, TomlVersion, config_base_d
 use tombi_future::{BoxFuture, Boxable};
 use tombi_uri::SchemaUri;
 
-type DocumentSchemas = Arc<RwLock<tombi_hashmap::HashMap<SchemaUri, CachedDocumentSchema>>>;
+type SchemaCache = Arc<RwLock<CacheState>>;
+
+#[derive(Debug, Default)]
+struct CacheState {
+    documents: tombi_hashmap::HashMap<SchemaUri, CachedDocumentSchema>,
+    resources: ResourceRegistry,
+}
+
+#[derive(Debug, Default)]
+struct ResourceRegistry {
+    by_uri: tombi_hashmap::HashMap<SchemaUri, EmbeddedResource>,
+    by_source: tombi_hashmap::HashMap<SchemaUri, Arc<SchemaGeneration>>,
+}
+
+tokio::task_local! {
+    static RESOLUTION_STACK: RefCell<Vec<SchemaUri>>;
+}
+
+struct ResolutionGuard(SchemaUri);
+
+impl ResolutionGuard {
+    fn enter(schema_uri: &SchemaUri) -> Option<Self> {
+        RESOLUTION_STACK
+            .try_with(|stack| {
+                let mut stack = stack.borrow_mut();
+                if stack.contains(schema_uri) {
+                    None
+                } else {
+                    stack.push(schema_uri.clone());
+                    Some(Self(schema_uri.clone()))
+                }
+            })
+            .ok()
+            .flatten()
+    }
+}
+
+impl Drop for ResolutionGuard {
+    fn drop(&mut self) {
+        let _ = RESOLUTION_STACK.try_with(|stack| {
+            let mut stack = stack.borrow_mut();
+            if let Some(position) = stack.iter().rposition(|uri| uri == &self.0) {
+                stack.remove(position);
+            }
+        });
+    }
+}
+
+#[derive(Debug, Clone)]
+struct EmbeddedResource {
+    generation: Arc<SchemaGeneration>,
+}
+
+#[derive(Debug)]
+pub(crate) struct SchemaGeneration {
+    revision: u64,
+    pub(crate) source_schema_uri: Arc<SchemaUri>,
+    pub(crate) source_node: Arc<tombi_json::ValueNode>,
+    pub(crate) resource_index: Arc<ResourceIndex>,
+    /// Completed resource schemas with all generation-local strong references
+    /// removed. Misses may compile concurrently; insertion is idempotent.
+    compiled_resources: std::sync::RwLock<tombi_hashmap::HashMap<SchemaUri, Arc<DocumentSchema>>>,
+}
+
+fn build_schema_map(
+    schema_value: &tombi_json::ValueNode,
+    targets: &tombi_hashmap::HashMap<String, crate::ResourceTarget>,
+    string_formats: Option<&[tombi_x_keyword::StringFormat]>,
+    dialect: Option<crate::JsonSchemaDialect>,
+) -> SchemaMap {
+    targets
+        .iter()
+        .filter_map(|(name, target)| {
+            crate::resolve_json_pointer_node(schema_value, &target.pointer)
+                .and_then(|node| {
+                    crate::schema::referable_from_schema_value(
+                        node,
+                        string_formats,
+                        dialect,
+                        None,
+                        None,
+                    )
+                })
+                .map(|schema| (name.clone(), schema))
+        })
+        .collect()
+}
+
+fn build_anchor_maps(
+    schema_value: &tombi_json::ValueNode,
+    metadata: &crate::ResourceMetadata,
+    string_formats: Option<&[tombi_x_keyword::StringFormat]>,
+    dialect: Option<crate::JsonSchemaDialect>,
+) -> (SchemaAnchors, SchemaDynamicAnchors) {
+    (
+        SchemaAnchors::new(RwLock::new(build_schema_map(
+            schema_value,
+            &metadata.anchors,
+            string_formats,
+            dialect,
+        ))),
+        SchemaDynamicAnchors::new(RwLock::new(build_schema_map(
+            schema_value,
+            &metadata.dynamic_anchors,
+            string_formats,
+            dialect,
+        ))),
+    )
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct SchemaCacheVersion {
@@ -28,6 +145,7 @@ struct SchemaCacheVersion {
 #[derive(Debug, Clone)]
 struct CachedDocumentSchema {
     version: Option<SchemaCacheVersion>,
+    source_schema_uri: SchemaUri,
     document_schema: Result<Arc<DocumentSchema>, crate::Error>,
 }
 
@@ -105,7 +223,8 @@ pub struct AssociateSchemaOptions {
 #[derive(Debug, Clone)]
 pub struct SchemaStore {
     http_client: Arc<dyn HttpClient>,
-    document_schemas: DocumentSchemas,
+    cache: SchemaCache,
+    next_generation: Arc<AtomicU64>,
     schemas: Arc<RwLock<Vec<StoredSchema>>>,
     options: crate::Options,
     base_dir_path: Arc<RwLock<Option<std::path::PathBuf>>>,
@@ -127,7 +246,7 @@ impl SchemaStore {
     }
 
     pub async fn is_empty(&self) -> bool {
-        self.document_schemas.read().await.is_empty() && self.schemas.read().await.is_empty()
+        self.cache.read().await.documents.is_empty() && self.schemas.read().await.is_empty()
     }
 
     /// New with options
@@ -145,7 +264,8 @@ impl SchemaStore {
     ) -> Self {
         Self {
             http_client,
-            document_schemas: Arc::new(RwLock::default()),
+            cache: Arc::new(RwLock::default()),
+            next_generation: Arc::new(AtomicU64::new(0)),
             schemas: Arc::new(RwLock::new(Vec::new())),
             options,
             base_dir_path: Arc::new(RwLock::new(None)),
@@ -185,7 +305,7 @@ impl SchemaStore {
         config: &tombi_config::Config,
         config_path: Option<&std::path::Path>,
     ) -> Result<(), crate::Error> {
-        self.document_schemas.write().await.clear();
+        *self.cache.write().await = CacheState::default();
         self.schemas.write().await.clear();
         self.load_config(config, config_path).await?;
         Ok(())
@@ -458,18 +578,17 @@ impl SchemaStore {
             schema_uri.set_fragment(None);
         }
 
-        let has_key = { self.document_schemas.read().await.contains_key(&schema_uri) };
+        let has_key = { self.cache.read().await.documents.contains_key(&schema_uri) };
         if has_key
-            && let Some(document_schema) = self.fetch_document_schema(&schema_uri).await.transpose()
+            && let Some((document_schema, version)) = RESOLUTION_STACK
+                .scope(
+                    RefCell::new(Vec::new()),
+                    self.fetch_stable_document_schema(&schema_uri),
+                )
+                .await?
         {
-            let version = schema_cache_version(&schema_uri).await;
-            self.document_schemas.write().await.insert(
-                schema_uri.clone(),
-                CachedDocumentSchema {
-                    version,
-                    document_schema,
-                },
-            );
+            self.replace_cached_source_document(schema_uri.clone(), version, document_schema)
+                .await?;
             log::debug!("update schema: {}", schema_uri);
             return Ok(true);
         }
@@ -481,6 +600,46 @@ impl SchemaStore {
         &self,
         schema_uri: &SchemaUri,
     ) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
+        self.fetch_schema_value_with_registry(schema_uri, true)
+            .await
+    }
+
+    async fn fetch_schema_value_with_registry(
+        &self,
+        schema_uri: &SchemaUri,
+        consult_embedded_registry: bool,
+    ) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
+        if consult_embedded_registry
+            && let Some(resource) = self
+                .cache
+                .read()
+                .await
+                .resources
+                .by_uri
+                .get(schema_uri)
+                .cloned()
+        {
+            let Some(metadata) = resource.generation.resource_index.resource(schema_uri) else {
+                return Ok(None);
+            };
+            return Ok(crate::resolve_json_pointer_node(
+                &resource.generation.source_node,
+                &metadata.root_pointer,
+            )
+            .cloned());
+        }
+        let aliased_source = if consult_embedded_registry {
+            self.cache
+                .read()
+                .await
+                .documents
+                .get(schema_uri)
+                .map(|cached| cached.source_schema_uri.clone())
+                .filter(|source| source != schema_uri)
+        } else {
+            None
+        };
+        let schema_uri = aliased_source.as_ref().unwrap_or(schema_uri);
         match schema_uri.scheme() {
             "file" => {
                 let schema_path = tombi_uri::Uri::to_file_path(schema_uri).map_err(|_| {
@@ -591,24 +750,143 @@ impl SchemaStore {
         }
     }
 
+    pub(crate) async fn fetch_external_schema_value(
+        &self,
+        schema_uri: &SchemaUri,
+    ) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
+        self.fetch_schema_value_with_registry(schema_uri, false)
+            .await
+    }
+
     async fn fetch_document_schema(
         &self,
         schema_uri: &SchemaUri,
     ) -> Result<Option<Arc<DocumentSchema>>, crate::Error> {
-        let schema_value = match self.fetch_schema_value(schema_uri).await? {
-            Some(value) => value,
-            None => return Ok(None),
-        };
+        self.fetch_document_schema_with_registry(schema_uri, true, true)
+            .await
+    }
+
+    async fn fetch_stable_document_schema(
+        &self,
+        schema_uri: &SchemaUri,
+    ) -> Result<Option<(Arc<DocumentSchema>, Option<SchemaCacheVersion>)>, crate::Error> {
+        self.fetch_stable_document_schema_with_registry(schema_uri, true, true)
+            .await
+    }
+
+    async fn fetch_stable_document_schema_with_registry(
+        &self,
+        schema_uri: &SchemaUri,
+        consult_embedded_registry: bool,
+        publish_embedded_resources: bool,
+    ) -> Result<Option<(Arc<DocumentSchema>, Option<SchemaCacheVersion>)>, crate::Error> {
+        for _ in 0..3 {
+            let before = schema_cache_version(schema_uri).await;
+            let document_schema = self
+                .fetch_document_schema_with_registry(
+                    schema_uri,
+                    consult_embedded_registry,
+                    publish_embedded_resources,
+                )
+                .await?;
+            let after = schema_cache_version(schema_uri).await;
+            if before == after {
+                return Ok(document_schema.map(|document| (document, after)));
+            }
+        }
+
+        // Do not bless a racing read with a version it may not represent. A
+        // missing version forces the next lookup to retry once the source is stable.
+        Ok(self
+            .fetch_document_schema_with_registry(
+                schema_uri,
+                consult_embedded_registry,
+                publish_embedded_resources,
+            )
+            .await?
+            .map(|document| (document, None)))
+    }
+
+    async fn fetch_document_schema_with_registry(
+        &self,
+        schema_uri: &SchemaUri,
+        consult_embedded_registry: bool,
+        publish_embedded_resources: bool,
+    ) -> Result<Option<Arc<DocumentSchema>>, crate::Error> {
+        if consult_embedded_registry
+            && let Some(resource) = self
+                .cache
+                .read()
+                .await
+                .resources
+                .by_uri
+                .get(schema_uri)
+                .cloned()
+        {
+            return self
+                .document_schema_from_generation(schema_uri, resource.generation)
+                .await;
+        }
+
+        let revision = self.next_generation.fetch_add(1, Ordering::Relaxed);
+        let schema_value = Arc::new(
+            match self
+                .fetch_schema_value_with_registry(schema_uri, consult_embedded_registry)
+                .await?
+            {
+                Some(value) => value,
+                None => return Ok(None),
+            },
+        );
         if !matches!(
-            schema_value,
+            schema_value.as_ref(),
             tombi_json::ValueNode::Object(_) | tombi_json::ValueNode::Bool(_)
         ) {
             return Err(crate::Error::SchemaMustBeObjectOrBoolean {
                 schema_uri: schema_uri.clone(),
             });
         }
-        let document_schema =
-            DocumentSchema::new(schema_value, schema_uri.clone(), None, self).await;
+        let resource_index = Arc::new(
+            ResourceIndex::build(&schema_value, schema_uri, None).map_err(|error| {
+                crate::Error::InvalidSchemaResources {
+                    schema_uri: schema_uri.clone(),
+                    reason: error.to_string(),
+                }
+            })?,
+        );
+        let generation = Arc::new(SchemaGeneration {
+            revision,
+            source_schema_uri: Arc::new(schema_uri.clone()),
+            source_node: schema_value.clone(),
+            resource_index: resource_index.clone(),
+            compiled_resources: std::sync::RwLock::new(Default::default()),
+        });
+        let root_resource_uri = resource_index.root_resource_uri().clone();
+        let Some(_resolution_guard) = ResolutionGuard::enter(&root_resource_uri) else {
+            return Err(crate::Error::CyclicSchemaReference {
+                schema_uri: root_resource_uri,
+            });
+        };
+        let mut document_schema = DocumentSchema::new_indexed(
+            &schema_value,
+            schema_uri.clone(),
+            Some(root_resource_uri.clone()),
+            None,
+            Some(generation.clone()),
+            None,
+            self,
+        )
+        .await;
+        if let Some(metadata) = resource_index.resource(&root_resource_uri) {
+            let (anchors, dynamic_anchors) = build_anchor_maps(
+                &schema_value,
+                metadata,
+                document_schema.string_formats(),
+                document_schema.dialect(),
+            );
+            document_schema.anchors = anchors;
+            document_schema.dynamic_anchors = dynamic_anchors;
+        }
         if let Some(
             SchemaView::AllOf(AllOfSchema { schemas, .. })
             | SchemaView::AnyOf(AnyOfSchema { schemas, .. })
@@ -630,7 +908,397 @@ impl SchemaStore {
             }
         }
 
+        if publish_embedded_resources {
+            self.register_embedded_resources(generation).await?;
+        }
+
         Ok(Some(Arc::new(document_schema)))
+    }
+
+    pub(crate) async fn try_get_document_schema_in_generation(
+        &self,
+        schema_uri: &SchemaUri,
+        generation: Option<&Arc<SchemaGeneration>>,
+    ) -> Result<Option<Arc<DocumentSchema>>, crate::Error> {
+        if let Some(generation) = generation {
+            if generation.resource_index.resource(schema_uri).is_some() {
+                if RESOLUTION_STACK.try_with(|_| ()).is_err() {
+                    return RESOLUTION_STACK
+                        .scope(
+                            RefCell::new(Vec::new()),
+                            self.document_schema_from_generation(schema_uri, generation.clone()),
+                        )
+                        .await;
+                }
+                return self
+                    .document_schema_from_generation(schema_uri, generation.clone())
+                    .await;
+            }
+            let registered = self
+                .cache
+                .read()
+                .await
+                .resources
+                .by_uri
+                .get(schema_uri)
+                .filter(|resource| {
+                    resource.generation.source_schema_uri != generation.source_schema_uri
+                })
+                .cloned();
+            if let Some(resource) = registered {
+                if RESOLUTION_STACK.try_with(|_| ()).is_err() {
+                    return RESOLUTION_STACK
+                        .scope(
+                            RefCell::new(Vec::new()),
+                            self.document_schema_from_generation(schema_uri, resource.generation),
+                        )
+                        .await;
+                }
+                return self
+                    .document_schema_from_generation(schema_uri, resource.generation)
+                    .await;
+            }
+            let cached_source = self
+                .cache
+                .read()
+                .await
+                .documents
+                .get(schema_uri)
+                .map(|cached| cached.source_schema_uri.clone());
+            if cached_source
+                .as_ref()
+                .is_some_and(|source| source != generation.source_schema_uri.as_ref())
+                && let Some(document_schema) = self.try_get_document_schema(schema_uri).await?
+                && document_schema
+                    .definitions
+                    .generation()
+                    .is_none_or(|resolved_generation| {
+                        resolved_generation.source_schema_uri != generation.source_schema_uri
+                    })
+            {
+                return Ok(Some(document_schema));
+            }
+            if RESOLUTION_STACK.try_with(|_| ()).is_err() {
+                return RESOLUTION_STACK
+                    .scope(
+                        RefCell::new(Vec::new()),
+                        self.fetch_and_cache_external_document_schema(schema_uri, generation),
+                    )
+                    .await;
+            }
+            self.fetch_and_cache_external_document_schema(schema_uri, generation)
+                .await
+        } else {
+            self.try_get_document_schema(schema_uri).await
+        }
+    }
+
+    async fn fetch_and_cache_external_document_schema(
+        &self,
+        schema_uri: &SchemaUri,
+        pinned_generation: &Arc<SchemaGeneration>,
+    ) -> Result<Option<Arc<DocumentSchema>>, crate::Error> {
+        let Some((document_schema, version)) = self
+            .fetch_stable_document_schema_with_registry(schema_uri, false, false)
+            .await?
+        else {
+            return Ok(None);
+        };
+        if self
+            .try_publish_external_candidate(schema_uri, version, document_schema.clone())
+            .await
+        {
+            return Ok(Some(document_schema));
+        }
+
+        let registered = self
+            .cache
+            .read()
+            .await
+            .resources
+            .by_uri
+            .get(schema_uri)
+            .filter(|resource| {
+                resource.generation.source_schema_uri != pinned_generation.source_schema_uri
+            })
+            .cloned();
+        if let Some(resource) = registered {
+            return self
+                .document_schema_from_generation(schema_uri, resource.generation)
+                .await;
+        }
+        let cached_source = self
+            .cache
+            .read()
+            .await
+            .documents
+            .get(schema_uri)
+            .map(|cached| cached.source_schema_uri.clone());
+        if cached_source
+            .as_ref()
+            .is_some_and(|source| source != pinned_generation.source_schema_uri.as_ref())
+            && let Some(document_schema) = self.try_get_document_schema(schema_uri).await?
+            && document_schema
+                .definitions
+                .generation()
+                .is_none_or(|resolved_generation| {
+                    resolved_generation.source_schema_uri != pinned_generation.source_schema_uri
+                })
+        {
+            return Ok(Some(document_schema));
+        }
+        // A pinned generation may legitimately need a private external fallback
+        // whose URI is owned globally by a newer same-source generation.
+        log::debug!("keep external schema private: {schema_uri}");
+        Ok(Some(document_schema))
+    }
+
+    /// Publishes a separately-built external candidate as one transaction.
+    /// Returning `false` leaves both registries unchanged.
+    async fn try_publish_external_candidate(
+        &self,
+        key: &SchemaUri,
+        version: Option<SchemaCacheVersion>,
+        document_schema: Arc<DocumentSchema>,
+    ) -> bool {
+        let Some(generation) = document_schema.owner_generation.clone() else {
+            return false;
+        };
+        let source_schema_uri = generation.source_schema_uri.as_ref().clone();
+        let resource_uris = generation
+            .resource_index
+            .resources()
+            .keys()
+            .filter(|uri| {
+                *uri != generation.resource_index.root_resource_uri() && *uri != &source_schema_uri
+            })
+            .cloned()
+            .collect_vec();
+        let aliases = std::iter::once(key)
+            .chain(document_schema.id.as_ref())
+            .collect_vec();
+
+        let mut cache = self.cache.write().await;
+        if cache
+            .resources
+            .by_source
+            .get(&source_schema_uri)
+            .is_some_and(|installed| installed.revision > generation.revision)
+        {
+            return false;
+        }
+        if resource_uris.iter().any(|uri| {
+            cache
+                .documents
+                .get(uri)
+                .is_some_and(|existing| existing.source_schema_uri != source_schema_uri)
+                || cache.resources.by_uri.get(uri).is_some_and(|existing| {
+                    existing.generation.source_schema_uri.as_ref() != &source_schema_uri
+                })
+        }) || aliases.iter().any(|uri| {
+            cache
+                .documents
+                .get(*uri)
+                .is_some_and(|existing| existing.source_schema_uri != source_schema_uri)
+                || cache.resources.by_uri.get(*uri).is_some_and(|existing| {
+                    existing.generation.source_schema_uri.as_ref() != &source_schema_uri
+                })
+        }) {
+            return false;
+        }
+
+        cache.resources.by_uri.retain(|_, resource| {
+            resource.generation.source_schema_uri.as_ref() != &source_schema_uri
+        });
+        cache
+            .resources
+            .by_uri
+            .extend(resource_uris.into_iter().map(|uri| {
+                (
+                    uri,
+                    EmbeddedResource {
+                        generation: generation.clone(),
+                    },
+                )
+            }));
+        cache
+            .resources
+            .by_source
+            .insert(source_schema_uri.clone(), generation);
+
+        cache
+            .documents
+            .retain(|_, existing| existing.source_schema_uri != source_schema_uri);
+        let id = document_schema.id.clone();
+        let cached = CachedDocumentSchema {
+            version,
+            source_schema_uri: source_schema_uri.clone(),
+            document_schema: Ok(document_schema),
+        };
+        cache.documents.insert(key.clone(), cached.clone());
+        if let Some(id) = id {
+            cache.documents.insert(id, cached);
+        }
+        true
+    }
+
+    async fn document_schema_from_generation(
+        &self,
+        schema_uri: &SchemaUri,
+        generation: Arc<SchemaGeneration>,
+    ) -> Result<Option<Arc<DocumentSchema>>, crate::Error> {
+        let compiled = {
+            generation
+                .compiled_resources
+                .read()
+                .expect("compiled resource cache poisoned")
+                .get(schema_uri)
+                .cloned()
+        };
+        if let Some(template) = compiled {
+            let mut document_schema = template.as_ref().clone();
+            document_schema.definitions = document_schema
+                .definitions
+                .with_generation(generation.clone());
+            document_schema.owner_generation = Some(generation);
+            return Ok(Some(Arc::new(document_schema)));
+        }
+        let Some(_resolution_guard) = ResolutionGuard::enter(schema_uri) else {
+            return Err(crate::Error::CyclicSchemaReference {
+                schema_uri: schema_uri.clone(),
+            });
+        };
+        let Some(metadata) = generation.resource_index.resource(schema_uri) else {
+            return Ok(None);
+        };
+        let Some(node) =
+            crate::resolve_json_pointer_node(&generation.source_node, &metadata.root_pointer)
+        else {
+            return Ok(None);
+        };
+        let mut document_schema = DocumentSchema::new_embedded(
+            node,
+            generation.source_schema_uri.as_ref().clone(),
+            schema_uri.clone(),
+            metadata.dialect,
+            generation.clone(),
+            None,
+            self,
+        )
+        .await;
+        let (anchors, dynamic_anchors) = build_anchor_maps(
+            &generation.source_node,
+            metadata,
+            document_schema.string_formats(),
+            document_schema.dialect(),
+        );
+        document_schema.anchors = anchors;
+        document_schema.dynamic_anchors = dynamic_anchors;
+        if document_schema.definitions.dynamic_scope().is_empty()
+            && document_schema
+                .definitions
+                .generation()
+                .is_some_and(|resolved_generation| Arc::ptr_eq(resolved_generation, &generation))
+        {
+            let mut template = document_schema.clone();
+            template.definitions = template.definitions.without_runtime_context();
+            template.owner_generation = None;
+            generation
+                .compiled_resources
+                .write()
+                .expect("compiled resource cache poisoned")
+                .entry(schema_uri.clone())
+                .or_insert_with(|| Arc::new(template));
+        }
+        Ok(Some(Arc::new(document_schema)))
+    }
+
+    async fn register_embedded_resources(
+        &self,
+        generation: Arc<SchemaGeneration>,
+    ) -> Result<bool, crate::Error> {
+        let mut discovered = Vec::new();
+        let source_schema_uri = &generation.source_schema_uri;
+        for canonical_uri in generation.resource_index.resources().keys() {
+            if canonical_uri == generation.resource_index.root_resource_uri()
+                && canonical_uri == source_schema_uri.as_ref()
+            {
+                continue;
+            }
+            discovered.push((
+                canonical_uri.clone(),
+                EmbeddedResource {
+                    generation: generation.clone(),
+                },
+            ));
+        }
+
+        let mut cache = self.cache.write().await;
+        for (canonical_uri, _) in &discovered {
+            if let Some(existing) = cache
+                .documents
+                .get(canonical_uri)
+                .filter(|existing| &existing.source_schema_uri != source_schema_uri.as_ref())
+            {
+                return Err(crate::Error::InvalidSchemaResources {
+                    schema_uri: source_schema_uri.as_ref().clone(),
+                    reason: format!(
+                        "duplicate schema resource URI {canonical_uri}; already loaded from {}",
+                        existing.source_schema_uri
+                    ),
+                });
+            }
+        }
+        let registry = &mut cache.resources;
+        if registry
+            .by_source
+            .get(source_schema_uri.as_ref())
+            .is_some_and(|installed| installed.revision > generation.revision)
+        {
+            return Ok(false);
+        }
+        for (canonical_uri, _) in &discovered {
+            if let Some(existing) = registry.by_uri.get(canonical_uri).filter(|existing| {
+                existing.generation.source_schema_uri.as_ref() != source_schema_uri.as_ref()
+            }) {
+                return Err(crate::Error::InvalidSchemaResources {
+                    schema_uri: source_schema_uri.as_ref().clone(),
+                    reason: format!(
+                        "duplicate schema resource URI {canonical_uri}; already loaded from {}",
+                        existing.generation.source_schema_uri
+                    ),
+                });
+            }
+        }
+        registry.by_uri.retain(|_, resource| {
+            resource.generation.source_schema_uri.as_ref() != source_schema_uri.as_ref()
+        });
+        registry.by_uri.extend(discovered);
+        registry
+            .by_source
+            .insert(source_schema_uri.as_ref().clone(), generation.clone());
+        Ok(true)
+    }
+
+    pub(crate) async fn effective_base_uri(
+        &self,
+        schema_uri: &SchemaUri,
+        position: tombi_text::Position,
+    ) -> Option<SchemaUri> {
+        let cache = self.cache.read().await;
+        let registry = &cache.resources;
+        registry
+            .by_uri
+            .get(schema_uri)
+            .map(|resource| &resource.generation.resource_index)
+            .or_else(|| {
+                registry
+                    .by_source
+                    .get(schema_uri)
+                    .map(|generation| &generation.resource_index)
+            })
+            .and_then(|index| index.effective_base(position))
+            .cloned()
     }
 
     pub fn try_get_document_schema<'a: 'b, 'b>(
@@ -638,8 +1306,15 @@ impl SchemaStore {
         schema_uri: &'a SchemaUri,
     ) -> BoxFuture<'b, Result<Option<Arc<DocumentSchema>>, crate::Error>> {
         async move {
+            if RESOLUTION_STACK.try_with(|_| ()).is_err() {
+                return RESOLUTION_STACK
+                    .scope(
+                        RefCell::new(Vec::new()),
+                        self.try_get_document_schema(schema_uri),
+                    )
+                    .await;
+            }
             let requested_schema_uri = schema_uri.clone();
-
             let (schema_uri, fragment) = {
                 let mut uri = schema_uri.clone();
                 let fragment = uri.fragment().map(ToOwned::to_owned);
@@ -647,43 +1322,78 @@ impl SchemaStore {
                 (uri, fragment)
             };
 
-            let cached_document_schema =
-                self.document_schemas.read().await.get(&schema_uri).cloned();
-            let document_schema = if let Some(cached_document_schema) = cached_document_schema {
-                let cache_version = schema_cache_version(&schema_uri).await;
+            let (embedded_resource, cached_document_schema) = {
+                let cache = self.cache.read().await;
+                (
+                    cache.resources.by_uri.get(&schema_uri).cloned(),
+                    cache.documents.get(&schema_uri).cloned(),
+                )
+            };
+            let document_schema = if let Some(resource) = embedded_resource {
+                self.document_schema_from_generation(&schema_uri, resource.generation)
+                    .await?
+            } else if let Some(cached_document_schema) = cached_document_schema {
+                let cache_version =
+                    schema_cache_version(&cached_document_schema.source_schema_uri).await;
                 if cached_document_schema.version == cache_version {
                     match cached_document_schema.document_schema {
                         Ok(document_schema) => Some(document_schema),
                         Err(err) => return Err(err),
                     }
                 } else {
-                    match self.fetch_document_schema(&schema_uri).await.transpose() {
-                        Some(document_schema) => {
-                            let cache_version = schema_cache_version(&schema_uri).await;
-                            self.document_schemas.write().await.insert(
+                    let source_schema_uri = cached_document_schema.source_schema_uri;
+                    match self
+                        .fetch_stable_document_schema(&source_schema_uri)
+                        .await
+                        .transpose()
+                    {
+                        Some(source_document_schema) => {
+                            let (source_document_schema, cache_version) = source_document_schema?;
+                            self.replace_cached_source_document(
+                                source_schema_uri.clone(),
+                                cache_version,
+                                source_document_schema.clone(),
+                            )
+                            .await?;
+                            let document_schema = if schema_uri == source_schema_uri {
+                                source_document_schema
+                            } else {
+                                let Some(document_schema) =
+                                    self.fetch_document_schema(&schema_uri).await?
+                                else {
+                                    return Ok(None);
+                                };
+                                document_schema
+                            };
+                            self.cache_document_schema(
                                 schema_uri.clone(),
-                                CachedDocumentSchema {
-                                    version: cache_version,
-                                    document_schema: document_schema.clone(),
-                                },
-                            );
-                            Some(document_schema?)
+                                source_schema_uri,
+                                cache_version,
+                                document_schema.clone(),
+                            )
+                            .await?;
+                            Some(document_schema)
                         }
                         None => None,
                     }
                 }
             } else {
-                match self.fetch_document_schema(&schema_uri).await.transpose() {
+                match self
+                    .fetch_stable_document_schema(&schema_uri)
+                    .await
+                    .transpose()
+                {
                     Some(document_schema) => {
-                        let cache_version = schema_cache_version(&schema_uri).await;
-                        self.document_schemas.write().await.insert(
+                        let (document_schema, cache_version) = document_schema?;
+                        let source_schema_uri = document_schema.schema_uri.clone();
+                        self.cache_document_schema(
                             schema_uri.clone(),
-                            CachedDocumentSchema {
-                                version: cache_version,
-                                document_schema: document_schema.clone(),
-                            },
-                        );
-                        Some(document_schema?)
+                            source_schema_uri,
+                            cache_version,
+                            document_schema.clone(),
+                        )
+                        .await?;
+                        Some(document_schema)
                     }
                     None => None,
                 }
@@ -719,9 +1429,8 @@ impl SchemaStore {
                     });
                 };
 
-                // Create a new document schema with the fragment-referenced schema_uri in the return value
                 let mut fragment_document_schema = document_schema.as_ref().clone();
-                fragment_document_schema.schema_uri = requested_schema_uri; // Use fragment-full URI for return value
+                fragment_document_schema.schema_uri = requested_schema_uri;
                 fragment_document_schema.schema_view = Some(Arc::new(fragment_schema_view));
                 return Ok(Some(Arc::new(fragment_document_schema)));
             }
@@ -748,9 +1457,8 @@ impl SchemaStore {
                     )
                     .await?
             {
-                // Create a new document schema with the fragment-referenced schema_uri in the return value
                 let mut fragment_document_schema = document_schema.as_ref().clone();
-                fragment_document_schema.schema_uri = requested_schema_uri; // Use fragment-full URI for return value
+                fragment_document_schema.schema_uri = requested_schema_uri;
                 fragment_document_schema.schema_view = Some(current_schema.schema_view);
                 return Ok(Some(Arc::new(fragment_document_schema)));
             }
@@ -761,6 +1469,94 @@ impl SchemaStore {
             })
         }
         .boxed()
+    }
+
+    async fn cache_document_schema(
+        &self,
+        key: SchemaUri,
+        source_schema_uri: SchemaUri,
+        version: Option<SchemaCacheVersion>,
+        document_schema: Arc<DocumentSchema>,
+    ) -> Result<(), crate::Error> {
+        let cached = CachedDocumentSchema {
+            version,
+            source_schema_uri: source_schema_uri.clone(),
+            document_schema: Ok(document_schema.clone()),
+        };
+        let mut cache = self.cache.write().await;
+        if let Some(generation) = document_schema.owner_generation.as_ref()
+            && !cache
+                .resources
+                .by_source
+                .get(&source_schema_uri)
+                .is_some_and(|installed| Arc::ptr_eq(installed, generation))
+        {
+            return Ok(());
+        }
+        for uri in std::iter::once(&key).chain(document_schema.id.as_ref()) {
+            if let Some(resource) = cache.resources.by_uri.get(uri).filter(|resource| {
+                resource.generation.source_schema_uri.as_ref() != &source_schema_uri
+            }) {
+                return Err(crate::Error::InvalidSchemaResources {
+                    schema_uri: source_schema_uri.clone(),
+                    reason: format!(
+                        "duplicate schema resource URI {uri}; already loaded from {}",
+                        resource.generation.source_schema_uri
+                    ),
+                });
+            }
+        }
+        let schemas = &mut cache.documents;
+        schemas.insert(key, cached.clone());
+        if let Some(id) = &document_schema.id {
+            schemas.insert(id.clone(), cached);
+        }
+        Ok(())
+    }
+
+    /// Atomically replaces every alias belonging to one physical document.
+    /// This prevents removed `$id` values from surviving a successful reload.
+    async fn replace_cached_source_document(
+        &self,
+        source_schema_uri: SchemaUri,
+        version: Option<SchemaCacheVersion>,
+        document_schema: Arc<DocumentSchema>,
+    ) -> Result<(), crate::Error> {
+        let cached = CachedDocumentSchema {
+            version,
+            source_schema_uri: source_schema_uri.clone(),
+            document_schema: Ok(document_schema.clone()),
+        };
+        let mut cache = self.cache.write().await;
+        if let Some(generation) = document_schema.owner_generation.as_ref()
+            && !cache
+                .resources
+                .by_source
+                .get(&source_schema_uri)
+                .is_some_and(|installed| Arc::ptr_eq(installed, generation))
+        {
+            return Ok(());
+        }
+        for uri in std::iter::once(&source_schema_uri).chain(document_schema.id.as_ref()) {
+            if let Some(resource) = cache.resources.by_uri.get(uri).filter(|resource| {
+                resource.generation.source_schema_uri.as_ref() != &source_schema_uri
+            }) {
+                return Err(crate::Error::InvalidSchemaResources {
+                    schema_uri: source_schema_uri.clone(),
+                    reason: format!(
+                        "duplicate schema resource URI {uri}; already loaded from {}",
+                        resource.generation.source_schema_uri
+                    ),
+                });
+            }
+        }
+        let schemas = &mut cache.documents;
+        schemas.retain(|_, existing| existing.source_schema_uri != source_schema_uri);
+        schemas.insert(source_schema_uri, cached.clone());
+        if let Some(id) = &document_schema.id {
+            schemas.insert(id.clone(), cached);
+        }
+        Ok(())
     }
 
     #[inline]
@@ -1440,6 +2236,11 @@ fn parse_override_target(target: &str) -> Option<Vec<PatternAccessor>> {
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
     use std::{
         fs,
         path::{Path, PathBuf},
@@ -1448,10 +2249,11 @@ mod tests {
     };
 
     use super::{
-        SchemaStore, load_catalog_from_cache_ignoring_ttl,
+        SchemaGeneration, SchemaStore, load_catalog_from_cache_ignoring_ttl,
         load_json_schema_from_cache_ignoring_ttl, matches_schema_patterns,
     };
-    use crate::{CatalogUri, SchemaView};
+    use crate::{CatalogUri, ResourceIndex, SchemaAccessor, SchemaView};
+    use tombi_future::Boxable;
     use tombi_uri::SchemaUri;
 
     fn temp_cache_path(test_name: &str) -> PathBuf {
@@ -1466,6 +2268,23 @@ mod tests {
         let file = fs::File::options().write(true).open(path).unwrap();
         let modified = file.metadata().unwrap().modified().unwrap() + Duration::from_secs(1);
         file.set_modified(modified).unwrap();
+    }
+
+    #[derive(Debug)]
+    struct CountingHttpClient {
+        requests: AtomicUsize,
+        response: &'static str,
+    }
+
+    impl crate::http_client::HttpClient for CountingHttpClient {
+        fn get_bytes<'a>(
+            &'a self,
+            _url: &'a str,
+        ) -> crate::http_client::HttpFuture<'a, Result<bytes::Bytes, crate::http_client::FetchError>>
+        {
+            self.requests.fetch_add(1, Ordering::Relaxed);
+            async move { Ok(bytes::Bytes::from_static(self.response.as_bytes())) }.boxed()
+        }
     }
 
     #[test]
@@ -1652,6 +2471,469 @@ mod tests {
         );
 
         let _ = std::fs::remove_file(schema_path);
+    }
+
+    #[tokio::test]
+    async fn retained_document_resolves_with_its_original_generation() {
+        let schema_path = std::env::temp_dir().join(format!(
+            "tombi_reload_compound_schema_{}_{}.json",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let schema_uri = SchemaUri::from_file_path(&schema_path).unwrap();
+        let schema_store = SchemaStore::new();
+        let schema = |value_type: &str| {
+            format!(
+                r#"{{
+                    "$schema":"https://json-schema.org/draft/2020-12/schema",
+                    "$id":"https://example.com/root",
+                    "type":"object",
+                    "properties":{{"value":{{"$ref":"child"}}}},
+                    "$defs":{{"child":{{"$id":"https://example.com/child","type":"{value_type}"}}}}
+                }}"#
+            )
+        };
+
+        std::fs::write(&schema_path, schema("string")).unwrap();
+        let old_document = schema_store
+            .try_get_document_schema(&schema_uri)
+            .await
+            .unwrap()
+            .unwrap();
+
+        std::fs::write(&schema_path, schema("integer")).unwrap();
+        bump_modified(&schema_path);
+        let new_document = schema_store
+            .try_get_document_schema(&schema_uri)
+            .await
+            .unwrap()
+            .unwrap();
+
+        async fn value_schema(
+            document: &crate::DocumentSchema,
+            store: &SchemaStore,
+        ) -> crate::CurrentSchema<'static> {
+            let SchemaView::Table(table) = document.schema_view.as_deref().unwrap() else {
+                panic!("root schema must be an object")
+            };
+            table
+                .resolve_property_schema(
+                    &SchemaAccessor::Key("value".to_owned()),
+                    Cow::Borrowed(&document.schema_uri),
+                    Cow::Borrowed(&document.definitions),
+                    document.strict,
+                    store,
+                )
+                .await
+                .unwrap()
+                .unwrap()
+        }
+
+        let old_value = value_schema(&old_document, &schema_store).await;
+        let new_value = value_schema(&new_document, &schema_store).await;
+        assert!(matches!(
+            old_value.schema_view.as_ref(),
+            SchemaView::String(_)
+        ));
+        assert!(matches!(
+            new_value.schema_view.as_ref(),
+            SchemaView::Integer(_)
+        ));
+
+        let _ = std::fs::remove_file(schema_path);
+    }
+
+    #[tokio::test]
+    async fn retained_generation_miss_does_not_see_new_embedded_resource() {
+        let schema_path = temp_cache_path("generation-negative-lookup");
+        let external_path = schema_path.with_extension("child.json");
+        let external_name = external_path.file_name().unwrap().to_string_lossy();
+        let schema_uri = SchemaUri::from_file_path(&schema_path).unwrap();
+        let schema = |embedded_type: Option<&str>| {
+            let defs = embedded_type.map_or_else(String::new, |value_type| {
+                format!(
+                    r#", "$defs":{{"child":{{"$id":"{external_name}","type":"{value_type}","$defs":{{"nested":{{"$id":"nested","type":"{value_type}"}}}}}}}}"#
+                )
+            });
+            format!(
+                r#"{{
+                    "$schema":"https://json-schema.org/draft/2020-12/schema",
+                    "type":"object",
+                    "properties":{{"value":{{"$ref":"{external_name}"}}}}
+                    {defs}
+                }}"#
+            )
+        };
+        std::fs::write(
+            &external_path,
+            r#"{"type":"string","$defs":{"nested":{"$id":"nested","type":"string"}}}"#,
+        )
+        .unwrap();
+        std::fs::write(&schema_path, schema(None)).unwrap();
+        let store = SchemaStore::new();
+        let old_document = store
+            .try_get_document_schema(&schema_uri)
+            .await
+            .unwrap()
+            .unwrap();
+
+        std::fs::write(&schema_path, schema(Some("integer"))).unwrap();
+        bump_modified(&schema_path);
+        let new_document = store
+            .try_get_document_schema(&schema_uri)
+            .await
+            .unwrap()
+            .unwrap();
+
+        async fn value_schema(
+            document: &crate::DocumentSchema,
+            store: &SchemaStore,
+        ) -> crate::CurrentSchema<'static> {
+            let SchemaView::Table(table) = document.schema_view.as_deref().unwrap() else {
+                panic!("root schema must be an object")
+            };
+            table
+                .resolve_property_schema(
+                    &SchemaAccessor::Key("value".to_owned()),
+                    Cow::Borrowed(&document.schema_uri),
+                    Cow::Borrowed(&document.definitions),
+                    document.strict,
+                    store,
+                )
+                .await
+                .unwrap()
+                .unwrap()
+        }
+
+        assert!(matches!(
+            value_schema(&old_document, &store)
+                .await
+                .schema_view
+                .as_ref(),
+            SchemaView::String(_)
+        ));
+        assert!(matches!(
+            value_schema(&new_document, &store)
+                .await
+                .schema_view
+                .as_ref(),
+            SchemaView::Integer(_)
+        ));
+        let nested_uri =
+            SchemaUri::from_file_path(external_path.parent().unwrap().join("nested")).unwrap();
+        let new_generation = new_document.definitions.generation().unwrap();
+        let cache = store.cache.read().await;
+        let external_uri = SchemaUri::from_file_path(&external_path).unwrap();
+        assert!(!cache.resources.by_source.contains_key(&external_uri));
+        assert!(
+            cache
+                .resources
+                .by_uri
+                .get(&nested_uri)
+                .is_some_and(|resource| { Arc::ptr_eq(&resource.generation, new_generation) })
+        );
+        drop(cache);
+
+        let _ = std::fs::remove_file(schema_path);
+        let _ = std::fs::remove_file(external_path);
+    }
+
+    #[tokio::test]
+    async fn embedded_resource_falls_back_to_external_file() {
+        let schema_path = temp_cache_path("compound-external-fallback");
+        let external_path = schema_path.with_extension("external.json");
+        let external_name = external_path.file_name().unwrap().to_string_lossy();
+        let schema_uri = SchemaUri::from_file_path(&schema_path).unwrap();
+        std::fs::write(&external_path, r#"{"type":"string"}"#).unwrap();
+        std::fs::write(
+            &schema_path,
+            format!(
+                r#"{{
+                    "$schema":"https://json-schema.org/draft/2020-12/schema",
+                    "$ref":"embedded",
+                    "$defs":{{"embedded":{{"$id":"embedded","$ref":"{external_name}"}}}}
+                }}"#
+            ),
+        )
+        .unwrap();
+
+        let document_schema = SchemaStore::new()
+            .try_get_document_schema(&schema_uri)
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert!(matches!(
+            document_schema.schema_view.as_deref(),
+            Some(SchemaView::String(_))
+        ));
+
+        let _ = std::fs::remove_file(schema_path);
+        let _ = std::fs::remove_file(external_path);
+    }
+
+    #[tokio::test]
+    async fn duplicate_embedded_resource_ids_are_rejected_by_store() {
+        let schema_path = temp_cache_path("duplicate-compound-resource");
+        let schema_uri = SchemaUri::from_file_path(&schema_path).unwrap();
+        std::fs::write(
+            &schema_path,
+            r#"{
+                "$schema":"https://json-schema.org/draft/2020-12/schema",
+                "$defs":{
+                    "one":{"$id":"duplicate","type":"string"},
+                    "two":{"$id":"duplicate","type":"integer"}
+                }
+            }"#,
+        )
+        .unwrap();
+
+        let error = SchemaStore::new()
+            .try_get_document_schema(&schema_uri)
+            .await
+            .unwrap_err();
+
+        assert!(matches!(error, crate::Error::InvalidSchemaResources { .. }));
+        assert!(error.to_string().contains("duplicate schema resource URI"));
+
+        let _ = std::fs::remove_file(schema_path);
+    }
+
+    #[tokio::test]
+    async fn preloaded_canonical_resource_resolves_across_documents() {
+        let target_path = temp_cache_path("preloaded-canonical-target");
+        let source_path = temp_cache_path("preloaded-canonical-source");
+        let target_uri = SchemaUri::from_file_path(&target_path).unwrap();
+        let source_uri = SchemaUri::from_file_path(&source_path).unwrap();
+        std::fs::write(
+            &target_path,
+            r#"{"$id":"shoko://example/B","type":"string"}"#,
+        )
+        .unwrap();
+        std::fs::write(&source_path, r#"{"$ref":"shoko://example/B"}"#).unwrap();
+
+        let store = SchemaStore::new();
+        let target = store
+            .try_get_document_schema(&target_uri)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            target
+                .as_current_schema()
+                .unwrap()
+                .source_schema_uri()
+                .as_ref(),
+            &target_uri
+        );
+        let source = store
+            .try_get_document_schema(&source_uri)
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert!(matches!(
+            source.schema_view.as_deref(),
+            Some(SchemaView::String(_))
+        ));
+        assert_eq!(
+            source
+                .as_current_schema()
+                .unwrap()
+                .source_schema_uri()
+                .as_ref(),
+            &target_uri
+        );
+
+        let _ = std::fs::remove_file(target_path);
+        let _ = std::fs::remove_file(source_path);
+    }
+
+    #[tokio::test]
+    async fn external_json_pointer_reuses_the_fetched_generation() {
+        let source_path = temp_cache_path("external-pointer-generation");
+        let source_uri = SchemaUri::from_file_path(&source_path).unwrap();
+        let external_url = format!(
+            "https://example.invalid/{}.json#/$defs/value",
+            source_path.file_stem().unwrap().to_string_lossy()
+        );
+        std::fs::write(
+            &source_path,
+            format!(
+                r#"{{
+                    "$defs":{{
+                        "useExternal":{{"$ref":"{external_url}"}}
+                    }}
+                }}"#
+            ),
+        )
+        .unwrap();
+        let client = Arc::new(CountingHttpClient {
+            requests: AtomicUsize::new(0),
+            response: r#"{
+                "$defs": {
+                    "value": {"type":"string"}
+                }
+            }"#,
+        });
+        let store = SchemaStore::new_with_options_and_http_client(
+            crate::Options::default(),
+            client.clone(),
+        );
+
+        let source = store
+            .try_get_document_schema(&source_uri)
+            .await
+            .unwrap()
+            .unwrap();
+
+        let definitions = source.definitions.clone();
+        let mut referable = {
+            let definitions = definitions.read().await;
+            definitions.get("#/$defs/useExternal").cloned().unwrap()
+        };
+        let item = referable
+            .resolve(
+                Cow::Owned(source.schema_uri.clone()),
+                Cow::Owned(definitions.clone()),
+                None,
+                &store,
+            )
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(matches!(
+            item.schema_view.as_ref(),
+            SchemaView::String(_) | SchemaView::AnyOf(_)
+        ));
+        let mut external_schema_uri = SchemaUri::from_str(&external_url).unwrap();
+        external_schema_uri.set_fragment(None);
+        {
+            let cache = store.cache.read().await;
+            assert!(cache.documents.contains_key(&external_schema_uri));
+            assert!(cache.resources.by_source.contains_key(&external_schema_uri));
+            assert!(!cache.resources.by_uri.contains_key(&external_schema_uri));
+        }
+        referable
+            .resolve(
+                Cow::Owned(source.schema_uri.clone()),
+                Cow::Owned(definitions),
+                None,
+                &store,
+            )
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(client.requests.load(Ordering::Relaxed), 1);
+
+        let _ = std::fs::remove_file(source_path);
+    }
+
+    #[tokio::test]
+    async fn standalone_and_embedded_resource_ownership_never_split() {
+        let standalone_path = temp_cache_path("standalone-owner");
+        let bundle_path = temp_cache_path("embedded-owner");
+        let standalone_uri = SchemaUri::from_file_path(&standalone_path).unwrap();
+        let bundle_uri = SchemaUri::from_file_path(&bundle_path).unwrap();
+        let canonical_uri = "https://example.com/shared-resource";
+        std::fs::write(
+            &standalone_path,
+            format!(r#"{{"$id":"{canonical_uri}","type":"string"}}"#),
+        )
+        .unwrap();
+        std::fs::write(
+            &bundle_path,
+            format!(r#"{{"$defs":{{"shared":{{"$id":"{canonical_uri}","type":"integer"}}}}}}"#),
+        )
+        .unwrap();
+
+        let standalone_first = SchemaStore::new();
+        standalone_first
+            .try_get_document_schema(&standalone_uri)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(matches!(
+            standalone_first.try_get_document_schema(&bundle_uri).await,
+            Err(crate::Error::InvalidSchemaResources { .. })
+        ));
+
+        let embedded_first = SchemaStore::new();
+        embedded_first
+            .try_get_document_schema(&bundle_uri)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(matches!(
+            embedded_first
+                .try_get_document_schema(&standalone_uri)
+                .await,
+            Err(crate::Error::InvalidSchemaResources { .. })
+        ));
+
+        for _ in 0..16 {
+            let concurrent = SchemaStore::new();
+            let (standalone, embedded) = tokio::join!(
+                concurrent.try_get_document_schema(&standalone_uri),
+                concurrent.try_get_document_schema(&bundle_uri),
+            );
+            assert_ne!(
+                standalone.is_ok(),
+                embedded.is_ok(),
+                "exactly one source must acquire the canonical URI"
+            );
+        }
+
+        let _ = std::fs::remove_file(standalone_path);
+        let _ = std::fs::remove_file(bundle_path);
+    }
+
+    #[tokio::test]
+    async fn older_generation_cannot_replace_newer_publication() {
+        fn generation(
+            source: &SchemaUri,
+            revision: u64,
+            value_type: &str,
+        ) -> Arc<SchemaGeneration> {
+            let node = Arc::new(
+                tombi_json::ValueNode::from_str(&format!(
+                    r#"{{"$id":"https://example.com/root","$defs":{{"child":{{"$id":"child","type":"{value_type}"}}}}}}"#
+                ))
+                .unwrap(),
+            );
+            Arc::new(SchemaGeneration {
+                revision,
+                source_schema_uri: Arc::new(source.clone()),
+                resource_index: Arc::new(ResourceIndex::build(&node, source, None).unwrap()),
+                source_node: node,
+                compiled_resources: std::sync::RwLock::new(Default::default()),
+            })
+        }
+
+        let source = SchemaUri::from_str("file:///tmp/tombi-generation-order.json").unwrap();
+        let older = generation(&source, 1, "string");
+        let newer = generation(&source, 2, "integer");
+        let store = SchemaStore::new();
+
+        assert!(
+            store
+                .register_embedded_resources(newer.clone())
+                .await
+                .unwrap()
+        );
+        assert!(!store.register_embedded_resources(older).await.unwrap());
+
+        let cache = store.cache.read().await;
+        assert!(
+            cache
+                .resources
+                .by_source
+                .get(&source)
+                .is_some_and(|installed| Arc::ptr_eq(installed, &newer))
+        );
     }
 
     #[tokio::test]

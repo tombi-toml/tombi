@@ -81,7 +81,7 @@ impl GetTypeDefinition for tombi_schema_store::AllOfSchema {
             };
 
             vec![schema_type_definition(
-                current_schema.schema_uri.as_ref(),
+                current_schema.source_schema_uri().as_ref(),
                 accessors,
                 self.range,
             )]

@@ -18,43 +18,6 @@ fn normalize_toml_text(input: &str) -> String {
     toml_text
 }
 
-async fn validate_test_suite(
-    schema: JsonValue,
-    toml_text: &str,
-) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
-    let temp = tempdir().expect("failed to create temp directory");
-    let schema_path = temp.path().join("schema.json");
-    let source_path = temp.path().join("test.toml");
-
-    fs::write(&schema_path, serde_json::to_vec_pretty(&schema).unwrap()).unwrap();
-    fs::write(&source_path, toml_text).unwrap();
-
-    let schema_store = SchemaStore::new_with_options(SchemaStoreOptions {
-        strict: Some(false.into()),
-        offline: Some(true),
-        cache: None,
-    });
-    let schema_uri = SchemaUri::from_file_path(&schema_path)
-        .expect("failed to convert suite schema path to schema uri");
-    schema_store
-        .associate_schema(
-            schema_uri,
-            vec!["*.toml".to_string()],
-            &AssociateSchemaOptions::default(),
-        )
-        .await;
-
-    let lint_options = LintOptions::default();
-    let linter = Linter::new(
-        TomlVersion::default(),
-        &lint_options,
-        Some(Either::Right(source_path.as_path())),
-        &schema_store,
-    );
-
-    linter.lint(toml_text).await
-}
-
 macro_rules! suite_test {
     (#[tokio::test] async fn $name:ident(
         $data:expr,
@@ -97,6 +60,473 @@ macro_rules! suite_test {
             }
         }
     };
+}
+
+// =============================================================================
+// Draft 2020-12: compound schema documents
+// =============================================================================
+mod draft2020_12_compound_schema {
+    use super::*;
+
+    fn absolute_id_schema() -> JsonValue {
+        serde_json::json!({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "shoko://python/pyproject",
+            "type": "object",
+            "properties": {
+                "tool": {
+                    "type": "object",
+                    "properties": {
+                        "tombi": { "$ref": "shoko://tombi-toml/tombi" }
+                    }
+                }
+            },
+            "$defs": {
+                "tombi": {
+                    "$id": "shoko://tombi-toml/tombi",
+                    "type": "object",
+                    "properties": { "strict": { "type": "boolean" } },
+                    "required": ["strict"]
+                }
+            }
+        })
+    }
+
+    suite_test!(
+        #[tokio::test] async fn resolves_absolute_embedded_resource_offline(
+            r#"
+            [tool.tombi]
+            "#,
+            JsonSchema(absolute_id_schema()),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::TableKeyRequired {
+                    key: "strict".to_string(),
+                },
+                ((0, 0), (1, 0)),
+            ),
+        ]);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn resolves_relative_sibling_resources(
+            r#"
+            value = 42
+            "#,
+            JsonSchema(serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://example.com/bundle/root.json",
+                "$ref": "resources/consumer",
+                "$defs": {
+                    "consumer": {
+                        "$id": "resources/consumer",
+                        "$ref": "value"
+                    },
+                    "value": {
+                        "$id": "resources/value",
+                        "type": "object",
+                        "properties": { "value": { "type": "string" } }
+                    }
+                }
+            })),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::TypeMismatch {
+                    expected: tombi_schema_store::ValueType::String,
+                    actual: tombi_document_tree_syntax::ValueType::Integer,
+                },
+                ((0, 8), (0, 10)),
+            ),
+        ]);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn resolves_versionless_alias_to_versioned_resources_offline(
+            r#"
+            [tool.tombi]
+            strict = 42
+            "#,
+            JsonSchema(serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$ref": "shoko://python/pyproject",
+                "$defs": {
+                    "python-pyproject-alias": {
+                        "$id": "shoko://python/pyproject",
+                        "$ref": "shoko://python/pyproject/versions/1.0.0/schema.json"
+                    },
+                    "python-pyproject-1.0.0": {
+                        "$schema": "https://json-schema.org/draft/2020-12/schema",
+                        "$id": "shoko://python/pyproject/versions/1.0.0/schema.json",
+                        "type": "object",
+                        "properties": {
+                            "tool": {
+                                "type": "object",
+                                "properties": {
+                                    "tombi": { "$ref": "shoko://tombi-toml/tombi" }
+                                },
+                                "required": ["tombi"]
+                            }
+                        },
+                        "required": ["tool"]
+                    },
+                    "tombi-alias": {
+                        "$id": "shoko://tombi-toml/tombi",
+                        "$ref": "shoko://tombi-toml/tombi/versions/1.2.3/schema.json"
+                    },
+                    "tombi-1.2.3": {
+                        "$schema": "https://json-schema.org/draft/2020-12/schema",
+                        "$id": "shoko://tombi-toml/tombi/versions/1.2.3/schema.json",
+                        "type": "object",
+                        "properties": {
+                            "strict": { "type": "boolean" }
+                        },
+                        "required": ["strict"],
+                        "additionalProperties": false
+                    }
+                }
+            })),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::TypeMismatch {
+                    expected: tombi_schema_store::ValueType::Boolean,
+                    actual: tombi_document_tree_syntax::ValueType::Integer,
+                },
+                ((1, 9), (1, 11)),
+            ),
+        ]);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn resolves_nested_embedded_resource_with_enclosing_base(
+            r#"
+            value = 42
+            "#,
+            JsonSchema(serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://example.com/bundle/root.json",
+                "$ref": "resources/outer",
+                "$defs": {
+                    "outer": {
+                        "$id": "resources/outer",
+                        "$ref": "nested/child",
+                        "$defs": {
+                            "child": {
+                                "$id": "nested/child",
+                                "type": "object",
+                                "properties": { "value": { "type": "string" } }
+                            }
+                        }
+                    }
+                }
+            })),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::TypeMismatch {
+                    expected: tombi_schema_store::ValueType::String,
+                    actual: tombi_document_tree_syntax::ValueType::Integer,
+                },
+                ((0, 8), (0, 10)),
+            ),
+        ]);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn resolves_static_anchor_inside_embedded_resource(
+            r#"
+            value = 42
+            "#,
+            JsonSchema(serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://example.com/bundle/root.json",
+                "$ref": "resources/model#valueModel",
+                "$defs": {
+                    "model": {
+                        "$id": "resources/model",
+                        "$defs": {
+                            "value-model": {
+                                "$anchor": "valueModel",
+                                "type": "object",
+                                "properties": { "value": { "type": "string" } }
+                            }
+                        }
+                    }
+                }
+            })),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::TypeMismatch {
+                    expected: tombi_schema_store::ValueType::String,
+                    actual: tombi_document_tree_syntax::ValueType::Integer,
+                },
+                ((0, 8), (0, 10)),
+            ),
+        ]);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn embedded_resource_uses_its_explicit_dialect(
+            r#"
+            values = ["ok", "wrong"]
+            "#,
+            JsonSchema(serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://example.com/bundle/root.json",
+                "type": "object",
+                "properties": { "values": { "$ref": "resources/tuple" } },
+                "$defs": {
+                    "tuple": {
+                        "$schema": "http://json-schema.org/draft-07/schema#",
+                        "$id": "resources/tuple",
+                        "type": "array",
+                        "items": [
+                            { "type": "string" },
+                            { "type": "integer" }
+                        ],
+                        "additionalItems": false
+                    }
+                }
+            })),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::TypeMismatch {
+                    expected: tombi_schema_store::ValueType::Integer,
+                    actual: tombi_document_tree_syntax::ValueType::String,
+                },
+                ((0, 16), (0, 23)),
+            ),
+        ]);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn json_pointer_reference_still_works(
+            r#"
+            [tool.tombi]
+            "#,
+            JsonSchema({
+                let mut schema = absolute_id_schema();
+                schema["properties"]["tool"]["properties"]["tombi"]["$ref"] =
+                    serde_json::json!("#/$defs/tombi");
+                schema
+            }),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::TableKeyRequired {
+                    key: "strict".to_string(),
+                },
+                ((0, 0), (1, 0)),
+            ),
+        ]);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn relative_dynamic_ref_uses_outer_dynamic_anchor(
+            r#"
+            strict = true
+            [child]
+            strict = 42
+            "#,
+            JsonSchema(serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://example.com/bundle/root.json",
+                "$ref": "resources/strict",
+                "$defs": {
+                    "strict": {
+                        "$id": "resources/strict",
+                        "$dynamicAnchor": "node",
+                        "type": "object",
+                        "properties": {
+                            "strict": { "type": "boolean" },
+                            "child": { "$dynamicRef": "tree#node" }
+                        },
+                        "required": ["strict"]
+                    },
+                    "tree": {
+                        "$id": "resources/tree",
+                        "$dynamicAnchor": "node",
+                        "type": "object"
+                    }
+                }
+            })),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::TypeMismatch {
+                    expected: tombi_schema_store::ValueType::Boolean,
+                    actual: tombi_document_tree_syntax::ValueType::Integer,
+                },
+                ((2, 9), (2, 11)),
+            ),
+        ]);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn dynamic_ref_does_not_override_static_anchor_target(
+            r#"
+            strict = true
+            [child]
+            "#,
+            JsonSchema(serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://example.com/bundle/root.json",
+                "$ref": "resources/strict",
+                "$defs": {
+                    "strict": {
+                        "$id": "resources/strict",
+                        "$dynamicAnchor": "node",
+                        "type": "object",
+                        "properties": {
+                            "strict": { "type": "boolean" },
+                            "child": { "$dynamicRef": "plain#node" }
+                        },
+                        "required": ["strict"]
+                    },
+                    "plain": {
+                        "$id": "resources/plain",
+                        "$anchor": "node",
+                        "type": "object"
+                    }
+                }
+            })),
+        ) -> Ok(_);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn shared_dynamic_ref_uses_each_outer_scope(
+            r#"
+            [one.nested.recurse]
+            marker = 42
+            [two.nested.recurse]
+            marker = "wrong"
+            "#,
+            JsonSchema(serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://example.com/bundle/root.json",
+                "type": "object",
+                "properties": {
+                    "one": { "$ref": "resources/one" },
+                    "two": { "$ref": "resources/two" }
+                },
+                "$defs": {
+                    "one": {
+                        "$id": "resources/one",
+                        "$dynamicAnchor": "node",
+                        "type": "object",
+                        "properties": {
+                            "marker": { "type": "string" },
+                            "nested": { "$ref": "shared" }
+                        }
+                    },
+                    "two": {
+                        "$id": "resources/two",
+                        "$dynamicAnchor": "node",
+                        "type": "object",
+                        "properties": {
+                            "marker": { "type": "integer" },
+                            "nested": { "$ref": "shared" }
+                        }
+                    },
+                    "shared": {
+                        "$id": "resources/shared",
+                        "type": "object",
+                        "properties": {
+                            "recurse": { "$dynamicRef": "fallback#node" }
+                        }
+                    },
+                    "fallback": {
+                        "$id": "resources/fallback",
+                        "$dynamicAnchor": "node",
+                        "type": "object"
+                    }
+                }
+            })),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::TypeMismatch {
+                    expected: tombi_schema_store::ValueType::String,
+                    actual: tombi_document_tree_syntax::ValueType::Integer,
+                },
+                ((1, 9), (1, 11)),
+            ),
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::TypeMismatch {
+                    expected: tombi_schema_store::ValueType::Integer,
+                    actual: tombi_document_tree_syntax::ValueType::String,
+                },
+                ((3, 9), (3, 16)),
+            ),
+        ]);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn cyclic_embedded_resources_terminate(
+            r#"
+            value = 42
+            "#,
+            JsonSchema(serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "shoko://cycle/root",
+                "$ref": "shoko://cycle/a",
+                "$defs": {
+                    "a": {
+                        "$id": "shoko://cycle/a",
+                        "$ref": "shoko://cycle/b",
+                        "type": "object",
+                        "properties": {
+                            "value": { "type": "string" }
+                        }
+                    },
+                    "b": {
+                        "$id": "shoko://cycle/b",
+                        "$ref": "shoko://cycle/a"
+                    }
+                }
+            })),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::TypeMismatch {
+                    expected: tombi_schema_store::ValueType::String,
+                    actual: tombi_document_tree_syntax::ValueType::Integer,
+                },
+                ((0, 8), (0, 10)),
+            ),
+        ]);
+    );
+}
+
+async fn validate_test_suite(
+    schema: JsonValue,
+    toml_text: &str,
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    let temp = tempdir().expect("failed to create temp directory");
+    let schema_path = temp.path().join("schema.json");
+    let source_path = temp.path().join("test.toml");
+
+    fs::write(&schema_path, serde_json::to_vec_pretty(&schema).unwrap()).unwrap();
+    fs::write(&source_path, toml_text).unwrap();
+
+    let schema_store = SchemaStore::new_with_options(SchemaStoreOptions {
+        strict: Some(false.into()),
+        offline: Some(true),
+        cache: None,
+    });
+    let schema_uri = SchemaUri::from_file_path(&schema_path)
+        .expect("failed to convert suite schema path to schema uri");
+    schema_store
+        .associate_schema(
+            schema_uri,
+            vec!["*.toml".to_string()],
+            &AssociateSchemaOptions::default(),
+        )
+        .await;
+
+    let lint_options = LintOptions::default();
+    let linter = Linter::new(
+        TomlVersion::default(),
+        &lint_options,
+        Some(Either::Right(source_path.as_path())),
+        &schema_store,
+    );
+
+    linter.lint(toml_text).await
 }
 
 // =============================================================================

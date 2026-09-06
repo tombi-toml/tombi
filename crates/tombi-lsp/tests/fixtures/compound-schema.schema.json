@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/compound/bundle",
+  "$defs": {
+    "settings": {
+      "$id": "shoko://tombi.dev/settings",
+      "type": "object",
+      "properties": {
+        "strict": {
+          "description": "Strict mode from an embedded schema resource.",
+          "type": "boolean"
+        }
+      },
+      "required": ["strict"],
+      "additionalProperties": false
+    }
+  },
+  "$ref": "shoko://tombi.dev/settings"
+}

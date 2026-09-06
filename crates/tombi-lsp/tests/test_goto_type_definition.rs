@@ -9,6 +9,19 @@ mod goto_type_definition_tests {
     struct ExpectedRange(tombi_text::Range);
     struct ExpectedRanges(Vec<tombi_text::Range>);
 
+    fn compound_schema_path() -> std::path::PathBuf {
+        tombi_test_lib::project_root_path()
+            .join("crates/tombi-lsp/tests/fixtures/compound-schema.schema.json")
+    }
+
+    test_goto_type_definition!(
+        #[tokio::test]
+        async fn embedded_resource_uses_physical_schema_uri(
+            "strict█ = true",
+            SchemaPath(compound_schema_path()),
+        ) -> Ok(compound_schema_path());
+    );
+
     mod strict_priority {
         use super::*;
 
@@ -160,7 +173,7 @@ mod goto_type_definition_tests {
                 "#,
                 SourcePath(tombi_test_lib::project_root_path().join("pyproject.toml")),
                 SchemaPath(pyproject_schema_path()),
-            ) -> Ok("https://json.schemastore.org/partial-taskipy.json");
+            ) -> Ok("https://www.schemastore.org/partial-taskipy.json");
         );
 
         test_goto_type_definition!(

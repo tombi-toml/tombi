@@ -93,6 +93,9 @@ pub enum Error {
         schema_uri: SchemaUri,
     },
 
+    #[error("cyclic schema resource reference: {schema_uri}")]
+    CyclicSchemaReference { schema_uri: SchemaUri },
+
     #[error("unsupported reference: {reference}, schema_uri: {schema_uri}")]
     UnsupportedReference {
         reference: String,
@@ -104,6 +107,12 @@ pub enum Error {
 
     #[error("schema must be an object or boolean: {schema_uri}")]
     SchemaMustBeObjectOrBoolean { schema_uri: SchemaUri },
+
+    #[error("invalid schema resources in {schema_uri}: {reason}")]
+    InvalidSchemaResources {
+        schema_uri: SchemaUri,
+        reason: String,
+    },
 
     #[error(transparent)]
     CacheError(#[from] tombi_cache::Error),

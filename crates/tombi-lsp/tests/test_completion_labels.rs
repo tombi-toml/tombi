@@ -8,8 +8,20 @@ use tombi_test_lib::{
     today_local_date_time, today_local_time, today_offset_date_time,
 };
 
+fn compound_schema_path() -> std::path::PathBuf {
+    project_root_path().join("crates/tombi-lsp/tests/fixtures/compound-schema.schema.json")
+}
+
 mod completion_labels {
     use super::*;
+
+    test_completion_labels! {
+        #[tokio::test]
+        async fn embedded_resource_with_absolute_id(
+            "█",
+            SchemaPath(compound_schema_path()),
+        ) -> Ok(["strict"]);
+    }
 
     test_completion_labels! {
         #[tokio::test]

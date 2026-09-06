@@ -17,6 +17,28 @@ fn tombi_document_link_all_enabled_config_path() -> std::path::PathBuf {
 mod document_link_tests {
     use super::*;
 
+    mod compound_schema {
+        use super::*;
+
+        test_document_link!(
+            #[tokio::test]
+            async fn embedded_resource_schema_links_to_physical_bundle(
+                "#:schema crates/tombi-lsp/tests/fixtures/compound-schema.schema.json\nstrict = true",
+                SourcePath(project_root_path().join("compound-schema.toml")),
+                SchemaPath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/compound-schema.schema.json"
+                )),
+            ) -> Ok(Some(vec![
+                {
+                    path: project_root_path().join(
+                        "crates/tombi-lsp/tests/fixtures/compound-schema.schema.json"
+                    ),
+                    range: 0:9..0:68
+                }
+            ]));
+        );
+    }
+
     mod cargo_schema {
         use super::*;
 

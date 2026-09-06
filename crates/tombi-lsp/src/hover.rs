@@ -79,8 +79,12 @@ pub(super) fn schema_link_uri(
 pub(super) fn current_schema_link_uri(
     current_schema: Option<&CurrentSchema<'_>>,
 ) -> Option<SchemaUri> {
-    current_schema
-        .map(|schema| schema_link_uri(schema.schema_uri.as_ref(), schema.schema_view.range()))
+    current_schema.map(|schema| {
+        schema_link_uri(
+            schema.source_schema_uri().as_ref(),
+            schema.schema_view.range(),
+        )
+    })
 }
 
 fn merge_optional_vec<T: PartialEq>(

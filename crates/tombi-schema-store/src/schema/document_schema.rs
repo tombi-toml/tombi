@@ -28,6 +28,10 @@ pub struct DocumentSchema {
     pub definitions: SchemaDefinitions,
     pub anchors: SchemaAnchors,
     pub dynamic_anchors: SchemaDynamicAnchors,
+    /// Generation that owns this physical document. This intentionally differs
+    /// from `definitions.generation()` when a root `$ref` evaluates in another
+    /// document's context.
+    pub(crate) owner_generation: Option<Arc<crate::store::SchemaGeneration>>,
 }
 
 impl DocumentSchema {
@@ -37,57 +41,121 @@ impl DocumentSchema {
         strict: Option<BoolDefaultTrue>,
         schema_store: &SchemaStore,
     ) -> Self {
-        match node {
-            tombi_json::ValueNode::Object(object) => {
-                Self::new_from_object(object, schema_uri, strict, schema_store).await
-            }
-            tombi_json::ValueNode::Bool(bool) => Self {
-                id: None,
-                schema_uri,
-                strict,
-                dialect: None,
-                toml_version: None,
-                string_formats: None,
-                format_assertion: true,
-                schema_view: Some(Arc::new(super::bool_schema_view(bool.value, bool.range))),
-                semantic_schema: SemanticSchema::from_value_node(
-                    &tombi_json::ValueNode::Bool(bool),
-                    None,
-                )
-                .map(Arc::new),
-                definitions: SchemaDefinitions::new(Default::default()),
-                anchors: SchemaAnchors::new(Default::default()),
-                dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
-            },
-            _ => Self {
-                id: None,
-                schema_uri,
-                strict,
-                dialect: None,
-                toml_version: None,
-                string_formats: None,
-                format_assertion: true,
-                schema_view: None,
-                semantic_schema: None,
-                definitions: SchemaDefinitions::new(Default::default()),
-                anchors: SchemaAnchors::new(Default::default()),
-                dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
-            },
-        }
+        Self::new_indexed(&node, schema_uri, None, None, None, strict, schema_store).await
     }
 
-    async fn new_from_object(
-        object: tombi_json::ObjectNode,
+    pub(crate) async fn new_indexed(
+        node: &tombi_json::ValueNode,
         schema_uri: SchemaUri,
+        resolved_id: Option<SchemaUri>,
+        inherited_dialect: Option<JsonSchemaDialect>,
+        generation: Option<Arc<crate::store::SchemaGeneration>>,
         strict: Option<BoolDefaultTrue>,
         schema_store: &SchemaStore,
     ) -> Self {
-        let id = resolve_schema_id(&object, &schema_uri);
+        match node {
+            tombi_json::ValueNode::Object(object) => {
+                Self::new_from_object(
+                    object,
+                    schema_uri,
+                    resolved_id,
+                    inherited_dialect,
+                    generation,
+                    strict,
+                    schema_store,
+                )
+                .await
+            }
+            tombi_json::ValueNode::Bool(bool) => {
+                let owner_generation = generation.clone();
+                let definitions = SchemaDefinitions::new(Default::default())
+                    .with_source_schema_uri(schema_uri.clone());
+                let definitions = generation.map_or(definitions.clone(), |generation| {
+                    definitions.with_generation(generation)
+                });
+                Self {
+                    id: resolved_id,
+                    schema_uri: schema_uri.clone(),
+                    strict,
+                    dialect: None,
+                    toml_version: None,
+                    string_formats: None,
+                    format_assertion: true,
+                    schema_view: Some(Arc::new(super::bool_schema_view(bool.value, bool.range))),
+                    semantic_schema: SemanticSchema::from_value_node(node, None).map(Arc::new),
+                    definitions,
+                    anchors: SchemaAnchors::new(Default::default()),
+                    dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
+                    owner_generation,
+                }
+            }
+            _ => {
+                let owner_generation = generation.clone();
+                let definitions = SchemaDefinitions::new(Default::default())
+                    .with_source_schema_uri(schema_uri.clone());
+                let definitions = generation.map_or(definitions.clone(), |generation| {
+                    definitions.with_generation(generation)
+                });
+                Self {
+                    id: resolved_id,
+                    schema_uri: schema_uri.clone(),
+                    strict,
+                    dialect: None,
+                    toml_version: None,
+                    string_formats: None,
+                    format_assertion: true,
+                    schema_view: None,
+                    semantic_schema: None,
+                    definitions,
+                    anchors: SchemaAnchors::new(Default::default()),
+                    dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
+                    owner_generation,
+                }
+            }
+        }
+    }
 
-        let dialect = object.get("$schema").and_then(|value| match value {
-            tombi_json::ValueNode::String(s) => JsonSchemaDialect::try_from(s.value.as_str()).ok(),
-            _ => None,
-        });
+    pub(crate) async fn new_embedded(
+        node: &tombi_json::ValueNode,
+        source_schema_uri: SchemaUri,
+        canonical_uri: SchemaUri,
+        inherited_dialect: Option<JsonSchemaDialect>,
+        generation: Arc<crate::store::SchemaGeneration>,
+        strict: Option<BoolDefaultTrue>,
+        schema_store: &SchemaStore,
+    ) -> Self {
+        Self::new_indexed(
+            node,
+            source_schema_uri,
+            Some(canonical_uri),
+            inherited_dialect,
+            Some(generation),
+            strict,
+            schema_store,
+        )
+        .await
+    }
+
+    async fn new_from_object(
+        object: &tombi_json::ObjectNode,
+        schema_uri: SchemaUri,
+        resolved_id: Option<SchemaUri>,
+        inherited_dialect: Option<JsonSchemaDialect>,
+        generation: Option<Arc<crate::store::SchemaGeneration>>,
+        strict: Option<BoolDefaultTrue>,
+        schema_store: &SchemaStore,
+    ) -> Self {
+        let id = resolved_id.or_else(|| resolve_schema_id(object, &schema_uri));
+
+        let dialect = object
+            .get("$schema")
+            .and_then(|value| match value {
+                tombi_json::ValueNode::String(s) => {
+                    JsonSchemaDialect::try_from(s.value.as_str()).ok()
+                }
+                _ => None,
+            })
+            .or(inherited_dialect);
 
         let toml_version = object.get(X_TOMBI_TOML_VERSION).and_then(|obj| match obj {
             tombi_json::ValueNode::String(version) => TomlVersion::from_str(&version.value).ok(),
@@ -119,10 +187,10 @@ impl DocumentSchema {
         let format_assertion = match dialect {
             Some(JsonSchemaDialect::Draft07) | None => true,
             Some(JsonSchemaDialect::Draft2019_09) => {
-                has_enabled_vocabulary(&object, FORMAT_2019_VOCAB)
+                has_enabled_vocabulary(object, FORMAT_2019_VOCAB)
             }
             Some(JsonSchemaDialect::Draft2020_12) => {
-                has_enabled_vocabulary(&object, FORMAT_ASSERTION_2020_VOCAB)
+                has_enabled_vocabulary(object, FORMAT_ASSERTION_2020_VOCAB)
             }
         };
 
@@ -134,7 +202,7 @@ impl DocumentSchema {
         // The root value schema may itself be a `$ref`. A direct schema resolves to an
         // `Arc` immediately; a root `$ref` is resolved below once the definitions are built.
         let (mut schema_view, semantic_schema, root_ref) = match Referable::new(
-            &object,
+            object,
             string_formats.as_deref(),
             dialect,
             collect_anchor.then_some(&mut anchors),
@@ -147,7 +215,7 @@ impl DocumentSchema {
             }) => (Some(value), semantic_schema, None),
             Some(root_ref @ Referable::Ref { .. }) => (
                 None,
-                Some(Arc::new(SemanticSchema::from_object_node(&object, dialect))),
+                Some(Arc::new(SemanticSchema::from_object_node(object, dialect))),
                 Some(root_ref),
             ),
             None => (None, None, None),
@@ -191,6 +259,13 @@ impl DocumentSchema {
             }
         }
 
+        let source_schema_uri = schema_uri.clone();
+        let definitions =
+            SchemaDefinitions::new(definitions.into()).with_source_schema_uri(source_schema_uri);
+        let owner_generation = generation.clone();
+        let definitions = generation.map_or(definitions.clone(), |generation| {
+            definitions.with_generation(generation)
+        });
         let mut document_schema = Self {
             id,
             schema_uri,
@@ -201,9 +276,10 @@ impl DocumentSchema {
             format_assertion,
             schema_view,
             semantic_schema,
-            definitions: SchemaDefinitions::new(definitions.into()),
+            definitions,
             anchors: SchemaAnchors::new(anchors.into()),
             dynamic_anchors: SchemaDynamicAnchors::new(dynamic_anchors.into()),
+            owner_generation,
         };
 
         // Resolve a root-level `$ref` once at load time so the document exposes a usable
@@ -222,11 +298,22 @@ impl DocumentSchema {
                 Ok(resolved) => {
                     if let Some(current_schema) = resolved {
                         document_schema.semantic_schema = current_schema.semantic_schema;
+                        document_schema.definitions = current_schema.definitions.into_owned();
                         Some(current_schema.schema_view)
                     } else {
                         None
                     }
                 }
+                Err(crate::Error::CyclicSchemaReference { .. }) => document_schema
+                    .semantic_schema
+                    .as_deref()
+                    .and_then(|schema| {
+                        schema.schema_view_for_type(
+                            super::SchemaType::Object,
+                            document_schema.string_formats.as_deref(),
+                        )
+                    })
+                    .map(Arc::new),
                 Err(error) => {
                     log::warn!(
                         "failed to resolve root $ref for {}: {error}",

@@ -136,7 +136,7 @@ impl GetTypeDefinition for tombi_schema_store::LocalDateSchema {
     ) -> tombi_future::BoxFuture<'b, Vec<TypeDefinition>> {
         async move {
             current_schema.map_or_else(Vec::new, |schema| {
-                let mut schema_uri = schema.schema_uri.as_ref().clone();
+                let mut schema_uri = schema.source_schema_uri().into_owned();
                 schema_uri.set_fragment(Some(&format!("L{}", self.range.start.line + 1)));
 
                 vec![TypeDefinition {

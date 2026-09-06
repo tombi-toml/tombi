@@ -304,7 +304,8 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Table {
                                     )
                                     .await
                             } else {
-                                let mut schema_uri = current_schema.schema_uri.as_ref().clone();
+                                let mut schema_uri =
+                                    current_schema.source_schema_uri().into_owned();
                                 schema_uri.set_fragment(Some(&format!(
                                     "L{}",
                                     key.range().start.line + 1
@@ -432,7 +433,7 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Table {
                         .await
                     }
                     _ => vec![TypeDefinition {
-                        schema_uri: current_schema.schema_uri.as_ref().clone(),
+                        schema_uri: current_schema.source_schema_uri().into_owned(),
                         schema_accessors: accessors.iter().map(Into::into).collect_vec(),
                         range: tombi_text::Range::default(),
                     }],
@@ -475,7 +476,7 @@ impl GetTypeDefinition for TableSchema {
     ) -> tombi_future::BoxFuture<'b, Vec<TypeDefinition>> {
         async move {
             current_schema.map_or_else(Vec::new, |schema| {
-                let mut schema_uri = schema.schema_uri.as_ref().clone();
+                let mut schema_uri = schema.source_schema_uri().into_owned();
                 schema_uri.set_fragment(Some(&format!("L{}", self.range.start.line + 1)));
 
                 vec![TypeDefinition {

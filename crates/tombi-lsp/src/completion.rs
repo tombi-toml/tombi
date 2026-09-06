@@ -360,7 +360,7 @@ pub(super) fn take_completion_schema_tooltip(
     if item.schema_uri.as_ref() == Some(current_schema.schema_uri.as_ref()) {
         item.schema_uri = Some(
             tombi_extension::get_schema_link_uri(
-                current_schema.schema_uri.as_ref(),
+                current_schema.source_schema_uri().as_ref(),
                 current_schema.schema_view.range().start,
             )
             .into(),
