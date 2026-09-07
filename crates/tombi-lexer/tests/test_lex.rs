@@ -470,6 +470,16 @@ test_lex_token! {
 
 test_lex_token! {
     #[test]
+    fn multi_line_basic_string6(r#""""C:\\""""#) -> Ok(Token(MULTI_LINE_BASIC_STRING, (0, 10)));
+}
+
+test_lex_token! {
+    #[test]
+    fn multi_line_basic_string7(r#""""a\\\\""""#) -> Ok(Token(MULTI_LINE_BASIC_STRING, (0, 11)));
+}
+
+test_lex_token! {
+    #[test]
     fn invalid_multi_line_basic_string  (r#"""""""""""#) -> Err(
         Token(InvalidMultilineBasicString, (0, 9))
     );

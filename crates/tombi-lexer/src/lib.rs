@@ -438,8 +438,10 @@ impl Cursor<'_> {
                         self.pop_span_range(),
                     ));
                 }
+                // A backslash escapes the next character only when it is not
+                // itself escaped, so a run of backslashes toggles the flag.
                 '\\' => {
-                    was_quote = true;
+                    was_quote = !was_quote;
                 }
                 _ => {
                     was_quote = false;
