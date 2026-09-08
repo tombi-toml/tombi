@@ -176,7 +176,37 @@ mod test {
             windows_path = """C:\\Users\\"""
             after = 1
             "#
-        ) -> Ok(|root| -> root.key_values().count() == 2)
+        ) -> Ok(|root| -> {
+            use tombi_ast::{KeyNode as _, ValueNode as _};
+            use tombi_toml_version::TomlVersion;
+
+            let mut key_values = root.key_values();
+            match (key_values.next(), key_values.next()) {
+                (Some(windows_path), Some(after)) => {
+                    windows_path.keys().is_some_and(|keys| {
+                        keys.keys().next().is_some_and(|key| {
+                            key.content(TomlVersion::V1_0_0).as_deref()
+                                == Some("windows_path")
+                        })
+                    }) && windows_path.value().is_some_and(|value| {
+                        matches!(
+                            value.value(TomlVersion::V1_0_0),
+                            Some(tombi_ast::Value::String(value)) if value == "C:\\Users\\"
+                        )
+                    }) && after.keys().is_some_and(|keys| {
+                        keys.keys().next().is_some_and(|key| {
+                            key.content(TomlVersion::V1_0_0).as_deref() == Some("after")
+                        })
+                    }) && after.value().is_some_and(|value| {
+                        matches!(
+                            value.value(TomlVersion::V1_0_0),
+                            Some(tombi_ast::Value::Integer(1))
+                        )
+                    }) && key_values.next().is_none()
+                }
+                _ => false,
+            }
+        })
     }
 
     test_parser! {
