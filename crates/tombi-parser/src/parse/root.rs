@@ -171,6 +171,16 @@ mod test {
 
     test_parser! {
         #[test]
+        fn multiline_basic_string_ending_in_escaped_backslash_preserves_following_key(
+            r#"
+            windows_path = """C:\\Users\\"""
+            after = 1
+            "#
+        ) -> Ok(|root| -> root.key_values().count() == 2)
+    }
+
+    test_parser! {
+        #[test]
         fn resolves_ascii_eof_after_standalone_carriage_return(
             "a\r"
         ) -> RawAssert(|parsed| {
