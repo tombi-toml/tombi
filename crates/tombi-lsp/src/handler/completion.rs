@@ -1,9 +1,7 @@
 use itertools::Either;
 use tombi_extension::{CommentContext, CompletionContent, CompletionHint};
 use tombi_text::IntoLsp;
-use tower_lsp::lsp_types::{
-    CompletionContext, CompletionParams, CompletionTriggerKind, TextDocumentPositionParams,
-};
+use tower_lsp::lsp_types::{CompletionParams, TextDocumentPositionParams};
 
 use crate::{
     backend,
@@ -27,7 +25,6 @@ pub async fn handle_completion(
                 text_document,
                 position,
             },
-        context,
         ..
     } = params;
 
@@ -82,28 +79,6 @@ pub async fn handle_completion(
         .await
         .ok()
         .flatten();
-
-    let root_schema = source_schema
-        .as_ref()
-        .and_then(|schema| schema.root_schema.as_deref());
-
-    // Skip completion if the trigger character is a whitespace or if there is no schema.
-    if let Some(CompletionContext {
-        trigger_kind: CompletionTriggerKind::TRIGGER_CHARACTER,
-        trigger_character: Some(trigger_character),
-        ..
-    }) = context
-        && trigger_character == "\n"
-    {
-        let pos_line = position.line as usize;
-        if pos_line > 0
-            && let Some(prev_line) = &document_source.text().lines().nth(pos_line - 1)
-            && (prev_line.trim().is_empty() || root_schema.is_none())
-        {
-            log::trace!("completion skipped due to consecutive line breaks");
-            return Ok(None);
-        }
-    }
 
     let document_tree = document_source.document_tree();
     let position = position.into_lsp(line_index);
