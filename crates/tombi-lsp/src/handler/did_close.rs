@@ -29,14 +29,7 @@ pub async fn handle_did_close(backend: &Backend, params: DidCloseTextDocumentPar
         .config_schema_store_for_uri(text_document_uri)
         .await;
 
-    if !config
-        .lsp
-        .as_ref()
-        .and_then(|server| server.workspace_diagnostic.as_ref())
-        .and_then(|workspace_diagnostic| workspace_diagnostic.enabled)
-        .unwrap_or_default()
-        .value()
-    {
+    if !crate::workspace_config::is_workspace_diagnostic_enabled(&config) {
         backend
             .client
             .publish_diagnostics(text_document.uri, Vec::new(), None)

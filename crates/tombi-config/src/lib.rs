@@ -24,7 +24,7 @@ pub use schema::{
     SchemaOverrideItem, SchemaOverrideLintOptions, SchemaOverrideLintRules,
     SchemaOverrideTableKeysOrderRule, SchemaTableKeysOrderRule, SubSchema,
 };
-pub use server::{LspCompletion, LspDiagnostic, LspOptions};
+pub use server::{LspCompletion, LspDiagnostic, LspOptions, LspWorkspaceDiagnostic};
 pub use tombi_severity_level::SeverityLevel;
 pub use tombi_toml_version::TomlVersion;
 pub use tombi_x_keyword::{ArrayValuesOrder, TableKeysOrder};

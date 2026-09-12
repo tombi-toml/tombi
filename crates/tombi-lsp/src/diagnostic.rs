@@ -50,14 +50,7 @@ pub async fn get_diagnostics_result(
         .config_schema_store_for_uri(text_document_uri)
         .await;
 
-    if !config
-        .lsp
-        .as_ref()
-        .and_then(|lsp| lsp.diagnostic.as_ref())
-        .and_then(|diagnostic| diagnostic.enabled)
-        .unwrap_or_default()
-        .value()
-    {
+    if !crate::workspace_config::is_diagnostic_enabled(&config) {
         log::debug!("`lsp.diagnostic.enabled` is false");
         return None;
     }

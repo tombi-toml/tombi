@@ -16,13 +16,7 @@ pub struct WorkspaceConfig {
 impl WorkspaceConfig {
     #[inline]
     pub fn is_workspace_diagnostic_enabled(&self) -> bool {
-        self.config
-            .lsp
-            .as_ref()
-            .and_then(|lsp| lsp.workspace_diagnostic.as_ref())
-            .and_then(|workspace_diagnostic| workspace_diagnostic.enabled)
-            .unwrap_or_default()
-            .value()
+        is_workspace_diagnostic_enabled(&self.config)
     }
 
     #[inline]
@@ -94,6 +88,39 @@ pub async fn get_workspace_configs(backend: &Backend) -> Option<Vec<WorkspaceCon
     }
 
     Some(configs)
+}
+
+/// Whether the workspace diagnostic feature is enabled for the given config.
+///
+/// Workspace diagnostics are computed through the same pipeline as document diagnostics,
+/// so `lsp.diagnostic.enabled = false` disables them as well.
+/// Without this, the whole workspace would still be crawled and linted only to
+/// throw the results away.
+#[inline]
+pub fn is_workspace_diagnostic_enabled(config: &Config) -> bool {
+    if !is_diagnostic_enabled(config) {
+        return false;
+    }
+
+    config
+        .lsp
+        .as_ref()
+        .and_then(|lsp| lsp.workspace_diagnostic.as_ref())
+        .and_then(|workspace_diagnostic| workspace_diagnostic.enabled)
+        .unwrap_or_default()
+        .value()
+}
+
+/// Whether the document diagnostic feature is enabled for the given config.
+#[inline]
+pub fn is_diagnostic_enabled(config: &Config) -> bool {
+    config
+        .lsp
+        .as_ref()
+        .and_then(|lsp| lsp.diagnostic.as_ref())
+        .and_then(|diagnostic| diagnostic.enabled)
+        .unwrap_or_default()
+        .value()
 }
 
 pub fn is_workspace_target(
@@ -176,4 +203,56 @@ mod tests {
 
     test_workspace_ignore!(workspace_ignore_respects_gitignore, true, true);
     test_workspace_ignore!(workspace_ignore_disabled, false, false);
+
+    macro_rules! test_workspace_diagnostic_enabled {
+        ($name:ident, diagnostic = $diagnostic:expr, workspace_diagnostic = $workspace_diagnostic:expr, $expected:literal) => {
+            #[test]
+            fn $name() {
+                let mut config = Config::default();
+                config.lsp = Some(tombi_config::LspOptions {
+                    diagnostic: $diagnostic.map(|enabled: bool| tombi_config::LspDiagnostic {
+                        enabled: Some(enabled.into()),
+                    }),
+                    workspace_diagnostic: $workspace_diagnostic.map(|enabled: bool| {
+                        tombi_config::LspWorkspaceDiagnostic {
+                            enabled: Some(enabled.into()),
+                        }
+                    }),
+                    ..Default::default()
+                });
+
+                assert_eq!(is_workspace_diagnostic_enabled(&config), $expected);
+            }
+        };
+    }
+
+    test_workspace_diagnostic_enabled!(
+        workspace_diagnostic_enabled_by_default,
+        diagnostic = None,
+        workspace_diagnostic = None,
+        true
+    );
+
+    // `lsp.diagnostic.enabled = false` must also stop workspace diagnostics,
+    // otherwise the whole workspace is crawled and linted only to discard the results.
+    test_workspace_diagnostic_enabled!(
+        workspace_diagnostic_follows_disabled_diagnostic,
+        diagnostic = Some(false),
+        workspace_diagnostic = None,
+        false
+    );
+
+    test_workspace_diagnostic_enabled!(
+        workspace_diagnostic_disabled_even_if_explicitly_enabled,
+        diagnostic = Some(false),
+        workspace_diagnostic = Some(true),
+        false
+    );
+
+    test_workspace_diagnostic_enabled!(
+        workspace_diagnostic_disabled_alone,
+        diagnostic = Some(true),
+        workspace_diagnostic = Some(false),
+        false
+    );
 }

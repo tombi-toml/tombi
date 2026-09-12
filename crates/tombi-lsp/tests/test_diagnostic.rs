@@ -26,6 +26,30 @@ mod diagnostic {
         );
     }
 
+    mod issue_2173_lsp_diagnostic_disabled {
+        use std::path::PathBuf;
+
+        use super::*;
+        use tombi_test_lib::project_root_path;
+
+        fn fixture_path() -> PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-2173-lsp-diagnostic-disabled")
+        }
+
+        test_diagnostic_file!(
+            #[tokio::test]
+            async fn unknown_key_is_suppressed(
+                r#"
+                [settings]
+                foo = 123
+                "#,
+                SourcePath(fixture_path().join("target.toml")),
+                ConfigPath(fixture_path().join("tombi.toml")),
+            ) -> Ok([]);
+        );
+    }
+
     /// Test for issue #1495: Local schema and subdirectories
     /// https://github.com/tombi-toml/tombi/issues/1495
     mod issue_1495_subdirectory_glob {
