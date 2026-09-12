@@ -33,6 +33,7 @@ export const SUPPORT_JSON_LANGUAGES = ["json"];
 export const TOMBI_DEV_VERSION = "0.0.0-dev";
 const OPEN_TOOLTIP_LINK_COMMAND = `${EXTENSION_ID}.openTooltipLink`;
 const MIN_VERSION_FOR_TOMBI_TOOLTIP_LINK = "0.11.2";
+const STATUS_BAR_ITEM_ID = `${EXTENSION_ID}.status`;
 
 export class Extension {
   private statusBarItem: vscode.StatusBarItem;
@@ -43,9 +44,13 @@ export class Extension {
     private client: node.LanguageClient,
     private server: Server,
   ) {
+    // NOTE: The `id` is required for VSCode to persist the user's
+    //       show/hide preference from the status bar context menu.
     this.statusBarItem = vscode.window.createStatusBarItem(
+      STATUS_BAR_ITEM_ID,
       vscode.StatusBarAlignment.Left,
     );
+    this.statusBarItem.name = `${EXTENSION_NAME} Status`;
     this.context.subscriptions.push(this.statusBarItem);
 
     this.registerEvents();
