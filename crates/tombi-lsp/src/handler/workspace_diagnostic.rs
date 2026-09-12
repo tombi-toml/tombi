@@ -19,9 +19,6 @@ pub async fn handle_workspace_diagnostic(
     backend: &Backend,
     params: WorkspaceDiagnosticParams,
 ) -> Result<WorkspaceDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_workspace_diagnostic");
-    log::trace!("{:?}", params);
-
     let previous_result_ids = params
         .previous_result_ids
         .into_iter()
@@ -29,6 +26,16 @@ pub async fn handle_workspace_diagnostic(
         .collect::<tombi_hashmap::HashMap<_, _>>();
 
     let targets = collect_workspace_diagnostic_targets(backend).await;
+
+    if targets.is_empty() && previous_result_ids.is_empty() {
+        return Ok(WorkspaceDiagnosticReportResult::Report(
+            WorkspaceDiagnosticReport { items: Vec::new() },
+        ));
+    }
+
+    log::info!("handle_workspace_diagnostic");
+    log::trace!("previous_result_ids: {previous_result_ids:?}");
+
     let target_set = targets
         .iter()
         .cloned()

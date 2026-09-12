@@ -9,7 +9,6 @@ pub async fn handle_goto_definition(
     backend: &Backend,
     params: GotoDefinitionParams,
 ) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_goto_definition");
     log::trace!("{:?}", params);
 
     let GotoDefinitionParams {
@@ -38,6 +37,8 @@ pub async fn handle_goto_definition(
         log::debug!("`server.goto_definition.enabled` is false");
         return Ok(Default::default());
     }
+
+    log::info!("handle_goto_definition");
 
     let Ok(document_sources) = backend.document_sources.try_read() else {
         return Ok(Default::default());

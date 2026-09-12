@@ -39,7 +39,6 @@ pub async fn handle_goto_type_definition(
     backend: &Backend,
     params: GotoTypeDefinitionParams,
 ) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_goto_type_definition");
     log::trace!("{:?}", params);
 
     let GotoTypeDefinitionParams {
@@ -73,6 +72,8 @@ pub async fn handle_goto_type_definition(
         log::debug!("`server.goto_type_definition.enabled` is false");
         return Ok(Default::default());
     }
+
+    log::info!("handle_goto_type_definition");
 
     let Ok(document_sources) = backend.document_sources.try_read() else {
         return Ok(Default::default());

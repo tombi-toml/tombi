@@ -19,10 +19,16 @@ pub async fn push_workspace_diagnostics(
     backend: &Backend,
     options: &WorkspaceDiagnosticOptions,
 ) -> Result<(), tower_lsp::jsonrpc::Error> {
+    let targets = collect_workspace_diagnostic_targets(backend).await;
+
+    if targets.is_empty() {
+        return Ok(());
+    }
+
     log::info!("push_workspace_diagnostics");
     log::trace!("{:?}", options);
 
-    for text_document_uri in collect_workspace_diagnostic_targets(backend).await {
+    for text_document_uri in targets {
         publish_workspace_diagnostics(backend, text_document_uri, options).await;
     }
 

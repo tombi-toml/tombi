@@ -12,7 +12,6 @@ pub async fn handle_formatting(
     backend: &Backend,
     params: DocumentFormattingParams,
 ) -> Result<Option<Vec<TextEdit>>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_formatting");
     log::trace!("{:?}", params);
 
     let DocumentFormattingParams {
@@ -42,6 +41,8 @@ pub async fn handle_formatting(
         log::debug!("`server.formatting.enabled` is false");
         return Ok(None);
     }
+
+    log::info!("handle_formatting");
 
     if let Ok(text_document_path) = text_document_uri.to_file_path() {
         match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {

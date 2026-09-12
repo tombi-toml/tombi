@@ -10,7 +10,6 @@ pub async fn handle_references(
     backend: &Backend,
     params: ReferenceParams,
 ) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_references");
     log::trace!("{:?}", params);
 
     let ReferenceParams {
@@ -40,6 +39,8 @@ pub async fn handle_references(
         log::debug!("`server.references.enabled` is false");
         return Ok(None);
     }
+
+    log::info!("handle_references");
 
     let Ok(document_sources) = backend.document_sources.try_read() else {
         return Ok(None);
