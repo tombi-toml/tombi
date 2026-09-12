@@ -50,8 +50,6 @@ pub async fn handle_completion(
         return Ok(None);
     }
 
-    log::info!("handle_completion");
-
     if !config
         .schema
         .as_ref()
@@ -62,6 +60,8 @@ pub async fn handle_completion(
         log::debug!("`schema.enabled` is false");
         return Ok(None);
     }
+
+    log::info!("handle_completion");
 
     let Ok(document_sources) = backend.document_sources.try_read() else {
         return Ok(None);
