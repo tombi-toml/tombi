@@ -16,7 +16,6 @@ pub async fn handle_hover(
     backend: &backend::Backend,
     params: HoverParams,
 ) -> Result<Option<HoverContent>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_hover");
     log::trace!("{:?}", params);
 
     let HoverParams {
@@ -49,6 +48,8 @@ pub async fn handle_hover(
         log::debug!("`server.hover.enabled` is false");
         return Ok(None);
     }
+
+    log::info!("handle_hover");
 
     let Ok(document_sources) = backend.document_sources.try_read() else {
         return Ok(None);

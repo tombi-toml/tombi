@@ -9,7 +9,6 @@ pub async fn handle_document_link(
     backend: &Backend,
     params: DocumentLinkParams,
 ) -> Result<Option<Vec<DocumentLink>>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_document_link");
     log::trace!("{:?}", params);
 
     let DocumentLinkParams { text_document, .. } = params;
@@ -31,6 +30,8 @@ pub async fn handle_document_link(
         log::debug!("`server.document_link.enabled` is false");
         return Ok(None);
     }
+
+    log::info!("handle_document_link");
 
     let Ok(document_sources) = backend.document_sources.try_read() else {
         return Ok(None);

@@ -16,7 +16,6 @@ pub async fn handle_completion(
     backend: &backend::Backend,
     params: CompletionParams,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
-    log::info!("handle_completion");
     log::trace!("{:?}", params);
 
     let CompletionParams {
@@ -61,6 +60,8 @@ pub async fn handle_completion(
         log::debug!("`schema.enabled` is false");
         return Ok(None);
     }
+
+    log::info!("handle_completion");
 
     let Ok(document_sources) = backend.document_sources.try_read() else {
         return Ok(None);
