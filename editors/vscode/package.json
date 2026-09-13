@@ -50,7 +50,7 @@
     "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.28.1",
     "ovsx": "^0.10.11",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.11"
   },
   "activationEvents": [
     "onLanguage:cargoLock",
