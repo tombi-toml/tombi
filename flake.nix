@@ -49,6 +49,8 @@
             (craneLib.fileset.commonCargoSources unfilteredRoot)
             # Also keep any JSON files
             (nixpkgs.lib.fileset.fileFilter (file: file.hasExt "json") unfilteredRoot)
+            # Suite pin used by include_str! in json-schema-test
+            ./json-schema-test/src/SUITE_PIN
           ];
         };
 

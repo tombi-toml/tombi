@@ -30,7 +30,7 @@ description: "現在のローカル差分を検証し、Codex または Claude C
 
 ### 2. ローカルの独立サブエージェントにレビューを依頼する
 
-実行中のハーネスに応じて、Codex または Claude Code のサブエージェント機能で `review-quality` エージェントを起動する。親エージェント自身の自己レビューだけで代替しない。
+実行中のハーネスに応じて、Codex / Claude Code / Cursor のサブエージェント機能で `review-quality` エージェントを起動する。親エージェント自身の自己レビューだけで代替しない。利用制限で起動できない場合の扱いは Step 3 を参照する。
 
 サブエージェントには次を渡す。
 
@@ -51,7 +51,9 @@ description: "現在のローカル差分を検証し、Codex または Claude C
 - fingerprint が変わった場合、以前のレビュー結果を再利用せず、新しいサブエージェントで Step 2 をやり直す
 - 仕様判断が必要で解消できない finding は、PR を作成せずユーザーに確認する
 
-レビュー結果が空、失敗、権限不足、タイムアウトなどで有効な判定を得られない場合も fail closed とし、PR を作成しない。
+レビュー結果が空、失敗、権限不足、タイムアウトなどで有効な判定を得られない場合は fail closed とし、PR を作成しない。
+
+例外: `review-quality` サブエージェント（Codex / Claude Code / Cursor のいずれでも）が利用制限・quota 超過・`out of usage` などで起動できない、または途中で打ち切られた場合は、独立レビュー結果がなくてもゲートを通過してよい。その旨を記録し、Step 4 へ進む。ローカル検証（Step 1）は省略しない。
 
 ### 4. PR を作成する
 
@@ -98,7 +100,7 @@ PR 作成後の `main` 取り込み、CI 修正、review 対応などで head tr
 
 ## 出力
 
-- 利用したローカル review subagent
+- 利用したローカル review subagent（利用制限でスキップした場合はその旨）
 - 承認済み review base OID、review fingerprint、finding の有無
 - 実行した検証
 - branch、commit、PR URL、label

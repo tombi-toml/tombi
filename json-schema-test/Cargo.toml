@@ -1,0 +1,30 @@
+[package]
+name = "json-schema-test"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "json-schema-test"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+flate2.workspace = true
+itertools.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tar.workspace = true
+tempfile.workspace = true
+tokio = { workspace = true, features = ["fs", "macros", "rt-multi-thread"] }
+tombi-config.workspace = true
+tombi-diagnostic.workspace = true
+tombi-linter.workspace = true
+tombi-schema-store = { workspace = true, features = ["ast-syntax", "native"] }
+
+[lints]
+workspace = true

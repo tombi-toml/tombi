@@ -1,0 +1,281 @@
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
+
+use anyhow::{Context, Result, bail};
+use flate2::read::GzDecoder;
+use tar::Archive;
+
+/// Pinned upstream commit of json-schema-org/JSON-Schema-Test-Suite.
+pub const SUITE_COMMIT: &str = include_str!("SUITE_PIN");
+
+const SUITE_ARCHIVE_URL: &str = "https://github.com/json-schema-org/JSON-Schema-Test-Suite/archive";
+
+pub fn suite_commit() -> &'static str {
+    SUITE_COMMIT.trim()
+}
+
+pub fn vendor_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("vendor")
+}
+
+pub fn suite_dir() -> PathBuf {
+    vendor_dir().join("JSON-Schema-Test-Suite")
+}
+
+pub fn ensure_suite() -> Result<PathBuf> {
+    let vendor = vendor_dir();
+    let suite = suite_dir();
+    let pin_path = vendor.join("COMMIT");
+    let commit = suite_commit();
+
+    if suite.join("tests").is_dir()
+        && pin_path
+            .exists()
+            .then(|| fs::read_to_string(&pin_path).ok())
+            .flatten()
+            .is_some_and(|pinned| pinned.trim() == commit)
+    {
+        return Ok(suite);
+    }
+
+    if vendor.exists() {
+        fs::remove_dir_all(&vendor).with_context(|| {
+            format!(
+                "failed to remove stale suite vendor at {}",
+                vendor.display()
+            )
+        })?;
+    }
+    fs::create_dir_all(&vendor)
+        .with_context(|| format!("failed to create vendor dir {}", vendor.display()))?;
+
+    eprintln!("Fetching JSON-Schema-Test-Suite @ {commit} ...");
+    download_and_extract(commit, &vendor, &suite)?;
+    fs::write(&pin_path, format!("{commit}\n"))
+        .with_context(|| format!("failed to write pin file {}", pin_path.display()))?;
+    eprintln!("Suite ready at {}", suite.display());
+    Ok(suite)
+}
+
+fn download_and_extract(commit: &str, vendor: &Path, suite: &Path) -> Result<()> {
+    let url = format!("{SUITE_ARCHIVE_URL}/{commit}.tar.gz");
+    let archive_path = vendor.join("suite.tar.gz");
+
+    let status = Command::new("curl")
+        .args(["-fsSL", "-o"])
+        .arg(&archive_path)
+        .arg(&url)
+        .status()
+        .context("failed to spawn curl; install curl to fetch the test suite")?;
+    if !status.success() {
+        bail!("curl failed to download {url} (status {status})");
+    }
+
+    let file = fs::File::open(&archive_path)
+        .with_context(|| format!("failed to open {}", archive_path.display()))?;
+    let decoder = GzDecoder::new(file);
+    let mut archive = Archive::new(decoder);
+    archive
+        .unpack(vendor)
+        .context("failed to unpack suite archive")?;
+
+    let extracted = vendor.join(format!("JSON-Schema-Test-Suite-{commit}"));
+    if !extracted.is_dir() {
+        // GitHub short-sha archives still use the full name from the request.
+        let found = fs::read_dir(vendor)?
+            .filter_map(|entry| entry.ok())
+            .map(|entry| entry.path())
+            .find(|path| {
+                path.file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| name.starts_with("JSON-Schema-Test-Suite-"))
+                    && path.is_dir()
+            });
+        match found {
+            Some(path) => fs::rename(&path, suite).with_context(|| {
+                format!("failed to rename {} -> {}", path.display(), suite.display())
+            })?,
+            None => bail!(
+                "extracted suite directory not found under {}",
+                vendor.display()
+            ),
+        }
+    } else {
+        fs::rename(&extracted, suite).with_context(|| {
+            format!(
+                "failed to rename {} -> {}",
+                extracted.display(),
+                suite.display()
+            )
+        })?;
+    }
+
+    let _ = fs::remove_file(&archive_path);
+    Ok(())
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub enum Draft {
+    #[value(name = "draft7")]
+    Draft7,
+    #[value(name = "draft2019-09")]
+    Draft2019_09,
+    #[value(name = "draft2020-12")]
+    Draft2020_12,
+}
+
+impl Draft {
+    pub fn all() -> &'static [Draft] {
+        &[Draft::Draft7, Draft::Draft2019_09, Draft::Draft2020_12]
+    }
+
+    pub fn dir_name(self) -> &'static str {
+        match self {
+            Draft::Draft7 => "draft7",
+            Draft::Draft2019_09 => "draft2019-09",
+            Draft::Draft2020_12 => "draft2020-12",
+        }
+    }
+
+    pub fn meta_schema_uri(self) -> &'static str {
+        match self {
+            Draft::Draft7 => "http://json-schema.org/draft-07/schema#",
+            Draft::Draft2019_09 => "https://json-schema.org/draft/2019-09/schema",
+            Draft::Draft2020_12 => "https://json-schema.org/draft/2020-12/schema",
+        }
+    }
+}
+
+pub fn list_required_suite_files(suite_root: &Path, draft: Draft) -> Result<Vec<PathBuf>> {
+    let dir = suite_root.join("tests").join(draft.dir_name());
+    if !dir.is_dir() {
+        bail!("suite draft directory missing: {}", dir.display());
+    }
+
+    let mut files = Vec::new();
+    for entry in fs::read_dir(&dir).with_context(|| format!("failed to read {}", dir.display()))? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.extension().and_then(|ext| ext.to_str()) != Some("json") {
+            continue;
+        }
+        // Definition A: required tests only (skip optional/).
+        if path
+            .components()
+            .any(|component| component.as_os_str() == "optional")
+        {
+            continue;
+        }
+        files.push(path);
+    }
+    files.sort();
+    Ok(files)
+}
+
+pub fn remotes_dir(suite_root: &Path) -> PathBuf {
+    suite_root.join("remotes")
+}
+
+/// Rewrite `http://localhost:1234/...` remote refs to `file://` URIs under `remotes/`.
+pub fn rewrite_localhost_remotes(value: &mut serde_json::Value, remotes: &Path) {
+    match value {
+        serde_json::Value::Object(map) => {
+            for (key, child) in map.iter_mut() {
+                if matches!(
+                    key.as_str(),
+                    "$ref" | "$id" | "$recursiveRef" | "$dynamicRef"
+                ) {
+                    if let serde_json::Value::String(uri) = child {
+                        if let Some(rewritten) = rewrite_localhost_uri(uri, remotes) {
+                            *uri = rewritten;
+                        }
+                    }
+                } else {
+                    rewrite_localhost_remotes(child, remotes);
+                }
+            }
+        }
+        serde_json::Value::Array(items) => {
+            for item in items {
+                rewrite_localhost_remotes(item, remotes);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn rewrite_localhost_uri(uri: &str, remotes: &Path) -> Option<String> {
+    const BASE: &str = "http://localhost:1234";
+
+    let (without_fragment, fragment) = match uri.split_once('#') {
+        Some((path, fragment)) => (path, Some(fragment)),
+        None => (uri, None),
+    };
+    let (without_query, query) = match without_fragment.split_once('?') {
+        Some((path, query)) => (path, Some(query)),
+        None => (without_fragment, None),
+    };
+
+    let relative = if without_query == BASE {
+        ""
+    } else {
+        without_query.strip_prefix(&format!("{BASE}/"))?
+    };
+
+    let path = if relative.is_empty() {
+        remotes.to_path_buf()
+    } else {
+        remotes.join(relative)
+    };
+    let mut file_uri = tombi_schema_store::SchemaUri::from_file_path(&path)
+        .ok()?
+        .to_string();
+    if let Some(query) = query {
+        file_uri.push('?');
+        file_uri.push_str(query);
+    }
+    if let Some(fragment) = fragment {
+        file_uri.push('#');
+        file_uri.push_str(fragment);
+    }
+    Some(file_uri)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn rewrite_preserves_json_pointer_fragment() {
+        let remotes = PathBuf::from("/tmp/remotes");
+        let rewritten = rewrite_localhost_uri(
+            "http://localhost:1234/draft7/subSchemas.json#/definitions/integer",
+            &remotes,
+        )
+        .expect("rewrite");
+        let (path_part, fragment) = rewritten
+            .split_once('#')
+            .expect("rewritten URI should keep a fragment");
+        assert!(
+            path_part.ends_with("subSchemas.json"),
+            "filesystem path should be the json file: {rewritten}"
+        );
+        assert_eq!(fragment, "/definitions/integer");
+    }
+}
+
+pub fn inject_dialect_if_missing(schema: &mut serde_json::Value, draft: Draft) {
+    let serde_json::Value::Object(map) = schema else {
+        return;
+    };
+    if !map.contains_key("$schema") {
+        map.insert(
+            "$schema".to_string(),
+            serde_json::Value::String(draft.meta_schema_uri().to_string()),
+        );
+    }
+}

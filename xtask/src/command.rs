@@ -2,6 +2,7 @@ pub mod codegen;
 pub mod codegen_grammar;
 pub mod codegen_jsonschema;
 pub mod dist;
+pub mod json_schema_test;
 pub mod set_version;
 pub mod toml_test;
 
@@ -18,6 +19,9 @@ pub enum XTaskCommand {
 
     /// Run toml-test.
     TomlTest(toml_test::Args),
+
+    /// Run JSON-Schema-Test-Suite (Definition A).
+    JsonSchemaTest(json_schema_test::Args),
 
     /// Prepare the distribution.
     Dist,

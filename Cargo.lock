@@ -1229,6 +1229,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "json-schema-test"
+version = "0.0.0-dev"
+dependencies = [
+ "anyhow",
+ "clap",
+ "flate2",
+ "itertools 0.14.0",
+ "serde",
+ "serde_json",
+ "tar",
+ "tempfile",
+ "tokio",
+ "tombi-config",
+ "tombi-diagnostic",
+ "tombi-linter",
+ "tombi-schema-store",
+]
+
+[[package]]
 name = "leb128fmt"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

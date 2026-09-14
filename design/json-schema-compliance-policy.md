@@ -53,6 +53,7 @@
 - 実装変更は dialect ごとの挙動差を明示的に保つこと。
 - `draft-07`、`2019-09`、`2020-12` の回帰テストを継続して維持すること。
 - `tombi-linter` の JSON Schema suite を、仕様差分と退行検知の基準セットとして扱う。
+- 公式 [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite) については Definition A（上記 3 dialect の required テストのうち TOML 化可能な instance）を `json-schema-test` / `cargo xtask json-schema-test` で追跡する。CI は Definition A が green になるまで `workflow_dispatch` のみとする。
 
 ## 8. Non-Goals
 

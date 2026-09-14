@@ -1,0 +1,38 @@
+# JSON Schema Test Suite (Definition A)
+#
+# DISABLED on push/PR until Definition A is fully green.
+# Enable push/pull_request triggers only after the local suite passes without --allow-fail.
+
+name: json-schema-test-suite
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  json-schema-test:
+    name: Run JSON-Schema-Test-Suite (Definition A)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Fetch suite
+        run: cargo xtask json-schema-test --fetch-only
+
+      - name: Run Definition A suite
+        # Fail the job on remaining gaps once this workflow is enabled on PRs.
+        run: cargo xtask json-schema-test

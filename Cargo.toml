@@ -4,6 +4,7 @@ members = [
   "crates/*",
   "editors/zed",
   "extensions/*",
+  "json-schema-test",
   "rust/*",
   "toml-test",
   "xtask",

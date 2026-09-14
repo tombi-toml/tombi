@@ -42,6 +42,10 @@ pub fn run(args: impl Into<Args>) -> Result<(), anyhow::Error> {
         command::XTaskCommand::TomlTest(args) => {
             command::toml_test::run(&xshell::Shell::new().unwrap(), verbosity, args)?
         }
+        command::XTaskCommand::JsonSchemaTest(args) => {
+            let _ = verbosity;
+            command::json_schema_test::run(&xshell::Shell::new().unwrap(), args)?
+        }
         command::XTaskCommand::Dist => command::dist::run(&xshell::Shell::new().unwrap())?,
     }
     Ok(())

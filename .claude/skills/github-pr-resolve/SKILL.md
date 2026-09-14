@@ -48,7 +48,7 @@ merge が必要なら競合を解消し、影響を受けるローカル検証�
 
 `github-pr-flow` などの呼び出し元から承認済み review base OID、review fingerprint、exact head OID が渡された場合は、remote base、local HEAD、remote head、PR head、`git diff --binary origin/main HEAD` の hash を再取得する。すべて一致する場合だけレビュー結果を引き継ぐ。
 
-証拠が渡されていない standalone 実行、または1項目でも一致しない場合は、現在の full PR diff に必要なローカル検証を実行し、`<review-base-oid>:<patch-hash>` を fingerprint として記録してから、Codex または Claude Code の `review-quality` サブエージェントへ読み取り専用レビューを依頼する。actionable finding があれば修正フローへ進み、有効な判定を得られなければ fail closed とする。
+証拠が渡されていない standalone 実行、または1項目でも一致しない場合は、現在の full PR diff に必要なローカル検証を実行し、`<review-base-oid>:<patch-hash>` を fingerprint として記録してから、Codex / Claude Code / Cursor の `review-quality` サブエージェントへ読み取り専用レビューを依頼する。actionable finding があれば修正フローへ進む。レビュー結果が空、失敗、権限不足、タイムアウトなどで有効な判定を得られなければ fail closed とする。ただし利用制限・quota 超過・`out of usage` でサブエージェントが起動できない／打ち切られた場合は、独立レビューなしでも続行してよい（その旨を記録する）。
 
 ### 4. CI の失敗を処理する
 
@@ -176,12 +176,12 @@ AI reviewer と人間レビュアーを区別せず、技術判断で完結す�
 3. merge 後の tree に対して必要なローカル検証を完了し、PR に含める変更だけを stage する
 4. `git rev-parse origin/main` を review base OID として記録する
 5. `git diff --cached --binary origin/main | shasum -a 256` を patch hash とし、`<review-base-oid>:<patch-hash>` を review fingerprint として記録する
-6. Codex または Claude Code の `review-quality` サブエージェントに、full PR diff、fingerprint、検証結果を渡して読み取り専用レビューを依頼する
+6. Codex / Claude Code / Cursor の `review-quality` サブエージェントに、full PR diff、fingerprint、検証結果を渡して読み取り専用レビューを依頼する
 7. actionable finding があれば修正・検証・stage・fingerprint・独立レビューをやり直す
 8. finding がなくても、commit 直前に remote base OID と staged full PR diff が承認済み fingerprint と一致することを確認する
 9. commit 後に `git diff --binary origin/main HEAD | shasum -a 256` が同じ tree 差分を示し、`git status --porcelain` が空であることを確認してから push する
 
-base OID、commit hook、formatter などで head tree が変われば以前のレビュー結果を失効させ、検証と独立レビューをやり直す。サブエージェントから有効な判定を得られない場合も commit / push しない。
+base OID、commit hook、formatter などで head tree が変われば以前のレビュー結果を失効させ、検証と独立レビューをやり直す。レビュー結果が空、失敗、権限不足、タイムアウトなどで有効な判定を得られない場合は commit / push しない。ただし利用制限・quota 超過・`out of usage` でサブエージェントが起動できない／打ち切られた場合は、独立レビューなしでも commit / push してよい（その旨を記録する）。
 
 push は Step 1 で特定した head repository の `<headRefName>` を明示的な対象にする。push 後は同じ repository URL を `git ls-remote` し、その OID と local HEAD、PR の `headRefOid` が一致するまで確認する。
 
