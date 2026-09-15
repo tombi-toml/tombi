@@ -144,6 +144,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                             current_schema.definitions.clone(),
                                             current_schema.strict,
                                             schema_context.store,
+                                            None,
                                         )
                                         .await
                                     {
@@ -240,6 +241,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                                     current_schema.definitions.clone(),
                                                     current_schema.strict,
                                                     schema_context.store,
+                                                    None,
                                                 )
                                                 .await
                                             {
@@ -317,6 +319,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                                     current_schema.definitions.clone(),
                                                     current_schema.strict,
                                                     schema_context.store,
+                                                    None,
                                                 )
                                                 .await
                                             {
@@ -626,6 +629,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                         current_schema.definitions.clone(),
                                         current_schema.strict,
                                         schema_context.store,
+                                        None,
                                     )
                                     .await
                                 {
@@ -965,6 +969,7 @@ impl FindCompletionContents for TableSchema {
                         current_schema.definitions.clone(),
                         current_schema.strict,
                         schema_context.store,
+                        None,
                     )
                     .await
                 {
@@ -1262,6 +1267,7 @@ fn table_schema_has_remaining_key_completion<'a>(
                     Cow::Borrowed(&definitions),
                     Some(strict.into()),
                     schema_store,
+                    None,
                 )
                 .await
             else {

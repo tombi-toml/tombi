@@ -105,13 +105,21 @@ where
             accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
             value_type: value.value_type().into(),
             constraints: None,
-            schema_document_uri: Some(super::schema_link_uri(current_schema.schema_document_uri.as_ref(), all_of_schema.range)),
+            schema_document_uri: Some(super::schema_link_uri(
+                current_schema.schema_document_uri.as_ref(),
+                all_of_schema.range,
+            )),
             range: None,
             schema_tooltip: None,
         });
         hover_value_content
             .schema_document_uri
-            .get_or_insert_with(|| super::schema_link_uri(current_schema.schema_document_uri.as_ref(), all_of_schema.range));
+            .get_or_insert_with(|| {
+                super::schema_link_uri(
+                    current_schema.schema_document_uri.as_ref(),
+                    all_of_schema.range,
+                )
+            });
 
         if hover_value_content.title.is_none() && hover_value_content.description.is_none() {
             hover_value_content.title = all_of_schema.title.clone();

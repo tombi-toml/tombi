@@ -1131,6 +1131,7 @@ impl SchemaStore {
                     Cow::Borrowed(&document_schema.definitions),
                     None,
                     self,
+                    None,
                 )
                 .await?
         {

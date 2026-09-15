@@ -258,6 +258,7 @@ where
                                 current_schema.definitions.clone(),
                                 current_schema.strict,
                                 schema_context.store,
+                                None,
                             )
                             .await
                             .inspect_err(|err| log::warn!("{err}"))

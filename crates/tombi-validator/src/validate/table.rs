@@ -337,12 +337,13 @@ async fn validate_table(
                     current_schema.definitions.clone(),
                     current_schema.strict,
                     schema_context.store,
+                    Some(&current_schema.dynamic_scope),
                 )
                 .await
             {
-                Ok(Some(current_schema)) => {
+                Ok(Some(property_schema)) => {
                     let result = value
-                        .validate(&new_accessors, Some(&current_schema), schema_context)
+                        .validate(&new_accessors, Some(&property_schema), schema_context)
                         .await;
                     declared_schema_applied = true;
                     declared_value_matched &= crate::validate::is_assertion_success(&result);
@@ -357,7 +358,7 @@ async fn validate_table(
                     {
                         assertion_failed |= child_assertion_failed;
                         convert_deprecated_diagnostics_range(
-                            &current_schema,
+                            &property_schema,
                             value,
                             key,
                             &mut diagnostics,
@@ -401,12 +402,13 @@ async fn validate_table(
                             current_schema.definitions.clone(),
                             current_schema.strict,
                             schema_context.store,
+                            Some(&current_schema.dynamic_scope),
                         )
                         .await
                     {
-                        Ok(Some(current_schema)) => {
+                        Ok(Some(property_schema)) => {
                             let result = value
-                                .validate(&new_accessors, Some(&current_schema), schema_context)
+                                .validate(&new_accessors, Some(&property_schema), schema_context)
                                 .await;
                             declared_schema_applied = true;
                             declared_value_matched &=
@@ -422,7 +424,7 @@ async fn validate_table(
                             {
                                 assertion_failed |= child_assertion_failed;
                                 convert_deprecated_diagnostics_range(
-                                    &current_schema,
+                                    &property_schema,
                                     value,
                                     key,
                                     &mut diagnostics,
@@ -503,12 +505,13 @@ async fn validate_table(
             if let Some((_, referable_additional_property_schema)) =
                 &table_schema.additional_property_schema
             {
-                match tombi_schema_store::resolve_schema_item(
+                match tombi_schema_store::resolve_schema_item_in_scope(
                     referable_additional_property_schema,
                     current_schema.schema_base_uri.clone(),
                     current_schema.definitions.clone(),
                     current_schema.strict,
                     schema_context.store,
+                    Some(&current_schema.dynamic_scope),
                 )
                 .await
                 {

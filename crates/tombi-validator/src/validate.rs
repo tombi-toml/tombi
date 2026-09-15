@@ -41,7 +41,6 @@ pub use one_of::validate_one_of;
 use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
 use tombi_document_tree_syntax::{TryIntoDocumentTree, dig_keys};
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::CurrentSchema;
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_text::RelativePosition;
 
@@ -55,20 +54,7 @@ pub fn validate<'a: 'b, 'b>(
             source_schema
                 .root_schema
                 .as_deref()
-                .and_then(|root_schema| {
-                    root_schema
-                        .schema_view
-                        .as_ref()
-                        .map(|schema_view| CurrentSchema {
-                            schema_view: schema_view.clone(),
-                            semantic_schema: root_schema.semantic_schema.clone(),
-                            schema_uri: Cow::Borrowed(&root_schema.schema_uri),
-                            schema_base_uri: Cow::Owned(root_schema.schema_base_uri().clone()),
-                            schema_document_uri: Cow::Borrowed(root_schema.schema_document_uri()),
-                            definitions: Cow::Borrowed(&root_schema.definitions),
-                            strict: root_schema.strict,
-                        })
-                })
+                .and_then(|root_schema| root_schema.as_current_schema())
         });
 
         if let Err(crate::Invalid { diagnostics, .. }) = tree
@@ -198,6 +184,7 @@ pub fn project_current_schema_for_value(
             schema_document_uri: Cow::Owned(current_schema.schema_document_uri.as_ref().clone()),
             definitions: Cow::Owned(current_schema.definitions.as_ref().clone()),
             strict: current_schema.strict,
+            dynamic_scope: current_schema.dynamic_scope.clone(),
         });
     }
     if matches_instance && !current_schema.requires_instance_projection(instance_type) {
@@ -766,7 +753,7 @@ where
     async move {
         let _cycle_guard = schema_context
             .schema_visits
-            .get_schema_view_cycle_guard(&resolved_schema.schema_view)?;
+            .get_schema_view_cycle_guard(&resolved_schema.schema_view, accessors)?;
 
         match (value.value_type(), resolved_schema.schema_view.as_ref()) {
             (

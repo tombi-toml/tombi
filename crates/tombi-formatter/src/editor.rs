@@ -1,8 +1,6 @@
-use std::borrow::Cow;
-
 use tombi_ast_syntax::AstNode;
 use tombi_document_tree_syntax::TryIntoDocumentTree;
-use tombi_schema_store::{CurrentSchema, SchemaContext};
+use tombi_schema_store::SchemaContext;
 
 mod change;
 mod edit;
@@ -22,20 +20,9 @@ pub(crate) async fn edit<'a>(
     else {
         return root;
     };
-    let current_schema = schema_context.root_schema.and_then(|document_schema| {
-        document_schema
-            .schema_view
-            .as_ref()
-            .map(|schema_view| CurrentSchema {
-                schema_view: schema_view.clone(),
-                semantic_schema: document_schema.semantic_schema.clone(),
-                schema_uri: Cow::Borrowed(&document_schema.schema_uri),
-                schema_base_uri: Cow::Borrowed(document_schema.schema_base_uri()),
-                schema_document_uri: Cow::Borrowed(document_schema.schema_document_uri()),
-                definitions: Cow::Borrowed(&document_schema.definitions),
-                strict: document_schema.strict,
-            })
-    });
+    let current_schema = schema_context
+        .root_schema
+        .and_then(|document_schema| document_schema.as_current_schema());
 
     let document_value = tombi_document_tree_syntax::Value::from(document_tree);
     let changes = root

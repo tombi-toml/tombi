@@ -129,8 +129,7 @@ async fn reload_config_drops_embedded_resource_index() {
 async fn document_schema_new_registers_embedded_resources_for_offline_refs() {
     let schema_document_uri =
         SchemaUri::from_str("https://example.com/compound.json").expect("valid document URI");
-    let embedded_uri =
-        SchemaUri::from_str("shoko://example/resource").expect("valid embedded URI");
+    let embedded_uri = SchemaUri::from_str("shoko://example/resource").expect("valid embedded URI");
     let schema_store = SchemaStore::new();
 
     let document_schema = DocumentSchema::new(
@@ -222,8 +221,7 @@ async fn property_with_non_fragment_id_uses_embedded_resource_base() {
         .expect("write schema");
     let schema_document_uri =
         SchemaUri::from_file_path(schema_file.path()).expect("valid schema file URI");
-    let child_uri =
-        SchemaUri::from_str("https://example.com/child.json").expect("valid child URI");
+    let child_uri = SchemaUri::from_str("https://example.com/child.json").expect("valid child URI");
     let schema_store = SchemaStore::new();
     let document_schema = schema_store
         .try_get_document_schema(&schema_document_uri)

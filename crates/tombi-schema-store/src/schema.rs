@@ -45,7 +45,8 @@ pub use offset_date_time_schema::OffsetDateTimeSchema;
 pub use one_of_schema::OneOfSchema;
 pub use referable_schema::{
     CurrentSchema, Referable, ReferenceKind, is_online_url, resolve_and_collect_schemas,
-    resolve_and_collect_schemas_with_errors, resolve_json_pointer, resolve_schema_item,
+    resolve_and_collect_schemas_with_errors, resolve_and_collect_schemas_with_errors_in_scope,
+    resolve_json_pointer, resolve_schema_item, resolve_schema_item_in_scope,
 };
 pub use schema_context::{ResolvedFormatOrder, SchemaContext};
 pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};
@@ -425,7 +426,7 @@ pub(crate) fn update_named_anchors(
     object: &tombi_json::ObjectNode,
     referable: &Referable<SchemaView>,
     dialect: Option<crate::JsonSchemaDialect>,
-    anchor_collector: Option<&mut AnchorCollector>,
+    mut anchor_collector: Option<&mut AnchorCollector>,
     mut dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
 ) {
     if crate::supports_keyword(dialect, "$anchor")
@@ -433,10 +434,21 @@ pub(crate) fn update_named_anchors(
             .get("$anchor")
             .and_then(|value| value.as_str())
             .filter(|anchor| is_plain_name_fragment(anchor))
-        && let Some(anchor_collector) = anchor_collector
+        && let Some(anchor_collector) = anchor_collector.as_deref_mut()
     {
         anchor_collector
             .entry(format!("#{anchor}"))
+            .or_insert_with(|| referable.clone());
+    }
+    // Draft-07 location-independent identifiers: `$id` with a plain-name fragment.
+    if dialect == Some(crate::JsonSchemaDialect::Draft07)
+        && let Some(id) = object.get("$id").and_then(|value| value.as_str())
+        && let Some(fragment) = id.strip_prefix('#')
+        && is_plain_name_fragment(fragment)
+        && let Some(anchor_collector) = anchor_collector
+    {
+        anchor_collector
+            .entry(format!("#{fragment}"))
             .or_insert_with(|| referable.clone());
     }
     if crate::supports_keyword(dialect, "$dynamicAnchor")
