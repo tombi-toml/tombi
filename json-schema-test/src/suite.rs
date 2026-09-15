@@ -149,7 +149,6 @@ fn cache_file_path_for_uri(cache_root: &Path, uri: &str) -> PathBuf {
     }
     path
 }
-
 fn download_and_extract(commit: &str, vendor: &Path, suite: &Path) -> Result<()> {
     let url = format!("{SUITE_ARCHIVE_URL}/{commit}.tar.gz");
     let archive_path = vendor.join("suite.tar.gz");
