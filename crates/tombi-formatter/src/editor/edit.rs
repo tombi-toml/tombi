@@ -141,7 +141,7 @@ fn edit_recursive<'a: 'b, 'b>(
                             current_schema.definitions.clone(),
                             current_schema.strict,
                             schema_context.store,
-                        None,
+                            None,
                         )
                         .await
                     {
@@ -180,7 +180,7 @@ fn edit_recursive<'a: 'b, 'b>(
                                         current_schema.definitions.clone(),
                                         current_schema.strict,
                                         schema_context.store,
-                                    None,
+                                        None,
                                     )
                                     .await
                             {

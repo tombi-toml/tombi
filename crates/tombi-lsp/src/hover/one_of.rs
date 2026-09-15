@@ -168,16 +168,24 @@ where
                 accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
                 value_type: value.value_type().into(),
                 constraints: None,
-                schema_document_uri: Some(super::schema_link_uri(current_schema.schema_document_uri.as_ref(), one_of_schema.range)),
+                schema_document_uri: Some(super::schema_link_uri(
+                    current_schema.schema_document_uri.as_ref(),
+                    one_of_schema.range,
+                )),
                 range: None,
                 schema_tooltip: None,
             })
         });
 
         if let Some(hover_value_content) = hover_value_content.as_mut() {
-            hover_value_content.schema_document_uri.get_or_insert_with(|| {
-                super::schema_link_uri(current_schema.schema_document_uri.as_ref(), one_of_schema.range)
-            });
+            hover_value_content
+                .schema_document_uri
+                .get_or_insert_with(|| {
+                    super::schema_link_uri(
+                        current_schema.schema_document_uri.as_ref(),
+                        one_of_schema.range,
+                    )
+                });
             super::inherit_matching_nullable_type(&value_type, &mut hover_value_content.value_type);
             if let Some(default) = default {
                 if let Some(constraints) = hover_value_content.constraints.as_mut() {

@@ -184,5 +184,7 @@ async fn resolve_current_schema_from_comment_directive<'a>(
         .await
         .ok()??;
 
-    document_schema.as_current_schema().map(CurrentSchema::into_owned)
+    document_schema
+        .as_current_schema()
+        .map(CurrentSchema::into_owned)
 }

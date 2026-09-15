@@ -20,7 +20,10 @@ enum VisitKey {
     /// `SchemaView` at an instance location. Location is part of the key so the
     /// same recursive schema can validate nested children; same-location re-entry
     /// (e.g. `{ "$ref": "#" }` on the current value) remains a cycle.
-    SchemaView { ptr: usize, location: u64 },
+    SchemaView {
+        ptr: usize,
+        location: u64,
+    },
 }
 
 #[derive(Debug, Default, Clone)]

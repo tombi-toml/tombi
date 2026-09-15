@@ -514,7 +514,6 @@ mod tests {
         );
     }
 
-
     #[tokio::test]
     async fn format_assertion_default_true_for_draft_07() {
         let schema_json = r#"{ "$schema": "http://json-schema.org/draft-07/schema#" }"#;

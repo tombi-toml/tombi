@@ -98,7 +98,7 @@ impl GetHoverContent for tombi_document_tree_syntax::Table {
                                             current_schema.definitions.clone(),
                                             current_schema.strict,
                                             schema_context.store,
-                                        None,
+                                            None,
                                         )
                                         .await
                                     {
@@ -246,7 +246,7 @@ impl GetHoverContent for tombi_document_tree_syntax::Table {
                                                         current_schema.definitions.clone(),
                                                         current_schema.strict,
                                                         schema_context.store,
-                                                    None,
+                                                        None,
                                                     )
                                                     .await
                                                 {
