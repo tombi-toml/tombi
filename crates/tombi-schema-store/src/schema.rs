@@ -445,7 +445,7 @@ pub(crate) fn update_named_anchors(
         && let Some(id) = object.get("$id").and_then(|value| value.as_str())
         && let Some(fragment) = id.strip_prefix('#')
         && is_plain_name_fragment(fragment)
-        && let Some(anchor_collector) = anchor_collector.as_deref_mut()
+        && let Some(anchor_collector) = anchor_collector
     {
         anchor_collector
             .entry(format!("#{fragment}"))
