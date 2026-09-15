@@ -2,6 +2,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process::Command,
+    str::FromStr,
 };
 
 use anyhow::{Context, Result, bail};
@@ -25,39 +26,128 @@ pub fn suite_dir() -> PathBuf {
     vendor_dir().join("JSON-Schema-Test-Suite")
 }
 
+pub fn metaschema_cache_dir() -> PathBuf {
+    vendor_dir().join("metaschema-cache")
+}
+
 pub fn ensure_suite() -> Result<PathBuf> {
     let vendor = vendor_dir();
     let suite = suite_dir();
     let pin_path = vendor.join("COMMIT");
     let commit = suite_commit();
 
-    if suite.join("tests").is_dir()
+    let suite_ready = suite.join("tests").is_dir()
         && pin_path
             .exists()
             .then(|| fs::read_to_string(&pin_path).ok())
             .flatten()
-            .is_some_and(|pinned| pinned.trim() == commit)
-    {
-        return Ok(suite);
+            .is_some_and(|pinned| pinned.trim() == commit);
+
+    if !suite_ready {
+        if vendor.exists() {
+            fs::remove_dir_all(&vendor).with_context(|| {
+                format!(
+                    "failed to remove stale suite vendor at {}",
+                    vendor.display()
+                )
+            })?;
+        }
+        fs::create_dir_all(&vendor)
+            .with_context(|| format!("failed to create vendor dir {}", vendor.display()))?;
+
+        eprintln!("Fetching JSON-Schema-Test-Suite @ {commit} ...");
+        download_and_extract(commit, &vendor, &suite)?;
+        fs::write(&pin_path, format!("{commit}\n"))
+            .with_context(|| format!("failed to write pin file {}", pin_path.display()))?;
+        eprintln!("Suite ready at {}", suite.display());
     }
 
-    if vendor.exists() {
-        fs::remove_dir_all(&vendor).with_context(|| {
-            format!(
-                "failed to remove stale suite vendor at {}",
-                vendor.display()
-            )
-        })?;
-    }
-    fs::create_dir_all(&vendor)
-        .with_context(|| format!("failed to create vendor dir {}", vendor.display()))?;
-
-    eprintln!("Fetching JSON-Schema-Test-Suite @ {commit} ...");
-    download_and_extract(commit, &vendor, &suite)?;
-    fs::write(&pin_path, format!("{commit}\n"))
-        .with_context(|| format!("failed to write pin file {}", pin_path.display()))?;
-    eprintln!("Suite ready at {}", suite.display());
+    ensure_official_metaschemas()?;
     Ok(suite)
+}
+
+/// Official dialect metaschemas, stored in the same on-disk layout as `tombi-cache`
+/// so `SchemaStore` can resolve them offline via `TOMBI_CACHE_HOME`.
+const OFFICIAL_METASCHEMA_URIS: &[&str] = &[
+    "http://json-schema.org/draft-07/schema",
+    "https://json-schema.org/draft-07/schema",
+    "https://json-schema.org/draft/2019-09/schema",
+    "https://json-schema.org/draft/2019-09/meta/core",
+    "https://json-schema.org/draft/2019-09/meta/applicator",
+    "https://json-schema.org/draft/2019-09/meta/validation",
+    "https://json-schema.org/draft/2019-09/meta/meta-data",
+    "https://json-schema.org/draft/2019-09/meta/format",
+    "https://json-schema.org/draft/2019-09/meta/content",
+    "https://json-schema.org/draft/2020-12/schema",
+    "https://json-schema.org/draft/2020-12/meta/core",
+    "https://json-schema.org/draft/2020-12/meta/applicator",
+    "https://json-schema.org/draft/2020-12/meta/validation",
+    "https://json-schema.org/draft/2020-12/meta/meta-data",
+    "https://json-schema.org/draft/2020-12/meta/format-annotation",
+    "https://json-schema.org/draft/2020-12/meta/content",
+    "https://json-schema.org/draft/2020-12/meta/unevaluated",
+];
+
+fn ensure_official_metaschemas() -> Result<()> {
+    let cache_root = metaschema_cache_dir();
+    fs::create_dir_all(&cache_root).with_context(|| {
+        format!(
+            "failed to create metaschema cache dir {}",
+            cache_root.display()
+        )
+    })?;
+
+    let mut missing = Vec::new();
+    for uri in OFFICIAL_METASCHEMA_URIS {
+        let path = cache_file_path_for_uri(&cache_root, uri);
+        if !path.is_file() {
+            missing.push((*uri, path));
+        }
+    }
+    if missing.is_empty() {
+        return Ok(());
+    }
+
+    eprintln!(
+        "Fetching {} official JSON Schema metaschema(s) for offline suite runs ...",
+        missing.len()
+    );
+    for (uri, path) in missing {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)
+                .with_context(|| format!("failed to create metaschema dir {}", parent.display()))?;
+        }
+        let status = Command::new("curl")
+            .args(["-fsSL", "-o"])
+            .arg(&path)
+            .arg(uri)
+            .status()
+            .context("failed to spawn curl; install curl to fetch metaschemas")?;
+        if !status.success() {
+            bail!("curl failed to download {uri} (status {status})");
+        }
+    }
+    Ok(())
+}
+
+fn cache_file_path_for_uri(cache_root: &Path, uri: &str) -> PathBuf {
+    // Mirrors `tombi_cache::cache_file_path` for http(s) URIs without a `.json` suffix.
+    let parsed =
+        tombi_schema_store::SchemaUri::from_str(uri).expect("official metaschema URI must parse");
+    let mut path = cache_root.to_path_buf();
+    path.push(parsed.scheme());
+    if let Some(host) = parsed.host() {
+        path.push(host.to_string());
+    }
+    if let Some(segments) = parsed.path_segments() {
+        for segment in segments {
+            path.push(segment);
+        }
+    }
+    if matches!(parsed.scheme(), "http" | "https") && !parsed.path().ends_with(".json") {
+        path.push("__index__.json");
+    }
+    path
 }
 
 fn download_and_extract(commit: &str, vendor: &Path, suite: &Path) -> Result<()> {

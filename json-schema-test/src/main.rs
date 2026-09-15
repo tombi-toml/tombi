@@ -1,6 +1,8 @@
 use anyhow::Result;
 use clap::Parser;
-use json_schema_test::{Draft, RunOptions, ensure_suite, print_summary, run_suite, suite_commit};
+use json_schema_test::{
+    Draft, RunOptions, ensure_suite, metaschema_cache_dir, print_summary, run_suite, suite_commit,
+};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -39,8 +41,18 @@ async fn main() -> Result<()> {
     let suite_root = ensure_suite()?;
     println!("Using JSON-Schema-Test-Suite @ {}", suite_commit());
 
+    // Point SchemaStore's offline HTTP cache at the vendored official metaschemas.
+    // SAFETY: this binary is a dedicated suite runner; the env var is process-scoped.
+    unsafe {
+        std::env::set_var("TOMBI_CACHE_HOME", metaschema_cache_dir());
+    }
+
     if args.fetch_only {
         println!("Suite fetched at {}", suite_root.display());
+        println!(
+            "Metaschema cache ready at {}",
+            metaschema_cache_dir().display()
+        );
         return Ok(());
     }
 

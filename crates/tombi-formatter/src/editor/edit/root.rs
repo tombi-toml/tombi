@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use itertools::Itertools;
 use tombi_ast_syntax::DocumentCommentDirectives;
 use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
@@ -186,13 +184,5 @@ async fn resolve_current_schema_from_comment_directive<'a>(
         .await
         .ok()??;
 
-    Some(CurrentSchema {
-        schema_view: document_schema.schema_view.clone()?,
-        semantic_schema: document_schema.semantic_schema.clone(),
-        schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
-        schema_base_uri: Cow::Owned(document_schema.schema_base_uri().clone()),
-        schema_document_uri: Cow::Owned(document_schema.schema_document_uri().clone()),
-        definitions: Cow::Owned(document_schema.definitions.clone()),
-        strict: document_schema.strict,
-    })
+    document_schema.as_current_schema().map(CurrentSchema::into_owned)
 }

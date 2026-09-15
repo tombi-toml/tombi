@@ -6,7 +6,7 @@ mod display_value;
 mod one_of;
 mod value;
 
-use std::{borrow::Cow, fmt::Debug, ops::Deref};
+use std::{fmt::Debug, ops::Deref};
 
 pub use comment::get_document_comment_directive_hover_content;
 use constraints::ValueConstraints;
@@ -35,19 +35,7 @@ pub async fn get_hover_content(
     let table = tree.deref();
     match schema_context.root_schema {
         Some(document_schema) => {
-            let current_schema =
-                document_schema
-                    .schema_view
-                    .as_ref()
-                    .map(|schema_view| CurrentSchema {
-                        schema_view: schema_view.clone(),
-                        semantic_schema: document_schema.semantic_schema.clone(),
-                        schema_uri: Cow::Borrowed(&document_schema.schema_uri),
-                        schema_base_uri: Cow::Owned(document_schema.schema_base_uri().clone()),
-                        schema_document_uri: Cow::Borrowed(document_schema.schema_document_uri()),
-                        definitions: Cow::Borrowed(&document_schema.definitions),
-                        strict: document_schema.strict,
-                    });
+            let current_schema = document_schema.as_current_schema();
             table
                 .get_hover_content(position, keys, &[], current_schema.as_ref(), schema_context)
                 .await
@@ -207,8 +195,7 @@ pub(super) fn first_most_specific_hover_value_content(
     let mut schema_document_uri = None;
     let mut range = None;
     for mut content in contents {
-        schema_document_uri =
-            schema_document_uri.or_else(|| content.schema_document_uri.take());
+        schema_document_uri = schema_document_uri.or_else(|| content.schema_document_uri.take());
         range = range.or(content.range);
         selected.get_or_insert(content);
     }
