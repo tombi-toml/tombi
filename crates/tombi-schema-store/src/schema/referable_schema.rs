@@ -306,8 +306,15 @@ impl Referable<SchemaView> {
                 object,
                 referable,
                 dialect,
-                anchor_collector,
-                dynamic_anchor_collector,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            );
+            Self::collect_nested_definition_anchors(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
             );
         }
 
@@ -316,6 +323,39 @@ impl Referable<SchemaView> {
 
     pub fn is_resolved(&self) -> bool {
         matches!(self, Referable::Resolved { .. })
+    }
+
+    fn collect_nested_definition_anchors(
+        object: &tombi_json::ObjectNode,
+        string_formats: Option<&[StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
+        mut anchor_collector: Option<&mut AnchorCollector>,
+        mut dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
+    ) {
+        for defs_key in ["definitions", "$defs"] {
+            let Some(tombi_json::ValueNode::Object(definitions)) = object.get(defs_key) else {
+                continue;
+            };
+
+            for (_, value) in &definitions.properties {
+                let starts_new_resource = value
+                    .as_object()
+                    .and_then(|definition| definition.get("$id"))
+                    .and_then(tombi_json::ValueNode::as_str)
+                    .is_some_and(|id| id.split_once('#').map_or(true, |(base, _)| !base.is_empty()));
+                if starts_new_resource {
+                    continue;
+                }
+
+                let _ = super::referable_from_schema_value(
+                    value,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                );
+            }
+        }
     }
 
     pub fn is_ref(&self) -> bool {
@@ -660,9 +700,7 @@ impl Referable<SchemaView> {
                                 resolved_reference.semantic_schema.clone(),
                             ),
                         };
-                        let mut dynamic_scope = dynamic_scope;
-                        dynamic_scope
-                            .insert(0, resolved_reference.schema_base_uri.as_ref().clone());
+                        let dynamic_scope = resolved_reference.dynamic_scope.clone();
                         let should_cache_resolution = should_cache_resolution
                             && resolved_reference.schema_uri.as_ref()
                                 == resolved_reference.schema_base_uri.as_ref();
@@ -785,7 +823,13 @@ impl Referable<SchemaView> {
                 value: schema_view,
                 semantic_schema,
             } => {
-                let (schema_uri, resolved_schema_base_uri, schema_document_uri, definitions) =
+                let (
+                    schema_uri,
+                    resolved_schema_base_uri,
+                    schema_document_uri,
+                    definitions,
+                    dynamic_scope,
+                ) =
                     match reference_url {
                         Some(reference_url) => {
                             if let Some(document_schema) =
@@ -796,6 +840,8 @@ impl Referable<SchemaView> {
                                     document_schema.schema_base_uri().clone(),
                                     document_schema.schema_document_uri().clone(),
                                     document_schema.definitions.clone(),
+                                    document_schema
+                                        .dynamic_scope(parent_dynamic_scope.unwrap_or(&[])),
                                 )
                             } else {
                                 (
@@ -805,6 +851,10 @@ impl Referable<SchemaView> {
                                         .schema_document_uri_for(schema_base_uri.as_ref())
                                         .await,
                                     definitions.into_owned(),
+                                    extend_dynamic_scope(
+                                        parent_dynamic_scope.unwrap_or(&[]),
+                                        schema_base_uri.as_ref(),
+                                    ),
                                 )
                             }
                         }
@@ -817,6 +867,10 @@ impl Referable<SchemaView> {
                                 schema_base_uri.clone().into_owned(),
                                 schema_document_uri,
                                 definitions.into_owned(),
+                                extend_dynamic_scope(
+                                    parent_dynamic_scope.unwrap_or(&[]),
+                                    schema_base_uri.as_ref(),
+                                ),
                             )
                         }
                     };
@@ -828,10 +882,7 @@ impl Referable<SchemaView> {
                     schema_document_uri: Cow::Owned(schema_document_uri),
                     definitions: Cow::Owned(definitions),
                     strict,
-                    dynamic_scope: extend_dynamic_scope(
-                        parent_dynamic_scope.unwrap_or(&[]),
-                        &resolved_schema_base_uri,
-                    ),
+                    dynamic_scope,
                     schema_base_uri: Cow::Owned(resolved_schema_base_uri),
                 }))
             }

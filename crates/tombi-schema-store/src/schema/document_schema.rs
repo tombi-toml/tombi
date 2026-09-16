@@ -636,6 +636,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn collects_dynamic_anchor_definitions_nested_under_defs() {
+        let schema_json = r#"{
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "allOf": [
+                {
+                    "$defs": {
+                        "elements": {
+                            "$dynamicAnchor": "elements",
+                            "type": "object"
+                        }
+                    }
+                }
+            ]
+        }"#;
+
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid schema json");
+        let schema_uri = tombi_uri::SchemaUri::from_str("https://example.com/schema.json")
+            .expect("valid schema uri");
+
+        let document_schema =
+            DocumentSchema::new(schema_value, schema_uri, None, &SchemaStore::new())
+                .await
+                .expect("DocumentSchema::new");
+        let dynamic_anchors = document_schema.dynamic_anchors.read().await;
+        assert!(dynamic_anchors.contains_key("#elements"));
+    }
+
+    #[tokio::test]
     async fn root_boolean_true_schema_is_accepted() {
         let schema_value = tombi_json::ValueNode::from_str("true").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
