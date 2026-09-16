@@ -19,12 +19,13 @@ async fn resolve_schema_item_owned(
     current_schema: &CurrentSchema<'_>,
     schema_context: &SchemaContext<'_>,
 ) -> Option<CurrentSchema<'static>> {
-    tombi_schema_store::resolve_schema_item(
+    tombi_schema_store::resolve_schema_item_in_scope(
         schema_item,
         current_schema.schema_base_uri.clone(),
         current_schema.definitions.clone(),
         current_schema.strict,
         schema_context.store,
+        Some(&current_schema.dynamic_scope),
     )
     .await
     .inspect_err(|err| log::warn!("{err}"))
@@ -231,7 +232,7 @@ fn resolve_schema_with_accessors<'a: 'b, 'b>(
                         current_schema.definitions.clone(),
                         current_schema.strict,
                         schema_context.store,
-                        None,
+                        Some(&current_schema.dynamic_scope),
                     )
                     .await
                     .inspect_err(|err| log::warn!("{err}"))
@@ -283,7 +284,7 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
     schema_context: &'a SchemaContext<'a>,
 ) -> tombi_future::BoxFuture<'b, Option<CurrentSchema<'static>>> {
     async move {
-        let collected = tombi_schema_store::resolve_and_collect_schemas(
+        let collected = tombi_schema_store::resolve_and_collect_schemas_in_scope(
             schemas,
             current_schema.schema_base_uri.clone(),
             current_schema.definitions.clone(),
@@ -291,6 +292,7 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
             schema_context.store,
             &schema_context.schema_visits,
             accessors,
+            Some(&current_schema.dynamic_scope),
         )
         .await?;
 

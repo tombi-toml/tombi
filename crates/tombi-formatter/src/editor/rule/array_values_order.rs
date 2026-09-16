@@ -222,7 +222,7 @@ async fn get_sorted_values_order_groups<'a>(
             SchemaView::AnyOf(AnyOfSchema { schemas, .. }),
         ) => {
             let mut sorted_values_with_comma = Vec::with_capacity(values_with_comma.len());
-            let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas_in_scope(
                 schemas,
                 current_schema.schema_base_uri.clone(),
                 current_schema.definitions.clone(),
@@ -230,6 +230,7 @@ async fn get_sorted_values_order_groups<'a>(
                 schema_context.store,
                 &schema_context.schema_visits,
                 accessors,
+                Some(&current_schema.dynamic_scope),
             )
             .await
             else {
@@ -316,16 +317,18 @@ fn try_array_values_order_by_from_item_schema<'a: 'b, 'b>(
                 SchemaView::AllOf(AllOfSchema { schemas, .. })
                 | SchemaView::AnyOf(AnyOfSchema { schemas, .. })
                 | SchemaView::OneOf(OneOfSchema { schemas, .. }) => {
-                    if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
-                        schemas,
-                        current_schema.schema_base_uri.clone(),
-                        current_schema.definitions.clone(),
-                        current_schema.strict,
-                        schema_context.store,
-                        &schema_context.schema_visits,
-                        accessors,
-                    )
-                    .await
+                    if let Some(resolved_schemas) =
+                        tombi_schema_store::resolve_and_collect_schemas_in_scope(
+                            schemas,
+                            current_schema.schema_base_uri.clone(),
+                            current_schema.definitions.clone(),
+                            current_schema.strict,
+                            schema_context.store,
+                            &schema_context.schema_visits,
+                            accessors,
+                            Some(&current_schema.dynamic_scope),
+                        )
+                        .await
                     {
                         for current_schema in &resolved_schemas {
                             if table_node

@@ -40,7 +40,7 @@ where
             .as_ref()
             .and_then(|default| DisplayValue::try_from(default).ok());
 
-        let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
+        let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas_in_scope(
             &any_of_schema.schemas,
             Cow::Borrowed(current_schema.schema_base_uri.as_ref()),
             Cow::Borrowed(current_schema.definitions.as_ref()),
@@ -48,6 +48,7 @@ where
             schema_context.store,
             &schema_context.schema_visits,
             accessors,
+            Some(&current_schema.dynamic_scope),
         )
         .await?;
         let value_type = any_of_schema.value_type().await;
@@ -112,12 +113,7 @@ where
                         && let Some(enum_values) = resolved_schema
                             .schema_view
                             .as_ref()
-                            .get_enum(
-                                &resolved_schema.schema_base_uri,
-                                &resolved_schema.definitions,
-                                resolved_schema.strict,
-                                schema_context,
-                            )
+                            .get_enum(resolved_schema, schema_context)
                             .await
                     {
                         hover_value_content
@@ -204,7 +200,7 @@ impl GetHoverContent for tombi_schema_store::AnyOfSchema {
                 .as_ref()
                 .and_then(|default| DisplayValue::try_from(default).ok());
 
-            let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
+            let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas_in_scope(
                 &self.schemas,
                 current_schema.schema_base_uri.clone(),
                 current_schema.definitions.clone(),
@@ -212,6 +208,7 @@ impl GetHoverContent for tombi_schema_store::AnyOfSchema {
                 schema_context.store,
                 &schema_context.schema_visits,
                 accessors,
+                Some(&current_schema.dynamic_scope),
             )
             .await?;
 

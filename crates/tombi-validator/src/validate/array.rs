@@ -202,12 +202,13 @@ async fn validate_array(
                 .or(array_schema.items.as_ref())
             {
                 Some(overflow_item) => {
-                    match tombi_schema_store::resolve_schema_item(
+                    match tombi_schema_store::resolve_schema_item_in_scope(
                         overflow_item,
                         current_schema.schema_base_uri.clone(),
                         current_schema.definitions.clone(),
                         current_schema.strict,
                         schema_context.store,
+                        Some(&current_schema.dynamic_scope),
                     )
                     .await
                     {
@@ -240,12 +241,13 @@ async fn validate_array(
 
             if index < prefix_items.len() {
                 evaluated[index] = true;
-                match tombi_schema_store::resolve_schema_item(
+                match tombi_schema_store::resolve_schema_item_in_scope(
                     &prefix_items[index],
                     current_schema.schema_base_uri.clone(),
                     current_schema.definitions.clone(),
                     current_schema.strict,
                     schema_context.store,
+                    Some(&current_schema.dynamic_scope),
                 )
                 .await
                 {
@@ -328,12 +330,13 @@ async fn validate_array(
         }
     } else if let Some(items) = &array_schema.items {
         // Single schema for all items
-        match tombi_schema_store::resolve_schema_item(
+        match tombi_schema_store::resolve_schema_item_in_scope(
             items,
             current_schema.schema_base_uri.clone(),
             current_schema.definitions.clone(),
             current_schema.strict,
             schema_context.store,
+            Some(&current_schema.dynamic_scope),
         )
         .await
         {
@@ -382,12 +385,13 @@ async fn validate_array(
     }
 
     let contains_schema = match &array_schema.contains {
-        Some(contains) => match tombi_schema_store::resolve_schema_item(
+        Some(contains) => match tombi_schema_store::resolve_schema_item_in_scope(
             contains,
             current_schema.schema_base_uri.clone(),
             current_schema.definitions.clone(),
             current_schema.strict,
             schema_context.store,
+            Some(&current_schema.dynamic_scope),
         )
         .await
         {
@@ -485,12 +489,13 @@ async fn validate_array(
     // Run unevaluatedItems after all applicators that can mark items as evaluated.
     if has_unevaluated_items {
         let unevaluated_schema = if let Some(schema_item) = &array_schema.unevaluated_items_schema {
-            match tombi_schema_store::resolve_schema_item(
+            match tombi_schema_store::resolve_schema_item_in_scope(
                 schema_item,
                 current_schema.schema_base_uri.clone(),
                 current_schema.definitions.clone(),
                 current_schema.strict,
                 schema_context.store,
+                Some(&current_schema.dynamic_scope),
             )
             .await
             {

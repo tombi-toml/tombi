@@ -61,16 +61,18 @@ fn edit_recursive<'a: 'b, 'b>(
                 SchemaView::AllOf(AllOfSchema { schemas, .. })
                 | SchemaView::AnyOf(AnyOfSchema { schemas, .. })
                 | SchemaView::OneOf(OneOfSchema { schemas, .. }) => {
-                    let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
-                        schemas,
-                        current_schema.schema_base_uri.clone(),
-                        current_schema.definitions.clone(),
-                        current_schema.strict,
-                        schema_context.store,
-                        &schema_context.schema_visits,
-                        accessors.as_ref(),
-                    )
-                    .await
+                    let Some(resolved_schemas) =
+                        tombi_schema_store::resolve_and_collect_schemas_in_scope(
+                            schemas,
+                            current_schema.schema_base_uri.clone(),
+                            current_schema.definitions.clone(),
+                            current_schema.strict,
+                            schema_context.store,
+                            &schema_context.schema_visits,
+                            accessors.as_ref(),
+                            Some(&current_schema.dynamic_scope),
+                        )
+                        .await
                     else {
                         return Vec::new();
                     };
@@ -141,7 +143,7 @@ fn edit_recursive<'a: 'b, 'b>(
                             current_schema.definitions.clone(),
                             current_schema.strict,
                             schema_context.store,
-                            None,
+                            Some(&current_schema.dynamic_scope),
                         )
                         .await
                     {
@@ -180,7 +182,7 @@ fn edit_recursive<'a: 'b, 'b>(
                                         current_schema.definitions.clone(),
                                         current_schema.strict,
                                         schema_context.store,
-                                        None,
+                                        Some(&current_schema.dynamic_scope),
                                     )
                                     .await
                             {
@@ -205,14 +207,16 @@ fn edit_recursive<'a: 'b, 'b>(
                             referable_additional_property_schema
                         );
 
-                        if let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
-                            referable_additional_property_schema,
-                            current_schema.schema_base_uri.clone(),
-                            current_schema.definitions.clone(),
-                            current_schema.strict,
-                            schema_context.store,
-                        )
-                        .await
+                        if let Ok(Some(current_schema)) =
+                            tombi_schema_store::resolve_schema_item_in_scope(
+                                referable_additional_property_schema,
+                                current_schema.schema_base_uri.clone(),
+                                current_schema.definitions.clone(),
+                                current_schema.strict,
+                                schema_context.store,
+                                Some(&current_schema.dynamic_scope),
+                            )
+                            .await
                         {
                             return edit_recursive(
                                 value,
@@ -228,14 +232,16 @@ fn edit_recursive<'a: 'b, 'b>(
                 }
                 SchemaView::Array(array_schema) => {
                     if let Some(items) = &array_schema.items
-                        && let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
-                            items,
-                            current_schema.schema_base_uri.clone(),
-                            current_schema.definitions.clone(),
-                            current_schema.strict,
-                            schema_context.store,
-                        )
-                        .await
+                        && let Ok(Some(current_schema)) =
+                            tombi_schema_store::resolve_schema_item_in_scope(
+                                items,
+                                current_schema.schema_base_uri.clone(),
+                                current_schema.definitions.clone(),
+                                current_schema.strict,
+                                schema_context.store,
+                                Some(&current_schema.dynamic_scope),
+                            )
+                            .await
                     {
                         return edit_recursive(
                             value,

@@ -1,9 +1,7 @@
 use std::str::FromStr;
 
 use tombi_future::Boxable;
-use tombi_schema_store::{
-    AllOfSchema, AnyOfSchema, OneOfSchema, SchemaContext, SchemaDefinitions, SchemaUri, SchemaView,
-};
+use tombi_schema_store::{AllOfSchema, AnyOfSchema, OneOfSchema, SchemaContext, SchemaView};
 
 #[derive(Debug, Clone)]
 pub enum DisplayValue {
@@ -162,9 +160,7 @@ impl std::fmt::Display for DisplayValue {
 pub trait GetEnum {
     fn get_enum<'a: 'b, 'b>(
         &'a self,
-        schema_base_uri: &'a SchemaUri,
-        definitions: &'a SchemaDefinitions,
-        strict: Option<tombi_schema_type::BoolDefaultTrue>,
+        current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
         schema_context: &'a SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>>;
 }
@@ -172,9 +168,7 @@ pub trait GetEnum {
 impl GetEnum for SchemaView {
     fn get_enum<'a: 'b, 'b>(
         &'a self,
-        schema_base_uri: &'a SchemaUri,
-        definitions: &'a SchemaDefinitions,
-        strict: Option<tombi_schema_type::BoolDefaultTrue>,
+        current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
         schema_context: &'a SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
         async move {
@@ -332,14 +326,11 @@ impl GetEnum for SchemaView {
                 | SchemaView::Array(_)
                 | SchemaView::Table(_)
                 | SchemaView::Null => None,
-                SchemaView::OneOf(OneOfSchema { schemas, .. })
-                | SchemaView::AnyOf(AnyOfSchema { schemas, .. })
-                | SchemaView::AllOf(AllOfSchema { schemas, .. }) => {
+                SchemaView::OneOf(OneOfSchema { .. })
+                | SchemaView::AnyOf(AnyOfSchema { .. })
+                | SchemaView::AllOf(AllOfSchema { .. }) => {
                     get_enum_from_schemas(
-                        schemas,
-                        schema_base_uri,
-                        definitions,
-                        strict,
+                        current_schema,
                         schema_context,
                     )
                     .await
@@ -352,22 +343,25 @@ impl GetEnum for SchemaView {
 
 /// Helper function to get enum values from a collection of schemas
 fn get_enum_from_schemas<'a: 'b, 'b>(
-    schemas: &'a tombi_schema_store::ReferableSchemaViews,
-    schema_base_uri: &'a SchemaUri,
-    definitions: &'a SchemaDefinitions,
-    strict: Option<tombi_schema_type::BoolDefaultTrue>,
+    current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
     schema_context: &'a SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
     async move {
         let mut enum_values = Vec::new();
-        let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
-            schemas,
-            std::borrow::Cow::Borrowed(schema_base_uri),
-            std::borrow::Cow::Borrowed(definitions),
-            strict,
+        let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas_in_scope(
+            match current_schema.schema_view.as_ref() {
+                SchemaView::OneOf(OneOfSchema { schemas, .. })
+                | SchemaView::AnyOf(AnyOfSchema { schemas, .. })
+                | SchemaView::AllOf(AllOfSchema { schemas, .. }) => schemas,
+                _ => unreachable!("get_enum_from_schemas requires a composite schema"),
+            },
+            std::borrow::Cow::Borrowed(current_schema.schema_base_uri.as_ref()),
+            std::borrow::Cow::Borrowed(current_schema.definitions.as_ref()),
+            current_schema.strict,
             schema_context.store,
             &schema_context.schema_visits,
             &[],
+            Some(&current_schema.dynamic_scope),
         )
         .await?;
 
@@ -375,9 +369,7 @@ fn get_enum_from_schemas<'a: 'b, 'b>(
             if let Some(values) = resolved
                 .schema_view
                 .get_enum(
-                    &resolved.schema_base_uri,
-                    &resolved.definitions,
-                    resolved.strict,
+                    resolved,
                     schema_context,
                 )
                 .await

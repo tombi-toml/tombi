@@ -45,8 +45,9 @@ pub use offset_date_time_schema::OffsetDateTimeSchema;
 pub use one_of_schema::OneOfSchema;
 pub use referable_schema::{
     CurrentSchema, Referable, ReferenceKind, is_online_url, resolve_and_collect_schemas,
-    resolve_and_collect_schemas_with_errors, resolve_and_collect_schemas_with_errors_in_scope,
-    resolve_json_pointer, resolve_schema_item, resolve_schema_item_in_scope,
+    resolve_and_collect_schemas_in_scope, resolve_and_collect_schemas_with_errors,
+    resolve_and_collect_schemas_with_errors_in_scope, resolve_json_pointer, resolve_schema_item,
+    resolve_schema_item_in_scope,
 };
 pub use schema_context::{ResolvedFormatOrder, SchemaContext};
 pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};

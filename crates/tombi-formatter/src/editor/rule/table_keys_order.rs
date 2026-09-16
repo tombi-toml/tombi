@@ -120,13 +120,15 @@ where
     T: Send + Clone + std::fmt::Debug + 'b,
 {
     async move {
-        if let Some(CurrentSchema {
-            schema_view,
-            schema_base_uri,
-            definitions,
-            strict,
-            ..
-        }) = current_schema
+        if let Some(
+            current_schema @ CurrentSchema {
+                schema_view,
+                schema_base_uri,
+                definitions,
+                strict,
+                ..
+            },
+        ) = current_schema
         {
             match schema_view.as_ref() {
                 SchemaView::OneOf(OneOfSchema {
@@ -144,16 +146,18 @@ where
                     keys_order,
                     ..
                 }) => {
-                    if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
-                        schemas,
-                        Cow::Borrowed(schema_base_uri),
-                        Cow::Borrowed(definitions),
-                        *strict,
-                        schema_context.store,
-                        &schema_context.schema_visits,
-                        accessors,
-                    )
-                    .await
+                    if let Some(resolved_schemas) =
+                        tombi_schema_store::resolve_and_collect_schemas_in_scope(
+                            schemas,
+                            Cow::Borrowed(schema_base_uri),
+                            Cow::Borrowed(definitions),
+                            *strict,
+                            schema_context.store,
+                            &schema_context.schema_visits,
+                            accessors,
+                            Some(&current_schema.dynamic_scope),
+                        )
+                        .await
                     {
                         for current_schema in &resolved_schemas {
                             if value
@@ -258,7 +262,7 @@ where
                                 current_schema.definitions.clone(),
                                 current_schema.strict,
                                 schema_context.store,
-                                None,
+                                Some(&current_schema.dynamic_scope),
                             )
                             .await
                             .inspect_err(|err| log::warn!("{err}"))
@@ -284,12 +288,13 @@ where
                         if let Some((_, referable_schema)) =
                             &table_schema.additional_property_schema
                             && let Ok(Some(current_schema)) =
-                                tombi_schema_store::resolve_schema_item(
+                                tombi_schema_store::resolve_schema_item_in_scope(
                                     referable_schema,
                                     current_schema.schema_base_uri.clone(),
                                     current_schema.definitions.clone(),
                                     current_schema.strict,
                                     schema_context.store,
+                                    Some(&current_schema.dynamic_scope),
                                 )
                                 .await
                                 .inspect_err(|err| log::warn!("{err}"))
@@ -342,15 +347,17 @@ where
                 if let Some(current_schema) = current_schema
                     && let SchemaView::Array(array_schema) = current_schema.schema_view.as_ref()
                     && let Some(referable_schema) = &array_schema.items
-                    && let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
-                        referable_schema,
-                        current_schema.schema_base_uri.clone(),
-                        current_schema.definitions.clone(),
-                        current_schema.strict,
-                        schema_context.store,
-                    )
-                    .await
-                    .inspect_err(|err| log::warn!("{err}"))
+                    && let Ok(Some(current_schema)) =
+                        tombi_schema_store::resolve_schema_item_in_scope(
+                            referable_schema,
+                            current_schema.schema_base_uri.clone(),
+                            current_schema.definitions.clone(),
+                            current_schema.strict,
+                            schema_context.store,
+                            Some(&current_schema.dynamic_scope),
+                        )
+                        .await
+                        .inspect_err(|err| log::warn!("{err}"))
                 {
                     for (index, (value, (_, targets))) in
                         array.iter().zip(sort_targets_map).enumerate()

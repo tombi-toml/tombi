@@ -144,7 +144,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                             current_schema.definitions.clone(),
                                             current_schema.strict,
                                             schema_context.store,
-                                            None,
+                                            Some(&current_schema.dynamic_scope),
                                         )
                                         .await
                                     {
@@ -241,7 +241,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                                     current_schema.definitions.clone(),
                                                     current_schema.strict,
                                                     schema_context.store,
-                                                    None,
+                                                    Some(&current_schema.dynamic_scope),
                                                 )
                                                 .await
                                             {
@@ -319,7 +319,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                                     current_schema.definitions.clone(),
                                                     current_schema.strict,
                                                     schema_context.store,
-                                                    None,
+                                                    Some(&current_schema.dynamic_scope),
                                                 )
                                                 .await
                                             {
@@ -365,12 +365,13 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                     );
 
                                     if let Ok(Some(current_schema)) =
-                                        tombi_schema_store::resolve_schema_item(
+                                        tombi_schema_store::resolve_schema_item_in_scope(
                                             referable_additional_property_schema,
                                             current_schema.schema_base_uri.clone(),
                                             current_schema.definitions.clone(),
                                             current_schema.strict,
                                             schema_context.store,
+                                            Some(&current_schema.dynamic_scope),
                                         )
                                         .await
                                     {
@@ -629,7 +630,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                         current_schema.definitions.clone(),
                                         current_schema.strict,
                                         schema_context.store,
-                                        None,
+                                        Some(&current_schema.dynamic_scope),
                                     )
                                     .await
                                 {
@@ -744,12 +745,13 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                     schema_view,
                                     schema_base_uri,
                                     ..
-                                })) = tombi_schema_store::resolve_schema_item(
+                                })) = tombi_schema_store::resolve_schema_item_in_scope(
                                     additional_property_schema,
                                     current_schema.schema_base_uri.clone(),
                                     current_schema.definitions.clone(),
                                     current_schema.strict,
                                     schema_context.store,
+                                    Some(&current_schema.dynamic_scope),
                                 )
                                 .await
                             {
@@ -969,7 +971,7 @@ impl FindCompletionContents for TableSchema {
                         current_schema.definitions.clone(),
                         current_schema.strict,
                         schema_context.store,
-                        None,
+                        Some(&current_schema.dynamic_scope),
                     )
                     .await
                 {
@@ -1074,12 +1076,13 @@ async fn count_table_or_array_schema(
                                 definitions,
                                 strict,
                                 ..
-                            })) = tombi_schema_store::resolve_schema_item(
+                            })) = tombi_schema_store::resolve_schema_item_in_scope(
                                 &item,
                                 Cow::Borrowed(&current_schema.schema_base_uri),
                                 Cow::Borrowed(&current_schema.definitions),
                                 current_schema.strict,
                                 schema_store,
+                                Some(&current_schema.dynamic_scope),
                             )
                             .await
                         {
@@ -1234,6 +1237,7 @@ fn table_schema_has_remaining_key_completion<'a>(
     definitions: Cow<'a, tombi_schema_store::SchemaDefinitions>,
     schema_store: &'a SchemaStore,
     strict: bool,
+    parent_dynamic_scope: Option<&'a [tombi_schema_store::SchemaUri]>,
 ) -> BoxFuture<'a, bool> {
     async move {
         if table_schema.allows_any_additional_properties(strict) {
@@ -1267,7 +1271,7 @@ fn table_schema_has_remaining_key_completion<'a>(
                     Cow::Borrowed(&definitions),
                     Some(strict.into()),
                     schema_store,
-                    None,
+                    parent_dynamic_scope,
                 )
                 .await
             else {
@@ -1301,6 +1305,7 @@ fn table_schema_has_remaining_key_completion<'a>(
                         Cow::Borrowed(&current_schema.definitions),
                         schema_store,
                         strict,
+                        Some(&current_schema.dynamic_scope),
                     )
                     .await
                 {
@@ -1384,6 +1389,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                             Cow::Borrowed(&current_schema.definitions),
                             schema_context.store,
                             schema_context.strict(Some(current_schema)),
+                            Some(&current_schema.dynamic_scope),
                         )
                         .await
                     {

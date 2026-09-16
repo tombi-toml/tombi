@@ -38,12 +38,13 @@ where
         };
 
     // Resolve and validate the `if` schema
-    let if_result = match tombi_schema_store::resolve_schema_item(
+    let if_result = match tombi_schema_store::resolve_schema_item_in_scope(
         &if_then_else_schema.if_schema,
         current_schema.schema_base_uri.clone(),
         current_schema.definitions.clone(),
         current_schema.strict,
         schema_context.store,
+        Some(&current_schema.dynamic_scope),
     )
     .await
     {
@@ -68,12 +69,13 @@ where
     if is_assertion_success(&if_result) {
         // `if` matched → apply `then` schema if present
         if let Some(then_schema) = &if_then_else_schema.then_schema {
-            match tombi_schema_store::resolve_schema_item(
+            match tombi_schema_store::resolve_schema_item_in_scope(
                 then_schema,
                 current_schema.schema_base_uri.clone(),
                 current_schema.definitions.clone(),
                 current_schema.strict,
                 schema_context.store,
+                Some(&current_schema.dynamic_scope),
             )
             .await
             {
@@ -100,12 +102,13 @@ where
     } else {
         // `if` did not match → apply `else` schema if present
         if let Some(else_schema) = &if_then_else_schema.else_schema {
-            match tombi_schema_store::resolve_schema_item(
+            match tombi_schema_store::resolve_schema_item_in_scope(
                 else_schema,
                 Cow::Borrowed(current_schema.schema_base_uri.as_ref()),
                 Cow::Borrowed(current_schema.definitions.as_ref()),
                 current_schema.strict,
                 schema_context.store,
+                Some(&current_schema.dynamic_scope),
             )
             .await
             {
