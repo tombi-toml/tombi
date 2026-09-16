@@ -985,12 +985,13 @@ impl FindCompletionContents for TableSchema {
 
                 let (schema_candidates, errors) = current_schema
                     .schema_view
-                    .find_schema_candidates(
+                    .find_schema_candidates_in_scope(
                         accessors,
                         &current_schema.schema_base_uri,
                         &current_schema.definitions,
                         current_schema.strict,
                         schema_context.store,
+                        Some(&current_schema.dynamic_scope),
                     )
                     .await;
 
@@ -1057,12 +1058,13 @@ async fn count_table_or_array_schema(
     join_all(
         current_schema
             .schema_view
-            .match_flattened_schemas(
+            .match_flattened_schemas_in_scope(
                 &|schema| matches!(schema, SchemaView::Table(_) | SchemaView::Array(_)),
                 &current_schema.schema_base_uri,
                 &current_schema.definitions,
                 current_schema.strict,
                 schema_store,
+                Some(&current_schema.dynamic_scope),
             )
             .await
             .into_iter()
@@ -1075,6 +1077,7 @@ async fn count_table_or_array_schema(
                                 schema_view,
                                 definitions,
                                 strict,
+                                dynamic_scope,
                                 ..
                             })) = tombi_schema_store::resolve_schema_item_in_scope(
                                 &item,
@@ -1087,12 +1090,13 @@ async fn count_table_or_array_schema(
                             .await
                         {
                             return schema_view
-                                .is_match(
+                                .is_match_in_scope(
                                     &|schema| matches!(schema, SchemaView::Table(_)),
                                     &schema_base_uri,
                                     &definitions,
                                     strict,
                                     schema_store,
+                                    Some(&dynamic_scope),
                                 )
                                 .await;
                         }
@@ -1280,12 +1284,13 @@ fn table_schema_has_remaining_key_completion<'a>(
 
             let (schema_candidates, errors) = current_schema
                 .schema_view
-                .find_schema_candidates(
+                .find_schema_candidates_in_scope(
                     &[],
                     &current_schema.schema_base_uri,
                     &current_schema.definitions,
                     current_schema.strict,
                     schema_store,
+                    Some(&current_schema.dynamic_scope),
                 )
                 .await;
 
@@ -1335,12 +1340,13 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
 
         let (schema_candidates, errors) = current_schema
             .schema_view
-            .find_schema_candidates(
+            .find_schema_candidates_in_scope(
                 accessors,
                 &current_schema.schema_base_uri,
                 &current_schema.definitions,
                 current_schema.strict,
                 schema_context.store,
+                Some(&current_schema.dynamic_scope),
             )
             .await;
 

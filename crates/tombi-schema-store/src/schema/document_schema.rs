@@ -366,9 +366,24 @@ impl DocumentSchema {
                 schema_document_uri: Cow::Borrowed(self.schema_document_uri()),
                 definitions: Cow::Borrowed(&self.definitions),
                 strict: self.strict,
-                dynamic_scope: vec![schema_base_uri.clone()],
+                dynamic_scope: self.dynamic_scope(&[]),
             }
         })
+    }
+
+    pub(crate) fn dynamic_scope(&self, parent_dynamic_scope: &[SchemaUri]) -> Vec<SchemaUri> {
+        fn extend(scope: &[SchemaUri], resource_uri: &SchemaUri) -> Vec<SchemaUri> {
+            if scope.first() == Some(resource_uri) {
+                return scope.to_vec();
+            }
+            let mut extended = Vec::with_capacity(scope.len() + 1);
+            extended.push(resource_uri.clone());
+            extended.extend_from_slice(scope);
+            extended
+        }
+
+        let scope = extend(parent_dynamic_scope, self.schema_resource_uri());
+        extend(&scope, self.schema_base_uri())
     }
 }
 

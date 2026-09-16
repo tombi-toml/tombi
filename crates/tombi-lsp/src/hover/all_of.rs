@@ -71,10 +71,7 @@ where
                             && let Some(enum_values) = resolved_schema
                                 .schema_view
                                 .as_ref()
-                                .get_enum(
-                                    resolved_schema,
-                                    schema_context,
-                                )
+                                .get_enum(resolved_schema, schema_context)
                                 .await
                         {
                             hover_value_content

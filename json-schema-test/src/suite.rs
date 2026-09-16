@@ -117,17 +117,25 @@ fn ensure_official_metaschemas() -> Result<()> {
             fs::create_dir_all(parent)
                 .with_context(|| format!("failed to create metaschema dir {}", parent.display()))?;
         }
+        let download_uri = canonical_metaschema_download_uri(uri);
         let status = Command::new("curl")
             .args(["-fsSL", "-o"])
             .arg(&path)
-            .arg(uri)
+            .arg(download_uri.as_ref())
             .status()
             .context("failed to spawn curl; install curl to fetch metaschemas")?;
         if !status.success() {
-            bail!("curl failed to download {uri} (status {status})");
+            bail!("curl failed to download {download_uri} for {uri} (status {status})");
         }
     }
     Ok(())
+}
+
+fn canonical_metaschema_download_uri(uri: &str) -> std::borrow::Cow<'_, str> {
+    if let Some(path) = uri.strip_prefix("http://json-schema.org/") {
+        return std::borrow::Cow::Owned(format!("https://json-schema.org/{path}"));
+    }
+    std::borrow::Cow::Borrowed(uri)
 }
 
 fn cache_file_path_for_uri(cache_root: &Path, uri: &str) -> PathBuf {

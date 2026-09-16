@@ -683,22 +683,50 @@ impl SchemaView {
         strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, Vec<SchemaView>> {
+        self.match_flattened_schemas_in_scope(
+            condition,
+            schema_base_uri,
+            definitions,
+            strict,
+            schema_store,
+            None,
+        )
+    }
+
+    pub fn match_flattened_schemas_in_scope<
+        'a: 'b,
+        'b,
+        T: Fn(&SchemaView) -> bool + Sync + Send,
+    >(
+        &'a self,
+        condition: &'a T,
+        schema_base_uri: &'a SchemaUri,
+        definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
+        schema_store: &'a SchemaStore,
+        parent_dynamic_scope: Option<&'a [SchemaUri]>,
+    ) -> BoxFuture<'b, Vec<SchemaView>> {
         async move {
             let schema_visits = crate::SchemaVisits::default();
-            self.match_flattened_schemas_with_visits(
+            self.match_flattened_schemas_with_visits_in_scope(
                 condition,
                 schema_base_uri,
                 definitions,
                 strict,
                 schema_store,
                 &schema_visits,
+                parent_dynamic_scope,
             )
             .await
         }
         .boxed()
     }
 
-    fn match_flattened_schemas_with_visits<'a: 'b, 'b, T: Fn(&SchemaView) -> bool + Sync + Send>(
+    fn match_flattened_schemas_with_visits_in_scope<
+        'a: 'b,
+        'b,
+        T: Fn(&SchemaView) -> bool + Sync + Send,
+    >(
         &'a self,
         condition: &'a T,
         schema_base_uri: &'a SchemaUri,
@@ -706,6 +734,7 @@ impl SchemaView {
         strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
         schema_visits: &'a crate::SchemaVisits,
+        parent_dynamic_scope: Option<&'a [SchemaUri]>,
     ) -> BoxFuture<'b, Vec<SchemaView>> {
         async move {
             let mut matched_schemas = Vec::new();
@@ -713,7 +742,7 @@ impl SchemaView {
                 SchemaView::OneOf(OneOfSchema { schemas, .. })
                 | SchemaView::AnyOf(AnyOfSchema { schemas, .. })
                 | SchemaView::AllOf(AllOfSchema { schemas, .. }) => {
-                    let Some(collected) = crate::resolve_and_collect_schemas(
+                    let Some(collected) = crate::resolve_and_collect_schemas_in_scope(
                         schemas,
                         Cow::Borrowed(schema_base_uri),
                         Cow::Borrowed(definitions),
@@ -721,6 +750,7 @@ impl SchemaView {
                         schema_store,
                         schema_visits,
                         &[],
+                        parent_dynamic_scope,
                     )
                     .await
                     else {
@@ -731,13 +761,14 @@ impl SchemaView {
                         matched_schemas.extend(
                             current_schema
                                 .schema_view
-                                .match_flattened_schemas_with_visits(
+                                .match_flattened_schemas_with_visits_in_scope(
                                     condition,
                                     &current_schema.schema_base_uri,
                                     &current_schema.definitions,
                                     current_schema.strict,
                                     schema_store,
                                     schema_visits,
+                                    Some(&current_schema.dynamic_scope),
                                 )
                                 .await,
                         );
@@ -766,22 +797,45 @@ impl SchemaView {
     where
         'a: 'b,
     {
+        self.is_match_in_scope(
+            condition,
+            schema_base_uri,
+            definitions,
+            strict,
+            schema_store,
+            None,
+        )
+    }
+
+    pub fn is_match_in_scope<'a, 'b, T: Fn(&SchemaView) -> bool + Sync + Send>(
+        &'a self,
+        condition: &'a T,
+        schema_base_uri: &'a SchemaUri,
+        definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
+        schema_store: &'a SchemaStore,
+        parent_dynamic_scope: Option<&'a [SchemaUri]>,
+    ) -> BoxFuture<'b, bool>
+    where
+        'a: 'b,
+    {
         async move {
             let schema_visits = crate::SchemaVisits::default();
-            self.is_match_with_visits(
+            self.is_match_with_visits_in_scope(
                 condition,
                 schema_base_uri,
                 definitions,
                 strict,
                 schema_store,
                 &schema_visits,
+                parent_dynamic_scope,
             )
             .await
         }
         .boxed()
     }
 
-    fn is_match_with_visits<'a, 'b, T: Fn(&SchemaView) -> bool + Sync + Send>(
+    fn is_match_with_visits_in_scope<'a, 'b, T: Fn(&SchemaView) -> bool + Sync + Send>(
         &'a self,
         condition: &'a T,
         schema_base_uri: &'a SchemaUri,
@@ -789,6 +843,7 @@ impl SchemaView {
         strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
         schema_visits: &'a crate::SchemaVisits,
+        parent_dynamic_scope: Option<&'a [SchemaUri]>,
     ) -> BoxFuture<'b, bool>
     where
         'a: 'b,
@@ -797,7 +852,7 @@ impl SchemaView {
             match self {
                 SchemaView::OneOf(OneOfSchema { schemas, .. })
                 | SchemaView::AnyOf(AnyOfSchema { schemas, .. }) => {
-                    let Some(collected) = crate::resolve_and_collect_schemas(
+                    let Some(collected) = crate::resolve_and_collect_schemas_in_scope(
                         schemas,
                         Cow::Borrowed(schema_base_uri),
                         Cow::Borrowed(definitions),
@@ -805,6 +860,7 @@ impl SchemaView {
                         schema_store,
                         schema_visits,
                         &[],
+                        parent_dynamic_scope,
                     )
                     .await
                     else {
@@ -814,13 +870,14 @@ impl SchemaView {
                     join_all(collected.iter().map(|current_schema| async {
                         current_schema
                             .schema_view
-                            .is_match_with_visits(
+                            .is_match_with_visits_in_scope(
                                 condition,
                                 &current_schema.schema_base_uri,
                                 &current_schema.definitions,
                                 current_schema.strict,
                                 schema_store,
                                 schema_visits,
+                                Some(&current_schema.dynamic_scope),
                             )
                             .await
                     }))
@@ -829,7 +886,7 @@ impl SchemaView {
                     .any(|is_matched| is_matched)
                 }
                 SchemaView::AllOf(AllOfSchema { schemas, .. }) => {
-                    let Some(collected) = crate::resolve_and_collect_schemas(
+                    let Some(collected) = crate::resolve_and_collect_schemas_in_scope(
                         schemas,
                         Cow::Borrowed(schema_base_uri),
                         Cow::Borrowed(definitions),
@@ -837,6 +894,7 @@ impl SchemaView {
                         schema_store,
                         schema_visits,
                         &[],
+                        parent_dynamic_scope,
                     )
                     .await
                     else {
@@ -846,13 +904,14 @@ impl SchemaView {
                     join_all(collected.iter().map(|current_schema| async {
                         current_schema
                             .schema_view
-                            .is_match_with_visits(
+                            .is_match_with_visits_in_scope(
                                 condition,
                                 &current_schema.schema_base_uri,
                                 &current_schema.definitions,
                                 current_schema.strict,
                                 schema_store,
                                 schema_visits,
+                                Some(&current_schema.dynamic_scope),
                             )
                             .await
                     }))
@@ -874,6 +933,52 @@ impl SchemaView {
         strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
         schema_visits: &'a crate::SchemaVisits,
+    ) -> BoxFuture<'b, (Vec<SchemaView>, Vec<crate::Error>)> {
+        self.find_schema_candidates_with_visits_in_scope(
+            accessors,
+            schema_base_uri,
+            definitions,
+            strict,
+            schema_store,
+            schema_visits,
+            None,
+        )
+    }
+
+    pub fn find_schema_candidates_in_scope<'a: 'b, 'b>(
+        &'a self,
+        accessors: &'a [Accessor],
+        schema_base_uri: &'a SchemaUri,
+        definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
+        schema_store: &'a SchemaStore,
+        parent_dynamic_scope: Option<&'a [SchemaUri]>,
+    ) -> BoxFuture<'b, (Vec<SchemaView>, Vec<crate::Error>)> {
+        async move {
+            let schema_visits = crate::SchemaVisits::default();
+            self.find_schema_candidates_with_visits_in_scope(
+                accessors,
+                schema_base_uri,
+                definitions,
+                strict,
+                schema_store,
+                &schema_visits,
+                parent_dynamic_scope,
+            )
+            .await
+        }
+        .boxed()
+    }
+
+    fn find_schema_candidates_with_visits_in_scope<'a: 'b, 'b>(
+        &'a self,
+        accessors: &'a [Accessor],
+        schema_base_uri: &'a SchemaUri,
+        definitions: &'a SchemaDefinitions,
+        strict: Option<tombi_schema_type::BoolDefaultTrue>,
+        schema_store: &'a SchemaStore,
+        schema_visits: &'a crate::SchemaVisits,
+        parent_dynamic_scope: Option<&'a [SchemaUri]>,
     ) -> BoxFuture<'b, (Vec<SchemaView>, Vec<crate::Error>)> {
         async move {
             match self {
@@ -898,7 +1003,7 @@ impl SchemaView {
                     let mut candidates = Vec::new();
                     let mut errors = Vec::new();
 
-                    let Some(collected) = crate::resolve_and_collect_schemas(
+                    let Some(collected) = crate::resolve_and_collect_schemas_in_scope(
                         schemas,
                         Cow::Borrowed(schema_base_uri),
                         Cow::Borrowed(definitions),
@@ -906,6 +1011,7 @@ impl SchemaView {
                         schema_store,
                         schema_visits,
                         accessors,
+                        parent_dynamic_scope,
                     )
                     .await
                     else {
@@ -915,13 +1021,14 @@ impl SchemaView {
                     for current_schema in &collected {
                         let (mut schema_candidates, schema_errors) = current_schema
                             .schema_view
-                            .find_schema_candidates_with_visits(
+                            .find_schema_candidates_with_visits_in_scope(
                                 accessors,
                                 &current_schema.schema_base_uri,
                                 &current_schema.definitions,
                                 current_schema.strict,
                                 schema_store,
                                 schema_visits,
+                                Some(&current_schema.dynamic_scope),
                             )
                             .await;
 

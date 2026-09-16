@@ -329,11 +329,7 @@ impl GetEnum for SchemaView {
                 SchemaView::OneOf(OneOfSchema { .. })
                 | SchemaView::AnyOf(AnyOfSchema { .. })
                 | SchemaView::AllOf(AllOfSchema { .. }) => {
-                    get_enum_from_schemas(
-                        current_schema,
-                        schema_context,
-                    )
-                    .await
+                    get_enum_from_schemas(current_schema, schema_context).await
                 }
             }
         }
@@ -368,10 +364,7 @@ fn get_enum_from_schemas<'a: 'b, 'b>(
         for resolved in &resolved_schemas {
             if let Some(values) = resolved
                 .schema_view
-                .get_enum(
-                    resolved,
-                    schema_context,
-                )
+                .get_enum(resolved, schema_context)
                 .await
             {
                 enum_values.extend(values);
