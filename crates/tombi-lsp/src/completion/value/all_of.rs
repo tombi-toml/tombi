@@ -72,6 +72,7 @@ where
                 &current_schema.definitions,
                 current_schema.strict,
                 schema_context.store,
+                &current_schema.dynamic_scope,
                 completion_hint,
             )
             .await;
@@ -81,6 +82,7 @@ where
                 &current_schema.definitions,
                 current_schema.strict,
                 schema_context.store,
+                &current_schema.dynamic_scope,
                 completion_hint,
             )
             .await;

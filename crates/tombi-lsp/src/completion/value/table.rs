@@ -698,6 +698,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                                     &linked_schema.definitions,
                                                     linked_schema.strict,
                                                     schema_context.store,
+                                                    &linked_schema.dynamic_scope,
                                                     completion_hint,
                                                 )
                                                 .await,
@@ -708,6 +709,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                                     &linked_schema.definitions,
                                                     linked_schema.strict,
                                                     schema_context.store,
+                                                    &linked_schema.dynamic_scope,
                                                     completion_hint,
                                                 )
                                                 .await,
@@ -1018,6 +1020,7 @@ impl FindCompletionContents for TableSchema {
                                 &current_schema.definitions,
                                 current_schema.strict,
                                 schema_context.store,
+                                &current_schema.dynamic_scope,
                                 completion_hint,
                             )
                             .await,
@@ -1027,6 +1030,7 @@ impl FindCompletionContents for TableSchema {
                                 &current_schema.definitions,
                                 current_schema.strict,
                                 schema_context.store,
+                                &current_schema.dynamic_scope,
                                 completion_hint,
                             )
                             .await,
@@ -1419,6 +1423,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                         &current_schema.definitions,
                         current_schema.strict,
                         schema_context.store,
+                        &current_schema.dynamic_scope,
                         completion_hint,
                     )
                     .await,
@@ -1428,6 +1433,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                         &current_schema.definitions,
                         current_schema.strict,
                         schema_context.store,
+                        &current_schema.dynamic_scope,
                         completion_hint,
                     )
                     .await,

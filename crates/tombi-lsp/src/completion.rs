@@ -551,6 +551,7 @@ pub trait CompletionCandidate {
         definitions: &'a SchemaDefinitions,
         strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
+        parent_dynamic_scope: &'a [SchemaUri],
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Option<String>>;
 
@@ -560,6 +561,7 @@ pub trait CompletionCandidate {
         definitions: &'a SchemaDefinitions,
         strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
+        parent_dynamic_scope: &'a [SchemaUri],
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Option<String>>;
 
@@ -569,6 +571,7 @@ pub trait CompletionCandidate {
         definitions: &SchemaDefinitions,
         strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &SchemaStore,
+        parent_dynamic_scope: &[SchemaUri],
         completion_hint: Option<CompletionHint>,
     ) -> Option<String> {
         self.title(
@@ -576,6 +579,7 @@ pub trait CompletionCandidate {
             definitions,
             strict,
             schema_store,
+            parent_dynamic_scope,
             completion_hint,
         )
         .await
@@ -587,6 +591,7 @@ pub trait CompletionCandidate {
         definitions: &SchemaDefinitions,
         strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &SchemaStore,
+        parent_dynamic_scope: &[SchemaUri],
         completion_hint: Option<CompletionHint>,
     ) -> Option<String> {
         self.description(
@@ -594,6 +599,7 @@ pub trait CompletionCandidate {
             definitions,
             strict,
             schema_store,
+            parent_dynamic_scope,
             completion_hint,
         )
         .await
@@ -606,13 +612,14 @@ fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
     definitions: &'a SchemaDefinitions,
     strict: Option<tombi_schema_type::BoolDefaultTrue>,
     schema_store: &'a SchemaStore,
+    parent_dynamic_scope: &'a [SchemaUri],
     completion_hint: Option<CompletionHint>,
 ) -> tombi_future::BoxFuture<'b, Option<String>> {
     async move {
         let mut candidates = tombi_hashmap::IndexSet::new();
         let schema_visits = tombi_schema_store::SchemaVisits::default();
 
-        if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+        if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas_in_scope(
             composite_schema.schemas(),
             Cow::Borrowed(schema_base_uri),
             Cow::Borrowed(definitions),
@@ -620,6 +627,7 @@ fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
             schema_store,
             &schema_visits,
             &[],
+            Some(parent_dynamic_scope),
         )
         .await
         {
@@ -634,6 +642,7 @@ fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
                     &current_schema.definitions,
                     current_schema.strict,
                     schema_store,
+                    &current_schema.dynamic_scope,
                     completion_hint,
                 )
                 .await
@@ -661,13 +670,14 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
     definitions: &'a SchemaDefinitions,
     strict: Option<tombi_schema_type::BoolDefaultTrue>,
     schema_store: &'a SchemaStore,
+    parent_dynamic_scope: &'a [SchemaUri],
     completion_hint: Option<CompletionHint>,
 ) -> tombi_future::BoxFuture<'b, Option<String>> {
     async move {
         let mut contents = Vec::new();
         let schema_visits = tombi_schema_store::SchemaVisits::default();
 
-        if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+        if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas_in_scope(
             composite_schema.schemas(),
             Cow::Borrowed(schema_base_uri),
             Cow::Borrowed(definitions),
@@ -675,6 +685,7 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
             schema_store,
             &schema_visits,
             &[],
+            Some(parent_dynamic_scope),
         )
         .await
         {
@@ -689,6 +700,7 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
                     &current_schema.definitions,
                     current_schema.strict,
                     schema_store,
+                    &current_schema.dynamic_scope,
                     completion_hint,
                 )
                 .await;
@@ -698,6 +710,7 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
                     &current_schema.definitions,
                     current_schema.strict,
                     schema_store,
+                    &current_schema.dynamic_scope,
                     completion_hint,
                 )
                 .await;
@@ -732,6 +745,7 @@ macro_rules! impl_composite_completion_candidate {
                 definitions: &'a SchemaDefinitions,
                 strict: Option<tombi_schema_type::BoolDefaultTrue>,
                 schema_store: &'a SchemaStore,
+                parent_dynamic_scope: &'a [SchemaUri],
                 completion_hint: Option<CompletionHint>,
             ) -> tombi_future::BoxFuture<'b, Option<String>> {
                 composite_title(
@@ -740,6 +754,7 @@ macro_rules! impl_composite_completion_candidate {
                     definitions,
                     strict,
                     schema_store,
+                    parent_dynamic_scope,
                     completion_hint,
                 )
             }
@@ -750,6 +765,7 @@ macro_rules! impl_composite_completion_candidate {
                 definitions: &'a SchemaDefinitions,
                 strict: Option<tombi_schema_type::BoolDefaultTrue>,
                 schema_store: &'a SchemaStore,
+                parent_dynamic_scope: &'a [SchemaUri],
                 completion_hint: Option<CompletionHint>,
             ) -> tombi_future::BoxFuture<'b, Option<String>> {
                 composite_description(
@@ -758,6 +774,7 @@ macro_rules! impl_composite_completion_candidate {
                     definitions,
                     strict,
                     schema_store,
+                    parent_dynamic_scope,
                     completion_hint,
                 )
             }

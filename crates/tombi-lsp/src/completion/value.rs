@@ -305,6 +305,7 @@ impl CompletionCandidate for SchemaView {
         definitions: &'a SchemaDefinitions,
         strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
+        parent_dynamic_scope: &'a [SchemaUri],
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
@@ -329,6 +330,7 @@ impl CompletionCandidate for SchemaView {
                             definitions,
                             strict,
                             schema_store,
+                            parent_dynamic_scope,
                             completion_hint,
                         )
                         .await
@@ -340,6 +342,7 @@ impl CompletionCandidate for SchemaView {
                             definitions,
                             strict,
                             schema_store,
+                            parent_dynamic_scope,
                             completion_hint,
                         )
                         .await
@@ -351,6 +354,7 @@ impl CompletionCandidate for SchemaView {
                             definitions,
                             strict,
                             schema_store,
+                            parent_dynamic_scope,
                             completion_hint,
                         )
                         .await
@@ -367,6 +371,7 @@ impl CompletionCandidate for SchemaView {
         definitions: &'a SchemaDefinitions,
         strict: Option<tombi_schema_type::BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
+        parent_dynamic_scope: &'a [SchemaUri],
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
@@ -391,6 +396,7 @@ impl CompletionCandidate for SchemaView {
                             definitions,
                             strict,
                             schema_store,
+                            parent_dynamic_scope,
                             completion_hint,
                         )
                         .await
@@ -402,6 +408,7 @@ impl CompletionCandidate for SchemaView {
                             definitions,
                             strict,
                             schema_store,
+                            parent_dynamic_scope,
                             completion_hint,
                         )
                         .await
@@ -413,6 +420,7 @@ impl CompletionCandidate for SchemaView {
                             definitions,
                             strict,
                             schema_store,
+                            parent_dynamic_scope,
                             completion_hint,
                         )
                         .await

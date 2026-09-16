@@ -313,8 +313,8 @@ impl Referable<SchemaView> {
                 object,
                 string_formats,
                 dialect,
-                anchor_collector.as_deref_mut(),
-                dynamic_anchor_collector.as_deref_mut(),
+                anchor_collector,
+                dynamic_anchor_collector,
             );
         }
 
@@ -342,7 +342,7 @@ impl Referable<SchemaView> {
                     .as_object()
                     .and_then(|definition| definition.get("$id"))
                     .and_then(tombi_json::ValueNode::as_str)
-                    .is_some_and(|id| id.split_once('#').map_or(true, |(base, _)| !base.is_empty()));
+                    .is_some_and(|id| id.split_once('#').is_none_or(|(base, _)| !base.is_empty()));
                 if starts_new_resource {
                     continue;
                 }
@@ -1457,7 +1457,7 @@ fn parse_dynamic_anchor_reference(
     current_base_uri: &SchemaUri,
 ) -> Option<(Option<SchemaUri>, String)> {
     if let Some(fragment) = reference.strip_prefix('#') {
-        if !is_plain_name_fragment(&fragment) {
+        if !is_plain_name_fragment(fragment) {
             return None;
         }
         return Some((None, format!("#{fragment}")));
