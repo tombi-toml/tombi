@@ -32,7 +32,7 @@ where
     async move {
         let mut hover_value_contents = Vec::new();
 
-        let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
+        let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas_in_scope(
             &all_of_schema.schemas,
             Cow::Borrowed(current_schema.schema_base_uri.as_ref()),
             Cow::Borrowed(current_schema.definitions.as_ref()),
@@ -40,6 +40,7 @@ where
             schema_context.store,
             &schema_context.schema_visits,
             accessors,
+            Some(&current_schema.dynamic_scope),
         )
         .await?;
 
@@ -70,12 +71,7 @@ where
                             && let Some(enum_values) = resolved_schema
                                 .schema_view
                                 .as_ref()
-                                .get_enum(
-                                    &resolved_schema.schema_base_uri,
-                                    &resolved_schema.definitions,
-                                    resolved_schema.strict,
-                                    schema_context,
-                                )
+                                .get_enum(resolved_schema, schema_context)
                                 .await
                         {
                             hover_value_content
@@ -105,13 +101,21 @@ where
             accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
             value_type: value.value_type().into(),
             constraints: None,
-            schema_document_uri: Some(super::schema_link_uri(current_schema.schema_document_uri.as_ref(), all_of_schema.range)),
+            schema_document_uri: Some(super::schema_link_uri(
+                current_schema.schema_document_uri.as_ref(),
+                all_of_schema.range,
+            )),
             range: None,
             schema_tooltip: None,
         });
         hover_value_content
             .schema_document_uri
-            .get_or_insert_with(|| super::schema_link_uri(current_schema.schema_document_uri.as_ref(), all_of_schema.range));
+            .get_or_insert_with(|| {
+                super::schema_link_uri(
+                    current_schema.schema_document_uri.as_ref(),
+                    all_of_schema.range,
+                )
+            });
 
         if hover_value_content.title.is_none() && hover_value_content.description.is_none() {
             hover_value_content.title = all_of_schema.title.clone();
@@ -176,7 +180,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 unreachable!("schema must be provided");
             };
 
-            let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas(
+            let resolved_schemas = tombi_schema_store::resolve_and_collect_schemas_in_scope(
                 &self.schemas,
                 current_schema.schema_base_uri.clone(),
                 current_schema.definitions.clone(),
@@ -184,6 +188,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 schema_context.store,
                 &schema_context.schema_visits,
                 accessors,
+                Some(&current_schema.dynamic_scope),
             )
             .await?;
 

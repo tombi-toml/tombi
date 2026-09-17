@@ -31,7 +31,7 @@ where
     async move {
         let mut completion_items = Vec::new();
 
-        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas_in_scope(
             &all_of_schema.schemas,
             current_schema.schema_base_uri.clone(),
             current_schema.definitions.clone(),
@@ -39,6 +39,7 @@ where
             schema_context.store,
             &schema_context.schema_visits,
             accessors,
+            Some(&current_schema.dynamic_scope),
         )
         .await
         else {
@@ -71,6 +72,7 @@ where
                 &current_schema.definitions,
                 current_schema.strict,
                 schema_context.store,
+                &current_schema.dynamic_scope,
                 completion_hint,
             )
             .await;
@@ -80,6 +82,7 @@ where
                 &current_schema.definitions,
                 current_schema.strict,
                 schema_context.store,
+                &current_schema.dynamic_scope,
                 completion_hint,
             )
             .await;

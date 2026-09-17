@@ -69,12 +69,13 @@ async fn validate_dependent_schemas<'a>(
             continue;
         }
 
-        match tombi_schema_store::resolve_schema_item(
+        match tombi_schema_store::resolve_schema_item_in_scope(
             schema_item,
             current_schema.schema_base_uri.clone(),
             current_schema.definitions.clone(),
             current_schema.strict,
             schema_context.store,
+            Some(&current_schema.dynamic_scope),
         )
         .await
         {
@@ -337,12 +338,13 @@ async fn validate_table(
                     current_schema.definitions.clone(),
                     current_schema.strict,
                     schema_context.store,
+                    Some(&current_schema.dynamic_scope),
                 )
                 .await
             {
-                Ok(Some(current_schema)) => {
+                Ok(Some(property_schema)) => {
                     let result = value
-                        .validate(&new_accessors, Some(&current_schema), schema_context)
+                        .validate(&new_accessors, Some(&property_schema), schema_context)
                         .await;
                     declared_schema_applied = true;
                     declared_value_matched &= crate::validate::is_assertion_success(&result);
@@ -357,7 +359,7 @@ async fn validate_table(
                     {
                         assertion_failed |= child_assertion_failed;
                         convert_deprecated_diagnostics_range(
-                            &current_schema,
+                            &property_schema,
                             value,
                             key,
                             &mut diagnostics,
@@ -401,12 +403,13 @@ async fn validate_table(
                             current_schema.definitions.clone(),
                             current_schema.strict,
                             schema_context.store,
+                            Some(&current_schema.dynamic_scope),
                         )
                         .await
                     {
-                        Ok(Some(current_schema)) => {
+                        Ok(Some(property_schema)) => {
                             let result = value
-                                .validate(&new_accessors, Some(&current_schema), schema_context)
+                                .validate(&new_accessors, Some(&property_schema), schema_context)
                                 .await;
                             declared_schema_applied = true;
                             declared_value_matched &=
@@ -422,7 +425,7 @@ async fn validate_table(
                             {
                                 assertion_failed |= child_assertion_failed;
                                 convert_deprecated_diagnostics_range(
-                                    &current_schema,
+                                    &property_schema,
                                     value,
                                     key,
                                     &mut diagnostics,
@@ -503,12 +506,13 @@ async fn validate_table(
             if let Some((_, referable_additional_property_schema)) =
                 &table_schema.additional_property_schema
             {
-                match tombi_schema_store::resolve_schema_item(
+                match tombi_schema_store::resolve_schema_item_in_scope(
                     referable_additional_property_schema,
                     current_schema.schema_base_uri.clone(),
                     current_schema.definitions.clone(),
                     current_schema.strict,
                     schema_context.store,
+                    Some(&current_schema.dynamic_scope),
                 )
                 .await
                 {
@@ -566,12 +570,13 @@ async fn validate_table(
                 && !evaluated_by_additional_default
             {
                 if let Some(schema_item) = &table_schema.unevaluated_property_schema {
-                    match tombi_schema_store::resolve_schema_item(
+                    match tombi_schema_store::resolve_schema_item_in_scope(
                         schema_item,
                         current_schema.schema_base_uri.clone(),
                         current_schema.definitions.clone(),
                         current_schema.strict,
                         schema_context.store,
+                        Some(&current_schema.dynamic_scope),
                     )
                     .await
                     {
@@ -943,12 +948,13 @@ async fn validate_table(
 
     let property_name_current_schema =
         if let Some(property_name_schema) = &table_schema.property_names {
-            match tombi_schema_store::resolve_schema_item(
+            match tombi_schema_store::resolve_schema_item_in_scope(
                 property_name_schema,
                 current_schema.schema_base_uri.clone(),
                 current_schema.definitions.clone(),
                 current_schema.strict,
                 schema_context.store,
+                Some(&current_schema.dynamic_scope),
             )
             .await
             {
@@ -1180,7 +1186,7 @@ fn collect_evaluated_properties_from_referable_schemas<'a>(
 ) -> BoxFuture<'a, crate::Valid> {
     async move {
         let mut result = crate::Valid::new();
-        let Some(schemas) = tombi_schema_store::resolve_and_collect_schemas(
+        let Some(schemas) = tombi_schema_store::resolve_and_collect_schemas_in_scope(
             applicator.schemas(),
             current_schema.schema_base_uri.clone(),
             current_schema.definitions.clone(),
@@ -1188,6 +1194,7 @@ fn collect_evaluated_properties_from_referable_schemas<'a>(
             schema_context.store,
             &schema_context.schema_visits,
             accessors,
+            Some(&current_schema.dynamic_scope),
         )
         .await
         else {

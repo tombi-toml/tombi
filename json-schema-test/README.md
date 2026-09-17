@@ -31,6 +31,9 @@ Or directly:
 cargo run -p json-schema-test -- --allow-fail
 ```
 
+Official dialect metaschemas are fetched into `vendor/metaschema-cache/` (same
+layout as `tombi-cache`) so offline suite runs can resolve `$ref`s to
+`json-schema.org` without the developer's `~/.cache/tombi`.
 ## Suite pin
 
 Upstream commit is pinned in [`src/SUITE_PIN`](./src/SUITE_PIN). Updating the pin

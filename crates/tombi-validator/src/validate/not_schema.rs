@@ -20,12 +20,13 @@ pub async fn validate_not<'a, T>(
 where
     T: Validate + ValueImpl + Sync + Send,
 {
-    let matches_not_schema = match tombi_schema_store::resolve_schema_item(
+    let matches_not_schema = match tombi_schema_store::resolve_schema_item_in_scope(
         &not_schema.schema,
         current_schema.schema_base_uri.clone(),
         current_schema.definitions.clone(),
         current_schema.strict,
         schema_context.store,
+        Some(&current_schema.dynamic_scope),
     )
     .await
     {

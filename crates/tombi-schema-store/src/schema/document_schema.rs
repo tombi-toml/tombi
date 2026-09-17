@@ -192,7 +192,9 @@ impl DocumentSchema {
 
         let mut anchors = AnchorCollector::default();
         let mut dynamic_anchors = DynamicAnchorCollector::default();
-        let collect_anchor = crate::supports_keyword(dialect, "$anchor");
+        // Draft-07 uses `$id` plain-name fragments as anchors; 2019-09+ uses `$anchor`.
+        let collect_anchor = crate::supports_keyword(dialect, "$anchor")
+            || dialect == Some(JsonSchemaDialect::Draft07);
         let collect_dynamic_anchor = crate::supports_keyword(dialect, "$dynamicAnchor")
             || crate::supports_keyword(dialect, "$recursiveAnchor");
         // The root value schema may itself be a `$ref`. A direct schema resolves to an
@@ -354,15 +356,34 @@ impl DocumentSchema {
     }
 
     pub fn as_current_schema(&self) -> Option<CurrentSchema<'_>> {
-        self.schema_view.as_ref().map(|schema_view| CurrentSchema {
-            schema_view: schema_view.clone(),
-            semantic_schema: self.semantic_schema.clone(),
-            schema_uri: Cow::Borrowed(&self.schema_uri),
-            schema_base_uri: Cow::Owned(self.schema_base_uri().clone()),
-            schema_document_uri: Cow::Borrowed(self.schema_document_uri()),
-            definitions: Cow::Borrowed(&self.definitions),
-            strict: self.strict,
+        self.schema_view.as_ref().map(|schema_view| {
+            let schema_base_uri = self.schema_base_uri();
+            CurrentSchema {
+                schema_view: schema_view.clone(),
+                semantic_schema: self.semantic_schema.clone(),
+                schema_uri: Cow::Borrowed(&self.schema_uri),
+                schema_base_uri: Cow::Borrowed(schema_base_uri),
+                schema_document_uri: Cow::Borrowed(self.schema_document_uri()),
+                definitions: Cow::Borrowed(&self.definitions),
+                strict: self.strict,
+                dynamic_scope: self.dynamic_scope(&[]),
+            }
         })
+    }
+
+    pub(crate) fn dynamic_scope(&self, parent_dynamic_scope: &[SchemaUri]) -> Vec<SchemaUri> {
+        fn extend(scope: &[SchemaUri], resource_uri: &SchemaUri) -> Vec<SchemaUri> {
+            if scope.first() == Some(resource_uri) {
+                return scope.to_vec();
+            }
+            let mut extended = Vec::with_capacity(scope.len() + 1);
+            extended.push(resource_uri.clone());
+            extended.extend_from_slice(scope);
+            extended
+        }
+
+        let scope = extend(parent_dynamic_scope, self.schema_resource_uri());
+        extend(&scope, self.schema_base_uri())
     }
 }
 
@@ -481,6 +502,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn collects_draft07_id_fragment_as_anchor() {
+        let schema_json = r##"{
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": "urn:uuid:deadbeef-1234-ff00-00ff-4321feebdaed",
+            "definitions": {
+                "bar": {
+                    "$id": "#something",
+                    "type": "string"
+                }
+            }
+        }"##;
+
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid schema json");
+        let schema_uri = tombi_uri::SchemaUri::from_str("https://example.com/schema.json")
+            .expect("valid schema uri");
+
+        let document_schema =
+            DocumentSchema::new(schema_value, schema_uri, None, &SchemaStore::new())
+                .await
+                .expect("DocumentSchema::new");
+        let anchors = document_schema.anchors.read().await;
+        assert!(
+            anchors.contains_key("#something"),
+            "draft-07 `$id` plain-name fragments must register as anchors"
+        );
+    }
+
+    #[tokio::test]
     async fn format_assertion_default_true_for_draft_07() {
         let schema_json = r#"{ "$schema": "http://json-schema.org/draft-07/schema#" }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
@@ -584,6 +633,34 @@ mod tests {
                 .expect("DocumentSchema::new");
         let dynamic_anchors = document_schema.dynamic_anchors.read().await;
         assert!(dynamic_anchors.contains_key("#nameSchema"));
+    }
+
+    #[tokio::test]
+    async fn collects_dynamic_anchor_definitions_nested_under_defs() {
+        let schema_json = r#"{
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "allOf": [
+                {
+                    "$defs": {
+                        "elements": {
+                            "$dynamicAnchor": "elements",
+                            "type": "object"
+                        }
+                    }
+                }
+            ]
+        }"#;
+
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid schema json");
+        let schema_uri = tombi_uri::SchemaUri::from_str("https://example.com/schema.json")
+            .expect("valid schema uri");
+
+        let document_schema =
+            DocumentSchema::new(schema_value, schema_uri, None, &SchemaStore::new())
+                .await
+                .expect("DocumentSchema::new");
+        let dynamic_anchors = document_schema.dynamic_anchors.read().await;
+        assert!(dynamic_anchors.contains_key("#elements"));
     }
 
     #[tokio::test]

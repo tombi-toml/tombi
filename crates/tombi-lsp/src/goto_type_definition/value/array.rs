@@ -158,9 +158,7 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Array {
                             keys,
                             accessors,
                             one_of_schema,
-                            &current_schema.schema_base_uri,
-                            &current_schema.definitions,
-                            current_schema.strict,
+                            current_schema,
                             schema_context,
                         )
                         .await;
@@ -172,9 +170,7 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Array {
                             keys,
                             accessors,
                             any_of_schema,
-                            &current_schema.schema_base_uri,
-                            &current_schema.definitions,
-                            current_schema.strict,
+                            current_schema,
                             schema_context,
                         )
                         .await;
@@ -186,9 +182,7 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Array {
                             keys,
                             accessors,
                             all_of_schema,
-                            &current_schema.schema_base_uri,
-                            &current_schema.definitions,
-                            current_schema.strict,
+                            current_schema,
                             schema_context,
                         )
                         .await;

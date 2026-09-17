@@ -1,4 +1,4 @@
-use std::{borrow::Cow, ops::Deref, sync::Arc};
+use std::{ops::Deref, sync::Arc};
 
 use tombi_document_tree_syntax::{DocumentTree, TableKind, Value, ValueImpl, dig_accessors};
 use tombi_future::Boxable;
@@ -19,12 +19,13 @@ async fn resolve_schema_item_owned(
     current_schema: &CurrentSchema<'_>,
     schema_context: &SchemaContext<'_>,
 ) -> Option<CurrentSchema<'static>> {
-    tombi_schema_store::resolve_schema_item(
+    tombi_schema_store::resolve_schema_item_in_scope(
         schema_item,
         current_schema.schema_base_uri.clone(),
         current_schema.definitions.clone(),
         current_schema.strict,
         schema_context.store,
+        Some(&current_schema.dynamic_scope),
     )
     .await
     .inspect_err(|err| log::warn!("{err}"))
@@ -158,16 +159,7 @@ async fn resolve_current_schema(
     schema_context: &SchemaContext<'_>,
 ) -> Option<CurrentSchema<'static>> {
     let document_schema = schema_context.root_schema?;
-    let schema_view = document_schema.schema_view.as_ref()?;
-    let current_schema = CurrentSchema {
-        schema_view: schema_view.clone(),
-        semantic_schema: document_schema.semantic_schema.clone(),
-        schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
-        schema_base_uri: Cow::Owned(document_schema.schema_base_uri().clone()),
-        schema_document_uri: Cow::Owned(document_schema.schema_document_uri().clone()),
-        definitions: Cow::Owned(document_schema.definitions.clone()),
-        strict: document_schema.strict,
-    };
+    let current_schema = document_schema.as_current_schema()?.into_owned();
 
     resolve_schema_with_accessors(
         document_tree,
@@ -240,6 +232,7 @@ fn resolve_schema_with_accessors<'a: 'b, 'b>(
                         current_schema.definitions.clone(),
                         current_schema.strict,
                         schema_context.store,
+                        Some(&current_schema.dynamic_scope),
                     )
                     .await
                     .inspect_err(|err| log::warn!("{err}"))
@@ -291,7 +284,7 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
     schema_context: &'a SchemaContext<'a>,
 ) -> tombi_future::BoxFuture<'b, Option<CurrentSchema<'static>>> {
     async move {
-        let collected = tombi_schema_store::resolve_and_collect_schemas(
+        let collected = tombi_schema_store::resolve_and_collect_schemas_in_scope(
             schemas,
             current_schema.schema_base_uri.clone(),
             current_schema.definitions.clone(),
@@ -299,6 +292,7 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
             schema_context.store,
             &schema_context.schema_visits,
             accessors,
+            Some(&current_schema.dynamic_scope),
         )
         .await?;
 
@@ -432,6 +426,7 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
                     schema_document_uri: current_schema.schema_document_uri,
                     definitions: current_schema.definitions,
                     strict: current_schema.strict,
+                    dynamic_scope: current_schema.dynamic_scope,
                 })
             }
         }

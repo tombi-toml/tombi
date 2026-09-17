@@ -211,9 +211,7 @@ pub(super) async fn adjacent_type_definition<
             keys,
             accessors,
             one_of_schema,
-            &current_schema.schema_base_uri,
-            &current_schema.definitions,
-            current_schema.strict,
+            current_schema,
             schema_context,
         )
         .await
@@ -228,9 +226,7 @@ pub(super) async fn adjacent_type_definition<
             keys,
             accessors,
             any_of_schema,
-            &current_schema.schema_base_uri,
-            &current_schema.definitions,
-            current_schema.strict,
+            current_schema,
             schema_context,
         )
         .await
@@ -245,9 +241,7 @@ pub(super) async fn adjacent_type_definition<
             keys,
             accessors,
             all_of_schema,
-            &current_schema.schema_base_uri,
-            &current_schema.definitions,
-            current_schema.strict,
+            current_schema,
             schema_context,
         )
         .await

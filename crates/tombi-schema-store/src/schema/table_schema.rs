@@ -392,6 +392,7 @@ impl TableSchema {
         definitions: Cow<'_, SchemaDefinitions>,
         strict: Option<BoolDefaultTrue>,
         schema_store: &SchemaStore,
+        parent_dynamic_scope: Option<&[SchemaUri]>,
     ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
         let mut property_schema = {
             let properties = self.properties.read().await;
@@ -404,7 +405,13 @@ impl TableSchema {
 
             if property_schema.is_resolved() {
                 return property_schema
-                    .to_current_schema(schema_base_uri, definitions, strict, schema_store)
+                    .to_current_schema(
+                        schema_base_uri,
+                        definitions,
+                        strict,
+                        schema_store,
+                        parent_dynamic_scope,
+                    )
                     .await;
             }
 
@@ -412,11 +419,12 @@ impl TableSchema {
         };
 
         let resolved = property_schema
-            .resolve(
-                schema_base_uri.clone(),
-                definitions.clone(),
+            .resolve_in_scope(
+                schema_base_uri,
+                definitions,
                 strict,
                 schema_store,
+                parent_dynamic_scope,
             )
             .await?
             .map(CurrentSchema::into_owned);
@@ -444,6 +452,7 @@ impl TableSchema {
         definitions: Cow<'_, SchemaDefinitions>,
         strict: Option<BoolDefaultTrue>,
         schema_store: &SchemaStore,
+        parent_dynamic_scope: Option<&[SchemaUri]>,
     ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
         let Some(pattern_properties) = &self.pattern_properties else {
             return Ok(None);
@@ -460,7 +469,13 @@ impl TableSchema {
 
             if property_schema.is_resolved() {
                 return property_schema
-                    .to_current_schema(schema_base_uri, definitions, strict, schema_store)
+                    .to_current_schema(
+                        schema_base_uri,
+                        definitions,
+                        strict,
+                        schema_store,
+                        parent_dynamic_scope,
+                    )
                     .await;
             }
 
@@ -468,11 +483,12 @@ impl TableSchema {
         };
 
         let resolved = pattern_property_schema
-            .resolve(
-                schema_base_uri.clone(),
-                definitions.clone(),
+            .resolve_in_scope(
+                schema_base_uri,
+                definitions,
                 strict,
                 schema_store,
+                parent_dynamic_scope,
             )
             .await?
             .map(CurrentSchema::into_owned);
@@ -503,6 +519,27 @@ impl FindSchemaCandidates for TableSchema {
         strict: Option<BoolDefaultTrue>,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, (Vec<SchemaView>, Vec<crate::Error>)> {
+        self.find_schema_candidates_in_scope(
+            accessors,
+            schema_base_uri,
+            definitions,
+            strict,
+            schema_store,
+            None,
+        )
+    }
+}
+
+impl TableSchema {
+    pub(crate) fn find_schema_candidates_in_scope<'a: 'b, 'b>(
+        &'a self,
+        accessors: &'a [Accessor],
+        schema_base_uri: &'a SchemaUri,
+        definitions: &'a SchemaDefinitions,
+        strict: Option<BoolDefaultTrue>,
+        schema_store: &'a SchemaStore,
+        parent_dynamic_scope: Option<&'a [SchemaUri]>,
+    ) -> BoxFuture<'b, (Vec<SchemaView>, Vec<crate::Error>)> {
         async move {
             let mut candidates = Vec::new();
             let mut errors = Vec::new();
@@ -517,6 +554,7 @@ impl FindSchemaCandidates for TableSchema {
                             Cow::Borrowed(definitions),
                             strict,
                             schema_store,
+                            parent_dynamic_scope,
                         )
                         .await
                         .inspect_err(|err| {
@@ -534,16 +572,18 @@ impl FindSchemaCandidates for TableSchema {
                         schema_base_uri,
                         definitions,
                         strict,
+                        dynamic_scope,
                         ..
                     }) = current_schema
                     {
                         let (schema_candidates, schema_errors) = schema_view
-                            .find_schema_candidates(
+                            .find_schema_candidates_in_scope(
                                 accessors,
                                 &schema_base_uri,
                                 &definitions,
                                 strict,
                                 schema_store,
+                                Some(&dynamic_scope),
                             )
                             .await;
                         candidates.extend(schema_candidates);
@@ -561,6 +601,7 @@ impl FindSchemaCandidates for TableSchema {
                     Cow::Borrowed(definitions),
                     strict,
                     schema_store,
+                    parent_dynamic_scope,
                 )
                 .await
                 .inspect_err(|err| {
@@ -578,16 +619,18 @@ impl FindSchemaCandidates for TableSchema {
                 schema_base_uri,
                 definitions,
                 strict,
+                dynamic_scope,
                 ..
             }) = current_schema
             {
                 return schema_view
-                    .find_schema_candidates(
+                    .find_schema_candidates_in_scope(
                         &accessors[1..],
                         &schema_base_uri,
                         &definitions,
                         strict,
                         schema_store,
+                        Some(&dynamic_scope),
                     )
                     .await;
             }

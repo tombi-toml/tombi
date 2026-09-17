@@ -98,6 +98,7 @@ impl GetHoverContent for tombi_document_tree_syntax::Table {
                                             current_schema.definitions.clone(),
                                             current_schema.strict,
                                             schema_context.store,
+                                            Some(&current_schema.dynamic_scope),
                                         )
                                         .await
                                     {
@@ -245,6 +246,7 @@ impl GetHoverContent for tombi_document_tree_syntax::Table {
                                                         current_schema.definitions.clone(),
                                                         current_schema.strict,
                                                         schema_context.store,
+                                                        Some(&current_schema.dynamic_scope),
                                                     )
                                                     .await
                                                 {
@@ -352,12 +354,13 @@ impl GetHoverContent for tombi_document_tree_syntax::Table {
                                 if let Some((_, referable_additional_property_schema)) =
                                     &table_schema.additional_property_schema
                                     && let Ok(Some(current_schema)) =
-                                        tombi_schema_store::resolve_schema_item(
+                                        tombi_schema_store::resolve_schema_item_in_scope(
                                             referable_additional_property_schema,
                                             current_schema.schema_base_uri.clone(),
                                             current_schema.definitions.clone(),
                                             current_schema.strict,
                                             schema_context.store,
+                                            Some(&current_schema.dynamic_scope),
                                         )
                                         .await
                                 {
