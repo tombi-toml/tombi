@@ -19,6 +19,11 @@ pub struct AnyOfSchema {
     pub keys_order: Option<TableKeysOrder>,
     pub not: Option<Box<NotSchema>>,
     pub if_then_else: Option<Box<IfThenElseSchema>>,
+    /// `allOf` declared as a sibling of `anyOf` in the same schema object.
+    /// `anyOf` takes priority as the primary `SchemaView`, but the sibling
+    /// applicator still constrains the instance and must be validated
+    /// alongside it (see `validate_any_of`).
+    pub all_of_schemas: Option<ReferableSchemaViews>,
 }
 
 impl AnyOfSchema {
@@ -89,6 +94,7 @@ impl AnyOfSchema {
                 dynamic_anchor_collector,
             )
             .map(Box::new),
+            all_of_schemas: None,
         }
     }
 

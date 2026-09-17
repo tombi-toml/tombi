@@ -19,6 +19,12 @@ pub struct OneOfSchema {
     pub keys_order: Option<TableKeysOrder>,
     pub not: Option<Box<NotSchema>>,
     pub if_then_else: Option<Box<IfThenElseSchema>>,
+    /// `anyOf` / `allOf` declared as siblings of `oneOf` in the same schema
+    /// object. `oneOf` takes priority as the primary `SchemaView`, but the
+    /// sibling applicators still constrain the instance and must be
+    /// validated alongside it (see `validate_one_of`).
+    pub any_of_schemas: Option<ReferableSchemaViews>,
+    pub all_of_schemas: Option<ReferableSchemaViews>,
 }
 
 impl OneOfSchema {
@@ -89,6 +95,8 @@ impl OneOfSchema {
                 dynamic_anchor_collector,
             )
             .map(Box::new),
+            any_of_schemas: None,
+            all_of_schemas: None,
         }
     }
 

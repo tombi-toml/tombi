@@ -7,8 +7,8 @@ use tombi_x_keyword::StringFormat;
 use crate::x_taplo::XTaplo;
 
 use super::{
-    AnchorCollector, Deprecation, DynamicAnchorCollector, SchemaDefinitions, SchemaMap, SchemaUri,
-    SchemaView, bool_schema_view,
+    AnchorCollector, Deprecation, DynamicAnchorCollector, ReferableSchemaViews, SchemaDefinitions,
+    SchemaMap, SchemaUri, SchemaView, bool_schema_view,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -182,6 +182,37 @@ impl<T> Referable<T> {
     }
 }
 
+/// Parses `object[keyword]` as a JSON Schema array keyword (`oneOf` / `anyOf`
+/// / `allOf`) into its resolved sub-schemas, or `None` when the keyword is
+/// absent. Shared by the `SchemaView` priority chain in
+/// `Referable::<SchemaView>::new` to keep sibling applicators (e.g. `allOf`
+/// alongside a primary `anyOf`) from being dropped.
+fn referable_schemas_from_array(
+    object: &tombi_json::ObjectNode,
+    keyword: &str,
+    string_formats: Option<&[StringFormat]>,
+    dialect: Option<crate::JsonSchemaDialect>,
+    mut anchor_collector: Option<&mut AnchorCollector>,
+    mut dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
+) -> Option<ReferableSchemaViews> {
+    let array = object.get(keyword)?.as_array()?;
+    Some(Arc::new(tokio::sync::RwLock::new(
+        array
+            .items
+            .iter()
+            .filter_map(|value| {
+                super::referable_from_schema_value(
+                    value,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                )
+            })
+            .collect_vec(),
+    )))
+}
+
 impl Referable<SchemaView> {
     pub fn new(
         object: &tombi_json::ObjectNode,
@@ -260,21 +291,52 @@ impl Referable<SchemaView> {
                     )
                 })
             } else if object.get("oneOf").is_some() {
-                Some(SchemaView::OneOf(super::OneOfSchema::new(
+                // `oneOf` wins as the primary `SchemaView` when it coexists with
+                // `anyOf` / `allOf` siblings in the same object; those siblings
+                // still constrain the instance, so keep their schemas around for
+                // `validate_one_of` to validate alongside the `oneOf` branches.
+                let mut one_of_schema = super::OneOfSchema::new(
                     object,
                     string_formats,
                     dialect,
                     anchor_collector.as_deref_mut(),
                     dynamic_anchor_collector.as_deref_mut(),
-                )))
+                );
+                one_of_schema.any_of_schemas = referable_schemas_from_array(
+                    object,
+                    "anyOf",
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                );
+                one_of_schema.all_of_schemas = referable_schemas_from_array(
+                    object,
+                    "allOf",
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                );
+                Some(SchemaView::OneOf(one_of_schema))
             } else if object.get("anyOf").is_some() {
-                Some(SchemaView::AnyOf(super::AnyOfSchema::new(
+                // Same reasoning as above for an `allOf` sibling of `anyOf`.
+                let mut any_of_schema = super::AnyOfSchema::new(
                     object,
                     string_formats,
                     dialect,
                     anchor_collector.as_deref_mut(),
                     dynamic_anchor_collector.as_deref_mut(),
-                )))
+                );
+                any_of_schema.all_of_schemas = referable_schemas_from_array(
+                    object,
+                    "allOf",
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                );
+                Some(SchemaView::AnyOf(any_of_schema))
             } else if object.get("allOf").is_some() {
                 Some(SchemaView::AllOf(super::AllOfSchema::new(
                     object,
@@ -829,43 +891,25 @@ impl Referable<SchemaView> {
                     schema_document_uri,
                     definitions,
                     dynamic_scope,
-                ) =
-                    match reference_url {
-                        Some(reference_url) => {
-                            if let Some(document_schema) =
-                                schema_store.try_get_document_schema(reference_url).await?
-                            {
-                                (
-                                    document_schema.schema_uri.clone(),
-                                    document_schema.schema_base_uri().clone(),
-                                    document_schema.schema_document_uri().clone(),
-                                    document_schema.definitions.clone(),
-                                    document_schema
-                                        .dynamic_scope(parent_dynamic_scope.unwrap_or(&[])),
-                                )
-                            } else {
-                                (
-                                    reference_url.clone(),
-                                    schema_base_uri.clone().into_owned(),
-                                    schema_store
-                                        .schema_document_uri_for(schema_base_uri.as_ref())
-                                        .await,
-                                    definitions.into_owned(),
-                                    extend_dynamic_scope(
-                                        parent_dynamic_scope.unwrap_or(&[]),
-                                        schema_base_uri.as_ref(),
-                                    ),
-                                )
-                            }
-                        }
-                        None => {
-                            let schema_document_uri = schema_store
-                                .schema_document_uri_for(schema_base_uri.as_ref())
-                                .await;
+                ) = match reference_url {
+                    Some(reference_url) => {
+                        if let Some(document_schema) =
+                            schema_store.try_get_document_schema(reference_url).await?
+                        {
                             (
-                                schema_document_uri.clone(),
+                                document_schema.schema_uri.clone(),
+                                document_schema.schema_base_uri().clone(),
+                                document_schema.schema_document_uri().clone(),
+                                document_schema.definitions.clone(),
+                                document_schema.dynamic_scope(parent_dynamic_scope.unwrap_or(&[])),
+                            )
+                        } else {
+                            (
+                                reference_url.clone(),
                                 schema_base_uri.clone().into_owned(),
-                                schema_document_uri,
+                                schema_store
+                                    .schema_document_uri_for(schema_base_uri.as_ref())
+                                    .await,
                                 definitions.into_owned(),
                                 extend_dynamic_scope(
                                     parent_dynamic_scope.unwrap_or(&[]),
@@ -873,7 +917,23 @@ impl Referable<SchemaView> {
                                 ),
                             )
                         }
-                    };
+                    }
+                    None => {
+                        let schema_document_uri = schema_store
+                            .schema_document_uri_for(schema_base_uri.as_ref())
+                            .await;
+                        (
+                            schema_document_uri.clone(),
+                            schema_base_uri.clone().into_owned(),
+                            schema_document_uri,
+                            definitions.into_owned(),
+                            extend_dynamic_scope(
+                                parent_dynamic_scope.unwrap_or(&[]),
+                                schema_base_uri.as_ref(),
+                            ),
+                        )
+                    }
+                };
 
                 Ok(Some(CurrentSchema {
                     schema_view: schema_view.clone(),
@@ -2792,5 +2852,78 @@ mod test {
         );
 
         assert!(parse_dynamic_anchor_reference("#/defs/x", &base).is_none());
+    }
+
+    #[test]
+    fn any_of_keeps_sibling_all_of_schemas() {
+        let schema = tombi_json::ValueNode::from_str(
+            r##"{
+                "allOf": [
+                    { "properties": { "foo": true }, "unevaluatedProperties": false }
+                ],
+                "anyOf": [
+                    { "properties": { "bar": true } }
+                ]
+            }"##,
+        )
+        .unwrap();
+        let object = schema.as_object().unwrap();
+
+        let referable = Referable::<SchemaView>::new(object, None, None, None, None).unwrap();
+        let Referable::Resolved { value, .. } = referable else {
+            panic!("expected a resolved schema view");
+        };
+        let SchemaView::AnyOf(any_of_schema) = value.as_ref() else {
+            panic!("anyOf must win as the primary SchemaView, expected AnyOf, got {value:?}");
+        };
+        assert!(
+            any_of_schema.all_of_schemas.is_some(),
+            "the sibling `allOf` must not be dropped when `anyOf` is the primary SchemaView"
+        );
+    }
+
+    #[tokio::test]
+    async fn root_ref_to_self_bookended_dynamic_ref_resolves_without_error() {
+        // Regression test: a compound document whose root `$ref` points at an
+        // embedded `$id` resource that is itself rooted at a `$dynamicRef`
+        // (bookended against its own `$defs`, as JSON-Schema-Test-Suite's
+        // "unevaluatedProperties with $dynamicRef" case does) used to fail
+        // eager root-`$ref` resolution: resolving the embedded resource's own
+        // dynamic ref re-entered the very document still being loaded, which
+        // the load guard could not yet answer, and the whole document ended
+        // up with `schema_view: None` (no schema applied at all).
+        let schema_json = r##"{
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://example.com/root-ref-self-bookended/derived",
+            "$ref": "./base",
+            "$defs": {
+                "base": {
+                    "$id": "./base",
+                    "properties": { "foo": { "type": "string" } },
+                    "$dynamicRef": "#addons",
+                    "$defs": {
+                        "defaultAddons": { "$dynamicAnchor": "addons" }
+                    }
+                }
+            }
+        }"##;
+
+        let schema_path = unique_temp_dir("tombi_root_ref_self_bookended").with_extension("json");
+        std::fs::write(&schema_path, schema_json).unwrap();
+
+        let schema_uri = tombi_uri::SchemaUri::from_file_path(&schema_path).unwrap();
+        let schema_store = SchemaStore::new();
+        let document_schema = schema_store
+            .try_get_document_schema(&schema_uri)
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert!(
+            document_schema.schema_view.is_some(),
+            "root $ref resolution must not give up entirely when the target's own root is a self-bookended $dynamicRef"
+        );
+
+        let _ = std::fs::remove_file(schema_path);
     }
 }

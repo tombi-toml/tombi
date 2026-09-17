@@ -8,9 +8,63 @@ use tombi_schema_store::CurrentSchema;
 
 use super::Validate;
 use crate::validate::{if_then_else::validate_if_then_else, not_schema::validate_not};
-use crate::validate::{validate_deprecated, validate_resolved_schema};
+use crate::validate::{merge_validation_results, validate_deprecated, validate_resolved_schema};
 
+/// Validates `anyOf` together with an `allOf` declared as its sibling in the
+/// same schema object. `anyOf` wins as the primary `SchemaView` when both
+/// coexist (see `Referable::<SchemaView>::new`'s priority chain), but the
+/// sibling `allOf` still constrains the instance, so its schemas are carried
+/// on `AnyOfSchema::all_of_schemas` and validated here as an independent
+/// `allOf` composition, merged with `anyOf`'s own result.
 pub fn validate_any_of<'a: 'b, 'b, T>(
+    value: &'a T,
+    accessors: &'a [tombi_schema_store::Accessor],
+    any_of_schema: &'a tombi_schema_store::AnyOfSchema,
+    current_schema: &'a CurrentSchema<'a>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    comment_directives: Option<&'a [TombiValueCommentDirective]>,
+    common_rules: Option<&'a CommonLintRules>,
+) -> BoxFuture<'b, Result<crate::Valid, crate::Invalid>>
+where
+    T: Validate + ValueImpl + Sync + Send + Debug,
+{
+    async move {
+        let result = validate_any_of_schema(
+            value,
+            accessors,
+            any_of_schema,
+            current_schema,
+            schema_context,
+            comment_directives,
+            common_rules,
+        )
+        .await;
+
+        let Some(all_of_schemas) = &any_of_schema.all_of_schemas else {
+            return result;
+        };
+
+        let sibling_all_of = tombi_schema_store::AllOfSchema {
+            schemas: all_of_schemas.clone(),
+            ..Default::default()
+        };
+        let sibling_result = super::validate_all_of(
+            value,
+            accessors,
+            &sibling_all_of,
+            current_schema,
+            schema_context,
+            comment_directives,
+            common_rules,
+        )
+        .await;
+
+        merge_validation_results(result, sibling_result)
+    }
+    .boxed()
+}
+
+fn validate_any_of_schema<'a: 'b, 'b, T>(
     value: &'a T,
     accessors: &'a [tombi_schema_store::Accessor],
     any_of_schema: &'a tombi_schema_store::AnyOfSchema,

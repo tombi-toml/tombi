@@ -32,7 +32,7 @@ tokio::task_local! {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct SchemaCacheVersion {
+pub(crate) struct SchemaCacheVersion {
     modified_at_nanos: u64,
     len: u64,
 }
@@ -837,7 +837,7 @@ impl SchemaStore {
         Ok(())
     }
 
-    async fn cache_document_schema(
+    pub(crate) async fn cache_document_schema(
         &self,
         schema_uri: &SchemaUri,
         document_schema: Result<Arc<DocumentSchema>, crate::Error>,

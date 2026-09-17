@@ -281,6 +281,19 @@ impl DocumentSchema {
         // value schema (e.g. schemas whose root is only `{ "$ref": "#/definitions/..." }`).
         // `definitions` / `schema_base_uri` are borrowed only until the resolved value is built.
         if let Some(mut root_ref) = root_ref {
+            // A root-level `$dynamicRef` / `$recursiveRef` that bookends against this
+            // same resource (e.g. `$defs.defaultAddons`) needs to look this resource
+            // back up by URI while it is still being built. Cache a partial copy (no
+            // `schema_view` yet) so that reentrant lookup finds it instead of failing
+            // outright; `load_embedded_document_schema` / `load_retrieved_document_schema`
+            // overwrite this with the fully resolved document once `resolve` returns.
+            schema_store
+                .cache_document_schema(
+                    document_schema.schema_resource_uri(),
+                    Ok(Arc::new(document_schema.clone())),
+                    None,
+                )
+                .await;
             document_schema.schema_view = match root_ref
                 .resolve(
                     Cow::Owned(document_schema.schema_base_uri().clone()),
