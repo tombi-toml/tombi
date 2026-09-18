@@ -3002,4 +3002,65 @@ mod test {
 
         let _ = std::fs::remove_file(schema_path);
     }
+
+    #[tokio::test]
+    async fn self_bookended_dynamic_ref_partial_does_not_leak_into_persistent_cache() {
+        // Regression test: a resource whose OWN root is a self-bookended
+        // `$dynamicRef` and whose `$id` differs from its physical document
+        // URI. The reentrant self-lookup during eager root-ref resolution
+        // (see `root_ref_to_self_bookended_dynamic_ref_resolves_without_error`)
+        // must not leave a `schema_view: None` entry behind under the `$id`
+        // key in the *persistent* schema cache -- if it did, a later lookup
+        // by that `$id` (e.g. another schema's `$ref` to it) would see a
+        // permanently broken document, since a non-file URI like this one
+        // has no cache version to ever mark it stale.
+        let schema_json = r##"{
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://example.com/self-id-differs-from-physical/schema",
+            "properties": { "foo": { "type": "string" } },
+            "$dynamicRef": "#addons",
+            "$defs": {
+                "defaultAddons": { "$dynamicAnchor": "addons" }
+            }
+        }"##;
+
+        let schema_path =
+            unique_temp_dir("tombi_self_bookended_id_differs_from_physical").with_extension("json");
+        std::fs::write(&schema_path, schema_json).unwrap();
+
+        let physical_uri = tombi_uri::SchemaUri::from_file_path(&schema_path).unwrap();
+        let id_uri = tombi_uri::SchemaUri::from_str(
+            "https://example.com/self-id-differs-from-physical/schema",
+        )
+        .unwrap();
+        let schema_store = SchemaStore::new();
+
+        // Load once via the physical path, exactly like associating this file
+        // as a TOML document's schema would.
+        let by_physical_uri = schema_store
+            .try_get_document_schema(&physical_uri)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(
+            by_physical_uri.schema_view.is_some(),
+            "loading by the physical URI must resolve the self-bookended $dynamicRef"
+        );
+
+        // A later lookup by the resource's own `$id` (as another schema's
+        // `$ref` would do) must independently resolve to a real schema, not
+        // the version-less partial left behind while the physical-URI load
+        // was resolving its root `$dynamicRef`.
+        let by_id_uri = schema_store
+            .try_get_document_schema(&id_uri)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(
+            by_id_uri.schema_view.is_some(),
+            "looking the resource up by its own $id must not see a stale schema_view: None partial"
+        );
+
+        let _ = std::fs::remove_file(schema_path);
+    }
 }

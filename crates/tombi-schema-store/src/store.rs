@@ -29,10 +29,47 @@ tokio::task_local! {
     /// Same-task stack of schema URIs currently being built. Detects cyclic embedded
     /// root `$ref`s without blocking concurrent loads on other tasks.
     static LOADING_SCHEMA_URIS: std::cell::RefCell<tombi_hashmap::HashSet<SchemaUri>>;
+
+    /// Same-task, in-progress `DocumentSchema`s (no `schema_view` yet, but with
+    /// `anchors` / `dynamic_anchors` already collected), keyed by resource URI.
+    /// A resource whose root `$ref` is a self-bookended `$dynamicRef` /
+    /// `$recursiveRef` looks itself up while still being built; this gives that
+    /// reentrant lookup something to find instead of failing outright. Entries
+    /// are removed via `PartialDocumentSchemaGuard`'s `Drop` once their resource
+    /// finishes loading, so a stale partial can never shadow the real,
+    /// fully-resolved document for a later lookup in the same call tree, and
+    /// nothing here ever reaches the persistent `document_schemas` cache.
+    pub(crate) static PARTIAL_DOCUMENT_SCHEMAS: std::cell::RefCell<tombi_hashmap::HashMap<SchemaUri, Arc<DocumentSchema>>>;
+}
+
+/// Registers a resource's in-progress `DocumentSchema` in
+/// [`PARTIAL_DOCUMENT_SCHEMAS`] for the lifetime of this guard, then removes
+/// it on `Drop` (whichever way loading finished). See the field's doc comment
+/// for why this must never leak into the persistent cache.
+pub(crate) struct PartialDocumentSchemaGuard {
+    schema_uri: SchemaUri,
+}
+
+impl PartialDocumentSchemaGuard {
+    pub(crate) fn register(schema_uri: SchemaUri, document_schema: Arc<DocumentSchema>) -> Self {
+        let _ = PARTIAL_DOCUMENT_SCHEMAS.try_with(|partials| {
+            partials
+                .borrow_mut()
+                .insert(schema_uri.clone(), document_schema);
+        });
+        Self { schema_uri }
+    }
+}
+
+impl Drop for PartialDocumentSchemaGuard {
+    fn drop(&mut self) {
+        let _ = PARTIAL_DOCUMENT_SCHEMAS
+            .try_with(|partials| partials.borrow_mut().remove(&self.schema_uri));
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct SchemaCacheVersion {
+struct SchemaCacheVersion {
     modified_at_nanos: u64,
     len: u64,
 }
@@ -837,7 +874,7 @@ impl SchemaStore {
         Ok(())
     }
 
-    pub(crate) async fn cache_document_schema(
+    async fn cache_document_schema(
         &self,
         schema_uri: &SchemaUri,
         document_schema: Result<Arc<DocumentSchema>, crate::Error>,
@@ -1027,7 +1064,10 @@ impl SchemaStore {
                     LOADING_SCHEMA_URIS
                         .scope(
                             std::cell::RefCell::new(tombi_hashmap::HashSet::default()),
-                            self.try_get_document_schema_inner(schema_uri),
+                            PARTIAL_DOCUMENT_SCHEMAS.scope(
+                                std::cell::RefCell::new(tombi_hashmap::HashMap::default()),
+                                self.try_get_document_schema_inner(schema_uri),
+                            ),
                         )
                         .await
                 }
@@ -1049,30 +1089,46 @@ impl SchemaStore {
             (uri, fragment)
         };
 
-        let cached_document_schema = self.document_schemas.read().await.get(&schema_uri).cloned();
-        let embedded_location = self.embedded_resource_location(&schema_uri).await;
-        let document_schema = if let Some(location) = embedded_location {
-            let parent_version = schema_cache_version(&location.schema_document_uri).await;
-            if let Some(cached_document_schema) = cached_document_schema
-                && cached_document_schema.version == parent_version
+        // A resource still under construction (its `PartialDocumentSchemaGuard`
+        // has not dropped yet) looking itself up, e.g. a root `$dynamicRef` /
+        // `$recursiveRef` bookended against its own `$defs`. Prefer this over
+        // the persistent cache so a lookup mid-construction always sees the
+        // resource's own (already collected) `anchors` / `dynamic_anchors`
+        // rather than racing the real load below.
+        let partial_document_schema = PARTIAL_DOCUMENT_SCHEMAS
+            .try_with(|partials| partials.borrow().get(&schema_uri).cloned())
+            .ok()
+            .flatten();
+
+        let document_schema = if let Some(partial_document_schema) = partial_document_schema {
+            Some(partial_document_schema)
+        } else {
+            let cached_document_schema =
+                self.document_schemas.read().await.get(&schema_uri).cloned();
+            let embedded_location = self.embedded_resource_location(&schema_uri).await;
+            if let Some(location) = embedded_location {
+                let parent_version = schema_cache_version(&location.schema_document_uri).await;
+                if let Some(cached_document_schema) = cached_document_schema
+                    && cached_document_schema.version == parent_version
+                {
+                    match cached_document_schema.document_schema {
+                        Ok(document_schema) => Some(document_schema),
+                        Err(err) => return Err(err),
+                    }
+                } else {
+                    self.load_embedded_document_schema(&schema_uri, &location)
+                        .await?
+                }
+            } else if let Some(cached_document_schema) = cached_document_schema
+                && cached_document_schema.version == schema_cache_version(&schema_uri).await
             {
                 match cached_document_schema.document_schema {
                     Ok(document_schema) => Some(document_schema),
                     Err(err) => return Err(err),
                 }
             } else {
-                self.load_embedded_document_schema(&schema_uri, &location)
-                    .await?
+                self.load_retrieved_document_schema(&schema_uri).await?
             }
-        } else if let Some(cached_document_schema) = cached_document_schema
-            && cached_document_schema.version == schema_cache_version(&schema_uri).await
-        {
-            match cached_document_schema.document_schema {
-                Ok(document_schema) => Some(document_schema),
-                Err(err) => return Err(err),
-            }
-        } else {
-            self.load_retrieved_document_schema(&schema_uri).await?
         };
 
         let Some(document_schema) = document_schema else {
