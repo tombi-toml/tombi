@@ -281,6 +281,17 @@ impl DocumentSchema {
         // value schema (e.g. schemas whose root is only `{ "$ref": "#/definitions/..." }`).
         // `definitions` / `schema_base_uri` are borrowed only until the resolved value is built.
         if let Some(mut root_ref) = root_ref {
+            // A root-level `$dynamicRef` / `$recursiveRef` that bookends against this
+            // same resource (e.g. `$defs.defaultAddons`) needs to look this resource
+            // back up by URI while it is still being built. Register a partial copy
+            // (no `schema_view` yet) so that reentrant lookup finds it instead of
+            // failing outright; the guard removes it again once `resolve` returns,
+            // so it never shadows the real, fully-resolved document afterwards, and
+            // it never reaches the persistent schema cache.
+            let _partial_document_schema_guard = crate::store::PartialDocumentSchemaGuard::register(
+                document_schema.schema_resource_uri().clone(),
+                Arc::new(document_schema.clone()),
+            );
             document_schema.schema_view = match root_ref
                 .resolve(
                     Cow::Owned(document_schema.schema_base_uri().clone()),
