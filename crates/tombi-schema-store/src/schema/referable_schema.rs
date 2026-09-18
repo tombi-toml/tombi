@@ -213,6 +213,19 @@ fn referable_schemas_from_array(
     )))
 }
 
+/// Wraps a single-keyword combinator `SchemaView` (e.g. just `oneOf`, with no
+/// `not` / `if_then_else` / annotations of its own) as a resolved schema, for
+/// use as one branch of the synthetic `allOf` built when `oneOf` / `anyOf` /
+/// `allOf` coexist as siblings in the same object (see
+/// `Referable::<SchemaView>::new`).
+fn bare_combinator_referable(view: SchemaView) -> Referable<SchemaView> {
+    Referable::Resolved {
+        schema_base_uri: None,
+        value: Arc::new(view),
+        semantic_schema: None,
+    }
+}
+
 impl Referable<SchemaView> {
     pub fn new(
         object: &tombi_json::ObjectNode,
@@ -290,53 +303,96 @@ impl Referable<SchemaView> {
                         dynamic_anchor_collector.as_deref_mut(),
                     )
                 })
-            } else if object.get("oneOf").is_some() {
-                // `oneOf` wins as the primary `SchemaView` when it coexists with
-                // `anyOf` / `allOf` siblings in the same object; those siblings
-                // still constrain the instance, so keep their schemas around for
-                // `validate_one_of` to validate alongside the `oneOf` branches.
-                let mut one_of_schema = super::OneOfSchema::new(
+            } else if [
+                object.get("oneOf").is_some(),
+                object.get("anyOf").is_some(),
+                object.get("allOf").is_some(),
+            ]
+            .into_iter()
+            .filter(|present| *present)
+            .count()
+                > 1
+            {
+                // More than one of `oneOf` / `anyOf` / `allOf` declared as
+                // siblings in the same object: each is an independent
+                // applicator that the instance must satisfy, i.e.
+                // `{oneOf: A, anyOf: B}` means the same as
+                // `allOf: [{oneOf: A}, {anyOf: B}]`. Desugar into that
+                // equivalent `allOf` so none of them is silently dropped by
+                // picking just one as the primary `SchemaView`. `not` /
+                // `if_then_else` / annotations stay on the outer `allOf`,
+                // same as when only one of the three is present.
+                let mut all_of_schema = super::AllOfSchema::new(
                     object,
                     string_formats,
                     dialect,
                     anchor_collector.as_deref_mut(),
                     dynamic_anchor_collector.as_deref_mut(),
                 );
-                one_of_schema.any_of_schemas = referable_schemas_from_array(
+                let mut combinators = Vec::with_capacity(3);
+                if let Some(schemas) = referable_schemas_from_array(
+                    object,
+                    "oneOf",
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                ) {
+                    combinators.push(bare_combinator_referable(SchemaView::OneOf(
+                        super::OneOfSchema {
+                            schemas,
+                            ..Default::default()
+                        },
+                    )));
+                }
+                if let Some(schemas) = referable_schemas_from_array(
                     object,
                     "anyOf",
                     string_formats,
                     dialect,
                     anchor_collector.as_deref_mut(),
                     dynamic_anchor_collector.as_deref_mut(),
-                );
-                one_of_schema.all_of_schemas = referable_schemas_from_array(
+                ) {
+                    combinators.push(bare_combinator_referable(SchemaView::AnyOf(
+                        super::AnyOfSchema {
+                            schemas,
+                            ..Default::default()
+                        },
+                    )));
+                }
+                if let Some(schemas) = referable_schemas_from_array(
                     object,
                     "allOf",
                     string_formats,
                     dialect,
                     anchor_collector.as_deref_mut(),
                     dynamic_anchor_collector.as_deref_mut(),
-                );
-                Some(SchemaView::OneOf(one_of_schema))
+                ) {
+                    combinators.push(bare_combinator_referable(SchemaView::AllOf(
+                        super::AllOfSchema {
+                            schemas,
+                            ..Default::default()
+                        },
+                    )));
+                }
+                all_of_schema.schemas = Arc::new(tokio::sync::RwLock::new(combinators));
+                Some(SchemaView::AllOf(all_of_schema))
+            } else if object.get("oneOf").is_some() {
+                Some(SchemaView::OneOf(super::OneOfSchema::new(
+                    object,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                )))
             } else if object.get("anyOf").is_some() {
-                // Same reasoning as above for an `allOf` sibling of `anyOf`.
-                let mut any_of_schema = super::AnyOfSchema::new(
+                Some(SchemaView::AnyOf(super::AnyOfSchema::new(
                     object,
                     string_formats,
                     dialect,
                     anchor_collector.as_deref_mut(),
                     dynamic_anchor_collector.as_deref_mut(),
-                );
-                any_of_schema.all_of_schemas = referable_schemas_from_array(
-                    object,
-                    "allOf",
-                    string_formats,
-                    dialect,
-                    anchor_collector.as_deref_mut(),
-                    dynamic_anchor_collector.as_deref_mut(),
-                );
-                Some(SchemaView::AnyOf(any_of_schema))
+                )))
             } else if object.get("allOf").is_some() {
                 Some(SchemaView::AllOf(super::AllOfSchema::new(
                     object,
@@ -2854,8 +2910,11 @@ mod test {
         assert!(parse_dynamic_anchor_reference("#/defs/x", &base).is_none());
     }
 
-    #[test]
-    fn any_of_keeps_sibling_all_of_schemas() {
+    #[tokio::test]
+    async fn sibling_any_of_and_all_of_desugar_into_an_equivalent_all_of() {
+        // `{allOf: A, anyOf: B}` must behave like `allOf: [{allOf: A}, {anyOf: B}]`:
+        // neither applicator may be silently dropped by picking only one of
+        // them as the primary `SchemaView`.
         let schema = tombi_json::ValueNode::from_str(
             r##"{
                 "allOf": [
@@ -2873,12 +2932,29 @@ mod test {
         let Referable::Resolved { value, .. } = referable else {
             panic!("expected a resolved schema view");
         };
-        let SchemaView::AnyOf(any_of_schema) = value.as_ref() else {
-            panic!("anyOf must win as the primary SchemaView, expected AnyOf, got {value:?}");
+        let SchemaView::AllOf(all_of_schema) = value.as_ref() else {
+            panic!("multiple sibling applicators must desugar into AllOf, got {value:?}");
         };
+
+        let combinators = all_of_schema.schemas.read().await;
+        assert_eq!(
+            combinators.len(),
+            2,
+            "both the `allOf` and `anyOf` siblings must survive as combinators"
+        );
         assert!(
-            any_of_schema.all_of_schemas.is_some(),
-            "the sibling `allOf` must not be dropped when `anyOf` is the primary SchemaView"
+            combinators.iter().any(|referable| matches!(
+                referable,
+                Referable::Resolved { value, .. } if matches!(value.as_ref(), SchemaView::AllOf(_))
+            )),
+            "the original `allOf` branch must be preserved"
+        );
+        assert!(
+            combinators.iter().any(|referable| matches!(
+                referable,
+                Referable::Resolved { value, .. } if matches!(value.as_ref(), SchemaView::AnyOf(_))
+            )),
+            "the original `anyOf` branch must be preserved"
         );
     }
 
