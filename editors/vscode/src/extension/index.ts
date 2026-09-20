@@ -50,7 +50,7 @@ export class Extension {
       STATUS_BAR_ITEM_ID,
       vscode.StatusBarAlignment.Left,
     );
-    this.statusBarItem.name = `${EXTENSION_NAME} Status`;
+    this.statusBarItem.name = EXTENSION_NAME;
     this.context.subscriptions.push(this.statusBarItem);
 
     this.registerEvents();
