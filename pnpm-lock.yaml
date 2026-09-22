@@ -216,6 +216,8 @@ importers:
         specifier: 0.0.0-dev
         version: 0.0.0-dev
 
+  typescript/@tombi-toml/tombi-lib: {}
+
   typescript/@tombi-toml/wasm-lib:
     devDependencies:
       wasm-pack:
