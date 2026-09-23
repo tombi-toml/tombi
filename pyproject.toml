@@ -62,4 +62,7 @@ python-source = "python/tombi/src"
 addopts = ["-v"]
 
 [tool.uv.workspace]
-members = ["python/tombi-beta"]
+members = [
+  "python/tombi-beta",
+  "python/tombi-lib",
+]
