@@ -22,6 +22,8 @@ mod dependent_schemas_test_schema;
 mod format_annotation_test_schema;
 #[path = "integration/issue_1895_rustfmt_like_schema.rs"]
 mod issue_1895_rustfmt_like_schema;
+#[path = "integration/issue_2210_mise_dotfiles.rs"]
+mod issue_2210_mise_dotfiles;
 #[path = "integration/json_schema_test_suite.rs"]
 mod json_schema_test_suite;
 #[path = "integration/min_max_contains_test_schema.rs"]

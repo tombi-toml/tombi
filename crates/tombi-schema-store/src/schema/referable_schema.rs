@@ -303,6 +303,19 @@ impl Referable<SchemaView> {
                         dynamic_anchor_collector.as_deref_mut(),
                     )
                 })
+            } else if has_combinator_siblings(object) {
+                // A combinator is an applicator; it does not replace the
+                // assertions that appear beside it. Projecting a schema
+                // whose `anyOf`/`oneOf`/`allOf` is accompanied by structural
+                // keywords through the bare combinator view would drop
+                // siblings such as `required` and `properties`.
+                semantic_schema.as_ref().and_then(|semantic_schema| {
+                    semantic_schema.completion_projection_with_collectors(
+                        string_formats,
+                        anchor_collector.as_deref_mut(),
+                        dynamic_anchor_collector.as_deref_mut(),
+                    )
+                })
             } else if [
                 object.get("oneOf").is_some(),
                 object.get("anyOf").is_some(),
@@ -1004,6 +1017,33 @@ impl Referable<SchemaView> {
             }
         }
     }
+}
+
+fn has_combinator_siblings(object: &tombi_json::ObjectNode) -> bool {
+    // `oneOf` has a dedicated SchemaView whose branch identity is needed by
+    // LSP presentation. The projection workaround is currently needed for
+    // an `anyOf`/`allOf` primary view, where sibling assertions would
+    // otherwise be dropped.
+    let has_combinator = ["anyOf", "allOf"]
+        .iter()
+        .any(|keyword| object.get(keyword).is_some());
+    let has_structural_sibling = [
+        "type",
+        "required",
+        "properties",
+        "patternProperties",
+        "additionalProperties",
+        "unevaluatedProperties",
+        "propertyNames",
+        "dependentRequired",
+        "dependentSchemas",
+        "dependencies",
+        "minProperties",
+        "maxProperties",
+    ]
+    .iter()
+    .any(|keyword| object.get(keyword).is_some());
+    has_combinator && has_structural_sibling
 }
 
 fn apply_ref_annotations(
