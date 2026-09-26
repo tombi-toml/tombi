@@ -13,7 +13,7 @@ use super::{
     referable_schema::{Referable, ReferenceKind},
     resolve_schema_resource_uri,
 };
-use crate::{Accessor, JsonSchemaDialect, SchemaStore};
+use crate::{Accessor, JsonSchemaDialect, JsonSchemaVocabulary, SchemaStore, keyword_vocabulary};
 
 #[derive(Debug, Clone)]
 pub struct DocumentSchema {
@@ -134,7 +134,7 @@ impl DocumentSchema {
     }
 
     async fn new_from_object(
-        object: tombi_json::ObjectNode,
+        mut object: tombi_json::ObjectNode,
         schema_uri: SchemaUri,
         schema_resource_uri: SchemaUri,
         id: Option<SchemaUri>,
@@ -152,6 +152,12 @@ impl DocumentSchema {
                 _ => None,
             })
             .or(inherited_dialect);
+
+        if validation_vocabulary_is_disabled(&object, dialect, &schema_resource_uri, schema_store)
+            .await
+        {
+            remove_validation_keywords(&mut object);
+        }
 
         let toml_version = object.get(X_TOMBI_TOML_VERSION).and_then(|obj| match obj {
             tombi_json::ValueNode::String(version) => TomlVersion::from_str(&version.value).ok(),
@@ -447,6 +453,135 @@ fn has_enabled_vocabulary(object: &tombi_json::ObjectNode, vocabulary_uri: &str)
         .and_then(|v| v.as_object())
         .and_then(|vocab| vocab.get(vocabulary_uri))
         .is_some_and(|value| matches!(value, tombi_json::ValueNode::Bool(b) if b.value))
+}
+
+async fn validation_vocabulary_is_disabled(
+    object: &tombi_json::ObjectNode,
+    dialect: Option<JsonSchemaDialect>,
+    schema_resource_uri: &SchemaUri,
+    schema_store: &SchemaStore,
+) -> bool {
+    if validation_vocabulary_is_disabled_in_object(object, dialect) {
+        return true;
+    }
+
+    let Some(schema) = object
+        .get("$schema")
+        .and_then(tombi_json::ValueNode::as_str)
+    else {
+        return false;
+    };
+    let Some(metaschema_uri) = resolve_schema_resource_uri(schema_resource_uri, schema) else {
+        return false;
+    };
+    let Ok(Some(tombi_json::ValueNode::Object(metaschema))) =
+        schema_store.fetch_schema_value(&metaschema_uri).await
+    else {
+        return false;
+    };
+
+    let metaschema_dialect = metaschema
+        .get("$schema")
+        .and_then(tombi_json::ValueNode::as_str)
+        .and_then(|schema| JsonSchemaDialect::try_from(schema).ok());
+    validation_vocabulary_is_disabled_in_object(&metaschema, metaschema_dialect)
+}
+
+fn validation_vocabulary_is_disabled_in_object(
+    object: &tombi_json::ObjectNode,
+    dialect: Option<JsonSchemaDialect>,
+) -> bool {
+    let vocabulary_uris = match dialect {
+        Some(JsonSchemaDialect::Draft2019_09) => {
+            &["https://json-schema.org/draft/2019-09/vocab/validation"][..]
+        }
+        Some(JsonSchemaDialect::Draft2020_12) => {
+            &["https://json-schema.org/draft/2020-12/vocab/validation"][..]
+        }
+        Some(JsonSchemaDialect::Draft07) => &[][..],
+        None => &[
+            "https://json-schema.org/draft/2019-09/vocab/validation",
+            "https://json-schema.org/draft/2020-12/vocab/validation",
+        ][..],
+    };
+
+    object
+        .get("$vocabulary")
+        .and_then(|v| v.as_object())
+        .is_some_and(|vocab| {
+            vocabulary_uris.iter().any(|uri| {
+                vocab.get(uri).is_some_and(
+                    |value| matches!(value, tombi_json::ValueNode::Bool(value) if !value.value),
+                )
+            })
+        })
+}
+
+fn remove_validation_keywords(object: &mut tombi_json::ObjectNode) {
+    object.properties.as_inner_mut().retain(|key, _| {
+        keyword_vocabulary(key.value.as_str()) != Some(JsonSchemaVocabulary::Validation)
+    });
+
+    let schema_keywords = [
+        "$defs",
+        "definitions",
+        "additionalItems",
+        "additionalProperties",
+        "allOf",
+        "anyOf",
+        "contains",
+        "contentSchema",
+        "dependentSchemas",
+        "else",
+        "if",
+        "items",
+        "not",
+        "oneOf",
+        "patternProperties",
+        "prefixItems",
+        "properties",
+        "propertyNames",
+        "then",
+        "unevaluatedItems",
+        "unevaluatedProperties",
+    ];
+
+    for keyword in schema_keywords {
+        let Some(value) = object.properties.as_inner_mut().get_mut(keyword) else {
+            continue;
+        };
+        remove_validation_keywords_from_value(value, keyword);
+    }
+}
+
+fn remove_validation_keywords_from_value(value: &mut tombi_json::ValueNode, keyword: &str) {
+    match value {
+        tombi_json::ValueNode::Object(object)
+            if matches!(
+                keyword,
+                "$defs" | "definitions" | "dependentSchemas" | "patternProperties" | "properties"
+            ) =>
+        {
+            for schema in object.properties.values_mut() {
+                remove_validation_keywords_from_schema(schema);
+            }
+        }
+        tombi_json::ValueNode::Object(object) => remove_validation_keywords(object),
+        tombi_json::ValueNode::Array(array) => {
+            for schema in &mut array.items {
+                remove_validation_keywords_from_value(schema, keyword);
+            }
+        }
+        tombi_json::ValueNode::Bool(_) | tombi_json::ValueNode::String(_) => {}
+        tombi_json::ValueNode::Number(_) => {}
+        tombi_json::ValueNode::Null(_) => {}
+    }
+}
+
+fn remove_validation_keywords_from_schema(value: &mut tombi_json::ValueNode) {
+    if let tombi_json::ValueNode::Object(object) = value {
+        remove_validation_keywords(object);
+    }
 }
 
 impl FindSchemaCandidates for DocumentSchema {

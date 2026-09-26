@@ -1,0 +1,14 @@
+{
+  "$schema": "issue-2191-custom-metaschema.schema.json",
+  "type": "object",
+  "properties": {
+    "value": {
+      "type": "integer",
+      "minimum": 5
+    },
+    "known": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}
