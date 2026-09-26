@@ -1020,7 +1020,11 @@ impl Referable<SchemaView> {
 }
 
 fn has_combinator_siblings(object: &tombi_json::ObjectNode) -> bool {
-    let has_combinator = ["oneOf", "anyOf", "allOf"]
+    // `oneOf` has a dedicated SchemaView whose branch identity is needed by
+    // LSP presentation. The projection workaround is currently needed for
+    // an `anyOf`/`allOf` primary view, where sibling assertions would
+    // otherwise be dropped.
+    let has_combinator = ["anyOf", "allOf"]
         .iter()
         .any(|keyword| object.get(keyword).is_some());
     let has_structural_sibling = [
@@ -1033,6 +1037,7 @@ fn has_combinator_siblings(object: &tombi_json::ObjectNode) -> bool {
         "propertyNames",
         "dependentRequired",
         "dependentSchemas",
+        "dependencies",
         "minProperties",
         "maxProperties",
     ]
