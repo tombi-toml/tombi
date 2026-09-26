@@ -101,6 +101,28 @@ impl SchemaView {
         }
     }
 
+    /// Returns true when this runtime view already embeds the target of a
+    /// reference beside the reference object's local keywords.
+    pub fn has_reference_targets(&self) -> bool {
+        match self {
+            Self::Boolean(schema) => schema.all_of.as_deref(),
+            Self::Integer(schema) => schema.all_of.as_deref(),
+            Self::Float(schema) => schema.all_of.as_deref(),
+            Self::String(schema) => schema.all_of.as_deref(),
+            Self::LocalDate(schema) => schema.all_of.as_deref(),
+            Self::LocalDateTime(schema) => schema.all_of.as_deref(),
+            Self::LocalTime(schema) => schema.all_of.as_deref(),
+            Self::OffsetDateTime(schema) => schema.all_of.as_deref(),
+            Self::Array(schema) => schema.all_of.as_deref(),
+            Self::Table(schema) => schema.all_of.as_deref(),
+            Self::AllOf(schema) => Some(schema),
+            Self::OneOf(_) | Self::AnyOf(_) | Self::Null | Self::Anything(_) | Self::Nothing(_) => {
+                None
+            }
+        }
+        .is_some_and(|schema| schema.reference_siblings)
+    }
+
     pub fn with_reference_targets(mut self, targets: Vec<Referable<SchemaView>>) -> Self {
         fn attach(slot: &mut Option<Box<AllOfSchema>>, mut targets: Vec<Referable<SchemaView>>) {
             if let Some(existing) = slot.take() {
@@ -115,6 +137,7 @@ impl SchemaView {
             }
             *slot = Some(Box::new(AllOfSchema {
                 schemas: Arc::new(tokio::sync::RwLock::new(targets)),
+                reference_siblings: true,
                 ..Default::default()
             }));
         }
@@ -150,6 +173,7 @@ impl SchemaView {
         schemas.extend(targets);
         Self::AllOf(AllOfSchema {
             schemas: Arc::new(tokio::sync::RwLock::new(schemas)),
+            reference_siblings: true,
             ..Default::default()
         })
     }

@@ -287,6 +287,47 @@ impl DocumentSchema {
         // value schema (e.g. schemas whose root is only `{ "$ref": "#/definitions/..." }`).
         // `definitions` / `schema_base_uri` are borrowed only until the resolved value is built.
         if let Some(mut root_ref) = root_ref {
+            // `$dynamicRef` and `$recursiveRef` are context-dependent. Resolving either while
+            // the resource is loaded would freeze the result against the resource's own scope
+            // and discard an outer dynamic/recursive anchor supplied by a later caller. Keep
+            // the reference in the runtime view so validation resolves it with that caller's
+            // dynamic scope. The local object projection owns sibling keywords such as
+            // `properties` and `unevaluatedProperties`; attaching the unresolved target as an
+            // adjacent applicator lets those keywords consume its evaluated annotations.
+            let is_dynamic_root = matches!(
+                &root_ref,
+                Referable::Ref {
+                    kind: ReferenceKind::DynamicRef | ReferenceKind::RecursiveRef,
+                    ..
+                }
+            );
+            let lazy_object_view = is_dynamic_root
+                .then(|| {
+                    document_schema
+                        .semantic_schema
+                        .as_deref()?
+                        .schema_view_for_type(
+                            super::SchemaType::Object,
+                            document_schema.string_formats.as_deref(),
+                        )
+                })
+                .flatten();
+            if let Some(local_view) = lazy_object_view {
+                // The local projection already owns the reference object's siblings.
+                // Keep only the deferred reference on the target; otherwise those siblings
+                // (notably `unevaluatedProperties`) are applied a second time inside the
+                // target and can erase annotations produced by a successful dynamic target.
+                if let Referable::Ref {
+                    semantic_schema, ..
+                } = &mut root_ref
+                {
+                    *semantic_schema = None;
+                }
+                document_schema.schema_view =
+                    Some(Arc::new(local_view.with_reference_targets(vec![root_ref])));
+                return document_schema;
+            }
+
             // A root-level `$dynamicRef` / `$recursiveRef` that bookends against this
             // same resource (e.g. `$defs.defaultAddons`) needs to look this resource
             // back up by URI while it is still being built. Register a partial copy

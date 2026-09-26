@@ -99,6 +99,121 @@ macro_rules! suite_test {
     };
 }
 
+mod issue_2190_reference_annotations {
+    use super::*;
+
+    fn dynamic_ref_schema() -> JsonValue {
+        serde_json::json!({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://example.com/unevaluated-properties-with-dynamic-ref/derived",
+            "$ref": "./baseSchema",
+            "$defs": {
+                "derived": {
+                    "$dynamicAnchor": "addons",
+                    "properties": { "bar": { "type": "string" } }
+                },
+                "baseSchema": {
+                    "$id": "./baseSchema",
+                    "unevaluatedProperties": false,
+                    "properties": { "foo": { "type": "string" } },
+                    "$dynamicRef": "#addons",
+                    "$defs": {
+                        "defaultAddons": { "$dynamicAnchor": "addons" }
+                    }
+                }
+            }
+        })
+    }
+
+    suite_test!(
+        #[tokio::test] async fn dynamic_ref_annotations_are_visible_to_unevaluated_properties(
+            r#"
+            foo = "foo"
+            bar = "bar"
+            "#,
+            JsonSchema(dynamic_ref_schema()),
+        ) -> Ok(_);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn dynamic_ref_still_rejects_unannotated_properties(
+            r#"
+            foo = "foo"
+            bar = "bar"
+            baz = "baz"
+            "#,
+            JsonSchema(dynamic_ref_schema()),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                    key: "baz".to_string(),
+                },
+                ((2, 0), (2, 11)),
+            ),
+        ]);
+    );
+
+    fn recursive_ref_schema() -> JsonValue {
+        serde_json::json!({
+            "$schema": "https://json-schema.org/draft/2019-09/schema",
+            "$id": "https://example.com/unevaluated-properties-with-recursive-ref/extended-tree",
+            "$recursiveAnchor": true,
+            "$ref": "./tree",
+            "properties": { "name": { "type": "string" } },
+            "$defs": {
+                "tree": {
+                    "$id": "./tree",
+                    "$recursiveAnchor": true,
+                    "type": "object",
+                    "properties": {
+                        "node": true,
+                        "branches": {
+                            "unevaluatedProperties": false,
+                            "$recursiveRef": "#"
+                        }
+                    },
+                    "required": ["node"]
+                }
+            }
+        })
+    }
+
+    suite_test!(
+        #[tokio::test] async fn recursive_ref_annotations_are_visible_to_unevaluated_properties(
+            r#"
+            name = "a"
+            node = 1
+
+            [branches]
+            name = "b"
+            node = 2
+            "#,
+            JsonSchema(recursive_ref_schema()),
+        ) -> Ok(_);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn recursive_ref_still_rejects_unannotated_properties(
+            r#"
+            name = "a"
+            node = 1
+
+            [branches]
+            foo = "b"
+            node = 2
+            "#,
+            JsonSchema(recursive_ref_schema()),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                    key: "foo".to_string(),
+                },
+                ((4, 0), (4, 9)),
+            ),
+        ]);
+    );
+}
+
 // =============================================================================
 // Draft 7: dependencies
 // =============================================================================
