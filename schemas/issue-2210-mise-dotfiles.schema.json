@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "dotfiles": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "required": ["permissions"],
+                    "properties": {
+                      "mode": { "enum": ["copy", "template"] },
+                      "block": false,
+                      "template": false,
+                      "comment": false
+                    },
+                    "anyOf": [
+                      { "required": ["source"] },
+                      { "required": ["content"] },
+                      { "required": ["mode"] },
+                      {
+                        "properties": {
+                          "exclude": false,
+                          "manifest": false,
+                          "encrypt": false
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "permissions": false
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
