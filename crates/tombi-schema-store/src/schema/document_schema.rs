@@ -510,7 +510,7 @@ fn validation_vocabulary_is_disabled_in_object(
         .and_then(|v| v.as_object())
         .is_some_and(|vocab| {
             vocabulary_uris.iter().any(|uri| {
-                vocab.get(*uri).is_some_and(
+                vocab.get(uri).is_some_and(
                     |value| matches!(value, tombi_json::ValueNode::Bool(value) if !value.value),
                 )
             })
