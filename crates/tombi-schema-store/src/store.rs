@@ -784,6 +784,9 @@ impl SchemaStore {
         ) = document_schema.schema_view.as_deref()
         {
             for referable_schema in schemas.write().await.iter_mut() {
+                if referable_schema.is_context_dependent_reference() {
+                    continue;
+                }
                 referable_schema
                     .resolve(
                         Cow::Borrowed(document_schema.schema_base_uri()),

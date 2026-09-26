@@ -181,6 +181,16 @@ impl<T> Referable<T> {
             Self::Ref { .. } => None,
         }
     }
+
+    pub(crate) fn is_context_dependent_reference(&self) -> bool {
+        matches!(
+            self,
+            Self::Ref {
+                kind: ReferenceKind::DynamicRef | ReferenceKind::RecursiveRef,
+                ..
+            }
+        )
+    }
 }
 
 /// Parses `object[keyword]` as a JSON Schema array keyword (`oneOf` / `anyOf`
@@ -640,6 +650,7 @@ impl Referable<SchemaView> {
                                     examples: examples.clone(),
                                     deprecation: deprecation.clone(),
                                     reference_siblings: true,
+                                    contains_reference_targets: true,
                                     ..Default::default()
                                 })),
                                 semantic_schema: None,
@@ -823,6 +834,7 @@ impl Referable<SchemaView> {
                                     examples: examples.clone(),
                                     deprecation: deprecation.clone(),
                                     reference_siblings: true,
+                                    contains_reference_targets: true,
                                     ..Default::default()
                                 })),
                                 semantic_schema: None,

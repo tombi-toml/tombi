@@ -307,6 +307,8 @@ impl SemanticSchema {
                     super::SchemaView::AllOf(super::AllOfSchema {
                         schemas,
                         reference_siblings: composite.kind == SemanticCompositeKind::Reference,
+                        contains_reference_targets: composite.kind
+                            == SemanticCompositeKind::Reference,
                         ..Default::default()
                     })
                 }

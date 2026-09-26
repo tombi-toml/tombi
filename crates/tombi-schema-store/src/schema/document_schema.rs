@@ -301,30 +301,66 @@ impl DocumentSchema {
                     ..
                 }
             );
-            let lazy_object_view = is_dynamic_root
-                .then(|| {
+            if is_dynamic_root {
+                let lazy_object_view =
                     document_schema
                         .semantic_schema
-                        .as_deref()?
-                        .schema_view_for_type(
-                            super::SchemaType::Object,
-                            document_schema.string_formats.as_deref(),
-                        )
-                })
-                .flatten();
-            if let Some(local_view) = lazy_object_view {
-                // The local projection already owns the reference object's siblings.
-                // Keep only the deferred reference on the target; otherwise those siblings
-                // (notably `unevaluatedProperties`) are applied a second time inside the
-                // target and can erase annotations produced by a successful dynamic target.
-                if let Referable::Ref {
-                    semantic_schema, ..
-                } = &mut root_ref
-                {
-                    *semantic_schema = None;
+                        .as_deref()
+                        .and_then(|semantic_schema| {
+                            semantic_schema.schema_view_for_type(
+                                super::SchemaType::Object,
+                                document_schema.string_formats.as_deref(),
+                            )
+                        });
+                if let Some(local_view) = lazy_object_view {
+                    if let Referable::Ref {
+                        semantic_schema, ..
+                    } = &mut root_ref
+                    {
+                        *semantic_schema = None;
+                    }
+                    document_schema.schema_view =
+                        Some(Arc::new(local_view.with_reference_targets(vec![root_ref])));
+                    return document_schema;
                 }
-                document_schema.schema_view =
-                    Some(Arc::new(local_view.with_reference_targets(vec![root_ref])));
+
+                let local_semantic = match &mut root_ref {
+                    Referable::Ref {
+                        semantic_schema, ..
+                    } => semantic_schema.take(),
+                    Referable::Resolved { .. } => None,
+                };
+                let schema_view = if let Some(local_semantic) = local_semantic {
+                    let range = local_semantic.range();
+                    SchemaView::AllOf(super::AllOfSchema {
+                        schemas: Arc::new(tokio::sync::RwLock::new(vec![
+                            Referable::Resolved {
+                                schema_base_uri: Some(document_schema.schema_base_uri().clone()),
+                                value: Arc::new(SchemaView::Anything(super::AnythingSchema {
+                                    title: None,
+                                    description: None,
+                                    range,
+                                })),
+                                semantic_schema: Some(local_semantic),
+                            },
+                            root_ref,
+                        ])),
+                        reference_siblings: true,
+                        contains_reference_targets: true,
+                        ..Default::default()
+                    })
+                } else {
+                    SchemaView::AllOf(super::AllOfSchema {
+                        schemas: Arc::new(tokio::sync::RwLock::new(vec![root_ref])),
+                        contains_reference_targets: true,
+                        ..Default::default()
+                    })
+                };
+                document_schema.schema_view = Some(Arc::new(schema_view));
+                // The runtime composition above is the authoritative semantic
+                // representation. Retaining the original root semantic here
+                // would project away the deferred reference before validation.
+                document_schema.semantic_schema = None;
                 return document_schema;
             }
 

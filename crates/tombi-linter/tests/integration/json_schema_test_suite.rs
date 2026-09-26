@@ -153,6 +153,145 @@ mod issue_2190_reference_annotations {
         ]);
     );
 
+    fn dynamic_ref_with_existing_all_of_schema() -> JsonValue {
+        serde_json::json!({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://example.com/dynamic-ref-with-all-of/derived",
+            "$ref": "./baseSchema",
+            "$defs": {
+                "derived": {
+                    "$dynamicAnchor": "addons",
+                    "properties": { "bar": { "type": "string" } }
+                },
+                "baseSchema": {
+                    "$id": "./baseSchema",
+                    "allOf": [{ "properties": { "foo": { "type": "string" } } }],
+                    "$dynamicRef": "#addons",
+                    "$defs": {
+                        "defaultAddons": { "$dynamicAnchor": "addons" }
+                    }
+                }
+            }
+        })
+    }
+
+    suite_test!(
+        #[tokio::test] async fn dynamic_ref_target_is_validated_with_existing_all_of(
+            r#"
+            foo = "foo"
+            bar = 1
+            "#,
+            JsonSchema(dynamic_ref_with_existing_all_of_schema()),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::TypeMismatch {
+                    expected: tombi_schema_store::ValueType::String,
+                    actual: tombi_document_tree_syntax::ValueType::Integer,
+                },
+                ((1, 6), (1, 7)),
+            ),
+        ]);
+    );
+
+    fn scalar_dynamic_ref_schema() -> JsonValue {
+        serde_json::json!({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://example.com/scalar-dynamic-ref/root",
+            "type": "object",
+            "properties": {
+                "value": { "$ref": "#/$defs/derived" }
+            },
+            "$defs": {
+                "derived": {
+                    "$id": "./derived",
+                    "$dynamicAnchor": "kind",
+                    "type": "integer",
+                    "$ref": "./base"
+                },
+                "base": {
+                    "$id": "./base",
+                    "$dynamicRef": "#kind",
+                    "$defs": {
+                        "defaultKind": {
+                            "$dynamicAnchor": "kind",
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    suite_test!(
+        #[tokio::test] async fn scalar_dynamic_ref_uses_callers_scope(
+            r#"
+            value = 1
+            "#,
+            JsonSchema(scalar_dynamic_ref_schema()),
+        ) -> Ok(_);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn scalar_dynamic_ref_rejects_default_anchor_type(
+            r#"
+            value = "wrong scope"
+            "#,
+            JsonSchema(scalar_dynamic_ref_schema()),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::Nothing,
+                ((0, 8), (0, 21)),
+            ),
+        ]);
+    );
+
+    fn scalar_recursive_ref_schema() -> JsonValue {
+        serde_json::json!({
+            "$schema": "https://json-schema.org/draft/2019-09/schema",
+            "$id": "https://example.com/scalar-recursive-ref/root",
+            "type": "object",
+            "properties": {
+                "value": { "$ref": "#/$defs/derived" }
+            },
+            "$defs": {
+                "derived": {
+                    "$id": "./derived",
+                    "$recursiveAnchor": true,
+                    "type": "integer",
+                    "$ref": "./base"
+                },
+                "base": {
+                    "$id": "./base",
+                    "$recursiveAnchor": true,
+                    "$recursiveRef": "#"
+                }
+            }
+        })
+    }
+
+    suite_test!(
+        #[tokio::test] async fn scalar_recursive_ref_uses_callers_scope(
+            r#"
+            value = 1
+            "#,
+            JsonSchema(scalar_recursive_ref_schema()),
+        ) -> Ok(_);
+    );
+
+    suite_test!(
+        #[tokio::test] async fn scalar_recursive_ref_rejects_wrong_type(
+            r#"
+            value = "wrong scope"
+            "#,
+            JsonSchema(scalar_recursive_ref_schema()),
+        ) -> Err([
+            tombi_validator::Diagnostic::new(
+                tombi_validator::DiagnosticKind::Nothing,
+                ((0, 8), (0, 21)),
+            ),
+        ]);
+    );
+
     fn recursive_ref_schema() -> JsonValue {
         serde_json::json!({
             "$schema": "https://json-schema.org/draft/2019-09/schema",
