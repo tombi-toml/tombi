@@ -137,7 +137,8 @@ impl<'a> CurrentSchema<'a> {
         self.semantic_schema.as_deref().is_some_and(|semantic| {
             semantic.accepts_instance_type(instance_type)
                 && (!self.schema_view.matches_instance_type(instance_type)
-                    || semantic.root_reference_requires_instance_projection(instance_type))
+                    || (!self.schema_view.has_reference_targets()
+                        && semantic.root_reference_requires_instance_projection(instance_type)))
         })
     }
 
@@ -179,6 +180,16 @@ impl<T> Referable<T> {
             Self::Resolved { value, .. } => Some(value.as_ref()),
             Self::Ref { .. } => None,
         }
+    }
+
+    pub(crate) fn is_context_dependent_reference(&self) -> bool {
+        matches!(
+            self,
+            Self::Ref {
+                kind: ReferenceKind::DynamicRef | ReferenceKind::RecursiveRef,
+                ..
+            }
+        )
     }
 }
 
@@ -598,6 +609,59 @@ impl Referable<SchemaView> {
                         )
                         .await?
                     {
+                        if ref_semantic_schema
+                            .as_deref()
+                            .is_some_and(has_reference_projection_siblings)
+                        {
+                            let local_semantic = ref_semantic_schema
+                                .clone()
+                                .expect("reference siblings have semantic schema");
+                            let range = local_semantic.range();
+                            let source_schema_uri = schema_base_uri.as_ref().clone();
+                            let source_document_uri = schema_store
+                                .schema_document_uri_for(&source_schema_uri)
+                                .await;
+                            let dynamic_scope = resolved.dynamic_scope.clone();
+                            let schemas = vec![
+                                Referable::Resolved {
+                                    schema_base_uri: Some(source_schema_uri.clone()),
+                                    value: Arc::new(SchemaView::Anything(super::AnythingSchema {
+                                        title: None,
+                                        description: None,
+                                        range,
+                                    })),
+                                    semantic_schema: Some(local_semantic),
+                                },
+                                Referable::Resolved {
+                                    schema_base_uri: Some(
+                                        resolved.schema_base_uri.as_ref().clone(),
+                                    ),
+                                    value: resolved.schema_view,
+                                    semantic_schema: resolved.semantic_schema,
+                                },
+                            ];
+                            return Ok(Some(CurrentSchema {
+                                schema_view: Arc::new(SchemaView::AllOf(super::AllOfSchema {
+                                    title: title.clone(),
+                                    description: description.clone(),
+                                    range,
+                                    schemas: Arc::new(tokio::sync::RwLock::new(schemas)),
+                                    default: default.clone(),
+                                    examples: examples.clone(),
+                                    deprecation: deprecation.clone(),
+                                    reference_siblings: true,
+                                    contains_reference_targets: true,
+                                    ..Default::default()
+                                })),
+                                semantic_schema: None,
+                                schema_uri: Cow::Owned(source_schema_uri.clone()),
+                                schema_base_uri: Cow::Owned(source_schema_uri),
+                                schema_document_uri: Cow::Owned(source_document_uri),
+                                definitions: Cow::Owned(definitions.as_ref().clone()),
+                                strict,
+                                dynamic_scope,
+                            }));
+                        }
                         return Ok(Some(resolved));
                     }
                     let should_cache_resolution = *kind == ReferenceKind::Ref;
@@ -770,6 +834,7 @@ impl Referable<SchemaView> {
                                     examples: examples.clone(),
                                     deprecation: deprecation.clone(),
                                     reference_siblings: true,
+                                    contains_reference_targets: true,
                                     ..Default::default()
                                 })),
                                 semantic_schema: None,

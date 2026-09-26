@@ -20,6 +20,7 @@ pub struct AllOfSchema {
     pub not: Option<Box<NotSchema>>,
     pub if_then_else: Option<Box<IfThenElseSchema>>,
     pub reference_siblings: bool,
+    pub contains_reference_targets: bool,
 }
 
 impl AllOfSchema {
@@ -91,6 +92,7 @@ impl AllOfSchema {
             )
             .map(Box::new),
             reference_siblings: false,
+            contains_reference_targets: false,
         }
     }
 

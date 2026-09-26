@@ -101,8 +101,31 @@ impl SchemaView {
         }
     }
 
+    /// Returns true when this runtime view already embeds the target of a
+    /// reference beside the reference object's local keywords.
+    pub fn has_reference_targets(&self) -> bool {
+        match self {
+            Self::Boolean(schema) => schema.all_of.as_deref(),
+            Self::Integer(schema) => schema.all_of.as_deref(),
+            Self::Float(schema) => schema.all_of.as_deref(),
+            Self::String(schema) => schema.all_of.as_deref(),
+            Self::LocalDate(schema) => schema.all_of.as_deref(),
+            Self::LocalDateTime(schema) => schema.all_of.as_deref(),
+            Self::LocalTime(schema) => schema.all_of.as_deref(),
+            Self::OffsetDateTime(schema) => schema.all_of.as_deref(),
+            Self::Array(schema) => schema.all_of.as_deref(),
+            Self::Table(schema) => schema.all_of.as_deref(),
+            Self::AllOf(schema) => Some(schema),
+            Self::OneOf(_) | Self::AnyOf(_) | Self::Null | Self::Anything(_) | Self::Nothing(_) => {
+                None
+            }
+        }
+        .is_some_and(|schema| schema.contains_reference_targets)
+    }
+
     pub fn with_reference_targets(mut self, targets: Vec<Referable<SchemaView>>) -> Self {
         fn attach(slot: &mut Option<Box<AllOfSchema>>, mut targets: Vec<Referable<SchemaView>>) {
+            let had_existing = slot.is_some();
             if let Some(existing) = slot.take() {
                 targets.insert(
                     0,
@@ -115,6 +138,12 @@ impl SchemaView {
             }
             *slot = Some(Box::new(AllOfSchema {
                 schemas: Arc::new(tokio::sync::RwLock::new(targets)),
+                // With only reference targets, the first resolved target is the
+                // projection base used by reference-sibling validation. If a
+                // real `allOf` already exists, every branch is an independent
+                // sibling and must be validated by the ordinary allOf path.
+                reference_siblings: !had_existing,
+                contains_reference_targets: true,
                 ..Default::default()
             }));
         }
@@ -150,6 +179,7 @@ impl SchemaView {
         schemas.extend(targets);
         Self::AllOf(AllOfSchema {
             schemas: Arc::new(tokio::sync::RwLock::new(schemas)),
+            contains_reference_targets: true,
             ..Default::default()
         })
     }
@@ -1100,7 +1130,10 @@ mod tests {
         let SchemaView::String(schema) = schema else {
             panic!("expected string schema");
         };
-        assert_eq!(schema.all_of.unwrap().schemas.read().await.len(), 1);
+        let all_of = schema.all_of.unwrap();
+        assert!(all_of.reference_siblings);
+        assert!(all_of.contains_reference_targets);
+        assert_eq!(all_of.schemas.read().await.len(), 1);
     }
 
     #[tokio::test]
@@ -1108,14 +1141,39 @@ mod tests {
         let schema =
             SchemaView::AnyOf(AnyOfSchema::default()).with_reference_targets(vec![string_target()]);
 
-        let SchemaView::AllOf(AllOfSchema { schemas, .. }) = schema else {
+        let SchemaView::AllOf(AllOfSchema {
+            schemas,
+            reference_siblings,
+            contains_reference_targets,
+            ..
+        }) = schema
+        else {
             panic!("expected allOf schema");
         };
+        assert!(!reference_siblings);
+        assert!(contains_reference_targets);
         let schemas = schemas.read().await;
         assert_eq!(schemas.len(), 2);
         assert!(matches!(
             &schemas[0],
             Referable::Resolved { value, .. } if matches!(value.as_ref(), SchemaView::AnyOf(_))
         ));
+    }
+
+    #[tokio::test]
+    async fn reference_targets_preserve_existing_all_of_as_ordinary_sibling() {
+        let string = StringSchema {
+            all_of: Some(Box::new(AllOfSchema::default())),
+            ..Default::default()
+        };
+        let schema = SchemaView::String(string).with_reference_targets(vec![string_target()]);
+
+        let SchemaView::String(schema) = schema else {
+            panic!("expected string schema");
+        };
+        let all_of = schema.all_of.unwrap();
+        assert!(!all_of.reference_siblings);
+        assert!(all_of.contains_reference_targets);
+        assert_eq!(all_of.schemas.read().await.len(), 2);
     }
 }

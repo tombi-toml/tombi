@@ -287,6 +287,83 @@ impl DocumentSchema {
         // value schema (e.g. schemas whose root is only `{ "$ref": "#/definitions/..." }`).
         // `definitions` / `schema_base_uri` are borrowed only until the resolved value is built.
         if let Some(mut root_ref) = root_ref {
+            // `$dynamicRef` and `$recursiveRef` are context-dependent. Resolving either while
+            // the resource is loaded would freeze the result against the resource's own scope
+            // and discard an outer dynamic/recursive anchor supplied by a later caller. Keep
+            // the reference in the runtime view so validation resolves it with that caller's
+            // dynamic scope. The local object projection owns sibling keywords such as
+            // `properties` and `unevaluatedProperties`; attaching the unresolved target as an
+            // adjacent applicator lets those keywords consume its evaluated annotations.
+            let is_dynamic_root = matches!(
+                &root_ref,
+                Referable::Ref {
+                    kind: ReferenceKind::DynamicRef | ReferenceKind::RecursiveRef,
+                    ..
+                }
+            );
+            if is_dynamic_root {
+                let lazy_object_view =
+                    document_schema
+                        .semantic_schema
+                        .as_deref()
+                        .and_then(|semantic_schema| {
+                            semantic_schema.schema_view_for_type(
+                                super::SchemaType::Object,
+                                document_schema.string_formats.as_deref(),
+                            )
+                        });
+                if let Some(local_view) = lazy_object_view {
+                    if let Referable::Ref {
+                        semantic_schema, ..
+                    } = &mut root_ref
+                    {
+                        *semantic_schema = None;
+                    }
+                    document_schema.schema_view =
+                        Some(Arc::new(local_view.with_reference_targets(vec![root_ref])));
+                    return document_schema;
+                }
+
+                let local_semantic = match &mut root_ref {
+                    Referable::Ref {
+                        semantic_schema, ..
+                    } => semantic_schema.take(),
+                    Referable::Resolved { .. } => None,
+                };
+                let schema_view = if let Some(local_semantic) = local_semantic {
+                    let range = local_semantic.range();
+                    SchemaView::AllOf(super::AllOfSchema {
+                        schemas: Arc::new(tokio::sync::RwLock::new(vec![
+                            Referable::Resolved {
+                                schema_base_uri: Some(document_schema.schema_base_uri().clone()),
+                                value: Arc::new(SchemaView::Anything(super::AnythingSchema {
+                                    title: None,
+                                    description: None,
+                                    range,
+                                })),
+                                semantic_schema: Some(local_semantic),
+                            },
+                            root_ref,
+                        ])),
+                        reference_siblings: true,
+                        contains_reference_targets: true,
+                        ..Default::default()
+                    })
+                } else {
+                    SchemaView::AllOf(super::AllOfSchema {
+                        schemas: Arc::new(tokio::sync::RwLock::new(vec![root_ref])),
+                        contains_reference_targets: true,
+                        ..Default::default()
+                    })
+                };
+                document_schema.schema_view = Some(Arc::new(schema_view));
+                // The runtime composition above is the authoritative semantic
+                // representation. Retaining the original root semantic here
+                // would project away the deferred reference before validation.
+                document_schema.semantic_schema = None;
+                return document_schema;
+            }
+
             // A root-level `$dynamicRef` / `$recursiveRef` that bookends against this
             // same resource (e.g. `$defs.defaultAddons`) needs to look this resource
             // back up by URI while it is still being built. Register a partial copy
