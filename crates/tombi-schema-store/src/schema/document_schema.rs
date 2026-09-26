@@ -153,9 +153,7 @@ impl DocumentSchema {
             })
             .or(inherited_dialect);
 
-        if validation_vocabulary_is_disabled(&object, dialect, &schema_resource_uri, schema_store)
-            .await
-        {
+        if validation_vocabulary_is_disabled(&object, &schema_resource_uri, schema_store).await {
             remove_validation_keywords(&mut object);
         }
 
@@ -534,14 +532,9 @@ fn has_enabled_vocabulary(object: &tombi_json::ObjectNode, vocabulary_uri: &str)
 
 async fn validation_vocabulary_is_disabled(
     object: &tombi_json::ObjectNode,
-    dialect: Option<JsonSchemaDialect>,
     schema_resource_uri: &SchemaUri,
     schema_store: &SchemaStore,
 ) -> bool {
-    if validation_vocabulary_is_disabled_in_object(object, dialect) {
-        return true;
-    }
-
     let Some(schema) = object
         .get("$schema")
         .and_then(tombi_json::ValueNode::as_str)
@@ -575,7 +568,7 @@ fn validation_vocabulary_is_disabled_in_object(
         Some(JsonSchemaDialect::Draft2020_12) => {
             &["https://json-schema.org/draft/2020-12/vocab/validation"][..]
         }
-        Some(JsonSchemaDialect::Draft07) => &[][..],
+        Some(JsonSchemaDialect::Draft07) => return false,
         None => &[
             "https://json-schema.org/draft/2019-09/vocab/validation",
             "https://json-schema.org/draft/2020-12/vocab/validation",
@@ -586,9 +579,9 @@ fn validation_vocabulary_is_disabled_in_object(
         .get("$vocabulary")
         .and_then(|v| v.as_object())
         .is_some_and(|vocab| {
-            vocabulary_uris.iter().any(|uri| {
-                vocab.get(uri).is_some_and(
-                    |value| matches!(value, tombi_json::ValueNode::Bool(value) if !value.value),
+            vocabulary_uris.iter().all(|uri| {
+                !vocab.get(uri).is_some_and(
+                    |value| matches!(value, tombi_json::ValueNode::Bool(value) if value.value),
                 )
             })
         })

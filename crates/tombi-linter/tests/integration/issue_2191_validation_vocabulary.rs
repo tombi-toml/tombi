@@ -15,12 +15,15 @@ fn custom_schema_path() -> std::path::PathBuf {
 
 test_lint! {
     #[test]
-    fn test_validation_vocabulary_disabled_skips_minimum(
+    fn test_schema_vocabulary_does_not_disable_minimum(
         r#"
         value = 1
         "#,
         SchemaPath(schema_path()),
-    ) -> Ok(_)
+    ) -> Err([tombi_validator::DiagnosticKind::FloatMinimum {
+        minimum: 5.0,
+        actual: 1.0,
+    }])
 }
 
 test_lint! {
@@ -50,12 +53,15 @@ test_lint! {
 
 test_lint! {
     #[test]
-    fn test_draft_2019_validation_vocabulary_disabled_skips_minimum(
+    fn test_draft_2019_schema_vocabulary_does_not_disable_minimum(
         r#"
         value = 1
         "#,
         SchemaPath(draft_2019_schema_path()),
-    ) -> Ok(_)
+    ) -> Err([tombi_validator::DiagnosticKind::FloatMinimum {
+        minimum: 5.0,
+        actual: 1.0,
+    }])
 }
 
 test_lint! {

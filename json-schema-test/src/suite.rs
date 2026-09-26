@@ -283,12 +283,12 @@ pub fn rewrite_localhost_remotes(value: &mut serde_json::Value, remotes: &Path) 
             for (key, child) in map.iter_mut() {
                 if matches!(
                     key.as_str(),
-                    "$ref" | "$id" | "$recursiveRef" | "$dynamicRef"
+                    "$id" | "$ref" | "$schema" | "$recursiveRef" | "$dynamicRef"
                 ) {
-                    if let serde_json::Value::String(uri) = child {
-                        if let Some(rewritten) = rewrite_localhost_uri(uri, remotes) {
-                            *uri = rewritten;
-                        }
+                    if let serde_json::Value::String(uri) = child
+                        && let Some(rewritten) = rewrite_localhost_uri(uri, remotes)
+                    {
+                        *uri = rewritten;
                     }
                 } else {
                     rewrite_localhost_remotes(child, remotes);
@@ -341,10 +341,36 @@ fn rewrite_localhost_uri(uri: &str, remotes: &Path) -> Option<String> {
     Some(file_uri)
 }
 
+pub fn inject_dialect_if_missing(schema: &mut serde_json::Value, draft: Draft) {
+    let serde_json::Value::Object(map) = schema else {
+        return;
+    };
+    if !map.contains_key("$schema") {
+        map.insert(
+            "$schema".to_string(),
+            serde_json::Value::String(draft.meta_schema_uri().to_string()),
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::path::PathBuf;
+
+    #[test]
+    fn rewrite_localhost_metaschema_uri() {
+        let remotes = PathBuf::from("/tmp/remotes");
+        let mut schema = serde_json::json!({
+            "$schema": "http://localhost:1234/draft2020-12/metaschema-no-validation.json"
+        });
+
+        rewrite_localhost_remotes(&mut schema, &remotes);
+
+        let rewritten = schema["$schema"].as_str().expect("rewritten $schema URI");
+        assert!(rewritten.starts_with("file://"));
+        assert!(rewritten.ends_with("/draft2020-12/metaschema-no-validation.json"));
+    }
 
     #[test]
     fn rewrite_preserves_json_pointer_fragment() {
@@ -362,17 +388,5 @@ mod tests {
             "filesystem path should be the json file: {rewritten}"
         );
         assert_eq!(fragment, "/definitions/integer");
-    }
-}
-
-pub fn inject_dialect_if_missing(schema: &mut serde_json::Value, draft: Draft) {
-    let serde_json::Value::Object(map) = schema else {
-        return;
-    };
-    if !map.contains_key("$schema") {
-        map.insert(
-            "$schema".to_string(),
-            serde_json::Value::String(draft.meta_schema_uri().to_string()),
-        );
     }
 }
