@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use itertools::Itertools;
 use tombi_comment_directive::{
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
@@ -131,9 +129,7 @@ async fn get_comment_directive_toml_content_hover_content(
 
         let schema_store = tombi_comment_directive_store::schema_store().await;
         let source_schema = tombi_schema_store::SourceSchema::new(
-            Some(Arc::new(
-                comment_directive_document_schema(schema_store, schema_uri).await,
-            )),
+            Some(comment_directive_document_schema(schema_store, schema_uri).await),
             tombi_hashmap::IndexMap::with_capacity(0),
             Some(toml_version),
             None,

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use tombi_schema_store::DocumentSchema;
 use tombi_uri::SchemaUri;
 
@@ -19,14 +21,10 @@ pub async fn schema_store() -> &'static tombi_schema_store::SchemaStore {
 pub async fn comment_directive_document_schema(
     store: &tombi_schema_store::SchemaStore,
     schema_uri: SchemaUri,
-) -> DocumentSchema {
-    let schema_value = store
-        .fetch_schema_value(&schema_uri)
+) -> Arc<DocumentSchema> {
+    store
+        .try_get_document_schema(&schema_uri)
         .await
-        // Value Comment Directive Schema is embedded in the crate
-        .unwrap()
-        .unwrap();
-    DocumentSchema::new(schema_value, schema_uri, None, store)
-        .await
-        .expect("embedded comment directive schema")
+        .expect("failed to load embedded comment directive schema")
+        .expect("embedded comment directive schema is missing")
 }

@@ -1344,6 +1344,27 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_multiple_arrays_with_same_comment_directive_schema(
+                r#"
+                # tombi: format.rules.array-values-order = "ascending"
+                first = [3, 1, 2]
+
+                # tombi: format.rules.array-values-order = "descending"
+                second = [3, 1, 2]
+                "#,
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.array-values-order = "ascending"
+                first = [1, 2, 3]
+
+                # tombi: format.rules.array-values-order = "descending"
+                second = [3, 2, 1]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_array_with_inner_comment_directive(
                 r#"
                 key = [
