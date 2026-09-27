@@ -1,22 +1,60 @@
 # JSON Schema Test Suite (Definition A)
 #
-# DISABLED on push/PR until Definition A is fully green.
-# Enable push/pull_request triggers only after the local suite passes without --allow-fail.
-
 name: json-schema-test-suite
 
 on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  detect-changes:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - id: filter
+        uses: ./.github/actions/relevant-changes
+        with:
+          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          paths: |
+            .cargo/**
+            .github/actions/relevant-changes/**
+            .github/workflows/json-schema-test-suite.yml
+            Cargo.toml
+            Cargo.lock
+            rust-toolchain.toml
+            crates/**
+            extensions/**
+            rust/**
+            json-schema-test/**
+            xtask/**
+            schemas/**
+            www.schemastore.org/**
+            www.schemastore.tombi/**
+            tombi.toml
+
   json-schema-test:
+    needs: detect-changes
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.detect-changes.result != 'success' || needs.detect-changes.outputs.relevant == 'true')
     name: Run JSON-Schema-Test-Suite (Definition A)
     runs-on: ubuntu-latest
     steps:
@@ -34,5 +72,5 @@ jobs:
         run: cargo xtask json-schema-test --fetch-only
 
       - name: Run Definition A suite
-        # Fail the job on remaining gaps once this workflow is enabled on PRs.
+        # Keep --allow-fail out of CI so any remaining gap fails this gate.
         run: cargo xtask json-schema-test
