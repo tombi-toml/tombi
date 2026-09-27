@@ -117,6 +117,7 @@ impl Validate for OffsetDateTime {
     }
 }
 
+#[allow(clippy::result_large_err)]
 async fn validate_offset_date_time(
     offset_date_time_value: &OffsetDateTime,
     accessors: &[tombi_schema_store::Accessor],

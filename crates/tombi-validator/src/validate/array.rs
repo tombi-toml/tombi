@@ -124,6 +124,7 @@ impl Validate for tombi_document_tree_syntax::Array {
     }
 }
 
+#[allow(clippy::result_large_err)]
 async fn validate_array(
     array_value: &tombi_document_tree_syntax::Array,
     accessors: &[tombi_schema_store::Accessor],
@@ -771,6 +772,7 @@ async fn validate_array(
     merge_validation_results(base_result, adjacent_result)
 }
 
+#[allow(clippy::result_large_err)]
 async fn validate_array_without_schema(
     array_value: &tombi_document_tree_syntax::Array,
     accessors: &[tombi_schema_store::Accessor],

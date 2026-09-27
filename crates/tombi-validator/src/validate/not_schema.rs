@@ -8,6 +8,7 @@ use crate::{
     validate::{handle_unused_noqa, is_assertion_success},
 };
 
+#[allow(clippy::result_large_err)]
 pub async fn validate_not<'a, T>(
     value: &T,
     accessors: &[tombi_schema_store::Accessor],

@@ -7,6 +7,7 @@ use tombi_schema_store::CurrentSchema;
 use crate::Validate;
 use crate::validate::{discard_failed_annotations, is_assertion_success, merge_validation_results};
 
+#[allow(clippy::result_large_err)]
 pub async fn validate_if_then_else<T>(
     value: &T,
     accessors: &[tombi_schema_store::Accessor],

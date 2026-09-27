@@ -125,6 +125,7 @@ impl Validate for tombi_document_tree_syntax::Float {
     }
 }
 
+#[allow(clippy::result_large_err)]
 async fn validate_float(
     float_value: &tombi_document_tree_syntax::Float,
     accessors: &[tombi_schema_store::Accessor],

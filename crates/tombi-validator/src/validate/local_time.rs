@@ -115,6 +115,7 @@ impl Validate for LocalTime {
     }
 }
 
+#[allow(clippy::result_large_err)]
 async fn validate_local_time(
     local_time_value: &LocalTime,
     accessors: &[tombi_schema_store::Accessor],

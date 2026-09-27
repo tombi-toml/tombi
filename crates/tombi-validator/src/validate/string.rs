@@ -316,6 +316,7 @@ where
     })
 }
 
+#[allow(clippy::result_large_err)]
 async fn validate_string<T>(
     string_value: &T,
     accessors: &[tombi_schema_store::Accessor],

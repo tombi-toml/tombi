@@ -139,6 +139,7 @@ impl Validate for tombi_document_tree_syntax::Integer {
     }
 }
 
+#[allow(clippy::result_large_err)]
 async fn validate_integer_schema(
     integer_value: &tombi_document_tree_syntax::Integer,
     accessors: &[tombi_schema_store::Accessor],
@@ -442,6 +443,7 @@ async fn validate_integer_schema(
     )
 }
 
+#[allow(clippy::result_large_err)]
 async fn validate_float_schema_for_integer(
     integer_value: &tombi_document_tree_syntax::Integer,
     accessors: &[tombi_schema_store::Accessor],

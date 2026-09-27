@@ -126,6 +126,7 @@ impl Validate for tombi_document_tree_syntax::Boolean {
     }
 }
 
+#[allow(clippy::result_large_err)]
 async fn validate_boolean(
     boolean_value: &tombi_document_tree_syntax::Boolean,
     accessors: &[tombi_schema_store::Accessor],

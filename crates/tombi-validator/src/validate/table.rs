@@ -222,6 +222,7 @@ impl Validate for tombi_document_tree_syntax::Table {
     }
 }
 
+#[allow(clippy::result_large_err)]
 async fn validate_table(
     table_value: &tombi_document_tree_syntax::Table,
     accessors: &[tombi_schema_store::Accessor],
@@ -1231,6 +1232,7 @@ fn collect_evaluated_properties_from_referable_schemas<'a>(
     .boxed()
 }
 
+#[allow(clippy::result_large_err)]
 async fn validate_table_without_schema(
     table_value: &tombi_document_tree_syntax::Table,
     accessors: &[tombi_schema_store::Accessor],
