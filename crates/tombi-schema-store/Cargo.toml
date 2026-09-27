@@ -13,6 +13,7 @@ glob.workspace = true
 gloo-net = { workspace = true, optional = true }
 itertools.workspace = true
 log.workspace = true
+parking_lot.workspace = true
 reqwest = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true

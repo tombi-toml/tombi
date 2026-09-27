@@ -1,2 +1,2 @@
 too-many-arguments-threshold = 20
-large-error-ignored = ["tombi_validator::Invalid"]
+large-error-threshold = 256

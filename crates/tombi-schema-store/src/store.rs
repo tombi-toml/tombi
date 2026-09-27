@@ -14,6 +14,7 @@ use crate::{
     json::JsonCatalog,
 };
 use itertools::{Either, Itertools};
+use parking_lot::RwLock as ParkingRwLock;
 use tokio::sync::RwLock;
 #[cfg(feature = "ast-syntax")]
 use tombi_ast_syntax::SchemaDocumentCommentDirective;
@@ -23,7 +24,10 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_uri::SchemaUri;
 
 type DocumentSchemas = Arc<RwLock<tombi_hashmap::HashMap<SchemaUri, CachedDocumentSchema>>>;
-type SchemaResourceIndex = Arc<RwLock<tombi_hashmap::HashMap<SchemaUri, SchemaResourceLocation>>>;
+// Index operations are short and never span an `.await`; avoid scheduling an
+// async lock acquisition on every schema reference during parallel formatting.
+type SchemaResourceIndex =
+    Arc<ParkingRwLock<tombi_hashmap::HashMap<SchemaUri, SchemaResourceLocation>>>;
 
 tokio::task_local! {
     /// Same-task stack of schema URIs currently being built. Detects cyclic embedded
@@ -201,7 +205,6 @@ impl SchemaStore {
         let location = self
             .schema_resource_index
             .read()
-            .await
             .get(&schema_resource_uri)
             .cloned()?;
         let schema_resources = location.schema_resources.upgrade()?;
@@ -221,7 +224,6 @@ impl SchemaStore {
         let Some(location) = self
             .schema_resource_index
             .read()
-            .await
             .get(&schema_resource_uri)
             .cloned()
         else {
@@ -243,7 +245,6 @@ impl SchemaStore {
         let location = self
             .schema_resource_index
             .read()
-            .await
             .get(&schema_resource_uri)
             .cloned()?;
         let schema_resources = location.schema_resources.upgrade()?;
@@ -268,7 +269,7 @@ impl SchemaStore {
         Self {
             http_client,
             document_schemas: Arc::new(RwLock::default()),
-            schema_resource_index: Arc::new(RwLock::default()),
+            schema_resource_index: Arc::new(ParkingRwLock::default()),
             schemas: Arc::new(RwLock::new(Vec::new())),
             options,
             base_dir_path: Arc::new(RwLock::new(None)),
@@ -309,7 +310,7 @@ impl SchemaStore {
         config_path: Option<&std::path::Path>,
     ) -> Result<(), crate::Error> {
         self.document_schemas.write().await.clear();
-        self.schema_resource_index.write().await.clear();
+        self.schema_resource_index.write().clear();
         self.schemas.write().await.clear();
         self.load_config(config, config_path).await?;
         Ok(())
@@ -610,7 +611,6 @@ impl SchemaStore {
         let location = self
             .schema_resource_index
             .read()
-            .await
             .get(&schema_resource_uri)
             .cloned();
         if let Some(location) = location {
@@ -625,7 +625,6 @@ impl SchemaStore {
                 // so embedded-then-external fallback still works.
                 self.schema_resource_index
                     .write()
-                    .await
                     .remove(&schema_resource_uri);
             }
         }
@@ -821,53 +820,55 @@ impl SchemaStore {
         // Stable order so cross-document duplicate diagnostics are deterministic.
         aliases.sort_by(|left, right| left.0.as_str().cmp(right.0.as_str()));
 
-        let mut index = self.schema_resource_index.write().await;
-        for (alias_uri, schema_resource_uri) in &aliases {
-            if let Some(existing) = index.get(alias_uri)
-                && existing.schema_document_uri != *schema_document_uri
-                && let Some(existing_resources) = existing.schema_resources.upgrade()
-            {
-                let existing_location = existing_resources
-                    .resource(&existing.schema_resource_uri)
-                    .map(|resource| resource.location.clone())
-                    .unwrap_or_else(|| "#".to_string());
-                let conflicting_location = schema_resources
-                    .resource(schema_resource_uri)
-                    .map(|resource| resource.location.clone())
-                    .unwrap_or_else(|| "#".to_string());
-                return Err(crate::Error::DuplicateSchemaResourceAcrossDocuments(
-                    Box::new(crate::error::DuplicateSchemaResourceAcrossDocuments {
-                        schema_uri: alias_uri.clone(),
-                        existing_schema_document_uri: existing.schema_document_uri.clone(),
-                        existing_location,
-                        conflicting_schema_document_uri: schema_document_uri.clone(),
-                        conflicting_location,
-                    }),
-                ));
+        let stale_schema_resource_uris = {
+            let mut index = self.schema_resource_index.write();
+            for (alias_uri, schema_resource_uri) in &aliases {
+                if let Some(existing) = index.get(alias_uri)
+                    && existing.schema_document_uri != *schema_document_uri
+                    && let Some(existing_resources) = existing.schema_resources.upgrade()
+                {
+                    let existing_location = existing_resources
+                        .resource(&existing.schema_resource_uri)
+                        .map(|resource| resource.location.clone())
+                        .unwrap_or_else(|| "#".to_string());
+                    let conflicting_location = schema_resources
+                        .resource(schema_resource_uri)
+                        .map(|resource| resource.location.clone())
+                        .unwrap_or_else(|| "#".to_string());
+                    return Err(crate::Error::DuplicateSchemaResourceAcrossDocuments(
+                        Box::new(crate::error::DuplicateSchemaResourceAcrossDocuments {
+                            schema_uri: alias_uri.clone(),
+                            existing_schema_document_uri: existing.schema_document_uri.clone(),
+                            existing_location,
+                            conflicting_schema_document_uri: schema_document_uri.clone(),
+                            conflicting_location,
+                        }),
+                    ));
+                }
             }
-        }
 
-        let stale_schema_resource_uris = index
-            .iter()
-            .filter_map(|(uri, location)| {
-                (location.schema_document_uri == *schema_document_uri).then_some(uri.clone())
-            })
-            .collect_vec();
-        index.retain(|_, location| {
-            location.schema_document_uri != *schema_document_uri
-                && location.schema_resources.upgrade().is_some()
-        });
-        for (alias_uri, schema_resource_uri) in aliases {
-            index.insert(
-                alias_uri,
-                SchemaResourceLocation {
-                    schema_document_uri: schema_document_uri.clone(),
-                    schema_resource_uri,
-                    schema_resources: Arc::downgrade(&schema_resources),
-                },
-            );
-        }
-        drop(index);
+            let stale_schema_resource_uris = index
+                .iter()
+                .filter_map(|(uri, location)| {
+                    (location.schema_document_uri == *schema_document_uri).then_some(uri.clone())
+                })
+                .collect_vec();
+            index.retain(|_, location| {
+                location.schema_document_uri != *schema_document_uri
+                    && location.schema_resources.upgrade().is_some()
+            });
+            for (alias_uri, schema_resource_uri) in aliases {
+                index.insert(
+                    alias_uri,
+                    SchemaResourceLocation {
+                        schema_document_uri: schema_document_uri.clone(),
+                        schema_resource_uri,
+                        schema_resources: Arc::downgrade(&schema_resources),
+                    },
+                );
+            }
+            stale_schema_resource_uris
+        };
 
         if !stale_schema_resource_uris.is_empty() {
             let mut document_schemas = self.document_schemas.write().await;
@@ -897,17 +898,12 @@ impl SchemaStore {
         &self,
         schema_uri: &SchemaUri,
     ) -> Option<SchemaResourceLocation> {
-        let location = self
-            .schema_resource_index
-            .read()
-            .await
-            .get(schema_uri)
-            .cloned()?;
+        let location = self.schema_resource_index.read().get(schema_uri).cloned()?;
         if location.schema_document_uri == *schema_uri {
             return None;
         }
         if location.schema_resources.upgrade().is_none() {
-            self.schema_resource_index.write().await.remove(schema_uri);
+            self.schema_resource_index.write().remove(schema_uri);
             return None;
         }
         Some(location)
@@ -951,7 +947,6 @@ impl SchemaStore {
         let location = self
             .schema_resource_index
             .read()
-            .await
             .get(schema_uri)
             .cloned()
             .unwrap_or_else(|| location.clone());
@@ -1027,17 +1022,19 @@ impl SchemaStore {
         error: crate::Error,
         pin_error: bool,
     ) {
-        let mut index = self.schema_resource_index.write().await;
-        let stale_schema_resource_uris = index
-            .iter()
-            .filter_map(|(uri, location)| {
-                (location.schema_document_uri == *schema_document_uri).then_some(uri.clone())
-            })
-            .collect_vec();
-        for uri in &stale_schema_resource_uris {
-            index.remove(uri);
-        }
-        drop(index);
+        let stale_schema_resource_uris = {
+            let mut index = self.schema_resource_index.write();
+            let stale_schema_resource_uris = index
+                .iter()
+                .filter_map(|(uri, location)| {
+                    (location.schema_document_uri == *schema_document_uri).then_some(uri.clone())
+                })
+                .collect_vec();
+            for uri in &stale_schema_resource_uris {
+                index.remove(uri);
+            }
+            stale_schema_resource_uris
+        };
 
         let version = schema_cache_version(schema_document_uri).await;
         let mut document_schemas = self.document_schemas.write().await;
