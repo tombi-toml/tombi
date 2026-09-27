@@ -756,7 +756,8 @@ impl SchemaStore {
                 schema_uri: schema_uri.clone(),
             });
         }
-        let schema_resources = SchemaDocumentResources::collect(&schema_value, schema_uri)?;
+        let schema_resources =
+            SchemaDocumentResources::collect(&schema_value, schema_uri, self).await?;
         self.replace_schema_resources(schema_resources.clone())
             .await?;
         let document_schema = DocumentSchema::new_resource(

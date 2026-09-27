@@ -28,8 +28,33 @@ test_lint! {
 
 test_lint! {
     #[test]
+    fn test_embedded_custom_metaschema_overrides_parent_vocabulary(
+        r#"
+        [overridden]
+        value = 1
+        "#,
+        SchemaPath(custom_schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::FloatMinimum {
+        minimum: 5.0,
+        actual: 1.0,
+    }])
+}
+
+test_lint! {
+    #[test]
     fn test_custom_metaschema_validation_vocabulary_disabled(
         r#"
+        value = 1
+        "#,
+        SchemaPath(custom_schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_custom_metaschema_vocabulary_is_inherited_by_embedded_resources(
+        r#"
+        [nested]
         value = 1
         "#,
         SchemaPath(custom_schema_path()),

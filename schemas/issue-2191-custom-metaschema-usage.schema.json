@@ -8,6 +8,27 @@
     },
     "known": {
       "type": "boolean"
+    },
+    "nested": {
+      "$id": "nested-resource",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer",
+          "minimum": 5
+        }
+      }
+    },
+    "overridden": {
+      "$id": "overridden-resource",
+      "$schema": "issue-2191-validation-metaschema.schema.json",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer",
+          "minimum": 5
+        }
+      }
     }
   },
   "additionalProperties": false

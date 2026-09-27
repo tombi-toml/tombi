@@ -53,7 +53,8 @@ impl DocumentSchema {
         // Fail closed on duplicate `$id` / collect errors, matching
         // `SchemaStore::fetch_document_schema`. Register the resource index before
         // building so root `$ref` targets to embedded `$id`s resolve offline.
-        let schema_resources = SchemaDocumentResources::collect(&node, &schema_document_uri)?;
+        let schema_resources =
+            SchemaDocumentResources::collect(&node, &schema_document_uri, schema_store).await?;
         schema_store
             .replace_schema_resources(schema_resources.clone())
             .await?;
@@ -78,6 +79,7 @@ impl DocumentSchema {
         let schema_resource_uri = resource.schema_resource_uri;
         let id = resource.id;
         let inherited_dialect = resource.dialect;
+        let validation_vocabulary_disabled = resource.validation_vocabulary_disabled;
         Some(match resource.value {
             tombi_json::ValueNode::Object(object) => {
                 Self::new_from_object(
@@ -86,6 +88,7 @@ impl DocumentSchema {
                     schema_resource_uri,
                     id,
                     inherited_dialect,
+                    validation_vocabulary_disabled,
                     strict,
                     schema_store,
                     schema_resources,
@@ -139,6 +142,7 @@ impl DocumentSchema {
         schema_resource_uri: SchemaUri,
         id: Option<SchemaUri>,
         inherited_dialect: Option<JsonSchemaDialect>,
+        validation_vocabulary_disabled: bool,
         strict: Option<BoolDefaultTrue>,
         schema_store: &SchemaStore,
         schema_resources: Arc<SchemaDocumentResources>,
@@ -153,7 +157,7 @@ impl DocumentSchema {
             })
             .or(inherited_dialect);
 
-        if validation_vocabulary_is_disabled(&object, &schema_resource_uri, schema_store).await {
+        if validation_vocabulary_disabled {
             remove_validation_keywords(&mut object);
         }
 
@@ -530,63 +534,6 @@ fn has_enabled_vocabulary(object: &tombi_json::ObjectNode, vocabulary_uri: &str)
         .is_some_and(|value| matches!(value, tombi_json::ValueNode::Bool(b) if b.value))
 }
 
-async fn validation_vocabulary_is_disabled(
-    object: &tombi_json::ObjectNode,
-    schema_resource_uri: &SchemaUri,
-    schema_store: &SchemaStore,
-) -> bool {
-    let Some(schema) = object
-        .get("$schema")
-        .and_then(tombi_json::ValueNode::as_str)
-    else {
-        return false;
-    };
-    let Some(metaschema_uri) = resolve_schema_resource_uri(schema_resource_uri, schema) else {
-        return false;
-    };
-    let Ok(Some(tombi_json::ValueNode::Object(metaschema))) =
-        schema_store.fetch_schema_value(&metaschema_uri).await
-    else {
-        return false;
-    };
-
-    let metaschema_dialect = metaschema
-        .get("$schema")
-        .and_then(tombi_json::ValueNode::as_str)
-        .and_then(|schema| JsonSchemaDialect::try_from(schema).ok());
-    validation_vocabulary_is_disabled_in_object(&metaschema, metaschema_dialect)
-}
-
-fn validation_vocabulary_is_disabled_in_object(
-    object: &tombi_json::ObjectNode,
-    dialect: Option<JsonSchemaDialect>,
-) -> bool {
-    let vocabulary_uris = match dialect {
-        Some(JsonSchemaDialect::Draft2019_09) => {
-            &["https://json-schema.org/draft/2019-09/vocab/validation"][..]
-        }
-        Some(JsonSchemaDialect::Draft2020_12) => {
-            &["https://json-schema.org/draft/2020-12/vocab/validation"][..]
-        }
-        Some(JsonSchemaDialect::Draft07) => return false,
-        None => &[
-            "https://json-schema.org/draft/2019-09/vocab/validation",
-            "https://json-schema.org/draft/2020-12/vocab/validation",
-        ][..],
-    };
-
-    object
-        .get("$vocabulary")
-        .and_then(|v| v.as_object())
-        .is_some_and(|vocab| {
-            vocabulary_uris.iter().all(|uri| {
-                !vocab.get(uri).is_some_and(
-                    |value| matches!(value, tombi_json::ValueNode::Bool(value) if value.value),
-                )
-            })
-        })
-}
-
 fn remove_validation_keywords(object: &mut tombi_json::ObjectNode) {
     object.properties.as_inner_mut().retain(|key, _| {
         keyword_vocabulary(key.value.as_str()) != Some(JsonSchemaVocabulary::Validation)
@@ -686,9 +633,56 @@ impl FindSchemaCandidates for DocumentSchema {
 mod tests {
     use std::str::FromStr;
 
-    use crate::{SchemaStore, SchemaView};
+    use crate::{JsonSchemaDialect, SchemaStore, SchemaView};
 
     use super::DocumentSchema;
+
+    #[tokio::test]
+    async fn custom_metaschema_context_is_inherited_by_embedded_resources() {
+        let schema_path = tombi_test_lib::project_root_path()
+            .join("schemas/issue-2191-custom-metaschema-usage.schema.json");
+        let schema_uri = crate::SchemaUri::from_file_path(&schema_path).expect("schema URI");
+        let schema_value = tombi_json::ValueNode::from_reader(
+            std::fs::File::open(schema_path).expect("schema file"),
+        )
+        .expect("valid schema JSON");
+        let store = SchemaStore::new();
+
+        let document = DocumentSchema::new(schema_value, schema_uri, None, &store)
+            .await
+            .expect("DocumentSchema::new");
+
+        let embedded_uri = document
+            .schema_resources
+            .resource_uris()
+            .find(|uri| uri.to_string().ends_with("/nested-resource"))
+            .expect("embedded schema resource");
+        let embedded_resource = document
+            .schema_resources
+            .resource(embedded_uri)
+            .expect("embedded resource metadata");
+
+        assert_eq!(
+            embedded_resource.dialect,
+            Some(JsonSchemaDialect::Draft2020_12)
+        );
+        assert!(embedded_resource.validation_vocabulary_disabled);
+
+        let overridden_uri = document
+            .schema_resources
+            .resource_uris()
+            .find(|uri| uri.to_string().ends_with("/overridden-resource"))
+            .expect("overridden embedded schema resource");
+        let overridden_resource = document
+            .schema_resources
+            .resource(overridden_uri)
+            .expect("overridden embedded resource metadata");
+        assert_eq!(
+            overridden_resource.dialect,
+            Some(JsonSchemaDialect::Draft2020_12)
+        );
+        assert!(!overridden_resource.validation_vocabulary_disabled);
+    }
 
     #[tokio::test]
     async fn collects_anchor_definitions_for_2019_09_and_later() {

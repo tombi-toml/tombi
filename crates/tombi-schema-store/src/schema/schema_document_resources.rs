@@ -1,7 +1,7 @@
 use std::{str::FromStr, sync::Arc};
 
 use super::SchemaUri;
-use crate::JsonSchemaDialect;
+use crate::{JsonSchemaDialect, SchemaStore};
 
 #[derive(Debug, Clone)]
 pub(crate) struct SchemaResource {
@@ -10,6 +10,7 @@ pub(crate) struct SchemaResource {
     pub schema_resource_uri: SchemaUri,
     pub id: Option<SchemaUri>,
     pub dialect: Option<JsonSchemaDialect>,
+    pub validation_vocabulary_disabled: bool,
     /// JSON Pointer to this resource within the physical document (e.g. `#/$defs/foo`).
     pub location: String,
     pub value: tombi_json::ValueNode,
@@ -25,21 +26,26 @@ pub(crate) struct SchemaDocumentResources {
 }
 
 impl SchemaDocumentResources {
-    pub(crate) fn collect(
+    pub(crate) async fn collect(
         root: &tombi_json::ValueNode,
         schema_document_uri: &SchemaUri,
+        schema_store: &SchemaStore,
     ) -> Result<Arc<Self>, crate::Error> {
+        let (root_dialect, root_validation_vocabulary_disabled) =
+            root_schema_context(root, schema_document_uri, schema_store).await;
         let mut resources = tombi_hashmap::HashMap::default();
         let root_schema_resource_uri = collect_schema_resources_from_value(
             root,
             schema_document_uri,
             schema_document_uri,
-            None,
+            root_dialect,
+            root_validation_vocabulary_disabled,
             true,
             "#",
             &mut resources,
         )?
         .expect("the root schema always defines a schema resource");
+        inherit_resource_contexts(&mut resources, schema_document_uri, schema_store).await;
 
         if schema_document_uri != &root_schema_resource_uri
             && let Some(existing) = resources.get(schema_document_uri)
@@ -78,11 +84,127 @@ impl SchemaDocumentResources {
     }
 }
 
+async fn root_schema_context(
+    root: &tombi_json::ValueNode,
+    schema_document_uri: &SchemaUri,
+    schema_store: &SchemaStore,
+) -> (Option<JsonSchemaDialect>, bool) {
+    let Some(object) = root.as_object() else {
+        return (None, false);
+    };
+    let Some(schema_uri) = object
+        .get("$schema")
+        .and_then(tombi_json::ValueNode::as_str)
+    else {
+        return (None, false);
+    };
+    if let Ok(dialect) = JsonSchemaDialect::try_from(schema_uri) {
+        return (Some(dialect), false);
+    }
+
+    let schema_base_uri = object
+        .get("$id")
+        .and_then(tombi_json::ValueNode::as_str)
+        .and_then(|id| resolve_schema_resource_uri(schema_document_uri, id))
+        .unwrap_or_else(|| schema_document_uri.clone());
+    let Some(metaschema_uri) = resolve_schema_resource_uri(&schema_base_uri, schema_uri) else {
+        return (None, false);
+    };
+    let Ok(Some(tombi_json::ValueNode::Object(metaschema))) =
+        schema_store.fetch_schema_value(&metaschema_uri).await
+    else {
+        return (None, false);
+    };
+    let dialect = metaschema
+        .get("$schema")
+        .and_then(tombi_json::ValueNode::as_str)
+        .and_then(|schema| JsonSchemaDialect::try_from(schema).ok());
+    let validation_vocabulary_disabled =
+        validation_vocabulary_is_disabled_in_object(&metaschema, dialect);
+    (dialect, validation_vocabulary_disabled)
+}
+
+async fn inherit_resource_contexts(
+    resources: &mut tombi_hashmap::HashMap<SchemaUri, SchemaResource>,
+    schema_document_uri: &SchemaUri,
+    schema_store: &SchemaStore,
+) {
+    let mut resource_uris = resources.keys().cloned().collect::<Vec<_>>();
+    resource_uris.sort_by_key(|uri| {
+        resources
+            .get(uri)
+            .map(|resource| resource.location.matches('/').count())
+            .unwrap_or_default()
+    });
+
+    for resource_uri in resource_uris {
+        let Some(resource) = resources.get(&resource_uri).cloned() else {
+            continue;
+        };
+        if resource.location == "#" {
+            continue;
+        }
+        let parent_context = resources
+            .values()
+            .filter(|parent| {
+                resource.location.starts_with(&parent.location)
+                    && resource.location.as_bytes().get(parent.location.len()) == Some(&b'/')
+            })
+            .max_by_key(|parent| parent.location.len())
+            .map(|parent| (parent.dialect, parent.validation_vocabulary_disabled));
+        let Some((inherited_dialect, inherited_disabled)) = parent_context else {
+            continue;
+        };
+        let (dialect, disabled) = match &resource.value {
+            tombi_json::ValueNode::Object(object) if object.get("$schema").is_some() => {
+                let base_uri = resource.id.as_ref().unwrap_or(schema_document_uri);
+                root_schema_context(&resource.value, base_uri, schema_store).await
+            }
+            _ => (inherited_dialect, inherited_disabled),
+        };
+        if let Some(resource) = resources.get_mut(&resource_uri) {
+            resource.dialect = dialect;
+            resource.validation_vocabulary_disabled = disabled;
+        }
+    }
+}
+
+fn validation_vocabulary_is_disabled_in_object(
+    object: &tombi_json::ObjectNode,
+    dialect: Option<JsonSchemaDialect>,
+) -> bool {
+    let vocabulary_uris = match dialect {
+        Some(JsonSchemaDialect::Draft2019_09) => {
+            &["https://json-schema.org/draft/2019-09/vocab/validation"][..]
+        }
+        Some(JsonSchemaDialect::Draft2020_12) => {
+            &["https://json-schema.org/draft/2020-12/vocab/validation"][..]
+        }
+        Some(JsonSchemaDialect::Draft07) => return false,
+        None => &[
+            "https://json-schema.org/draft/2019-09/vocab/validation",
+            "https://json-schema.org/draft/2020-12/vocab/validation",
+        ][..],
+    };
+
+    object
+        .get("$vocabulary")
+        .and_then(|v| v.as_object())
+        .is_some_and(|vocab| {
+            vocabulary_uris.iter().all(|uri| {
+                !vocab.get(uri).is_some_and(
+                    |value| matches!(value, tombi_json::ValueNode::Bool(value) if value.value),
+                )
+            })
+        })
+}
+
 fn collect_schema_resources_from_value(
     value: &tombi_json::ValueNode,
     schema_document_uri: &SchemaUri,
     enclosing_schema_base_uri: &SchemaUri,
     inherited_dialect: Option<JsonSchemaDialect>,
+    inherited_validation_vocabulary_disabled: bool,
     is_document_root: bool,
     location: &str,
     resources: &mut tombi_hashmap::HashMap<SchemaUri, SchemaResource>,
@@ -96,6 +218,7 @@ fn collect_schema_resources_from_value(
                     schema_resource_uri: schema_resource_uri.clone(),
                     id: None,
                     dialect: inherited_dialect,
+                    validation_vocabulary_disabled: inherited_validation_vocabulary_disabled,
                     location: location.to_string(),
                     value: value.clone(),
                 },
@@ -118,6 +241,7 @@ fn collect_schema_resources_from_value(
         })
         .flatten()
         .or(inherited_dialect);
+    let validation_vocabulary_disabled = inherited_validation_vocabulary_disabled;
     let schema_resource_uri = declared_schema_resource_uri
         .clone()
         .or_else(|| is_document_root.then(|| schema_document_uri.clone()));
@@ -142,6 +266,7 @@ fn collect_schema_resources_from_value(
                 schema_resource_uri: schema_resource_uri.clone(),
                 id: declared_schema_resource_uri.clone(),
                 dialect,
+                validation_vocabulary_disabled,
                 location: location.to_string(),
                 value: value.clone(),
             },
@@ -158,6 +283,7 @@ fn collect_schema_resources_from_value(
                             schema_document_uri,
                             schema_base_uri,
                             dialect,
+                            validation_vocabulary_disabled,
                             false,
                             &json_pointer_join(
                                 location,
@@ -182,6 +308,7 @@ fn collect_schema_resources_from_value(
                             schema_document_uri,
                             schema_base_uri,
                             dialect,
+                            validation_vocabulary_disabled,
                             false,
                             &json_pointer_join(
                                 location,
@@ -201,6 +328,7 @@ fn collect_schema_resources_from_value(
                             schema_document_uri,
                             schema_base_uri,
                             dialect,
+                            validation_vocabulary_disabled,
                             false,
                             &json_pointer_join(
                                 location,
@@ -220,6 +348,7 @@ fn collect_schema_resources_from_value(
                             schema_document_uri,
                             schema_base_uri,
                             dialect,
+                            validation_vocabulary_disabled,
                             false,
                             &json_pointer_join(
                                 location,
@@ -235,6 +364,7 @@ fn collect_schema_resources_from_value(
                         schema_document_uri,
                         schema_base_uri,
                         dialect,
+                        validation_vocabulary_disabled,
                         false,
                         &json_pointer_join(location, key.value.as_str(), None),
                         resources,
@@ -257,6 +387,7 @@ fn collect_schema_resources_from_value(
                     schema_document_uri,
                     schema_base_uri,
                     dialect,
+                    validation_vocabulary_disabled,
                     false,
                     &json_pointer_join(location, key.value.as_str(), None),
                     resources,
