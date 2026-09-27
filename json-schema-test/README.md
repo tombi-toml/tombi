@@ -41,6 +41,8 @@ re-downloads the suite on the next run.
 
 ## CI
 
-`.github/workflows/json-schema-test-suite.yml` exists but is **manual only**
-(`workflow_dispatch`) until Definition A is fully green. Do not enable
-`push` / `pull_request` triggers until then.
+`.github/workflows/json-schema-test-suite.yml` runs Definition A on pushes to
+`main` and pull requests targeting `main` when suite-related files change. It
+can also be run manually with `workflow_dispatch`. CI runs without
+`--allow-fail`, so any remaining supported-case failure fails the check; use
+`--allow-fail` only for local development while investigating gaps.
