@@ -1,10 +1,10 @@
 [alias]
 decode = "run --package toml-test --bin decode --"
 jsonschema = "run --package config --bin jsonschema --all-features --"
+parse-jsonschema = "run --package tombi-schema-store --example parse_jsonschema --"
 tombi = "run --package tombi-cli --bin tombi --"
 tombi-flamegraph = "flamegraph --output .tmp/flamegraph.svg --package tombi-cli --"
 xtask = "run --package xtask --bin xtask --"
-parse-jsonschema = "run --package tombi-schema-store --example parse_jsonschema --"
 
 [target.'cfg(all(windows, target_env = "msvc"))']
 rustflags = ["-C", "target-feature=+crt-static"]
