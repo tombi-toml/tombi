@@ -6,6 +6,7 @@ use crate::{Diagnostic, Error, Options};
 /// only implements `Serialize` there (`tombi-diagnostic`'s `wasm` feature).
 #[derive(Debug, Clone, Default)]
 #[cfg_attr(feature = "wasm", derive(serde::Serialize))]
+#[cfg_attr(feature = "python", pyo3::pyclass(get_all, skip_from_py_object))]
 pub struct LintResult {
     pub diagnostics: Vec<Diagnostic>,
 }

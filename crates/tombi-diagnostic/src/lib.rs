@@ -7,6 +7,7 @@ pub use printer::Print;
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[cfg_attr(feature = "wasm", derive(serde::Serialize))]
+#[cfg_attr(feature = "python", pyo3::pyclass(skip_from_py_object))]
 pub struct Diagnostic {
     level: level::Level,
     code: String,
@@ -120,6 +121,63 @@ impl<T: SetDiagnostics> SetDiagnostics for Vec<T> {
         for item in self {
             item.set_diagnostics(diagnostics);
         }
+    }
+}
+
+#[cfg(feature = "python")]
+#[pyo3::pymethods]
+impl Diagnostic {
+    #[getter(level)]
+    fn py_level(&self) -> &str {
+        match self.level {
+            level::Level::WARNING => "warning",
+            level::Level::ERROR => "error",
+        }
+    }
+
+    #[getter(code)]
+    fn py_code(&self) -> &str {
+        self.code()
+    }
+
+    #[getter(message)]
+    fn py_message(&self) -> &str {
+        self.message()
+    }
+
+    #[getter]
+    fn start_line(&self) -> u32 {
+        self.range.start.line
+    }
+
+    #[getter]
+    fn start_column(&self) -> u32 {
+        self.range.start.column
+    }
+
+    #[getter]
+    fn end_line(&self) -> u32 {
+        self.range.end.line
+    }
+
+    #[getter]
+    fn end_column(&self) -> u32 {
+        self.range.end.column
+    }
+
+    #[getter(source_file)]
+    fn py_source_file(&self) -> Option<String> {
+        self.source_file()
+            .map(|source_file| source_file.to_string_lossy().into_owned())
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "Diagnostic(level={:?}, code={:?}, message={:?})",
+            self.py_level(),
+            self.code(),
+            self.message()
+        )
     }
 }
 

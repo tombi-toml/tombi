@@ -79,4 +79,7 @@ jobs:
           cache-dependency-glob: "uv.lock"
       - run: uv run --frozen ruff format --check
       - run: uv run --frozen ruff check --no-fix
-      - run: uv run --frozen pytest
+      # `--package tombi-lib` also builds/installs its PyO3 extension module
+      # (a maturin-backend package, unlike the pure-Python `tombi`/`tombi-beta`
+      # workspace members) so its tests actually get collected below.
+      - run: uv run --frozen --package tombi-lib pytest
