@@ -14,20 +14,11 @@ def test_format_returns_formatted_source():
     assert result.diagnostics == []
 
 
-def test_format_config_parse_failure_raises_config_error():
-    with pytest.raises(tombi_lib.TombiConfigError):
+def test_format_config_parse_failure_raises_tombi_error():
+    with pytest.raises(tombi_lib.TombiError):
         tombi_lib.format("key = 1", "example.toml", {"config": "invalid ="})
 
 
 def test_format_invalid_options_raise_type_error():
     with pytest.raises(TypeError):
         tombi_lib.format("key = 1", "example.toml", {"unknown": True})
-
-
-def test_errors_share_the_tombi_error_base():
-    for error in (
-        tombi_lib.TombiConfigError,
-        tombi_lib.TombiSchemaError,
-        tombi_lib.TombiIOError,
-    ):
-        assert issubclass(error, tombi_lib.TombiError)

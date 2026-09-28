@@ -10,7 +10,7 @@ pub enum Failure {
 }
 
 /// Convert a [`Failure`] into the JS error the Promise rejects with: a
-/// `TypeError`, or an `Error` named after [`tombi_lib::Error::name`].
+/// `TypeError`, or an `Error` named [`tombi_lib::Error::NAME`].
 pub(crate) fn to_napi_error(env: Env, failure: Failure) -> napi::Error {
     match failure {
         Failure::InvalidOptions(message) => napi::Error::from(
@@ -21,7 +21,7 @@ pub(crate) fn to_napi_error(env: Env, failure: Failure) -> napi::Error {
             let js_error = env
                 .create_error(napi::Error::from_reason(reason.clone()))
                 .and_then(|mut js_error| {
-                    js_error.set("name", error.name())?;
+                    js_error.set("name", tombi_lib::Error::NAME)?;
                     Ok(js_error)
                 });
             match js_error {

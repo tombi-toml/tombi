@@ -84,14 +84,5 @@ fn _tombi_lib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<tombi_lib::Position>()?;
     m.add_class::<tombi_lib::Range>()?;
     m.add("TombiError", m.py().get_type::<error::TombiError>())?;
-    m.add(
-        "TombiConfigError",
-        m.py().get_type::<error::TombiConfigError>(),
-    )?;
-    m.add(
-        "TombiSchemaError",
-        m.py().get_type::<error::TombiSchemaError>(),
-    )?;
-    m.add("TombiIOError", m.py().get_type::<error::TombiIOError>())?;
     Ok(())
 }

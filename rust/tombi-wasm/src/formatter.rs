@@ -10,11 +10,11 @@ fn serialize(value: &impl Serialize) -> JsValue {
         .expect("WASM values must be serializable")
 }
 
-/// A JS `Error` named after [`tombi_lib::Error::name`], shared with the
+/// A JS `Error` named [`tombi_lib::Error::NAME`], shared with the
 /// Python/Node.js bindings.
 fn tombi_error(error: tombi_lib::Error) -> JsValue {
     let js_error = Error::new(&error.to_string());
-    js_error.set_name(error.name());
+    js_error.set_name(tombi_lib::Error::NAME);
     js_error.into()
 }
 

@@ -115,32 +115,21 @@ default configuration if no configuration file is found.
 
 ## Errors
 
-`format` and `lint` reject with exactly one of the following errors, which share
-the same names as the Python and Node.js `tombi-lib` packages:
-
-| `name`             | Cause                                                    |
-| ------------------ | -------------------------------------------------------- |
-| `TombiConfigError` | The `tombi.toml` configuration could not be parsed.      |
-| `TombiSchemaError` | A schema or schema catalog could not be resolved.        |
-| `TombiIOError`     | An I/O operation failed.                                 |
-
-`TombiError` is their union type, so `name` narrows it exhaustively:
+When the configuration cannot be parsed, a schema or schema catalog cannot be
+resolved, or an I/O operation fails, `format` and `lint` reject with a
+`TombiError` (an `Error` whose `name` is `"TombiError"`), the same error name as
+the Python and Node.js `tombi-lib` packages:
 
 ```ts
-import type { TombiError } from "tombi-wasm-lib";
+import { format, type TombiError } from "tombi-wasm-lib";
 
-function describe(error: TombiError): string {
-  switch (error.name) {
-    case "TombiConfigError":
-      return "fix tombi.toml";
-    case "TombiSchemaError":
-      return "schema unavailable";
-    case "TombiIOError":
-      return "I/O failure";
-    default: {
-      const unreachable: never = error;
-      return unreachable;
-    }
+try {
+  await format(source, "Cargo.toml");
+} catch (error) {
+  if (error instanceof Error && error.name === "TombiError") {
+    console.error((error as TombiError).message);
+  } else {
+    throw error;
   }
 }
 ```
