@@ -194,7 +194,9 @@ pub fn lint(source: String, source_path: String, options: Options) -> Result<Lin
     runtime()?.block_on(lint_async(source, source_path, options))
 }
 
-#[cfg(test)]
+// Exercises the native-only synchronous `format`/`lint` wrappers, so this
+// module does not build under a wasm target.
+#[cfg(all(test, not(target_family = "wasm")))]
 mod tests {
     use super::*;
 
@@ -209,30 +211,46 @@ mod tests {
         }
     }
 
-    #[test]
-    fn format_returns_formatted_source() {
-        let result = format(
-            "key=1".to_owned(),
-            "playground.toml".to_owned(),
-            schema_disabled_options(),
-        )
-        .unwrap();
-
-        assert_eq!(result.formatted.as_deref(), Some("key = 1\n"));
-        assert!(result.diagnostics.is_empty());
+    // Declarative macros for this crate's own `format`/`lint` entry points,
+    // in the spirit of `tombi_formatter::test_format!`/`tombi_linter::test_lint!`.
+    // Those macros can't be reused directly: they build a `Formatter`/`Linter`
+    // against a pre-built `SchemaStore` fixture, bypassing exactly what these
+    // tests exercise (config loading, schema-store wiring, and `Error` mapping
+    // in `load_config`/`new_schema_store`). Further same-shaped `format`/`lint`
+    // cases should be added here rather than as new one-off `#[test]` fns.
+    macro_rules! test_lib_format {
+        ($name:ident, $source:expr, $options:expr => formatted: $expected:expr) => {
+            #[test]
+            fn $name() {
+                let result =
+                    format($source.to_owned(), "playground.toml".to_owned(), $options).unwrap();
+                assert_eq!(result.formatted.as_deref(), $expected);
+            }
+        };
     }
 
-    #[test]
-    fn lint_reports_diagnostics_for_invalid_toml() {
-        let result = lint(
-            "key =".to_owned(),
-            "playground.toml".to_owned(),
-            schema_disabled_options(),
-        )
-        .unwrap();
-
-        assert!(!result.diagnostics.is_empty());
+    macro_rules! test_lib_lint {
+        ($name:ident, $source:expr, $options:expr => has_diagnostics: $expected:expr) => {
+            #[test]
+            fn $name() {
+                let result =
+                    lint($source.to_owned(), "playground.toml".to_owned(), $options).unwrap();
+                assert_eq!(!result.diagnostics.is_empty(), $expected);
+            }
+        };
     }
+
+    test_lib_format!(
+        format_returns_formatted_source,
+        "key=1",
+        schema_disabled_options() => formatted: Some("key = 1\n")
+    );
+
+    test_lib_lint!(
+        lint_reports_diagnostics_for_invalid_toml,
+        "key =",
+        schema_disabled_options() => has_diagnostics: true
+    );
 
     #[test]
     fn config_parse_failure_surfaces_as_config_error() {
