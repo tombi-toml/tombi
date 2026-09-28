@@ -45,8 +45,7 @@ try {
 `format` resolves to an object containing the formatted TOML when formatting
 succeeds and an array of diagnostics. The diagnostics array is empty when none were
 reported. When diagnostics prevent formatting, `formatted` is omitted.
-Configuration and execution errors reject the Promise with a `TombiError`
-(see [Errors](#errors)).
+Configuration and execution errors reject the Promise as `TombiError`.
 
 ## Lint TOML
 
@@ -86,7 +85,7 @@ try {
 
 `lint` resolves to an object containing a diagnostics array. The array is empty when
 no diagnostics were reported. Configuration and execution errors reject the Promise
-with a `TombiError` (see [Errors](#errors)).
+as `TombiError`.
 
 Both functions accept an optional options object as the third argument. `config`
 replaces the automatically discovered configuration and accepts an object or string:
@@ -112,27 +111,3 @@ await format(source, "Cargo.toml", { config: config.content });
 
 When `config` is omitted, Tombi uses automatic discovery and falls back to the
 default configuration if no configuration file is found.
-
-## Errors
-
-When the configuration cannot be parsed, a schema or schema catalog cannot be
-resolved, or an I/O operation fails, `format` and `lint` reject with a
-`TombiError` (an `Error` whose `name` is `"TombiError"`), the same error name as
-the Python and Node.js `tombi-lib` packages:
-
-```ts
-import { format, type TombiError } from "tombi-wasm-lib";
-
-try {
-  await format(source, "Cargo.toml");
-} catch (error) {
-  if (error instanceof Error && error.name === "TombiError") {
-    console.error((error as TombiError).message);
-  } else {
-    throw error;
-  }
-}
-```
-
-A malformed options object is a programming error rather than a `TombiError`, and
-rejects with a standard `TypeError`.
