@@ -12,6 +12,7 @@
       "!docs/.output",
       "!docs/.vinxi",
       "!docs/public/wasm",
+      "!typescript/@tombi-toml/tombi-lib/index.d.ts",
       "!**/*.js"
     ]
   },

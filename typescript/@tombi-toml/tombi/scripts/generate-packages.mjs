@@ -16,15 +16,21 @@ function getName(platform, arch, prefix = "cli") {
 	return format(`${prefix}-${platform}`, arch);
 }
 
-function copyBinaryToNativePackage(platform, arch) {
+function copyBinaryToNativePackage(
+	platform,
+	arch,
+	{ mainPackage, prefix, binaryName, extension, main },
+) {
 	const os = platform.split("-")[0];
-	const buildName = getName(platform, arch);
+	const buildName = getName(platform, arch, prefix);
 	const packageRoot = resolve(PACKAGES_ROOT, buildName);
 	const packageName = `@tombi-toml/${buildName}`;
 
 	// Update the `package.json` manifest
-	const { version, license, repository, engines, homepage } = rootManifest;
+	const { version, license, repository, homepage } = rootManifest;
+	const { engines } = readManifest(mainPackage);
 
+	const ext = extension(os);
 	const manifest = JSON.stringify(
 		{
 			name: packageName,
@@ -33,6 +39,7 @@ function copyBinaryToNativePackage(platform, arch) {
 			repository,
 			engines,
 			homepage,
+			main: main ? `${binaryName}${ext}` : undefined,
 			os: [os],
 			cpu: [arch],
 			libc:
@@ -50,13 +57,12 @@ function copyBinaryToNativePackage(platform, arch) {
 	console.log(`Update manifest ${manifestPath}`);
 	fs.writeFileSync(manifestPath, manifest);
 
-	// Copy the CLI binary
-	const ext = os === "win32" ? ".exe" : "";
+	// Copy the binary
 	const binarySource = resolve(
 		REPO_ROOT,
-		`${getName(platform, arch, "tombi")}${ext}`,
+		`${getName(platform, arch, binaryName)}${ext}`,
 	);
-	const binaryTarget = resolve(packageRoot, `tombi${ext}`);
+	const binaryTarget = resolve(packageRoot, `${binaryName}${ext}`);
 
 	if (!fs.existsSync(binarySource)) {
 		console.error(
@@ -70,15 +76,17 @@ function copyBinaryToNativePackage(platform, arch) {
 	fs.chmodSync(binaryTarget, 0o755);
 }
 
-function writeManifest(packagePath) {
+function readManifest(packagePath) {
 	const manifestPath = resolve(PACKAGES_ROOT, packagePath, "package.json");
+	return JSON.parse(fs.readFileSync(manifestPath).toString("utf-8"));
+}
 
-	const manifestData = JSON.parse(
-		fs.readFileSync(manifestPath).toString("utf-8"),
-	);
+function writeManifest(packagePath, targets, prefix) {
+	const manifestPath = resolve(PACKAGES_ROOT, packagePath, "package.json");
+	const manifestData = readManifest(packagePath);
 
-	const nativePackages = TARGETS.map(([platform, arch]) => [
-		`@tombi-toml/${getName(platform, arch)}`,
+	const nativePackages = targets.map(([platform, arch]) => [
+		`@tombi-toml/${getName(platform, arch, prefix)}`,
 		rootManifest.version,
 	]);
 
@@ -106,8 +114,53 @@ const TARGETS = [
 	...EXTRA_TARGETS,
 ];
 
-for (const [platform, arch] of TARGETS) {
-	copyBinaryToNativePackage(platform, arch);
+const PACKAGE_SETS = [
+	{
+		// The CLI binary (`tombi-<target>[.exe]`) dispatched by `bin/tombi`.
+		mainPackage: "tombi",
+		prefix: "cli",
+		binaryName: "tombi",
+		extension: (os) => (os === "win32" ? ".exe" : ""),
+		main: false,
+		targets: TARGETS,
+	},
+	{
+		// The napi-rs addon (`tombi-lib-<target>.node`) loaded by
+		// `@tombi-toml/tombi-lib`. Node.js has no illumos prebuilt addon
+		// toolchain here, so it only ships the symmetric matrix.
+		mainPackage: "tombi-lib",
+		prefix: "lib",
+		binaryName: "tombi-lib",
+		extension: () => ".node",
+		main: true,
+		targets: TARGETS.filter(([platform]) => !platform.startsWith("sunos")),
+	},
+];
+
+// The per-platform package directories are checked into git so that the set of
+// published packages is visible; fail if they drift from the targets above.
+function assertPackageDirectories({ prefix, targets }) {
+	const expected = targets
+		.map(([platform, arch]) => getName(platform, arch, prefix))
+		.sort();
+	const actual = fs
+		.readdirSync(PACKAGES_ROOT)
+		.filter((name) => name.startsWith(`${prefix}-`))
+		.sort();
+	if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+		console.error(
+			`Package directories for "${prefix}-*" don't match the targets.\n` +
+				`  expected: ${expected.join(", ")}\n` +
+				`  actual:   ${actual.join(", ")}`,
+		);
+		process.exit(1);
+	}
 }
 
-writeManifest("tombi");
+for (const packageSet of PACKAGE_SETS) {
+	assertPackageDirectories(packageSet);
+	for (const [platform, arch] of packageSet.targets) {
+		copyBinaryToNativePackage(platform, arch, packageSet);
+	}
+	writeManifest(packageSet.mainPackage, packageSet.targets, packageSet.prefix);
+}

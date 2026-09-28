@@ -1,13 +1,46 @@
 {
-  "name": "tombi-lib",
+  "name": "@tombi-toml/tombi-lib",
   "version": "0.0.0-dev",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "description": "Tombi formatter and linter library for Node.js",
+  "keywords": [
+    "toml",
+    "formatter",
+    "linter"
+  ],
+  "author": "tombi-toml",
+  "license": "MIT",
+  "private": false,
+  "homepage": "https://tombi-toml.github.io/tombi/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tombi-toml/tombi.git",
+    "directory": "typescript/@tombi-toml/tombi-lib"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module"
+  "bugs": {
+    "url": "https://github.com/tombi-toml/tombi/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "LICENSE"
+  ],
+  "napi": {
+    "binaryName": "tombi-lib"
+  },
+  "scripts": {
+    "build": "napi build --manifest-path ../../../rust/tombi-lib/Cargo.toml --features node --release --output-dir . --dts index.d.ts",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "3.10.5"
+  }
 }

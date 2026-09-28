@@ -10,6 +10,10 @@
 mod error;
 mod format;
 mod lint;
+// napi-derive skips export registration in test builds, which would leave
+// every binding dead code; the bindings are exercised by the npm smoke test.
+#[cfg(all(feature = "node", not(test)))]
+mod node;
 
 pub use error::Error;
 pub use format::{FormatResult, format_async};

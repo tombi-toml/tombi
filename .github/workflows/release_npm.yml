@@ -99,6 +99,11 @@ jobs:
         with:
           persist-credentials: false
 
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        if: ${{ !matrix.use_cross }}
+        with:
+          run_install: false
+
       - name: Install Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -129,6 +134,12 @@ jobs:
         run: |
           echo "JEMALLOC_SYS_WITH_LG_PAGE=16" >> $GITHUB_ENV
 
+      # cargo-zigbuild (napi's `--cross-compile`) links the musl `.node` addon
+      # dynamically against musl, which the static musl-tools toolchain can't.
+      - name: Install Zig
+        if: endsWith(matrix.target, '-musl')
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+
       - uses: ./.github/actions/set-version
 
       # Build the CLI binary
@@ -155,7 +166,27 @@ jobs:
           mkdir dist
           cp target/${{ matrix.target }}/release/tombi ./dist/tombi-${{ matrix.vscode_target }}
 
-      # Upload the CLI binary as a build artifact
+      # Build the Node.js library binding (`@tombi-toml/tombi-lib`).
+      # illumos has no napi-rs toolchain here, so it only ships the CLI.
+      - name: Install Node.js dependencies
+        if: ${{ !matrix.use_cross }}
+        run: pnpm install --frozen-lockfile --filter @tombi-toml/tombi-lib
+
+      - name: Build Node.js library binding
+        if: ${{ !matrix.use_cross }}
+        shell: bash
+        run: |
+          if [[ "${{ matrix.target }}" == *-musl ]]; then
+            # Let cargo-zigbuild pick the linker instead of the workflow-level
+            # aarch64-linux-gnu-gcc used for the static musl CLI build.
+            env -u CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER \
+              pnpm --dir typescript/@tombi-toml/tombi-lib build --target ${{ matrix.target }} --cross-compile
+          else
+            pnpm --dir typescript/@tombi-toml/tombi-lib build --target ${{ matrix.target }}
+          fi
+          cp typescript/@tombi-toml/tombi-lib/tombi-lib.node ./dist/tombi-lib-${{ matrix.vscode_target }}.node
+
+      # Upload the CLI binary and library binding as a build artifact
       - name: Upload CLI artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -216,11 +247,6 @@ jobs:
           set -e
           for package in typescript/@tombi-toml/*; do
             package=${package#typescript/}
-            # tombi-lib is a WIP placeholder without a scoped package name; exclude until it is ready to publish.
-            if [ "${package}" = "@tombi-toml/tombi-lib" ]; then
-              echo "Skipping ${package} (not ready for publish)."
-              continue
-            fi
             if npm view ${package}@${TOMBI_VERSION} version > /dev/null 2>&1; then
               echo "${package}@${TOMBI_VERSION} is already published. Skipping publish."
               continue

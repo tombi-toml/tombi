@@ -1,0 +1,21 @@
+{
+  "name": "@tombi-toml/lib-win32-x64",
+  "version": "0.0.0-dev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tombi-toml/tombi.git",
+    "directory": "typescript/@tombi-toml/lib-win32-x64"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "homepage": "https://tombi-toml.github.io/tombi/",
+  "main": "tombi-lib.node",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ]
+}
