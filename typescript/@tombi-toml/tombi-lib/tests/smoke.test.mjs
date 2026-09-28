@@ -97,6 +97,7 @@ test("config errors reject the promise", async () => {
   for (const run of [format, lint]) {
     await assert.rejects(run("key = 1", "playground.toml", { config: "invalid =" }), (error) => {
       assert.ok(error instanceof Error);
+      assert.equal(error.name, "TombiConfigError");
       assert.ok(error.message.length > 0);
       return true;
     });

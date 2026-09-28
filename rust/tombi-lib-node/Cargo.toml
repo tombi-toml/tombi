@@ -1,0 +1,26 @@
+[package]
+name = "tombi-lib-node"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description = "napi-rs bindings for tombi-lib's format/lint API"
+repository.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+# napi-derive skips export registration in test builds, which would leave
+# every binding dead code; the bindings are exercised by the npm smoke test.
+test = false
+doctest = false
+
+[dependencies]
+napi.workspace = true
+napi-derive.workspace = true
+tombi-lib = { workspace = true, default-features = false, features = ["native"] }
+
+[build-dependencies]
+napi-build.workspace = true
+
+[lints]
+workspace = true

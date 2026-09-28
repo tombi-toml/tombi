@@ -7,6 +7,7 @@ pub use printer::Print;
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[cfg_attr(feature = "wasm", derive(serde::Serialize))]
+#[cfg_attr(feature = "python", pyo3::pyclass(skip_from_py_object))]
 pub struct Diagnostic {
     level: level::Level,
     code: String,
@@ -120,6 +121,107 @@ impl<T: SetDiagnostics> SetDiagnostics for Vec<T> {
         for item in self {
             item.set_diagnostics(diagnostics);
         }
+    }
+}
+
+/// A zero-based position in a TOML document, exposed to Python with
+/// dot-chain access (`diagnostic.range.start.line`). A Python-only
+/// counterpart to `tombi_text::Position`, kept in this crate rather than
+/// adding a `python` feature to `tombi-text` itself.
+#[cfg(feature = "python")]
+#[derive(Debug, Clone, Copy)]
+#[pyo3::pyclass(get_all, skip_from_py_object)]
+pub struct Position {
+    pub line: u32,
+    pub column: u32,
+}
+
+#[cfg(feature = "python")]
+#[pyo3::pymethods]
+impl Position {
+    fn __repr__(&self) -> String {
+        format!("Position(line={}, column={})", self.line, self.column)
+    }
+}
+
+#[cfg(feature = "python")]
+impl From<tombi_text::Position> for Position {
+    fn from(position: tombi_text::Position) -> Self {
+        Self {
+            line: position.line,
+            column: position.column,
+        }
+    }
+}
+
+/// A range in a TOML document, exposed to Python with dot-chain access
+/// (`diagnostic.range.start`/`.end`). See [`Position`] for why this isn't
+/// `tombi_text::Range` directly.
+#[cfg(feature = "python")]
+#[derive(Debug, Clone, Copy)]
+#[pyo3::pyclass(get_all, skip_from_py_object)]
+pub struct Range {
+    pub start: Position,
+    pub end: Position,
+}
+
+#[cfg(feature = "python")]
+#[pyo3::pymethods]
+impl Range {
+    fn __repr__(&self) -> String {
+        format!("Range(start={:?}, end={:?})", self.start, self.end)
+    }
+}
+
+#[cfg(feature = "python")]
+impl From<tombi_text::Range> for Range {
+    fn from(range: tombi_text::Range) -> Self {
+        Self {
+            start: range.start.into(),
+            end: range.end.into(),
+        }
+    }
+}
+
+#[cfg(feature = "python")]
+#[pyo3::pymethods]
+impl Diagnostic {
+    #[getter(level)]
+    fn py_level(&self) -> &str {
+        match self.level {
+            level::Level::WARNING => "warning",
+            level::Level::ERROR => "error",
+        }
+    }
+
+    #[getter(code)]
+    fn py_code(&self) -> &str {
+        self.code()
+    }
+
+    #[getter(message)]
+    fn py_message(&self) -> &str {
+        self.message()
+    }
+
+    #[getter(range)]
+    fn py_range(&self) -> Range {
+        self.range.into()
+    }
+
+    #[getter(source_file)]
+    fn py_source_file(&self) -> Option<String> {
+        self.source_file()
+            .map(|source_file| source_file.to_string_lossy().into_owned())
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "Diagnostic(level={:?}, code={:?}, message={:?})",
+            self.py_level(),
+            self.code(),
+            self.message()
+        )
     }
 }
 

@@ -4,21 +4,21 @@
 //! schemas the same way regardless of target, so `tombi-wasm`'s `lib` feature
 //! calls them directly from its own async (wasm-bindgen-futures) executor.
 //! `format_sync`/`lint_sync` additionally block on a Tokio runtime, for
-//! synchronous callers such as the Python (`python` feature) and Node.js
-//! (`node` feature) bindings; they are only available on non-wasm targets.
+//! synchronous callers such as the Python (`tombi-lib-python`) and Node.js
+//! (`tombi-lib-node`) binding crates; they are only available on non-wasm
+//! targets.
 
 mod error;
 mod format;
 mod lint;
-// napi-derive skips export registration in test builds, which would leave
-// every binding dead code; the bindings are exercised by the npm smoke test.
-#[cfg(all(feature = "node", not(test)))]
-mod node;
 
 pub use error::Error;
 pub use format::{FormatResult, format_async};
 pub use lint::{LintResult, lint_async};
 pub use tombi_diagnostic::Diagnostic;
+
+#[cfg(feature = "python")]
+pub use tombi_diagnostic::{Position, Range};
 
 #[cfg(not(target_family = "wasm"))]
 pub use format::format_sync;

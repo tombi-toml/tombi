@@ -8,16 +8,12 @@ repository.workspace = true
 license.workspace = true
 
 [lib]
-# `cdylib` is the native `.node` addon loaded by `@tombi-toml/tombi-lib`
-# (built with `--features node`); `rlib` is for `tombi-wasm` and other Rust
-# callers.
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [dependencies]
 itertools.workspace = true
 log.workspace = true
-napi = { workspace = true, optional = true }
-napi-derive = { workspace = true, optional = true }
+pyo3 = { workspace = true, optional = true }
 serde.workspace = true
 serde_tombi.workspace = true
 thiserror.workspace = true
@@ -27,31 +23,21 @@ tombi-formatter.workspace = true
 tombi-glob.workspace = true
 tombi-linter.workspace = true
 tombi-schema-store.workspace = true
-tombi-text = { workspace = true, optional = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 tokio = { workspace = true, features = ["rt"] }
 
-[build-dependencies]
-napi-build = { workspace = true, optional = true }
-
 [features]
 default = ["native"]
 # Real `std::fs`/network access (reqwest), for the native `format`/`lint` used
-# by the `python`/`node` bindings.
+# by the `tombi-lib-python`/`tombi-lib-node` binding crates.
 native = ["serde_tombi/native", "tombi-schema-store/native"]
 # The wasm virtual filesystem and `gloo-net` HTTP client, for `format_async`/
 # `lint_async` called directly from `tombi-wasm`'s `lib` feature.
 wasm = ["serde_tombi/wasm", "tombi-schema-store/wasm", "tombi-diagnostic/wasm"]
-python = []
-# napi-rs bindings for `@tombi-toml/tombi-lib` (Node.js only, no wasm).
-node = [
-  "native",
-  "dep:napi",
-  "dep:napi-build",
-  "dep:napi-derive",
-  "dep:tombi-text",
-]
+# PyO3 conversions on `FormatResult`/`LintResult`/`Diagnostic`, for the
+# `tombi-lib-python` binding crate.
+python = ["dep:pyo3", "tombi-diagnostic/python"]
 
 [lints]
 workspace = true

@@ -167,7 +167,7 @@ jobs:
         with:
           key: node-lib
       - name: Run Node.js library Clippy
-        run: cargo clippy --locked -p tombi-lib --features node -- -D warnings
+        run: cargo clippy --locked -p tombi-lib-node -- -D warnings
       - name: Build Node.js library binding
         run: pnpm --dir typescript/@tombi-toml/tombi-lib build
       - name: Check generated type definitions are up to date

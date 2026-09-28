@@ -1,9 +1,12 @@
 //! napi-rs bindings for `@tombi-toml/tombi-lib`.
 //!
 //! `format`/`lint` return a `Promise`: the synchronous core
-//! ([`crate::format_sync`]/[`crate::lint_sync`]) runs on the libuv thread pool
-//! via [`AsyncTask`], so it never blocks the Node.js event loop.
+//! ([`tombi_lib::format_sync`]/[`tombi_lib::lint_sync`]) runs on the libuv
+//! thread pool via [`AsyncTask`], so it never blocks the Node.js event loop.
 
+mod error;
+
+use error::to_napi_error;
 use napi::{
     Env, Task,
     bindgen_prelude::{AsyncTask, Either, Null},
@@ -27,12 +30,12 @@ pub struct JsOptions {
     pub config: Option<Either<String, JsConfigFile>>,
 }
 
-impl From<JsOptions> for crate::Options {
+impl From<JsOptions> for tombi_lib::Options {
     fn from(options: JsOptions) -> Self {
         Self {
             config: options.config.map(|config| match config {
-                Either::A(content) => crate::ConfigInput::Text(content),
-                Either::B(JsConfigFile { content, path }) => crate::ConfigInput::File {
+                Either::A(content) => tombi_lib::ConfigInput::Text(content),
+                Either::B(JsConfigFile { content, path }) => tombi_lib::ConfigInput::File {
                     content,
                     path: path.into(),
                 },
@@ -46,15 +49,6 @@ impl From<JsOptions> for crate::Options {
 pub struct JsPosition {
     pub line: u32,
     pub column: u32,
-}
-
-impl From<tombi_text::Position> for JsPosition {
-    fn from(position: tombi_text::Position) -> Self {
-        Self {
-            line: position.line,
-            column: position.column,
-        }
-    }
 }
 
 /// A range in a TOML document.
@@ -78,20 +72,27 @@ pub struct JsDiagnostic {
     pub source_file: Either<String, Null>,
 }
 
-impl From<crate::Diagnostic> for JsDiagnostic {
-    fn from(diagnostic: crate::Diagnostic) -> Self {
+impl From<tombi_lib::Diagnostic> for JsDiagnostic {
+    fn from(diagnostic: tombi_lib::Diagnostic) -> Self {
         let range = diagnostic.range();
         Self {
-            level: match diagnostic.level() {
-                tombi_diagnostic::Level::ERROR => "error",
-                tombi_diagnostic::Level::WARNING => "warning",
+            level: if diagnostic.is_error() {
+                "error"
+            } else {
+                "warning"
             }
             .to_owned(),
             code: diagnostic.code().to_owned(),
             message: diagnostic.message().to_owned(),
             range: JsRange {
-                start: range.start.into(),
-                end: range.end.into(),
+                start: JsPosition {
+                    line: range.start.line,
+                    column: range.start.column,
+                },
+                end: JsPosition {
+                    line: range.end.line,
+                    column: range.end.column,
+                },
             },
             source_file: match diagnostic.source_file() {
                 Some(source_file) => Either::A(source_file.to_string_lossy().into_owned()),
@@ -115,30 +116,28 @@ pub struct JsLintResult {
     pub diagnostics: Vec<JsDiagnostic>,
 }
 
-fn to_napi_error(error: crate::Error) -> napi::Error {
-    napi::Error::from_reason(error.to_string())
-}
-
 pub struct FormatTask {
     source: String,
     source_path: String,
-    options: crate::Options,
+    options: tombi_lib::Options,
 }
 
 impl Task for FormatTask {
-    type Output = crate::FormatResult;
+    // The `tombi_lib::Error` is kept until `resolve`, which has the `Env`
+    // needed to build a named JS error from it.
+    type Output = Result<tombi_lib::FormatResult, tombi_lib::Error>;
     type JsValue = JsFormatResult;
 
     fn compute(&mut self) -> napi::Result<Self::Output> {
-        crate::format_sync(
+        Ok(tombi_lib::format_sync(
             std::mem::take(&mut self.source),
             std::mem::take(&mut self.source_path),
             std::mem::take(&mut self.options),
-        )
-        .map_err(to_napi_error)
+        ))
     }
 
-    fn resolve(&mut self, _env: Env, output: Self::Output) -> napi::Result<Self::JsValue> {
+    fn resolve(&mut self, env: Env, output: Self::Output) -> napi::Result<Self::JsValue> {
+        let output = output.map_err(|error| to_napi_error(&env, error))?;
         Ok(JsFormatResult {
             formatted: output.formatted,
             diagnostics: output.diagnostics.into_iter().map(Into::into).collect(),
@@ -149,23 +148,23 @@ impl Task for FormatTask {
 pub struct LintTask {
     source: String,
     source_path: String,
-    options: crate::Options,
+    options: tombi_lib::Options,
 }
 
 impl Task for LintTask {
-    type Output = crate::LintResult;
+    type Output = Result<tombi_lib::LintResult, tombi_lib::Error>;
     type JsValue = JsLintResult;
 
     fn compute(&mut self) -> napi::Result<Self::Output> {
-        crate::lint_sync(
+        Ok(tombi_lib::lint_sync(
             std::mem::take(&mut self.source),
             std::mem::take(&mut self.source_path),
             std::mem::take(&mut self.options),
-        )
-        .map_err(to_napi_error)
+        ))
     }
 
-    fn resolve(&mut self, _env: Env, output: Self::Output) -> napi::Result<Self::JsValue> {
+    fn resolve(&mut self, env: Env, output: Self::Output) -> napi::Result<Self::JsValue> {
+        let output = output.map_err(|error| to_napi_error(&env, error))?;
         Ok(JsLintResult {
             diagnostics: output.diagnostics.into_iter().map(Into::into).collect(),
         })

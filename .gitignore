@@ -12,6 +12,10 @@ site/
 .cache/
 *.egg-info
 
+# maturin/PyO3-built extension modules (e.g. `maturin develop` in python/tombi-lib)
+*.abi3.so
+*.pyd
+
 # venv
 .venv
 .env

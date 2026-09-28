@@ -1,0 +1,21 @@
+[package]
+name = "tombi-lib-python"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description = "PyO3 bindings for tombi-lib's format/lint API"
+repository.workspace = true
+license.workspace = true
+
+[lib]
+name = "_tombi_lib"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { workspace = true, features = ["extension-module"] }
+pyo3-async-runtimes.workspace = true
+pythonize.workspace = true
+tombi-lib = { workspace = true, default-features = false, features = ["native", "python"] }
+
+[lints]
+workspace = true

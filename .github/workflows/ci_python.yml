@@ -79,4 +79,4 @@ jobs:
           cache-dependency-glob: "uv.lock"
       - run: uv run --frozen ruff format --check
       - run: uv run --frozen ruff check --no-fix
-      - run: uv run --frozen pytest
+      - run: uv run --frozen --package tombi-lib pytest
