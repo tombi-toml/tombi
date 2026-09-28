@@ -10,6 +10,8 @@ def test_lint_reports_diagnostics_for_invalid_toml():
     diagnostic = result.diagnostics[0]
     assert diagnostic.level in ("error", "warning")
     assert diagnostic.message
+    assert diagnostic.range.keys() == {"start", "end"}
+    assert diagnostic.range["start"].keys() == {"line", "column"}
 
 
 def test_lint_reports_no_diagnostics_for_valid_toml():

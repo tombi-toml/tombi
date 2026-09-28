@@ -1,11 +1,18 @@
+from typing import TypedDict
+
+class Position(TypedDict):
+    line: int
+    column: int
+
+class Range(TypedDict):
+    start: Position
+    end: Position
+
 class Diagnostic:
     level: str
     code: str
     message: str
-    start_line: int
-    start_column: int
-    end_line: int
-    end_column: int
+    range: Range
     source_file: str | None
 
 class FormatResult:

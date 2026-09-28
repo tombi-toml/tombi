@@ -145,24 +145,30 @@ impl Diagnostic {
         self.message()
     }
 
-    #[getter]
-    fn start_line(&self) -> u32 {
-        self.range.start.line
-    }
+    /// `{"start": {"line": int, "column": int}, "end": {...}}`, matching the
+    /// shape of the wasm-lib `Diagnostic.range` (`tombi_text::Position`'s own
+    /// manual `Serialize` impl there).
+    #[getter(range)]
+    fn py_range<'py>(
+        &self,
+        py: pyo3::Python<'py>,
+    ) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyDict>> {
+        use pyo3::types::PyDictMethods;
 
-    #[getter]
-    fn start_column(&self) -> u32 {
-        self.range.start.column
-    }
+        fn position_dict<'py>(
+            py: pyo3::Python<'py>,
+            position: tombi_text::Position,
+        ) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyDict>> {
+            let dict = pyo3::types::PyDict::new(py);
+            dict.set_item("line", position.line)?;
+            dict.set_item("column", position.column)?;
+            Ok(dict)
+        }
 
-    #[getter]
-    fn end_line(&self) -> u32 {
-        self.range.end.line
-    }
-
-    #[getter]
-    fn end_column(&self) -> u32 {
-        self.range.end.column
+        let dict = pyo3::types::PyDict::new(py);
+        dict.set_item("start", position_dict(py, self.range.start)?)?;
+        dict.set_item("end", position_dict(py, self.range.end)?)?;
+        Ok(dict)
     }
 
     #[getter(source_file)]
