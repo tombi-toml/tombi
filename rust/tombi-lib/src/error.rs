@@ -1,6 +1,6 @@
 /// Error returned by `format`/`lint`/[`crate::format_async`]/[`crate::lint_async`].
 #[derive(Debug, thiserror::Error)]
-pub enum LibError {
+pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 

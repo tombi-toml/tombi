@@ -9,7 +9,7 @@
 
 mod error;
 
-pub use error::LibError;
+pub use error::Error;
 pub use tombi_diagnostic::Diagnostic;
 
 /// An in-memory `tombi.toml` configuration.
@@ -46,7 +46,7 @@ pub struct LintResult {
 
 fn load_config(
     options: Options,
-) -> Result<(tombi_config::Config, Option<std::path::PathBuf>), LibError> {
+) -> Result<(tombi_config::Config, Option<std::path::PathBuf>), Error> {
     if let Some(config) = options.config {
         let (config_content, config_path) = match config {
             ConfigInput::File { content, path } => (content, path),
@@ -89,7 +89,7 @@ pub async fn format_async(
     source: String,
     source_path: String,
     options: Options,
-) -> Result<FormatResult, LibError> {
+) -> Result<FormatResult, Error> {
     let source_path = std::path::PathBuf::from(source_path);
     let (config, config_path) = load_config(options)?;
     let toml_version = config.toml_version.unwrap_or_default();
@@ -134,7 +134,7 @@ pub async fn lint_async(
     source: String,
     source_path: String,
     options: Options,
-) -> Result<LintResult, LibError> {
+) -> Result<LintResult, Error> {
     let source_path = std::path::PathBuf::from(source_path);
     let (config, config_path) = load_config(options)?;
     let toml_version = config.toml_version.unwrap_or_default();
@@ -166,7 +166,7 @@ pub async fn lint_async(
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn runtime() -> Result<tokio::runtime::Runtime, LibError> {
+fn runtime() -> Result<tokio::runtime::Runtime, Error> {
     Ok(tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?)
@@ -180,7 +180,7 @@ pub fn format(
     source: String,
     source_path: String,
     options: Options,
-) -> Result<FormatResult, LibError> {
+) -> Result<FormatResult, Error> {
     runtime()?.block_on(format_async(source, source_path, options))
 }
 
@@ -188,7 +188,7 @@ pub fn format(
 ///
 /// Not available on wasm targets; use [`lint_async`] instead.
 #[cfg(not(target_family = "wasm"))]
-pub fn lint(source: String, source_path: String, options: Options) -> Result<LintResult, LibError> {
+pub fn lint(source: String, source_path: String, options: Options) -> Result<LintResult, Error> {
     runtime()?.block_on(lint_async(source, source_path, options))
 }
 
@@ -243,7 +243,7 @@ mod tests {
         )
         .unwrap_err();
 
-        assert!(matches!(error, LibError::Config(_)));
+        assert!(matches!(error, Error::Config(_)));
     }
 
     #[test]
