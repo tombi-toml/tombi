@@ -1,42 +1,9 @@
 use js_sys::{Error, Promise};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_wasm_bindgen::Serializer;
 use tombi_lib::Diagnostic;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use wasm_bindgen_futures::future_to_promise;
-
-#[derive(Default, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct Options {
-    config: Option<ConfigInput>,
-}
-
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum ConfigInput {
-    File { content: String, path: String },
-    Text(String),
-}
-
-impl From<Options> for tombi_lib::Options {
-    fn from(options: Options) -> Self {
-        Self {
-            config: options.config.map(Into::into),
-        }
-    }
-}
-
-impl From<ConfigInput> for tombi_lib::ConfigInput {
-    fn from(config: ConfigInput) -> Self {
-        match config {
-            ConfigInput::File { content, path } => Self::File {
-                content,
-                path: std::path::PathBuf::from(path),
-            },
-            ConfigInput::Text(content) => Self::Text(content),
-        }
-    }
-}
 
 #[derive(Serialize)]
 struct FormatResult {
@@ -79,9 +46,9 @@ fn tombi_wasm_error(message: &str) -> JsValue {
     error.into()
 }
 
-fn deserialize_options(options: JsValue) -> Result<Options, JsValue> {
+fn deserialize_options(options: JsValue) -> Result<tombi_lib::Options, JsValue> {
     if options.is_null() || options.is_undefined() {
-        Ok(Options::default())
+        Ok(tombi_lib::Options::default())
     } else {
         serde_wasm_bindgen::from_value(options)
             .map_err(|error| tombi_wasm_error(&error.to_string()))
@@ -92,7 +59,7 @@ fn deserialize_options(options: JsValue) -> Result<Options, JsValue> {
 pub fn format(source: String, source_path: String, options: JsValue) -> Promise {
     future_to_promise(async move {
         let options = deserialize_options(options)?;
-        match tombi_lib::format_async(source, source_path, options.into()).await {
+        match tombi_lib::format_async(source, source_path, options).await {
             Ok(result) => Ok(serialize(&FormatResult::from(result))),
             Err(error) => Err(tombi_wasm_error(&error.to_string())),
         }
@@ -103,7 +70,7 @@ pub fn format(source: String, source_path: String, options: JsValue) -> Promise 
 pub fn lint(source: String, source_path: String, options: JsValue) -> Promise {
     future_to_promise(async move {
         let options = deserialize_options(options)?;
-        match tombi_lib::lint_async(source, source_path, options.into()).await {
+        match tombi_lib::lint_async(source, source_path, options).await {
             Ok(result) => Ok(serialize(&LintResult::from(result))),
             Err(error) => Err(tombi_wasm_error(&error.to_string())),
         }

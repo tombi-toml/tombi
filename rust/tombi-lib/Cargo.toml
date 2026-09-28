@@ -13,6 +13,7 @@ crate-type = ["rlib"]
 [dependencies]
 itertools.workspace = true
 log.workspace = true
+serde.workspace = true
 serde_tombi.workspace = true
 thiserror.workspace = true
 tombi-config.workspace = true

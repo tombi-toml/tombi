@@ -13,7 +13,8 @@ pub use error::Error;
 pub use tombi_diagnostic::Diagnostic;
 
 /// An in-memory `tombi.toml` configuration.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(untagged)]
 pub enum ConfigInput {
     /// The content of a config file at a given path.
     File {
@@ -25,7 +26,8 @@ pub enum ConfigInput {
 }
 
 /// Options shared by `format`/[`format_async`] and `lint`/[`lint_async`].
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Options {
     pub config: Option<ConfigInput>,
 }
