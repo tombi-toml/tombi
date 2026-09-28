@@ -62,3 +62,22 @@ export function lint(
 export interface TombiWasmError extends Error {
   readonly name: "TombiWasmError";
 }
+
+/** One entry of the browser-backed virtual workspace. */
+export interface WorkspaceEntry {
+  uri: string;
+  kind?: "file" | "directory";
+  text?: string;
+}
+
+/** Update one file in the browser-backed virtual workspace. */
+export function set_workspace_file(uri: string, text: string): void;
+
+/** Remove one file from the browser-backed virtual workspace. */
+export function remove_workspace_file(uri: string): void;
+
+/** Replace the virtual workspace entries visible to `format`/`lint`. */
+export function set_workspace_entries(entries: WorkspaceEntry[]): void;
+
+/** Replace the virtual workspace files visible to `format`/`lint`. */
+export function set_workspace_files(files: WorkspaceEntry[]): void;

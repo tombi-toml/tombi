@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-import init, { format, lint } from "../../../typescript/@tombi-toml/wasm-lib/dist/tombi_wasm.js";
+import init, {
+  format,
+  lint,
+  remove_workspace_file,
+  set_workspace_file,
+} from "../../../typescript/@tombi-toml/wasm-lib/dist/tombi_wasm.js";
 
 const wasm = await readFile(new URL("../../../typescript/@tombi-toml/wasm-lib/dist/tombi_wasm_bg.wasm", import.meta.url));
 await init({ module_or_path: wasm });
@@ -99,3 +104,40 @@ await assert.rejects(lint("key = 1", "playground.toml", { config: "invalid =" })
   assert.equal(Object.hasOwn(error, "error"), false);
   return true;
 });
+
+// wasm-lib's `lint`/`format` resolve `file://` schemas through the same
+// injected virtual filesystem as wasm-lsp (set_workspace_file/tombi_fs).
+set_workspace_file(
+  "file:///workspace/schema.json",
+  '{"type":"object","properties":{"key":{"type":"integer"}}}',
+);
+
+const schemaConfig = `
+[[schemas]]
+path = "schema.json"
+include = ["data.toml"]
+`;
+
+const schemaViolation = await lint('key = "not-an-integer"', "/workspace/data.toml", {
+  config: { content: schemaConfig, path: "/workspace/tombi.toml" },
+});
+assert.ok(
+  schemaViolation.diagnostics.length > 0,
+  `wasm-lib lint should resolve a local file:// schema injected via set_workspace_file: ${JSON.stringify(schemaViolation)}`,
+);
+
+const schemaCompliant = await lint("key = 1", "/workspace/data.toml", {
+  config: { content: schemaConfig, path: "/workspace/tombi.toml" },
+});
+assert.deepEqual(schemaCompliant.diagnostics, []);
+
+remove_workspace_file("file:///workspace/schema.json");
+
+const schemaAfterRemoval = await lint('key = "not-an-integer"', "/workspace/data.toml", {
+  config: { content: schemaConfig, path: "/workspace/tombi.toml" },
+});
+assert.deepEqual(
+  schemaAfterRemoval.diagnostics,
+  [],
+  "removing the injected schema file should stop it from being applied",
+);
