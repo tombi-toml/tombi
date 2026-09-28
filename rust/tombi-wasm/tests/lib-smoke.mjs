@@ -141,3 +141,45 @@ assert.deepEqual(
   [],
   "removing the injected schema file should stop it from being applied",
 );
+
+// `schema.catalog.paths` with a `file://` entry must also resolve through the
+// injected virtual filesystem (this exercises load_catalog_from_uri's "file"
+// scheme, not just fetch_schema_value's).
+set_workspace_file(
+  "file:///workspace/schema-from-catalog.json",
+  '{"type":"object","properties":{"key":{"type":"integer"}}}',
+);
+set_workspace_file(
+  "file:///workspace/catalog.json",
+  JSON.stringify({
+    schemas: [
+      {
+        name: "test",
+        description: "desc",
+        fileMatch: ["catalog-data.toml"],
+        url: "file:///workspace/schema-from-catalog.json",
+      },
+    ],
+  }),
+);
+
+const catalogConfig = `
+[schema]
+enabled = true
+
+[schema.catalog]
+paths = ["file:///workspace/catalog.json"]
+`;
+
+const catalogViolation = await lint('key = "not-an-integer"', "/workspace/catalog-data.toml", {
+  config: { content: catalogConfig, path: "/workspace/tombi.toml" },
+});
+assert.ok(
+  catalogViolation.diagnostics.length > 0,
+  `wasm-lib lint should resolve a local file:// catalog injected via set_workspace_file: ${JSON.stringify(catalogViolation)}`,
+);
+
+const catalogCompliant = await lint("key = 1", "/workspace/catalog-data.toml", {
+  config: { content: catalogConfig, path: "/workspace/tombi.toml" },
+});
+assert.deepEqual(catalogCompliant.diagnostics, []);
