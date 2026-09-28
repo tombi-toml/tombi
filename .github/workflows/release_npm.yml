@@ -216,6 +216,11 @@ jobs:
           set -e
           for package in typescript/@tombi-toml/*; do
             package=${package#typescript/}
+            # tombi-lib is a WIP placeholder without a scoped package name; exclude until it is ready to publish.
+            if [ "${package}" = "@tombi-toml/tombi-lib" ]; then
+              echo "Skipping ${package} (not ready for publish)."
+              continue
+            fi
             if npm view ${package}@${TOMBI_VERSION} version > /dev/null 2>&1; then
               echo "${package}@${TOMBI_VERSION} is already published. Skipping publish."
               continue
