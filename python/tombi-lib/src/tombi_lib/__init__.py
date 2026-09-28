@@ -8,7 +8,9 @@ from ._tombi_lib import (
     TombiError,
     TombiSchemaError,
     format,
+    format_async,
     lint,
+    lint_async,
 )
 
 __version__ = importlib.metadata.version("tombi-lib")
@@ -22,14 +24,7 @@ __all__ = [
     "TombiSchemaError",
     "__version__",
     "format",
+    "format_async",
     "lint",
+    "lint_async",
 ]
-
-try:
-    # Only present when the extension was built with the `async` Cargo
-    # feature (the published wheel enables it; a custom build may not).
-    from ._tombi_lib import format_async, lint_async
-except ImportError:
-    pass
-else:
-    __all__ += ["format_async", "lint_async"]

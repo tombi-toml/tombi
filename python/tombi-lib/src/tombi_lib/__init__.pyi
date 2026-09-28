@@ -28,9 +28,6 @@ def format(
     source: str, source_path: str, options: dict | None = None
 ) -> FormatResult: ...
 def lint(source: str, source_path: str, options: dict | None = None) -> LintResult: ...
-
-# Only present when the extension was built with the `async` Cargo feature
-# (the published wheel enables it; a custom build may not).
 async def format_async(
     source: str, source_path: str, options: dict | None = None
 ) -> FormatResult: ...
