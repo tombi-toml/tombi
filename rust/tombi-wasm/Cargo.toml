@@ -16,19 +16,12 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 console_error_panic_hook.workspace = true
 futures = { workspace = true, optional = true }
-itertools = { workspace = true, optional = true }
 js-sys.workspace = true
 serde = { workspace = true, optional = true }
-serde_tombi = { workspace = true, optional = true }
 serde-wasm-bindgen = { version = "0.6.5", optional = true }
-tombi-config = { workspace = true, optional = true }
-tombi-diagnostic = { workspace = true, optional = true }
-tombi-formatter = { workspace = true, optional = true }
 tombi-fs = { workspace = true, optional = true }
-tombi-glob = { workspace = true, optional = true }
-tombi-linter = { workspace = true, optional = true }
+tombi-lib = { workspace = true, optional = true, default-features = false }
 tombi-lsp = { workspace = true, optional = true }
-tombi-schema-store = { workspace = true, optional = true }
 tombi-uri = { workspace = true, optional = true }
 tower-lsp = { workspace = true, optional = true }
 wasm-bindgen.workspace = true
@@ -39,21 +32,12 @@ web-sys = { workspace = true, optional = true }
 [features]
 default = ["lib"]
 lib = [
-  "dep:itertools",
   "dep:serde",
-  "dep:serde_tombi",
   "dep:serde-wasm-bindgen",
-  "dep:tombi-config",
-  "dep:tombi-diagnostic",
-  "dep:tombi-formatter",
   "dep:tombi-fs",
-  "dep:tombi-glob",
-  "dep:tombi-linter",
-  "dep:tombi-schema-store",
+  "dep:tombi-lib",
   "dep:tombi-uri",
-  "serde_tombi/wasm",
-  "tombi-diagnostic/wasm",
-  "tombi-schema-store/wasm",
+  "tombi-lib/wasm",
 ]
 lsp = [
   "dep:futures",

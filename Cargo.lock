@@ -2907,6 +2907,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "tombi-lib"
+version = "0.0.0-dev"
+dependencies = [
+ "itertools 0.14.0",
+ "log",
+ "serde_tombi",
+ "thiserror 2.0.20",
+ "tokio",
+ "tombi-config",
+ "tombi-diagnostic",
+ "tombi-formatter",
+ "tombi-glob",
+ "tombi-linter",
+ "tombi-schema-store",
+]
+
+[[package]]
 name = "tombi-linter"
 version = "0.0.0-dev"
 dependencies = [
@@ -3166,19 +3183,12 @@ version = "0.0.0-dev"
 dependencies = [
  "console_error_panic_hook",
  "futures",
- "itertools 0.14.0",
  "js-sys",
  "serde",
  "serde-wasm-bindgen",
- "serde_tombi",
- "tombi-config",
- "tombi-diagnostic",
- "tombi-formatter",
  "tombi-fs",
- "tombi-glob",
- "tombi-linter",
+ "tombi-lib",
  "tombi-lsp",
- "tombi-schema-store",
  "tombi-uri",
  "tower-lsp",
  "wasm-bindgen",

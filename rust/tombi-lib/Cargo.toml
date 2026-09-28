@@ -1,0 +1,40 @@
+[package]
+name = "tombi-lib"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description = "Tombi formatter and linter library API for Python and Node.js"
+repository.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+itertools.workspace = true
+log.workspace = true
+serde_tombi.workspace = true
+thiserror.workspace = true
+tombi-config.workspace = true
+tombi-diagnostic.workspace = true
+tombi-formatter.workspace = true
+tombi-glob.workspace = true
+tombi-linter.workspace = true
+tombi-schema-store.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tokio = { workspace = true, features = ["rt"] }
+
+[features]
+default = ["native"]
+# Real `std::fs`/network access (reqwest), for the native `format`/`lint` used
+# by the `python`/`node` bindings.
+native = ["serde_tombi/native", "tombi-schema-store/native"]
+# The wasm virtual filesystem and `gloo-net` HTTP client, for `format_async`/
+# `lint_async` called directly from `tombi-wasm`'s `lib` feature.
+wasm = ["serde_tombi/wasm", "tombi-schema-store/wasm", "tombi-diagnostic/wasm"]
+python = []
+node = []
+
+[lints]
+workspace = true

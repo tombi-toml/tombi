@@ -110,6 +110,7 @@ tombi-json-lexer = { path = "crates/tombi-json-lexer" }
 tombi-json-syntax = { path = "crates/tombi-json-syntax" }
 tombi-json-value = { path = "crates/tombi-json-value" }
 tombi-lexer = { path = "crates/tombi-lexer" }
+tombi-lib = { path = "rust/tombi-lib", default-features = false }
 tombi-linter = { path = "crates/tombi-linter" }
 tombi-lsp = { path = "crates/tombi-lsp", default-features = false }
 tombi-parser = { path = "crates/tombi-parser" }
