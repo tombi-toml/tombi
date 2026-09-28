@@ -13,8 +13,17 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { workspace = true, features = ["extension-module"] }
+pyo3-async-runtimes = { workspace = true, optional = true }
 pythonize.workspace = true
 tombi-lib = { workspace = true, default-features = false, features = ["native", "python"] }
+
+[features]
+default = []
+# Exposes `format_async`/`lint_async` as Python coroutines (via
+# `pyo3-async-runtimes`'s tokio bridge) alongside the always-available
+# blocking `format`/`lint`. Kept optional so a build that only needs the
+# blocking API doesn't pull in `pyo3-async-runtimes`/asyncio-bridge tokio.
+async = ["dep:pyo3-async-runtimes"]
 
 [lints]
 workspace = true

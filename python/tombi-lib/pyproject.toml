@@ -13,6 +13,7 @@ build-backend = "maturin"
 
 [tool.maturin]
 bindings = "pyo3"
+features = ["async"]
 manifest-path = "../../rust/tombi-lib-python/Cargo.toml"
 module-name = "tombi_lib._tombi_lib"
 python-source = "src"
