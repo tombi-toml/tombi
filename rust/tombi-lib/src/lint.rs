@@ -1,7 +1,11 @@
 use crate::{Diagnostic, Error, Options};
 
 /// The result of linting a TOML document.
+///
+/// `Serialize` is only derived under the `wasm` feature: `Diagnostic` itself
+/// only implements `Serialize` there (`tombi-diagnostic`'s `wasm` feature).
 #[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "wasm", derive(serde::Serialize))]
 pub struct LintResult {
     pub diagnostics: Vec<Diagnostic>,
 }

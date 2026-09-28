@@ -1,9 +1,14 @@
 use crate::{Diagnostic, Error, Options};
 
 /// The result of formatting a TOML document.
+///
+/// `Serialize` is only derived under the `wasm` feature: `Diagnostic` itself
+/// only implements `Serialize` there (`tombi-diagnostic`'s `wasm` feature).
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "wasm", derive(serde::Serialize))]
 pub struct FormatResult {
     /// The formatted source, or `None` if formatting failed.
+    #[cfg_attr(feature = "wasm", serde(skip_serializing_if = "Option::is_none"))]
     pub formatted: Option<String>,
     pub diagnostics: Vec<Diagnostic>,
 }
