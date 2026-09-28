@@ -437,13 +437,13 @@ impl SchemaStore {
                     }
                 })?;
 
-                if !catalog_path.exists() {
+                if !tombi_fs::is_file(&catalog_path) {
                     return Err(crate::Error::CatalogFileNotFound {
                         catalog_path: catalog_path.to_path_buf(),
                     });
                 }
 
-                let content = std::fs::read_to_string(&catalog_path).map_err(|_| {
+                let content = tombi_fs::read_to_string(&catalog_path).map_err(|_| {
                     crate::Error::CatalogFileReadFailed {
                         catalog_path: catalog_path.to_path_buf(),
                     }
@@ -637,18 +637,18 @@ impl SchemaStore {
                     }
                 })?;
 
-                if !schema_path.exists() {
+                if !tombi_fs::is_file(&schema_path) {
                     return Err(crate::Error::SchemaFileNotFound {
                         schema_path: schema_path.clone(),
                     });
                 }
 
-                let file = std::fs::File::open(&schema_path)
+                let content = tombi_fs::read_to_string(&schema_path)
                     .map_err(|_| crate::Error::SchemaFileReadFailed { schema_path })?;
 
                 log::debug!("load schema from file: {}", schema_uri);
 
-                Ok(Some(tombi_json::ValueNode::from_reader(file).map_err(
+                Ok(Some(tombi_json::ValueNode::from_str(&content).map_err(
                     |err| crate::Error::SchemaFileParseFailed {
                         schema_uri: schema_uri.to_owned(),
                         reason: err.to_string(),
@@ -1292,7 +1292,7 @@ impl SchemaStore {
                 _ => None,
             },
             Some(Either::Right(path)) => {
-                Some(std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf()))
+                Some(tombi_fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf()))
             }
             None => None,
         };
@@ -1826,7 +1826,7 @@ async fn load_json_schema_from_cache(
 }
 
 fn canonicalize_path_for_matching(path: &std::path::Path) -> std::path::PathBuf {
-    std::fs::canonicalize(path).unwrap_or_else(|_| {
+    tombi_fs::canonicalize(path).unwrap_or_else(|_| {
         if path.is_absolute() {
             path.to_path_buf()
         } else {
@@ -2125,6 +2125,35 @@ mod tests {
         );
 
         let _ = std::fs::remove_file(schema_path);
+    }
+
+    #[tokio::test]
+    async fn load_catalog_from_uri_reads_file_scheme_via_tombi_fs() {
+        let catalog_path = std::env::temp_dir().join(format!(
+            "tombi_catalog_file_scheme_{}_{}.json",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::write(
+            &catalog_path,
+            r#"{"schemas":[{"name":"test","description":"desc","url":"https://example.invalid/schema.json"}]}"#,
+        )
+        .unwrap();
+
+        let catalog_uri = CatalogUri::from_file_path(&catalog_path).unwrap();
+        let schema_store = SchemaStore::new();
+
+        let catalog = schema_store
+            .load_catalog_from_uri(&catalog_uri)
+            .await
+            .unwrap();
+
+        assert_eq!(catalog.unwrap().schemas.len(), 1);
+
+        let _ = std::fs::remove_file(catalog_path);
     }
 
     #[tokio::test]
