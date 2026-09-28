@@ -15,7 +15,7 @@ assert result.diagnostics
 `options` accepts a `dict` matching a `tombi.toml` configuration, e.g. `{"config": "[schema]\nenabled = false\n"}`.
 Errors raise `tombi_lib.TombiError` (base), `tombi_lib.TombiConfigError`, or `tombi_lib.TombiSchemaError`.
 
-`format_async`/`lint_async` are also available for `asyncio` callers, when the extension was built with the `async` Cargo feature (enabled in the published wheel):
+`format_async`/`lint_async` are also available for `asyncio` callers:
 
 ```python
 result = await tombi_lib.format_async("key=1", "example.toml")
