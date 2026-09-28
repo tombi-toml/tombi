@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { format, lint } from "../index.js";
 
@@ -104,6 +106,14 @@ test("config errors reject the promise", async () => {
   }
 });
 
+test("malformed options reject with a TypeError", async () => {
+  for (const run of [format, lint]) {
+    for (const options of [{ unknown: true }, { config: 1 }, { config: { content: "x" } }, "str"]) {
+      await assert.rejects(run("key = 1", "playground.toml", options), TypeError);
+    }
+  }
+});
+
 test("lint resolves a local schema from the real filesystem", async () => {
   const workspace = await mkdtemp(join(tmpdir(), "tombi-lib-"));
   try {
@@ -133,5 +143,34 @@ paths = []
     assert.deepEqual(compliant.diagnostics, []);
   } finally {
     await rm(workspace, { recursive: true, force: true });
+  }
+});
+
+// Installed from npm, `index.js` has no local `tombi-lib.node` next to it and
+// loads the addon from the `@tombi-toml/lib-*` package checked into this repo.
+test("loads the addon from the platform package", async () => {
+  const packageDir = fileURLToPath(new URL("..", import.meta.url));
+  const isMusl =
+    process.platform === "linux" && !process.report.getReport().header.glibcVersionRuntime;
+  const platformPackage = `lib-${process.platform}-${process.arch}${isMusl ? "-musl" : ""}`;
+
+  const root = await mkdtemp(join(tmpdir(), "tombi-lib-package-"));
+  try {
+    const installedDir = join(root, "node_modules", "@tombi-toml", platformPackage);
+    await mkdir(installedDir, { recursive: true });
+    await copyFile(
+      join(packageDir, "..", platformPackage, "package.json"),
+      join(installedDir, "package.json"),
+    );
+    await copyFile(join(packageDir, "tombi-lib.node"), join(installedDir, "tombi-lib.node"));
+    await copyFile(join(packageDir, "index.js"), join(root, "index.js"));
+
+    const installed = createRequire(import.meta.url)(join(root, "index.js"));
+    assert.deepEqual(await installed.format("key=1", "playground.toml", schemaDisabled), {
+      formatted: "key = 1\n",
+      diagnostics: [],
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });

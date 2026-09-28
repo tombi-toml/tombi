@@ -14,7 +14,7 @@ pnpm add tombi-wasm-lib
 Initialize the WASM module before calling `format`:
 
 ```ts
-import init, { format, type TombiWasmError } from "tombi-wasm-lib";
+import init, { format, type TombiError } from "tombi-wasm-lib";
 
 await init();
 
@@ -38,21 +38,22 @@ try {
     }
   }
 } catch (error) {
-  console.error((error as TombiWasmError).message);
+  console.error((error as TombiError).message);
 }
 ```
 
 `format` resolves to an object containing the formatted TOML when formatting
 succeeds and an array of diagnostics. The diagnostics array is empty when none were
 reported. When diagnostics prevent formatting, `formatted` is omitted.
-Configuration and execution errors reject the Promise as `TombiWasmError`.
+Configuration and execution errors reject the Promise with a `TombiError`
+(see [Errors](#errors)).
 
 ## Lint TOML
 
 Initialize the WASM module before calling `lint`:
 
 ```ts
-import init, { lint, type TombiWasmError } from "tombi-wasm-lib";
+import init, { lint, type TombiError } from "tombi-wasm-lib";
 
 await init();
 
@@ -79,13 +80,13 @@ try {
   }
 } catch (error) {
   // Configuration and execution errors reject the Promise.
-  console.error((error as TombiWasmError).message);
+  console.error((error as TombiError).message);
 }
 ```
 
 `lint` resolves to an object containing a diagnostics array. The array is empty when
 no diagnostics were reported. Configuration and execution errors reject the Promise
-as `TombiWasmError`.
+with a `TombiError` (see [Errors](#errors)).
 
 Both functions accept an optional options object as the third argument. `config`
 replaces the automatically discovered configuration and accepts an object or string:
@@ -111,3 +112,38 @@ await format(source, "Cargo.toml", { config: config.content });
 
 When `config` is omitted, Tombi uses automatic discovery and falls back to the
 default configuration if no configuration file is found.
+
+## Errors
+
+`format` and `lint` reject with exactly one of the following errors, which share
+the same names as the Python and Node.js `tombi-lib` packages:
+
+| `name`             | Cause                                                    |
+| ------------------ | -------------------------------------------------------- |
+| `TombiConfigError` | The `tombi.toml` configuration could not be parsed.      |
+| `TombiSchemaError` | A schema or schema catalog could not be resolved.        |
+| `TombiIOError`     | An I/O operation failed.                                 |
+
+`TombiError` is their union type, so `name` narrows it exhaustively:
+
+```ts
+import type { TombiError } from "tombi-wasm-lib";
+
+function describe(error: TombiError): string {
+  switch (error.name) {
+    case "TombiConfigError":
+      return "fix tombi.toml";
+    case "TombiSchemaError":
+      return "schema unavailable";
+    case "TombiIOError":
+      return "I/O failure";
+    default: {
+      const unreachable: never = error;
+      return unreachable;
+    }
+  }
+}
+```
+
+A malformed options object is a programming error rather than a `TombiError`, and
+rejects with a standard `TypeError`.

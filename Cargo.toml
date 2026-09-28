@@ -50,7 +50,7 @@ itertools = "0.14.0"
 js-sys = "0.3.77"
 log = "0.4.22"
 memchr = "2.7.5"
-napi = { version = "3.13.0", default-features = false, features = ["napi4"] }
+napi = { version = "3.13.0", default-features = false, features = ["napi4", "serde-json"] }
 napi-build = "2.5.0"
 napi-derive = "3.6.9"
 nu-ansi-term = "0.50.1"

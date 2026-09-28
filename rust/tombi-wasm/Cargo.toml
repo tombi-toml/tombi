@@ -19,6 +19,7 @@ futures = { workspace = true, optional = true }
 js-sys.workspace = true
 serde = { workspace = true, optional = true }
 serde-wasm-bindgen = { version = "0.6.5", optional = true }
+serde_json = { workspace = true, optional = true }
 tombi-fs = { workspace = true, optional = true }
 tombi-lib = { workspace = true, optional = true, default-features = false }
 tombi-lsp = { workspace = true, optional = true }
@@ -34,6 +35,7 @@ default = ["lib"]
 lib = [
   "dep:serde",
   "dep:serde-wasm-bindgen",
+  "dep:serde_json",
   "dep:tombi-fs",
   "dep:tombi-lib",
   "dep:tombi-uri",

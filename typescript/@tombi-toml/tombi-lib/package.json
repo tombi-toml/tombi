@@ -20,7 +20,7 @@
     "url": "https://github.com/tombi-toml/tombi/issues"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "publishConfig": {
     "access": "public",
@@ -31,13 +31,14 @@
   "files": [
     "index.js",
     "index.d.ts",
+    "binding.d.ts",
     "LICENSE"
   ],
   "napi": {
     "binaryName": "tombi-lib"
   },
   "scripts": {
-    "build": "napi build --manifest-path ../../../rust/tombi-lib-node/Cargo.toml --release --output-dir . --dts index.d.ts",
+    "build": "napi build --manifest-path ../../../rust/tombi-lib-node/Cargo.toml --release --output-dir . --dts binding.d.ts",
     "test": "node --test tests/*.test.mjs"
   },
   "devDependencies": {

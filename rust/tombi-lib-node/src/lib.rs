@@ -6,12 +6,17 @@
 
 mod error;
 
-use error::to_napi_error;
+use error::{Failure, to_napi_error};
 use napi::{
     Env, Task,
-    bindgen_prelude::{AsyncTask, Either, Null},
+    bindgen_prelude::{AsyncTask, Either, Null, Unknown},
 };
 use napi_derive::napi;
+
+// `ConfigFile`/`Options` only declare the TypeScript types of `options`. The
+// value itself is deserialized straight into `tombi_lib::Options` with serde,
+// like wasm-lib, so unknown keys and non-object values are rejected the same
+// way (napi's own object conversion would silently ignore them).
 
 /// The content of a `tombi.toml` config file at a given path.
 #[napi(object, js_name = "ConfigFile")]
@@ -30,17 +35,15 @@ pub struct JsOptions {
     pub config: Option<Either<String, JsConfigFile>>,
 }
 
-impl From<JsOptions> for tombi_lib::Options {
-    fn from(options: JsOptions) -> Self {
-        Self {
-            config: options.config.map(|config| match config {
-                Either::A(content) => tombi_lib::ConfigInput::Text(content),
-                Either::B(JsConfigFile { content, path }) => tombi_lib::ConfigInput::File {
-                    content,
-                    path: path.into(),
-                },
-            }),
-        }
+fn deserialize_options(
+    env: Env,
+    options: Option<Unknown<'_>>,
+) -> Result<tombi_lib::Options, String> {
+    match options {
+        Some(options) => env
+            .from_js_value::<tombi_lib::Options, _>(options)
+            .map_err(|error| error.reason),
+        None => Ok(tombi_lib::Options::default()),
     }
 }
 
@@ -116,28 +119,50 @@ pub struct JsLintResult {
     pub diagnostics: Vec<JsDiagnostic>,
 }
 
-pub struct FormatTask {
+/// The arguments of one `format`/`lint` call, moved onto the libuv thread
+/// pool by [`AsyncTask`].
+pub struct Request {
     source: String,
     source_path: String,
-    options: tombi_lib::Options,
+    options: Result<tombi_lib::Options, String>,
 }
 
+impl Request {
+    fn new(env: Env, source: String, source_path: String, options: Option<Unknown<'_>>) -> Self {
+        Self {
+            source,
+            source_path,
+            options: deserialize_options(env, options),
+        }
+    }
+
+    fn run<T>(
+        &mut self,
+        run: fn(String, String, tombi_lib::Options) -> Result<T, tombi_lib::Error>,
+    ) -> Result<T, Failure> {
+        let options = std::mem::replace(&mut self.options, Ok(tombi_lib::Options::default()))
+            .map_err(Failure::InvalidOptions)?;
+        run(
+            std::mem::take(&mut self.source),
+            std::mem::take(&mut self.source_path),
+            options,
+        )
+        .map_err(Failure::Tombi)
+    }
+}
+
+pub struct FormatTask(Request);
+
 impl Task for FormatTask {
-    // The `tombi_lib::Error` is kept until `resolve`, which has the `Env`
-    // needed to build a named JS error from it.
-    type Output = Result<tombi_lib::FormatResult, tombi_lib::Error>;
+    type Output = Result<tombi_lib::FormatResult, Failure>;
     type JsValue = JsFormatResult;
 
     fn compute(&mut self) -> napi::Result<Self::Output> {
-        Ok(tombi_lib::format_sync(
-            std::mem::take(&mut self.source),
-            std::mem::take(&mut self.source_path),
-            std::mem::take(&mut self.options),
-        ))
+        Ok(self.0.run(tombi_lib::format_sync))
     }
 
     fn resolve(&mut self, env: Env, output: Self::Output) -> napi::Result<Self::JsValue> {
-        let output = output.map_err(|error| to_napi_error(&env, error))?;
+        let output = output.map_err(|failure| to_napi_error(env, failure))?;
         Ok(JsFormatResult {
             formatted: output.formatted,
             diagnostics: output.diagnostics.into_iter().map(Into::into).collect(),
@@ -145,26 +170,18 @@ impl Task for FormatTask {
     }
 }
 
-pub struct LintTask {
-    source: String,
-    source_path: String,
-    options: tombi_lib::Options,
-}
+pub struct LintTask(Request);
 
 impl Task for LintTask {
-    type Output = Result<tombi_lib::LintResult, tombi_lib::Error>;
+    type Output = Result<tombi_lib::LintResult, Failure>;
     type JsValue = JsLintResult;
 
     fn compute(&mut self) -> napi::Result<Self::Output> {
-        Ok(tombi_lib::lint_sync(
-            std::mem::take(&mut self.source),
-            std::mem::take(&mut self.source_path),
-            std::mem::take(&mut self.options),
-        ))
+        Ok(self.0.run(tombi_lib::lint_sync))
     }
 
     fn resolve(&mut self, env: Env, output: Self::Output) -> napi::Result<Self::JsValue> {
-        let output = output.map_err(|error| to_napi_error(&env, error))?;
+        let output = output.map_err(|failure| to_napi_error(env, failure))?;
         Ok(JsLintResult {
             diagnostics: output.diagnostics.into_iter().map(Into::into).collect(),
         })
@@ -172,29 +189,29 @@ impl Task for LintTask {
 }
 
 /// Format a TOML document.
-#[napi(ts_return_type = "Promise<FormatResult>")]
+#[napi(
+    ts_args_type = "source: string, sourcePath: string, options?: Options | undefined | null",
+    ts_return_type = "Promise<FormatResult>"
+)]
 pub fn format(
+    env: Env,
     source: String,
     source_path: String,
-    options: Option<JsOptions>,
+    options: Option<Unknown<'_>>,
 ) -> AsyncTask<FormatTask> {
-    AsyncTask::new(FormatTask {
-        source,
-        source_path,
-        options: options.map(Into::into).unwrap_or_default(),
-    })
+    AsyncTask::new(FormatTask(Request::new(env, source, source_path, options)))
 }
 
 /// Lint a TOML document.
-#[napi(ts_return_type = "Promise<LintResult>")]
+#[napi(
+    ts_args_type = "source: string, sourcePath: string, options?: Options | undefined | null",
+    ts_return_type = "Promise<LintResult>"
+)]
 pub fn lint(
+    env: Env,
     source: String,
     source_path: String,
-    options: Option<JsOptions>,
+    options: Option<Unknown<'_>>,
 ) -> AsyncTask<LintTask> {
-    AsyncTask::new(LintTask {
-        source,
-        source_path,
-        options: options.map(Into::into).unwrap_or_default(),
-    })
+    AsyncTask::new(LintTask(Request::new(env, source, source_path, options)))
 }

@@ -89,7 +89,7 @@ assert.ok(warningResult.diagnostics.every((diagnostic) => diagnostic.level === "
 
 await assert.rejects(format("key = 1", "playground.toml", { config: "invalid =" }), (error) => {
   assert.ok(error instanceof Error);
-  assert.equal(error.name, "TombiWasmError");
+  assert.equal(error.name, "TombiConfigError");
   assert.equal(typeof error.message, "string");
   assert.ok(error.message.length > 0);
   assert.equal(Object.hasOwn(error, "error"), false);
@@ -98,12 +98,20 @@ await assert.rejects(format("key = 1", "playground.toml", { config: "invalid =" 
 
 await assert.rejects(lint("key = 1", "playground.toml", { config: "invalid =" }), (error) => {
   assert.ok(error instanceof Error);
-  assert.equal(error.name, "TombiWasmError");
+  assert.equal(error.name, "TombiConfigError");
   assert.equal(typeof error.message, "string");
   assert.ok(error.message.length > 0);
   assert.equal(Object.hasOwn(error, "error"), false);
   return true;
 });
+
+// Malformed options are a caller bug, rejected as a standard `TypeError`
+// rather than a `TombiError`.
+for (const run of [format, lint]) {
+  for (const options of [{ unknown: true }, { config: 1 }]) {
+    await assert.rejects(run("key = 1", "playground.toml", options), TypeError);
+  }
+}
 
 // wasm-lib's `lint`/`format` resolve `file://` schemas through the same
 // injected virtual filesystem as wasm-lsp (set_workspace_file/tombi_fs).

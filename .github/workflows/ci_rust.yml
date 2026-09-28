@@ -62,6 +62,7 @@ jobs:
             extensions/**
             rust/**
             typescript/@tombi-toml/tombi-lib/**
+            typescript/@tombi-toml/lib-*/**
             typescript/@tombi-toml/wasm-lib/**
             typescript/@tombi-toml/wasm-lsp/**
             editors/zed/**
@@ -171,6 +172,6 @@ jobs:
       - name: Build Node.js library binding
         run: pnpm --dir typescript/@tombi-toml/tombi-lib build
       - name: Check generated type definitions are up to date
-        run: git diff --exit-code typescript/@tombi-toml/tombi-lib/index.d.ts
+        run: git diff --exit-code typescript/@tombi-toml/tombi-lib/binding.d.ts
       - name: Run Node.js library smoke tests
         run: pnpm --dir typescript/@tombi-toml/tombi-lib test
