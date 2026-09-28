@@ -1,4 +1,4 @@
-from importlib.metadata import version as _version
+import importlib.metadata
 
 from ._tombi_lib import (
     Diagnostic,
@@ -11,7 +11,7 @@ from ._tombi_lib import (
     lint,
 )
 
-__version__ = _version("tombi-lib")
+__version__ = importlib.metadata.version("tombi-lib")
 
 __all__ = [
     "Diagnostic",

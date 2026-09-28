@@ -16,6 +16,9 @@ pub use format::{FormatResult, format_async};
 pub use lint::{LintResult, lint_async};
 pub use tombi_diagnostic::Diagnostic;
 
+#[cfg(feature = "python")]
+pub use tombi_diagnostic::{Position, Range};
+
 #[cfg(not(target_family = "wasm"))]
 pub use format::format_sync;
 #[cfg(not(target_family = "wasm"))]

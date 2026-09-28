@@ -124,6 +124,65 @@ impl<T: SetDiagnostics> SetDiagnostics for Vec<T> {
     }
 }
 
+/// A zero-based position in a TOML document, exposed to Python with
+/// dot-chain access (`diagnostic.range.start.line`). A Python-only
+/// counterpart to `tombi_text::Position`, kept in this crate rather than
+/// adding a `python` feature to `tombi-text` itself.
+#[cfg(feature = "python")]
+#[derive(Debug, Clone, Copy)]
+#[pyo3::pyclass(get_all, skip_from_py_object)]
+pub struct Position {
+    pub line: u32,
+    pub column: u32,
+}
+
+#[cfg(feature = "python")]
+#[pyo3::pymethods]
+impl Position {
+    fn __repr__(&self) -> String {
+        format!("Position(line={}, column={})", self.line, self.column)
+    }
+}
+
+#[cfg(feature = "python")]
+impl From<tombi_text::Position> for Position {
+    fn from(position: tombi_text::Position) -> Self {
+        Self {
+            line: position.line,
+            column: position.column,
+        }
+    }
+}
+
+/// A range in a TOML document, exposed to Python with dot-chain access
+/// (`diagnostic.range.start`/`.end`). See [`Position`] for why this isn't
+/// `tombi_text::Range` directly.
+#[cfg(feature = "python")]
+#[derive(Debug, Clone, Copy)]
+#[pyo3::pyclass(get_all, skip_from_py_object)]
+pub struct Range {
+    pub start: Position,
+    pub end: Position,
+}
+
+#[cfg(feature = "python")]
+#[pyo3::pymethods]
+impl Range {
+    fn __repr__(&self) -> String {
+        format!("Range(start={:?}, end={:?})", self.start, self.end)
+    }
+}
+
+#[cfg(feature = "python")]
+impl From<tombi_text::Range> for Range {
+    fn from(range: tombi_text::Range) -> Self {
+        Self {
+            start: range.start.into(),
+            end: range.end.into(),
+        }
+    }
+}
+
 #[cfg(feature = "python")]
 #[pyo3::pymethods]
 impl Diagnostic {
@@ -145,30 +204,9 @@ impl Diagnostic {
         self.message()
     }
 
-    /// `{"start": {"line": int, "column": int}, "end": {...}}`, matching the
-    /// shape of the wasm-lib `Diagnostic.range` (`tombi_text::Position`'s own
-    /// manual `Serialize` impl there).
     #[getter(range)]
-    fn py_range<'py>(
-        &self,
-        py: pyo3::Python<'py>,
-    ) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyDict>> {
-        use pyo3::types::PyDictMethods;
-
-        fn position_dict<'py>(
-            py: pyo3::Python<'py>,
-            position: tombi_text::Position,
-        ) -> pyo3::PyResult<pyo3::Bound<'py, pyo3::types::PyDict>> {
-            let dict = pyo3::types::PyDict::new(py);
-            dict.set_item("line", position.line)?;
-            dict.set_item("column", position.column)?;
-            Ok(dict)
-        }
-
-        let dict = pyo3::types::PyDict::new(py);
-        dict.set_item("start", position_dict(py, self.range.start)?)?;
-        dict.set_item("end", position_dict(py, self.range.end)?)?;
-        Ok(dict)
+    fn py_range(&self) -> Range {
+        self.range.into()
     }
 
     #[getter(source_file)]

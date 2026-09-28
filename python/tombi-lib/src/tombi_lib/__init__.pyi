@@ -1,10 +1,8 @@
-from typing import TypedDict
-
-class Position(TypedDict):
+class Position:
     line: int
     column: int
 
-class Range(TypedDict):
+class Range:
     start: Position
     end: Position
 
