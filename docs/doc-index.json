@@ -54,28 +54,6 @@
     ]
   },
   {
-    "title": "CLI",
-    "description": "Command-line interface for Formatter and Linter.",
-    "path": "/docs/cli",
-    "children": [
-      {
-        "title": "Formatter",
-        "description": "Format TOML files from the command line.",
-        "path": "/docs/cli/formatter"
-      },
-      {
-        "title": "Linter",
-        "description": "Lint TOML files from the command line.",
-        "path": "/docs/cli/linter"
-      },
-      {
-        "title": "Offline Mode",
-        "description": "Use Tombi without internet connection.",
-        "path": "/docs/cli/offline-mode"
-      }
-    ]
-  },
-  {
     "title": "Language Server",
     "description": "LSP features with completion, diagnostics, and more.",
     "path": "/docs/language-server",
@@ -118,19 +96,24 @@
     ]
   },
   {
-    "title": "WebAssembly",
-    "description": "Run Tombi's formatter, linter, and Language Server in JavaScript and browsers.",
-    "path": "/docs/wasm",
+    "title": "CLI",
+    "description": "Command-line interface for Formatter and Linter.",
+    "path": "/docs/cli",
     "children": [
       {
-        "title": "Formatter and Linter",
-        "description": "Use the tombi-wasm-lib package for formatting and linting.",
-        "path": "/docs/wasm/tombi-wasm-lib"
+        "title": "Formatter",
+        "description": "Format TOML files from the command line.",
+        "path": "/docs/cli/formatter"
       },
       {
-        "title": "Language Server",
-        "description": "Use the tombi-wasm-lsp package and its Web Worker adapter.",
-        "path": "/docs/wasm/tombi-wasm-lsp"
+        "title": "Linter",
+        "description": "Lint TOML files from the command line.",
+        "path": "/docs/cli/linter"
+      },
+      {
+        "title": "Offline Mode",
+        "description": "Use Tombi without internet connection.",
+        "path": "/docs/cli/offline-mode"
       }
     ]
   },
@@ -148,6 +131,23 @@
         "title": "Node.js",
         "description": "Use the tombi-lib package from npm.",
         "path": "/docs/library/nodejs"
+      }
+    ]
+  },
+  {
+    "title": "WebAssembly",
+    "description": "Run Tombi's formatter, linter, and Language Server in browsers.",
+    "path": "/docs/wasm",
+    "children": [
+      {
+        "title": "Formatter and Linter",
+        "description": "Use the tombi-wasm-lib package for formatting and linting.",
+        "path": "/docs/wasm/tombi-wasm-lib"
+      },
+      {
+        "title": "Language Server",
+        "description": "Use the tombi-wasm-lsp package and its Web Worker adapter.",
+        "path": "/docs/wasm/tombi-wasm-lsp"
       }
     ]
   },

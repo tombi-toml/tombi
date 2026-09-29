@@ -1,7 +1,16 @@
 # `tombi-wasm-lib`
 
-`tombi-wasm-lib` provides Tombi's formatter and linter for browsers and other
-JavaScript environments.
+`tombi-wasm-lib` provides Tombi's formatter and linter for browsers.
+
+## Difference from `tombi-lib`
+
+| Package | Runtime | Implementation |
+| --- | --- | --- |
+| `tombi-wasm-lib` | Browsers | WebAssembly |
+| [`tombi-lib`](/docs/library/nodejs) | Node.js | Native addon |
+
+Use `tombi-wasm-lib` when running in a browser. For server-side Node.js, prefer
+`tombi-lib`.
 
 ## Install
 
