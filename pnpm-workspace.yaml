@@ -17,7 +17,7 @@ overrides:
   h3: 1.15.11
   js-yaml: 4.3.2
   linkify-it: 5.0.2
-  markdown-it: 14.2.0
+  markdown-it: 14.3.1
   minimatch: 10.2.5
   nanoid: 3.3.18
   nitropack: 2.13.4
