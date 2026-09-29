@@ -46,7 +46,7 @@ function loadBinding() {
 
   if (!packageName) {
     throw new Error(
-      `@tombi-toml/tombi-lib doesn't ship with a prebuilt binary for ${platform}-${arch} yet.`,
+      `tombi-lib doesn't ship with a prebuilt binary for ${platform}-${arch} yet.`,
     );
   }
 
@@ -56,7 +56,7 @@ function loadBinding() {
     throw new Error(
       `The Tombi native binding "${packageName}" could not be loaded. ` +
         "The platform-specific optional package may not be installed. " +
-        "Please reinstall @tombi-toml/tombi-lib with optional dependencies enabled.",
+        "Please reinstall tombi-lib with optional dependencies enabled.",
       { cause: error },
     );
   }
