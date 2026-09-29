@@ -1657,22 +1657,22 @@ mod hover_keys_value {
                 r#"
                 [project]
                 dependencies = [
-                    "tombi-beta█",
+                    "tombi-lib█",
                 ]
 
                 [tool.uv.workspace]
-                members = ["python/tombi-beta"]
+                members = ["python/tombi-lib"]
 
                 [tool.uv.sources]
-                tombi-beta = { workspace = true }
+                tombi-lib = { workspace = true }
                 "#,
                 SourcePath(tombi_test_lib::project_root_path().join("pyproject.toml")),
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok({
                 "Keys": "project.dependencies[0]",
                 "Value": "String",
-                "Title": Some("tombi-beta"),
-                "Description": Some("Add your description here"),
+                "Title": Some("tombi-lib"),
+                "Description": Some("Tombi formatter and linter library API for Python"),
             });
         );
 
@@ -1772,22 +1772,22 @@ mod hover_keys_value {
                 r#"
                 [tool.uv]
                 constraint-dependencies = [
-                    "tombi-beta█",
+                    "tombi-lib█",
                 ]
 
                 [tool.uv.workspace]
-                members = ["python/tombi-beta"]
+                members = ["python/tombi-lib"]
 
                 [tool.uv.sources]
-                tombi-beta = { workspace = true }
+                tombi-lib = { workspace = true }
                 "#,
                 SourcePath(tombi_test_lib::project_root_path().join("pyproject.toml")),
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok({
                 "Keys": "tool.uv.constraint-dependencies[0]",
                 "Value": "String",
-                "Title": Some("tombi-beta"),
-                "Description": Some("Add your description here"),
+                "Title": Some("tombi-lib"),
+                "Description": Some("Tombi formatter and linter library API for Python"),
             });
         );
 

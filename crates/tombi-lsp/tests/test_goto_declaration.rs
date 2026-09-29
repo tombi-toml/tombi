@@ -182,12 +182,12 @@ mod goto_declaration_tests {
 
         test_goto_declaration!(
             #[tokio::test]
-            async fn tool_pyproject_sources_tombi_beta_workspace(
+            async fn tool_pyproject_sources_tombi_lib_workspace(
                 r#"
                 [tool.uv.sources]
-                tombi-beta = { workspace█ = true }
+                tombi-lib = { workspace█ = true }
                 "#,
-                SourcePath(project_root_path().join("python/tombi-beta/pyproject.toml")),
+                SourcePath(project_root_path().join("python/tombi-lib/pyproject.toml")),
             ) -> Ok([project_root_path().join("pyproject.toml")]);
         );
 

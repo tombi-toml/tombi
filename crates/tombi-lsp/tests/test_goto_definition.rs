@@ -1004,10 +1004,10 @@ mod goto_definition_tests {
             async fn tool_pyproject_sources_package_with_workspace(
                 r#"
                 [tool.uv.sources]
-                tombi-beta█ = { workspace = true }
+                tombi-lib█ = { workspace = true }
                 "#,
-                SourcePath(project_root_path().join("python/tombi-beta/pyproject.toml")),
-            ) -> Ok([project_root_path().join("python/tombi-beta/pyproject.toml")]);
+                SourcePath(project_root_path().join("python/tombi-lib/pyproject.toml")),
+            ) -> Ok([project_root_path().join("python/tombi-lib/pyproject.toml")]);
         );
 
         test_goto_definition!(
@@ -1015,9 +1015,9 @@ mod goto_definition_tests {
             async fn tool_pyproject_sources_package_workspace(
                 r#"
                 [tool.uv.sources]
-                tombi-beta = { workspace█ = true }
+                tombi-lib = { workspace█ = true }
                 "#,
-                SourcePath(project_root_path().join("python/tombi-beta/pyproject.toml")),
+                SourcePath(project_root_path().join("python/tombi-lib/pyproject.toml")),
             ) -> Ok([project_root_path().join("pyproject.toml")]);
         );
 
@@ -1037,21 +1037,21 @@ mod goto_definition_tests {
             async fn tool_pyproject_workspace_members(
                 r#"
                 [tool.uv.workspace]
-                members█ = ["python/tombi-beta"]
+                members█ = ["python/tombi-lib"]
                 "#,
                 SourcePath(project_root_path().join("pyproject.toml")),
-            ) -> Ok([project_root_path().join("python/tombi-beta/pyproject.toml")]);
+            ) -> Ok([project_root_path().join("python/tombi-lib/pyproject.toml")]);
         );
 
         test_goto_definition!(
             #[tokio::test]
-            async fn tool_pyproject_workspace_members_python_tombi_beta(
+            async fn tool_pyproject_workspace_members_python_tombi_lib(
                 r#"
                 [tool.uv.workspace]
-                members = ["python/tombi-beta█"]
+                members = ["python/tombi-lib█"]
                 "#,
                 SourcePath(project_root_path().join("pyproject.toml")),
-            ) -> Ok([project_root_path().join("python/tombi-beta/pyproject.toml")]);
+            ) -> Ok([project_root_path().join("python/tombi-lib/pyproject.toml")]);
         );
 
         test_goto_definition!(

@@ -17,6 +17,5 @@ addopts = ["-v"]
 [tool.uv.workspace]
 members = [
   "python/tombi",
-  "python/tombi-beta",
   "python/tombi-lib",
 ]
