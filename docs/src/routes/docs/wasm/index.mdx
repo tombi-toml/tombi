@@ -15,9 +15,9 @@ pnpm add tombi-wasm-lib
 pnpm add tombi-wasm-lsp
 ```
 
-These packages are intended for browsers. For server-side Node.js, prefer the
-native [`tombi-lib`](/docs/library/nodejs) package, which does not require WASM
-initialization.
+These packages are intended for browsers. For formatting and linting in
+server-side Node.js, use the native [`tombi-lib`](/docs/library/nodejs) package
+instead of `tombi-wasm-lib`.
 
 The two packages are built from the shared `tombi-wasm` Rust crate. The `lib` and
 `lsp` features produce independent WASM artifacts.
