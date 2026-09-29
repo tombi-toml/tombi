@@ -166,11 +166,11 @@ jobs:
           mkdir dist
           cp target/${{ matrix.target }}/release/tombi ./dist/tombi-${{ matrix.vscode_target }}
 
-      # Build the Node.js library binding (`@tombi-toml/tombi-lib`).
+      # Build the Node.js library binding (`@tombi-toml/lib`).
       # illumos has no napi-rs toolchain here, so it only ships the CLI.
       - name: Install Node.js dependencies
         if: ${{ !matrix.use_cross }}
-        run: pnpm install --frozen-lockfile --filter @tombi-toml/tombi-lib
+        run: pnpm install --frozen-lockfile --filter @tombi-toml/lib
 
       - name: Build Node.js library binding
         if: ${{ !matrix.use_cross }}
@@ -180,11 +180,11 @@ jobs:
             # Let cargo-zigbuild pick the linker instead of the workflow-level
             # aarch64-linux-gnu-gcc used for the static musl CLI build.
             env -u CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER \
-              pnpm --dir typescript/@tombi-toml/tombi-lib build --target ${{ matrix.target }} --cross-compile
+              pnpm --dir typescript/@tombi-toml/lib build --target ${{ matrix.target }} --cross-compile
           else
-            pnpm --dir typescript/@tombi-toml/tombi-lib build --target ${{ matrix.target }}
+            pnpm --dir typescript/@tombi-toml/lib build --target ${{ matrix.target }}
           fi
-          cp typescript/@tombi-toml/tombi-lib/tombi-lib.node ./dist/tombi-lib-${{ matrix.vscode_target }}.node
+          cp typescript/@tombi-toml/lib/tombi-lib.node ./dist/tombi-lib-${{ matrix.vscode_target }}.node
 
       # Upload the CLI binary and library binding as a build artifact
       - name: Upload CLI artifact
@@ -285,7 +285,7 @@ jobs:
         run: |
           set -e
           # `<scoped package directory>:<unscoped package name>`
-          for alias in wasm-lib:tombi-wasm-lib wasm-lsp:tombi-wasm-lsp tombi-lib:tombi-lib; do
+          for alias in wasm-lib:tombi-wasm-lib wasm-lsp:tombi-wasm-lsp lib:tombi-lib; do
             package="${alias%%:*}"
             scoped_package="@tombi-toml/${package}"
             unscoped_package="${alias#*:}"

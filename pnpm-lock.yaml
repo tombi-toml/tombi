@@ -186,6 +186,12 @@ importers:
 
   typescript/@tombi-toml/cli-win32-x64: {}
 
+  typescript/@tombi-toml/lib:
+    devDependencies:
+      '@napi-rs/cli':
+        specifier: 3.10.5
+        version: 3.10.5(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(@types/node@24.10.1)(supports-color@10.2.2)
+
   typescript/@tombi-toml/lib-darwin-arm64: {}
 
   typescript/@tombi-toml/lib-darwin-x64: {}
@@ -231,12 +237,6 @@ importers:
       '@tombi-toml/cli-win32-x64':
         specifier: 0.0.0-dev
         version: 0.0.0-dev
-
-  typescript/@tombi-toml/tombi-lib:
-    devDependencies:
-      '@napi-rs/cli':
-        specifier: 3.10.5
-        version: 3.10.5(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(@types/node@24.10.1)(supports-color@10.2.2)
 
   typescript/@tombi-toml/wasm-lib:
     devDependencies:

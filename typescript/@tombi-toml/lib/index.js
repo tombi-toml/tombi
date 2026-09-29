@@ -1,7 +1,7 @@
 const { existsSync } = require("node:fs");
 const { join } = require("node:path");
 const { platform, arch, env } = process;
-// Published as both `@tombi-toml/tombi-lib` and `tombi-lib` (the release
+// Published as both `@tombi-toml/lib` and `tombi-lib` (the release
 // workflow only rewrites `name`), so read it rather than hard-coding one.
 const { name: packageName } = require("./package.json");
 

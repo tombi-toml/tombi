@@ -1,4 +1,4 @@
-//! napi-rs bindings for `@tombi-toml/tombi-lib`.
+//! napi-rs bindings for `@tombi-toml/lib`.
 //!
 //! `format`/`lint` return a `Promise`: the synchronous core
 //! ([`tombi_lib::format_sync`]/[`tombi_lib::lint_sync`]) runs on the libuv

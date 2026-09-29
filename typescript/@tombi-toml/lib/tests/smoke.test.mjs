@@ -203,7 +203,7 @@ test("error messages name the installed package", async () => {
   const packageDir = fileURLToPath(new URL("..", import.meta.url));
   const manifest = JSON.parse(await readFile(join(packageDir, "package.json"), "utf-8"));
 
-  for (const name of ["@tombi-toml/tombi-lib", "tombi-lib"]) {
+  for (const name of ["@tombi-toml/lib", "tombi-lib"]) {
     const root = await mkdtemp(join(tmpdir(), "tombi-lib-alias-"));
     try {
       await copyFile(join(packageDir, "index.js"), join(root, "index.js"));

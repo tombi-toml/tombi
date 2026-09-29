@@ -25,7 +25,7 @@ libcairo.2.dylib
 
 # node
 node_modules
-# napi-rs addons built for @tombi-toml/tombi-lib and copied into lib-*
+# napi-rs addons built for @tombi-toml/lib and copied into lib-*
 *.node
 /docs/public/wasm/
 .pnpm-store/
