@@ -87,7 +87,7 @@ jobs:
             tombi-wasm-lib-0.0.0-*
             tombi-wasm-lsp-0.0.0-*
 
-  release-cli-and-vscode:
+  build-cli-and-vsix:
     name: dist (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     needs: [delete-old-dev-artifacts]
@@ -166,17 +166,6 @@ jobs:
         run: npx vsce package --no-dependencies -o "../../dist/tombi-vscode-${{ env.TOMBI_VERSION }}-${{ matrix.vscode_target }}.vsix" --target ${{ matrix.vscode_target }}
         working-directory: ./editors/vscode
 
-      - name: Publish VSCode Extension
-        run: npx vsce publish --no-dependencies --pat ${{ secrets.VSCODE_MARKETPLACE_TOKEN }} --packagePath "../../dist/tombi-vscode-${{ env.TOMBI_VERSION }}-${{ matrix.vscode_target }}.vsix" --skip-duplicate
-        if: startsWith(github.ref, 'refs/tags/')
-        working-directory: ./editors/vscode
-
-      - name: Publish OpenVSX Extension
-        run: npx ovsx publish --no-dependencies --pat ${{ secrets.OPEN_VSX_ACCESS_TOKEN }} --packagePath "../../dist/tombi-vscode-${{ env.TOMBI_VERSION }}-${{ matrix.vscode_target }}.vsix" --skip-duplicate
-        if: startsWith(github.ref, 'refs/tags/')
-        working-directory: ./editors/vscode
-        timeout-minutes: 5
-
       - name: Upload tombi-cli artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: matrix.os != 'windows-latest'
@@ -197,7 +186,90 @@ jobs:
           name: tombi-vscode-${{ env.TOMBI_VERSION }}-${{ matrix.vscode_target }}.vsix
           path: dist/tombi-vscode-${{ env.TOMBI_VERSION }}-${{ matrix.vscode_target }}.vsix
 
-  release-cli-illumos:
+  # Extensions are published in separate jobs so that registry outages
+  # (e.g. OpenVSX "Registry is in read-only mode.") do not skip artifact uploads.
+  # release-notes depends on these jobs, so a failed publish blocks the release
+  # (and winget) until the failed job is re-run after the registry recovers.
+  # The jobs themselves always run so that release-notes is not skipped on non-tag refs.
+  publish-vscode-marketplace:
+    needs: [build-cli-and-vsix]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/set-version
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: ".node-version"
+          cache: "pnpm"
+
+      - run: pnpm install
+        working-directory: ./editors/vscode
+
+      - name: Download tombi-vscode artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: tombi-vscode-${{ env.TOMBI_VERSION }}-*
+          path: tombi-vscode-artifacts
+          merge-multiple: true
+
+      - name: Publish VSCode Extension
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          for vsix in ../../tombi-vscode-artifacts/*.vsix; do
+            npx vsce publish --no-dependencies --pat "${VSCODE_MARKETPLACE_TOKEN}" --packagePath "${vsix}" --skip-duplicate
+          done
+        working-directory: ./editors/vscode
+        env:
+          VSCODE_MARKETPLACE_TOKEN: ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}
+        timeout-minutes: 15
+
+  publish-openvsx:
+    needs: [build-cli-and-vsix]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/set-version
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: ".node-version"
+          cache: "pnpm"
+
+      - run: pnpm install
+        working-directory: ./editors/vscode
+
+      - name: Download tombi-vscode artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: tombi-vscode-${{ env.TOMBI_VERSION }}-*
+          path: tombi-vscode-artifacts
+          merge-multiple: true
+
+      - name: Publish OpenVSX Extension
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          for vsix in ../../tombi-vscode-artifacts/*.vsix; do
+            npx ovsx publish --no-dependencies --pat "${OPEN_VSX_ACCESS_TOKEN}" --packagePath "${vsix}" --skip-duplicate
+          done
+        working-directory: ./editors/vscode
+        env:
+          OPEN_VSX_ACCESS_TOKEN: ${{ secrets.OPEN_VSX_ACCESS_TOKEN }}
+        timeout-minutes: 15
+
+  build-cli-illumos:
     name: dist (x86_64-unknown-illumos)
     runs-on: ubuntu-24.04
     needs: [delete-old-dev-artifacts]
@@ -232,7 +304,7 @@ jobs:
           name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ env.TOMBI_TARGET }}.tar.gz
           path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ env.TOMBI_TARGET }}.tar.gz
 
-  release-wasm:
+  build-wasm:
     name: dist (wasm)
     runs-on: ubuntu-latest
     needs: [delete-old-dev-artifacts]
@@ -304,7 +376,7 @@ jobs:
           fi
 
   release-notes:
-    needs: [release-cli-and-vscode, release-cli-illumos, release-wasm, check-release-notes]
+    needs: [build-cli-and-vsix, publish-vscode-marketplace, publish-openvsx, build-cli-illumos, build-wasm, check-release-notes]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -571,56 +643,6 @@ jobs:
           owner: ${{ github.repository_owner }}
           repository: setup-tombi
           tag: ${{ steps.stable-version.outputs.stable_tag }}
-
-  validate-winget-manifest:
-    if: "!startsWith(github.ref, 'refs/tags/v')"
-    runs-on: windows-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Resolve winget validation release
-        id: winget-release
-        shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          $headers = @{
-            "Accept" = "application/vnd.github+json"
-            "Authorization" = "Bearer $env:GITHUB_TOKEN"
-            "X-GitHub-Api-Version" = "2022-11-28"
-          }
-          $latestRelease = Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/tombi-toml/tombi/releases/latest"
-          if ($latestRelease.tag_name -notmatch '^v(\d+\.\d+\.\d+)$') {
-            throw "Latest release tag is not a stable version: $($latestRelease.tag_name)"
-          }
-
-          Write-Host "Using latest stable release $($latestRelease.tag_name) for winget manifest validation and invocation."
-          "release_tag=$($latestRelease.tag_name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          "stable_version=$($Matches[1])" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-
-      - name: Setup wingetcreate
-        id: wingetcreate
-        uses: ./.github/actions/setup-wingetcreate
-        with:
-          version: ${{ env.WINGETCREATE_VERSION }}
-
-      - name: Generate and test winget manifest
-        uses: ./.github/actions/generate-winget-manifest
-        with:
-          release-tag: ${{ steps.winget-release.outputs.release_tag }}
-          version: ${{ steps.winget-release.outputs.stable_version }}
-          wingetcreate-path: ${{ steps.wingetcreate.outputs.path }}
-          github-token: ${{ github.token }}
-
-      - name: Upload winget manifest
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: winget-manifests
-          path: winget-manifests
 
   validate-winget-release-manifest:
     needs: [release-notes]
