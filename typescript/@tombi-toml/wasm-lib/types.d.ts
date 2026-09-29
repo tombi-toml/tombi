@@ -66,6 +66,9 @@ export interface TombiError extends Error {
   readonly name: "TombiError";
 }
 
+/** @deprecated Use {@link TombiError} instead. */
+export type TombiWasmError = TombiError;
+
 /** One entry of the browser-backed virtual workspace. */
 export interface WorkspaceEntry {
   uri: string;
