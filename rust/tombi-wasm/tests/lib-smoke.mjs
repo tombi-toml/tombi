@@ -63,6 +63,13 @@ assert.ok(Array.isArray(formatError.diagnostics));
 assert.ok(formatError.diagnostics.length > 0);
 assert.ok(formatError.diagnostics.every((diagnostic) => diagnostic.level === "error"));
 assert.ok(formatError.diagnostics.every((diagnostic) => Object.hasOwn(diagnostic, "sourceFile")));
+// `source_file` is the deprecated alias of `sourceFile`.
+assert.ok(
+  formatError.diagnostics.every(
+    (diagnostic) =>
+      Object.hasOwn(diagnostic, "source_file") && diagnostic.source_file === diagnostic.sourceFile,
+  ),
+);
 
 assert.deepEqual(await lint("key = 1", "playground.toml"), { diagnostics: [] });
 const { diagnostics } = await lint("key =", "playground.toml", {

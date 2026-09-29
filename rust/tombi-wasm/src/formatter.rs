@@ -4,7 +4,26 @@ use serde_wasm_bindgen::Serializer;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use wasm_bindgen_futures::future_to_promise;
 
+/// Serialize a `format`/`lint` result, adding each diagnostic's deprecated
+/// `source_file` key (the pre-`sourceFile` name) with the same value.
+/// Remove the alias in the next major release.
 fn serialize(value: &impl Serialize) -> JsValue {
+    let mut value = serde_json::to_value(value).expect("WASM values must be serializable");
+    if let Some(diagnostics) = value
+        .get_mut("diagnostics")
+        .and_then(serde_json::Value::as_array_mut)
+    {
+        for diagnostic in diagnostics
+            .iter_mut()
+            .filter_map(serde_json::Value::as_object_mut)
+        {
+            let source_file = diagnostic
+                .get("sourceFile")
+                .cloned()
+                .unwrap_or(serde_json::Value::Null);
+            diagnostic.insert("source_file".to_owned(), source_file);
+        }
+    }
     value
         .serialize(&Serializer::json_compatible())
         .expect("WASM values must be serializable")

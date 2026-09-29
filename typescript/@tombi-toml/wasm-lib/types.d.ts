@@ -7,6 +7,8 @@ export interface Diagnostic {
   message: string;
   range: Range;
   sourceFile: string | null;
+  /** @deprecated Use {@link Diagnostic.sourceFile} instead. */
+  source_file: string | null;
 }
 
 /** A zero-based position in a TOML document. */
