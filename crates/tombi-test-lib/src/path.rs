@@ -194,6 +194,12 @@ pub fn adjacent_one_of_hover_test_schema_path() -> PathBuf {
         .join("adjacent-one-of-hover-test.schema.json")
 }
 
+pub fn additional_properties_true_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("additional-properties-true-test.schema.json")
+}
+
 pub fn adjacent_one_of_additional_properties_test_schema_path() -> PathBuf {
     project_root_path()
         .join("schemas")
