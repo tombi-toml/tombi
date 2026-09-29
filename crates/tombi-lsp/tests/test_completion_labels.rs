@@ -1105,6 +1105,19 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn adjacent_one_of_additional_properties_unselected_repo_keys_completion(
+                r#"
+                fail_fast = false
+
+                [[repos]]
+                █
+                "#,
+                SchemaPath(adjacent_one_of_additional_properties_test_schema_path()),
+            ) -> Ok(["hooks", "repo = \"builtin\"", "repo = \"remote\"", "$key"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn adjacent_one_of_additional_properties_builtin_hook_incomplete_inline_table_keys_completion(
                 r#"
                 fail_fast = false

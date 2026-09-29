@@ -764,17 +764,24 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                     schema_view.deprecation().await.map(|_| true),
                                     completion_hint,
                                 ));
-                            } else if table_schema.additional_properties() == Some(true) {
-                                // `additionalProperties: true` has no value schema,
-                                // but still accepts arbitrary keys.
-                                completion_contents.push(CompletionContent::new_additional_key(
+                            }
+
+                            // `additionalProperties: true` has no value schema, but still
+                            // accepts arbitrary keys. Keep it out of `completion_contents`
+                            // until the end so it does not suppress the `oneOf`/`anyOf`
+                            // fallback below.
+                            let any_additional_key = (table_schema.pattern_properties.is_none()
+                                && table_schema.additional_property_schema.is_none()
+                                && table_schema.additional_properties() == Some(true))
+                            .then(|| {
+                                CompletionContent::new_additional_key(
                                     table_schema.additional_key_label.as_deref(),
                                     position,
                                     Some(current_schema.schema_base_uri.as_ref()),
                                     None,
                                     completion_hint,
-                                ));
-                            }
+                                )
+                            });
 
                             // `allOf` schemas always apply alongside the direct
                             // properties, so their key completions must be merged in
@@ -819,42 +826,40 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                 completion_contents.extend(projected_items);
                             }
 
-                            if completion_contents.is_empty() {
-                                if let Some(one_of_schema) = table_schema.one_of.as_deref() {
-                                    let completion_items =
-                                        super::one_of::find_one_of_completion_items(
-                                            self,
-                                            position,
-                                            keys,
-                                            accessors,
-                                            one_of_schema,
-                                            current_schema,
-                                            schema_context,
-                                            completion_hint,
-                                        )
-                                        .await;
-                                    if !completion_items.is_empty() {
-                                        return completion_items;
-                                    }
-                                }
-                                if let Some(any_of_schema) = table_schema.any_of.as_deref() {
-                                    let completion_items =
-                                        super::any_of::find_any_of_completion_items(
-                                            self,
-                                            position,
-                                            keys,
-                                            accessors,
-                                            any_of_schema,
-                                            current_schema,
-                                            schema_context,
-                                            completion_hint,
-                                        )
-                                        .await;
-                                    if !completion_items.is_empty() {
-                                        return completion_items;
-                                    }
-                                }
+                            if completion_contents.is_empty()
+                                && let Some(one_of_schema) = table_schema.one_of.as_deref()
+                            {
+                                let completion_items = super::one_of::find_one_of_completion_items(
+                                    self,
+                                    position,
+                                    keys,
+                                    accessors,
+                                    one_of_schema,
+                                    current_schema,
+                                    schema_context,
+                                    completion_hint,
+                                )
+                                .await;
+                                completion_contents.extend(completion_items);
                             }
+                            if completion_contents.is_empty()
+                                && let Some(any_of_schema) = table_schema.any_of.as_deref()
+                            {
+                                let completion_items = super::any_of::find_any_of_completion_items(
+                                    self,
+                                    position,
+                                    keys,
+                                    accessors,
+                                    any_of_schema,
+                                    current_schema,
+                                    schema_context,
+                                    completion_hint,
+                                )
+                                .await;
+                                completion_contents.extend(completion_items);
+                            }
+
+                            completion_contents.extend(any_additional_key);
                         }
                         crate::completion::dedup_completion_contents(completion_contents)
                     }
