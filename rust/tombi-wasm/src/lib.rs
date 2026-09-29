@@ -1,12 +1,18 @@
 #[cfg(feature = "lib")]
+mod convert;
+#[cfg(feature = "lib")]
 mod formatter;
+#[cfg(feature = "lib")]
+mod linter;
 #[cfg(feature = "lsp")]
 mod lsp;
 #[cfg(any(feature = "lib", feature = "lsp"))]
 mod workspace;
 
 #[cfg(feature = "lib")]
-pub use formatter::{format, lint};
+pub use formatter::format;
+#[cfg(feature = "lib")]
+pub use linter::lint;
 #[cfg(feature = "lsp")]
 pub use lsp::{ServerConfig, serve};
 #[cfg(any(feature = "lib", feature = "lsp"))]
