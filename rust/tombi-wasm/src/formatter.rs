@@ -1,3 +1,9 @@
+use std::{
+    future::Future,
+    pin::pin,
+    task::{Context, Poll, Waker},
+};
+
 use js_sys::{Error, Promise, TypeError};
 use serde::Serialize;
 use serde_wasm_bindgen::Serializer;
@@ -13,9 +19,30 @@ fn serialize(value: &impl Serialize) -> JsValue {
 /// A JS `Error` named [`tombi_lib::Error::NAME`], shared with the
 /// Python/Node.js bindings.
 fn tombi_error(error: tombi_lib::Error) -> JsValue {
-    let js_error = Error::new(&error.to_string());
+    tombi_error_from_message(&error.to_string())
+}
+
+fn tombi_error_from_message(message: &str) -> JsValue {
+    let js_error = Error::new(message);
     js_error.set_name(tombi_lib::Error::NAME);
     js_error.into()
+}
+
+/// Run `future` to completion without an executor.
+///
+/// WASM can't block the JS thread, so the future is polled exactly once: it
+/// completes when every input is available synchronously (the source, an
+/// in-memory config, and schemas injected into the virtual filesystem), and
+/// throws when it has to wait on asynchronous I/O such as fetching a remote
+/// schema, which only `format`/`lint` can do.
+fn run_sync<T>(future: impl Future<Output = Result<T, tombi_lib::Error>>) -> Result<T, JsValue> {
+    match pin!(future).poll(&mut Context::from_waker(Waker::noop())) {
+        Poll::Ready(result) => result.map_err(tombi_error),
+        Poll::Pending => Err(tombi_error_from_message(
+            "formatSync/lintSync can't wait on asynchronous I/O (e.g. fetching a remote schema). \
+             Use format/lint, or disable remote schemas in the configuration.",
+        )),
+    }
 }
 
 fn deserialize_options(options: JsValue) -> Result<tombi_lib::Options, JsValue> {
@@ -53,4 +80,24 @@ pub fn lint(source: String, source_path: String, options: JsValue) -> Promise {
             Err(error) => Err(tombi_error(error)),
         }
     })
+}
+
+#[wasm_bindgen(js_name = formatSync)]
+pub fn format_sync(
+    source: String,
+    source_path: String,
+    options: JsValue,
+) -> Result<JsValue, JsValue> {
+    let options = deserialize_options(options)?;
+    run_sync(tombi_lib::format_async(source, source_path, options)).map(|result| serialize(&result))
+}
+
+#[wasm_bindgen(js_name = lintSync)]
+pub fn lint_sync(
+    source: String,
+    source_path: String,
+    options: JsValue,
+) -> Result<JsValue, JsValue> {
+    let options = deserialize_options(options)?;
+    run_sync(tombi_lib::lint_async(source, source_path, options)).map(|result| serialize(&result))
 }

@@ -87,7 +87,27 @@ try {
 no diagnostics were reported. Configuration and execution errors reject the Promise
 as `TombiError`.
 
-Both functions accept an optional options object as the third argument. `config`
+## Synchronous API
+
+`formatSync` and `lintSync` return the result directly instead of a Promise:
+
+```ts
+import init, { formatSync } from "tombi-wasm-lib";
+
+await init();
+
+const { formatted } = formatSync("key=1", "example.toml", {
+  config: "[schema]\nenabled = false\n",
+});
+```
+
+WebAssembly can't block while waiting on I/O, so they throw a `TombiError` when a
+remote schema has to be fetched. Disable remote schemas, or provide schemas through
+`set_workspace_file`, when using them.
+
+## Options
+
+All functions accept an optional options object as the third argument. `config`
 replaces the automatically discovered configuration and accepts an object or string:
 
 ```ts

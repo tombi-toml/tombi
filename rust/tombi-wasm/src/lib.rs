@@ -6,7 +6,7 @@ mod lsp;
 mod workspace;
 
 #[cfg(feature = "lib")]
-pub use formatter::{format, lint};
+pub use formatter::{format, format_sync, lint, lint_sync};
 #[cfg(feature = "lsp")]
 pub use lsp::{ServerConfig, serve};
 #[cfg(any(feature = "lib", feature = "lsp"))]

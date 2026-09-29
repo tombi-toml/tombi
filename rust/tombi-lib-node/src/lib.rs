@@ -3,6 +3,7 @@
 //! `format`/`lint` return a `Promise`: the synchronous core
 //! ([`tombi_lib::format_sync`]/[`tombi_lib::lint_sync`]) runs on the libuv
 //! thread pool via [`AsyncTask`], so it never blocks the Node.js event loop.
+//! `formatSync`/`lintSync` run the same core on the calling thread instead.
 
 mod error;
 
@@ -151,6 +152,19 @@ impl Request {
     }
 }
 
+fn format_result(output: tombi_lib::FormatResult) -> JsFormatResult {
+    JsFormatResult {
+        formatted: output.formatted,
+        diagnostics: output.diagnostics.into_iter().map(Into::into).collect(),
+    }
+}
+
+fn lint_result(output: tombi_lib::LintResult) -> JsLintResult {
+    JsLintResult {
+        diagnostics: output.diagnostics.into_iter().map(Into::into).collect(),
+    }
+}
+
 pub struct FormatTask(Request);
 
 impl Task for FormatTask {
@@ -162,11 +176,9 @@ impl Task for FormatTask {
     }
 
     fn resolve(&mut self, env: Env, output: Self::Output) -> napi::Result<Self::JsValue> {
-        let output = output.map_err(|failure| to_napi_error(env, failure))?;
-        Ok(JsFormatResult {
-            formatted: output.formatted,
-            diagnostics: output.diagnostics.into_iter().map(Into::into).collect(),
-        })
+        output
+            .map(format_result)
+            .map_err(|failure| to_napi_error(env, failure))
     }
 }
 
@@ -181,10 +193,9 @@ impl Task for LintTask {
     }
 
     fn resolve(&mut self, env: Env, output: Self::Output) -> napi::Result<Self::JsValue> {
-        let output = output.map_err(|failure| to_napi_error(env, failure))?;
-        Ok(JsLintResult {
-            diagnostics: output.diagnostics.into_iter().map(Into::into).collect(),
-        })
+        output
+            .map(lint_result)
+            .map_err(|failure| to_napi_error(env, failure))
     }
 }
 
@@ -214,4 +225,32 @@ pub fn lint(
     options: Option<Unknown<'_>>,
 ) -> AsyncTask<LintTask> {
     AsyncTask::new(LintTask(Request::new(env, source, source_path, options)))
+}
+
+/// Format a TOML document synchronously, blocking the calling thread.
+#[napi(ts_args_type = "source: string, sourcePath: string, options?: Options | undefined | null")]
+pub fn format_sync(
+    env: Env,
+    source: String,
+    source_path: String,
+    options: Option<Unknown<'_>>,
+) -> napi::Result<JsFormatResult> {
+    Request::new(env, source, source_path, options)
+        .run(tombi_lib::format_sync)
+        .map(format_result)
+        .map_err(|failure| to_napi_error(env, failure))
+}
+
+/// Lint a TOML document synchronously, blocking the calling thread.
+#[napi(ts_args_type = "source: string, sourcePath: string, options?: Options | undefined | null")]
+pub fn lint_sync(
+    env: Env,
+    source: String,
+    source_path: String,
+    options: Option<Unknown<'_>>,
+) -> napi::Result<JsLintResult> {
+    Request::new(env, source, source_path, options)
+        .run(tombi_lib::lint_sync)
+        .map(lint_result)
+        .map_err(|failure| to_napi_error(env, failure))
 }

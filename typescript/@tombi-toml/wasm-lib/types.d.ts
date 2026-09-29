@@ -59,6 +59,30 @@ export function lint(
 ): Promise<LintResult>;
 
 /**
+ * Format a TOML document synchronously.
+ *
+ * Throws a `TombiError` when formatting needs asynchronous I/O, such as
+ * fetching a remote schema. Use `format` in that case.
+ */
+export function formatSync(
+  source: string,
+  sourcePath: string,
+  options?: Options,
+): FormatResult;
+
+/**
+ * Lint a TOML document synchronously.
+ *
+ * Throws a `TombiError` when linting needs asynchronous I/O, such as fetching
+ * a remote schema. Use `lint` in that case.
+ */
+export function lintSync(
+  source: string,
+  sourcePath: string,
+  options?: Options,
+): LintResult;
+
+/**
  * The error `format`/`lint` reject with when the configuration, a schema, or an
  * I/O operation fails. Malformed `options` reject with a `TypeError` instead.
  */
