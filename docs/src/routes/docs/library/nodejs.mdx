@@ -3,13 +3,13 @@
 ## Install
 
 ```sh
-npm install @tombi-toml/tombi-lib
+npm install tombi-lib
 ```
 
 ## Usage
 
 ```ts
-import { format, lint } from "@tombi-toml/tombi-lib";
+import { format, lint } from "tombi-lib";
 
 const { formatted } = await format("key=1", "example.toml");
 console.log(formatted); // key = 1
@@ -23,7 +23,7 @@ for (const diagnostic of diagnostics) {
 `formatSync` / `lintSync` are also available when a synchronous call is needed:
 
 ```ts
-import { formatSync } from "@tombi-toml/tombi-lib";
+import { formatSync } from "tombi-lib";
 
 const { formatted } = formatSync("key=1", "example.toml");
 ```

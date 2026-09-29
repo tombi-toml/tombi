@@ -146,7 +146,7 @@
       },
       {
         "title": "Node.js",
-        "description": "Use the @tombi-toml/tombi-lib package from npm.",
+        "description": "Use the tombi-lib package from npm.",
         "path": "/docs/library/nodejs"
       }
     ]
