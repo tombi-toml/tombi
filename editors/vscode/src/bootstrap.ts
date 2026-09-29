@@ -147,6 +147,15 @@ async function findNodeModulesTombiBin(
         currentUri,
         "node_modules",
         "@tombi-toml",
+        "cli",
+        "bin",
+        "tombi",
+      ),
+      // The former name of `@tombi-toml/cli`.
+      vscode.Uri.joinPath(
+        currentUri,
+        "node_modules",
+        "@tombi-toml",
         "tombi",
         "bin",
         "tombi",

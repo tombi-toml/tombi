@@ -1,5 +1,5 @@
 /**
- * @tombi-toml/tombi
+ * @tombi-toml/cli
  *
  * This package serves as a wrapper for the Rust-built tombi CLI tool.
  * The bin wrapper resolves and executes the appropriate optional native

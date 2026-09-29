@@ -8,7 +8,7 @@
       "**/*.md",
       "**/*.mdx",
       "**/*.json",
-      "**/typescript/@tombi-toml/tombi/bin/tombi/**",
+      "**/typescript/@tombi-toml/cli/bin/tombi/**",
       "!docs/.output",
       "!docs/.vinxi",
       "!docs/public/wasm",

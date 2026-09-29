@@ -1,5 +1,5 @@
 {
-  "name": "@tombi-toml/tombi",
+  "name": "@tombi-toml/cli",
   "version": "0.0.0-dev",
   "description": "🦅 TOML Toolkit 🦅",
   "bin": {
@@ -23,7 +23,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tombi-toml/tombi.git",
-    "directory": "typescript/@tombi-toml/tombi"
+    "directory": "typescript/@tombi-toml/cli"
   },
   "bugs": {
     "url": "https://github.com/tombi-toml/tombi/issues"

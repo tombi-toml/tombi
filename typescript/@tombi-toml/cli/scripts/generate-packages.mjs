@@ -117,7 +117,7 @@ const TARGETS = [
 const PACKAGE_SETS = [
 	{
 		// The CLI binary (`tombi-<target>[.exe]`) dispatched by `bin/tombi`.
-		mainPackage: "tombi",
+		mainPackage: "cli",
 		prefix: "cli",
 		binaryName: "tombi",
 		extension: (os) => (os === "win32" ? ".exe" : ""),

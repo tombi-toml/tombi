@@ -168,6 +168,36 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@24.10.1)(jsdom@26.1.0(supports-color@10.2.2))(vite@7.3.5(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
 
+  typescript/@tombi-toml/cli:
+    optionalDependencies:
+      '@tombi-toml/cli-darwin-arm64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-darwin-x64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-linux-arm64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-linux-arm64-musl':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-linux-x64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-linux-x64-musl':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-sunos-x64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-win32-arm64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-win32-x64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+
   typescript/@tombi-toml/cli-darwin-arm64: {}
 
   typescript/@tombi-toml/cli-darwin-x64: {}
@@ -207,36 +237,6 @@ importers:
   typescript/@tombi-toml/lib-win32-arm64: {}
 
   typescript/@tombi-toml/lib-win32-x64: {}
-
-  typescript/@tombi-toml/tombi:
-    optionalDependencies:
-      '@tombi-toml/cli-darwin-arm64':
-        specifier: 0.0.0-dev
-        version: 0.0.0-dev
-      '@tombi-toml/cli-darwin-x64':
-        specifier: 0.0.0-dev
-        version: 0.0.0-dev
-      '@tombi-toml/cli-linux-arm64':
-        specifier: 0.0.0-dev
-        version: 0.0.0-dev
-      '@tombi-toml/cli-linux-arm64-musl':
-        specifier: 0.0.0-dev
-        version: 0.0.0-dev
-      '@tombi-toml/cli-linux-x64':
-        specifier: 0.0.0-dev
-        version: 0.0.0-dev
-      '@tombi-toml/cli-linux-x64-musl':
-        specifier: 0.0.0-dev
-        version: 0.0.0-dev
-      '@tombi-toml/cli-sunos-x64':
-        specifier: 0.0.0-dev
-        version: 0.0.0-dev
-      '@tombi-toml/cli-win32-arm64':
-        specifier: 0.0.0-dev
-        version: 0.0.0-dev
-      '@tombi-toml/cli-win32-x64':
-        specifier: 0.0.0-dev
-        version: 0.0.0-dev
 
   typescript/@tombi-toml/wasm-lib:
     devDependencies:

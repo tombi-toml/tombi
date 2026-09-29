@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 const { platform, arch, env, version, release } = process;
 const { execSync } = require("node:child_process");
-// Published as both `@tombi-toml/tombi` and `tombi` (the release workflow only
-// rewrites `name`), so read it rather than hard-coding one.
+// Published as `@tombi-toml/cli`, `tombi`, and the former `@tombi-toml/tombi`
+// (the release workflow only rewrites `name`), so read it rather than
+// hard-coding one.
 const { name: packageName } = require("../package.json");
 
 function isMusl() {

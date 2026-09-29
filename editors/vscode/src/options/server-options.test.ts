@@ -41,9 +41,9 @@ describe("serverOptions", () => {
   it("runs node_modules installs through node", () => {
     const tombiBin: TombiBin = {
       source: "node_modules",
-      binPath: "/tmp/node_modules/@tombi-toml/tombi/bin/tombi",
+      binPath: "/tmp/node_modules/@tombi-toml/cli/bin/tombi",
       command: process.execPath,
-      args: ["/tmp/node_modules/@tombi-toml/tombi/bin/tombi"],
+      args: ["/tmp/node_modules/@tombi-toml/cli/bin/tombi"],
     };
 
     const options = serverOptions(tombiBin, {});
@@ -55,7 +55,7 @@ describe("serverOptions", () => {
 
     expect(run.command).toBe(process.execPath);
     expect(run.args).toEqual([
-      "/tmp/node_modules/@tombi-toml/tombi/bin/tombi",
+      "/tmp/node_modules/@tombi-toml/cli/bin/tombi",
       "lsp",
     ]);
   });
