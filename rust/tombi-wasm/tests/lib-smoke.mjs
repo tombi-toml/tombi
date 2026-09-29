@@ -3,9 +3,7 @@ import { readFile } from "node:fs/promises";
 
 import init, {
   format,
-  formatSync,
   lint,
-  lintSync,
   remove_workspace_file,
   set_workspace_file,
 } from "../../../typescript/@tombi-toml/wasm-lib/dist/tombi_wasm.js";
@@ -115,23 +113,6 @@ for (const run of [format, lint]) {
   }
 }
 
-// `formatSync`/`lintSync` complete when no asynchronous I/O is needed.
-const schemaDisabled = { config: "[schema]\nenabled = false\n" };
-assert.deepEqual(formatSync("key=1", "playground.toml", schemaDisabled), {
-  formatted: "key = 1\n",
-  diagnostics: [],
-});
-assert.deepEqual(lintSync("key = 1", "playground.toml", schemaDisabled), { diagnostics: [] });
-assert.ok(lintSync("key =", "playground.toml", schemaDisabled).diagnostics.length > 0);
-for (const run of [formatSync, lintSync]) {
-  assert.throws(() => run("key = 1", "playground.toml", { config: "invalid =" }), (error) => {
-    assert.ok(error instanceof Error);
-    assert.equal(error.name, "TombiError");
-    return true;
-  });
-  assert.throws(() => run("key = 1", "playground.toml", { unknown: true }), TypeError);
-}
-
 // wasm-lib's `lint`/`format` resolve `file://` schemas through the same
 // injected virtual filesystem as wasm-lsp (set_workspace_file/tombi_fs).
 set_workspace_file(
@@ -210,9 +191,3 @@ const catalogCompliant = await lint("key = 1", "/workspace/catalog-data.toml", {
   config: { content: catalogConfig, path: "/workspace/tombi.toml" },
 });
 assert.deepEqual(catalogCompliant.diagnostics, []);
-
-// Schemas injected into the virtual filesystem resolve synchronously too.
-const catalogViolationSync = lintSync('key = "not-an-integer"', "/workspace/catalog-data.toml", {
-  config: { content: catalogConfig, path: "/workspace/tombi.toml" },
-});
-assert.ok(catalogViolationSync.diagnostics.length > 0, JSON.stringify(catalogViolationSync));

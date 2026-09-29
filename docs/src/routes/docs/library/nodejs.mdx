@@ -20,14 +20,6 @@ for (const diagnostic of diagnostics) {
 }
 ```
 
-`formatSync` / `lintSync` are also available when a synchronous call is needed:
-
-```ts
-import { formatSync } from "@tombi-toml/tombi-lib";
-
-const { formatted } = formatSync("key=1", "example.toml");
-```
-
 ## Configuration
 
 By default, `tombi.toml` is searched from the current directory.

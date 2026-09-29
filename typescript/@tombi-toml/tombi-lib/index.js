@@ -66,5 +66,3 @@ const binding = loadBinding();
 
 module.exports.format = binding.format;
 module.exports.lint = binding.lint;
-module.exports.formatSync = binding.formatSync;
-module.exports.lintSync = binding.lintSync;
