@@ -13,7 +13,7 @@ export interface Diagnostic {
   code: string
   message: string
   range: Range
-  source_file: string | null
+  sourceFile: string | null
 }
 
 /** Format a TOML document. */

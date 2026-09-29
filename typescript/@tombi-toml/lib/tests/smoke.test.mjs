@@ -64,7 +64,7 @@ enabled = false
     assert.equal(typeof diagnostic.message, "string");
     assert.equal(typeof diagnostic.range.start.line, "number");
     assert.equal(typeof diagnostic.range.end.column, "number");
-    assert.ok(Object.hasOwn(diagnostic, "source_file"));
+    assert.ok(Object.hasOwn(diagnostic, "sourceFile"));
   }
 });
 

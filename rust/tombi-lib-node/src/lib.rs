@@ -70,9 +70,8 @@ pub struct JsDiagnostic {
     pub code: String,
     pub message: String,
     pub range: JsRange,
-    // `snake_case` (and `null` rather than a missing key) to keep the same
-    // shape as `@tombi-toml/wasm-lib`'s `Diagnostic`.
-    #[napi(js_name = "source_file")]
+    // `null` rather than a missing key, to keep the same shape as
+    // `@tombi-toml/wasm-lib`'s `Diagnostic`.
     pub source_file: Either<String, Null>,
 }
 

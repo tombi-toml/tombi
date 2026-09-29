@@ -6,7 +6,7 @@ export interface Diagnostic {
   code: string;
   message: string;
   range: Range;
-  source_file: string | null;
+  sourceFile: string | null;
 }
 
 /** A zero-based position in a TOML document. */
@@ -32,16 +32,23 @@ export interface LintResult {
   diagnostics: Diagnostic[];
 }
 
-/**
- * An in-memory `tombi.toml` configuration.
- * When a string is provided, it is treated as the content of a virtual
- * `tombi.toml`.
- */
-export type Config = { content: string; path: string } | string;
+/** The content of a `tombi.toml` config file at a given path. */
+export interface ConfigFile {
+  content: string;
+  path: string;
+}
+
+/** @deprecated Use `string | ConfigFile` instead. */
+export type Config = string | ConfigFile;
 
 /** Options shared by the formatter and linter. */
 export interface Options {
-  config?: Config;
+  /**
+   * An in-memory `tombi.toml` configuration.
+   * When a string is provided, it is treated as the content of a virtual
+   * `tombi.toml`.
+   */
+  config?: string | ConfigFile;
 }
 
 /** Format a TOML document. */

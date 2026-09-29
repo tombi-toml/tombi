@@ -7,6 +7,7 @@ pub use printer::Print;
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[cfg_attr(feature = "wasm", derive(serde::Serialize))]
+#[cfg_attr(feature = "wasm", serde(rename_all = "camelCase"))]
 #[cfg_attr(feature = "python", pyo3::pyclass(skip_from_py_object))]
 pub struct Diagnostic {
     level: level::Level,
