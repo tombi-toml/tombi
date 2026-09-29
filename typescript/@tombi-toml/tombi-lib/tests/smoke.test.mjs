@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { format, lint } from "../index.js";
+import { format, formatSync, lint, lintSync } from "../index.js";
 
 // Without an explicit `config`, `tombi.toml` is searched from the cwd and
 // would pick up this repository's own config (which enables a network schema
@@ -143,6 +143,27 @@ paths = []
     assert.deepEqual(compliant.diagnostics, []);
   } finally {
     await rm(workspace, { recursive: true, force: true });
+  }
+});
+
+test("formatSync/lintSync", () => {
+  assert.deepEqual(formatSync("key=1", "playground.toml", schemaDisabled), {
+    formatted: "key = 1\n",
+    diagnostics: [],
+  });
+  assert.deepEqual(lintSync("key = 1", "playground.toml", schemaDisabled), { diagnostics: [] });
+
+  const { diagnostics } = lintSync("key =", "playground.toml", schemaDisabled);
+  assert.ok(diagnostics.length > 0);
+  assert.ok(diagnostics.every((diagnostic) => diagnostic.level === "error"));
+
+  for (const run of [formatSync, lintSync]) {
+    assert.throws(() => run("key = 1", "playground.toml", { config: "invalid =" }), (error) => {
+      assert.ok(error instanceof Error);
+      assert.equal(error.name, "TombiError");
+      return true;
+    });
+    assert.throws(() => run("key = 1", "playground.toml", { unknown: true }), TypeError);
   }
 });
 
