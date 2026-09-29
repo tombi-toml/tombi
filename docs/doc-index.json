@@ -135,6 +135,23 @@
     ]
   },
   {
+    "title": "Library",
+    "description": "Call Tombi's formatter and linter in-process from Python and Node.js.",
+    "path": "/docs/library",
+    "children": [
+      {
+        "title": "Python",
+        "description": "Use the tombi-lib package from PyPI.",
+        "path": "/docs/library/python"
+      },
+      {
+        "title": "Node.js",
+        "description": "Use the @tombi-toml/tombi-lib package from npm.",
+        "path": "/docs/library/nodejs"
+      }
+    ]
+  },
+  {
     "title": "Editors",
     "description": "Use Tombi in your favorite editor with official extensions.",
     "path": "/docs/editors",

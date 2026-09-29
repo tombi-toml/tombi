@@ -1,0 +1,30 @@
+# Library
+
+Tombi's formatter and linter are available as native libraries that run in-process,
+without spawning the `tombi` CLI. This is useful for tools that format or lint many
+files one at a time, such as editor plugins or other formatters that embed Tombi.
+
+| Language | Package | Registry |
+| --- | --- | --- |
+| [Python](/docs/library/python) | `tombi-lib` | PyPI |
+| [Node.js](/docs/library/nodejs) | `@tombi-toml/tombi-lib` | npm |
+
+Both packages are built from the shared `tombi-lib` Rust crate, so they resolve
+configuration and JSON Schemas the same way as the CLI and report the same
+diagnostics.
+
+To run Tombi in a browser or other WebAssembly host, use the
+[WebAssembly packages](/docs/wasm) instead.
+
+## Configuration
+
+Both packages accept an optional `options` argument. Its `config` field supplies an
+in-memory `tombi.toml`:
+
+- A string is treated as the content of a virtual `tombi.toml`.
+- An object with `content` and `path` is treated as the content of a config file at
+  `path`. Relative paths in the configuration, such as `[[schemas]] path`, are
+  resolved from that file's directory.
+
+When `config` is omitted, `tombi.toml` is searched from the current working
+directory, and the default configuration is used if no configuration file is found.

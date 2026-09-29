@@ -1,0 +1,142 @@
+# Node.js
+
+`@tombi-toml/tombi-lib` provides Tombi's formatter and linter as a native Node.js
+addon built with [napi-rs](https://napi.rs). It requires Node.js 20 or later.
+
+Prebuilt binaries are distributed as platform-specific optional dependencies for
+Windows, macOS, and Linux (glibc and musl) on x64 and arm64. Make sure optional
+dependencies are not disabled when installing.
+
+## Install
+
+```sh
+npm install @tombi-toml/tombi-lib
+# or
+pnpm add @tombi-toml/tombi-lib
+```
+
+## Format TOML
+
+```ts
+import { format, type TombiError } from "@tombi-toml/tombi-lib";
+
+const source = `
+[package]
+name="example"
+`;
+
+try {
+  const { formatted, diagnostics } = await format(source, "Cargo.toml");
+
+  if (formatted !== undefined) {
+    console.log(formatted);
+  }
+
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.level === "error") {
+      console.error(diagnostic.message);
+    } else {
+      console.warn(diagnostic.message);
+    }
+  }
+} catch (error) {
+  console.error((error as TombiError).message);
+}
+```
+
+`format` resolves to an object containing the formatted TOML and an array of
+diagnostics. The array is empty when no diagnostics were reported. When diagnostics
+prevent formatting, `formatted` is omitted.
+
+## Lint TOML
+
+```ts
+import { lint } from "@tombi-toml/tombi-lib";
+
+const { diagnostics } = await lint('key = "value"', "example.toml");
+
+for (const diagnostic of diagnostics) {
+  const { line, column } = diagnostic.range.start;
+  console.log(`${diagnostic.level}: ${diagnostic.message} (${line}:${column})`);
+}
+```
+
+`lint` resolves to an object containing an array of diagnostics. The array is empty
+when no diagnostics were reported.
+
+## Options
+
+Both functions accept an optional options object as the third argument. `config`
+replaces the automatically discovered configuration and accepts a string or an
+object with `content` and `path`:
+
+```ts
+const config = {
+  content: `
+[format.rules]
+indent-width = 4
+`,
+  path: "/workspace/tombi.toml",
+};
+
+await format(source, "/workspace/Cargo.toml", { config });
+
+// The configuration content can be passed as a string shorthand. It is
+// treated as the content of a virtual `tombi.toml`.
+await lint(source, "Cargo.toml", { config: config.content });
+```
+
+When `config` is omitted, `tombi.toml` is searched from the current working
+directory. See [Library](/docs/library#configuration) for details.
+
+## API Reference
+
+```ts
+function format(
+  source: string,
+  sourcePath: string,
+  options?: Options,
+): Promise<FormatResult>;
+
+function lint(
+  source: string,
+  sourcePath: string,
+  options?: Options,
+): Promise<LintResult>;
+
+interface Options {
+  config?: string | { content: string; path: string };
+}
+
+interface FormatResult {
+  formatted?: string;
+  diagnostics: Diagnostic[];
+}
+
+interface LintResult {
+  diagnostics: Diagnostic[];
+}
+
+interface Diagnostic {
+  level: "error" | "warning";
+  code: string;
+  message: string;
+  range: { start: Position; end: Position };
+  source_file: string | null;
+}
+
+// Zero-based.
+interface Position {
+  line: number;
+  column: number;
+}
+```
+
+`sourcePath` is used to match configuration overrides and JSON Schemas (for
+example, `Cargo.toml` or `pyproject.toml`). The file does not need to exist.
+
+### Errors
+
+- Configuration, schema resolution, and I/O failures reject the Promise with a
+  `TombiError` (an `Error` whose `name` is `"TombiError"`).
+- Malformed options reject the Promise with a `TypeError`.

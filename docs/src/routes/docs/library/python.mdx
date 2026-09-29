@@ -1,0 +1,121 @@
+# Python
+
+`tombi-lib` provides Tombi's formatter and linter as a Python library.
+It requires Python 3.12 or later.
+
+## Install
+
+```sh
+uv add tombi-lib
+# or
+pip install tombi-lib
+```
+
+## Format TOML
+
+```python
+import tombi_lib
+
+source = """
+[package]
+name="example"
+"""
+
+try:
+    result = tombi_lib.format(source, "pyproject.toml")
+except tombi_lib.TombiError as error:
+    raise SystemExit(str(error))
+
+if result.formatted is not None:
+    print(result.formatted)
+
+for diagnostic in result.diagnostics:
+    print(f"{diagnostic.level}: {diagnostic.message}")
+```
+
+`format` returns a `FormatResult` containing the formatted TOML and a list of
+diagnostics. The list is empty when no diagnostics were reported. When diagnostics
+prevent formatting, `formatted` is `None`.
+
+## Lint TOML
+
+```python
+import tombi_lib
+
+result = tombi_lib.lint('key = "value"', "example.toml")
+
+for diagnostic in result.diagnostics:
+    start = diagnostic.range.start
+    print(f"{diagnostic.level}: {diagnostic.message} ({start.line}:{start.column})")
+```
+
+`lint` returns a `LintResult` containing a list of diagnostics. The list is empty
+when no diagnostics were reported.
+
+## asyncio
+
+`format_async` and `lint_async` take the same arguments and return awaitables:
+
+```python
+import asyncio
+
+import tombi_lib
+
+
+async def main() -> None:
+    result = await tombi_lib.format_async("key=1", "example.toml")
+    print(result.formatted)
+
+
+asyncio.run(main())
+```
+
+## Options
+
+All functions accept an optional `options` dict as the third argument.
+`config` replaces the automatically discovered configuration and accepts a string
+or a dict with `content` and `path`:
+
+```python
+config = {
+    "content": """
+[format.rules]
+indent-width = 4
+""",
+    "path": "/workspace/tombi.toml",
+}
+
+tombi_lib.format(source, "/workspace/Cargo.toml", {"config": config})
+
+# The configuration content can be passed as a string shorthand. It is
+# treated as the content of a virtual `tombi.toml`.
+tombi_lib.lint(source, "Cargo.toml", {"config": config["content"]})
+```
+
+When `config` is omitted, `tombi.toml` is searched from the current working
+directory. See [Library](/docs/library#configuration) for details.
+
+## API Reference
+
+| Function | Returns |
+| --- | --- |
+| `format(source, source_path, options=None)` | `FormatResult` |
+| `lint(source, source_path, options=None)` | `LintResult` |
+| `format_async(source, source_path, options=None)` | awaitable of `FormatResult` |
+| `lint_async(source, source_path, options=None)` | awaitable of `LintResult` |
+
+`source_path` is used to match configuration overrides and JSON Schemas (for
+example, `Cargo.toml` or `pyproject.toml`). The file does not need to exist.
+
+| Type | Attributes |
+| --- | --- |
+| `FormatResult` | `formatted` (`str` or `None`), `diagnostics` (`list[Diagnostic]`) |
+| `LintResult` | `diagnostics` (`list[Diagnostic]`) |
+| `Diagnostic` | `level: str` (`"error"` or `"warning"`), `code: str`, `message: str`, `range: Range`, `source_file` (`str` or `None`) |
+| `Range` | `start: Position`, `end: Position` |
+| `Position` | `line: int`, `column: int` (zero-based) |
+
+### Errors
+
+- Configuration, schema resolution, and I/O failures raise `tombi_lib.TombiError`.
+- Malformed `options` raise `TypeError`.
