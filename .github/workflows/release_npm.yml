@@ -259,11 +259,8 @@ jobs:
         run: |
           set -e
           # `<scoped package directory>:<alias package name>`
-          # `@tombi-toml/tombi` is the former name of `@tombi-toml/cli`, kept
-          # published until it is deprecated.
           for alias in \
             cli:tombi \
-            cli:@tombi-toml/tombi \
             lib:tombi-lib \
             wasm-lib:tombi-wasm-lib \
             wasm-lsp:tombi-wasm-lsp; do
