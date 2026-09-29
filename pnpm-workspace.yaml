@@ -12,7 +12,7 @@ overrides:
   brace-expansion: 5.0.9
   dompurify: 3.4.13
   esbuild: 0.28.1
-  fast-uri: 3.1.6
+  fast-uri: 3.1.7
   form-data: 4.0.6
   h3: 1.15.11
   js-yaml: 4.3.2
@@ -26,7 +26,7 @@ overrides:
   seroval: 1.5.3
   tar: 7.5.21
   tmp: 0.2.7
-  undici: 7.29.0
+  undici: 7.29.1
   "vitest>vite": ^7.3.5
   ws: 8.21.0
 minimumReleaseAge: 7200
