@@ -764,6 +764,16 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table {
                                     schema_view.deprecation().await.map(|_| true),
                                     completion_hint,
                                 ));
+                            } else if table_schema.additional_properties() == Some(true) {
+                                // `additionalProperties: true` has no value schema,
+                                // but still accepts arbitrary keys.
+                                completion_contents.push(CompletionContent::new_additional_key(
+                                    table_schema.additional_key_label.as_deref(),
+                                    position,
+                                    Some(current_schema.schema_base_uri.as_ref()),
+                                    None,
+                                    completion_hint,
+                                ));
                             }
 
                             // `allOf` schemas always apply alongside the direct
