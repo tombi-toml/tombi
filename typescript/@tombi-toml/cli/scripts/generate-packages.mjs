@@ -117,7 +117,7 @@ const TARGETS = [
 const PACKAGE_SETS = [
 	{
 		// The CLI binary (`tombi-<target>[.exe]`) dispatched by `bin/tombi`.
-		mainPackage: "tombi",
+		mainPackage: "cli",
 		prefix: "cli",
 		binaryName: "tombi",
 		extension: (os) => (os === "win32" ? ".exe" : ""),
@@ -126,9 +126,9 @@ const PACKAGE_SETS = [
 	},
 	{
 		// The napi-rs addon (`tombi-lib-<target>.node`) loaded by
-		// `@tombi-toml/tombi-lib`. Node.js has no illumos prebuilt addon
+		// `@tombi-toml/lib`. Node.js has no illumos prebuilt addon
 		// toolchain here, so it only ships the symmetric matrix.
-		mainPackage: "tombi-lib",
+		mainPackage: "lib",
 		prefix: "lib",
 		binaryName: "tombi-lib",
 		extension: () => ".node",

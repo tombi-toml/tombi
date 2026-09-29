@@ -8,11 +8,11 @@
       "**/*.md",
       "**/*.mdx",
       "**/*.json",
-      "**/typescript/@tombi-toml/tombi/bin/tombi/**",
+      "**/typescript/@tombi-toml/cli/bin/tombi/**",
       "!docs/.output",
       "!docs/.vinxi",
       "!docs/public/wasm",
-      "!typescript/@tombi-toml/tombi-lib/binding.d.ts",
+      "!typescript/@tombi-toml/lib/binding.d.ts",
       "!**/*.js"
     ]
   },

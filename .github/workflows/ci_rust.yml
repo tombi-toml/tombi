@@ -61,7 +61,7 @@ jobs:
             crates/**
             extensions/**
             rust/**
-            typescript/@tombi-toml/tombi-lib/**
+            typescript/@tombi-toml/lib/**
             typescript/@tombi-toml/lib-*/**
             typescript/@tombi-toml/wasm-lib/**
             typescript/@tombi-toml/wasm-lsp/**
@@ -170,8 +170,8 @@ jobs:
       - name: Run Node.js library Clippy
         run: cargo clippy --locked -p tombi-lib-node -- -D warnings
       - name: Build Node.js library binding
-        run: pnpm --dir typescript/@tombi-toml/tombi-lib build
+        run: pnpm --dir typescript/@tombi-toml/lib build
       - name: Check generated type definitions are up to date
-        run: git diff --exit-code typescript/@tombi-toml/tombi-lib/binding.d.ts
+        run: git diff --exit-code typescript/@tombi-toml/lib/binding.d.ts
       - name: Run Node.js library smoke tests
-        run: pnpm --dir typescript/@tombi-toml/tombi-lib test
+        run: pnpm --dir typescript/@tombi-toml/lib test

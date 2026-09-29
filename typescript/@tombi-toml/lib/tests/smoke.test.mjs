@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -185,6 +185,7 @@ test("loads the addon from the platform package", async () => {
     );
     await copyFile(join(packageDir, "tombi-lib.node"), join(installedDir, "tombi-lib.node"));
     await copyFile(join(packageDir, "index.js"), join(root, "index.js"));
+    await copyFile(join(packageDir, "package.json"), join(root, "package.json"));
 
     const installed = createRequire(import.meta.url)(join(root, "index.js"));
     assert.deepEqual(await installed.format("key=1", "playground.toml", schemaDisabled), {
@@ -193,5 +194,27 @@ test("loads the addon from the platform package", async () => {
     });
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+// The release workflow also publishes this package as `tombi-lib` by only
+// rewriting `name`, so error messages must name whichever package is installed.
+test("error messages name the installed package", async () => {
+  const packageDir = fileURLToPath(new URL("..", import.meta.url));
+  const manifest = JSON.parse(await readFile(join(packageDir, "package.json"), "utf-8"));
+
+  for (const name of ["@tombi-toml/lib", "tombi-lib"]) {
+    const root = await mkdtemp(join(tmpdir(), "tombi-lib-alias-"));
+    try {
+      await copyFile(join(packageDir, "index.js"), join(root, "index.js"));
+      await writeFile(join(root, "package.json"), JSON.stringify({ ...manifest, name }));
+
+      assert.throws(
+        () => createRequire(import.meta.url)(join(root, "index.js")),
+        (error) => error.message.includes(`Please reinstall ${name} `),
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   }
 });

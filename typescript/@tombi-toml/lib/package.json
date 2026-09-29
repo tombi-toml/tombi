@@ -1,5 +1,5 @@
 {
-  "name": "@tombi-toml/tombi-lib",
+  "name": "@tombi-toml/lib",
   "version": "0.0.0-dev",
   "description": "Tombi formatter and linter library for Node.js",
   "keywords": [
@@ -14,7 +14,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tombi-toml/tombi.git",
-    "directory": "typescript/@tombi-toml/tombi-lib"
+    "directory": "typescript/@tombi-toml/lib"
   },
   "bugs": {
     "url": "https://github.com/tombi-toml/tombi/issues"

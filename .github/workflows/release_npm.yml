@@ -166,11 +166,11 @@ jobs:
           mkdir dist
           cp target/${{ matrix.target }}/release/tombi ./dist/tombi-${{ matrix.vscode_target }}
 
-      # Build the Node.js library binding (`@tombi-toml/tombi-lib`).
+      # Build the Node.js library binding (`@tombi-toml/lib`).
       # illumos has no napi-rs toolchain here, so it only ships the CLI.
       - name: Install Node.js dependencies
         if: ${{ !matrix.use_cross }}
-        run: pnpm install --frozen-lockfile --filter @tombi-toml/tombi-lib
+        run: pnpm install --frozen-lockfile --filter @tombi-toml/lib
 
       - name: Build Node.js library binding
         if: ${{ !matrix.use_cross }}
@@ -180,11 +180,11 @@ jobs:
             # Let cargo-zigbuild pick the linker instead of the workflow-level
             # aarch64-linux-gnu-gcc used for the static musl CLI build.
             env -u CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER \
-              pnpm --dir typescript/@tombi-toml/tombi-lib build --target ${{ matrix.target }} --cross-compile
+              pnpm --dir typescript/@tombi-toml/lib build --target ${{ matrix.target }} --cross-compile
           else
-            pnpm --dir typescript/@tombi-toml/tombi-lib build --target ${{ matrix.target }}
+            pnpm --dir typescript/@tombi-toml/lib build --target ${{ matrix.target }}
           fi
-          cp typescript/@tombi-toml/tombi-lib/tombi-lib.node ./dist/tombi-lib-${{ matrix.vscode_target }}.node
+          cp typescript/@tombi-toml/lib/tombi-lib.node ./dist/tombi-lib-${{ matrix.vscode_target }}.node
 
       # Upload the CLI binary and library binding as a build artifact
       - name: Upload CLI artifact
@@ -240,7 +240,7 @@ jobs:
           pnpm --dir typescript/@tombi-toml/wasm-lsp build
 
       - name: Generate npm package
-        run: node typescript/@tombi-toml/tombi/scripts/generate-packages.mjs
+        run: node typescript/@tombi-toml/cli/scripts/generate-packages.mjs
 
       - name: Publish '@tombi-toml/*' npm packages
         run: |
@@ -255,50 +255,33 @@ jobs:
             echo publish ${package}@${TOMBI_VERSION}
           done
 
-      - name: Publish 'tombi' npm package
+      - name: Publish package aliases
         run: |
           set -e
-          # Check if tombi@${TOMBI_VERSION} is already published
-          if npm view tombi@${TOMBI_VERSION} version > /dev/null 2>&1; then
-            echo "tombi@${TOMBI_VERSION} is already published. Skipping publish."
-          else
-            # Create a temporary directory
-            temp_dir=$(mktemp -d)
-
-            # Copy @tombi-toml/tombi package (follow symlinks)
-            cp -Lr typescript/@tombi-toml/tombi/* "$temp_dir/"
-
-            # Update `package.json` to change the name from @tombi-toml/tombi to tombi
-            cd "$temp_dir"
-            jq '.name = "tombi"' package.json > package.json.tmp && mv package.json.tmp package.json
-
-            # Publish as tombi
-            npm publish --tag latest --access public --provenance
-            echo "Published tombi@${TOMBI_VERSION}"
-
-            # Clean up
-            cd -
-            rm -rf "$temp_dir"
-          fi
-
-      - name: Publish WASM package aliases
-        run: |
-          set -e
-          for package in wasm-lib wasm-lsp; do
+          # `<scoped package directory>:<alias package name>`
+          # `@tombi-toml/tombi` is the former name of `@tombi-toml/cli`, kept
+          # published until it is deprecated.
+          for alias in \
+            cli:tombi \
+            cli:@tombi-toml/tombi \
+            lib:tombi-lib \
+            wasm-lib:tombi-wasm-lib \
+            wasm-lsp:tombi-wasm-lsp; do
+            package="${alias%%:*}"
             scoped_package="@tombi-toml/${package}"
-            unscoped_package="tombi-${package}"
-            if npm view ${unscoped_package}@${TOMBI_VERSION} version > /dev/null 2>&1; then
-              echo "${unscoped_package}@${TOMBI_VERSION} is already published. Skipping publish."
+            alias_package="${alias#*:}"
+            if npm view ${alias_package}@${TOMBI_VERSION} version > /dev/null 2>&1; then
+              echo "${alias_package}@${TOMBI_VERSION} is already published. Skipping publish."
               continue
             fi
 
             temp_dir=$(mktemp -d)
             cp -Lr "typescript/@tombi-toml/${package}"/* "$temp_dir/"
             cd "$temp_dir"
-            jq --arg name "$unscoped_package" '.name = $name' package.json > package.json.tmp
+            jq --arg name "$alias_package" '.name = $name' package.json > package.json.tmp
             mv package.json.tmp package.json
             npm publish --tag latest --access public --provenance
-            echo "Published ${unscoped_package}@${TOMBI_VERSION} (alias of ${scoped_package})"
+            echo "Published ${alias_package}@${TOMBI_VERSION} (alias of ${scoped_package})"
             cd -
             rm -rf "$temp_dir"
           done

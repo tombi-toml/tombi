@@ -168,41 +168,7 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@24.10.1)(jsdom@26.1.0(supports-color@10.2.2))(vite@7.3.5(@types/node@24.10.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0))
 
-  typescript/@tombi-toml/cli-darwin-arm64: {}
-
-  typescript/@tombi-toml/cli-darwin-x64: {}
-
-  typescript/@tombi-toml/cli-linux-arm64: {}
-
-  typescript/@tombi-toml/cli-linux-arm64-musl: {}
-
-  typescript/@tombi-toml/cli-linux-x64: {}
-
-  typescript/@tombi-toml/cli-linux-x64-musl: {}
-
-  typescript/@tombi-toml/cli-sunos-x64: {}
-
-  typescript/@tombi-toml/cli-win32-arm64: {}
-
-  typescript/@tombi-toml/cli-win32-x64: {}
-
-  typescript/@tombi-toml/lib-darwin-arm64: {}
-
-  typescript/@tombi-toml/lib-darwin-x64: {}
-
-  typescript/@tombi-toml/lib-linux-arm64: {}
-
-  typescript/@tombi-toml/lib-linux-arm64-musl: {}
-
-  typescript/@tombi-toml/lib-linux-x64: {}
-
-  typescript/@tombi-toml/lib-linux-x64-musl: {}
-
-  typescript/@tombi-toml/lib-win32-arm64: {}
-
-  typescript/@tombi-toml/lib-win32-x64: {}
-
-  typescript/@tombi-toml/tombi:
+  typescript/@tombi-toml/cli:
     optionalDependencies:
       '@tombi-toml/cli-darwin-arm64':
         specifier: 0.0.0-dev
@@ -232,11 +198,45 @@ importers:
         specifier: 0.0.0-dev
         version: 0.0.0-dev
 
-  typescript/@tombi-toml/tombi-lib:
+  typescript/@tombi-toml/cli-darwin-arm64: {}
+
+  typescript/@tombi-toml/cli-darwin-x64: {}
+
+  typescript/@tombi-toml/cli-linux-arm64: {}
+
+  typescript/@tombi-toml/cli-linux-arm64-musl: {}
+
+  typescript/@tombi-toml/cli-linux-x64: {}
+
+  typescript/@tombi-toml/cli-linux-x64-musl: {}
+
+  typescript/@tombi-toml/cli-sunos-x64: {}
+
+  typescript/@tombi-toml/cli-win32-arm64: {}
+
+  typescript/@tombi-toml/cli-win32-x64: {}
+
+  typescript/@tombi-toml/lib:
     devDependencies:
       '@napi-rs/cli':
         specifier: 3.10.5
         version: 3.10.5(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(@types/node@24.10.1)(supports-color@10.2.2)
+
+  typescript/@tombi-toml/lib-darwin-arm64: {}
+
+  typescript/@tombi-toml/lib-darwin-x64: {}
+
+  typescript/@tombi-toml/lib-linux-arm64: {}
+
+  typescript/@tombi-toml/lib-linux-arm64-musl: {}
+
+  typescript/@tombi-toml/lib-linux-x64: {}
+
+  typescript/@tombi-toml/lib-linux-x64-musl: {}
+
+  typescript/@tombi-toml/lib-win32-arm64: {}
+
+  typescript/@tombi-toml/lib-win32-x64: {}
 
   typescript/@tombi-toml/wasm-lib:
     devDependencies:
