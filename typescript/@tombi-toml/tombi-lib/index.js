@@ -1,6 +1,9 @@
 const { existsSync } = require("node:fs");
 const { join } = require("node:path");
 const { platform, arch, env } = process;
+// Published as both `@tombi-toml/tombi-lib` and `tombi-lib` (the release
+// workflow only rewrites `name`), so read it rather than hard-coding one.
+const { name: packageName } = require("./package.json");
 
 function isMusl() {
   // `glibcVersionRuntime` is only reported by glibc-based Node.js builds.
@@ -39,24 +42,24 @@ function loadBinding() {
     return require(localBinary);
   }
 
-  const packageName =
+  const bindingPackageName =
     platform === "linux" && isMusl()
       ? PLATFORMS["linux-musl"][arch]
       : PLATFORMS[platform]?.[arch];
 
-  if (!packageName) {
+  if (!bindingPackageName) {
     throw new Error(
-      `tombi-lib doesn't ship with a prebuilt binary for ${platform}-${arch} yet.`,
+      `${packageName} doesn't ship with a prebuilt binary for ${platform}-${arch} yet.`,
     );
   }
 
   try {
-    return require(`${packageName}/tombi-lib.node`);
+    return require(`${bindingPackageName}/tombi-lib.node`);
   } catch (error) {
     throw new Error(
-      `The Tombi native binding "${packageName}" could not be loaded. ` +
+      `The Tombi native binding "${bindingPackageName}" could not be loaded. ` +
         "The platform-specific optional package may not be installed. " +
-        "Please reinstall tombi-lib with optional dependencies enabled.",
+        `Please reinstall ${packageName} with optional dependencies enabled.`,
       { cause: error },
     );
   }
