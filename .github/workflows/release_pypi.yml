@@ -79,6 +79,11 @@ jobs:
             target: s390x
           - runner: ubuntu-latest
             target: ppc64le
+        package:
+          - name: tombi
+            directory: .
+          - name: tombi-lib
+            directory: python/tombi-lib
       fail-fast: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -92,6 +97,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
+          working-directory: ${{ matrix.package.directory }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist
           sccache: "true"
@@ -105,8 +111,8 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-linux-${{ matrix.platform.target }}
-          path: dist
+          name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-${{ matrix.package.name }}-linux-${{ matrix.platform.target }}
+          path: ${{ matrix.package.directory }}/dist
 
   musllinux:
     needs: detect-changes
@@ -123,6 +129,11 @@ jobs:
             target: aarch64
           - runner: ubuntu-latest
             target: armv7
+        package:
+          - name: tombi
+            directory: .
+          - name: tombi-lib
+            directory: python/tombi-lib
       fail-fast: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -136,6 +147,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
+          working-directory: ${{ matrix.package.directory }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist
           sccache: "true"
@@ -143,8 +155,8 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-musllinux-${{ matrix.platform.target }}
-          path: dist
+          name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-${{ matrix.package.name }}-musllinux-${{ matrix.platform.target }}
+          path: ${{ matrix.package.directory }}/dist
 
   windows:
     needs: detect-changes
@@ -157,6 +169,11 @@ jobs:
             target: x64
           - runner: windows-latest
             target: x86
+        package:
+          - name: tombi
+            directory: .
+          - name: tombi-lib
+            directory: python/tombi-lib
       fail-fast: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -170,14 +187,15 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
+          working-directory: ${{ matrix.package.directory }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-windows-${{ matrix.platform.target }}
-          path: dist
+          name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-${{ matrix.package.name }}-windows-${{ matrix.platform.target }}
+          path: ${{ matrix.package.directory }}/dist
 
   macos:
     needs: detect-changes
@@ -190,6 +208,11 @@ jobs:
             target: x86_64
           - runner: macos-14
             target: aarch64
+        package:
+          - name: tombi
+            directory: .
+          - name: tombi-lib
+            directory: python/tombi-lib
       fail-fast: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -203,19 +226,28 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
+          working-directory: ${{ matrix.package.directory }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-macos-${{ matrix.platform.target }}
-          path: dist
+          name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-${{ matrix.package.name }}-macos-${{ matrix.platform.target }}
+          path: ${{ matrix.package.directory }}/dist
 
   sdist:
     needs: detect-changes
     if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package:
+          - name: tombi
+            directory: .
+          - name: tombi-lib
+            directory: python/tombi-lib
+      fail-fast: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -228,13 +260,14 @@ jobs:
       - name: Build sdist
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
+          working-directory: ${{ matrix.package.directory }}
           command: sdist
           args: --out dist
       - name: Upload sdist
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-sdist
-          path: dist
+          name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-${{ matrix.package.name }}-sdist
+          path: ${{ matrix.package.directory }}/dist
 
   release-python:
     name: Release

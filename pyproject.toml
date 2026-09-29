@@ -52,7 +52,7 @@ bindings = "bin"
 include = [
   { format = "sdist", path = "LICENSE" },
   { format = "sdist", path = "www.schemastore.org/**/*.json" },
-  { format = "sdist", path = "www.tombi.dev/**/*.json" },
+  { format = "sdist", path = "www.schemastore.tombi/**/*.json" },
 ]
 manifest-path = "rust/tombi-cli/Cargo.toml"
 module-name = "tombi"

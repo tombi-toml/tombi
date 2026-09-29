@@ -13,6 +13,13 @@ build-backend = "maturin"
 
 [tool.maturin]
 bindings = "pyo3"
+# Schemas embedded by `tombi-schema-store` with `include_str!`, so that the
+# sdist builds on its own. `include` can't reach outside this directory, so
+# these are symlinks to the repository root.
+include = [
+  { format = "sdist", path = "www.schemastore.org/**/*.json" },
+  { format = "sdist", path = "www.schemastore.tombi/**/*.json" },
+]
 manifest-path = "../../rust/tombi-lib-python/Cargo.toml"
 module-name = "tombi_lib._tombi_lib"
 python-source = "src"

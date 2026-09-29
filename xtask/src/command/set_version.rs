@@ -64,12 +64,21 @@ fn set_editors_vscode_package_json_version(sh: &Shell, version: &str) -> anyhow:
 }
 
 fn set_pyproject_toml_version(sh: &Shell, version: &str) -> anyhow::Result<()> {
-    let mut patch = Patch::new(sh, project_root_path().join("pyproject.toml"))?;
-    patch.replace(
-        &format!(r#"version = "{DEV_VERSION}""#),
-        &format!(r#"version = "{version}""#),
-    );
-    patch.commit(sh)?;
+    let project_root = project_root_path();
+    for pyproject_toml in [
+        project_root.join("pyproject.toml"),
+        project_root
+            .join("python")
+            .join("tombi-lib")
+            .join("pyproject.toml"),
+    ] {
+        let mut patch = Patch::new(sh, pyproject_toml)?;
+        patch.replace(
+            &format!(r#"version = "{DEV_VERSION}""#),
+            &format!(r#"version = "{version}""#),
+        );
+        patch.commit(sh)?;
+    }
     Ok(())
 }
 
@@ -79,7 +88,7 @@ fn set_package_json_versions(sh: &Shell, version: &str) -> anyhow::Result<()> {
     for entry in fs::read_dir(&pkgs_dir)? {
         let entry = entry?;
         let path = entry.path();
-        let is_main = path.file_name().unwrap() == "tombi";
+        let is_main = path.file_name().unwrap() == "cli";
         let is_cli = path
             .file_name()
             .unwrap()
