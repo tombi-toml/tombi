@@ -81,7 +81,7 @@ jobs:
             target: ppc64le
         package:
           - name: tombi
-            directory: .
+            directory: python/tombi
           - name: tombi-lib
             directory: python/tombi-lib
       fail-fast: false
@@ -131,7 +131,7 @@ jobs:
             target: armv7
         package:
           - name: tombi
-            directory: .
+            directory: python/tombi
           - name: tombi-lib
             directory: python/tombi-lib
       fail-fast: false
@@ -171,7 +171,7 @@ jobs:
             target: x86
         package:
           - name: tombi
-            directory: .
+            directory: python/tombi
           - name: tombi-lib
             directory: python/tombi-lib
       fail-fast: false
@@ -210,7 +210,7 @@ jobs:
             target: aarch64
         package:
           - name: tombi
-            directory: .
+            directory: python/tombi
           - name: tombi-lib
             directory: python/tombi-lib
       fail-fast: false
@@ -244,7 +244,7 @@ jobs:
       matrix:
         package:
           - name: tombi
-            directory: .
+            directory: python/tombi
           - name: tombi-lib
             directory: python/tombi-lib
       fail-fast: false

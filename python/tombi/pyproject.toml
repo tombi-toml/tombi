@@ -1,0 +1,51 @@
+#:tombi toml-version = "v1.0.0"
+
+[project]
+name = "tombi"
+version = "0.0.0-dev"  # We use git tags for versioning. This is just a placeholder.
+description = "🦅 TOML Toolkit 🦅"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Build Tools",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Text Editors",
+  "Topic :: Text Processing :: Markup",
+  "Topic :: Utilities",
+]
+dependencies = []
+
+[project.urls]
+GitHub = "https://github.com/tombi-toml/tombi"
+
+[build-system]
+requires = [
+  "maturin>=1.5,<2.0",
+]
+build-backend = "maturin"
+
+[tool.maturin]
+bindings = "bin"
+# `LICENSE` and the schemas embedded by `tombi-schema-store` with `include_str!`,
+# so that the sdist builds on its own. `include` can't reach outside this
+# directory, so these are symlinks to the repository root.
+include = [
+  { format = "sdist", path = "LICENSE" },
+  { format = "sdist", path = "www.schemastore.org/**/*.json" },
+  { format = "sdist", path = "www.schemastore.tombi/**/*.json" },
+]
+manifest-path = "../../rust/tombi-cli/Cargo.toml"
+module-name = "tombi"
+python-source = "src"

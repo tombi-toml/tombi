@@ -65,13 +65,11 @@ fn set_editors_vscode_package_json_version(sh: &Shell, version: &str) -> anyhow:
 
 fn set_pyproject_toml_version(sh: &Shell, version: &str) -> anyhow::Result<()> {
     let project_root = project_root_path();
-    for pyproject_toml in [
-        project_root.join("pyproject.toml"),
-        project_root
+    for package in ["tombi", "tombi-lib"] {
+        let pyproject_toml = project_root
             .join("python")
-            .join("tombi-lib")
-            .join("pyproject.toml"),
-    ] {
+            .join(package)
+            .join("pyproject.toml");
         let mut patch = Patch::new(sh, pyproject_toml)?;
         patch.replace(
             &format!(r#"version = "{DEV_VERSION}""#),
