@@ -26,6 +26,9 @@ export interface FormatResult {
   diagnostics: Array<Diagnostic>
 }
 
+/** Format a TOML document synchronously, blocking the calling thread. */
+export declare function formatSync(source: string, sourcePath: string, options?: Options | undefined | null): FormatResult
+
 /** Lint a TOML document. */
 export declare function lint(source: string, sourcePath: string, options?: Options | undefined | null): Promise<LintResult>
 
@@ -33,6 +36,9 @@ export declare function lint(source: string, sourcePath: string, options?: Optio
 export interface LintResult {
   diagnostics: Array<Diagnostic>
 }
+
+/** Lint a TOML document synchronously, blocking the calling thread. */
+export declare function lintSync(source: string, sourcePath: string, options?: Options | undefined | null): LintResult
 
 /** Options shared by the formatter and linter. */
 export interface Options {
