@@ -47,17 +47,15 @@ fn render(report: &Report) -> String {
         )];
         let location = match finding.range {
             Some(range) => {
-                properties.push(format!("line={}", range.start.line));
-                properties.push(format!("endLine={}", range.end.line));
+                let (line, column) = (range.start.line + 1, range.start.character + 1);
+                properties.push(format!("line={line}"));
+                properties.push(format!("endLine={}", range.end.line + 1));
                 // The runner drops columns of annotations spanning multiple lines.
                 if range.start.line == range.end.line {
-                    properties.push(format!("col={}", range.start.column));
-                    properties.push(format!("endColumn={}", range.end.column));
+                    properties.push(format!("col={column}"));
+                    properties.push(format!("endColumn={}", range.end.character + 1));
                 }
-                format!(
-                    "{}:{}:{}",
-                    file.display_path, range.start.line, range.start.column
-                )
+                format!("{}:{line}:{column}", file.display_path)
             }
             None => file.display_path.clone(),
         };

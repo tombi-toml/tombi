@@ -3,6 +3,7 @@ use std::path::Path;
 
 use percent_encoding::{AsciiSet, CONTROLS, utf8_percent_encode};
 use serde_json::json;
+use tombi_text::EncodingKind;
 
 use super::{CollectedFiles, FileReport, Report, level_str, to_slash};
 use crate::app::diagnostics::format_reporter::FormatReporter;
@@ -29,8 +30,16 @@ const PATH_SEGMENT: &AsciiSet = &CONTROLS
     .add(b'}');
 
 /// Collects all files and writes a SARIF 2.1.0 report.
-#[derive(Debug, Default)]
+///
+/// Columns count UTF-16 code units, as declared by `columnKind: utf16CodeUnits`.
+#[derive(Debug)]
 pub(in crate::app::diagnostics) struct SarifReporter(CollectedFiles);
+
+impl Default for SarifReporter {
+    fn default() -> Self {
+        Self(CollectedFiles::new(EncodingKind::Utf16))
+    }
+}
 
 impl FormatReporter for SarifReporter {
     fn record(
@@ -92,10 +101,10 @@ fn render(report: &Report) -> String {
             // GitHub code scanning requires `startLine` even for file-level results.
             let region = match finding.range {
                 Some(range) => json!({
-                    "startLine": range.start.line,
-                    "startColumn": range.start.utf16_column,
-                    "endLine": range.end.line,
-                    "endColumn": range.end.utf16_column,
+                    "startLine": range.start.line + 1,
+                    "startColumn": range.start.character + 1,
+                    "endLine": range.end.line + 1,
+                    "endColumn": range.end.character + 1,
                 }),
                 None => json!({ "startLine": 1 }),
             };
@@ -350,7 +359,7 @@ mod tests {
             )],
             ..clean_file("a.toml")
         }];
-        let files = collect(files);
+        let files = collect_with(files, EncodingKind::Utf16);
         let report = Report::new(&files, true, &root, &root);
         let sarif: serde_json::Value = serde_json::from_str(&render(&report)).unwrap();
 

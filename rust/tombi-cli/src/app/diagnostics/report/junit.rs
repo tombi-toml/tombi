@@ -72,7 +72,7 @@ fn render(report: &Report) -> String {
         }
 
         if let Some(range) = findings.iter().find_map(|finding| finding.range) {
-            let _ = write!(attributes, r#" line="{}""#, range.start.line);
+            let _ = write!(attributes, r#" line="{}""#, range.start.line + 1);
         }
         let failure_type = if findings.iter().any(|finding| finding.level == Level::ERROR) {
             "error"
@@ -89,7 +89,9 @@ fn render(report: &Report) -> String {
                 let location = match finding.range {
                     Some(range) => format!(
                         "{}:{}:{}",
-                        file.display_path, range.start.line, range.start.column
+                        file.display_path,
+                        range.start.line + 1,
+                        range.start.character + 1
                     ),
                     None => file.display_path.clone(),
                 };

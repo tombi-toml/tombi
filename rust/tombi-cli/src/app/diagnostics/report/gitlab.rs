@@ -4,7 +4,7 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 use tombi_diagnostic::Level;
 
-use super::{CollectedFiles, FileReport, Finding, Report};
+use super::{CollectedFiles, FileReport, Finding, Report, position_json};
 use crate::app::diagnostics::format_reporter::FormatReporter;
 
 /// Collects all files and writes a GitLab Code Quality report.
@@ -47,8 +47,8 @@ fn render(report: &Report) -> String {
                 Some(range) => json!({
                     "path": path,
                     "positions": {
-                        "begin": range.start.to_json(),
-                        "end": range.end.to_json(),
+                        "begin": position_json(range.start),
+                        "end": position_json(range.end),
                     },
                 }),
                 None => json!({

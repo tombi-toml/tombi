@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use tombi_diagnostic::{Diagnostic, Level};
-use unicode_segmentation::UnicodeSegmentation;
+use tombi_text::{EncodingKind, IntoLsp, LineIndex};
 
 const NOT_FORMATTED_CODE: &str = "not-formatted";
 const NOT_FORMATTED_MESSAGE: &str = "File is not formatted";
@@ -85,6 +85,8 @@ impl FileReport {
 pub(super) struct CollectedFiles {
     files: Vec<CollectedFile>,
     execution_successful: bool,
+    /// The unit of the columns of the report.
+    encoding: EncodingKind,
 }
 
 /// A checked file whose positions are already converted, so that its source can be dropped.
@@ -103,8 +105,9 @@ struct CollectedFinding {
     range: Option<ReportRange>,
 }
 
-impl From<FileReport> for CollectedFile {
-    fn from(file: FileReport) -> Self {
+impl CollectedFile {
+    /// Converts the positions of the diagnostics, which count grapheme clusters, into `encoding`.
+    pub(super) fn new(file: FileReport, encoding: EncodingKind) -> Self {
         let mut findings = Vec::with_capacity(file.diagnostics.len() + 1);
         if let Some(problem) = file.problem {
             let (code, message) = match problem {
@@ -119,16 +122,21 @@ impl From<FileReport> for CollectedFile {
             });
         }
         if !file.diagnostics.is_empty() {
-            let lines = SourceLines::new(&file.source);
+            let line_index = LineIndex::new(&file.source, encoding);
             findings.extend(file.diagnostics.iter().map(|diagnostic| CollectedFinding {
                 level: diagnostic.level(),
                 code: diagnostic.code().to_owned(),
                 message: diagnostic.message().to_owned(),
-                range: Some(lines.range(diagnostic.range())),
+                range: Some(diagnostic.range().into_lsp(&line_index)),
             }));
         }
-        findings
-            .sort_by(|a, b| (a.range, &a.code, &a.message).cmp(&(b.range, &b.code, &b.message)));
+        findings.sort_by(|a, b| {
+            (range_key(a.range), &a.code, &a.message).cmp(&(
+                range_key(b.range),
+                &b.code,
+                &b.message,
+            ))
+        });
 
         Self {
             path: file.path,
@@ -137,18 +145,24 @@ impl From<FileReport> for CollectedFile {
     }
 }
 
+/// Columns count Unicode code points.
 impl Default for CollectedFiles {
     fn default() -> Self {
-        Self {
-            files: Vec::new(),
-            execution_successful: true,
-        }
+        Self::new(EncodingKind::Utf32)
     }
 }
 
 impl CollectedFiles {
+    pub(super) fn new(encoding: EncodingKind) -> Self {
+        Self {
+            files: Vec::new(),
+            execution_successful: true,
+            encoding,
+        }
+    }
+
     pub(super) fn record(&mut self, file: FileReport) {
-        self.files.push(file.into());
+        self.files.push(CollectedFile::new(file, self.encoding));
     }
 
     pub(super) fn record_runtime_error(&mut self) {
@@ -204,31 +218,26 @@ pub(super) struct Finding<'a> {
     pub occurrence: usize,
 }
 
-/// A 1-based range.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub(super) struct ReportRange {
-    pub start: ReportPosition,
-    pub end: ReportPosition,
+/// A 0-based range whose columns are in the unit of the reporter.
+pub(super) type ReportRange = tower_lsp::lsp_types::Range;
+
+fn range_key(range: Option<ReportRange>) -> Option<(u32, u32, u32, u32)> {
+    range.map(|range| {
+        (
+            range.start.line,
+            range.start.character,
+            range.end.line,
+            range.end.character,
+        )
+    })
 }
 
-/// A 1-based position.
-///
-/// `column` counts Unicode code points, and `utf16_column` counts UTF-16 code units.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub(super) struct ReportPosition {
-    pub line: u32,
-    pub column: u32,
-    pub utf16_column: u32,
-}
-
-impl ReportPosition {
-    /// `{ "line": _, "column": _ }` with the code point column.
-    pub fn to_json(self) -> serde_json::Value {
-        serde_json::json!({
-            "line": self.line,
-            "column": self.column,
-        })
-    }
+/// `{ "line": _, "column": _ }` of a 1-based position.
+pub(super) fn position_json(position: tower_lsp::lsp_types::Position) -> serde_json::Value {
+    serde_json::json!({
+        "line": position.line + 1,
+        "column": position.character + 1,
+    })
 }
 
 impl<'a> Report<'a> {
@@ -308,51 +317,6 @@ pub(super) const fn level_str(level: Level) -> &'static str {
     }
 }
 
-/// Converts grapheme-based positions of tombi into code point and UTF-16 columns.
-struct SourceLines<'a> {
-    lines: Vec<&'a str>,
-}
-
-impl<'a> SourceLines<'a> {
-    fn new(source: &'a str) -> Self {
-        Self {
-            lines: source
-                .split('\n')
-                .map(|line| line.strip_suffix('\r').unwrap_or(line))
-                .collect(),
-        }
-    }
-
-    fn range(&self, range: tombi_text::Range) -> ReportRange {
-        ReportRange {
-            start: self.position(range.start),
-            end: self.position(range.end),
-        }
-    }
-
-    fn position(&self, position: tombi_text::Position) -> ReportPosition {
-        let mut column = 0;
-        let mut utf16_column = 0;
-        let mut graphemes = 0;
-
-        if let Some(line) = self.lines.get(position.line as usize) {
-            for grapheme in line.graphemes(true).take(position.column as usize) {
-                column += grapheme.chars().count() as u32;
-                utf16_column += grapheme.encode_utf16().count() as u32;
-                graphemes += 1;
-            }
-        }
-
-        // Positions past the end of the line are kept as they are.
-        let rest = position.column.saturating_sub(graphemes);
-        ReportPosition {
-            line: position.line + 1,
-            column: column + rest + 1,
-            utf16_column: utf16_column + rest + 1,
-        }
-    }
-}
-
 /// The root that paths in CI reports are relative to.
 ///
 /// Uses `CI_PROJECT_DIR` (GitLab CI), `GITHUB_WORKSPACE` (GitHub Actions),
@@ -411,7 +375,17 @@ mod tests {
     pub(super) use test_report;
 
     pub(super) fn collect(files: Vec<FileReport>) -> Vec<CollectedFile> {
-        files.into_iter().map(CollectedFile::from).collect()
+        collect_with(files, EncodingKind::Utf32)
+    }
+
+    pub(super) fn collect_with(
+        files: Vec<FileReport>,
+        encoding: EncodingKind,
+    ) -> Vec<CollectedFile> {
+        files
+            .into_iter()
+            .map(|file| CollectedFile::new(file, encoding))
+            .collect()
     }
 
     pub(super) fn test_root() -> PathBuf {
@@ -456,26 +430,41 @@ mod tests {
         }
     }
 
-    macro_rules! test_position {
-        ($name:ident: $source:expr, ($line:expr, $column:expr) => ($expected_column:expr, $expected_utf16:expr)) => {
+    /// Converts `$range` of a diagnostic in `$source` into columns of `$encoding`.
+    macro_rules! test_columns {
+        ($name:ident: $source:expr, $encoding:expr, $range:expr => $expected:expr) => {
             #[test]
             fn $name() {
-                let position = SourceLines::new($source).position(Position::new($line, $column));
+                let (start, end) = $range;
+                let file = FileReport::new(
+                    Some(PathBuf::from("a.toml")),
+                    $source.to_owned(),
+                    vec![Diagnostic::new_error("message", "code", range(start, end))],
+                );
+                let range = CollectedFile::new(file, $encoding).findings[0]
+                    .range
+                    .unwrap();
                 pretty_assertions::assert_eq!(
-                    (position.line, position.column, position.utf16_column),
-                    ($line + 1, $expected_column, $expected_utf16)
+                    (
+                        range.start.line,
+                        range.start.character,
+                        range.end.line,
+                        range.end.character
+                    ),
+                    $expected
                 );
             }
         };
     }
 
-    test_position!(ascii: "a = 1", (0, 4) => (5, 5));
-    test_position!(cjk: "キー = 1", (0, 5) => (6, 6));
-    test_position!(emoji: "\"😀\" = 1", (0, 3) => (4, 5));
-    test_position!(combining_mark: "\"e\u{301}\" = 1", (0, 3) => (5, 5));
-    test_position!(crlf: "a = 1\r\n\"😀\" = 2", (1, 3) => (4, 5));
-    test_position!(past_end_of_line: "a", (0, 3) => (4, 4));
-    test_position!(past_end_of_file: "a", (2, 1) => (2, 2));
+    test_columns!(ascii: "a = 1", EncodingKind::Utf32, ((0, 0), (0, 4)) => (0, 0, 0, 4));
+    test_columns!(cjk: "キー = 1", EncodingKind::Utf32, ((0, 0), (0, 2)) => (0, 0, 0, 2));
+    test_columns!(emoji_code_points: "\"😀\" = 1", EncodingKind::Utf32, ((0, 1), (0, 2)) => (0, 1, 0, 2));
+    test_columns!(emoji_utf16: "\"😀\" = 1", EncodingKind::Utf16, ((0, 1), (0, 2)) => (0, 1, 0, 3));
+    test_columns!(combining_mark_code_points: "\"e\u{301}\" = 1", EncodingKind::Utf32, ((0, 1), (0, 2)) => (0, 1, 0, 3));
+    test_columns!(crlf: "a = 1\r\n\"😀\" = 2", EncodingKind::Utf16, ((1, 1), (1, 2)) => (1, 1, 1, 3));
+    test_columns!(multiple_lines: "a = \"\"\"\n😀\n\"\"\"", EncodingKind::Utf16, ((0, 4), (2, 3)) => (0, 4, 2, 3));
+    test_columns!(past_end_of_line_is_clamped: "a", EncodingKind::Utf32, ((0, 0), (0, 3)) => (0, 0, 0, 1));
 
     macro_rules! test_file_problem {
         ($name:ident: $error:expr => $expected:expr) => {
@@ -572,7 +561,7 @@ mod tests {
                 .iter()
                 .map(|finding| (finding.range.unwrap().start.line, finding.occurrence))
                 .collect::<Vec<_>>(),
-            vec![(1, 0), (2, 1)]
+            vec![(0, 0), (1, 1)]
         );
     }
 

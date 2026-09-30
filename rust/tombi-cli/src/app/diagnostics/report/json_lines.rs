@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use tombi_text::EncodingKind;
+
 use super::{CollectedFile, FileReport, Report, json};
 use crate::app::diagnostics::format_reporter::FormatReporter;
 
@@ -20,7 +22,8 @@ impl JsonLinesReporter {
 
 impl FormatReporter for JsonLinesReporter {
     fn record(&mut self, file: FileReport, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
-        let files = [CollectedFile::from(file)];
+        // Columns count Unicode code points, like `json`.
+        let files = [CollectedFile::new(file, EncodingKind::Utf32)];
         // Paths are relative to the current directory, so the project root is not used.
         let report = Report::new(&files, true, &self.cwd, &self.cwd);
         writer.write_all(render(&report).as_bytes())?;

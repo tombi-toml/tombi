@@ -35,10 +35,9 @@ tombi-glob.workspace = true
 tombi-linter.workspace = true
 tombi-lsp.workspace = true
 tombi-schema-store = { workspace = true, features = ["native"] }
-tombi-text.workspace = true
+tombi-text = { workspace = true, features = ["lsp"] }
 tower.workspace = true
 tower-lsp = { workspace = true, features = ["runtime-tokio"] }
-unicode-segmentation.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

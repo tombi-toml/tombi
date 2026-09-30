@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use super::{CollectedFiles, FileReport, Finding, Report, level_str};
+use super::{CollectedFiles, FileReport, Finding, Report, level_str, position_json};
 use crate::app::diagnostics::format_reporter::FormatReporter;
 
 /// Collects all files and writes a JSON array of diagnostics.
@@ -54,8 +54,8 @@ pub(super) fn diagnostic(report: &Report, finding: &Finding) -> serde_json::Valu
         "code": finding.code,
         "message": finding.message,
         "range": finding.range.map(|range| json!({
-            "start": range.start.to_json(),
-            "end": range.end.to_json(),
+            "start": position_json(range.start),
+            "end": position_json(range.end),
         })),
     })
 }
