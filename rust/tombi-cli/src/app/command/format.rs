@@ -135,10 +135,7 @@ pub fn run(args: Args) -> Result<(), crate::Error> {
         error_num,
     } = match inner_run(args, crate::app::printer(), &mut diagnostics_reporter) {
         Ok(summary) => summary,
-        Err(error) => {
-            log::error!("{}", error);
-            std::process::exit(1);
-        }
+        Err(error) => diagnostics_reporter.exit_with_error(&error),
     };
 
     if let Err(error) = diagnostics_reporter.finish() {
@@ -216,12 +213,8 @@ where
             }),
         });
 
-    let Ok(runtime) =
-        super::runtime(FileInputType::from(args.files.as_ref()) == FileInputType::Stdin)
-    else {
-        log::error!("failed to create tokio runtime");
-        std::process::exit(1);
-    };
+    let runtime = super::runtime(FileInputType::from(args.files.as_ref()) == FileInputType::Stdin)
+        .map_err(|error| format!("failed to create tokio runtime: {error}"))?;
 
     runtime.block_on(async {
         // Run schema loading and file discovery concurrently
@@ -230,6 +223,9 @@ where
             FileSearch::new(&args.files, &config, config_path.as_deref(), config_level,)
         );
 
+        // Before `schema_result?`, so that an error does not write to an input file.
+        diagnostics_reporter
+            .reject_input_conflict(super::input_paths(&input, config_path.as_deref()));
         schema_result?;
         let total_num = input.len();
         let mut summary = FormatRunSummary::default();

@@ -156,13 +156,29 @@ fn encode_path(path: &str) -> String {
 
 /// Converts an absolute path into a `file` URI.
 fn file_uri(path: &Path, is_dir: bool) -> String {
-    let path = to_slash(path);
-    let path = path.trim_start_matches('/');
-    let mut uri = format!("file:///{}", encode_path(path));
-    // Keep the drive letter of Windows paths unencoded, e.g. `file:///C:/project`.
-    if cfg!(windows) {
-        uri = uri.replacen("%3A", ":", 1);
-    }
+    uri_from_slash_path(&to_slash(path), is_dir)
+}
+
+/// Converts an absolute path with `/` separators into a `file` URI.
+///
+/// A UNC path `//server/share/dir` becomes `file://server/share/dir`,
+/// where the server is the authority of the URI.
+fn uri_from_slash_path(path: &str, is_dir: bool) -> String {
+    // `\\?\C:\dir` and `\\?\UNC\server\share` are the verbatim forms of a drive path and a UNC path.
+    let path = match path.strip_prefix("//?/") {
+        Some(verbatim) => match verbatim.strip_prefix("UNC/") {
+            Some(unc) => format!("//{unc}"),
+            None => verbatim.to_owned(),
+        },
+        None => path.to_owned(),
+    };
+
+    let (authority, path) = match path.strip_prefix("//") {
+        Some(unc) => unc.split_once('/').unwrap_or((unc, "")),
+        None => ("", path.trim_start_matches('/')),
+    };
+
+    let mut uri = format!("file://{}/{}", encode_path(authority), encode_path(path));
     if is_dir && !uri.ends_with('/') {
         uri.push('/');
     }
@@ -342,12 +358,21 @@ mod tests {
         );
     }
 
-    #[cfg(unix)]
-    #[test]
-    fn file_uri_encodes_segments() {
-        pretty_assertions::assert_eq!(
-            file_uri(Path::new("/a b/c%d"), true),
-            "file:///a%20b/c%25d/"
-        );
+    macro_rules! test_uri_from_slash_path {
+        ($name:ident: $path:expr, $is_dir:expr => $expected:expr) => {
+            #[test]
+            fn $name() {
+                pretty_assertions::assert_eq!(uri_from_slash_path($path, $is_dir), $expected);
+            }
+        };
     }
+
+    test_uri_from_slash_path!(unix_path_is_encoded_per_segment: "/a b/c%d", true => "file:///a%20b/c%25d/");
+    test_uri_from_slash_path!(unix_file: "/project/a.toml", false => "file:///project/a.toml");
+    test_uri_from_slash_path!(drive_path_keeps_colon: "C:/project", true => "file:///C:/project/");
+    test_uri_from_slash_path!(unc_server_is_authority: "//server/share/dir", true => "file://server/share/dir/");
+    test_uri_from_slash_path!(unc_path_is_encoded: "//server/share/a b", false => "file://server/share/a%20b");
+    test_uri_from_slash_path!(unc_share_root: "//server/share", true => "file://server/share/");
+    test_uri_from_slash_path!(verbatim_drive_path: "//?/C:/project", true => "file:///C:/project/");
+    test_uri_from_slash_path!(verbatim_unc_path: "//?/UNC/server/share/dir", true => "file://server/share/dir/");
 }

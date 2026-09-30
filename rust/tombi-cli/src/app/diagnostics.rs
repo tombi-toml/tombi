@@ -4,6 +4,7 @@ mod pretty;
 mod report;
 
 use std::io::Write;
+use std::path::{Path, PathBuf};
 
 use destination::Destination;
 use format_reporter::FormatReporter;
@@ -109,6 +110,12 @@ pub struct DiagnosticsReporter {
     reporter: Box<dyn FormatReporter>,
     writer: Box<dyn Write + Send>,
     write_error: Option<std::io::Error>,
+    /// The regular file that diagnostics are written to.
+    file_path: Option<PathBuf>,
+    /// The subcommand, used for the usage of error messages.
+    command: clap::Command,
+    /// Whether the diagnostics file has been checked not to be an input of the command.
+    inputs_checked: bool,
 }
 
 impl DiagnosticsReporter {
@@ -119,14 +126,63 @@ impl DiagnosticsReporter {
         let format = args.diagnostics_format;
         let destination = Destination::new(args.diagnostics_file.as_deref());
 
-        validate_option_combination(format, &destination, context);
+        validate_option_combination(format, &destination, &context);
 
         Ok(Self {
             reporter: format
                 .reporter(destination.is_default_stderr() && crate::app::use_ansi_color())?,
             writer: destination.open()?,
             write_error: None,
+            file_path: destination.file_path().map(Path::to_owned),
+            command: context.command,
+            inputs_checked: false,
         })
+    }
+
+    /// Exits with a usage error if the diagnostics file is also read by the command.
+    ///
+    /// The file is not truncated until something is written, so this must be called
+    /// after the inputs are known and before the first file is recorded.
+    pub fn reject_input_conflict<'a>(&mut self, inputs: impl IntoIterator<Item = &'a Path>) {
+        if let Some(file_path) = &self.file_path
+            && self.conflicts_with(inputs)
+        {
+            usage_error(
+                self.command.clone(),
+                clap::error::ErrorKind::ArgumentConflict,
+                format!("`--diagnostics-file` {file_path:?} is also an input file of the command"),
+            );
+        }
+        self.inputs_checked = true;
+    }
+
+    /// Whether the diagnostics file is one of the `inputs`, including via symlinks and relative paths.
+    fn conflicts_with<'a>(&self, inputs: impl IntoIterator<Item = &'a Path>) -> bool {
+        let Some(file) = self
+            .file_path
+            .as_deref()
+            .and_then(|file_path| file_path.canonicalize().ok())
+        else {
+            return false;
+        };
+        inputs
+            .into_iter()
+            .any(|input| input.canonicalize().is_ok_and(|input| input == file))
+    }
+
+    /// Logs the error, writes what has been collected so that the report is complete, and exits.
+    ///
+    /// A diagnostics file is left untouched if the error happened before the inputs were checked,
+    /// because it may be an input of the command.
+    pub fn exit_with_error(mut self, error: &dyn std::fmt::Display) -> ! {
+        log::error!("{error}");
+        if self.file_path.is_none() || self.inputs_checked {
+            self.record_runtime_error();
+            if let Err(error) = self.finish() {
+                log::error!("failed to write diagnostics: {error}");
+            }
+        }
+        std::process::exit(1);
     }
 
     /// Records a checked file, with the error that made checking it fail, if any.
@@ -201,14 +257,14 @@ impl DiagnosticsReporter {
 fn validate_option_combination(
     format: DiagnosticsFormat,
     destination: &Destination,
-    context: InputContext,
+    context: &InputContext,
 ) {
     use clap::error::ErrorKind;
 
     if format.requires_diagnostics_file() {
         if destination.is_default_stderr() {
             usage_error(
-                context.command,
+                context.command.clone(),
                 ErrorKind::MissingRequiredArgument,
                 format!(
                     "`--diagnostics-format {}` requires `--diagnostics-file`",
@@ -218,7 +274,7 @@ fn validate_option_combination(
         }
         if destination.is_stderr() {
             usage_error(
-                context.command,
+                context.command.clone(),
                 ErrorKind::ArgumentConflict,
                 format!(
                     "`--diagnostics-format {}` cannot be written to stderr",
@@ -230,7 +286,7 @@ fn validate_option_combination(
 
     if context.stdout_in_use && destination.is_stdout() {
         usage_error(
-            context.command,
+            context.command.clone(),
             ErrorKind::ArgumentConflict,
             "`--diagnostics-file` cannot be stdout when formatting stdin",
         );
@@ -238,7 +294,7 @@ fn validate_option_combination(
 
     if context.stdin_without_filename && format != DiagnosticsFormat::Pretty {
         usage_error(
-            context.command,
+            context.command.clone(),
             ErrorKind::MissingRequiredArgument,
             format!(
                 "`--diagnostics-format {}` requires `--stdin-filename` when reading from stdin",
@@ -257,4 +313,68 @@ fn usage_error(
         .styles(crate::app::app_styles())
         .error(kind, message)
         .exit()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Opens a reporter writing to `$file` in a directory that has `tombi.toml` and `input.toml`.
+    macro_rules! test_conflicts_with {
+        ($name:ident: $file:expr, $inputs:expr => $expected:expr) => {
+            #[test]
+            fn $name() {
+                let dir = tempfile::tempdir().unwrap();
+                for name in ["tombi.toml", "input.toml", "other.toml"] {
+                    std::fs::write(dir.path().join(name), "").unwrap();
+                }
+                let reporter = DiagnosticsReporter::open(
+                    &DiagnosticsArgs {
+                        diagnostics_format: DiagnosticsFormat::Json,
+                        diagnostics_file: Some(dir.path().join($file)),
+                    },
+                    InputContext {
+                        command: clap::Command::new("tombi lint"),
+                        stdin_without_filename: false,
+                        stdout_in_use: false,
+                    },
+                )
+                .unwrap();
+
+                let inputs = $inputs.map(|name: &str| dir.path().join(name));
+                pretty_assertions::assert_eq!(
+                    reporter.conflicts_with(inputs.iter().map(PathBuf::as_path)),
+                    $expected
+                );
+            }
+        };
+    }
+
+    test_conflicts_with!(input_file_conflicts: "input.toml", ["input.toml", "other.toml"] => true);
+    test_conflicts_with!(config_file_conflicts: "tombi.toml", ["tombi.toml", "input.toml"] => true);
+    test_conflicts_with!(path_with_dot_conflicts: "./input.toml", ["input.toml"] => true);
+    test_conflicts_with!(other_file_does_not_conflict: "report.json", ["input.toml", "tombi.toml"] => false);
+    test_conflicts_with!(no_inputs_do_not_conflict: "input.toml", [] => false);
+
+    #[cfg(unix)]
+    #[test]
+    fn symlink_to_input_conflicts() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("input.toml"), "").unwrap();
+        std::os::unix::fs::symlink("input.toml", dir.path().join("report.json")).unwrap();
+        let reporter = DiagnosticsReporter::open(
+            &DiagnosticsArgs {
+                diagnostics_format: DiagnosticsFormat::Json,
+                diagnostics_file: Some(dir.path().join("report.json")),
+            },
+            InputContext {
+                command: clap::Command::new("tombi lint"),
+                stdin_without_filename: false,
+                stdout_in_use: false,
+            },
+        )
+        .unwrap();
+
+        assert!(reporter.conflicts_with([dir.path().join("input.toml").as_path()]));
+    }
 }

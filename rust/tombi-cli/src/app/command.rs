@@ -32,6 +32,23 @@ pub(super) fn runtime(single_threaded: bool) -> std::io::Result<tokio::runtime::
     builder.enable_all().build()
 }
 
+/// The files that are read by the command: the config file and the found files.
+pub(super) fn input_paths<'a>(
+    input: &'a tombi_glob::FileSearch,
+    config_path: Option<&'a std::path::Path>,
+) -> impl Iterator<Item = &'a std::path::Path> {
+    let entries: &[tombi_glob::FileSearchEntry] = match input {
+        tombi_glob::FileSearch::Files(entries) => entries,
+        tombi_glob::FileSearch::Stdin => &[],
+    };
+    config_path
+        .into_iter()
+        .chain(entries.iter().filter_map(|entry| match entry {
+            tombi_glob::FileSearchEntry::Found(path) => Some(path.as_path()),
+            _ => None,
+        }))
+}
+
 pub(super) fn file_open_error(
     source_path: std::path::PathBuf,
     error: std::io::Error,
@@ -44,4 +61,40 @@ pub(super) fn file_open_error(
             source: error,
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::{Path, PathBuf};
+
+    use tombi_glob::{FileSearch, FileSearchEntry};
+
+    macro_rules! test_input_paths {
+        ($name:ident: $input:expr, $config:expr => $expected:expr) => {
+            #[test]
+            fn $name() {
+                let input: FileSearch = $input;
+                let config: Option<&Path> = $config;
+                pretty_assertions::assert_eq!(
+                    super::input_paths(&input, config)
+                        .map(Path::to_owned)
+                        .collect::<Vec<_>>(),
+                    $expected.map(PathBuf::from).to_vec()
+                );
+            }
+        };
+    }
+
+    test_input_paths!(
+        config_and_found_files_are_inputs:
+        FileSearch::Files(vec![
+            FileSearchEntry::Found("a.toml".into()),
+            FileSearchEntry::Skipped("skipped.toml".into()),
+            FileSearchEntry::Error(tombi_glob::Error::FileNotFound("missing.toml".into())),
+            FileSearchEntry::Found("b.toml".into()),
+        ]),
+        Some(Path::new("tombi.toml")) => ["tombi.toml", "a.toml", "b.toml"]
+    );
+    test_input_paths!(stdin_has_only_config: FileSearch::Stdin, Some(Path::new("tombi.toml")) => ["tombi.toml"]);
+    test_input_paths!(stdin_without_config_has_no_inputs: FileSearch::Stdin, None => [] as [&str; 0]);
 }
