@@ -442,6 +442,14 @@ pub(crate) fn merge_branch_diagnostics(
         a.code() == b.code() && a.message() == b.message() && a.range() == b.range()
     }
 
+    if !branch_diagnostics
+        .iter()
+        .flatten()
+        .any(|diagnostic| diagnostic.code() == "unused-noqa")
+    {
+        return branch_diagnostics.into_iter().flatten().collect();
+    }
+
     let mut merged: Vec<tombi_diagnostic::Diagnostic> = Vec::new();
     for diagnostic in branch_diagnostics.iter().flatten() {
         let keep = diagnostic.code() != "unused-noqa"
