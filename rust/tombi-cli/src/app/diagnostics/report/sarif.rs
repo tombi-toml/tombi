@@ -28,6 +28,12 @@ const PATH_SEGMENT: &AsciiSet = &CONTROLS
     .add(b'|')
     .add(b'}');
 
+/// Characters that are not allowed in a segment of a relative reference.
+///
+/// A colon is encoded too, because a first segment that contains one, such as `dir:name/a.toml`,
+/// would be taken as a URI scheme.
+const RELATIVE_PATH_SEGMENT: &AsciiSet = &PATH_SEGMENT.add(b':');
+
 /// Collects all files and writes a SARIF 2.1.0 report.
 pub(in crate::app::diagnostics) struct SarifFormat;
 
@@ -62,7 +68,7 @@ impl ReportFormat for SarifFormat {
             .enumerate()
             .map(|(index, file)| match &file.project_path {
                 Some(path) => json!({
-                    "uri": encode_path(path),
+                    "uri": encode_path(path, RELATIVE_PATH_SEGMENT),
                     "uriBaseId": SRCROOT,
                     "index": index,
                 }),
@@ -135,10 +141,10 @@ impl ReportFormat for SarifFormat {
     }
 }
 
-/// Percent-encodes each segment of a `/`-separated relative path.
-fn encode_path(path: &str) -> String {
+/// Percent-encodes each segment of a `/`-separated path.
+fn encode_path(path: &str, set: &'static AsciiSet) -> String {
     path.split('/')
-        .map(|segment| utf8_percent_encode(segment, PATH_SEGMENT).to_string())
+        .map(|segment| utf8_percent_encode(segment, set).to_string())
         .collect::<Vec<_>>()
         .join("/")
 }
@@ -169,7 +175,11 @@ fn uri_from_slash_path(path: &str, is_dir: bool) -> String {
         ("", path.trim_start_matches('/'))
     };
 
-    let mut uri = format!("file://{}/{}", encode_path(authority), encode_path(path));
+    let mut uri = format!(
+        "file://{}/{}",
+        encode_path(authority, PATH_SEGMENT),
+        encode_path(path, PATH_SEGMENT)
+    );
     if is_dir && !uri.ends_with('/') {
         uri.push('/');
     }
@@ -400,4 +410,32 @@ mod tests {
     test_utf16_columns!(crlf: "a = 1\r\n\"😀\" = 2", ((1, 1), (1, 2)) => (1, 1, 1, 3));
     test_utf16_columns!(multiple_lines: "a = \"\"\"\n😀\n\"\"\"", ((0, 4), (2, 3)) => (0, 4, 2, 3));
     test_utf16_columns!(past_end_of_line_is_clamped: "a", ((0, 0), (0, 3)) => (0, 0, 0, 1));
+
+    macro_rules! test_encode_relative_path {
+        ($name:ident: $path:expr => $expected:expr) => {
+            #[test]
+            fn $name() {
+                pretty_assertions::assert_eq!(encode_path($path, RELATIVE_PATH_SEGMENT), $expected);
+            }
+        };
+    }
+
+    test_encode_relative_path!(colon_in_first_segment: "dir:name/a.toml" => "dir%3Aname/a.toml");
+    test_encode_relative_path!(colon_in_file_name: "dir/a:b.toml" => "dir/a%3Ab.toml");
+    test_encode_relative_path!(spaces_and_hashes: "a b/c#d.toml" => "a%20b/c%23d.toml");
+    test_encode_relative_path!(plain_path: "sub/a.toml" => "sub/a.toml");
+
+    #[cfg(unix)]
+    #[test]
+    fn relative_artifact_uri_has_no_scheme_like_colon() {
+        let root = test_root();
+        let files = collect::<SarifFormat>(vec![clean_file("dir:name/a.toml")]);
+        let report = Report::new(&files, true, &root, &root);
+        let sarif: serde_json::Value = serde_json::from_str(&SarifFormat::render(&report)).unwrap();
+
+        pretty_assertions::assert_eq!(
+            sarif["runs"][0]["artifacts"][0]["location"]["uri"],
+            "dir%3Aname/a.toml"
+        );
+    }
 }
