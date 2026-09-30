@@ -7,7 +7,8 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
 use crate::validate::{
-    handle_deprecated, if_then_else::validate_if_then_else, not_schema::validate_not,
+    handle_deprecated, if_then_else::validate_if_then_else, merge_branch_diagnostics,
+    not_schema::validate_not,
 };
 
 use super::Validate;
@@ -68,22 +69,27 @@ where
                 }
             }
         } else {
+            let mut branch_diagnostics = Vec::with_capacity(resolved_schemas.len());
             for resolved_schema in &resolved_schemas {
                 match value
                     .validate(accessors, Some(resolved_schema), schema_context)
                     .await
                 {
-                    Ok(result) => evaluated_locations.merge_from(result),
+                    Ok(result) => {
+                        evaluated_locations.merge_from(result);
+                        branch_diagnostics.push(Vec::new());
+                    }
                     Err(error) => {
                         if !error.assertion_failed {
                             evaluated_locations.merge_from(error.local_evaluated_locations.clone());
                         }
                         assertion_failed |= error.assertion_failed;
-                        total_diagnostics.extend(error.diagnostics);
+                        branch_diagnostics.push(error.diagnostics);
                         match_evidence.merge_from(*error.match_evidence);
                     }
                 }
             }
+            total_diagnostics.extend(merge_branch_diagnostics(branch_diagnostics));
         }
 
         if total_diagnostics.is_empty() && all_of_schema.deprecation.is_some() {

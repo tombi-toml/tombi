@@ -428,6 +428,37 @@ fn handle_unused_noqa<'a>(
     }
 }
 
+/// Merge diagnostics from combinator branches.
+///
+/// A comment directive is unused only if every branch reports it as unused,
+/// so `unused-noqa` diagnostics are kept only when all branches agree.
+pub(crate) fn merge_branch_diagnostics(
+    branch_diagnostics: Vec<Vec<tombi_diagnostic::Diagnostic>>,
+) -> Vec<tombi_diagnostic::Diagnostic> {
+    fn is_same_diagnostic(
+        a: &tombi_diagnostic::Diagnostic,
+        b: &tombi_diagnostic::Diagnostic,
+    ) -> bool {
+        a.code() == b.code() && a.message() == b.message() && a.range() == b.range()
+    }
+
+    let mut merged: Vec<tombi_diagnostic::Diagnostic> = Vec::new();
+    for diagnostic in branch_diagnostics.iter().flatten() {
+        let keep = diagnostic.code() != "unused-noqa"
+            || (branch_diagnostics.iter().all(|others| {
+                others
+                    .iter()
+                    .any(|other| is_same_diagnostic(diagnostic, other))
+            }) && !merged
+                .iter()
+                .any(|other| is_same_diagnostic(diagnostic, other)));
+        if keep {
+            merged.push(diagnostic.clone());
+        }
+    }
+    merged
+}
+
 #[allow(clippy::result_large_err)]
 pub(crate) fn with_lint_diagnostics(
     result: Result<crate::Valid, crate::Invalid>,

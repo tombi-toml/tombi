@@ -8,7 +8,7 @@ use tombi_schema_store::CurrentSchema;
 
 use super::Validate;
 use crate::validate::{if_then_else::validate_if_then_else, not_schema::validate_not};
-use crate::validate::{validate_deprecated, validate_resolved_schema};
+use crate::validate::{merge_branch_diagnostics, validate_deprecated, validate_resolved_schema};
 
 pub fn validate_any_of<'a: 'b, 'b, T>(
     value: &'a T,
@@ -100,7 +100,7 @@ where
 
         let mut total_error = crate::Invalid::new();
         let mut matched = false;
-        let mut matched_diagnostics = Vec::new();
+        let mut matched_branch_diagnostics = Vec::new();
         let mut matched_evaluated_locations = base_evaluated_locations;
 
         for resolved_schema in &resolved_schemas {
@@ -120,6 +120,7 @@ where
                 Ok(result) => {
                     matched = true;
                     matched_evaluated_locations.merge_from(result);
+                    matched_branch_diagnostics.push(Vec::new());
                 }
                 Err(error) => {
                     if error.assertion_failed {
@@ -128,11 +129,13 @@ where
                         matched = true;
                         matched_evaluated_locations
                             .merge_from(error.local_evaluated_locations.clone());
-                        matched_diagnostics.extend(error.diagnostics);
+                        matched_branch_diagnostics.push(error.diagnostics);
                     }
                 }
             }
         }
+
+        let mut matched_diagnostics = merge_branch_diagnostics(matched_branch_diagnostics);
 
         if matched {
             // Only report `unused-noqa` for the deprecated rule at the leaf schema;

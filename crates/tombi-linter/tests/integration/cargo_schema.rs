@@ -809,3 +809,30 @@ test_lint! {
         Config(deprecated_schema_config(None)),
     ) -> Ok(_)
 }
+
+test_lint! {
+    #[test]
+    fn test_deprecated_any_of_overlapping_branches_disabled_does_not_report_unused_noqa(
+        "any_of_overlapping_value = 1 # tombi: lint.rules.deprecated.disabled = true\n",
+        Config(deprecated_schema_config(None)),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_deprecated_all_of_overlapping_branches_disabled_does_not_report_unused_noqa(
+        "all_of_overlapping_value = 1 # tombi: lint.rules.deprecated.disabled = true\n",
+        Config(deprecated_schema_config(None)),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_deprecated_all_of_non_deprecated_branches_disabled_reports_unused_noqa_once(
+        "all_of_non_deprecated_value = 1 # tombi: lint.rules.deprecated.disabled = true\n",
+        Config(deprecated_schema_config(None)),
+    ) -> Diagnostics([{
+        code: "unused-noqa",
+        level: tombi_diagnostic::Level::WARNING,
+    }])
+}
