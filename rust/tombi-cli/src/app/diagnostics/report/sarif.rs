@@ -159,23 +159,25 @@ fn file_uri(path: &Path, is_dir: bool) -> String {
     uri_from_slash_path(&to_slash(path), is_dir)
 }
 
+/// Splits `server/share/dir` of a UNC path into the server, which is the authority, and the rest.
+fn split_authority(unc: &str) -> (&str, &str) {
+    unc.split_once('/').unwrap_or((unc, ""))
+}
+
 /// Converts an absolute path with `/` separators into a `file` URI.
 ///
 /// A UNC path `//server/share/dir` becomes `file://server/share/dir`,
 /// where the server is the authority of the URI.
 fn uri_from_slash_path(path: &str, is_dir: bool) -> String {
     // `\\?\C:\dir` and `\\?\UNC\server\share` are the verbatim forms of a drive path and a UNC path.
-    let path = match path.strip_prefix("//?/") {
-        Some(verbatim) => match verbatim.strip_prefix("UNC/") {
-            Some(unc) => format!("//{unc}"),
-            None => verbatim.to_owned(),
-        },
-        None => path.to_owned(),
-    };
-
-    let (authority, path) = match path.strip_prefix("//") {
-        Some(unc) => unc.split_once('/').unwrap_or((unc, "")),
-        None => ("", path.trim_start_matches('/')),
+    let (authority, path) = if let Some(unc) = path.strip_prefix("//?/UNC/") {
+        split_authority(unc)
+    } else if let Some(verbatim) = path.strip_prefix("//?/") {
+        ("", verbatim)
+    } else if let Some(unc) = path.strip_prefix("//") {
+        split_authority(unc)
+    } else {
+        ("", path.trim_start_matches('/'))
     };
 
     let mut uri = format!("file://{}/{}", encode_path(authority), encode_path(path));

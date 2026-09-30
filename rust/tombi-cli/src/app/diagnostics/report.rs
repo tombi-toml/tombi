@@ -38,7 +38,11 @@ impl FileProblem {
             crate::Error::TombiGlob(tombi_glob::Error::FileNotFound(_)) => {
                 Some(Self::Io("File not found".to_owned()))
             }
-            _ => None,
+            // Listed explicitly, so that a new variant has to be classified.
+            crate::Error::TombiGlob(_)
+            | crate::Error::Io(_)
+            | crate::Error::StdinParseFailed
+            | crate::Error::FileParseFailed(_) => None,
         }
     }
 
