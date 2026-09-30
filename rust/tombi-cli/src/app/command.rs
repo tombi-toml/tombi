@@ -36,7 +36,7 @@ pub(super) fn runtime(single_threaded: bool) -> std::io::Result<tokio::runtime::
 pub(super) fn input_paths<'a>(
     input: &'a tombi_glob::FileSearch,
     config_path: Option<&'a std::path::Path>,
-) -> Vec<&'a std::path::Path> {
+) -> impl Iterator<Item = &'a std::path::Path> {
     let entries: &[tombi_glob::FileSearchEntry] = match input {
         tombi_glob::FileSearch::Files(entries) => entries,
         tombi_glob::FileSearch::Stdin => &[],
@@ -47,7 +47,6 @@ pub(super) fn input_paths<'a>(
             tombi_glob::FileSearchEntry::Found(path) => Some(path.as_path()),
             _ => None,
         }))
-        .collect()
 }
 
 pub(super) fn file_open_error(
@@ -66,7 +65,7 @@ pub(super) fn file_open_error(
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     use tombi_glob::{FileSearch, FileSearchEntry};
 
@@ -77,8 +76,10 @@ mod tests {
                 let input: FileSearch = $input;
                 let config: Option<&Path> = $config;
                 pretty_assertions::assert_eq!(
-                    super::input_paths(&input, config),
-                    $expected.map(Path::new).to_vec()
+                    super::input_paths(&input, config)
+                        .map(Path::to_owned)
+                        .collect::<Vec<_>>(),
+                    $expected.map(PathBuf::from).to_vec()
                 );
             }
         };

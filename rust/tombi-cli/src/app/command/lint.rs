@@ -200,7 +200,7 @@ where
 
         // Before `schema_result?`, so that an error does not write to an input file.
         diagnostics_reporter
-            .reject_input_conflict(&super::input_paths(&input, config_path.as_deref()));
+            .reject_input_conflict(super::input_paths(&input, config_path.as_deref()));
         schema_result?;
         let total_num = input.len();
         let mut summary = LintRunSummary::default();

@@ -146,7 +146,7 @@ impl DiagnosticsReporter {
     ///
     /// The file is not truncated until something is written, so this must be called
     /// after the inputs are known and before the first file is recorded.
-    pub fn reject_input_conflict(&mut self, inputs: &[&Path]) {
+    pub fn reject_input_conflict<'a>(&mut self, inputs: impl IntoIterator<Item = &'a Path>) {
         if let Some(file_path) = self.unverified_file.take()
             && is_one_of(&file_path, inputs)
         {
@@ -289,12 +289,12 @@ fn validate_option_combination(
 }
 
 /// Whether `file` is one of the `inputs`, including via symlinks and relative paths.
-fn is_one_of(file: &Path, inputs: &[&Path]) -> bool {
+fn is_one_of<'a>(file: &Path, inputs: impl IntoIterator<Item = &'a Path>) -> bool {
     let Ok(file) = tombi_fs::canonicalize(file) else {
         return false;
     };
     inputs
-        .iter()
+        .into_iter()
         .any(|input| tombi_fs::canonicalize(input).is_ok_and(|input| input == file))
 }
 
@@ -324,9 +324,8 @@ mod tests {
                 }
 
                 let inputs = $inputs.map(|name: &str| dir.path().join(name));
-                let inputs = inputs.iter().map(PathBuf::as_path).collect::<Vec<_>>();
                 pretty_assertions::assert_eq!(
-                    is_one_of(&dir.path().join($file), &inputs),
+                    is_one_of(&dir.path().join($file), inputs.iter().map(PathBuf::as_path)),
                     $expected
                 );
             }
@@ -348,7 +347,7 @@ mod tests {
 
         assert!(is_one_of(
             &dir.path().join("report.json"),
-            &[dir.path().join("input.toml").as_path()]
+            [dir.path().join("input.toml").as_path()]
         ));
     }
 }
