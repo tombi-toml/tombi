@@ -135,15 +135,19 @@ where
         }
 
         if matched {
-            if let Err(error) = validate_deprecated(
-                any_of_schema.deprecation.as_ref(),
-                accessors,
-                value,
-                Some(current_schema),
-                schema_context,
-                comment_directives,
-                common_rules,
-            ) {
+            // Only report `unused-noqa` for the deprecated rule at the leaf schema;
+            // a matched branch may have consumed the directive.
+            if any_of_schema.deprecation.is_some()
+                && let Err(error) = validate_deprecated(
+                    any_of_schema.deprecation.as_ref(),
+                    accessors,
+                    value,
+                    Some(current_schema),
+                    schema_context,
+                    comment_directives,
+                    common_rules,
+                )
+            {
                 matched_diagnostics.extend(error.diagnostics);
             }
 

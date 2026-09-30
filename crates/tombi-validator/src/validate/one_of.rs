@@ -209,7 +209,7 @@ where
                     a
                 });
 
-            if error.diagnostics.is_empty() {
+            if error.diagnostics.is_empty() && one_of_schema.deprecation.is_some() {
                 handle_deprecated(
                     &mut error.diagnostics,
                     one_of_schema.deprecation.as_ref(),
