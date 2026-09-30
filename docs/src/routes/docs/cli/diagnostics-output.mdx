@@ -1,0 +1,42 @@
+# Diagnostics Output
+
+`tombi format` and `tombi lint` can write diagnostics in machine-readable formats for CI and other tools.
+
+```bash
+# JUnit report of unformatted files
+tombi format --check --diagnostics-format junit --diagnostics-file junit.xml
+
+# GitLab Code Quality report
+tombi lint --diagnostics-format gitlab --diagnostics-file gl-code-quality-report.json
+
+# GitHub Actions annotations
+tombi lint --diagnostics-format github
+
+# JSON to stdout
+tombi lint --quiet --diagnostics-format json --diagnostics-file /dev/stdout | jq
+```
+
+## Options
+
+- `--diagnostics-format <FORMAT>`: Output format of diagnostics. The default is `pretty`.
+- `--diagnostics-file <PATH>`: File to write diagnostics to. The default is stderr.
+  On Unix, `/dev/stdout` and `/dev/fd/N` are also supported.
+
+## Formats
+
+| Format       | Description                                                                                                              | Requires `--diagnostics-file` |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------ | :---------------------------: |
+| `pretty`     | Human-readable output                                                                                                    |                               |
+| `json`       | JSON array of diagnostics                                                                                                |               ✅               |
+| `json-lines` | [JSON Lines](https://jsonlines.org/), a diagnostic per line                                                              |               ✅               |
+| `github`     | [GitHub Actions workflow commands](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands) |                               |
+| `gitlab`     | [GitLab Code Quality report](https://docs.gitlab.com/ci/testing/code_quality/)                                           |               ✅               |
+| `junit`      | JUnit XML report                                                                                                         |               ✅               |
+| `sarif`      | [SARIF 2.1.0](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) report                                   |               ✅               |
+
+Problems with a whole file are reported with the following codes:
+
+- `not-formatted`: the file is not formatted (`tombi format --check`).
+- `io-error`: the file could not be found, read, or written.
+
+When reading from stdin, formats other than `pretty` require `--stdin-filename`.

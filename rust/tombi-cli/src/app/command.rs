@@ -39,6 +39,9 @@ pub(super) fn file_open_error(
     if error.kind() == std::io::ErrorKind::NotFound {
         crate::Error::TombiGlob(tombi_glob::Error::FileNotFound(source_path))
     } else {
-        crate::Error::Io(error)
+        crate::Error::FileOpenFailed {
+            path: source_path,
+            source: error,
+        }
     }
 }

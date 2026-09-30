@@ -37,18 +37,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let error = Diagnostic::new_error("some error occured.", "tombi-diagnostic", ((2, 1), (2, 3)));
 
-    warning.print(&mut Pretty {
+    let printer = Pretty {
         use_ansi_color: true,
-    });
-    warning.with_source_file(&source_file).print(&mut Pretty {
-        use_ansi_color: true,
-    });
-    error.print(&mut Pretty {
-        use_ansi_color: true,
-    });
-    error.with_source_file(&source_file).print(&mut Pretty {
-        use_ansi_color: true,
-    });
+    };
+    let mut stderr = std::io::stderr();
+
+    warning.print(&printer, &mut stderr)?;
+    warning
+        .with_source_file(&source_file)
+        .print(&printer, &mut stderr)?;
+    error.print(&printer, &mut stderr)?;
+    error
+        .with_source_file(&source_file)
+        .print(&printer, &mut stderr)?;
 
     Ok(())
 }

@@ -16,16 +16,19 @@ impl std::default::Default for Pretty {
 }
 
 impl Print<Pretty> for Level {
-    fn print(&self, printer: &mut Pretty) {
-        self.print(&mut Simple {
-            use_ansi_color: printer.use_ansi_color,
-        });
+    fn print(&self, printer: &Pretty, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
+        self.print(
+            &Simple {
+                use_ansi_color: printer.use_ansi_color,
+            },
+            writer,
+        )
     }
 }
 
 impl Print<Pretty> for Diagnostic {
-    fn print(&self, printer: &mut Pretty) {
-        self.level().print(printer);
+    fn print(&self, printer: &Pretty, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
+        self.level().print(printer, writer)?;
 
         let (message_style, at_style, link_style) = if printer.use_ansi_color {
             (
@@ -37,10 +40,11 @@ impl Print<Pretty> for Diagnostic {
             (Style::new(), Style::new(), Style::new())
         };
 
-        eprintln!(": {}", message_style.paint(self.message()));
+        writeln!(writer, ": {}", message_style.paint(self.message()))?;
 
         if let Some(source_file) = self.source_file() {
-            eprintln!(
+            writeln!(
+                writer,
                 "    {} {}",
                 at_style.paint("at"),
                 link_style.paint(format!(
@@ -49,16 +53,17 @@ impl Print<Pretty> for Diagnostic {
                     self.position().line + 1,
                     self.position().column + 1
                 )),
-            );
+            )
         } else {
-            eprintln!(
+            writeln!(
+                writer,
                 "    {}",
                 at_style.paint(format!(
                     "at line {} column {}",
                     self.position().line + 1,
                     self.position().column + 1
                 )),
-            );
+            )
         }
     }
 }

@@ -9,10 +9,10 @@ license.workspace = true
 
 [lib]
 crate-type = ["cdylib"]
+doctest = false
 # napi-derive skips export registration in test builds, which would leave
 # every binding dead code; the bindings are exercised by the npm smoke test.
 test = false
-doctest = false
 
 [dependencies]
 napi.workspace = true

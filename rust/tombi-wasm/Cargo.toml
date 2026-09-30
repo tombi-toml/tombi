@@ -18,10 +18,10 @@ console_error_panic_hook.workspace = true
 futures = { workspace = true, optional = true }
 js-sys.workspace = true
 serde = { workspace = true, optional = true }
-serde-wasm-bindgen = { version = "0.6.5", optional = true }
 serde_json = { workspace = true, optional = true }
+serde-wasm-bindgen = { version = "0.6.5", optional = true }
 tombi-fs = { workspace = true, optional = true }
-tombi-lib = { workspace = true, optional = true, default-features = false }
+tombi-lib = { workspace = true, default-features = false, optional = true }
 tombi-lsp = { workspace = true, optional = true }
 tombi-uri = { workspace = true, optional = true }
 tower-lsp = { workspace = true, optional = true }
@@ -34,8 +34,8 @@ web-sys = { workspace = true, optional = true }
 default = ["lib"]
 lib = [
   "dep:serde",
-  "dep:serde-wasm-bindgen",
   "dep:serde_json",
+  "dep:serde-wasm-bindgen",
   "dep:tombi-fs",
   "dep:tombi-lib",
   "dep:tombi-uri",

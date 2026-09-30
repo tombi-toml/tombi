@@ -111,6 +111,11 @@
         "path": "/docs/cli/linter"
       },
       {
+        "title": "Diagnostics Output",
+        "description": "Write diagnostics in JSON, GitHub, GitLab, JUnit, and SARIF formats.",
+        "path": "/docs/cli/diagnostics-output"
+      },
+      {
         "title": "Offline Mode",
         "description": "Use Tombi without internet connection.",
         "path": "/docs/cli/offline-mode"

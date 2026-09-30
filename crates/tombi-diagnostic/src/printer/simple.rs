@@ -16,26 +16,26 @@ impl std::default::Default for Simple {
 }
 
 impl Print<Simple> for Level {
-    fn print(&self, printer: &mut Simple) {
+    fn print(&self, printer: &Simple, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
         let level_style = if printer.use_ansi_color {
             self.color().bold()
         } else {
             Style::new()
         };
 
-        eprint!("{}", level_style.paint(self.as_padded_str()));
+        write!(writer, "{}", level_style.paint(self.as_padded_str()))
     }
 }
 
 impl Print<Simple> for Diagnostic {
-    fn print(&self, printer: &mut Simple) {
+    fn print(&self, printer: &Simple, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
         let message_style = if printer.use_ansi_color {
             Style::new().bold()
         } else {
             Style::new()
         };
 
-        self.level().print(printer);
-        eprintln!(": {}", message_style.paint(self.message()));
+        self.level().print(printer, writer)?;
+        writeln!(writer, ": {}", message_style.paint(self.message()))
     }
 }

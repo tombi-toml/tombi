@@ -1,0 +1,353 @@
+use std::collections::BTreeSet;
+use std::path::Path;
+
+use percent_encoding::{AsciiSet, CONTROLS, utf8_percent_encode};
+use serde_json::json;
+
+use super::{CollectedFiles, FileReport, Report, level_str, to_slash};
+use crate::app::diagnostics::format_reporter::FormatReporter;
+
+const SRCROOT: &str = "%SRCROOT%";
+
+/// Characters that are not allowed in a URI path segment.
+const PATH_SEGMENT: &AsciiSet = &CONTROLS
+    .add(b' ')
+    .add(b'"')
+    .add(b'#')
+    .add(b'%')
+    .add(b'/')
+    .add(b'<')
+    .add(b'>')
+    .add(b'?')
+    .add(b'[')
+    .add(b'\\')
+    .add(b']')
+    .add(b'^')
+    .add(b'`')
+    .add(b'{')
+    .add(b'|')
+    .add(b'}');
+
+/// Collects all files and writes a SARIF 2.1.0 report.
+#[derive(Debug, Default)]
+pub(in crate::app::diagnostics) struct SarifReporter(CollectedFiles);
+
+impl FormatReporter for SarifReporter {
+    fn record(
+        &mut self,
+        file: FileReport,
+        _writer: &mut dyn std::io::Write,
+    ) -> std::io::Result<()> {
+        self.0.record(file);
+        Ok(())
+    }
+
+    fn record_runtime_error(&mut self) {
+        self.0.record_runtime_error();
+    }
+
+    fn finish(&mut self, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
+        self.0.finish(writer, render)
+    }
+
+    fn reports_file_problems(&self) -> bool {
+        true
+    }
+}
+
+/// Renders a SARIF 2.1.0 report.
+///
+/// Columns count UTF-16 code units, as declared by `columnKind`.
+/// Artifact URIs are relative to `%SRCROOT%`, the project root.
+fn render(report: &Report) -> String {
+    let rules = report
+        .findings
+        .iter()
+        .map(|finding| finding.code)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+
+    let artifact_locations = report
+        .files
+        .iter()
+        .enumerate()
+        .map(|(index, file)| match &file.project_path {
+            Some(path) => json!({
+                "uri": encode_path(path),
+                "uriBaseId": SRCROOT,
+                "index": index,
+            }),
+            None => json!({
+                "uri": file_uri(&file.absolute_path, false),
+                "index": index,
+            }),
+        })
+        .collect::<Vec<_>>();
+
+    let results = report
+        .findings
+        .iter()
+        .map(|finding| {
+            // GitHub code scanning requires `startLine` even for file-level results.
+            let region = match finding.range {
+                Some(range) => json!({
+                    "startLine": range.start.line,
+                    "startColumn": range.start.utf16_column,
+                    "endLine": range.end.line,
+                    "endColumn": range.end.utf16_column,
+                }),
+                None => json!({ "startLine": 1 }),
+            };
+            json!({
+                "ruleId": finding.code,
+                "ruleIndex": rules.binary_search(&finding.code).unwrap_or_default(),
+                "level": level_str(finding.level),
+                "message": { "text": finding.message },
+                "locations": [{
+                    "physicalLocation": {
+                        "artifactLocation": artifact_locations[finding.file_index],
+                        "region": region,
+                    },
+                }],
+            })
+        })
+        .collect::<Vec<_>>();
+
+    let sarif = json!({
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [{
+            "tool": {
+                "driver": {
+                    "name": "tombi",
+                    "informationUri": "https://tombi-toml.github.io/tombi",
+                    "version": env!("__TOMBI_VERSION").trim_start_matches('v'),
+                    "rules": rules.iter().map(|rule| json!({ "id": rule })).collect::<Vec<_>>(),
+                },
+            },
+            "invocations": [{
+                "executionSuccessful": report.execution_successful,
+            }],
+            "originalUriBaseIds": {
+                SRCROOT: { "uri": file_uri(&report.project_root, true) },
+            },
+            "artifacts": artifact_locations
+                .iter()
+                .map(|location| json!({ "location": location }))
+                .collect::<Vec<_>>(),
+            "columnKind": "utf16CodeUnits",
+            "results": results,
+        }],
+    });
+
+    let mut output = serde_json::to_string_pretty(&sarif).unwrap_or_default();
+    output.push('\n');
+    output
+}
+
+/// Percent-encodes each segment of a `/`-separated relative path.
+fn encode_path(path: &str) -> String {
+    path.split('/')
+        .map(|segment| utf8_percent_encode(segment, PATH_SEGMENT).to_string())
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
+/// Converts an absolute path into a `file` URI.
+fn file_uri(path: &Path, is_dir: bool) -> String {
+    let path = to_slash(path);
+    let path = path.trim_start_matches('/');
+    let mut uri = format!("file:///{}", encode_path(path));
+    // Keep the drive letter of Windows paths unencoded, e.g. `file:///C:/project`.
+    if cfg!(windows) {
+        uri = uri.replacen("%3A", ":", 1);
+    }
+    if is_dir && !uri.ends_with('/') {
+        uri.push('/');
+    }
+    uri
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::tests::*;
+    use super::*;
+
+    #[cfg(unix)]
+    test_report! {
+        #[test]
+        fn sarif_diagnostics(
+            [clean_file("clean.toml"), lint_file("dir name/a#.toml"), not_formatted_file("b.toml")],
+            render,
+        ) -> Ok(format!(r#"{{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {{
+      "tool": {{
+        "driver": {{
+          "name": "tombi",
+          "informationUri": "https://tombi-toml.github.io/tombi",
+          "version": "{version}",
+          "rules": [
+            {{
+              "id": "expected-equal"
+            }},
+            {{
+              "id": "key-unused"
+            }},
+            {{
+              "id": "not-formatted"
+            }}
+          ]
+        }}
+      }},
+      "invocations": [
+        {{
+          "executionSuccessful": true
+        }}
+      ],
+      "originalUriBaseIds": {{
+        "%SRCROOT%": {{
+          "uri": "file:///project/"
+        }}
+      }},
+      "artifacts": [
+        {{
+          "location": {{
+            "uri": "b.toml",
+            "uriBaseId": "%SRCROOT%",
+            "index": 0
+          }}
+        }},
+        {{
+          "location": {{
+            "uri": "clean.toml",
+            "uriBaseId": "%SRCROOT%",
+            "index": 1
+          }}
+        }},
+        {{
+          "location": {{
+            "uri": "dir%20name/a%23.toml",
+            "uriBaseId": "%SRCROOT%",
+            "index": 2
+          }}
+        }}
+      ],
+      "columnKind": "utf16CodeUnits",
+      "results": [
+        {{
+          "ruleId": "not-formatted",
+          "ruleIndex": 2,
+          "level": "error",
+          "message": {{
+            "text": "File is not formatted"
+          }},
+          "locations": [
+            {{
+              "physicalLocation": {{
+                "artifactLocation": {{
+                  "uri": "b.toml",
+                  "uriBaseId": "%SRCROOT%",
+                  "index": 0
+                }},
+                "region": {{
+                  "startLine": 1
+                }}
+              }}
+            }}
+          ]
+        }},
+        {{
+          "ruleId": "expected-equal",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {{
+            "text": "expected '='"
+          }},
+          "locations": [
+            {{
+              "physicalLocation": {{
+                "artifactLocation": {{
+                  "uri": "dir%20name/a%23.toml",
+                  "uriBaseId": "%SRCROOT%",
+                  "index": 2
+                }},
+                "region": {{
+                  "startLine": 1,
+                  "startColumn": 1,
+                  "endLine": 1,
+                  "endColumn": 4
+                }}
+              }}
+            }}
+          ]
+        }},
+        {{
+          "ruleId": "key-unused",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {{
+            "text": "unused key"
+          }},
+          "locations": [
+            {{
+              "physicalLocation": {{
+                "artifactLocation": {{
+                  "uri": "dir%20name/a%23.toml",
+                  "uriBaseId": "%SRCROOT%",
+                  "index": 2
+                }},
+                "region": {{
+                  "startLine": 2,
+                  "startColumn": 1,
+                  "endLine": 2,
+                  "endColumn": 2
+                }}
+              }}
+            }}
+          ]
+        }}
+      ]
+    }}
+  ]
+}}
+"#, version = env!("__TOMBI_VERSION").trim_start_matches('v')));
+    }
+
+    #[test]
+    fn sarif_columns_are_utf16() {
+        use super::super::FileReport;
+        use tombi_diagnostic::Diagnostic;
+
+        let root = test_root();
+        let files = vec![FileReport {
+            source: "\"😀\" = 1\n".to_owned(),
+            diagnostics: vec![Diagnostic::new_error(
+                "error",
+                "code",
+                range((0, 3), (0, 4)),
+            )],
+            ..clean_file("a.toml")
+        }];
+        let files = collect(files);
+        let report = Report::new(&files, true, &root, &root);
+        let sarif: serde_json::Value = serde_json::from_str(&render(&report)).unwrap();
+
+        pretty_assertions::assert_eq!(
+            sarif["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["region"],
+            json!({ "startLine": 1, "startColumn": 5, "endLine": 1, "endColumn": 6 })
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn file_uri_encodes_segments() {
+        pretty_assertions::assert_eq!(
+            file_uri(Path::new("/a b/c%d"), true),
+            "file:///a%20b/c%25d/"
+        );
+    }
+}

@@ -17,6 +17,27 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
+    #[error("{path:?} failed to open [{source}]")]
+    FileOpenFailed {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+
+    #[error("{path:?} failed to read [{source}]")]
+    FileReadFailed {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+
+    #[error("{path:?} failed to write [{source}]")]
+    FileWriteFailed {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+
     #[error("stdin failed to parse")]
     StdinParseFailed,
 
@@ -67,23 +88,38 @@ impl std::fmt::Display for NotFormattedError {
     }
 }
 
+impl Error {
+    pub fn read_failed(path: Option<&std::path::Path>, source: std::io::Error) -> Self {
+        match path {
+            Some(path) => Self::FileReadFailed {
+                path: path.to_owned(),
+                source,
+            },
+            None => Self::Io(source),
+        }
+    }
+}
+
 impl Print<Pretty> for Error {
-    fn print(&self, printer: &mut Pretty) {
-        self.print(&mut Simple {
-            use_ansi_color: printer.use_ansi_color,
-        });
+    fn print(&self, printer: &Pretty, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
+        self.print(
+            &Simple {
+                use_ansi_color: printer.use_ansi_color,
+            },
+            writer,
+        )
     }
 }
 
 impl Print<Simple> for Error {
-    fn print(&self, printer: &mut Simple) {
+    fn print(&self, printer: &Simple, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
         let message_style = if printer.use_ansi_color {
             Style::new().bold()
         } else {
             Style::new()
         };
 
-        Level::ERROR.print(printer);
-        eprintln!(": {}", message_style.paint(self.to_string()));
+        Level::ERROR.print(printer, writer)?;
+        writeln!(writer, ": {}", message_style.paint(self.to_string()))
     }
 }

@@ -1,4 +1,5 @@
 mod command;
+mod diagnostics;
 mod tombi_log;
 
 use clap::{
