@@ -1,9 +1,28 @@
 use std::path::PathBuf;
 
-use tombi_text::EncodingKind;
-
-use super::{CollectedFile, FileReport, Report, json};
+use super::{CollectedFile, FileReport, Report, ReportFormat, json};
 use crate::app::diagnostics::format_reporter::FormatReporter;
+
+/// A diagnostic per line, in the same form as the elements of the JSON array.
+pub(in crate::app::diagnostics) struct JsonLinesFormat;
+
+impl ReportFormat for JsonLinesFormat {
+    type Range = tombi_text::Range;
+
+    /// Columns count grapheme clusters, like the output of `pretty`.
+    fn convert_ranges(_source: &str, ranges: &[tombi_text::Range]) -> Vec<tombi_text::Range> {
+        ranges.to_vec()
+    }
+
+    /// Renders a JSON object per line, in the same form as the elements of the JSON array.
+    fn render(report: &Report<tombi_text::Range>) -> String {
+        report
+            .findings
+            .iter()
+            .map(|finding| format!("{}\n", json::diagnostic(report, finding)))
+            .collect()
+    }
+}
 
 /// Writes the diagnostics of each file as JSON Lines as soon as the file is recorded.
 ///
@@ -22,11 +41,10 @@ impl JsonLinesReporter {
 
 impl FormatReporter for JsonLinesReporter {
     fn record(&mut self, file: FileReport, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
-        // Columns count Unicode code points, like `json`.
-        let files = [CollectedFile::new(file, EncodingKind::Utf32)];
+        let files = [CollectedFile::new::<JsonLinesFormat>(file)];
         // Paths are relative to the current directory, so the project root is not used.
         let report = Report::new(&files, true, &self.cwd, &self.cwd);
-        writer.write_all(render(&report).as_bytes())?;
+        writer.write_all(JsonLinesFormat::render(&report).as_bytes())?;
         writer.flush()
     }
 
@@ -41,15 +59,6 @@ impl FormatReporter for JsonLinesReporter {
     }
 }
 
-/// Renders a JSON object per line, in the same form as the elements of the JSON array.
-fn render(report: &Report) -> String {
-    report
-        .findings
-        .iter()
-        .map(|finding| format!("{}\n", json::diagnostic(report, finding)))
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::super::tests::*;
@@ -58,8 +67,8 @@ mod tests {
     test_report! {
         #[test]
         fn json_lines_diagnostics(
+            JsonLinesFormat,
             [clean_file("clean.toml"), lint_file("a.toml"), not_formatted_file("b.toml")],
-            render,
         ) -> Ok(concat!(
             r#"{"path":"a.toml","level":"error","code":"expected-equal","message":"expected '='","range":{"start":{"line":1,"column":1},"end":{"line":1,"column":4}}}"#,
             "\n",
@@ -73,8 +82,8 @@ mod tests {
     test_report! {
         #[test]
         fn json_lines_no_diagnostics(
+            JsonLinesFormat,
             [clean_file("a.toml")],
-            render,
         ) -> Ok("");
     }
 }

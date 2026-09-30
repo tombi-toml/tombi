@@ -3,10 +3,9 @@ use std::path::Path;
 
 use percent_encoding::{AsciiSet, CONTROLS, utf8_percent_encode};
 use serde_json::json;
-use tombi_text::EncodingKind;
+use tombi_text::{EncodingKind, IntoLsp, LineIndex};
 
-use super::{CollectedFiles, FileReport, Report, level_str, to_slash};
-use crate::app::diagnostics::format_reporter::FormatReporter;
+use super::{Report, ReportFormat, level_str, to_slash};
 
 const SRCROOT: &str = "%SRCROOT%";
 
@@ -30,129 +29,110 @@ const PATH_SEGMENT: &AsciiSet = &CONTROLS
     .add(b'}');
 
 /// Collects all files and writes a SARIF 2.1.0 report.
-///
-/// Columns count UTF-16 code units, as declared by `columnKind: utf16CodeUnits`.
-#[derive(Debug)]
-pub(in crate::app::diagnostics) struct SarifReporter(CollectedFiles);
+pub(in crate::app::diagnostics) struct SarifFormat;
 
-impl Default for SarifReporter {
-    fn default() -> Self {
-        Self(CollectedFiles::new(EncodingKind::Utf16))
-    }
-}
+impl ReportFormat for SarifFormat {
+    /// Columns count UTF-16 code units, as declared by `columnKind: utf16CodeUnits`.
+    type Range = tower_lsp::lsp_types::Range;
 
-impl FormatReporter for SarifReporter {
-    fn record(
-        &mut self,
-        file: FileReport,
-        _writer: &mut dyn std::io::Write,
-    ) -> std::io::Result<()> {
-        self.0.record(file);
-        Ok(())
+    fn convert_ranges(source: &str, ranges: &[tombi_text::Range]) -> Vec<Self::Range> {
+        let line_index = LineIndex::new(source, EncodingKind::Utf16);
+        ranges
+            .iter()
+            .map(|range| (*range).into_lsp(&line_index))
+            .collect()
     }
 
-    fn record_runtime_error(&mut self) {
-        self.0.record_runtime_error();
-    }
+    /// Renders a SARIF 2.1.0 report.
+    ///
+    /// Columns count UTF-16 code units, as declared by `columnKind`.
+    /// Artifact URIs are relative to `%SRCROOT%`, the project root.
+    fn render(report: &Report<tower_lsp::lsp_types::Range>) -> String {
+        let rules = report
+            .findings
+            .iter()
+            .map(|finding| finding.code)
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
 
-    fn finish(&mut self, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
-        self.0.finish(writer, render)
-    }
-
-    fn reports_file_problems(&self) -> bool {
-        true
-    }
-}
-
-/// Renders a SARIF 2.1.0 report.
-///
-/// Columns count UTF-16 code units, as declared by `columnKind`.
-/// Artifact URIs are relative to `%SRCROOT%`, the project root.
-fn render(report: &Report) -> String {
-    let rules = report
-        .findings
-        .iter()
-        .map(|finding| finding.code)
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .collect::<Vec<_>>();
-
-    let artifact_locations = report
-        .files
-        .iter()
-        .enumerate()
-        .map(|(index, file)| match &file.project_path {
-            Some(path) => json!({
-                "uri": encode_path(path),
-                "uriBaseId": SRCROOT,
-                "index": index,
-            }),
-            None => json!({
-                "uri": file_uri(&file.absolute_path, false),
-                "index": index,
-            }),
-        })
-        .collect::<Vec<_>>();
-
-    let results = report
-        .findings
-        .iter()
-        .map(|finding| {
-            // GitHub code scanning requires `startLine` even for file-level results.
-            let region = match finding.range {
-                Some(range) => json!({
-                    "startLine": range.start.line + 1,
-                    "startColumn": range.start.character + 1,
-                    "endLine": range.end.line + 1,
-                    "endColumn": range.end.character + 1,
+        let artifact_locations = report
+            .files
+            .iter()
+            .enumerate()
+            .map(|(index, file)| match &file.project_path {
+                Some(path) => json!({
+                    "uri": encode_path(path),
+                    "uriBaseId": SRCROOT,
+                    "index": index,
                 }),
-                None => json!({ "startLine": 1 }),
-            };
-            json!({
-                "ruleId": finding.code,
-                "ruleIndex": rules.binary_search(&finding.code).unwrap_or_default(),
-                "level": level_str(finding.level),
-                "message": { "text": finding.message },
-                "locations": [{
-                    "physicalLocation": {
-                        "artifactLocation": artifact_locations[finding.file_index],
-                        "region": region,
-                    },
-                }],
+                None => json!({
+                    "uri": file_uri(&file.absolute_path, false),
+                    "index": index,
+                }),
             })
-        })
-        .collect::<Vec<_>>();
+            .collect::<Vec<_>>();
 
-    let sarif = json!({
-        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
-        "version": "2.1.0",
-        "runs": [{
-            "tool": {
-                "driver": {
-                    "name": "tombi",
-                    "informationUri": "https://tombi-toml.github.io/tombi",
-                    "version": env!("__TOMBI_VERSION").trim_start_matches('v'),
-                    "rules": rules.iter().map(|rule| json!({ "id": rule })).collect::<Vec<_>>(),
+        let results = report
+            .findings
+            .iter()
+            .map(|finding| {
+                // GitHub code scanning requires `startLine` even for file-level results.
+                let region = match finding.range {
+                    Some(range) => json!({
+                        "startLine": range.start.line + 1,
+                        "startColumn": range.start.character + 1,
+                        "endLine": range.end.line + 1,
+                        "endColumn": range.end.character + 1,
+                    }),
+                    None => json!({ "startLine": 1 }),
+                };
+                json!({
+                    "ruleId": finding.code,
+                    "ruleIndex": rules.binary_search(&finding.code).unwrap_or_default(),
+                    "level": level_str(finding.level),
+                    "message": { "text": finding.message },
+                    "locations": [{
+                        "physicalLocation": {
+                            "artifactLocation": artifact_locations[finding.file_index],
+                            "region": region,
+                        },
+                    }],
+                })
+            })
+            .collect::<Vec<_>>();
+
+        let sarif = json!({
+            "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+            "version": "2.1.0",
+            "runs": [{
+                "tool": {
+                    "driver": {
+                        "name": "tombi",
+                        "informationUri": "https://tombi-toml.github.io/tombi",
+                        "version": env!("__TOMBI_VERSION").trim_start_matches('v'),
+                        "rules": rules.iter().map(|rule| json!({ "id": rule })).collect::<Vec<_>>(),
+                    },
                 },
-            },
-            "invocations": [{
-                "executionSuccessful": report.execution_successful,
+                "invocations": [{
+                    "executionSuccessful": report.execution_successful,
+                }],
+                "originalUriBaseIds": {
+                    SRCROOT: { "uri": file_uri(&report.project_root, true) },
+                },
+                "artifacts": artifact_locations
+                    .iter()
+                    .map(|location| json!({ "location": location }))
+                    .collect::<Vec<_>>(),
+                "columnKind": "utf16CodeUnits",
+                "results": results,
             }],
-            "originalUriBaseIds": {
-                SRCROOT: { "uri": file_uri(&report.project_root, true) },
-            },
-            "artifacts": artifact_locations
-                .iter()
-                .map(|location| json!({ "location": location }))
-                .collect::<Vec<_>>(),
-            "columnKind": "utf16CodeUnits",
-            "results": results,
-        }],
-    });
+        });
 
-    let mut output = serde_json::to_string_pretty(&sarif).unwrap_or_default();
-    output.push('\n');
-    output
+        let mut output = serde_json::to_string_pretty(&sarif).unwrap_or_default();
+        output.push('\n');
+        output
+    }
 }
 
 /// Percent-encodes each segment of a `/`-separated relative path.
@@ -198,15 +178,17 @@ fn uri_from_slash_path(path: &str, is_dir: bool) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::super::tests::*;
+    use tombi_diagnostic::Diagnostic;
+
+    use super::super::{CollectedFile, FileReport, tests::*};
     use super::*;
 
     #[cfg(unix)]
     test_report! {
         #[test]
         fn sarif_diagnostics(
+            SarifFormat,
             [clean_file("clean.toml"), lint_file("dir name/a#.toml"), not_formatted_file("b.toml")],
-            render,
         ) -> Ok(format!(r#"{{
   "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
   "version": "2.1.0",
@@ -346,9 +328,6 @@ mod tests {
 
     #[test]
     fn sarif_columns_are_utf16() {
-        use super::super::FileReport;
-        use tombi_diagnostic::Diagnostic;
-
         let root = test_root();
         let files = vec![FileReport {
             source: "\"😀\" = 1\n".to_owned(),
@@ -359,9 +338,9 @@ mod tests {
             )],
             ..clean_file("a.toml")
         }];
-        let files = collect_with(files, EncodingKind::Utf16);
+        let files = collect::<SarifFormat>(files);
         let report = Report::new(&files, true, &root, &root);
-        let sarif: serde_json::Value = serde_json::from_str(&render(&report)).unwrap();
+        let sarif: serde_json::Value = serde_json::from_str(&SarifFormat::render(&report)).unwrap();
 
         pretty_assertions::assert_eq!(
             sarif["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["region"],
@@ -386,4 +365,39 @@ mod tests {
     test_uri_from_slash_path!(unc_share_root: "//server/share", true => "file://server/share/");
     test_uri_from_slash_path!(verbatim_drive_path: "//?/C:/project", true => "file:///C:/project/");
     test_uri_from_slash_path!(verbatim_unc_path: "//?/UNC/server/share/dir", true => "file://server/share/dir/");
+
+    /// Converts `$range` of a diagnostic in `$source` into UTF-16 columns.
+    macro_rules! test_utf16_columns {
+        ($name:ident: $source:expr, $range:expr => $expected:expr) => {
+            #[test]
+            fn $name() {
+                let (start, end) = $range;
+                let file = FileReport::new(
+                    Some(std::path::PathBuf::from("a.toml")),
+                    $source.to_owned(),
+                    vec![Diagnostic::new_error("message", "code", range(start, end))],
+                );
+                let range = CollectedFile::new::<SarifFormat>(file).findings[0]
+                    .range
+                    .unwrap();
+                pretty_assertions::assert_eq!(
+                    (
+                        range.start.line,
+                        range.start.character,
+                        range.end.line,
+                        range.end.character
+                    ),
+                    $expected
+                );
+            }
+        };
+    }
+
+    test_utf16_columns!(ascii: "a = 1", ((0, 0), (0, 4)) => (0, 0, 0, 4));
+    test_utf16_columns!(cjk: "キー = 1", ((0, 0), (0, 2)) => (0, 0, 0, 2));
+    test_utf16_columns!(emoji: "\"😀\" = 1", ((0, 1), (0, 2)) => (0, 1, 0, 3));
+    test_utf16_columns!(combining_mark: "\"e\u{301}\" = 1", ((0, 1), (0, 2)) => (0, 1, 0, 3));
+    test_utf16_columns!(crlf: "a = 1\r\n\"😀\" = 2", ((1, 1), (1, 2)) => (1, 1, 1, 3));
+    test_utf16_columns!(multiple_lines: "a = \"\"\"\n😀\n\"\"\"", ((0, 4), (2, 3)) => (0, 4, 2, 3));
+    test_utf16_columns!(past_end_of_line_is_clamped: "a", ((0, 0), (0, 3)) => (0, 0, 0, 1));
 }

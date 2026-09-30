@@ -34,6 +34,9 @@ tombi lint --quiet --diagnostics-format json --diagnostics-file /dev/stdout | jq
 | `junit`      | JUnit XML report                                                                                                         |               ✅               |
 | `sarif`      | [SARIF 2.1.0](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) report                                   |               ✅               |
 
+Lines and columns are 1-based.
+Columns count grapheme clusters, like the output of `pretty`, except for `sarif`, which counts UTF-16 code units.
+
 Problems with a whole file are reported with the following codes:
 
 - `not-formatted`: the file is not formatted (`tombi format --check`).

@@ -4,82 +4,66 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 use tombi_diagnostic::Level;
 
-use super::{CollectedFiles, FileReport, Finding, Report, position_json};
-use crate::app::diagnostics::format_reporter::FormatReporter;
+use super::{Finding, Report, ReportFormat, position_json};
 
 /// Collects all files and writes a GitLab Code Quality report.
-#[derive(Debug, Default)]
-pub(in crate::app::diagnostics) struct GitlabReporter(CollectedFiles);
+pub(in crate::app::diagnostics) struct GitlabFormat;
 
-impl FormatReporter for GitlabReporter {
-    fn record(
-        &mut self,
-        file: FileReport,
-        _writer: &mut dyn std::io::Write,
-    ) -> std::io::Result<()> {
-        self.0.record(file);
-        Ok(())
+impl ReportFormat for GitlabFormat {
+    type Range = tombi_text::Range;
+
+    /// Columns count grapheme clusters, like the output of `pretty`.
+    fn convert_ranges(_source: &str, ranges: &[tombi_text::Range]) -> Vec<tombi_text::Range> {
+        ranges.to_vec()
     }
 
-    fn record_runtime_error(&mut self) {
-        self.0.record_runtime_error();
-    }
+    /// Renders a GitLab Code Quality report.
+    ///
+    /// See <https://docs.gitlab.com/ci/testing/code_quality/#code-quality-report-format>.
+    fn render(report: &Report<tombi_text::Range>) -> String {
+        let issues = report
+            .findings
+            .iter()
+            .map(|finding| {
+                let path = report.file(finding).project_path_or_absolute();
+                let location = match finding.range {
+                    Some(range) => json!({
+                        "path": path,
+                        "positions": {
+                            "begin": position_json(range.start),
+                            "end": position_json(range.end),
+                        },
+                    }),
+                    None => json!({
+                        "path": path,
+                        "lines": { "begin": 1 },
+                    }),
+                };
 
-    fn finish(&mut self, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
-        self.0.finish(writer, render)
-    }
-
-    fn reports_file_problems(&self) -> bool {
-        true
-    }
-}
-
-/// Renders a GitLab Code Quality report.
-///
-/// See <https://docs.gitlab.com/ci/testing/code_quality/#code-quality-report-format>.
-fn render(report: &Report) -> String {
-    let issues = report
-        .findings
-        .iter()
-        .map(|finding| {
-            let path = report.file(finding).project_path_or_absolute();
-            let location = match finding.range {
-                Some(range) => json!({
-                    "path": path,
-                    "positions": {
-                        "begin": position_json(range.start),
-                        "end": position_json(range.end),
+                json!({
+                    "description": finding.message,
+                    "check_name": finding.code,
+                    "fingerprint": fingerprint(&path, finding),
+                    "severity": match finding.level {
+                        Level::ERROR => "major",
+                        Level::WARNING => "minor",
                     },
-                }),
-                None => json!({
-                    "path": path,
-                    "lines": { "begin": 1 },
-                }),
-            };
-
-            json!({
-                "description": finding.message,
-                "check_name": finding.code,
-                "fingerprint": fingerprint(&path, finding),
-                "severity": match finding.level {
-                    Level::ERROR => "major",
-                    Level::WARNING => "minor",
-                },
-                "location": location,
+                    "location": location,
+                })
             })
-        })
-        .collect::<Vec<_>>();
+            .collect::<Vec<_>>();
 
-    let mut output = serde_json::to_string_pretty(&issues).unwrap_or_default();
-    output.push('\n');
-    output
+        let mut output = serde_json::to_string_pretty(&issues).unwrap_or_default();
+        output.push('\n');
+        output
+    }
 }
 
 /// A fingerprint that is stable across line changes and tombi releases.
 ///
 /// Line numbers are excluded so that a finding keeps its identity when code above it moves.
 /// Identical findings in the same file are told apart by their order.
-fn fingerprint(path: &str, finding: &Finding) -> String {
+fn fingerprint(path: &str, finding: &Finding<tombi_text::Range>) -> String {
     let mut hasher = Sha256::new();
     for part in [
         path,
@@ -111,8 +95,8 @@ mod tests {
     test_report! {
         #[test]
         fn gitlab_diagnostics(
+            GitlabFormat,
             [clean_file("clean.toml"), lint_file("sub/a.toml"), not_formatted_file("b.toml")],
-            render,
         ) -> Ok(r#"[
   {
     "description": "File is not formatted",
@@ -171,14 +155,14 @@ mod tests {
     test_report! {
         #[test]
         fn gitlab_no_diagnostics(
+            GitlabFormat,
             [clean_file("a.toml")],
-            render,
         ) -> Ok("[]\n");
     }
 
     fn fingerprints(files: Vec<FileReport>) -> Vec<String> {
         let root = test_root();
-        let files = collect(files);
+        let files = collect::<GitlabFormat>(files);
         let report = Report::new(&files, true, &root, &root);
         report
             .findings

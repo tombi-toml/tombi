@@ -2,122 +2,106 @@ use std::fmt::Write;
 
 use tombi_diagnostic::Level;
 
-use super::{CollectedFiles, FileReport, Report, level_str};
-use crate::app::diagnostics::format_reporter::FormatReporter;
+use super::{Report, ReportFormat, level_str};
 
 /// Collects all files and writes a JUnit XML report.
-#[derive(Debug, Default)]
-pub(in crate::app::diagnostics) struct JunitReporter(CollectedFiles);
+pub(in crate::app::diagnostics) struct JunitFormat;
 
-impl FormatReporter for JunitReporter {
-    fn record(
-        &mut self,
-        file: FileReport,
-        _writer: &mut dyn std::io::Write,
-    ) -> std::io::Result<()> {
-        self.0.record(file);
-        Ok(())
+impl ReportFormat for JunitFormat {
+    type Range = tombi_text::Range;
+
+    /// Columns count grapheme clusters, like the output of `pretty`.
+    fn convert_ranges(_source: &str, ranges: &[tombi_text::Range]) -> Vec<tombi_text::Range> {
+        ranges.to_vec()
     }
 
-    fn record_runtime_error(&mut self) {
-        self.0.record_runtime_error();
-    }
+    /// Renders a JUnit XML report.
+    ///
+    /// Each checked file is a test case. Its findings are aggregated into a single `<failure>`,
+    /// because consumers such as GitLab keep only the first of test cases with the same name.
+    fn render(report: &Report<tombi_text::Range>) -> String {
+        let tests = report.files.len().max(1);
+        let failures = (0..report.files.len())
+            .filter(|index| !report.findings_of(*index).is_empty())
+            .count();
 
-    fn finish(&mut self, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
-        self.0.finish(writer, render)
-    }
-
-    fn reports_file_problems(&self) -> bool {
-        true
-    }
-}
-
-/// Renders a JUnit XML report.
-///
-/// Each checked file is a test case. Its findings are aggregated into a single `<failure>`,
-/// because consumers such as GitLab keep only the first of test cases with the same name.
-fn render(report: &Report) -> String {
-    let tests = report.files.len().max(1);
-    let failures = (0..report.files.len())
-        .filter(|index| !report.findings_of(*index).is_empty())
-        .count();
-
-    let mut output = String::new();
-    let _ = writeln!(output, r#"<?xml version="1.0" encoding="UTF-8"?>"#);
-    let _ = writeln!(
-        output,
-        r#"<testsuites name="tombi" tests="{tests}" failures="{failures}" errors="0">"#
-    );
-    let _ = writeln!(
-        output,
-        r#"  <testsuite name="tombi" tests="{tests}" failures="{failures}" errors="0" skipped="0">"#
-    );
-
-    // Some consumers such as Jenkins reject a report without test cases.
-    if report.files.is_empty() {
+        let mut output = String::new();
+        let _ = writeln!(output, r#"<?xml version="1.0" encoding="UTF-8"?>"#);
         let _ = writeln!(
             output,
-            r#"    <testcase name="No files checked" classname="tombi"/>"#
+            r#"<testsuites name="tombi" tests="{tests}" failures="{failures}" errors="0">"#
         );
-    }
-
-    for (index, file) in report.files.iter().enumerate() {
-        let findings = report.findings_of(index);
-        let path = escape(&file.display_path);
-        let mut attributes = format!(r#"name="{path}" classname="tombi" file="{path}""#);
-
-        if findings.is_empty() {
-            let _ = writeln!(output, "    <testcase {attributes}/>");
-            continue;
-        }
-
-        if let Some(range) = findings.iter().find_map(|finding| finding.range) {
-            let _ = write!(attributes, r#" line="{}""#, range.start.line + 1);
-        }
-        let failure_type = if findings.iter().any(|finding| finding.level == Level::ERROR) {
-            "error"
-        } else {
-            "warning"
-        };
-        let message = match findings.len() {
-            1 => findings[0].message.to_owned(),
-            n => format!("{n} problems"),
-        };
-        let body = findings
-            .iter()
-            .map(|finding| {
-                let location = match finding.range {
-                    Some(range) => format!(
-                        "{}:{}:{}",
-                        file.display_path,
-                        range.start.line + 1,
-                        range.start.character + 1
-                    ),
-                    None => file.display_path.clone(),
-                };
-                format!(
-                    "{location}: {} [{}] {}",
-                    level_str(finding.level),
-                    finding.code,
-                    finding.message
-                )
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        let _ = writeln!(output, "    <testcase {attributes}>");
         let _ = writeln!(
             output,
-            r#"      <failure type="{failure_type}" message="{}">{}</failure>"#,
-            escape(&message),
-            escape(&body)
+            r#"  <testsuite name="tombi" tests="{tests}" failures="{failures}" errors="0" skipped="0">"#
         );
-        let _ = writeln!(output, "    </testcase>");
-    }
 
-    let _ = writeln!(output, "  </testsuite>");
-    let _ = writeln!(output, "</testsuites>");
-    output
+        // Some consumers such as Jenkins reject a report without test cases.
+        if report.files.is_empty() {
+            let _ = writeln!(
+                output,
+                r#"    <testcase name="No files checked" classname="tombi"/>"#
+            );
+        }
+
+        for (index, file) in report.files.iter().enumerate() {
+            let findings = report.findings_of(index);
+            let path = escape(&file.display_path);
+            let mut attributes = format!(r#"name="{path}" classname="tombi" file="{path}""#);
+
+            if findings.is_empty() {
+                let _ = writeln!(output, "    <testcase {attributes}/>");
+                continue;
+            }
+
+            if let Some(range) = findings.iter().find_map(|finding| finding.range) {
+                let _ = write!(attributes, r#" line="{}""#, range.start.line + 1);
+            }
+            let failure_type = if findings.iter().any(|finding| finding.level == Level::ERROR) {
+                "error"
+            } else {
+                "warning"
+            };
+            let message = match findings.len() {
+                1 => findings[0].message.to_owned(),
+                n => format!("{n} problems"),
+            };
+            let body = findings
+                .iter()
+                .map(|finding| {
+                    let location = match finding.range {
+                        Some(range) => format!(
+                            "{}:{}:{}",
+                            file.display_path,
+                            range.start.line + 1,
+                            range.start.column + 1
+                        ),
+                        None => file.display_path.clone(),
+                    };
+                    format!(
+                        "{location}: {} [{}] {}",
+                        level_str(finding.level),
+                        finding.code,
+                        finding.message
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+
+            let _ = writeln!(output, "    <testcase {attributes}>");
+            let _ = writeln!(
+                output,
+                r#"      <failure type="{failure_type}" message="{}">{}</failure>"#,
+                escape(&message),
+                escape(&body)
+            );
+            let _ = writeln!(output, "    </testcase>");
+        }
+
+        let _ = writeln!(output, "  </testsuite>");
+        let _ = writeln!(output, "</testsuites>");
+        output
+    }
 }
 
 /// Escapes text for XML attributes and content, replacing characters that XML 1.0 does not allow.
@@ -148,8 +132,8 @@ mod tests {
     test_report! {
         #[test]
         fn junit_diagnostics(
+            JunitFormat,
             [clean_file("clean.toml"), lint_file("a.toml")],
-            render,
         ) -> Ok(r#"<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="tombi" tests="2" failures="1" errors="0">
   <testsuite name="tombi" tests="2" failures="1" errors="0" skipped="0">
@@ -166,8 +150,8 @@ a.toml:2:1: warning [key-unused] unused key</failure>
     test_report! {
         #[test]
         fn junit_not_formatted(
+            JunitFormat,
             [not_formatted_file("a.toml")],
-            render,
         ) -> Ok(r#"<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="tombi" tests="1" failures="1" errors="0">
   <testsuite name="tombi" tests="1" failures="1" errors="0" skipped="0">
@@ -182,11 +166,11 @@ a.toml:2:1: warning [key-unused] unused key</failure>
     test_report! {
         #[test]
         fn junit_escapes_xml(
+            JunitFormat,
             [FileReport {
                 diagnostics: vec![Diagnostic::new_warning("<\"&\u{1b}\">", "code", range((0, 0), (0, 1)))],
                 ..clean_file("a&b.toml")
             }],
-            render,
         ) -> Ok("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <testsuites name=\"tombi\" tests=\"1\" failures=\"1\" errors=\"0\">
   <testsuite name=\"tombi\" tests=\"1\" failures=\"1\" errors=\"0\" skipped=\"0\">
@@ -201,8 +185,8 @@ a.toml:2:1: warning [key-unused] unused key</failure>
     test_report! {
         #[test]
         fn junit_no_files(
+            JunitFormat,
             [],
-            render,
         ) -> Ok(r#"<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="tombi" tests="1" failures="0" errors="0">
   <testsuite name="tombi" tests="1" failures="0" errors="0" skipped="0">

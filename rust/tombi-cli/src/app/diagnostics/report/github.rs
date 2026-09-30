@@ -1,78 +1,62 @@
 use std::fmt::Write;
 
-use super::{CollectedFiles, FileReport, Report, level_str};
-use crate::app::diagnostics::format_reporter::FormatReporter;
+use super::{Report, ReportFormat, level_str};
 
-/// Collects all files and writes a GitHub Actions workflow commands.
-#[derive(Debug, Default)]
-pub(in crate::app::diagnostics) struct GithubReporter(CollectedFiles);
+/// Collects all files and writes GitHub Actions workflow commands.
+pub(in crate::app::diagnostics) struct GithubFormat;
 
-impl FormatReporter for GithubReporter {
-    fn record(
-        &mut self,
-        file: FileReport,
-        _writer: &mut dyn std::io::Write,
-    ) -> std::io::Result<()> {
-        self.0.record(file);
-        Ok(())
+impl ReportFormat for GithubFormat {
+    type Range = tombi_text::Range;
+
+    /// Columns count grapheme clusters, like the output of `pretty`.
+    fn convert_ranges(_source: &str, ranges: &[tombi_text::Range]) -> Vec<tombi_text::Range> {
+        ranges.to_vec()
     }
 
-    fn record_runtime_error(&mut self) {
-        self.0.record_runtime_error();
-    }
+    /// Renders GitHub Actions workflow commands, one annotation per line.
+    ///
+    /// See <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands>.
+    fn render(report: &Report<tombi_text::Range>) -> String {
+        let mut output = String::new();
 
-    fn finish(&mut self, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
-        self.0.finish(writer, render)
-    }
+        for finding in &report.findings {
+            let file = report.file(finding);
+            let command = level_str(finding.level);
 
-    fn reports_file_problems(&self) -> bool {
-        true
-    }
-}
-
-/// Renders GitHub Actions workflow commands, one annotation per line.
-///
-/// See <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands>.
-fn render(report: &Report) -> String {
-    let mut output = String::new();
-
-    for finding in &report.findings {
-        let file = report.file(finding);
-        let command = level_str(finding.level);
-
-        // The runner converts absolute paths in the workspace to repository-relative paths.
-        let mut properties = vec![format!(
-            "file={}",
-            escape_property(&file.absolute_path.to_string_lossy())
-        )];
-        let location = match finding.range {
-            Some(range) => {
-                let (line, column) = (range.start.line + 1, range.start.character + 1);
-                properties.push(format!("line={line}"));
-                properties.push(format!("endLine={}", range.end.line + 1));
-                // The runner drops columns of annotations spanning multiple lines.
-                if range.start.line == range.end.line {
-                    properties.push(format!("col={column}"));
-                    properties.push(format!("endColumn={}", range.end.character + 1));
+            // The runner converts absolute paths in the workspace to repository-relative paths.
+            let mut properties = vec![format!(
+                "file={}",
+                escape_property(&file.absolute_path.to_string_lossy())
+            )];
+            let location = match finding.range {
+                Some(range) => {
+                    let (line, column) = (range.start.line + 1, range.start.column + 1);
+                    properties.push(format!("line={line}"));
+                    properties.push(format!("endLine={}", range.end.line + 1));
+                    // The runner drops columns of annotations spanning multiple lines.
+                    if range.start.line == range.end.line {
+                        properties.push(format!("col={column}"));
+                        properties.push(format!("endColumn={}", range.end.column + 1));
+                    }
+                    format!("{}:{line}:{column}", file.display_path)
                 }
-                format!("{}:{line}:{column}", file.display_path)
-            }
-            None => file.display_path.clone(),
-        };
-        properties.push(format!(
-            "title={}",
-            escape_property(&format!("tombi ({})", finding.code))
-        ));
+                None => file.display_path.clone(),
+            };
+            properties.push(format!(
+                "title={}",
+                escape_property(&format!("tombi ({})", finding.code))
+            ));
 
-        let _ = writeln!(
-            output,
-            "::{command} {}::{}",
-            properties.join(","),
-            escape_data(&format!("{location}: {}", finding.message))
-        );
+            let _ = writeln!(
+                output,
+                "::{command} {}::{}",
+                properties.join(","),
+                escape_data(&format!("{location}: {}", finding.message))
+            );
+        }
+
+        output
     }
-
-    output
 }
 
 fn escape_data(value: &str) -> String {
@@ -97,8 +81,8 @@ mod tests {
     test_report! {
         #[test]
         fn github_diagnostics(
+            GithubFormat,
             [clean_file("clean.toml"), lint_file("a.toml"), not_formatted_file("b.toml")],
-            render,
         ) -> Ok(concat!(
             "::error file=/project/a.toml,line=1,endLine=1,col=1,endColumn=4,title=tombi (expected-equal)::a.toml:1:1: expected '='\n",
             "::warning file=/project/a.toml,line=2,endLine=2,col=1,endColumn=2,title=tombi (key-unused)::a.toml:2:1: unused key\n",
@@ -110,12 +94,12 @@ mod tests {
     test_report! {
         #[test]
         fn github_multiline_range_has_no_columns(
+            GithubFormat,
             [FileReport {
                 source: "a = \"\"\"\n\"\"\"\n".to_owned(),
                 diagnostics: vec![Diagnostic::new_error("invalid", "invalid", range((0, 4), (1, 3)))],
                 ..clean_file("a.toml")
             }],
-            render,
         ) -> Ok("::error file=/project/a.toml,line=1,endLine=2,title=tombi (invalid)::a.toml:1:5: invalid\n");
     }
 
@@ -123,19 +107,19 @@ mod tests {
     test_report! {
         #[test]
         fn github_escapes_data_and_properties(
+            GithubFormat,
             [FileReport {
                 diagnostics: vec![Diagnostic::new_error("100%\r\nsure: a, b", "a:b,c", range((0, 0), (0, 1)))],
                 ..clean_file("a,b:c.toml")
             }],
-            render,
         ) -> Ok("::error file=/project/a%2Cb%3Ac.toml,line=1,endLine=1,col=1,endColumn=2,title=tombi (a%3Ab%2Cc)::a,b:c.toml:1:1: 100%25%0D%0Asure: a, b\n");
     }
 
     test_report! {
         #[test]
         fn github_no_diagnostics(
+            GithubFormat,
             [clean_file("a.toml")],
-            render,
         ) -> Ok("");
     }
 }

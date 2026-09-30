@@ -12,8 +12,8 @@ use pretty::PrettyReporter;
 use report::FileProblem;
 pub use report::FileReport;
 use report::{
-    github::GithubReporter, gitlab::GitlabReporter, json::JsonReporter,
-    json_lines::JsonLinesReporter, junit::JunitReporter, sarif::SarifReporter,
+    CollectingReporter, github::GithubFormat, gitlab::GitlabFormat, json::JsonFormat,
+    json_lines::JsonLinesReporter, junit::JunitFormat, sarif::SarifFormat,
 };
 use tombi_diagnostic::Print;
 
@@ -68,12 +68,12 @@ impl DiagnosticsFormat {
     fn reporter(&self, use_ansi_color: bool) -> std::io::Result<Box<dyn FormatReporter>> {
         Ok(match self {
             Self::Pretty => Box::new(PrettyReporter::new(use_ansi_color)),
-            Self::Json => Box::<JsonReporter>::default(),
+            Self::Json => Box::<CollectingReporter<JsonFormat>>::default(),
             Self::JsonLines => Box::new(JsonLinesReporter::new()?),
-            Self::Github => Box::<GithubReporter>::default(),
-            Self::Gitlab => Box::<GitlabReporter>::default(),
-            Self::Junit => Box::<JunitReporter>::default(),
-            Self::Sarif => Box::<SarifReporter>::default(),
+            Self::Github => Box::<CollectingReporter<GithubFormat>>::default(),
+            Self::Gitlab => Box::<CollectingReporter<GitlabFormat>>::default(),
+            Self::Junit => Box::<CollectingReporter<JunitFormat>>::default(),
+            Self::Sarif => Box::<CollectingReporter<SarifFormat>>::default(),
         })
     }
 }
