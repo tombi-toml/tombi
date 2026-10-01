@@ -31,7 +31,7 @@ pub enum SchemaView {
     AllOf(AllOfSchema),
     Null,
     Anything(AnythingSchema),
-    Nothing(tombi_text::Range),
+    Nothing(tombi_text::Span),
 }
 
 impl SchemaView {
@@ -684,24 +684,24 @@ impl SchemaView {
         }
     }
 
-    pub fn range(&self) -> tombi_text::Range {
+    pub fn span(&self) -> tombi_text::Span {
         match self {
-            SchemaView::Null => tombi_text::Range::default(),
-            SchemaView::Boolean(schema) => schema.range,
-            SchemaView::Integer(schema) => schema.range,
-            SchemaView::Float(schema) => schema.range,
-            SchemaView::String(schema) => schema.range,
-            SchemaView::LocalDate(schema) => schema.range,
-            SchemaView::LocalDateTime(schema) => schema.range,
-            SchemaView::LocalTime(schema) => schema.range,
-            SchemaView::OffsetDateTime(schema) => schema.range,
-            SchemaView::Array(schema) => schema.range,
-            SchemaView::Table(schema) => schema.range,
-            SchemaView::OneOf(schema) => schema.range,
-            SchemaView::AnyOf(schema) => schema.range,
-            SchemaView::AllOf(schema) => schema.range,
-            SchemaView::Anything(schema) => schema.range,
-            SchemaView::Nothing(range) => *range,
+            SchemaView::Null => tombi_text::Span::default(),
+            SchemaView::Boolean(schema) => schema.span,
+            SchemaView::Integer(schema) => schema.span,
+            SchemaView::Float(schema) => schema.span,
+            SchemaView::String(schema) => schema.span,
+            SchemaView::LocalDate(schema) => schema.span,
+            SchemaView::LocalDateTime(schema) => schema.span,
+            SchemaView::LocalTime(schema) => schema.span,
+            SchemaView::OffsetDateTime(schema) => schema.span,
+            SchemaView::Array(schema) => schema.span,
+            SchemaView::Table(schema) => schema.span,
+            SchemaView::OneOf(schema) => schema.span,
+            SchemaView::AnyOf(schema) => schema.span,
+            SchemaView::AllOf(schema) => schema.span,
+            SchemaView::Anything(schema) => schema.span,
+            SchemaView::Nothing(span) => *span,
         }
     }
 

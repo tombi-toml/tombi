@@ -4,7 +4,7 @@ use super::{AllOfSchema, AnyOfSchema, NotSchema, OneOfSchema};
 pub struct FloatSchema {
     pub title: Option<String>,
     pub description: Option<String>,
-    pub range: tombi_text::Range,
+    pub span: tombi_text::Span,
     pub minimum: Option<f64>,
     pub maximum: Option<f64>,
     pub exclusive_minimum: Option<f64>,
@@ -63,7 +63,7 @@ impl FloatSchema {
             any_of,
             all_of,
             not,
-            range: object.range,
+            span: object.span,
         }
     }
 

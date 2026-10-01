@@ -219,6 +219,16 @@ impl SchemaStore {
 
     /// Physical document that owns `schema_uri`, or `schema_uri` itself when it is not embedded.
     pub async fn schema_document_uri_for(&self, schema_uri: &SchemaUri) -> SchemaUri {
+        self.schema_document_for(schema_uri).await.0
+    }
+
+    /// Physical document that owns `schema_uri` and its line index.
+    ///
+    /// When `schema_uri` is not indexed, returns `schema_uri` itself with an empty line index.
+    pub async fn schema_document_for(
+        &self,
+        schema_uri: &SchemaUri,
+    ) -> (SchemaUri, Arc<tombi_text::LineIndex>) {
         let mut schema_resource_uri = schema_uri.clone();
         schema_resource_uri.set_fragment(None);
         let Some(location) = self
@@ -227,12 +237,15 @@ impl SchemaStore {
             .get(&schema_resource_uri)
             .cloned()
         else {
-            return schema_resource_uri;
+            return (schema_resource_uri, crate::empty_line_index());
         };
         let Some(schema_resources) = location.schema_resources.upgrade() else {
-            return schema_resource_uri;
+            return (schema_resource_uri, crate::empty_line_index());
         };
-        schema_resources.schema_document_uri().clone()
+        (
+            schema_resources.schema_document_uri().clone(),
+            schema_resources.line_index().clone(),
+        )
     }
 
     /// Dialect of an indexed schema resource, including dialect inherited from the enclosing resource.
@@ -602,10 +615,10 @@ impl SchemaStore {
         Ok(false)
     }
 
-    pub async fn fetch_schema_value(
+    pub async fn fetch_schema_document(
         &self,
         schema_uri: &SchemaUri,
-    ) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
+    ) -> Result<Option<tombi_json::Document>, crate::Error> {
         let mut schema_resource_uri = schema_uri.clone();
         schema_resource_uri.set_fragment(None);
         let location = self
@@ -618,7 +631,12 @@ impl SchemaStore {
                 if schema_resource_uri != *schema_resources.schema_document_uri()
                     && let Some(resource) = schema_resources.resource(&location.schema_resource_uri)
                 {
-                    return Ok(schema_resources.resource_value(resource).cloned());
+                    return Ok(schema_resources.resource_value(resource).map(|value| {
+                        tombi_json::Document {
+                            value: value.clone(),
+                            line_index: schema_resources.line_index().clone(),
+                        }
+                    }));
                 }
             } else if location.schema_document_uri != schema_resource_uri {
                 // Stale Weak index entry: drop it and fall through to file/HTTP fetch
@@ -648,7 +666,7 @@ impl SchemaStore {
 
                 log::debug!("load schema from file: {}", schema_uri);
 
-                Ok(Some(tombi_json::ValueNode::from_str(&content).map_err(
+                Ok(Some(tombi_json::Document::from_str(&content).map_err(
                     |err| crate::Error::SchemaFileParseFailed {
                         schema_uri: schema_uri.to_owned(),
                         reason: err.to_string(),
@@ -658,25 +676,25 @@ impl SchemaStore {
             "http" | "https" => {
                 let schema_cache_path = get_cache_file_path(schema_uri).await;
                 if let Some(schema_cache_path) = &schema_cache_path
-                    && let Ok(Some(schema_value)) = load_json_schema_from_cache(
+                    && let Ok(Some(schema_document)) = load_json_schema_from_cache(
                         schema_uri,
                         schema_cache_path,
                         self.options.cache.as_ref(),
                     )
                     .await
                 {
-                    return Ok(Some(schema_value));
+                    return Ok(Some(schema_document));
                 }
 
                 if self.offline() {
-                    if let Ok(Some(schema_value)) = load_json_schema_from_cache_ignoring_ttl(
+                    if let Ok(Some(schema_document)) = load_json_schema_from_cache_ignoring_ttl(
                         schema_uri,
                         schema_cache_path.as_deref(),
                         self.options.cache.clone(),
                     )
                     .await
                     {
-                        return Ok(Some(schema_value));
+                        return Ok(Some(schema_document));
                     }
                     log::debug!("offline mode, skip fetch schema from uri: {}", schema_uri);
                     return Ok(None);
@@ -688,14 +706,14 @@ impl SchemaStore {
                         bytes
                     }
                     Err(err) => {
-                        if let Ok(Some(schema_value)) = load_json_schema_from_cache_ignoring_ttl(
+                        if let Ok(Some(schema_document)) = load_json_schema_from_cache_ignoring_ttl(
                             schema_uri,
                             schema_cache_path.as_deref(),
                             self.options.cache.clone(),
                         )
                         .await
                         {
-                            return Ok(Some(schema_value));
+                            return Ok(Some(schema_document));
                         }
                         return Err(crate::Error::SchemaFetchFailed {
                             schema_uri: schema_uri.clone(),
@@ -709,7 +727,7 @@ impl SchemaStore {
                 }
 
                 Ok(Some(
-                    tombi_json::ValueNode::from_reader(std::io::Cursor::new(bytes)).map_err(
+                    tombi_json::Document::from_reader(std::io::Cursor::new(bytes)).map_err(
                         |err| crate::Error::SchemaFileParseFailed {
                             schema_uri: schema_uri.to_owned(),
                             reason: err.to_string(),
@@ -726,7 +744,7 @@ impl SchemaStore {
 
                 log::trace!("load schema from embedded file: {}", schema_uri);
 
-                Ok(Some(tombi_json::ValueNode::from_str(content).map_err(
+                Ok(Some(tombi_json::Document::from_str(content).map_err(
                     |err| crate::Error::SchemaFileParseFailed {
                         schema_uri: schema_uri.to_owned(),
                         reason: err.to_string(),
@@ -743,12 +761,12 @@ impl SchemaStore {
         &self,
         schema_uri: &SchemaUri,
     ) -> Result<Option<Arc<DocumentSchema>>, crate::Error> {
-        let schema_value = match self.fetch_schema_value(schema_uri).await? {
+        let schema_document = match self.fetch_schema_document(schema_uri).await? {
             Some(value) => value,
             None => return Ok(None),
         };
         if !matches!(
-            schema_value,
+            schema_document.value,
             tombi_json::ValueNode::Object(_) | tombi_json::ValueNode::Bool(_)
         ) {
             return Err(crate::Error::SchemaMustBeObjectOrBoolean {
@@ -756,7 +774,7 @@ impl SchemaStore {
             });
         }
         let schema_resources =
-            SchemaDocumentResources::collect(schema_value, schema_uri, self).await?;
+            SchemaDocumentResources::collect(schema_document, schema_uri, self).await?;
         self.replace_schema_resources(schema_resources.clone())
             .await?;
         let document_schema = DocumentSchema::new_resource(
@@ -1145,12 +1163,12 @@ impl SchemaStore {
 
         // Handle JSON Pointer fragments (e.g., "#/definitions/TableValue")
         if fragment_reference == "#" || fragment_reference.starts_with("#/") {
-            let Some(schema_value) = self.fetch_schema_value(&schema_uri).await? else {
+            let Some(schema_document) = self.fetch_schema_document(&schema_uri).await? else {
                 return Ok(None);
             };
 
             let Some(fragment_schema_view) = resolve_json_pointer(
-                &schema_value,
+                &schema_document.value,
                 &fragment_reference,
                 document_schema.string_formats(),
                 document_schema.dialect(),
@@ -1787,15 +1805,15 @@ async fn load_json_schema_from_cache_ignoring_ttl(
     schema_uri: &SchemaUri,
     schema_cache_path: Option<&std::path::Path>,
     cache_options: Option<tombi_cache::Options>,
-) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
+) -> Result<Option<tombi_json::Document>, crate::Error> {
     if let Some(schema_cache_path) = schema_cache_path {
         let mut owned_cache_options = cache_options.unwrap_or_default();
         owned_cache_options.cache_ttl = None;
-        if let Ok(Some(schema_value)) =
+        if let Ok(Some(schema_document)) =
             load_json_schema_from_cache(schema_uri, schema_cache_path, Some(&owned_cache_options))
                 .await
         {
-            return Ok(Some(schema_value));
+            return Ok(Some(schema_document));
         }
     }
 
@@ -1806,14 +1824,14 @@ async fn load_json_schema_from_cache(
     schema_uri: &SchemaUri,
     schema_cache_path: &std::path::Path,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
+) -> Result<Option<tombi_json::Document>, crate::Error> {
     if let Some(schema_cache_content) =
         read_from_cache(Some(schema_cache_path), cache_options).await?
     {
         log::trace!("load schema from cache: {}", schema_uri);
 
         return Ok(Some(
-            tombi_json::ValueNode::from_str(&schema_cache_content).map_err(|err| {
+            tombi_json::Document::from_str(&schema_cache_content).map_err(|err| {
                 crate::Error::SchemaFileParseFailed {
                     schema_uri: schema_uri.to_owned(),
                     reason: err.to_string(),
@@ -2195,7 +2213,7 @@ mod tests {
             .set_modified(std::time::SystemTime::now() - Duration::from_secs(60 * 60 * 25))
             .unwrap();
 
-        let schema = load_json_schema_from_cache_ignoring_ttl(
+        let schema_document = load_json_schema_from_cache_ignoring_ttl(
             &SchemaUri::from_str("https://example.invalid/schema.json").unwrap(),
             Some(&cache_path),
             None,
@@ -2203,7 +2221,7 @@ mod tests {
         .await
         .unwrap();
 
-        assert!(schema.is_some());
+        assert!(schema_document.is_some());
 
         let _ = std::fs::remove_file(cache_path);
     }

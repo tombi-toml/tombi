@@ -201,6 +201,7 @@ where
             schema_uri: local.schema_uri,
             schema_base_uri: local.schema_base_uri,
             schema_document_uri: local.schema_document_uri,
+            line_index: local.line_index,
             definitions: local.definitions,
             strict: local.strict,
             dynamic_scope: local.dynamic_scope,

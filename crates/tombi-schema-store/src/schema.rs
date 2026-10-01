@@ -295,7 +295,7 @@ pub(crate) fn referable_from_schema_value(
         }
         tombi_json::ValueNode::Bool(bool) => Some(Referable::Resolved {
             schema_base_uri: None,
-            value: Arc::new(bool_schema_view(bool.value, bool.range)),
+            value: Arc::new(bool_schema_view(bool.value, bool.span)),
             semantic_schema: SemanticSchema::from_value_node(value, dialect).map(Arc::new),
         }),
         _ => None,
@@ -346,15 +346,15 @@ pub(crate) fn schema_item_from_schema_value_for_type(
     Some(Arc::new(tokio::sync::RwLock::new(referable)))
 }
 
-pub(crate) fn bool_schema_view(allow: bool, range: tombi_text::Range) -> SchemaView {
+pub(crate) fn bool_schema_view(allow: bool, span: tombi_text::Span) -> SchemaView {
     if allow {
         SchemaView::Anything(AnythingSchema {
             title: None,
             description: None,
-            range,
+            span,
         })
     } else {
-        SchemaView::Nothing(range)
+        SchemaView::Nothing(span)
     }
 }
 
@@ -483,7 +483,7 @@ fn is_plain_name_fragment(fragment: &str) -> bool {
 
 #[derive(Debug, Clone)]
 pub struct PropertySchema {
-    pub key_range: tombi_text::Range,
+    pub key_span: tombi_text::Span,
     pub property_schema: Referable<SchemaView>,
 }
 

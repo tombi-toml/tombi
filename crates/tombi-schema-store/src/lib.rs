@@ -23,6 +23,13 @@ pub use store::{AssociateSchemaOptions, SchemaStore};
 pub use tombi_accessor::{Accessor, AccessorContext, AccessorKeyKind, Accessors, KeyContext};
 pub use value_type::ValueType;
 
+/// A line index of an empty text, for a schema whose document is unknown.
+pub(crate) fn empty_line_index() -> std::sync::Arc<tombi_text::LineIndex> {
+    static EMPTY_LINE_INDEX: std::sync::LazyLock<std::sync::Arc<tombi_text::LineIndex>> =
+        std::sync::LazyLock::new(|| std::sync::Arc::new(tombi_text::LineIndex::new("")));
+    EMPTY_LINE_INDEX.clone()
+}
+
 pub fn get_schema_name(schema_uri: &tombi_uri::Uri) -> Option<&str> {
     if let Some(path) = schema_uri.path().split('/').next_back()
         && !path.is_empty()

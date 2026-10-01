@@ -129,16 +129,15 @@ pub struct TypeDefinition {
 
     pub schema_accessors: Vec<tombi_schema_store::SchemaAccessor>,
 
-    /// The range of the schema definition.
+    /// The span of the schema definition in the JSON Schema file, with its line index.
     ///
-    /// It's JSON Schema file range, not TOML file range.
-    pub range: tombi_text::Range,
+    /// `None` opens the file at the line of the fragment of [`Self::schema_base_uri`].
+    pub span: Option<tombi_extension::LocatedSpan>,
 }
 
 /// A location in a JSON Schema file.
 ///
-/// Unlike [`tombi_extension::Location`], its range is the one of the JSON Schema file,
-/// not converted from a span of a TOML file.
+/// Its range is converted from the span of the JSON Schema file with the encoding of the client.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SchemaLocation {
     pub uri: tombi_uri::Uri,
@@ -147,24 +146,37 @@ pub struct SchemaLocation {
 
 pub(crate) fn location_key(
     schema_base_uri: &SchemaUri,
-    range: tombi_text::Range,
-) -> (&str, tombi_text::Range) {
+    span: Option<tombi_text::Span>,
+) -> (&str, Option<tombi_text::Span>) {
     let uri = schema_base_uri.as_str();
-    if range == tombi_text::Range::default() {
-        (uri, range)
-    } else {
-        (uri.split_once('#').map_or(uri, |(base, _)| base), range)
+    match span {
+        None => (uri, span),
+        Some(_) => (uri.split_once('#').map_or(uri, |(base, _)| base), span),
     }
 }
 
+/// The fragment of a schema URI that opens the JSON Schema file at the line of `span`.
+pub(crate) fn schema_line_fragment(
+    line_index: &tombi_text::LineIndex,
+    span: tombi_text::Span,
+) -> String {
+    format!("L{}", line_index.line(span.start) + 1)
+}
+
 impl TypeDefinition {
-    pub fn update_range(
+    /// Replaces the span with `span` of the document of `line_index`
+    /// when this type definition is for `accessors`.
+    pub fn update_span(
         mut self,
         accessors: &[tombi_schema_store::Accessor],
-        range: &tombi_text::Range,
+        span: tombi_text::Span,
+        line_index: &std::sync::Arc<tombi_text::LineIndex>,
     ) -> Self {
         if self.schema_accessors == accessors {
-            self.range = *range;
+            self.span = Some(tombi_extension::LocatedSpan {
+                span,
+                line_index: line_index.clone(),
+            });
         }
         self
     }
@@ -263,18 +275,44 @@ pub(super) async fn adjacent_type_definition<
     Vec::new()
 }
 
+/// A type definition that opens the JSON Schema file of `current_schema` at the line of `span`.
 pub(super) fn schema_type_definition(
-    schema_base_uri: &SchemaUri,
+    current_schema: &CurrentSchema<'_>,
     accessors: &[Accessor],
-    range: tombi_text::Range,
+    span: tombi_text::Span,
 ) -> TypeDefinition {
-    let mut schema_base_uri = schema_base_uri.clone();
-    schema_base_uri.set_fragment(Some(&format!("L{}", range.start.line + 1)));
+    let mut schema_base_uri = current_schema.schema_base_uri.as_ref().clone();
+    schema_base_uri.set_fragment(Some(&schema_line_fragment(
+        &current_schema.line_index,
+        span,
+    )));
 
     TypeDefinition {
         schema_base_uri,
         schema_accessors: accessors.iter().map(Into::into).collect_vec(),
-        range: tombi_text::Range::default(),
+        span: None,
+    }
+}
+
+/// A type definition of the schema view of `current_schema`, at the line of `span`.
+pub(super) fn schema_view_type_definition(
+    current_schema: &CurrentSchema<'_>,
+    accessors: &[Accessor],
+    span: tombi_text::Span,
+) -> TypeDefinition {
+    let mut schema_base_uri = current_schema.schema_base_uri.as_ref().clone();
+    schema_base_uri.set_fragment(Some(&schema_line_fragment(
+        &current_schema.line_index,
+        span,
+    )));
+
+    TypeDefinition {
+        schema_base_uri,
+        schema_accessors: accessors.iter().map(Into::into).collect_vec(),
+        span: Some(tombi_extension::LocatedSpan {
+            span: current_schema.schema_view.span(),
+            line_index: current_schema.line_index.clone(),
+        }),
     }
 }
 
@@ -285,25 +323,22 @@ mod tests {
     use super::location_key;
 
     #[test]
-    fn location_key_preserves_fragment_when_range_is_unknown() {
+    fn location_key_preserves_fragment_when_span_is_unknown() {
         let first = tombi_schema_store::SchemaUri::from_str("file:///schema.json#L1").unwrap();
         let second = tombi_schema_store::SchemaUri::from_str("file:///schema.json#L2").unwrap();
 
-        assert_ne!(
-            location_key(&first, tombi_text::Range::default()),
-            location_key(&second, tombi_text::Range::default()),
-        );
+        assert_ne!(location_key(&first, None), location_key(&second, None));
     }
 
     #[test]
-    fn location_key_ignores_fragment_when_range_identifies_the_location() {
+    fn location_key_ignores_fragment_when_span_identifies_the_location() {
         let first = tombi_schema_store::SchemaUri::from_str("file:///schema.json#L1").unwrap();
         let second = tombi_schema_store::SchemaUri::from_str("file:///schema.json#L2").unwrap();
-        let range = tombi_text::Range::new(
-            tombi_text::Position::new(2, 3),
-            tombi_text::Position::new(2, 8),
-        );
+        let span = Some(tombi_text::Span::new(
+            tombi_text::Offset::new(3),
+            tombi_text::Offset::new(8),
+        ));
 
-        assert_eq!(location_key(&first, range), location_key(&second, range));
+        assert_eq!(location_key(&first, span), location_key(&second, span));
     }
 }

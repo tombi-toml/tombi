@@ -1,5 +1,5 @@
 /// A location in a document.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Location {
     pub uri: tombi_uri::Uri,
     /// The span in the TOML document of `uri`.
@@ -15,18 +15,25 @@ pub struct LocatedSpan {
     pub line_index: std::sync::Arc<tombi_text::LineIndex>,
 }
 
-impl PartialEq for Location {
+/// Spans are compared without their line index, which is the same for the same document.
+impl PartialEq for LocatedSpan {
     fn eq(&self, other: &Self) -> bool {
-        self.uri == other.uri
-            && self.span.as_ref().map(|span| span.span) == other.span.as_ref().map(|span| span.span)
+        self.span == other.span
     }
 }
 
-impl Eq for Location {}
+impl Eq for LocatedSpan {}
 
-impl std::hash::Hash for Location {
+impl std::hash::Hash for LocatedSpan {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.uri.hash(state);
-        self.span.as_ref().map(|span| span.span).hash(state);
+        self.span.hash(state);
+    }
+}
+
+impl LocatedSpan {
+    /// Converts the span into a range whose columns are counted in `encoding`.
+    #[inline]
+    pub fn range(&self, encoding: tombi_text::EncodingKind) -> tombi_text::Range {
+        self.line_index.range(self.span, encoding)
     }
 }

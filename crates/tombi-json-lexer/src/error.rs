@@ -2,7 +2,6 @@
 pub struct Error {
     kind: ErrorKind,
     span: tombi_text::Span,
-    range: tombi_text::Range,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,8 +20,8 @@ pub enum ErrorKind {
 
 impl Error {
     #[inline]
-    pub fn new(kind: ErrorKind, (span, range): (tombi_text::Span, tombi_text::Range)) -> Self {
-        Self { kind, span, range }
+    pub fn new(kind: ErrorKind, span: tombi_text::Span) -> Self {
+        Self { kind, span }
     }
 
     #[inline]
@@ -33,10 +32,5 @@ impl Error {
     #[inline]
     pub fn span(&self) -> tombi_text::Span {
         self.span
-    }
-
-    #[inline]
-    pub fn range(&self) -> tombi_text::Range {
-        self.range
     }
 }

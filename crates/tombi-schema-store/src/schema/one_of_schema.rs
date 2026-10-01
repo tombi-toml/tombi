@@ -11,7 +11,7 @@ use crate::{referable_from_schema_value, schema::if_then_else_schema::IfThenElse
 pub struct OneOfSchema {
     pub title: Option<String>,
     pub description: Option<String>,
-    pub range: tombi_text::Range,
+    pub span: tombi_text::Span,
     pub schemas: ReferableSchemaViews,
     pub default: Option<tombi_json::Value>,
     pub examples: Option<Vec<tombi_json::Value>>,
@@ -62,7 +62,7 @@ impl OneOfSchema {
         Self {
             title,
             description,
-            range: object.range,
+            span: object.span,
             schemas: Arc::new(tokio::sync::RwLock::new(schemas)),
             default: object.get("default").cloned().map(|v| v.into()),
             examples: object

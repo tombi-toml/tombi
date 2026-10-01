@@ -371,9 +371,9 @@ impl GetTypeDefinition for tombi_schema_store::SchemaView {
                 }
                 Self::Anything(schema) => current_schema.map_or_else(Vec::new, |current_schema| {
                     vec![schema_type_definition(
-                        current_schema.schema_base_uri.as_ref(),
+                        current_schema,
                         accessors,
-                        schema.range,
+                        schema.span,
                     )]
                 }),
                 Self::Nothing(_) | Self::Null => Vec::new(),

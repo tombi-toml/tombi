@@ -9,7 +9,7 @@ async fn distinguishes_schema_document_uri_schema_resource_uri_and_optional_id()
     let schema_store = SchemaStore::new();
 
     let schema_without_id = DocumentSchema::new(
-        tombi_json::ValueNode::from_str(r#"{ "type": "object" }"#).expect("valid schema"),
+        tombi_json::Document::from_str(r#"{ "type": "object" }"#).expect("valid schema"),
         schema_document_uri.clone(),
         None,
         &schema_store,
@@ -28,7 +28,7 @@ async fn distinguishes_schema_document_uri_schema_resource_uri_and_optional_id()
     assert_eq!(schema_without_id.schema_base_uri(), &schema_document_uri);
 
     let schema_with_id = DocumentSchema::new(
-        tombi_json::ValueNode::from_str(r#"{ "$id": "canonical.json" }"#).expect("valid schema"),
+        tombi_json::Document::from_str(r#"{ "$id": "canonical.json" }"#).expect("valid schema"),
         schema_document_uri.clone(),
         None,
         &schema_store,
@@ -133,7 +133,7 @@ async fn document_schema_new_registers_embedded_resources_for_offline_refs() {
     let schema_store = SchemaStore::new();
 
     let document_schema = DocumentSchema::new(
-        tombi_json::ValueNode::from_str(
+        tombi_json::Document::from_str(
             r#"{
                 "$ref": "shoko://example/resource",
                 "$defs": {

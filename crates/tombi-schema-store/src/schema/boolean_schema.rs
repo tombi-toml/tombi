@@ -4,7 +4,7 @@ use super::{AllOfSchema, AnyOfSchema, NotSchema, OneOfSchema};
 pub struct BooleanSchema {
     pub title: Option<String>,
     pub description: Option<String>,
-    pub range: tombi_text::Range,
+    pub span: tombi_text::Span,
     pub default: Option<bool>,
     pub const_value: Option<bool>,
     pub r#enum: Option<Vec<bool>>,
@@ -53,7 +53,7 @@ impl BooleanSchema {
             any_of,
             all_of,
             not,
-            range: object.range,
+            span: object.span,
         }
     }
 

@@ -2,7 +2,36 @@ use std::io::Read;
 
 use itertools::Itertools;
 use tombi_json_value::{Number, Object, Value};
-use tombi_text::Range;
+use tombi_text::Span;
+
+/// A parsed JSON document.
+#[derive(Debug, Clone)]
+pub struct Document {
+    /// The root value of the document.
+    pub value: ValueNode,
+    /// The line index of the document, to convert the spans of its nodes.
+    pub line_index: std::sync::Arc<tombi_text::LineIndex>,
+}
+
+impl Document {
+    pub fn from_reader<R>(reader: R) -> Result<Self, crate::Error>
+    where
+        R: std::io::Read,
+    {
+        let mut reader = std::io::BufReader::new(reader);
+        let mut s = String::new();
+        reader.read_to_string(&mut s)?;
+        Ok(crate::parser::parse_document(s)?)
+    }
+}
+
+impl std::str::FromStr for Document {
+    type Err = crate::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(crate::parser::parse_document(s)?)
+    }
+}
 
 /// A JSON value with source code position information
 #[derive(Debug, Clone, PartialEq)]
@@ -22,14 +51,14 @@ pub enum ValueNode {
 }
 
 impl ValueNode {
-    pub fn range(&self) -> Range {
+    pub fn span(&self) -> Span {
         match self {
-            Self::Null(node) => node.range,
-            Self::Bool(node) => node.range,
-            Self::Number(node) => node.range,
-            Self::String(node) => node.range,
-            Self::Array(node) => node.range,
-            Self::Object(node) => node.range,
+            Self::Null(node) => node.span,
+            Self::Bool(node) => node.span,
+            Self::Number(node) => node.span,
+            Self::String(node) => node.span,
+            Self::Array(node) => node.span,
+            Self::Object(node) => node.span,
         }
     }
 
@@ -157,7 +186,7 @@ impl std::str::FromStr for ValueNode {
 #[derive(Debug, Clone, PartialEq)]
 pub struct NullNode {
     /// The position of the null value in the source code
-    pub range: Range,
+    pub span: Span,
 }
 
 impl std::fmt::Display for NullNode {
@@ -172,7 +201,7 @@ pub struct BoolNode {
     /// The boolean value
     pub value: bool,
     /// The position of the boolean value in the source code
-    pub range: Range,
+    pub span: Span,
 }
 
 impl std::fmt::Display for BoolNode {
@@ -187,7 +216,7 @@ pub struct NumberNode {
     /// The number value
     pub value: Number,
     /// The position of the number value in the source code
-    pub range: Range,
+    pub span: Span,
 }
 
 impl std::fmt::Display for NumberNode {
@@ -202,7 +231,7 @@ pub struct StringNode {
     /// The string value
     pub value: String,
     /// The position of the string value in the source code
-    pub range: Range,
+    pub span: Span,
 }
 
 impl std::fmt::Display for StringNode {
@@ -243,7 +272,7 @@ pub struct ArrayNode {
     /// The array elements
     pub items: Vec<ValueNode>,
     /// The position of the entire array in the source code
-    pub range: Range,
+    pub span: Span,
 }
 
 impl ArrayNode {
@@ -278,7 +307,7 @@ pub struct ObjectNode {
     /// The object properties
     pub properties: tombi_json_value::Map<StringNode, ValueNode>,
     /// The position of the entire object in the source code
-    pub range: Range,
+    pub span: Span,
 }
 
 impl ObjectNode {

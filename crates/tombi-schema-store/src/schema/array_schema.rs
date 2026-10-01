@@ -18,7 +18,7 @@ use crate::{Accessor, SchemaStore, schema::if_then_else_schema::IfThenElseSchema
 pub struct ArraySchema {
     pub title: Option<String>,
     pub description: Option<String>,
-    pub range: tombi_text::Range,
+    pub span: tombi_text::Span,
     pub items: Option<SchemaItem>,
     pub prefix_items: Option<Vec<SchemaItem>>,
     pub additional_items: Option<bool>,
@@ -205,7 +205,7 @@ impl ArraySchema {
             one_of,
             any_of,
             all_of,
-            range: object.range,
+            span: object.span,
             not,
             if_then_else: IfThenElseSchema::new(
                 object,
