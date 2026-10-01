@@ -23,6 +23,23 @@ pub struct Formatter<'a> {
     source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
     schema_store: &'a tombi_schema_store::SchemaStore,
     buf: String,
+    /// Memoized results of `exceeds_line_width` for arrays and inline tables.
+    ///
+    /// Without it, every nesting level re-evaluates its children twice
+    /// (once recursively, once through `format_to_string`), which is exponential in the depth.
+    exceeds_line_width_cache: std::collections::HashMap<ExceedsLineWidthKey, bool>,
+}
+
+/// Everything `exceeds_line_width` depends on besides the immutable options.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub(crate) struct ExceedsLineWidthKey {
+    is_array: bool,
+    range: (tombi_text::Offset, tombi_text::Offset),
+    current_line_width: usize,
+    indent_depth: u8,
+    skip_indent: bool,
+    skip_comment: bool,
+    single_line_mode: bool,
 }
 
 impl<'a> Formatter<'a> {
@@ -44,6 +61,7 @@ impl<'a> Formatter<'a> {
             source_uri_or_path,
             schema_store,
             buf: String::new(),
+            exceeds_line_width_cache: Default::default(),
         }
     }
 
@@ -436,14 +454,37 @@ impl<'a> Formatter<'a> {
         self.indent_depth = 0;
     }
 
+    pub(crate) fn exceeds_line_width_key(
+        &self,
+        is_array: bool,
+        node: &tombi_ast_syntax::SyntaxNode,
+    ) -> ExceedsLineWidthKey {
+        let span = node.span();
+        ExceedsLineWidthKey {
+            is_array,
+            range: (span.start, span.end),
+            current_line_width: self.current_line_width(),
+            indent_depth: self.indent_depth,
+            skip_indent: self.skip_indent,
+            skip_comment: self.skip_comment,
+            single_line_mode: self.single_line_mode,
+        }
+    }
+
+    #[inline]
+    pub(crate) fn cached_exceeds_line_width(&self, key: &ExceedsLineWidthKey) -> Option<bool> {
+        self.exceeds_line_width_cache.get(key).copied()
+    }
+
+    #[inline]
+    pub(crate) fn cache_exceeds_line_width(&mut self, key: ExceedsLineWidthKey, value: bool) {
+        self.exceeds_line_width_cache.insert(key, value);
+    }
+
     #[inline]
     pub(crate) fn current_line_width(&self) -> usize {
-        self.buf
-            .split("\n")
-            .last()
-            .unwrap_or_default()
-            .graphemes(true)
-            .count()
+        let line_start = self.buf.rfind('\n').map_or(0, |index| index + 1);
+        self.buf[line_start..].graphemes(true).count()
     }
 }
 

@@ -210,6 +210,48 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_root_dotted_keys_merge_without_conflict(
+                r#"
+                a.b = 1
+                a.c = 2
+                d = 3
+                "#,
+            ) -> Ok(_)
+        }
+
+        test_lint! {
+            #[test]
+            fn test_root_duplicate_key(
+                r#"
+                a = 1
+                a = 3
+                b = 2
+                "#,
+            ) -> Err(["duplicate key: a"])
+        }
+
+        test_lint! {
+            #[test]
+            fn test_root_inline_table_then_dotted_key_conflict(
+                r#"
+                a = { x = 1 }
+                a.y = 2
+                "#,
+            ) -> Err(["conflicting table"])
+        }
+
+        test_lint! {
+            #[test]
+            fn test_root_dotted_key_then_inline_table_conflict(
+                r#"
+                a.y = 2
+                a = { x = 1 }
+                "#,
+            ) -> Err(["conflicting table"])
+        }
+
+        test_lint! {
+            #[test]
             fn test_root_table_unknown_key_not_allowed(
                 r#"
                 #:tombi schema.strict = false

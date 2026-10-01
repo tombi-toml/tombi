@@ -30,6 +30,19 @@ pub(crate) fn exceeds_line_width(
     node: &tombi_ast_syntax::Array,
     f: &mut crate::Formatter,
 ) -> Result<bool, std::fmt::Error> {
+    let key = f.exceeds_line_width_key(true, node.syntax());
+    if let Some(cached) = f.cached_exceeds_line_width(&key) {
+        return Ok(cached);
+    }
+    let result = compute_exceeds_line_width(node, f)?;
+    f.cache_exceeds_line_width(key, result);
+    Ok(result)
+}
+
+fn compute_exceeds_line_width(
+    node: &tombi_ast_syntax::Array,
+    f: &mut crate::Formatter,
+) -> Result<bool, std::fmt::Error> {
     let mut length = f.current_line_width();
     length += 2; // '[' and ']'
     length += f.array_bracket_space().len() * 2; // Space after '[' and before ']'
@@ -716,5 +729,19 @@ mod tests {
                 }),
             }
         ) -> Ok(r#"nested = [ [], [], [ 1, 2 ] ]"#)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn deeply_nested_array_does_not_blow_up(
+            "a = [[[[[[[[[[[[[[[[[[[[[[[[1]]]]]]]]]]]]]]]]]]]]]]]]"
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn deeply_nested_array_and_inline_table_does_not_blow_up(
+            "a = { k = [{ k = [{ k = [{ k = [{ k = [{ k = [{ k = [{ k = [{ k = [{ k = [{ k = [{ k = [1] }] }] }] }] }] }] }] }] }] }] }] }",TomlVersion::V1_1_0
+        ) -> Ok(source)
     }
 }

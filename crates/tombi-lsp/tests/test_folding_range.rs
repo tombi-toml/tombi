@@ -348,6 +348,50 @@ mod folding_range_tests {
         ];
     );
 
+    test_folding_range!(
+        #[tokio::test]
+        async fn nested_and_sibling_tables(
+            r#"
+            [a]
+            x = 1
+
+            [a.b]
+            y = 1
+
+            [a.b.c]
+            z = 1
+
+            [other]
+            w = 1
+            "#,
+        ) -> [
+            0..7,
+            3..7,
+            6..7,
+            9..10,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn table_with_unconvertible_sub_table_key(
+            r#"
+            [a]
+            x = 1
+
+            [a."\q"]
+            y = 1
+
+            [other]
+            w = 1
+            "#,
+        ) -> [
+            0..4,
+            3..4,
+            6..7,
+        ];
+    );
+
     #[macro_export]
     macro_rules! test_folding_range {
         (#[tokio::test] async fn $name:ident($source:expr $(,)?) -> [$($expected:expr),* $(,)?];) => {
