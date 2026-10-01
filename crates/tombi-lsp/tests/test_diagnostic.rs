@@ -292,6 +292,10 @@ mod diagnostic {
         test_diagnostic_file!(
             #[tokio::test]
             async fn resolves_versionless_alias_to_embedded_resource_offline(
+                r#"
+                [tool.tombi]
+                strict = 42
+                "#,
                 SourcePath(fixture_path().join("input.toml")),
                 ConfigPath(fixture_path().join("tombi.toml")),
                 tombi_lsp::backend::Options {

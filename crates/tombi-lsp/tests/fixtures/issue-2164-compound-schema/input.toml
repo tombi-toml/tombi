@@ -1,2 +1,2 @@
 [tool.tombi]
-strict = 42
+strict = true
