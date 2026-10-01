@@ -8,6 +8,37 @@ pub struct Location {
     pub range: Option<tombi_text::Range>,
 }
 
+/// A span in a document that is kept for a long time, such as a JSON Schema document,
+/// with the line index to convert it.
+#[derive(Debug, Clone)]
+pub struct LocatedSpan {
+    pub span: tombi_text::Span,
+    pub line_index: std::sync::Arc<tombi_text::OwnedLineIndex>,
+}
+
+/// Spans are compared without their line index, which is the same for the same document.
+impl PartialEq for LocatedSpan {
+    fn eq(&self, other: &Self) -> bool {
+        self.span == other.span
+    }
+}
+
+impl Eq for LocatedSpan {}
+
+impl std::hash::Hash for LocatedSpan {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.span.hash(state);
+    }
+}
+
+impl LocatedSpan {
+    /// Converts the span into a range whose columns are counted in `encoding`.
+    #[inline]
+    pub fn range(&self, encoding: tombi_text::EncodingKind) -> tombi_text::Range {
+        self.line_index.as_line_index().range(self.span, encoding)
+    }
+}
+
 /// Converts the spans of one document into ranges counted in the client's encoding.
 ///
 /// An extension builds its output with it, because the output is where

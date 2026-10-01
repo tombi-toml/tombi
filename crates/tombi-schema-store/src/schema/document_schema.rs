@@ -45,7 +45,7 @@ pub struct DocumentSchema {
 
 impl DocumentSchema {
     pub async fn new(
-        node: tombi_json::ValueNode,
+        document: tombi_json::Document,
         schema_document_uri: SchemaUri,
         strict: Option<BoolDefaultTrue>,
         schema_store: &SchemaStore,
@@ -54,7 +54,7 @@ impl DocumentSchema {
         // `SchemaStore::fetch_document_schema`. Register the resource index before
         // building so root `$ref` targets to embedded `$id`s resolve offline.
         let schema_resources =
-            SchemaDocumentResources::collect(node, &schema_document_uri, schema_store).await?;
+            SchemaDocumentResources::collect(document, &schema_document_uri, schema_store).await?;
         schema_store
             .replace_schema_resources(schema_resources.clone())
             .await?;
@@ -105,7 +105,7 @@ impl DocumentSchema {
                 toml_version: None,
                 string_formats: None,
                 format_assertion: true,
-                schema_view: Some(Arc::new(super::bool_schema_view(bool.value, bool.range))),
+                schema_view: Some(Arc::new(super::bool_schema_view(bool.value, bool.span))),
                 semantic_schema: SemanticSchema::from_value_node(
                     &tombi_json::ValueNode::Bool(bool),
                     None,
@@ -333,7 +333,7 @@ impl DocumentSchema {
                     Referable::Resolved { .. } => None,
                 };
                 let schema_view = if let Some(local_semantic) = local_semantic {
-                    let range = local_semantic.range();
+                    let span = local_semantic.span();
                     SchemaView::AllOf(super::AllOfSchema {
                         schemas: Arc::new(tokio::sync::RwLock::new(vec![
                             Referable::Resolved {
@@ -341,7 +341,7 @@ impl DocumentSchema {
                                 value: Arc::new(SchemaView::Anything(super::AnythingSchema {
                                     title: None,
                                     description: None,
-                                    range,
+                                    span,
                                 })),
                                 semantic_schema: Some(local_semantic),
                             },
@@ -414,6 +414,11 @@ impl DocumentSchema {
         self.dialect
     }
 
+    /// The line index of the physical document, to convert the spans of its schemas.
+    pub fn line_index(&self) -> &Arc<tombi_text::OwnedLineIndex> {
+        self.schema_resources.line_index()
+    }
+
     /// **schema_document_uri**: Physical URI of the loaded JSON Schema document (file/http/etc).
     /// Not `$id`.
     pub fn schema_document_uri(&self) -> &SchemaUri {
@@ -460,6 +465,7 @@ impl DocumentSchema {
                 schema_uri: Cow::Borrowed(&self.schema_uri),
                 schema_base_uri: Cow::Borrowed(schema_base_uri),
                 schema_document_uri: Cow::Borrowed(self.schema_document_uri()),
+                line_index: self.line_index().clone(),
                 definitions: Cow::Borrowed(&self.definitions),
                 strict: self.strict,
                 dynamic_scope: self.dynamic_scope(&[]),
@@ -642,13 +648,13 @@ mod tests {
         let schema_path = tombi_test_lib::project_root_path()
             .join("schemas/issue-2191-custom-metaschema-usage.schema.json");
         let schema_uri = crate::SchemaUri::from_file_path(&schema_path).expect("schema URI");
-        let schema_value = tombi_json::ValueNode::from_reader(
+        let schema_document = tombi_json::Document::from_reader(
             std::fs::File::open(schema_path).expect("schema file"),
         )
         .expect("valid schema JSON");
         let store = SchemaStore::new();
 
-        let document = DocumentSchema::new(schema_value, schema_uri, None, &store)
+        let document = DocumentSchema::new(schema_document, schema_uri, None, &store)
             .await
             .expect("DocumentSchema::new");
 
@@ -697,12 +703,13 @@ mod tests {
             }
         }"#;
 
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid schema json");
+        let schema_document =
+            tombi_json::Document::from_str(schema_json).expect("valid schema json");
         let schema_uri = tombi_uri::SchemaUri::from_str("https://example.com/schema.json")
             .expect("valid schema uri");
 
         let document_schema =
-            DocumentSchema::new(schema_value, schema_uri, None, &SchemaStore::new())
+            DocumentSchema::new(schema_document, schema_uri, None, &SchemaStore::new())
                 .await
                 .expect("DocumentSchema::new");
         let definitions = document_schema.definitions.read().await;
@@ -724,12 +731,13 @@ mod tests {
             }
         }"##;
 
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid schema json");
+        let schema_document =
+            tombi_json::Document::from_str(schema_json).expect("valid schema json");
         let schema_uri = tombi_uri::SchemaUri::from_str("https://example.com/schema.json")
             .expect("valid schema uri");
 
         let document_schema =
-            DocumentSchema::new(schema_value, schema_uri, None, &SchemaStore::new())
+            DocumentSchema::new(schema_document, schema_uri, None, &SchemaStore::new())
                 .await
                 .expect("DocumentSchema::new");
         let anchors = document_schema.anchors.read().await;
@@ -742,9 +750,9 @@ mod tests {
     #[tokio::test]
     async fn format_assertion_default_true_for_draft_07() {
         let schema_json = r#"{ "$schema": "http://json-schema.org/draft-07/schema#" }"#;
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let schema_document = tombi_json::Document::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new())
+        let doc = DocumentSchema::new(schema_document, uri, None, &SchemaStore::new())
             .await
             .expect("DocumentSchema::new");
         assert!(doc.format_assertion());
@@ -753,9 +761,9 @@ mod tests {
     #[tokio::test]
     async fn format_assertion_default_false_for_2019_09() {
         let schema_json = r#"{ "$schema": "https://json-schema.org/draft/2019-09/schema" }"#;
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let schema_document = tombi_json::Document::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new())
+        let doc = DocumentSchema::new(schema_document, uri, None, &SchemaStore::new())
             .await
             .expect("DocumentSchema::new");
         assert!(!doc.format_assertion());
@@ -769,9 +777,9 @@ mod tests {
                 "https://json-schema.org/draft/2019-09/vocab/format": true
             }
         }"#;
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let schema_document = tombi_json::Document::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new())
+        let doc = DocumentSchema::new(schema_document, uri, None, &SchemaStore::new())
             .await
             .expect("DocumentSchema::new");
         assert!(doc.format_assertion());
@@ -785,9 +793,9 @@ mod tests {
                 "https://json-schema.org/draft/2019-09/vocab/format": false
             }
         }"#;
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let schema_document = tombi_json::Document::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new())
+        let doc = DocumentSchema::new(schema_document, uri, None, &SchemaStore::new())
             .await
             .expect("DocumentSchema::new");
         assert!(!doc.format_assertion());
@@ -796,9 +804,9 @@ mod tests {
     #[tokio::test]
     async fn format_assertion_default_false_for_2020_12() {
         let schema_json = r#"{ "$schema": "https://json-schema.org/draft/2020-12/schema" }"#;
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let schema_document = tombi_json::Document::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new())
+        let doc = DocumentSchema::new(schema_document, uri, None, &SchemaStore::new())
             .await
             .expect("DocumentSchema::new");
         assert!(!doc.format_assertion());
@@ -812,9 +820,9 @@ mod tests {
                 "https://json-schema.org/draft/2020-12/vocab/format-assertion": true
             }
         }"#;
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let schema_document = tombi_json::Document::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new())
+        let doc = DocumentSchema::new(schema_document, uri, None, &SchemaStore::new())
             .await
             .expect("DocumentSchema::new");
         assert!(doc.format_assertion());
@@ -833,12 +841,13 @@ mod tests {
             }
         }"#;
 
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid schema json");
+        let schema_document =
+            tombi_json::Document::from_str(schema_json).expect("valid schema json");
         let schema_uri = tombi_uri::SchemaUri::from_str("https://example.com/schema.json")
             .expect("valid schema uri");
 
         let document_schema =
-            DocumentSchema::new(schema_value, schema_uri, None, &SchemaStore::new())
+            DocumentSchema::new(schema_document, schema_uri, None, &SchemaStore::new())
                 .await
                 .expect("DocumentSchema::new");
         let dynamic_anchors = document_schema.dynamic_anchors.read().await;
@@ -861,12 +870,13 @@ mod tests {
             ]
         }"#;
 
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid schema json");
+        let schema_document =
+            tombi_json::Document::from_str(schema_json).expect("valid schema json");
         let schema_uri = tombi_uri::SchemaUri::from_str("https://example.com/schema.json")
             .expect("valid schema uri");
 
         let document_schema =
-            DocumentSchema::new(schema_value, schema_uri, None, &SchemaStore::new())
+            DocumentSchema::new(schema_document, schema_uri, None, &SchemaStore::new())
                 .await
                 .expect("DocumentSchema::new");
         let dynamic_anchors = document_schema.dynamic_anchors.read().await;
@@ -875,9 +885,9 @@ mod tests {
 
     #[tokio::test]
     async fn root_boolean_true_schema_is_accepted() {
-        let schema_value = tombi_json::ValueNode::from_str("true").expect("valid");
+        let schema_document = tombi_json::Document::from_str("true").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new())
+        let doc = DocumentSchema::new(schema_document, uri, None, &SchemaStore::new())
             .await
             .expect("DocumentSchema::new");
         std::assert_matches!(doc.schema_view.as_deref(), Some(SchemaView::Anything(_)));
@@ -885,9 +895,9 @@ mod tests {
 
     #[tokio::test]
     async fn root_boolean_false_schema_is_accepted() {
-        let schema_value = tombi_json::ValueNode::from_str("false").expect("valid");
+        let schema_document = tombi_json::Document::from_str("false").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new())
+        let doc = DocumentSchema::new(schema_document, uri, None, &SchemaStore::new())
             .await
             .expect("DocumentSchema::new");
         std::assert_matches!(doc.schema_view.as_deref(), Some(SchemaView::Nothing(_)));
@@ -896,11 +906,11 @@ mod tests {
     #[tokio::test]
     async fn schema_base_uri_uses_absolute_id_when_present() {
         let schema_json = r#"{ "$id": "https://example.com/other/schema.json" }"#;
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let schema_document = tombi_json::Document::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/base/root.json")
             .expect("valid uri");
 
-        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new())
+        let doc = DocumentSchema::new(schema_document, uri, None, &SchemaStore::new())
             .await
             .expect("DocumentSchema::new");
         let expected = tombi_uri::SchemaUri::from_str("https://example.com/other/schema.json")
@@ -912,11 +922,11 @@ mod tests {
     #[tokio::test]
     async fn schema_base_uri_uses_resolved_relative_id_when_present() {
         let schema_json = r#"{ "$id": "defs/schema.json" }"#;
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let schema_document = tombi_json::Document::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/base/root.json")
             .expect("valid uri");
 
-        let doc = DocumentSchema::new(schema_value, uri, None, &SchemaStore::new())
+        let doc = DocumentSchema::new(schema_document, uri, None, &SchemaStore::new())
             .await
             .expect("DocumentSchema::new");
         let expected = tombi_uri::SchemaUri::from_str("https://example.com/base/defs/schema.json")
@@ -928,11 +938,11 @@ mod tests {
     #[tokio::test]
     async fn schema_base_uri_falls_back_to_schema_uri_when_id_is_not_string() {
         let schema_json = r#"{ "$id": 1 }"#;
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let schema_document = tombi_json::Document::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/base/root.json")
             .expect("valid uri");
 
-        let doc = DocumentSchema::new(schema_value, uri.clone(), None, &SchemaStore::new())
+        let doc = DocumentSchema::new(schema_document, uri.clone(), None, &SchemaStore::new())
             .await
             .expect("DocumentSchema::new");
         assert_eq!(doc.id, None);

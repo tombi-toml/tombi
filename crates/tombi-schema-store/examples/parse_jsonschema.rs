@@ -3,7 +3,7 @@ use std::fs;
 use std::process;
 use std::str::FromStr;
 
-use tombi_json::parse;
+use tombi_json::parse_document;
 use tombi_schema_store::DocumentSchema;
 
 fn main() {
@@ -36,8 +36,8 @@ fn main() {
     };
 
     // Parse the JSON content
-    match parse(&content) {
-        Ok(value_node) => {
+    match parse_document(content) {
+        Ok(schema_document) => {
             eprintln!("✅ Parse successful!");
             let schema_store = tombi_schema_store::SchemaStore::new();
             let runtime = tokio::runtime::Builder::new_current_thread()
@@ -46,7 +46,7 @@ fn main() {
                 .expect("failed to build tokio runtime");
             let document_schema = runtime
                 .block_on(DocumentSchema::new(
-                    value_node,
+                    schema_document,
                     schema_uri,
                     None,
                     &schema_store,

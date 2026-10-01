@@ -79,11 +79,7 @@ impl GetTypeDefinition for tombi_schema_store::AllOfSchema {
                 unreachable!("schema must be provided");
             };
 
-            vec![schema_type_definition(
-                current_schema.schema_base_uri.as_ref(),
-                accessors,
-                self.range,
-            )]
+            vec![schema_type_definition(current_schema, accessors, self.span)]
         }
         .boxed()
     }

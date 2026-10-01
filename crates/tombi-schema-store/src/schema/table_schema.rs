@@ -32,12 +32,12 @@ use tombi_json::StringNode;
 pub struct TableSchema {
     pub title: Option<String>,
     pub description: Option<String>,
-    pub range: tombi_text::Range,
+    pub span: tombi_text::Span,
     pub properties: SchemaProperties,
     pub pattern_properties: Option<SchemaPatternProperties>,
     additional_properties: Option<bool>,
     pub additional_property_schema: Option<(
-        tombi_text::Range, // JSON Schema property name range (for GoToTypeDefinition)
+        tombi_text::Span, // JSON Schema property name span (for GoToTypeDefinition)
         SchemaItem,
     )>,
     pub unevaluated_properties: Option<bool>,
@@ -88,7 +88,7 @@ impl TableSchema {
                         SchemaAccessor::Key(key_node.value.to_string()),
                         PropertySchema {
                             property_schema,
-                            key_range: key_node.range,
+                            key_span: key_node.span,
                         },
                     );
                 }
@@ -128,7 +128,7 @@ impl TableSchema {
                 (
                     Some(true),
                     schema_view
-                        .map(|schema| (value.range(), Arc::new(tokio::sync::RwLock::new(schema)))),
+                        .map(|schema| (value.span(), Arc::new(tokio::sync::RwLock::new(schema)))),
                 )
             }
             _ => (None, None),
@@ -187,7 +187,7 @@ impl TableSchema {
             description: object_node
                 .get("description")
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
-            range: object_node.range,
+            span: object_node.span,
             properties: Arc::new(properties.into()),
             pattern_properties: pattern_properties.map(|props| {
                 Arc::new(
@@ -198,7 +198,7 @@ impl TableSchema {
                                 key.value,
                                 PropertySchema {
                                     property_schema,
-                                    key_range: key.range,
+                                    key_span: key.span,
                                 },
                             )
                         })

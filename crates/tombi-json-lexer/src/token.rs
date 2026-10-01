@@ -5,28 +5,22 @@ pub struct Token {
     kind: SyntaxKind,
     contains_escape: bool,
     span: tombi_text::Span,
-    range: tombi_text::Range,
 }
 
 impl Token {
-    pub fn new(kind: SyntaxKind, (span, range): (tombi_text::Span, tombi_text::Range)) -> Self {
+    pub fn new(kind: SyntaxKind, span: tombi_text::Span) -> Self {
         Self {
             kind,
             contains_escape: false,
             span,
-            range,
         }
     }
 
-    pub fn new_string(
-        contains_escape: bool,
-        (span, range): (tombi_text::Span, tombi_text::Range),
-    ) -> Self {
+    pub fn new_string(contains_escape: bool, span: tombi_text::Span) -> Self {
         Self {
             kind: SyntaxKind::STRING,
             contains_escape,
             span,
-            range,
         }
     }
 
@@ -35,7 +29,6 @@ impl Token {
             kind: SyntaxKind::EOF,
             contains_escape: false,
             span: tombi_text::Span::MAX,
-            range: tombi_text::Range::MAX,
         }
     }
 
@@ -58,19 +51,14 @@ impl Token {
     pub fn span(&self) -> tombi_text::Span {
         self.span
     }
-
-    #[inline]
-    pub fn range(&self) -> tombi_text::Range {
-        self.range
-    }
 }
 
 impl std::fmt::Debug for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:?} @{} @{} (contains_escape: {})",
-            self.kind, self.span, self.range, self.contains_escape
+            "{:?} @{} (contains_escape: {})",
+            self.kind, self.span, self.contains_escape
         )
     }
 }

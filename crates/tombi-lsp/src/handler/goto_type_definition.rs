@@ -13,13 +13,16 @@ use crate::{
     handler::hover::get_hover_keys_with_span,
 };
 
-fn type_definition_locations(type_definitions: Vec<TypeDefinition>) -> Vec<SchemaLocation> {
+fn type_definition_locations(
+    type_definitions: Vec<TypeDefinition>,
+    encoding: tombi_text::EncodingKind,
+) -> Vec<SchemaLocation> {
     let mut unique_type_definitions: Vec<TypeDefinition> =
         Vec::with_capacity(type_definitions.len());
     for type_definition in type_definitions {
         if !unique_type_definitions.iter().any(|existing| {
-            location_key(&existing.schema_base_uri, existing.range)
-                == location_key(&type_definition.schema_base_uri, type_definition.range)
+            location_key(&existing.schema_base_uri, span_of(existing))
+                == location_key(&type_definition.schema_base_uri, span_of(&type_definition))
         }) {
             unique_type_definitions.push(type_definition);
         }
@@ -28,9 +31,16 @@ fn type_definition_locations(type_definitions: Vec<TypeDefinition>) -> Vec<Schem
         .into_iter()
         .map(|type_definition| SchemaLocation {
             uri: type_definition.schema_base_uri.into(),
-            range: type_definition.range,
+            range: type_definition
+                .span
+                .map(|span| span.range(encoding))
+                .unwrap_or_default(),
         })
         .collect()
+}
+
+fn span_of(type_definition: &TypeDefinition) -> Option<tombi_text::Span> {
+    type_definition.span.as_ref().map(|span| span.span)
 }
 
 pub async fn handle_goto_type_definition(
@@ -87,7 +97,7 @@ pub async fn handle_goto_type_definition(
     let type_definitions =
         get_tombi_document_comment_directive_type_definition(&root, offset).await;
     if !type_definitions.is_empty() {
-        return Ok(Some(type_definition_locations(type_definitions)));
+        return Ok(Some(type_definition_locations(type_definitions, encoding)));
     }
 
     let source_schema = schema_store
@@ -134,6 +144,6 @@ pub async fn handle_goto_type_definition(
     if type_definitions.is_empty() {
         Ok(None)
     } else {
-        Ok(Some(type_definition_locations(type_definitions)))
+        Ok(Some(type_definition_locations(type_definitions, encoding)))
     }
 }

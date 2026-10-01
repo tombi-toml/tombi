@@ -14,23 +14,16 @@ use tombi_json_syntax::{SyntaxKind, T};
 pub fn lex(source: &str) -> Lexed {
     let mut lexed = Lexed::default();
     let mut last_offset = tombi_text::Offset::default();
-    let mut last_position = tombi_text::Position::default();
 
-    for result in tokenize(source) {
-        let (last_span, last_range) = lexed.push_result_token(result);
-        last_offset = last_span.end;
-        last_position = last_range.end;
+    let mut cursor = Cursor::new(source);
+    for result in tokenize_with(&mut cursor) {
+        last_offset = lexed.push_result_token(result).end;
     }
 
+    lexed.line_starts = std::mem::take(&mut cursor.line_starts);
     lexed.tokens.push(crate::Token::new(
         SyntaxKind::EOF,
-        (
-            tombi_text::Span::new(last_offset, tombi_text::Offset::new(source.len() as u32)),
-            tombi_text::Range::new(
-                last_position,
-                last_position + tombi_text::RelativePosition::of(&source[last_offset.into()..]),
-            ),
-        ),
+        tombi_text::Span::new(last_offset, tombi_text::Offset::new(source.len() as u32)),
     ));
 
     lexed
@@ -38,18 +31,24 @@ pub fn lex(source: &str) -> Lexed {
 
 pub fn tokenize(source: &str) -> impl Iterator<Item = Result<Token, crate::Error>> + '_ {
     let mut cursor = Cursor::new(source);
+    std::iter::from_fn(move || next_token(&mut cursor))
+}
 
-    std::iter::from_fn(move || {
-        let token = cursor.advance_token();
+fn tokenize_with<'a, 'b>(
+    cursor: &'b mut Cursor<'a>,
+) -> impl Iterator<Item = Result<Token, crate::Error>> + 'b {
+    std::iter::from_fn(move || next_token(cursor))
+}
 
-        match token {
-            Ok(token) => match token.kind() {
-                kind if kind != SyntaxKind::EOF => Some(Ok(token)),
-                _ => None,
-            },
-            Err(error) => Some(Err(error)),
-        }
-    })
+#[inline]
+fn next_token(cursor: &mut Cursor<'_>) -> Option<Result<Token, crate::Error>> {
+    match cursor.advance_token() {
+        Ok(token) => match token.kind() {
+            kind if kind != SyntaxKind::EOF => Some(Ok(token)),
+            _ => None,
+        },
+        Err(error) => Some(Err(error)),
+    }
 }
 
 impl Cursor<'_> {
@@ -62,14 +61,14 @@ impl Cursor<'_> {
             _ if self.is_whitespace() => self.whitespace(),
             _ if self.is_line_break() => self.line_break(),
             // JSON object brackets
-            '{' => Ok(Token::new(T!['{'], self.pop_span_range())),
-            '}' => Ok(Token::new(T!['}'], self.pop_span_range())),
+            '{' => Ok(Token::new(T!['{'], self.pop_span())),
+            '}' => Ok(Token::new(T!['}'], self.pop_span())),
             // JSON array brackets
-            '[' => Ok(Token::new(T!['['], self.pop_span_range())),
-            ']' => Ok(Token::new(T![']'], self.pop_span_range())),
+            '[' => Ok(Token::new(T!['['], self.pop_span())),
+            ']' => Ok(Token::new(T![']'], self.pop_span())),
             // JSON value separators
-            ',' => Ok(Token::new(T![,], self.pop_span_range())),
-            ':' => Ok(Token::new(T![:], self.pop_span_range())),
+            ',' => Ok(Token::new(T![,], self.pop_span())),
+            ':' => Ok(Token::new(T![:], self.pop_span())),
             '"' => self.string(),
             // JSON number
             '0'..='9' | '-' => self.number(),
@@ -77,37 +76,37 @@ impl Cursor<'_> {
             't' => {
                 if self.matches("true") {
                     self.eat_n(3);
-                    Ok(Token::new(SyntaxKind::BOOLEAN, self.pop_span_range()))
+                    Ok(Token::new(SyntaxKind::BOOLEAN, self.pop_span()))
                 } else {
                     self.bump();
                     self.eat_while(|c| !is_token_separator(c));
-                    Err(crate::Error::new(InvalidTrue, self.pop_span_range()))
+                    Err(crate::Error::new(InvalidTrue, self.pop_span()))
                 }
             }
             'f' => {
                 if self.matches("false") {
                     self.eat_n(4);
-                    Ok(Token::new(SyntaxKind::BOOLEAN, self.pop_span_range()))
+                    Ok(Token::new(SyntaxKind::BOOLEAN, self.pop_span()))
                 } else {
                     self.bump();
                     self.eat_while(|c| !is_token_separator(c));
-                    Err(crate::Error::new(InvalidFalse, self.pop_span_range()))
+                    Err(crate::Error::new(InvalidFalse, self.pop_span()))
                 }
             }
             'n' => {
                 if self.matches("null") {
                     self.eat_n(3);
-                    Ok(Token::new(SyntaxKind::NULL, self.pop_span_range()))
+                    Ok(Token::new(SyntaxKind::NULL, self.pop_span()))
                 } else {
                     self.bump();
                     self.eat_while(|c| !is_token_separator(c));
-                    Err(crate::Error::new(InvalidNull, self.pop_span_range()))
+                    Err(crate::Error::new(InvalidNull, self.pop_span()))
                 }
             }
             _ => {
                 self.bump();
                 self.eat_while(|c| !is_token_separator(c));
-                Err(crate::Error::new(InvalidToken, self.pop_span_range()))
+                Err(crate::Error::new(InvalidToken, self.pop_span()))
             }
         }
     }
@@ -118,7 +117,7 @@ impl Cursor<'_> {
 
     fn whitespace(&mut self) -> Result<Token, crate::Error> {
         self.eat_while(is_whitespace);
-        Ok(Token::new(SyntaxKind::WHITESPACE, self.pop_span_range()))
+        Ok(Token::new(SyntaxKind::WHITESPACE, self.pop_span()))
     }
 
     fn is_line_break(&self) -> bool {
@@ -132,10 +131,10 @@ impl Cursor<'_> {
             if self.peek(1) == '\n' {
                 self.eat_n(1);
             } else {
-                return Ok(Token::new(SyntaxKind::WHITESPACE, self.pop_span_range()));
+                return Ok(Token::new(SyntaxKind::WHITESPACE, self.pop_span()));
             }
         }
-        Ok(Token::new(SyntaxKind::LINE_BREAK, self.pop_span_range()))
+        Ok(Token::new(SyntaxKind::LINE_BREAK, self.pop_span()))
     }
 
     fn number(&mut self) -> Result<Token, crate::Error> {
@@ -143,12 +142,12 @@ impl Cursor<'_> {
             if len > 1 {
                 self.eat_ascii_bytes(len - 1);
             }
-            return Ok(Token::new(SyntaxKind::NUMBER, self.pop_span_range()));
+            return Ok(Token::new(SyntaxKind::NUMBER, self.pop_span()));
         }
 
         self.eat_while(|c| !is_token_separator(c));
 
-        Err(crate::Error::new(InvalidNumber, self.pop_span_range()))
+        Err(crate::Error::new(InvalidNumber, self.pop_span()))
     }
 
     fn string(&mut self) -> Result<Token, crate::Error> {
@@ -161,10 +160,10 @@ impl Cursor<'_> {
             match c {
                 _ if c == '"' => {
                     if let Some(error_kind) = first_error {
-                        return Err(crate::Error::new(error_kind, self.pop_span_range()));
+                        return Err(crate::Error::new(error_kind, self.pop_span()));
                     }
 
-                    return Ok(Token::new_string(contains_escape, self.pop_span_range()));
+                    return Ok(Token::new_string(contains_escape, self.pop_span()));
                 }
                 '\u{0000}'..='\u{001F}' if first_error.is_none() => {
                     first_error = Some(InvalidString);
@@ -207,7 +206,7 @@ impl Cursor<'_> {
             }
         }
 
-        Err(crate::Error::new(InvalidString, self.pop_span_range()))
+        Err(crate::Error::new(InvalidString, self.pop_span()))
     }
 
     #[inline]

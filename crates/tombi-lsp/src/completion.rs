@@ -351,13 +351,7 @@ pub(super) fn take_completion_schema_tooltip(
     current_schema: &CurrentSchema<'_>,
 ) -> Option<SchemaTooltip> {
     if item.schema_base_uri.as_ref() == Some(current_schema.schema_base_uri.as_ref()) {
-        item.schema_base_uri = Some(
-            tombi_extension::get_schema_link_uri(
-                current_schema.schema_document_uri.as_ref(),
-                current_schema.schema_view.range().start,
-            )
-            .into(),
-        );
+        item.schema_base_uri = Some(crate::hover::schema_view_link_uri(current_schema));
     }
     let mut markdown = item.documentation.take().unwrap_or_default();
     if let Some(schema_base_uri) = item.schema_base_uri.take()
@@ -454,6 +448,7 @@ pub(super) async fn merge_adjacent_schema_completion_items(
                     schema_uri: current_schema.schema_uri.clone(),
                     schema_base_uri: current_schema.schema_base_uri.clone(),
                     schema_document_uri: current_schema.schema_document_uri.clone(),
+                    line_index: current_schema.line_index.clone(),
                     definitions: current_schema.definitions.clone(),
                     strict: current_schema.strict,
                     dynamic_scope: current_schema.dynamic_scope.clone(),
@@ -478,6 +473,7 @@ pub(super) async fn merge_adjacent_schema_completion_items(
                     schema_uri: current_schema.schema_uri.clone(),
                     schema_base_uri: current_schema.schema_base_uri.clone(),
                     schema_document_uri: current_schema.schema_document_uri.clone(),
+                    line_index: current_schema.line_index.clone(),
                     definitions: current_schema.definitions.clone(),
                     strict: current_schema.strict,
                     dynamic_scope: current_schema.dynamic_scope.clone(),
@@ -502,6 +498,7 @@ pub(super) async fn merge_adjacent_schema_completion_items(
                     schema_uri: current_schema.schema_uri.clone(),
                     schema_base_uri: current_schema.schema_base_uri.clone(),
                     schema_document_uri: current_schema.schema_document_uri.clone(),
+                    line_index: current_schema.line_index.clone(),
                     definitions: current_schema.definitions.clone(),
                     strict: current_schema.strict,
                     dynamic_scope: current_schema.dynamic_scope.clone(),

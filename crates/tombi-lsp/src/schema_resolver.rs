@@ -392,7 +392,7 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
                         current_schema
                             .semantic_schema
                             .as_ref()
-                            .map_or(Default::default(), |schema| schema.range()),
+                            .map_or(Default::default(), |schema| schema.span()),
                     ))
                 });
                 let referables = candidates
@@ -424,6 +424,7 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
                     schema_uri: current_schema.schema_uri,
                     schema_base_uri: current_schema.schema_base_uri,
                     schema_document_uri: current_schema.schema_document_uri,
+                    line_index: current_schema.line_index,
                     definitions: current_schema.definitions,
                     strict: current_schema.strict,
                     dynamic_scope: current_schema.dynamic_scope,

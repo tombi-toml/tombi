@@ -15,11 +15,16 @@ fn main() {
 
     let mut elapsed = std::time::Duration::ZERO;
     for iteration in 0..105 {
-        let node = tombi_json::ValueNode::from_str(&schema).unwrap();
+        let schema_document = tombi_json::Document::from_str(&schema).unwrap();
         let store = SchemaStore::new();
         let start = Instant::now();
         let document = runtime
-            .block_on(DocumentSchema::new(node, uri.clone(), None, &store))
+            .block_on(DocumentSchema::new(
+                schema_document,
+                uri.clone(),
+                None,
+                &store,
+            ))
             .unwrap();
         if iteration >= 5 {
             elapsed += start.elapsed();

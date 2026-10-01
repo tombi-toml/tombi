@@ -3,9 +3,9 @@ pub struct Cursor<'a> {
     chars: std::str::Chars<'a>,
     current_char: char,
     current_offset: tombi_text::Offset,
-    current_position: tombi_text::Position,
     token_start_offset: tombi_text::Offset,
-    token_start_position: tombi_text::Position,
+    /// The start offset of each line scanned so far.
+    pub(crate) line_starts: Vec<tombi_text::Offset>,
 }
 
 pub(crate) const EOF_CHAR: char = '\0';
@@ -19,9 +19,8 @@ impl<'a> Cursor<'a> {
             chars,
             current_char: current,
             current_offset: Default::default(),
-            current_position: Default::default(),
             token_start_offset: Default::default(),
-            token_start_position: Default::default(),
+            line_starts: vec![tombi_text::Offset::new(0)],
         }
     }
 
@@ -70,11 +69,14 @@ impl<'a> Cursor<'a> {
         let remaining = self.chars.as_str();
         let prefix = &remaining.as_bytes()[..len];
         debug_assert!(prefix.is_ascii());
+        debug_assert!(
+            !prefix.contains(&b'\n'),
+            "line starts are recorded only in `bump`"
+        );
         let current_char = prefix[len - 1] as char;
         let rest = &remaining[len..];
 
         self.current_offset += tombi_text::Offset::new(len as u32);
-        self.current_position += tombi_text::RelativePosition::from((0, len as u32));
         self.current_char = current_char;
         self.chars = rest.chars();
     }
@@ -83,7 +85,9 @@ impl<'a> Cursor<'a> {
     pub(crate) fn bump(&mut self) -> Option<char> {
         if let Some(c) = self.chars.next() {
             self.current_offset += tombi_text::Offset::new(c.len_utf8() as u32);
-            self.current_position += tombi_text::RelativePosition::from(c);
+            if c == '\n' {
+                self.line_starts.push(self.current_offset);
+            }
             self.current_char = c;
             Some(c)
         } else {
@@ -109,18 +113,9 @@ impl<'a> Cursor<'a> {
     }
 
     #[inline]
-    pub(crate) fn pop_span_range(&mut self) -> (tombi_text::Span, tombi_text::Range) {
-        let start_offset = self.token_start_offset;
-        let end_offset = self.current_offset;
-        let start_position = self.token_start_position;
-        let end_position = self.current_position;
-
+    pub(crate) fn pop_span(&mut self) -> tombi_text::Span {
+        let span = tombi_text::Span::new(self.token_start_offset, self.current_offset);
         self.token_start_offset = self.current_offset;
-        self.token_start_position = self.current_position;
-
-        (
-            tombi_text::Span::new(start_offset, end_offset),
-            tombi_text::Range::new(start_position, end_position),
-        )
+        span
     }
 }

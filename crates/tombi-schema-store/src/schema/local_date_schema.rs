@@ -4,7 +4,7 @@ use super::{AllOfSchema, AnyOfSchema, NotSchema, OneOfSchema};
 pub struct LocalDateSchema {
     pub title: Option<String>,
     pub description: Option<String>,
-    pub range: tombi_text::Range,
+    pub span: tombi_text::Span,
     pub r#enum: Option<Vec<String>>,
     pub default: Option<String>,
     pub const_value: Option<String>,
@@ -59,7 +59,7 @@ impl LocalDateSchema {
                     .collect()
             }),
             deprecation: crate::Deprecation::new(object),
-            range: object.range,
+            span: object.span,
             one_of,
             any_of,
             all_of,

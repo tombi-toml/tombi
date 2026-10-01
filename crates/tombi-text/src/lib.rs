@@ -19,6 +19,7 @@ mod features;
 mod line_ending;
 mod line_index;
 mod offset;
+mod owned_line_index;
 mod position;
 mod range;
 mod relative_position;
@@ -41,6 +42,7 @@ pub use crate::{
     encoding_kind::EncodingKind,
     line_index::{LineIndex, LineIndexCursor},
     offset::Offset,
+    owned_line_index::OwnedLineIndex,
     position::Position,
     range::Range,
     relative_position::RelativePosition,

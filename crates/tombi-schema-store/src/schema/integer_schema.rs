@@ -4,7 +4,7 @@ use super::{AllOfSchema, AnyOfSchema, NotSchema, OneOfSchema};
 pub struct IntegerSchema {
     pub title: Option<String>,
     pub description: Option<String>,
-    pub range: tombi_text::Range,
+    pub span: tombi_text::Span,
     pub minimum: Option<i64>,
     pub maximum: Option<i64>,
     pub exclusive_minimum: Option<i64>,
@@ -63,7 +63,7 @@ impl IntegerSchema {
             any_of,
             all_of,
             not,
-            range: object.range,
+            span: object.span,
         }
     }
 

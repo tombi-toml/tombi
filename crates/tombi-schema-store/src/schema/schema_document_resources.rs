@@ -24,15 +24,21 @@ pub(crate) struct SchemaDocumentResources {
     schema_document_uri: SchemaUri,
     root_schema_resource_uri: SchemaUri,
     root: tombi_json::ValueNode,
+    /// The line index of the physical document, to convert the spans of its schemas.
+    line_index: Arc<tombi_text::OwnedLineIndex>,
     resources: tombi_hashmap::HashMap<SchemaUri, SchemaResource>,
 }
 
 impl SchemaDocumentResources {
     pub(crate) async fn collect(
-        root: tombi_json::ValueNode,
+        document: tombi_json::Document,
         schema_document_uri: &SchemaUri,
         schema_store: &SchemaStore,
     ) -> Result<Arc<Self>, crate::Error> {
+        let tombi_json::Document {
+            value: root,
+            line_index,
+        } = document;
         let (root_dialect, root_validation_vocabulary_disabled) =
             root_schema_context(&root, schema_document_uri, schema_store).await;
         let mut resources = tombi_hashmap::HashMap::default();
@@ -66,6 +72,7 @@ impl SchemaDocumentResources {
             schema_document_uri: schema_document_uri.clone(),
             root_schema_resource_uri,
             root,
+            line_index,
             resources,
         }))
     }
@@ -76,6 +83,10 @@ impl SchemaDocumentResources {
 
     pub(crate) fn root_schema_resource_uri(&self) -> &SchemaUri {
         &self.root_schema_resource_uri
+    }
+
+    pub(crate) fn line_index(&self) -> &Arc<tombi_text::OwnedLineIndex> {
+        &self.line_index
     }
 
     pub(crate) fn resource(&self, schema_resource_uri: &SchemaUri) -> Option<&SchemaResource> {
@@ -120,8 +131,10 @@ async fn root_schema_context(
     let Some(metaschema_uri) = resolve_schema_resource_uri(&schema_base_uri, schema_uri) else {
         return (None, false);
     };
-    let Ok(Some(tombi_json::ValueNode::Object(metaschema))) =
-        schema_store.fetch_schema_value(&metaschema_uri).await
+    let Ok(Some(tombi_json::Document {
+        value: tombi_json::ValueNode::Object(metaschema),
+        ..
+    })) = schema_store.fetch_schema_document(&metaschema_uri).await
     else {
         return (None, false);
     };

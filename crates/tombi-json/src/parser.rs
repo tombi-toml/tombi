@@ -5,7 +5,7 @@ pub use error::Error;
 use tombi_json_lexer::{Lexed, Token, lex};
 use tombi_json_syntax::{SyntaxKind, T};
 use tombi_json_value::Number;
-use tombi_text::Range;
+use tombi_text::Span;
 
 /// Maximum nesting depth for arrays and objects.
 ///
@@ -70,7 +70,6 @@ impl<'a> Parser<'a> {
         match self.peek() {
             Some(token) if token.kind() == SyntaxKind::STRING => {
                 let span = token.span();
-                let range = token.range();
                 let contains_escape = token.contains_escape();
                 // Get the string and advance the position
                 let raw_str = &self.source[span.start.into()..span.end.into()];
@@ -82,7 +81,7 @@ impl<'a> Parser<'a> {
                 if !contains_escape {
                     return Ok(StringNode {
                         value: content.to_owned(),
-                        range,
+                        span,
                     });
                 }
 
@@ -166,7 +165,7 @@ impl<'a> Parser<'a> {
 
                 Ok(StringNode {
                     value: processed,
-                    range,
+                    span,
                 })
             }
             Some(token) => Err(Error::UnexpectedToken {
@@ -185,7 +184,6 @@ impl<'a> Parser<'a> {
                     SyntaxKind::NUMBER => {
                         let token = self.peek().unwrap();
                         let span = token.span();
-                        let range = token.range();
                         let num_str = &self.source[span.start.into()..span.end.into()];
                         self.advance();
 
@@ -203,26 +201,25 @@ impl<'a> Parser<'a> {
                                     Number::from_f64(n)
                                 };
 
-                                Ok(ValueNode::Number(NumberNode { value: num, range }))
+                                Ok(ValueNode::Number(NumberNode { value: num, span }))
                             }
                             Err(_) => Err(Error::InvalidValue),
                         }
                     }
                     SyntaxKind::NULL => {
                         let token = self.peek().unwrap();
-                        let range = token.range();
+                        let span = token.span();
                         self.advance();
-                        Ok(ValueNode::Null(NullNode { range }))
+                        Ok(ValueNode::Null(NullNode { span }))
                     }
                     SyntaxKind::BOOLEAN => {
                         let token = self.peek().unwrap();
                         let span = token.span();
-                        let range = token.range();
                         let bool_str = &self.source[span.start.into()..span.end.into()];
                         let value = bool_str == "true";
                         self.advance();
 
-                        Ok(ValueNode::Bool(BoolNode { value, range }))
+                        Ok(ValueNode::Bool(BoolNode { value, span }))
                     }
                     T!['['] => self.parse_array(depth),
                     T!['{'] => self.parse_object(depth),
@@ -242,7 +239,7 @@ impl<'a> Parser<'a> {
 
         // Consume the opening bracket
         let open_token = self.expect(T!['['])?;
-        let start_range = open_token.range();
+        let start = open_token.span().start;
         let mut items = Vec::new();
 
         // Check if the array is empty
@@ -250,10 +247,10 @@ impl<'a> Parser<'a> {
             && token.kind() == T![']']
         {
             let close_token = self.advance().unwrap();
-            let full_range = Range::new(start_range.start, close_token.range().end);
+            let span = Span::new(start, close_token.span().end);
             return Ok(ValueNode::Array(ArrayNode {
                 items: Vec::new(),
-                range: full_range,
+                span,
             }));
         }
 
@@ -270,12 +267,9 @@ impl<'a> Parser<'a> {
                 }
                 Some(T![']']) => {
                     let close_token = self.advance().unwrap();
-                    let full_range = Range::new(start_range.start, close_token.range().end);
+                    let span = Span::new(start, close_token.span().end);
 
-                    let array_node = ArrayNode {
-                        items,
-                        range: full_range,
-                    };
+                    let array_node = ArrayNode { items, span };
 
                     return Ok(ValueNode::Array(array_node));
                 }
@@ -292,12 +286,9 @@ impl<'a> Parser<'a> {
                 && token.kind() == T![']']
             {
                 let close_token = self.advance().unwrap();
-                let full_range = Range::new(start_range.start, close_token.range().end);
+                let span = Span::new(start, close_token.span().end);
 
-                let array_node = ArrayNode {
-                    items,
-                    range: full_range,
-                };
+                let array_node = ArrayNode { items, span };
 
                 return Ok(ValueNode::Array(array_node));
             }
@@ -313,7 +304,7 @@ impl<'a> Parser<'a> {
 
         // Consume the opening brace
         let open_token = self.expect(T!['{'])?;
-        let start_range = open_token.range();
+        let start = open_token.span().start;
         let mut properties: tombi_json_value::Map<StringNode, ValueNode> =
             tombi_json_value::Map::new();
 
@@ -322,10 +313,10 @@ impl<'a> Parser<'a> {
             && token.kind() == T!['}']
         {
             let close_token = self.advance().unwrap();
-            let full_range = Range::new(start_range.start, close_token.range().end);
+            let span = Span::new(start, close_token.span().end);
             return Ok(ValueNode::Object(ObjectNode {
                 properties: tombi_json_value::Map::new(),
-                range: full_range,
+                span,
             }));
         }
 
@@ -368,12 +359,9 @@ impl<'a> Parser<'a> {
                 }
                 Some(T!['}']) => {
                     let close_token = self.advance().unwrap();
-                    let full_range = Range::new(start_range.start, close_token.range().end);
+                    let span = Span::new(start, close_token.span().end);
 
-                    let object_node = ObjectNode {
-                        properties,
-                        range: full_range,
-                    };
+                    let object_node = ObjectNode { properties, span };
 
                     return Ok(ValueNode::Object(object_node));
                 }
@@ -390,12 +378,9 @@ impl<'a> Parser<'a> {
                 && token.kind() == T!['}']
             {
                 let close_token = self.advance().unwrap();
-                let full_range = Range::new(start_range.start, close_token.range().end);
+                let span = Span::new(start, close_token.span().end);
 
-                let object_node = ObjectNode {
-                    properties,
-                    range: full_range,
-                };
+                let object_node = ObjectNode { properties, span };
 
                 return Ok(ValueNode::Object(object_node));
             }
@@ -446,6 +431,25 @@ impl<'a> Parser<'a> {
 pub fn parse(source: &str) -> Result<ValueNode, crate::parser::Error> {
     let mut parser = Parser::new(source);
     parser.parse()
+}
+
+/// Parse a JSON string into a [`Document`][crate::Document], with the line index of `source`.
+///
+/// The line index is built from the line starts recorded while lexing, without scanning `source` again.
+pub fn parse_document(
+    source: impl Into<Box<str>>,
+) -> Result<crate::Document, crate::parser::Error> {
+    let text: Box<str> = source.into();
+    let mut parser = Parser::new(&text);
+    let value = parser.parse()?;
+    let line_starts = std::mem::take(&mut parser.lexed.line_starts);
+    Ok(crate::Document {
+        value,
+        line_index: std::sync::Arc::new(tombi_text::OwnedLineIndex::from_line_starts(
+            text,
+            line_starts,
+        )),
+    })
 }
 
 #[cfg(test)]

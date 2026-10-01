@@ -59,22 +59,33 @@ pub(super) trait GetHoverContent {
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>;
 }
 
-pub(super) fn schema_link_uri(
+/// A link to the start of `schema_span` in the JSON Schema document of `schema_uri`,
+/// whose line index is `line_index`.
+pub(crate) fn schema_link_uri(
     schema_uri: &SchemaUri,
-    schema_range: tombi_text::Range,
+    line_index: &tombi_text::OwnedLineIndex,
+    schema_span: tombi_text::Span,
 ) -> SchemaUri {
-    tombi_extension::get_schema_link_uri(schema_uri, schema_range.start).into()
+    // The column of a link is counted in UTF-16, the default position encoding of LSP.
+    let position = line_index
+        .as_line_index()
+        .position(schema_span.start, tombi_text::EncodingKind::Utf16);
+    tombi_extension::get_schema_link_uri(schema_uri, position).into()
+}
+
+/// A link to the schema view of `current_schema` in its JSON Schema document.
+pub(crate) fn schema_view_link_uri(current_schema: &CurrentSchema<'_>) -> SchemaUri {
+    schema_link_uri(
+        current_schema.schema_document_uri.as_ref(),
+        &current_schema.line_index,
+        current_schema.schema_view.span(),
+    )
 }
 
 pub(super) fn current_schema_link_uri(
     current_schema: Option<&CurrentSchema<'_>>,
 ) -> Option<SchemaUri> {
-    current_schema.map(|schema| {
-        schema_link_uri(
-            schema.schema_document_uri.as_ref(),
-            schema.schema_view.range(),
-        )
-    })
+    current_schema.map(schema_view_link_uri)
 }
 
 fn merge_optional_vec<T: PartialEq>(

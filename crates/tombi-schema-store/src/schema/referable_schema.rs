@@ -54,6 +54,9 @@ pub struct CurrentSchema<'a> {
     /// **schema_document_uri**: Physical URI of the loaded JSON Schema document (file/http/etc).
     /// Not `$id`. Used for config lookup, cache, and opening the source file.
     pub schema_document_uri: Cow<'a, SchemaUri>,
+    /// The line index of the document of [`Self::schema_document_uri`],
+    /// to convert the spans of its schemas.
+    pub line_index: Arc<tombi_text::OwnedLineIndex>,
     pub definitions: Cow<'a, SchemaDefinitions>,
     /// strict setting on root-schema/sub-schema level.
     pub strict: Option<BoolDefaultTrue>,
@@ -71,6 +74,7 @@ impl<'a> CurrentSchema<'a> {
             schema_uri: Cow::Owned(self.schema_uri.into_owned()),
             schema_base_uri: Cow::Owned(self.schema_base_uri.into_owned()),
             schema_document_uri: Cow::Owned(self.schema_document_uri.into_owned()),
+            line_index: self.line_index,
             definitions: Cow::Owned(self.definitions.into_owned()),
             strict: self.strict,
             dynamic_scope: self.dynamic_scope,
@@ -103,6 +107,7 @@ impl<'a> CurrentSchema<'a> {
             schema_uri: Cow::Owned(self.schema_uri.as_ref().clone()),
             schema_base_uri: Cow::Owned(self.schema_base_uri.as_ref().clone()),
             schema_document_uri: Cow::Owned(self.schema_document_uri.as_ref().clone()),
+            line_index: self.line_index.clone(),
             definitions: Cow::Owned(self.definitions.as_ref().clone()),
             strict: self.strict,
             dynamic_scope: self.dynamic_scope.clone(),
@@ -446,7 +451,7 @@ impl Referable<SchemaView> {
                     description: object
                         .get("description")
                         .and_then(|value| value.as_str().map(ToOwned::to_owned)),
-                    range: object.range,
+                    span: object.span,
                 }))
             };
             schema_view.map(|schema_view| Referable::Resolved {
@@ -653,11 +658,10 @@ impl Referable<SchemaView> {
                             let local_semantic = ref_semantic_schema
                                 .clone()
                                 .expect("reference siblings have semantic schema");
-                            let range = local_semantic.range();
+                            let span = local_semantic.span();
                             let source_schema_uri = schema_base_uri.as_ref().clone();
-                            let source_document_uri = schema_store
-                                .schema_document_uri_for(&source_schema_uri)
-                                .await;
+                            let (source_document_uri, source_line_index) =
+                                schema_store.schema_document_for(&source_schema_uri).await;
                             let dynamic_scope = resolved.dynamic_scope.clone();
                             let schemas = vec![
                                 Referable::Resolved {
@@ -665,7 +669,7 @@ impl Referable<SchemaView> {
                                     value: Arc::new(SchemaView::Anything(super::AnythingSchema {
                                         title: None,
                                         description: None,
-                                        range,
+                                        span,
                                     })),
                                     semantic_schema: Some(local_semantic),
                                 },
@@ -681,7 +685,7 @@ impl Referable<SchemaView> {
                                 schema_view: Arc::new(SchemaView::AllOf(super::AllOfSchema {
                                     title: title.clone(),
                                     description: description.clone(),
-                                    range,
+                                    span,
                                     schemas: Arc::new(tokio::sync::RwLock::new(schemas)),
                                     default: default.clone(),
                                     examples: examples.clone(),
@@ -694,6 +698,7 @@ impl Referable<SchemaView> {
                                 schema_uri: Cow::Owned(source_schema_uri.clone()),
                                 schema_base_uri: Cow::Owned(source_schema_uri),
                                 schema_document_uri: Cow::Owned(source_document_uri),
+                                line_index: source_line_index,
                                 definitions: Cow::Owned(definitions.as_ref().clone()),
                                 strict,
                                 dynamic_scope,
@@ -841,14 +846,14 @@ impl Referable<SchemaView> {
                             let local_semantic = ref_semantic_schema
                                 .clone()
                                 .expect("reference siblings have semantic schema");
-                            let range = local_semantic.range();
+                            let span = local_semantic.span();
                             let schemas = vec![
                                 Referable::Resolved {
                                     schema_base_uri: Some(source_schema_uri),
                                     value: Arc::new(SchemaView::Anything(super::AnythingSchema {
                                         title: None,
                                         description: None,
-                                        range,
+                                        span,
                                     })),
                                     semantic_schema: Some(local_semantic),
                                 },
@@ -865,7 +870,7 @@ impl Referable<SchemaView> {
                                 value: Arc::new(SchemaView::AllOf(super::AllOfSchema {
                                     title: title.clone(),
                                     description: description.clone(),
-                                    range,
+                                    span,
                                     schemas: Arc::new(tokio::sync::RwLock::new(schemas)),
                                     default: default.clone(),
                                     examples: examples.clone(),
@@ -981,7 +986,7 @@ impl Referable<SchemaView> {
                     value: schema_view,
                     semantic_schema,
                 } => {
-                    let (schema_uri, schema_base_uri, schema_document_uri, definitions) = {
+                    let (schema_uri, schema_base_uri, schema_document_uri, line_index, definitions) = {
                         match reference_url {
                             Some(reference_url) => {
                                 if let Some(document_schema) =
@@ -991,30 +996,31 @@ impl Referable<SchemaView> {
                                         Cow::Owned(document_schema.schema_uri.clone()),
                                         Cow::Owned(document_schema.schema_base_uri().clone()),
                                         Cow::Owned(document_schema.schema_document_uri().clone()),
+                                        document_schema.line_index().clone(),
                                         Cow::Owned(document_schema.definitions.clone()),
                                     )
                                 } else {
-                                    let schema_document_uri = Cow::Owned(
-                                        schema_store
-                                            .schema_document_uri_for(schema_base_uri.as_ref())
-                                            .await,
-                                    );
+                                    let (schema_document_uri, line_index) = schema_store
+                                        .schema_document_for(schema_base_uri.as_ref())
+                                        .await;
                                     (
                                         Cow::Owned(reference_url.clone()),
                                         schema_base_uri,
-                                        schema_document_uri,
+                                        Cow::Owned(schema_document_uri),
+                                        line_index,
                                         definitions,
                                     )
                                 }
                             }
                             None => {
-                                let schema_document_uri = schema_store
-                                    .schema_document_uri_for(schema_base_uri.as_ref())
+                                let (schema_document_uri, line_index) = schema_store
+                                    .schema_document_for(schema_base_uri.as_ref())
                                     .await;
                                 (
                                     Cow::Owned(schema_document_uri.clone()),
                                     schema_base_uri,
                                     Cow::Owned(schema_document_uri),
+                                    line_index,
                                     definitions,
                                 )
                             }
@@ -1027,6 +1033,7 @@ impl Referable<SchemaView> {
                         schema_uri,
                         schema_base_uri,
                         schema_document_uri,
+                        line_index,
                         definitions,
                         strict,
                         dynamic_scope,
@@ -1059,7 +1066,7 @@ impl Referable<SchemaView> {
                 let (
                     schema_uri,
                     resolved_schema_base_uri,
-                    schema_document_uri,
+                    (schema_document_uri, line_index),
                     definitions,
                     dynamic_scope,
                 ) = match reference_url {
@@ -1070,7 +1077,10 @@ impl Referable<SchemaView> {
                             (
                                 document_schema.schema_uri.clone(),
                                 document_schema.schema_base_uri().clone(),
-                                document_schema.schema_document_uri().clone(),
+                                (
+                                    document_schema.schema_document_uri().clone(),
+                                    document_schema.line_index().clone(),
+                                ),
                                 document_schema.definitions.clone(),
                                 document_schema.dynamic_scope(parent_dynamic_scope.unwrap_or(&[])),
                             )
@@ -1079,7 +1089,7 @@ impl Referable<SchemaView> {
                                 reference_url.clone(),
                                 schema_base_uri.clone().into_owned(),
                                 schema_store
-                                    .schema_document_uri_for(schema_base_uri.as_ref())
+                                    .schema_document_for(schema_base_uri.as_ref())
                                     .await,
                                 definitions.into_owned(),
                                 extend_dynamic_scope(
@@ -1090,13 +1100,13 @@ impl Referable<SchemaView> {
                         }
                     }
                     None => {
-                        let schema_document_uri = schema_store
-                            .schema_document_uri_for(schema_base_uri.as_ref())
+                        let (schema_document_uri, line_index) = schema_store
+                            .schema_document_for(schema_base_uri.as_ref())
                             .await;
                         (
                             schema_document_uri.clone(),
                             schema_base_uri.clone().into_owned(),
-                            schema_document_uri,
+                            (schema_document_uri, line_index),
                             definitions.into_owned(),
                             extend_dynamic_scope(
                                 parent_dynamic_scope.unwrap_or(&[]),
@@ -1111,6 +1121,7 @@ impl Referable<SchemaView> {
                     semantic_schema: semantic_schema.clone(),
                     schema_uri: Cow::Owned(schema_uri),
                     schema_document_uri: Cow::Owned(schema_document_uri),
+                    line_index,
                     definitions: Cow::Owned(definitions),
                     strict,
                     dynamic_scope,
@@ -1212,7 +1223,7 @@ fn combine_ref_semantics(
         (Some(local), Some(target)) => Some(Arc::new(super::SemanticSchema::composite(
             super::SemanticCompositeKind::Reference,
             vec![local.as_ref().clone(), target.as_ref().clone()],
-            local.range(),
+            local.span(),
         ))),
         (Some(schema), None) | (None, Some(schema)) => Some(schema),
         (None, None) => None,
@@ -1351,6 +1362,7 @@ async fn resolve_recursive_ref(
         semantic_schema: document_schema.semantic_schema.clone(),
         schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
         schema_document_uri: Cow::Owned(document_schema.schema_document_uri().clone()),
+        line_index: document_schema.line_index().clone(),
         definitions: Cow::Owned(document_schema.definitions.clone()),
         strict,
         dynamic_scope: extend_dynamic_scope(dynamic_scope, &schema_base_uri),
@@ -1488,6 +1500,7 @@ fn current_schema_from_document<'a>(
         semantic_schema,
         schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
         schema_document_uri: Cow::Owned(document_schema.schema_document_uri().clone()),
+        line_index: document_schema.line_index().clone(),
         definitions,
         strict,
         dynamic_scope: document_schema.dynamic_scope(parent_dynamic_scope),
@@ -1551,15 +1564,16 @@ async fn resolve_pointer_current_schema(
 
     let mut current_dynamic_scope = parent_dynamic_scope.to_vec();
     loop {
-        let Some(schema_value) = schema_store.fetch_schema_value(&schema_uri).await? else {
+        let Some(schema_document) = schema_store.fetch_schema_document(&schema_uri).await? else {
             return Ok(None);
         };
+        let schema_value = &schema_document.value;
         dialect = dialect
             .or(schema_store.schema_resource_dialect(&schema_uri).await)
-            .or_else(|| declared_dialect(&schema_value));
+            .or_else(|| declared_dialect(schema_value));
 
         if let Some((resource_chain, relative_pointer)) =
-            resource_boundary_for_pointer(&schema_value, &schema_uri, &pointer)
+            resource_boundary_for_pointer(schema_value, &schema_uri, &pointer)
         {
             let schema_resource_uri = resource_chain.last().cloned().unwrap();
             let mut dynamic_scope_at_target = current_dynamic_scope.clone();
@@ -1601,8 +1615,7 @@ async fn resolve_pointer_current_schema(
         }
 
         let schema_document_uri = schema_store.schema_document_uri_for(&schema_uri).await;
-        let Some(schema_view) = resolve_json_pointer(&schema_value, &pointer, None, dialect)?
-        else {
+        let Some(schema_view) = resolve_json_pointer(schema_value, &pointer, None, dialect)? else {
             return Err(crate::Error::InvalidJsonPointer {
                 pointer,
                 schema_uri,
@@ -1630,11 +1643,12 @@ async fn resolve_pointer_current_schema(
         }
         return Ok(Some(CurrentSchema {
             schema_view: Arc::new(schema_view),
-            semantic_schema: resolve_json_pointer_node(&schema_value, &pointer)
+            semantic_schema: resolve_json_pointer_node(schema_value, &pointer)
                 .and_then(|value| super::SemanticSchema::from_value_node(value, dialect))
                 .map(Arc::new),
             schema_uri: Cow::Owned(instance_uri),
             schema_document_uri: Cow::Owned(schema_document_uri),
+            line_index: schema_document.line_index.clone(),
             definitions: Cow::Owned(definitions),
             strict,
             dynamic_scope: extend_dynamic_scope(&current_dynamic_scope, &schema_base_uri),
@@ -1881,8 +1895,8 @@ pub async fn resolve_and_collect_schemas_with_errors_in_scope(
         let mut collected = Vec::with_capacity(resolved_schemas.len());
         let mut errors = Vec::new();
         let default_schema_base_uri = schema_base_uri.as_ref().clone();
-        let default_schema_document_uri = schema_store
-            .schema_document_uri_for(&default_schema_base_uri)
+        let (default_schema_document_uri, default_line_index) = schema_store
+            .schema_document_for(&default_schema_base_uri)
             .await;
         let default_definitions = definitions.clone().into_owned();
 
@@ -1890,7 +1904,7 @@ pub async fn resolve_and_collect_schemas_with_errors_in_scope(
             let (
                 current_schema_uri,
                 current_schema_base_uri,
-                current_schema_document_uri,
+                (current_schema_document_uri, current_line_index),
                 current_definitions,
                 current_dynamic_scope,
             ) = if let Some(resolved_schema_uri) = resolved_schema_uri {
@@ -1901,14 +1915,20 @@ pub async fn resolve_and_collect_schemas_with_errors_in_scope(
                     Ok(Some(document_schema)) => (
                         document_schema.schema_uri.clone(),
                         document_schema.schema_base_uri().clone(),
-                        document_schema.schema_document_uri().clone(),
+                        (
+                            document_schema.schema_document_uri().clone(),
+                            document_schema.line_index().clone(),
+                        ),
                         document_schema.definitions.clone(),
                         document_schema.dynamic_scope(parent_dynamic_scope.unwrap_or(&[])),
                     ),
                     Ok(None) => (
                         resolved_schema_uri.clone(),
                         default_schema_base_uri.clone(),
-                        default_schema_document_uri.clone(),
+                        (
+                            default_schema_document_uri.clone(),
+                            default_line_index.clone(),
+                        ),
                         default_definitions.clone(),
                         extend_dynamic_scope(
                             parent_dynamic_scope.unwrap_or(&[]),
@@ -1924,7 +1944,10 @@ pub async fn resolve_and_collect_schemas_with_errors_in_scope(
                 (
                     default_schema_document_uri.clone(),
                     default_schema_base_uri.clone(),
-                    default_schema_document_uri.clone(),
+                    (
+                        default_schema_document_uri.clone(),
+                        default_line_index.clone(),
+                    ),
                     default_definitions.clone(),
                     extend_dynamic_scope(
                         parent_dynamic_scope.unwrap_or(&[]),
@@ -1938,6 +1961,7 @@ pub async fn resolve_and_collect_schemas_with_errors_in_scope(
                 semantic_schema,
                 schema_uri: Cow::Owned(current_schema_uri),
                 schema_document_uri: Cow::Owned(current_schema_document_uri),
+                line_index: current_line_index,
                 definitions: Cow::Owned(current_definitions),
                 strict,
                 dynamic_scope: current_dynamic_scope,
@@ -2101,7 +2125,7 @@ pub fn resolve_json_pointer(
                 .and_then(|schema| schema.completion_projection(string_formats)))
         }
         tombi_json::ValueNode::Bool(bool_node) => {
-            Ok(Some(bool_schema_view(bool_node.value, bool_node.range)))
+            Ok(Some(bool_schema_view(bool_node.value, bool_node.span)))
         }
         _ => Ok(None),
     }
@@ -2553,9 +2577,22 @@ mod test {
             .await
             .unwrap();
 
-        std::assert_matches!(
-            resolved.map(|s| s.schema_view),
-            Some(schema) if matches!(&*schema, SchemaView::String(_))
+        let resolved = resolved.unwrap();
+        std::assert_matches!(resolved.schema_view.as_ref(), SchemaView::String(_));
+
+        // The span of the resolved schema is converted with the line index of `defs.json`.
+        let defs_text = std::fs::read_to_string(&renamed_defs_path).unwrap();
+        pretty_assertions::assert_eq!(resolved.line_index.text(), defs_text);
+        pretty_assertions::assert_eq!(
+            &defs_text[resolved.schema_view.span()],
+            r#"{ "type": "string" }"#
+        );
+        pretty_assertions::assert_eq!(
+            resolved.line_index.as_line_index().position(
+                resolved.schema_view.span().start,
+                tombi_text::EncodingKind::Utf16
+            ),
+            tombi_text::Position::new(2, 28)
         );
 
         let _ = std::fs::remove_dir_all(temp_dir);

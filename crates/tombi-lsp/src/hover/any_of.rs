@@ -148,7 +148,8 @@ where
             constraints: None,
             schema_document_uri: Some(super::schema_link_uri(
                 current_schema.schema_document_uri.as_ref(),
-                any_of_schema.range,
+                &current_schema.line_index,
+                any_of_schema.span,
             )),
             span: None,
             schema_tooltip: None,
@@ -159,7 +160,8 @@ where
             .get_or_insert_with(|| {
                 super::schema_link_uri(
                     current_schema.schema_document_uri.as_ref(),
-                    any_of_schema.range,
+                    &current_schema.line_index,
+                    any_of_schema.span,
                 )
             });
 

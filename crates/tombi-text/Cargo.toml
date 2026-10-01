@@ -8,6 +8,7 @@ license.workspace = true
 [dependencies]
 log.workspace = true
 memchr.workspace = true
+self_cell.workspace = true
 serde = { workspace = true, optional = true }
 unicode-segmentation.workspace = true
 wasm-bindgen = { workspace = true, optional = true }

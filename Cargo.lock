@@ -3388,6 +3388,7 @@ dependencies = [
  "memchr",
  "pretty_assertions",
  "rstest",
+ "self_cell",
  "serde",
  "tower-lsp",
  "unicode-segmentation",

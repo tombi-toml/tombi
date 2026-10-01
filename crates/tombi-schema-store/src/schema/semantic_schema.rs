@@ -6,12 +6,12 @@ use crate::JsonSchemaDialect;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Spanned<T> {
     pub value: T,
-    pub range: tombi_text::Range,
+    pub span: tombi_text::Span,
 }
 
 impl<T> Spanned<T> {
-    fn new(value: T, range: tombi_text::Range) -> Self {
-        Self { value, range }
+    fn new(value: T, span: tombi_text::Span) -> Self {
+        Self { value, span }
     }
 }
 
@@ -88,13 +88,13 @@ pub enum SemanticCompositeKind {
 pub struct SemanticCompositeSchema {
     pub kind: SemanticCompositeKind,
     pub schemas: Vec<SemanticSchema>,
-    pub range: tombi_text::Range,
+    pub span: tombi_text::Span,
 }
 
 impl SemanticSchema {
     pub fn from_value_node(value: &ValueNode, dialect: Option<JsonSchemaDialect>) -> Option<Self> {
         match value {
-            ValueNode::Bool(value) => Some(Self::Boolean(Spanned::new(value.value, value.range))),
+            ValueNode::Bool(value) => Some(Self::Boolean(Spanned::new(value.value, value.span))),
             ValueNode::Object(object) => Some(Self::from_object_node(object, dialect)),
             _ => None,
         }
@@ -104,23 +104,23 @@ impl SemanticSchema {
         Self::Object(Box::new(SemanticSchemaObject::new(object, dialect)))
     }
 
-    pub fn range(&self) -> tombi_text::Range {
+    pub fn span(&self) -> tombi_text::Span {
         match self {
-            Self::Boolean(value) => value.range,
-            Self::Object(object) => object.range,
-            Self::Composite(composite) => composite.range,
+            Self::Boolean(value) => value.span,
+            Self::Object(object) => object.span,
+            Self::Composite(composite) => composite.span,
         }
     }
 
     pub fn composite(
         kind: SemanticCompositeKind,
         schemas: Vec<SemanticSchema>,
-        range: tombi_text::Range,
+        span: tombi_text::Span,
     ) -> Self {
         Self::Composite(SemanticCompositeSchema {
             kind,
             schemas,
-            range,
+            span,
         })
     }
 
@@ -406,7 +406,7 @@ impl SemanticSchema {
             // example `{ "type": "string", "const": true }` or
             // `{ "enum": [] }`. Keep that semantic result as an explicit
             // false view instead of dropping the schema from its parent.
-            0 => Some(super::SchemaView::Nothing(self.range())),
+            0 => Some(super::SchemaView::Nothing(self.span())),
             1 => schemas.into_iter().next().and_then(|schema| match schema {
                 super::Referable::Resolved { value, .. } => std::sync::Arc::try_unwrap(value).ok(),
                 super::Referable::Ref { .. } => None,
@@ -835,7 +835,7 @@ fn literal_has_type(value: &Value, schema_type: SchemaType) -> bool {
 pub struct SemanticSchemaObject {
     source: ObjectNode,
     dialect: Option<JsonSchemaDialect>,
-    pub range: tombi_text::Range,
+    pub span: tombi_text::Span,
     pub type_assertion: Option<TypeAssertion>,
     pub assertions: GenericAssertions,
     pub constraints: TypeConstraints,
@@ -849,7 +849,7 @@ impl SemanticSchemaObject {
         Self {
             source: object.clone(),
             dialect,
-            range: object.range,
+            span: object.span,
             type_assertion: parse_type_assertion(object),
             assertions: GenericAssertions::new(object),
             constraints: TypeConstraints::new(object, dialect),
@@ -863,7 +863,7 @@ impl SemanticSchemaObject {
 fn parse_type_assertion(object: &ObjectNode) -> Option<TypeAssertion> {
     let allowed = match object.get("type") {
         Some(ValueNode::String(value)) => SchemaType::from_str(&value.value)
-            .map(|value_type| vec![Spanned::new(value_type, value.range)])
+            .map(|value_type| vec![Spanned::new(value_type, value.span)])
             .unwrap_or_default(),
         Some(ValueNode::Array(values)) => values
             .items
@@ -873,7 +873,7 @@ fn parse_type_assertion(object: &ObjectNode) -> Option<TypeAssertion> {
                     return None;
                 };
                 SchemaType::from_str(&value.value)
-                    .map(|value_type| Spanned::new(value_type, value.range))
+                    .map(|value_type| Spanned::new(value_type, value.span))
             })
             .collect(),
         _ => return None,
@@ -893,13 +893,13 @@ impl GenericAssertions {
         Self {
             const_value: object
                 .get("const")
-                .map(|value| Spanned::new(value.into(), value.range())),
+                .map(|value| Spanned::new(value.into(), value.span())),
             enum_values: object.get("enum").and_then(|value| {
                 value.as_array().map(|values| {
                     values
                         .items
                         .iter()
-                        .map(|value| Spanned::new(value.into(), value.range()))
+                        .map(|value| Spanned::new(value.into(), value.span()))
                         .collect()
                 })
             }),
@@ -951,7 +951,7 @@ fn number_keyword(object: &ObjectNode, keyword: &str) -> Option<Spanned<Number>>
     let ValueNode::Number(value) = object.get(keyword)? else {
         return None;
     };
-    Some(Spanned::new(value.value.clone(), value.range))
+    Some(Spanned::new(value.value.clone(), value.span))
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -987,14 +987,14 @@ fn usize_keyword(object: &ObjectNode, keyword: &str) -> Option<Spanned<usize>> {
         return None;
     };
     let value_usize = value.value.as_i64()?.try_into().ok()?;
-    Some(Spanned::new(value_usize, value.range))
+    Some(Spanned::new(value_usize, value.span))
 }
 
 fn string_keyword(object: &ObjectNode, keyword: &str) -> Option<Spanned<String>> {
     let ValueNode::String(value) = object.get(keyword)? else {
         return None;
     };
-    Some(Spanned::new(value.value.clone(), value.range))
+    Some(Spanned::new(value.value.clone(), value.span))
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -1053,7 +1053,7 @@ fn bool_keyword(object: &ObjectNode, keyword: &str) -> Option<Spanned<bool>> {
     let ValueNode::Bool(value) = object.get(keyword)? else {
         return None;
     };
-    Some(Spanned::new(value.value, value.range))
+    Some(Spanned::new(value.value, value.span))
 }
 
 fn schema_keyword(
@@ -1069,7 +1069,7 @@ fn schema_keyword(
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SemanticPropertySchema {
-    pub name_range: tombi_text::Range,
+    pub name_span: tombi_text::Span,
     pub schema: SemanticSchema,
 }
 
@@ -1140,7 +1140,7 @@ fn property_schemas(
                 (
                     name.value.clone(),
                     SemanticPropertySchema {
-                        name_range: name.range,
+                        name_span: name.span,
                         schema,
                     },
                 )
@@ -1168,7 +1168,7 @@ fn string_array(value: &ValueNode) -> Option<Vec<Spanned<String>>> {
                 let ValueNode::String(value) = value else {
                     return None;
                 };
-                Some(Spanned::new(value.value.clone(), value.range))
+                Some(Spanned::new(value.value.clone(), value.span))
             })
             .collect(),
     )
@@ -1230,7 +1230,7 @@ impl SemanticAnnotations {
             description: string_keyword(object, "description"),
             default: object
                 .get("default")
-                .map(|value| Spanned::new(value.into(), value.range())),
+                .map(|value| Spanned::new(value.into(), value.span())),
             examples: object
                 .get("examples")
                 .and_then(|value| value.as_array())
@@ -1238,7 +1238,7 @@ impl SemanticAnnotations {
                     values
                         .items
                         .iter()
-                        .map(|value| Spanned::new(value.into(), value.range()))
+                        .map(|value| Spanned::new(value.into(), value.span()))
                         .collect()
                 })
                 .unwrap_or_default(),

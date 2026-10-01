@@ -176,12 +176,13 @@ pub fn project_current_schema_for_value(
     {
         return Some(tombi_schema_store::CurrentSchema {
             schema_view: std::sync::Arc::new(tombi_schema_store::SchemaView::Nothing(
-                semantic_schema.range(),
+                semantic_schema.span(),
             )),
             semantic_schema: None,
             schema_uri: Cow::Owned(current_schema.schema_uri.as_ref().clone()),
             schema_base_uri: Cow::Owned(current_schema.schema_base_uri.as_ref().clone()),
             schema_document_uri: Cow::Owned(current_schema.schema_document_uri.as_ref().clone()),
+            line_index: current_schema.line_index.clone(),
             definitions: Cow::Owned(current_schema.definitions.as_ref().clone()),
             strict: current_schema.strict,
             dynamic_scope: current_schema.dynamic_scope.clone(),
