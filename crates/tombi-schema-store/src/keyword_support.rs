@@ -102,7 +102,7 @@ pub fn log_keyword_dialect_notes(
     let Some(dialect) = dialect else {
         return;
     };
-    for (key, value) in &object.properties {
+    for (key, value) in object.properties.iter() {
         let keyword = key.value.as_str();
 
         if is_deprecated_in_dialect(dialect, keyword) {
@@ -195,7 +195,7 @@ fn collect_from_object_node(
     dialect: JsonSchemaDialect,
     usages: &mut Vec<DeprecatedKeywordUsage>,
 ) {
-    for (key, value) in &object.properties {
+    for (key, value) in object.properties.iter() {
         let keyword = key.value.as_str();
         let child_pointer = format!("{pointer}/{}", escape_json_pointer_token(keyword));
 

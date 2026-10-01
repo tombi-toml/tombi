@@ -64,7 +64,7 @@ impl OneOfSchema {
             description,
             span: object.span,
             schemas: Arc::new(tokio::sync::RwLock::new(schemas)),
-            default: object.get("default").cloned().map(|v| v.into()),
+            default: object.get("default").map(Into::into),
             examples: object
                 .get("examples")
                 .and_then(|v| v.as_array())

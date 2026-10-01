@@ -55,7 +55,7 @@ impl StringSchema {
             content_media_type: object
                 .get("contentMediaType")
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
-            content_schema: object.get("contentSchema").cloned().map(Into::into),
+            content_schema: object.get("contentSchema").map(Into::into),
             min_length: object
                 .get("minLength")
                 .and_then(|v| v.as_u64().map(|n| n as usize)),

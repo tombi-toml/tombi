@@ -1099,7 +1099,7 @@ impl ObjectConstraints {
             let Some(ValueNode::Object(dependencies)) = object.get(keyword) else {
                 continue;
             };
-            for (name, value) in &dependencies.properties {
+            for (name, value) in dependencies.properties.iter() {
                 if let ValueNode::Array(_) = value {
                     dependent_required
                         .insert(name.value.clone(), string_array(value).unwrap_or_default());

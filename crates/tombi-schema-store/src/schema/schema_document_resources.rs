@@ -307,11 +307,11 @@ fn collect_schema_resources_from_value(
         );
     }
 
-    for (key, child) in &object.properties {
+    for (key, child) in object.properties.iter() {
         match key.value.as_str() {
             "$defs" | "definitions" | "properties" | "patternProperties" | "dependentSchemas" => {
                 if let Some(children) = child.as_object() {
-                    for (child_key, child) in &children.properties {
+                    for (child_key, child) in children.properties.iter() {
                         collect_schema_resources_from_value(
                             child,
                             schema_document_uri,
