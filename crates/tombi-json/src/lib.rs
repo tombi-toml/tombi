@@ -294,7 +294,7 @@ impl<'de> SerdeDeserializer<'de> for ValueNodeDeserializer<'de> {
         match &self.node {
             ValueNode::Array(arr) => {
                 let mut bytes = Vec::with_capacity(arr.len());
-                for item in &arr.items {
+                for item in arr.items.iter() {
                     match item {
                         ValueNode::Number(n) => {
                             if let Some(i) = n.value.as_i64() {
@@ -387,7 +387,7 @@ impl<'de> SerdeDeserializer<'de> for ValueNodeDeserializer<'de> {
         match self.node {
             ValueNode::Array(array) => {
                 let seq_access = SeqAccess {
-                    items: array.items.into_iter(),
+                    items: std::sync::Arc::unwrap_or_clone(array.items).into_iter(),
                 };
                 visitor.visit_seq(seq_access)
             }
@@ -424,7 +424,7 @@ impl<'de> SerdeDeserializer<'de> for ValueNodeDeserializer<'de> {
         match self.node {
             ValueNode::Object(object_node) => {
                 let map_access = MapAccess {
-                    properties: object_node.properties.into_iter(),
+                    properties: std::sync::Arc::unwrap_or_clone(object_node.properties).into_iter(),
                     key: None,
                     value: None,
                 };
@@ -461,7 +461,10 @@ impl<'de> SerdeDeserializer<'de> for ValueNodeDeserializer<'de> {
         match self.node {
             ValueNode::String(s) => visitor.visit_enum(TreeEnumAccess::new(s.value, None)),
             ValueNode::Object(obj) if obj.len() == 1 => {
-                let Some((variant, value_node)) = obj.properties.into_iter().next() else {
+                let Some((variant, value_node)) = std::sync::Arc::unwrap_or_clone(obj.properties)
+                    .into_iter()
+                    .next()
+                else {
                     return Err(Error::Custom(
                         "invalid type: expected enum, found object with no properties".to_string(),
                     ));

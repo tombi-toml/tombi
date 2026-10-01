@@ -6,10 +6,15 @@ use serde::{Serialize, Serializer};
 
 use crate::Value;
 
+/// The insertion-ordered map backing [`Map`].
+///
+/// Uses `ahash` instead of the default SipHash, because schema building looks up many keywords per object.
+pub type IndexMap<K, V> = tombi_hashmap::IndexMap<K, V, tombi_hashmap::RandomState>;
+
 /// A map implementation for JSON objects
 #[derive(Debug, Clone)]
 pub struct Map<K, V> {
-    inner: tombi_hashmap::IndexMap<K, V>,
+    inner: IndexMap<K, V>,
 }
 
 impl<K, V> PartialEq for Map<K, V>
@@ -29,14 +34,14 @@ where
     /// Creates an empty Map
     pub fn new() -> Self {
         Map {
-            inner: tombi_hashmap::IndexMap::new(),
+            inner: IndexMap::default(),
         }
     }
 
     /// Creates an empty Map with the specified capacity
     pub fn with_capacity(capacity: usize) -> Self {
         Map {
-            inner: tombi_hashmap::IndexMap::with_capacity(capacity),
+            inner: IndexMap::with_capacity_and_hasher(capacity, Default::default()),
         }
     }
 
@@ -103,18 +108,18 @@ where
         self.inner.values_mut()
     }
 
-    /// Returns a reference to the underlying tombi_hashmap::IndexMap
-    pub fn as_inner(&self) -> &tombi_hashmap::IndexMap<K, V> {
+    /// Returns a reference to the underlying [`IndexMap`]
+    pub fn as_inner(&self) -> &IndexMap<K, V> {
         &self.inner
     }
 
-    /// Returns a mutable reference to the underlying tombi_hashmap::IndexMap
-    pub fn as_inner_mut(&mut self) -> &mut tombi_hashmap::IndexMap<K, V> {
+    /// Returns a mutable reference to the underlying [`IndexMap`]
+    pub fn as_inner_mut(&mut self) -> &mut IndexMap<K, V> {
         &mut self.inner
     }
 
-    /// Consumes the Map and returns the underlying tombi_hashmap::IndexMap
-    pub fn into_inner(self) -> tombi_hashmap::IndexMap<K, V> {
+    /// Consumes the Map and returns the underlying [`IndexMap`]
+    pub fn into_inner(self) -> IndexMap<K, V> {
         self.inner
     }
 
@@ -186,7 +191,7 @@ where
 {
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         Map {
-            inner: tombi_hashmap::IndexMap::from_iter(iter),
+            inner: IndexMap::from_iter(iter),
         }
     }
 }

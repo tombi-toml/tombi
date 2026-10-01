@@ -321,12 +321,12 @@ impl XTombiArrayValuesOrder {
                 }
             }
             tombi_json::ValueNode::Object(object_node) => {
-                for (group_name, group_orders) in &object_node.properties {
+                for (group_name, group_orders) in object_node.properties.iter() {
                     match group_name.value.as_str() {
                         "oneOf" => {
                             if let Some(group_orders) = group_orders.as_array() {
                                 let mut orders = vec![];
-                                for order in &group_orders.items {
+                                for order in group_orders.items.iter() {
                                     match order
                                         .as_str()
                                         .and_then(|v| ArrayValuesOrder::try_from(v).ok())
@@ -348,7 +348,7 @@ impl XTombiArrayValuesOrder {
                         "anyOf" => {
                             if let Some(group_orders) = group_orders.as_array() {
                                 let mut orders = vec![];
-                                for order in &group_orders.items {
+                                for order in group_orders.items.iter() {
                                     match order
                                         .as_str()
                                         .and_then(|v| ArrayValuesOrder::try_from(v).ok())

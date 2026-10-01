@@ -74,13 +74,17 @@ impl DocumentSchema {
         strict: Option<BoolDefaultTrue>,
         schema_store: &SchemaStore,
     ) -> Option<Self> {
-        let resource = schema_resources.resource(&schema_resource_uri)?;
+        // Borrow the resource value from a second handle, so `schema_resources` can be moved
+        // into the built schema without cloning the JSON tree.
+        let resources = Arc::clone(&schema_resources);
+        let resource = resources.resource(&schema_resource_uri)?;
         let schema_uri = schema_resources.schema_document_uri().clone();
         let schema_resource_uri = resource.schema_resource_uri.clone();
         let id = resource.id.clone();
         let inherited_dialect = resource.dialect;
         let validation_vocabulary_disabled = resource.validation_vocabulary_disabled;
-        Some(match schema_resources.resource_value(resource)?.clone() {
+        let value = resources.resource_value(resource)?;
+        Some(match value {
             tombi_json::ValueNode::Object(object) => {
                 Self::new_from_object(
                     object,
@@ -106,11 +110,7 @@ impl DocumentSchema {
                 string_formats: None,
                 format_assertion: true,
                 schema_view: Some(Arc::new(super::bool_schema_view(bool.value, bool.span))),
-                semantic_schema: SemanticSchema::from_value_node(
-                    &tombi_json::ValueNode::Bool(bool),
-                    None,
-                )
-                .map(Arc::new),
+                semantic_schema: SemanticSchema::from_value_node(value, None).map(Arc::new),
                 definitions: SchemaDefinitions::new(Default::default()),
                 anchors: SchemaAnchors::new(Default::default()),
                 dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
@@ -137,7 +137,7 @@ impl DocumentSchema {
     }
 
     async fn new_from_object(
-        mut object: tombi_json::ObjectNode,
+        object: &tombi_json::ObjectNode,
         schema_uri: SchemaUri,
         schema_resource_uri: SchemaUri,
         id: Option<SchemaUri>,
@@ -157,9 +157,13 @@ impl DocumentSchema {
             })
             .or(inherited_dialect);
 
-        if validation_vocabulary_disabled {
+        let object = if validation_vocabulary_disabled {
+            let mut object = object.clone();
             remove_validation_keywords(&mut object);
-        }
+            Cow::Owned(object)
+        } else {
+            Cow::Borrowed(object)
+        };
 
         let toml_version = object.get(X_TOMBI_TOML_VERSION).and_then(|obj| match obj {
             tombi_json::ValueNode::String(version) => TomlVersion::from_str(&version.value).ok(),
@@ -541,7 +545,8 @@ fn has_enabled_vocabulary(object: &tombi_json::ObjectNode, vocabulary_uri: &str)
 }
 
 fn remove_validation_keywords(object: &mut tombi_json::ObjectNode) {
-    object.properties.as_inner_mut().retain(|key, _| {
+    let properties = Arc::make_mut(&mut object.properties).as_inner_mut();
+    properties.retain(|key, _| {
         keyword_vocabulary(key.value.as_str()) != Some(JsonSchemaVocabulary::Validation)
     });
 
@@ -570,7 +575,7 @@ fn remove_validation_keywords(object: &mut tombi_json::ObjectNode) {
     ];
 
     for keyword in schema_keywords {
-        let Some(value) = object.properties.as_inner_mut().get_mut(keyword) else {
+        let Some(value) = properties.get_mut(keyword) else {
             continue;
         };
         remove_validation_keywords_from_value(value, keyword);
@@ -585,13 +590,13 @@ fn remove_validation_keywords_from_value(value: &mut tombi_json::ValueNode, keyw
                 "$defs" | "definitions" | "dependentSchemas" | "patternProperties" | "properties"
             ) =>
         {
-            for schema in object.properties.values_mut() {
+            for schema in Arc::make_mut(&mut object.properties).values_mut() {
                 remove_validation_keywords_from_schema(schema);
             }
         }
         tombi_json::ValueNode::Object(object) => remove_validation_keywords(object),
         tombi_json::ValueNode::Array(array) => {
-            for schema in &mut array.items {
+            for schema in Arc::make_mut(&mut array.items).iter_mut() {
                 remove_validation_keywords_from_value(schema, keyword);
             }
         }

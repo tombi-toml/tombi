@@ -29,6 +29,45 @@ pub fn lex(source: &str) -> Lexed {
     lexed
 }
 
+/// A lexer that yields the non-trivia tokens of a source one at a time.
+///
+/// A parser that skips trivia can use it instead of [`lex`], so that the tokens are not
+/// collected into a vector first.
+pub struct Lexer<'a> {
+    cursor: Cursor<'a>,
+}
+
+impl<'a> Lexer<'a> {
+    pub fn new(source: &'a str) -> Self {
+        Self {
+            cursor: Cursor::new(source),
+        }
+    }
+
+    /// Returns the next non-trivia token.
+    ///
+    /// An invalid token is returned as [`SyntaxKind::INVALID_TOKEN`], as in [`Lexed::tokens`].
+    /// After the end of the source, it keeps returning an [`SyntaxKind::EOF`] token.
+    pub fn next_token(&mut self) -> Token {
+        self.cursor.skip_trivia();
+        match self.cursor.advance_token() {
+            Ok(token) if token.is_eof() => {
+                let end = tombi_text::Offset::new(self.cursor.source_len() as u32);
+                Token::new(SyntaxKind::EOF, tombi_text::Span::new(end, end))
+            }
+            Ok(token) => token,
+            Err(error) => Token::new(SyntaxKind::INVALID_TOKEN, error.span()),
+        }
+    }
+
+    /// Returns the start offset of each line scanned so far.
+    ///
+    /// They cover the whole source once [`Lexer::next_token`] has returned [`SyntaxKind::EOF`].
+    pub fn into_line_starts(self) -> Vec<tombi_text::Offset> {
+        self.cursor.line_starts
+    }
+}
+
 pub fn tokenize(source: &str) -> impl Iterator<Item = Result<Token, crate::Error>> + '_ {
     let mut cursor = Cursor::new(source);
     std::iter::from_fn(move || next_token(&mut cursor))
@@ -54,65 +93,36 @@ fn next_token(cursor: &mut Cursor<'_>) -> Option<Result<Token, crate::Error>> {
 impl Cursor<'_> {
     /// Parses a token from the input string.
     pub fn advance_token(&mut self) -> Result<Token, crate::Error> {
-        if self.bump().is_none() {
+        let Some(byte) = self.first() else {
             return Ok(Token::eof());
-        }
-        match self.current() {
-            _ if self.is_whitespace() => self.whitespace(),
-            _ if self.is_line_break() => self.line_break(),
+        };
+        match byte {
+            b' ' | b'\t' => self.whitespace(),
+            b'\n' | b'\r' => self.line_break(),
             // JSON object brackets
-            '{' => Ok(Token::new(T!['{'], self.pop_span())),
-            '}' => Ok(Token::new(T!['}'], self.pop_span())),
+            b'{' => self.punctuation(T!['{']),
+            b'}' => self.punctuation(T!['}']),
             // JSON array brackets
-            '[' => Ok(Token::new(T!['['], self.pop_span())),
-            ']' => Ok(Token::new(T![']'], self.pop_span())),
+            b'[' => self.punctuation(T!['[']),
+            b']' => self.punctuation(T![']']),
             // JSON value separators
-            ',' => Ok(Token::new(T![,], self.pop_span())),
-            ':' => Ok(Token::new(T![:], self.pop_span())),
-            '"' => self.string(),
+            b',' => self.punctuation(T![,]),
+            b':' => self.punctuation(T![:]),
+            b'"' => self.string(),
             // JSON number
-            '0'..='9' | '-' => self.number(),
+            b'0'..=b'9' | b'-' => self.number(),
             // JSON keywords
-            't' => {
-                if self.matches("true") {
-                    self.eat_n(3);
-                    Ok(Token::new(SyntaxKind::BOOLEAN, self.pop_span()))
-                } else {
-                    self.bump();
-                    self.eat_while(|c| !is_token_separator(c));
-                    Err(crate::Error::new(InvalidTrue, self.pop_span()))
-                }
-            }
-            'f' => {
-                if self.matches("false") {
-                    self.eat_n(4);
-                    Ok(Token::new(SyntaxKind::BOOLEAN, self.pop_span()))
-                } else {
-                    self.bump();
-                    self.eat_while(|c| !is_token_separator(c));
-                    Err(crate::Error::new(InvalidFalse, self.pop_span()))
-                }
-            }
-            'n' => {
-                if self.matches("null") {
-                    self.eat_n(3);
-                    Ok(Token::new(SyntaxKind::NULL, self.pop_span()))
-                } else {
-                    self.bump();
-                    self.eat_while(|c| !is_token_separator(c));
-                    Err(crate::Error::new(InvalidNull, self.pop_span()))
-                }
-            }
-            _ => {
-                self.bump();
-                self.eat_while(|c| !is_token_separator(c));
-                Err(crate::Error::new(InvalidToken, self.pop_span()))
-            }
+            b't' => self.keyword(b"true", SyntaxKind::BOOLEAN, InvalidTrue),
+            b'f' => self.keyword(b"false", SyntaxKind::BOOLEAN, InvalidFalse),
+            b'n' => self.keyword(b"null", SyntaxKind::NULL, InvalidNull),
+            _ => self.invalid_token(InvalidToken),
         }
     }
 
-    fn is_whitespace(&self) -> bool {
-        is_whitespace(self.current())
+    #[inline]
+    fn punctuation(&mut self, kind: SyntaxKind) -> Result<Token, crate::Error> {
+        self.eat_bytes(1);
+        Ok(Token::new(kind, self.pop_span()))
     }
 
     fn whitespace(&mut self) -> Result<Token, crate::Error> {
@@ -120,125 +130,119 @@ impl Cursor<'_> {
         Ok(Token::new(SyntaxKind::WHITESPACE, self.pop_span()))
     }
 
-    fn is_line_break(&self) -> bool {
-        is_line_break(self.current())
-    }
-
     fn line_break(&mut self) -> Result<Token, crate::Error> {
-        let c = self.current();
-        debug_assert!(matches!(c, '\r' | '\n'));
-        if c == '\r' {
-            if self.peek(1) == '\n' {
-                self.eat_n(1);
-            } else {
+        if self.first() == Some(b'\r') {
+            self.eat_bytes(1);
+            if self.first() != Some(b'\n') {
                 return Ok(Token::new(SyntaxKind::WHITESPACE, self.pop_span()));
             }
         }
+        self.eat_line_break();
         Ok(Token::new(SyntaxKind::LINE_BREAK, self.pop_span()))
     }
 
+    fn keyword(
+        &mut self,
+        keyword: &[u8],
+        kind: SyntaxKind,
+        error_kind: ErrorKind,
+    ) -> Result<Token, crate::Error> {
+        if self.remaining().starts_with(keyword) {
+            self.eat_bytes(keyword.len());
+            Ok(Token::new(kind, self.pop_span()))
+        } else {
+            self.invalid_token(error_kind)
+        }
+    }
+
+    /// Consumes the current char and the following chars up to a token separator.
+    fn invalid_token(&mut self, error_kind: ErrorKind) -> Result<Token, crate::Error> {
+        // A non-ASCII char continues with non-separator bytes, so it is consumed as a whole.
+        self.eat_bytes(1);
+        self.eat_while(|byte| !is_token_separator(byte));
+        Err(crate::Error::new(error_kind, self.pop_span()))
+    }
+
     fn number(&mut self) -> Result<Token, crate::Error> {
-        if let Some(len) = json_number_len(self.current(), self.remaining()) {
-            if len > 1 {
-                self.eat_ascii_bytes(len - 1);
-            }
+        if let Some(len) = json_number_len(self.remaining()) {
+            self.eat_bytes(len);
             return Ok(Token::new(SyntaxKind::NUMBER, self.pop_span()));
         }
 
-        self.eat_while(|c| !is_token_separator(c));
-
-        Err(crate::Error::new(InvalidNumber, self.pop_span()))
+        self.invalid_token(InvalidNumber)
     }
 
     fn string(&mut self) -> Result<Token, crate::Error> {
-        debug_assert!(self.current() == '"');
+        debug_assert_eq!(self.first(), Some(b'"'));
+        self.eat_bytes(1);
 
-        let mut first_error: Option<ErrorKind> = None;
+        let mut is_valid = true;
         let mut contains_escape = false;
-        self.eat_long_ascii_string_content();
-        while let Some(c) = self.bump() {
-            match c {
-                _ if c == '"' => {
-                    if let Some(error_kind) = first_error {
-                        return Err(crate::Error::new(error_kind, self.pop_span()));
+        loop {
+            self.eat_bytes(scanner::ordinary_string_prefix(self.remaining()));
+            match self.first() {
+                Some(b'"') => {
+                    self.eat_bytes(1);
+                    if !is_valid {
+                        return Err(crate::Error::new(InvalidString, self.pop_span()));
                     }
-
                     return Ok(Token::new_string(contains_escape, self.pop_span()));
                 }
-                '\u{0000}'..='\u{001F}' if first_error.is_none() => {
-                    first_error = Some(InvalidString);
-                }
-                '\\' => {
+                Some(b'\\') => {
                     contains_escape = true;
-                    match self.bump() {
-                        Some(escape_char) => match escape_char {
-                            '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't' => {}
-                            'u' => {
-                                let mut valid_unicode = true;
-                                for _i in 0..4 {
-                                    match self.bump() {
-                                        Some(hex_char) if hex_char.is_ascii_hexdigit() => {}
-                                        _ => {
-                                            valid_unicode = false;
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                if !valid_unicode && first_error.is_none() {
-                                    first_error = Some(InvalidString);
-                                }
-                            }
-                            _ => {
-                                if first_error.is_none() {
-                                    first_error = Some(InvalidString);
-                                }
-                            }
-                        },
-                        None => {
-                            if first_error.is_none() {
-                                first_error = Some(InvalidString);
-                            }
-                        }
-                    }
+                    self.eat_bytes(1);
+                    is_valid &= self.escape();
                 }
-                _ => {}
+                // An unescaped line break is invalid, but keeps the line starts complete.
+                Some(b'\n') => {
+                    is_valid = false;
+                    self.eat_line_break();
+                }
+                Some(byte) => {
+                    debug_assert!(byte < 0x20, "the scanner stops only at special bytes");
+                    is_valid = false;
+                    self.eat_bytes(1);
+                }
+                None => return Err(crate::Error::new(InvalidString, self.pop_span())),
             }
         }
-
-        Err(crate::Error::new(InvalidString, self.pop_span()))
     }
 
-    #[inline]
-    fn eat_long_ascii_string_content(&mut self) {
-        let remaining = self.remaining().as_bytes();
-        if remaining.len() < scanner::MIN_SIMD_INPUT_LEN {
-            return;
-        }
-
-        let len = scanner::ordinary_ascii_prefix(remaining);
-        if len >= scanner::MIN_SIMD_INPUT_LEN {
-            self.eat_ascii_bytes(len);
+    /// Consumes an escape sequence after `\\`, and returns whether it is valid.
+    fn escape(&mut self) -> bool {
+        match self.first() {
+            Some(b'"' | b'\\' | b'/' | b'b' | b'f' | b'n' | b'r' | b't') => {
+                self.eat_bytes(1);
+                true
+            }
+            Some(b'u') => {
+                self.eat_bytes(1);
+                let len = self
+                    .remaining()
+                    .iter()
+                    .take(4)
+                    .take_while(|byte| byte.is_ascii_hexdigit())
+                    .count();
+                self.eat_bytes(len);
+                len == 4
+            }
+            // Leave the byte to the string loop, so that a quote still closes the string
+            // and a line break is still recorded.
+            _ => false,
         }
     }
 }
 
+/// Returns the length of the JSON number at the start of `bytes`.
 #[inline]
-fn json_number_len(first: char, remaining: &str) -> Option<usize> {
-    let bytes = remaining.as_bytes();
-    let mut index = 0;
+fn json_number_len(bytes: &[u8]) -> Option<usize> {
+    let mut index = usize::from(bytes.first() == Some(&b'-'));
 
-    let integer_first = if first == '-' {
-        let digit = *bytes.get(index)?;
-        index += 1;
-        digit
-    } else {
-        first as u8
-    };
-
+    let integer_first = *bytes.get(index)?;
     if !integer_first.is_ascii_digit() {
         return None;
     }
+    index += 1;
 
     let mut integer_len = 1;
     while bytes.get(index).is_some_and(u8::is_ascii_digit) {
@@ -278,26 +282,22 @@ fn json_number_len(first: char, remaining: &str) -> Option<usize> {
         return None;
     }
 
-    match remaining[index..].chars().next() {
-        None => Some(index + 1),
-        Some(next) if is_token_separator(next) => Some(index + 1),
+    match bytes.get(index) {
+        None => Some(index),
+        Some(&next) if is_token_separator(next) => Some(index),
         Some(_) => None,
     }
 }
 
 #[inline]
-fn is_whitespace(c: char) -> bool {
-    c == ' ' || c == '\t'
+fn is_whitespace(byte: u8) -> bool {
+    byte == b' ' || byte == b'\t'
 }
 
 #[inline]
-fn is_line_break(c: char) -> bool {
-    c == '\n' || c == '\r'
-}
-
-#[inline]
-fn is_token_separator(c: char) -> bool {
-    is_whitespace(c)
-        || is_line_break(c)
-        || matches!(c, '{' | '}' | '[' | ']' | ',' | ':' | '"' | '\0')
+fn is_token_separator(byte: u8) -> bool {
+    matches!(
+        byte,
+        b' ' | b'\t' | b'\n' | b'\r' | b'{' | b'}' | b'[' | b']' | b',' | b':' | b'"' | b'\0'
+    )
 }

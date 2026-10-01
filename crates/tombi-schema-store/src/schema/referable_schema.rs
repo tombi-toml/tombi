@@ -311,7 +311,7 @@ impl Referable<SchemaView> {
                 description: object
                     .get("description")
                     .and_then(|description| description.as_str().map(ToString::to_string)),
-                default: object.get("default").cloned().map(Into::into),
+                default: object.get("default").map(Into::into),
                 examples: object
                     .get("examples")
                     .and_then(|examples| examples.as_array())
@@ -501,7 +501,7 @@ impl Referable<SchemaView> {
                 continue;
             };
 
-            for (_, value) in &definitions.properties {
+            for (_, value) in definitions.properties.iter() {
                 let starts_new_resource = value
                     .as_object()
                     .and_then(|definition| definition.get("$id"))

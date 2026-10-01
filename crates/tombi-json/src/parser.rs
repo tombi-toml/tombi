@@ -2,9 +2,11 @@ mod error;
 
 use crate::{ArrayNode, BoolNode, NullNode, NumberNode, ObjectNode, StringNode, ValueNode};
 pub use error::Error;
-use tombi_json_lexer::{Lexed, Token, lex};
+use std::sync::Arc;
+use tombi_json_lexer::{Lexer, Token};
 use tombi_json_syntax::{SyntaxKind, T};
 use tombi_json_value::Number;
+
 use tombi_text::Span;
 
 /// Maximum nesting depth for arrays and objects.
@@ -17,48 +19,31 @@ const MAX_RECURSION_DEPTH: usize = 128;
 /// Parser for JSON documents
 pub struct Parser<'a> {
     source: &'a str,
-    lexed: Lexed,
-    position: usize,
+    /// Yields the non-trivia tokens on demand, so that they are not collected first.
+    lexer: Lexer<'a>,
+    /// The current non-trivia token.
+    current: Token,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(source: &'a str) -> Self {
-        let lexed = lex(source);
+        let mut lexer = Lexer::new(source);
+        let current = lexer.next_token();
         Self {
             source,
-            lexed,
-            position: 0,
+            lexer,
+            current,
         }
     }
 
     pub fn parse(&mut self) -> Result<ValueNode, crate::parser::Error> {
-        // Skip leading trivia
-        while let Some(token) = self.peek() {
-            if token.kind().is_trivia() {
-                self.advance();
-            } else {
-                break;
-            }
-        }
-
         let root = self.parse_value(0)?;
 
-        // Skip trailing trivia
-        while let Some(token) = self.peek() {
-            if token.kind().is_trivia() {
-                self.advance();
-            } else {
-                break;
-            }
-        }
-
         // Ensure all tokens have been consumed
-        if let Some(token) = self.peek()
-            && token.kind() != SyntaxKind::EOF
-        {
+        if self.peek_kind() != SyntaxKind::EOF {
             return Err(Error::UnexpectedToken {
                 expected: SyntaxKind::EOF,
-                actual: token.kind(),
+                actual: self.peek_kind(),
             });
         }
 
@@ -68,7 +53,7 @@ impl<'a> Parser<'a> {
     fn parse_string(&mut self) -> Result<StringNode, crate::parser::Error> {
         // Get the current token (without advancing the position)
         match self.peek() {
-            Some(token) if token.kind() == SyntaxKind::STRING => {
+            token if token.kind() == SyntaxKind::STRING => {
                 let span = token.span();
                 let contains_escape = token.contains_escape();
                 // Get the string and advance the position
@@ -85,148 +70,62 @@ impl<'a> Parser<'a> {
                     });
                 }
 
-                // Process the string including escape sequences
-                let mut processed = String::with_capacity(content.len());
-                let mut chars = content.chars().peekable();
-
-                while let Some(c) = chars.next() {
-                    if c == '\\' {
-                        // Handle escape sequences
-                        match chars.next() {
-                            Some('"') => processed.push('"'),
-                            Some('\\') => processed.push('\\'),
-                            Some('/') => processed.push('/'),
-                            Some('b') => processed.push('\u{0008}'),
-                            Some('f') => processed.push('\u{000C}'),
-                            Some('n') => processed.push('\n'),
-                            Some('r') => processed.push('\r'),
-                            Some('t') => processed.push('\t'),
-                            Some('u') => {
-                                // Unicode escape sequence: \uXXXX
-                                let mut code_point = 0u32;
-                                for _ in 0..4 {
-                                    match chars.next() {
-                                        Some(hex) if hex.is_ascii_hexdigit() => {
-                                            code_point =
-                                                code_point * 16 + hex.to_digit(16).unwrap();
-                                        }
-                                        _ => return Err(Error::InvalidUnicodeEscape),
-                                    }
-                                }
-
-                                // Check for surrogate pairs
-                                if (0xD800..=0xDBFF).contains(&code_point) {
-                                    // High surrogate - expect low surrogate to follow
-                                    if chars.next() == Some('\\') && chars.next() == Some('u') {
-                                        let mut low_surrogate = 0u32;
-                                        for _ in 0..4 {
-                                            match chars.next() {
-                                                Some(hex) if hex.is_ascii_hexdigit() => {
-                                                    low_surrogate = low_surrogate * 16
-                                                        + hex.to_digit(16).unwrap();
-                                                }
-                                                _ => return Err(Error::InvalidUnicodeEscape),
-                                            }
-                                        }
-
-                                        if (0xDC00..=0xDFFF).contains(&low_surrogate) {
-                                            // Valid surrogate pair - decode to actual Unicode code point
-                                            let high = code_point - 0xD800;
-                                            let low = low_surrogate - 0xDC00;
-                                            let unicode_code_point = 0x10000 + (high << 10) + low;
-
-                                            match std::char::from_u32(unicode_code_point) {
-                                                Some(unicode_char) => processed.push(unicode_char),
-                                                None => return Err(Error::InvalidUnicodeCodePoint),
-                                            }
-                                        } else {
-                                            return Err(Error::InvalidUnicodeCodePoint);
-                                        }
-                                    } else {
-                                        return Err(Error::InvalidUnicodeCodePoint);
-                                    }
-                                } else if (0xDC00..=0xDFFF).contains(&code_point) {
-                                    // Low surrogate without high surrogate
-                                    return Err(Error::InvalidUnicodeCodePoint);
-                                } else {
-                                    // Regular Unicode code point
-                                    match std::char::from_u32(code_point) {
-                                        Some(unicode_char) => processed.push(unicode_char),
-                                        None => return Err(Error::InvalidUnicodeCodePoint),
-                                    }
-                                }
-                            }
-                            _ => return Err(Error::InvalidEscapeSequence),
-                        }
-                    } else {
-                        processed.push(c);
-                    }
-                }
-
                 Ok(StringNode {
-                    value: processed,
+                    value: unescape(content)?,
                     span,
                 })
             }
-            Some(token) => Err(Error::UnexpectedToken {
+            token => Err(Error::UnexpectedToken {
                 expected: SyntaxKind::STRING,
                 actual: token.kind(),
             }),
-            None => Err(Error::UnexpectedEof),
         }
     }
 
     fn parse_value(&mut self, depth: usize) -> Result<ValueNode, crate::parser::Error> {
-        match self.peek() {
-            Some(token) => {
-                match token.kind() {
-                    SyntaxKind::STRING => self.parse_string().map(ValueNode::String),
-                    SyntaxKind::NUMBER => {
-                        let token = self.peek().unwrap();
-                        let span = token.span();
-                        let num_str = &self.source[span.start.into()..span.end.into()];
-                        self.advance();
+        let token = self.peek();
+        match token.kind() {
+            SyntaxKind::STRING => self.parse_string().map(ValueNode::String),
+            SyntaxKind::NUMBER => {
+                let span = token.span();
+                let num_str = &self.source[span.start.into()..span.end.into()];
+                self.advance();
 
-                        // Parse as f64
-                        match num_str.parse::<f64>() {
-                            Ok(n) => {
-                                let num = if n.is_nan() || n.is_infinite() {
-                                    // Fallback for NaN or infinity
-                                    if num_str.starts_with('-') {
-                                        Number::from(-0.0)
-                                    } else {
-                                        Number::from(0.0)
-                                    }
-                                } else {
-                                    Number::from_f64(n)
-                                };
-
-                                Ok(ValueNode::Number(NumberNode { value: num, span }))
+                // Parse as f64
+                match num_str.parse::<f64>() {
+                    Ok(n) => {
+                        let num = if n.is_nan() || n.is_infinite() {
+                            // Fallback for NaN or infinity
+                            if num_str.starts_with('-') {
+                                Number::from(-0.0)
+                            } else {
+                                Number::from(0.0)
                             }
-                            Err(_) => Err(Error::InvalidValue),
-                        }
-                    }
-                    SyntaxKind::NULL => {
-                        let token = self.peek().unwrap();
-                        let span = token.span();
-                        self.advance();
-                        Ok(ValueNode::Null(NullNode { span }))
-                    }
-                    SyntaxKind::BOOLEAN => {
-                        let token = self.peek().unwrap();
-                        let span = token.span();
-                        let bool_str = &self.source[span.start.into()..span.end.into()];
-                        let value = bool_str == "true";
-                        self.advance();
+                        } else {
+                            Number::from_f64(n)
+                        };
 
-                        Ok(ValueNode::Bool(BoolNode { value, span }))
+                        Ok(ValueNode::Number(NumberNode { value: num, span }))
                     }
-                    T!['['] => self.parse_array(depth),
-                    T!['{'] => self.parse_object(depth),
-                    _ => Err(Error::InvalidValue),
+                    Err(_) => Err(Error::InvalidValue),
                 }
             }
-            None => Err(Error::UnexpectedEof),
+            SyntaxKind::NULL => {
+                let span = token.span();
+                self.advance();
+                Ok(ValueNode::Null(NullNode { span }))
+            }
+            SyntaxKind::BOOLEAN => {
+                let span = token.span();
+                let bool_str = &self.source[span.start.into()..span.end.into()];
+                let value = bool_str == "true";
+                self.advance();
+
+                Ok(ValueNode::Bool(BoolNode { value, span }))
+            }
+            T!['['] => self.parse_array(depth),
+            T!['{'] => self.parse_object(depth),
+            _ => Err(Error::InvalidValue),
         }
     }
 
@@ -243,13 +142,11 @@ impl<'a> Parser<'a> {
         let mut items = Vec::new();
 
         // Check if the array is empty
-        if let Some(token) = self.peek()
-            && token.kind() == T![']']
-        {
-            let close_token = self.advance().unwrap();
+        if self.peek_kind() == T![']'] {
+            let close_token = self.advance();
             let span = Span::new(start, close_token.span().end);
             return Ok(ValueNode::Array(ArrayNode {
-                items: Vec::new(),
+                items: Default::default(),
                 span,
             }));
         }
@@ -262,33 +159,37 @@ impl<'a> Parser<'a> {
 
             // Check for comma or closing bracket
             match self.peek_kind() {
-                Some(T![,]) => {
+                T![,] => {
                     self.advance(); // Consume comma
                 }
-                Some(T![']']) => {
-                    let close_token = self.advance().unwrap();
+                T![']'] => {
+                    let close_token = self.advance();
                     let span = Span::new(start, close_token.span().end);
 
-                    let array_node = ArrayNode { items, span };
+                    let array_node = ArrayNode {
+                        items: Arc::new(items),
+                        span,
+                    };
 
                     return Ok(ValueNode::Array(array_node));
                 }
                 _ => {
                     return Err(Error::UnexpectedToken {
                         expected: T![']'],
-                        actual: self.peek_kind().unwrap_or(SyntaxKind::EOF),
+                        actual: self.peek_kind(),
                     });
                 }
             }
 
             // Check if we've reached the end of the array
-            if let Some(token) = self.peek()
-                && token.kind() == T![']']
-            {
-                let close_token = self.advance().unwrap();
+            if self.peek_kind() == T![']'] {
+                let close_token = self.advance();
                 let span = Span::new(start, close_token.span().end);
 
-                let array_node = ArrayNode { items, span };
+                let array_node = ArrayNode {
+                    items: Arc::new(items),
+                    span,
+                };
 
                 return Ok(ValueNode::Array(array_node));
             }
@@ -309,13 +210,11 @@ impl<'a> Parser<'a> {
             tombi_json_value::Map::new();
 
         // Check if the object is empty
-        if let Some(token) = self.peek()
-            && token.kind() == T!['}']
-        {
-            let close_token = self.advance().unwrap();
+        if self.peek_kind() == T!['}'] {
+            let close_token = self.advance();
             let span = Span::new(start, close_token.span().end);
             return Ok(ValueNode::Object(ObjectNode {
-                properties: tombi_json_value::Map::new(),
+                properties: Default::default(),
                 span,
             }));
         }
@@ -323,10 +222,7 @@ impl<'a> Parser<'a> {
         // Parse object members
         loop {
             // Parse key (must be a string)
-            let Some(token) = self.peek() else {
-                return Err(Error::UnexpectedEof);
-            };
-
+            let token = self.peek();
             if token.kind() != SyntaxKind::STRING {
                 return Err(Error::UnexpectedToken {
                     expected: SyntaxKind::STRING,
@@ -354,76 +250,133 @@ impl<'a> Parser<'a> {
 
             // Check for comma or closing brace
             match self.peek_kind() {
-                Some(T![,]) => {
+                T![,] => {
                     self.advance(); // Consume comma
                 }
-                Some(T!['}']) => {
-                    let close_token = self.advance().unwrap();
+                T!['}'] => {
+                    let close_token = self.advance();
                     let span = Span::new(start, close_token.span().end);
 
-                    let object_node = ObjectNode { properties, span };
+                    let object_node = ObjectNode {
+                        properties: Arc::new(properties),
+                        span,
+                    };
 
                     return Ok(ValueNode::Object(object_node));
                 }
                 _ => {
                     return Err(Error::UnexpectedToken {
                         expected: T!['}'],
-                        actual: self.peek_kind().unwrap_or(SyntaxKind::EOF),
+                        actual: self.peek_kind(),
                     });
                 }
             }
 
             // Check if we've reached the end of the object
-            if let Some(token) = self.peek()
-                && token.kind() == T!['}']
-            {
-                let close_token = self.advance().unwrap();
+            if self.peek_kind() == T!['}'] {
+                let close_token = self.advance();
                 let span = Span::new(start, close_token.span().end);
 
-                let object_node = ObjectNode { properties, span };
+                let object_node = ObjectNode {
+                    properties: Arc::new(properties),
+                    span,
+                };
 
                 return Ok(ValueNode::Object(object_node));
             }
         }
     }
 
-    fn peek(&self) -> Option<&Token> {
-        self.lexed.tokens.get(self.position)
+    fn peek(&self) -> Token {
+        self.current
     }
 
-    fn peek_kind(&self) -> Option<SyntaxKind> {
-        self.peek().map(|t| t.kind())
+    fn peek_kind(&self) -> SyntaxKind {
+        self.current.kind()
     }
 
-    fn advance(&mut self) -> Option<&Token> {
-        // Save the start position
-        let position = self.position;
-        let token = self.lexed.tokens.get(position);
-
-        // Advance the position
-        self.position += 1;
-
-        // Skip trivia tokens
-        while let Some(token) = self.lexed.tokens.get(self.position) {
-            if token.kind().is_trivia() {
-                self.position += 1;
-            } else {
-                break;
-            }
-        }
-
+    fn advance(&mut self) -> Token {
+        let token = self.current;
+        self.current = self.lexer.next_token();
         token
     }
 
-    fn expect(&mut self, kind: SyntaxKind) -> Result<&Token, crate::parser::Error> {
-        match self.peek() {
-            Some(token) if token.kind() == kind => Ok(self.advance().unwrap()),
-            Some(token) => Err(Error::UnexpectedToken {
+    fn expect(&mut self, kind: SyntaxKind) -> Result<Token, crate::parser::Error> {
+        if self.peek_kind() == kind {
+            Ok(self.advance())
+        } else {
+            Err(Error::UnexpectedToken {
                 expected: kind,
-                actual: token.kind(),
-            }),
-            None => Err(Error::UnexpectedEof),
+                actual: self.peek_kind(),
+            })
         }
+    }
+}
+
+/// Decodes the escape sequences in the content of a string token.
+///
+/// The parts between escape sequences are copied as slices, not char by char.
+fn unescape(content: &str) -> Result<String, crate::parser::Error> {
+    let mut unescaped = String::with_capacity(content.len());
+    let mut rest = content;
+    while let Some(index) = rest.find('\\') {
+        unescaped.push_str(&rest[..index]);
+        let escape = &rest[index + 1..];
+        let (c, len) = match escape.as_bytes().first() {
+            Some(b'"') => ('"', 1),
+            Some(b'\\') => ('\\', 1),
+            Some(b'/') => ('/', 1),
+            Some(b'b') => ('\u{0008}', 1),
+            Some(b'f') => ('\u{000C}', 1),
+            Some(b'n') => ('\n', 1),
+            Some(b'r') => ('\r', 1),
+            Some(b't') => ('\t', 1),
+            Some(b'u') => unescape_unicode(&escape[1..]).map(|(c, len)| (c, len + 1))?,
+            _ => return Err(Error::InvalidEscapeSequence),
+        };
+        unescaped.push(c);
+        rest = &escape[len..];
+    }
+    unescaped.push_str(rest);
+    Ok(unescaped)
+}
+
+/// Decodes the `XXXX` of a `\\uXXXX` escape, with the low surrogate that follows a high surrogate.
+///
+/// Returns the char and the length of the consumed input.
+fn unescape_unicode(input: &str) -> Result<(char, usize), crate::parser::Error> {
+    let code_point = hex4(input)?;
+    match code_point {
+        // High surrogate - expect low surrogate to follow
+        0xD800..=0xDBFF => {
+            let Some(low_surrogate) = input[4..].strip_prefix("\\u") else {
+                return Err(Error::InvalidUnicodeCodePoint);
+            };
+            let low_surrogate = hex4(low_surrogate)?;
+            if !(0xDC00..=0xDFFF).contains(&low_surrogate) {
+                return Err(Error::InvalidUnicodeCodePoint);
+            }
+            let unicode_code_point =
+                0x10000 + ((code_point - 0xD800) << 10) + (low_surrogate - 0xDC00);
+            std::char::from_u32(unicode_code_point)
+                .map(|c| (c, 10))
+                .ok_or(Error::InvalidUnicodeCodePoint)
+        }
+        // Low surrogate without high surrogate
+        0xDC00..=0xDFFF => Err(Error::InvalidUnicodeCodePoint),
+        _ => std::char::from_u32(code_point)
+            .map(|c| (c, 4))
+            .ok_or(Error::InvalidUnicodeCodePoint),
+    }
+}
+
+/// Parses the 4 hex digits at the start of `input`.
+fn hex4(input: &str) -> Result<u32, crate::parser::Error> {
+    match input.get(..4) {
+        Some(digits) if digits.bytes().all(|digit| digit.is_ascii_hexdigit()) => {
+            u32::from_str_radix(digits, 16).map_err(|_| Error::InvalidUnicodeEscape)
+        }
+        _ => Err(Error::InvalidUnicodeEscape),
     }
 }
 
@@ -442,7 +395,8 @@ pub fn parse_document(
     let text: Box<str> = source.into();
     let mut parser = Parser::new(&text);
     let value = parser.parse()?;
-    let line_starts = std::mem::take(&mut parser.lexed.line_starts);
+    // A successful parse has lexed up to the end of the source.
+    let line_starts = parser.lexer.into_line_starts();
     Ok(crate::Document {
         value,
         line_index: std::sync::Arc::new(tombi_text::OwnedLineIndex::from_line_starts(
@@ -524,6 +478,37 @@ mod tests {
             result.as_ref().ok().and_then(ValueNode::as_str)
                 == Some("abcdefghijklmnopqrstuvwxyz0123456789\nend")
         }
+    );
+
+    test_json_parser!(
+        unescape_copies_text_between_escapes,
+        r#""a\"b\\c\/d\be\ff\ng\rh\ti\u00e9j\uD83E\uDD85k""#,
+        |result| {
+            result.as_ref().ok().and_then(ValueNode::as_str)
+                == Some("a\"b\\c/d\u{0008}e\u{000C}f\ng\rh\ti\u{00e9}j\u{1F985}k")
+        }
+    );
+
+    test_json_parser!(unescape_keeps_non_ascii_text, r#""日本\n語""#, |result| {
+        result.as_ref().ok().and_then(ValueNode::as_str) == Some("日本\n語")
+    });
+
+    test_json_parser!(
+        unescape_rejects_lone_low_surrogate,
+        r#""\uDC00""#,
+        |result| { matches!(result, Err(Error::InvalidUnicodeCodePoint)) }
+    );
+
+    test_json_parser!(
+        unescape_rejects_high_surrogate_without_low_surrogate,
+        r#""\uD83Ex""#,
+        |result| { matches!(result, Err(Error::InvalidUnicodeCodePoint)) }
+    );
+
+    test_json_parser!(
+        unescape_rejects_invalid_low_surrogate,
+        r#""\uD83E\u0041""#,
+        |result| { matches!(result, Err(Error::InvalidUnicodeCodePoint)) }
     );
 
     test_json_parser!(

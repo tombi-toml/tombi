@@ -224,7 +224,7 @@ impl TableSchema {
                 .and_then(|v| v.as_object())
                 .map(|deps_obj| {
                     let mut deps = tombi_hashmap::IndexMap::new();
-                    for (key, value) in &deps_obj.properties {
+                    for (key, value) in deps_obj.properties.iter() {
                         match value {
                             tombi_json::ValueNode::Array(arr) => {
                                 let required_keys: Vec<String> = arr
@@ -257,7 +257,7 @@ impl TableSchema {
                 .and_then(|v| v.as_object())
                 .map(|obj| {
                     let mut map = tombi_hashmap::IndexMap::new();
-                    for (key, value) in &obj.properties {
+                    for (key, value) in obj.properties.iter() {
                         if let Some(arr) = value.as_array() {
                             let required_keys: Vec<String> = arr
                                 .items
@@ -274,7 +274,7 @@ impl TableSchema {
                 .and_then(|v| v.as_object())
                 .map(|obj| {
                     let mut map = tombi_hashmap::IndexMap::new();
-                    for (key, value) in &obj.properties {
+                    for (key, value) in obj.properties.iter() {
                         if let Some(schema) = schema_item_from_schema_value(
                             value,
                             string_formats,
@@ -667,7 +667,7 @@ impl XTombiTableKeysOrder {
             }
             tombi_json::ValueNode::Object(object_node) => {
                 let mut sort_orders = vec![];
-                for (group_name, order) in &object_node.properties {
+                for (group_name, order) in object_node.properties.iter() {
                     let Ok(target) = TableKeysOrderGroupKind::try_from(group_name.value.as_str())
                     else {
                         log::warn!("invalid {X_TOMBI_TABLE_KEYS_ORDER} group: {group_name}");

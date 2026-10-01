@@ -739,3 +739,28 @@ test_tokens! {
         Token(BRACE_END, "}"),
     ];
 }
+
+test_token! {
+    #[test]
+    fn string_with_non_ascii("\"日本語🦅\"") -> Ok(Token(STRING, (0, 15)));
+}
+
+test_token! {
+    #[test]
+    fn error_string_with_line_break("\"a\nb\"") -> Err(Token(ErrorKind::InvalidString, (0, 5)));
+}
+
+test_token! {
+    #[test]
+    fn error_unterminated_string_with_line_break("\"a\nb") -> Err(Token(ErrorKind::InvalidString, (0, 4)));
+}
+
+test_token! {
+    #[test]
+    fn error_incomplete_unicode_escape_before_quote(r#""\u12""#) -> Err(Token(ErrorKind::InvalidString, (0, 6)));
+}
+
+test_token! {
+    #[test]
+    fn error_non_ascii_token("日本") -> Err(Token(ErrorKind::InvalidToken, (0, 6)));
+}
