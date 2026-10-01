@@ -11,10 +11,13 @@ use crate::editor::rule::{
     table_keys_order::get_sorted_accessors,
 };
 
-pub(in crate::editor) async fn inline_table_keys_order<'a>(
-    node: &'a tombi_document_tree_syntax::Value,
+pub(in crate::editor) async fn inline_table_keys_order<'a, 't, 'd>(
+    node: &'a tombi_document_tree_syntax::Value<'d>,
     accessors: &'a [tombi_schema_store::Accessor],
-    key_values_with_comma: Vec<(tombi_ast_syntax::KeyValue, Option<tombi_ast_syntax::Comma>)>,
+    key_values_with_comma: Vec<(
+        tombi_ast_syntax::KeyValue<'t>,
+        Option<tombi_ast_syntax::Comma<'t>>,
+    )>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     comment_directive: Option<
@@ -59,8 +62,8 @@ pub(in crate::editor) async fn inline_table_keys_order<'a>(
         .map(|(_, comma)| comma.is_some())
         .unwrap_or_default();
 
-    let old_first = key_values_with_comma.first().unwrap().0.syntax().clone();
-    let old_last = key_values_with_comma.last().unwrap().0.syntax().clone();
+    let old_first = *key_values_with_comma.first().unwrap().0.syntax();
+    let old_last = *key_values_with_comma.last().unwrap().0.syntax();
 
     let Some(mut sorted_key_values_with_comma) = get_sorted_accessors(
         node,

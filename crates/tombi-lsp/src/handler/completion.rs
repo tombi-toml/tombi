@@ -101,18 +101,26 @@ pub async fn handle_completion(
             {
                 return Ok(Some(comment_completion_contents));
             }
-            let Some((keys, completion_hint)) =
-                get_keys_and_completion_hint(&root, offset, toml_version, comment_context.as_ref())
-            else {
+            let Some((keys, completion_hint)) = get_keys_and_completion_hint(
+                &root,
+                document_source.decoded(),
+                offset,
+                toml_version,
+                comment_context.as_ref(),
+            ) else {
                 return Ok(Some(Vec::new()));
             };
 
             (keys, completion_hint)
         }
         Some(CommentContext::ValueDirective(_)) | None => {
-            let Some((keys, completion_hint)) =
-                get_keys_and_completion_hint(&root, offset, toml_version, comment_context.as_ref())
-            else {
+            let Some((keys, completion_hint)) = get_keys_and_completion_hint(
+                &root,
+                document_source.decoded(),
+                offset,
+                toml_version,
+                comment_context.as_ref(),
+            ) else {
                 return Ok(Some(Vec::new()));
             };
 
@@ -129,7 +137,7 @@ pub async fn handle_completion(
 
             completion_items.extend(
                 find_completion_contents(
-                    &document_tree,
+                    document_tree,
                     crate::CursorPosition::new(offset, line_index),
                     &keys,
                     &schema_context,
@@ -141,9 +149,13 @@ pub async fn handle_completion(
             (keys, completion_hint)
         }
         Some(CommentContext::Normal(_)) => {
-            let Some((keys, completion_hint)) =
-                get_keys_and_completion_hint(&root, offset, toml_version, comment_context.as_ref())
-            else {
+            let Some((keys, completion_hint)) = get_keys_and_completion_hint(
+                &root,
+                document_source.decoded(),
+                offset,
+                toml_version,
+                comment_context.as_ref(),
+            ) else {
                 return Ok(Some(Vec::new()));
             };
 
@@ -151,13 +163,13 @@ pub async fn handle_completion(
         }
     };
 
-    let accessors = tombi_document_tree_syntax::get_accessors(&document_tree, &keys, offset);
+    let accessors = tombi_document_tree_syntax::get_accessors(document_tree, &keys, offset);
     let offline = schema_store.offline();
     let cache_options = schema_store.cache_options();
     if config.tombi_extension_enabled()
         && let Some(items) = tombi_extension_tombi::completion(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             offset,
             &accessors,
             toml_version,
@@ -172,7 +184,7 @@ pub async fn handle_completion(
     if config.cargo_extension_enabled()
         && let Some(items) = tombi_extension_cargo::completion(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             offset,
             &accessors,
             toml_version,
@@ -189,7 +201,7 @@ pub async fn handle_completion(
     if config.nagi_sql_extension_enabled()
         && let Some(items) = tombi_extension_nagi_sql::completion(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             offset,
             &accessors,
             completion_hint,
@@ -203,7 +215,7 @@ pub async fn handle_completion(
     if config.pyproject_extension_enabled()
         && let Some(items) = tombi_extension_pyproject::completion(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             offset,
             &accessors,
             toml_version,
@@ -223,14 +235,18 @@ pub async fn handle_completion(
     Ok(Some(completion_items))
 }
 
-fn get_keys_and_completion_hint(
-    root: &tombi_ast_syntax::Root,
+fn get_keys_and_completion_hint<'t>(
+    root: &tombi_ast_syntax::Root<'t>,
+    decoded: &'t tombi_ast_syntax::DecodedTextResolver,
     offset: tombi_text::Offset,
     toml_version: tombi_config::TomlVersion,
-    comment_context: Option<&CommentContext<tombi_ast_syntax::Comment>>,
-) -> Option<(Vec<tombi_document_tree_syntax::Key>, Option<CompletionHint>)> {
+    comment_context: Option<&CommentContext<tombi_ast_syntax::Comment<'_>>>,
+) -> Option<(
+    Vec<tombi_document_tree_syntax::Key<'t>>,
+    Option<CompletionHint>,
+)> {
     let Some((keys, completion_hint)) =
-        extract_keys_and_hint(root, offset, toml_version, comment_context)
+        extract_keys_and_hint(root, decoded, offset, toml_version, comment_context)
     else {
         log::trace!("keys and completion_hint not found");
         return None;

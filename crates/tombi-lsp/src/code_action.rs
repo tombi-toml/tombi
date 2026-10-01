@@ -28,8 +28,8 @@ pub fn dot_keys_to_inline_table_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
     encoding: tombi_text::EncodingKind,
-    _root: &tombi_ast_syntax::Root,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    _root: &tombi_ast_syntax::Root<'_>,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
 ) -> Option<CodeAction> {
@@ -102,8 +102,8 @@ pub fn inline_table_to_dot_keys_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
     encoding: tombi_text::EncodingKind,
-    root: &tombi_ast_syntax::Root,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    root: &tombi_ast_syntax::Root<'_>,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
 ) -> Option<CodeAction> {
@@ -166,10 +166,10 @@ pub fn inline_table_to_dot_keys_code_action(
     }
 }
 
-fn get_ast_inline_table_node(
-    root: &tombi_ast_syntax::Root,
-    table: &tombi_document_tree_syntax::Table,
-) -> Option<tombi_ast_syntax::InlineTable> {
+fn get_ast_inline_table_node<'t>(
+    root: &tombi_ast_syntax::Root<'t>,
+    table: &tombi_document_tree_syntax::Table<'_>,
+) -> Option<tombi_ast_syntax::InlineTable<'t>> {
     let target_span = table.span();
     root.inline_table_at_span(target_span)
 }

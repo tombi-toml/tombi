@@ -38,13 +38,14 @@ pub use all_of::validate_all_of;
 pub use any_of::validate_any_of;
 use itertools::Itertools;
 pub use one_of::validate_one_of;
+use tombi_ast_syntax::AstNode as _;
 use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
 use tombi_document_tree_syntax::{TryIntoDocumentTree, dig_keys};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 pub fn validate<'a: 'b, 'b>(
-    tree: tombi_document_tree_syntax::DocumentTree,
+    tree: tombi_document_tree_syntax::DocumentTree<'b>,
     source_schema: Option<&'a tombi_schema_store::SourceSchema>,
     schema_context: &'a tombi_schema_store::SchemaContext,
 ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
@@ -400,11 +401,14 @@ fn handle_unused_noqa<'a>(
         ..
     } in comment_directives
     {
-        let Ok(root) = tombi_parser::parse(content).try_into_root() else {
+        let parsed = tombi_parser::parse(content);
+        let Ok(root) = parsed.try_root() else {
             continue;
         };
 
-        let Ok(document_tree) = root.try_into_document_tree(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION)
+        let decoded = root.decode_strings(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION);
+        let Ok(document_tree) =
+            root.try_into_document_tree(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, &decoded)
         else {
             continue;
         };

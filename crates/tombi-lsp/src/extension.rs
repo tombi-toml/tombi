@@ -306,9 +306,7 @@ impl IntoLsp for tombi_extension::WorkspaceEdit {
                             document_edits
                                 .edits
                                 .into_iter()
-                                .map(|edit| {
-                                    edit.into_lsp_type(&document_edits.line_index, encoding)
-                                })
+                                .map(range_text_edit)
                                 .collect(),
                         )
                     })
@@ -335,7 +333,7 @@ impl IntoLsp for tombi_extension::TextDocumentEdit {
     fn into_lsp_type(
         self,
         _line_index: &tombi_text::LineIndex,
-        encoding: tombi_text::EncodingKind,
+        _encoding: tombi_text::EncodingKind,
     ) -> Self::Lsp {
         Self::Lsp {
             text_document: tower_lsp::lsp_types::OptionalVersionedTextDocumentIdentifier {
@@ -346,18 +344,28 @@ impl IntoLsp for tombi_extension::TextDocumentEdit {
                 .edits
                 .into_iter()
                 .map(|edit| match edit {
-                    tombi_extension::OneOf::Left(edit) => tower_lsp::lsp_types::OneOf::Left(
-                        edit.into_lsp_type(&self.line_index, encoding),
-                    ),
+                    tombi_extension::OneOf::Left(edit) => {
+                        tower_lsp::lsp_types::OneOf::Left(range_text_edit(edit))
+                    }
                     tombi_extension::OneOf::Right(edit) => tower_lsp::lsp_types::OneOf::Right(
                         tower_lsp::lsp_types::AnnotatedTextEdit {
-                            text_edit: edit.text_edit.into_lsp_type(&self.line_index, encoding),
+                            text_edit: range_text_edit(edit.text_edit),
                             annotation_id: edit.annotation_id,
                         },
                     ),
                 })
                 .collect(),
         }
+    }
+}
+
+fn range_text_edit(edit: tombi_extension::RangeTextEdit) -> tower_lsp::lsp_types::TextEdit {
+    tower_lsp::lsp_types::TextEdit {
+        range: tower_lsp::lsp_types::Range::new(
+            tower_lsp::lsp_types::Position::new(edit.range.start.line, edit.range.start.column),
+            tower_lsp::lsp_types::Position::new(edit.range.end.line, edit.range.end.column),
+        ),
+        new_text: edit.new_text,
     }
 }
 
@@ -390,71 +398,5 @@ fn completion_kind(
         Kind::MagicTrigger => CompletionItemKind::METHOD,
         Kind::CommentDirective => CompletionItemKind::KEYWORD,
         Kind::File => CompletionItemKind::FILE,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::str::FromStr;
-
-    use tombi_extension::{
-        DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier, TextDocumentEdit,
-        TextEdit, WorkspaceEdit,
-    };
-    use tombi_text::{EncodingKind, LineIndex, Offset, Span};
-
-    use super::IntoLsp;
-
-    #[test]
-    fn workspace_edit_uses_each_target_document_line_index() {
-        let workspace_uri = tombi_uri::Uri::from_str("file:///workspace.toml").unwrap();
-        let member_uri = tombi_uri::Uri::from_str("file:///member.toml").unwrap();
-        let workspace_line_index = std::sync::Arc::new(LineIndex::new("e\u{301}x"));
-        let member_line_index = std::sync::Arc::new(LineIndex::new("👨‍👩‍👧‍👦x"));
-        let edit = WorkspaceEdit {
-            changes: None,
-            document_changes: Some(DocumentChanges::Edits(vec![
-                TextDocumentEdit {
-                    text_document: OptionalVersionedTextDocumentIdentifier {
-                        uri: workspace_uri,
-                        version: None,
-                    },
-                    line_index: workspace_line_index,
-                    // After the first grapheme cluster.
-                    edits: vec![OneOf::Left(TextEdit {
-                        span: Span::empty(Offset::of("e\u{301}")),
-                        new_text: String::new(),
-                    })],
-                },
-                TextDocumentEdit {
-                    text_document: OptionalVersionedTextDocumentIdentifier {
-                        uri: member_uri,
-                        version: None,
-                    },
-                    line_index: member_line_index,
-                    edits: vec![OneOf::Left(TextEdit {
-                        span: Span::empty(Offset::of("👨‍👩‍👧‍👦")),
-                        new_text: String::new(),
-                    })],
-                },
-            ])),
-        };
-
-        let fallback = LineIndex::new("a");
-        let Some(tower_lsp::lsp_types::DocumentChanges::Edits(edits)) = edit
-            .into_lsp_type(&fallback, EncodingKind::Utf16)
-            .document_changes
-        else {
-            panic!("expected document edits");
-        };
-        let offsets: Vec<_> = edits
-            .into_iter()
-            .map(|edit| match &edit.edits[0] {
-                tower_lsp::lsp_types::OneOf::Left(edit) => edit.range.start.character,
-                tower_lsp::lsp_types::OneOf::Right(_) => unreachable!(),
-            })
-            .collect();
-
-        assert_eq!(offsets, [2, 11]);
     }
 }

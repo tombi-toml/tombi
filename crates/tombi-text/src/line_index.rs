@@ -1,7 +1,5 @@
 //! See [`LineIndex`].
 
-use std::sync::Arc;
-
 use crate::{Column, EncodingKind, Line, Offset, Position, Range, Span};
 
 /// Indexes the start offset of each line in a piece of text.
@@ -11,16 +9,14 @@ use crate::{Column, EncodingKind, Line, Offset, Position, Range, Span};
 /// The unit of a column is chosen for each conversion by an [`EncodingKind`],
 /// because the line breaks do not depend on it.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LineIndex {
-    // `Arc<Box<str>>` is a thin pointer, which keeps the texts sharing it compact.
-    text: Arc<Box<str>>,
+pub struct LineIndex<'src> {
+    text: &'src str,
     line_starts: Box<[Offset]>,
 }
 
-impl LineIndex {
+impl<'src> LineIndex<'src> {
     /// Computes the line index for `text`.
-    pub fn new(text: impl Into<Box<str>>) -> Self {
-        let text = Arc::new(text.into());
+    pub fn new(text: &'src str) -> Self {
         let mut line_starts = vec![Offset::new(0)];
         line_starts.extend(
             memchr::memchr_iter(b'\n', text.as_bytes()).map(|index| offset_from_usize(index + 1)),
@@ -31,7 +27,7 @@ impl LineIndex {
     /// Creates the line index from the start offsets of the lines already scanned in `text`.
     ///
     /// `line_starts` must begin with `0`, followed by the offset after each `\n` in order.
-    pub fn from_line_starts(text: Arc<Box<str>>, line_starts: Vec<Offset>) -> Self {
+    pub fn from_line_starts(text: &'src str, line_starts: Vec<Offset>) -> Self {
         debug_assert_eq!(line_starts.first(), Some(&Offset::new(0)));
         debug_assert_eq!(
             line_starts.len(),
@@ -45,14 +41,8 @@ impl LineIndex {
 
     /// Returns the indexed text.
     #[inline]
-    pub fn text(&self) -> &str {
-        &self.text
-    }
-
-    /// Returns the indexed text as a shared string.
-    #[inline]
-    pub fn text_arc(&self) -> &Arc<Box<str>> {
-        &self.text
+    pub fn text(&self) -> &'src str {
+        self.text
     }
 
     /// Returns the number of lines tracked by the index.
@@ -81,7 +71,7 @@ impl LineIndex {
     }
 
     /// Returns the text of the line at `line`, excluding its line ending.
-    pub fn line_text(&self, line: Line) -> Option<&str> {
+    pub fn line_text(&self, line: Line) -> Option<&'src str> {
         self.line_span(line).map(|span| &self.text[span])
     }
 
@@ -136,7 +126,7 @@ impl LineIndex {
 
     /// Returns a cursor that converts offsets in ascending order without searching the lines
     /// again for each offset.
-    pub fn cursor(&self, encoding: EncodingKind) -> LineIndexCursor<'_> {
+    pub fn cursor(&self, encoding: EncodingKind) -> LineIndexCursor<'_, 'src> {
         LineIndexCursor {
             line_index: self,
             encoding,
@@ -171,15 +161,15 @@ impl LineIndex {
 /// only measures the text between consecutive offsets.
 /// An offset before the previous one is converted from the start of its line.
 #[derive(Debug, Clone)]
-pub struct LineIndexCursor<'a> {
-    line_index: &'a LineIndex,
+pub struct LineIndexCursor<'a, 'src> {
+    line_index: &'a LineIndex<'src>,
     encoding: EncodingKind,
     line: usize,
     offset: Offset,
     column: Column,
 }
 
-impl LineIndexCursor<'_> {
+impl LineIndexCursor<'_, '_> {
     /// The unit of the columns this cursor counts.
     #[inline]
     pub fn encoding(&self) -> EncodingKind {

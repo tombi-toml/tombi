@@ -33,12 +33,13 @@ pub async fn handle_document_link(
 
     log::info!("handle_document_link");
 
-    let Ok(document_sources) = backend.document_sources.try_read() else {
+    let Some(document_source) = backend.document_source(&text_document_uri) else {
         return Ok(None);
     };
-    let Some(document_source) = document_sources.get(&text_document_uri) else {
-        return Ok(None);
-    };
+    let converter = tombi_extension::SpanConverter::new(
+        document_source.line_index(),
+        document_source.encoding_kind(),
+    );
 
     let root = document_source.ast();
     let toml_version = document_source.toml_version;
@@ -69,8 +70,9 @@ pub async fn handle_document_link(
     if config.cargo_extension_enabled()
         && let Some(locations) = tombi_extension_cargo::document_link(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             toml_version,
+            converter,
             config.cargo_extension_features(),
         )
         .await?
@@ -85,7 +87,7 @@ pub async fn handle_document_link(
     if config.tombi_extension_enabled()
         && let Some(locations) = tombi_extension_tombi::document_link(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             toml_version,
             config.tombi_extension_features(),
         )
@@ -101,7 +103,7 @@ pub async fn handle_document_link(
     if config.pyproject_extension_enabled()
         && let Some(locations) = tombi_extension_pyproject::document_link(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             toml_version,
             config.pyproject_extension_features(),
         )

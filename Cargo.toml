@@ -74,6 +74,7 @@ rstest = { version = "0.25.0" }
 schemars = { version = "1.2.1", features = ["preserve_order", "url2"] }
 semver = "1.0.17"
 send_wrapper = { version = "0.6.0", features = ["futures"] }
+self_cell = "1.3"
 serde = { version = "1.0.219", features = ["derive", "rc"] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
 serde_tombi = { path = "rust/serde_tombi", default-features = false }

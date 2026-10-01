@@ -6,9 +6,9 @@ use super::token_type::TokenType;
 pub struct SemanticTokensBuilder<'a> {
     tokens: Vec<SemanticToken>,
     last_start: tombi_text::Position,
-    line_index: &'a tombi_text::LineIndex,
+    line_index: &'a tombi_text::LineIndex<'a>,
     /// Tokens are added in document order, so their positions are converted by a cursor.
-    cursor: tombi_text::LineIndexCursor<'a>,
+    cursor: tombi_text::LineIndexCursor<'a, 'a>,
     encoding: tombi_text::EncodingKind,
     pub text_document_uri: tombi_uri::Uri,
 }
@@ -16,7 +16,7 @@ pub struct SemanticTokensBuilder<'a> {
 impl<'a> SemanticTokensBuilder<'a> {
     pub fn new(
         text_document_uri: tombi_uri::Uri,
-        line_index: &'a tombi_text::LineIndex,
+        line_index: &'a tombi_text::LineIndex<'a>,
         encoding: tombi_text::EncodingKind,
     ) -> Self {
         Self {
@@ -44,9 +44,9 @@ impl<'a> SemanticTokensBuilder<'a> {
         self.last_start = range.start;
     }
 
-    pub fn add_comment_directive(
+    pub fn add_comment_directive<'c>(
         &mut self,
-        comment: impl AsRef<tombi_ast_syntax::Comment>,
+        comment: impl AsRef<tombi_ast_syntax::Comment<'c>>,
         directive_span: tombi_text::Span,
     ) {
         let comment_span = self.cursor.range(comment.as_ref().syntax().span());

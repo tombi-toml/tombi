@@ -23,7 +23,7 @@ impl String {
     }
 }
 
-impl From<tombi_document_tree_syntax::String> for crate::String {
+impl From<tombi_document_tree_syntax::String<'_>> for crate::String {
     fn from(node: tombi_document_tree_syntax::String) -> Self {
         Self {
             kind: node.kind(),

@@ -16,9 +16,9 @@ mod table;
 mod value;
 
 pub(super) trait Edit {
-    fn edit<'a: 'b, 'b>(
+    fn edit<'a: 'b, 'b, 'd>(
         &'a self,
-        node: &'a tombi_document_tree_syntax::Value,
+        node: &'a tombi_document_tree_syntax::Value<'d>,
         accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
@@ -26,10 +26,10 @@ pub(super) trait Edit {
     ) -> BoxFuture<'b, Vec<crate::editor::Change>>;
 }
 
-fn edit_recursive<'a: 'b, 'b>(
-    node: &'a tombi_document_tree_syntax::Value,
+fn edit_recursive<'a: 'b, 'b, 'd>(
+    node: &'a tombi_document_tree_syntax::Value<'d>,
     edit_fn: impl FnOnce(
-        &'a tombi_document_tree_syntax::Value,
+        &'a tombi_document_tree_syntax::Value<'d>,
         Arc<[Accessor]>,
         Option<tombi_schema_store::CurrentSchema<'a>>,
     ) -> BoxFuture<'b, Vec<crate::editor::Change>>

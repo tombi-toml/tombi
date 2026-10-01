@@ -15,7 +15,7 @@ use super::{
 pub fn get_one_of_hover_content<'a: 'b, 'b, T>(
     value: &'a T,
     offset: tombi_text::Offset,
-    keys: &'a [tombi_document_tree_syntax::Key],
+    keys: &'a [tombi_document_tree_syntax::Key<'_>],
     accessors: &'a [tombi_schema_store::Accessor],
     one_of_schema: &'a tombi_schema_store::OneOfSchema,
     current_schema: &'a CurrentSchema<'a>,
@@ -212,7 +212,7 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
     fn get_hover_content<'a: 'b, 'b>(
         &'a self,
         _position: tombi_text::Offset,
-        _keys: &'a [tombi_document_tree_syntax::Key],
+        _keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,

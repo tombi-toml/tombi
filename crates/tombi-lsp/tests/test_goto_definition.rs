@@ -1527,11 +1527,7 @@ mod goto_definition_tests {
                         definition_links
                             .into_iter()
                             .map(|link| {
-                                // The span carries the line index of its document.
-                                let range = link.span.map_or_else(Default::default, |span| {
-                                    span.line_index
-                                        .range(span.span, tombi_text::EncodingKind::GraphemeCluster)
-                                });
+                                let range = link.range.unwrap_or_default();
                                 (link.uri.to_uri(), range)
                             })
                             .collect_vec(),

@@ -13,7 +13,7 @@ pub(crate) const UV_DEPENDENCY_KEYS: &[&str] = &[
 
 #[derive(Debug, Clone)]
 pub(crate) struct DependencyRequirement<'a> {
-    pub(crate) dependency: &'a tombi_document_tree_syntax::String,
+    pub(crate) dependency: &'a tombi_document_tree_syntax::String<'a>,
     pub(crate) requirement: Requirement<VerbatimUrl>,
 }
 
@@ -39,7 +39,7 @@ pub(crate) fn parse_requirement(dependency: &str) -> Option<Requirement<Verbatim
 }
 
 pub(crate) fn parse_dependency_requirement<'a>(
-    dependency: &'a tombi_document_tree_syntax::String,
+    dependency: &'a tombi_document_tree_syntax::String<'a>,
 ) -> Option<DependencyRequirement<'a>> {
     parse_requirement(dependency.value()).map(|requirement| DependencyRequirement {
         requirement,
@@ -48,7 +48,7 @@ pub(crate) fn parse_dependency_requirement<'a>(
 }
 
 pub(crate) fn collect_dependency_requirements_from_document_tree<'a>(
-    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree<'a>,
 ) -> Vec<DependencyRequirement<'a>> {
     let mut dependency_requirements = Vec::new();
 
@@ -58,7 +58,7 @@ pub(crate) fn collect_dependency_requirements_from_document_tree<'a>(
 }
 
 pub(crate) fn collect_all_dependency_requirements_from_document_tree<'a>(
-    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree<'a>,
 ) -> Vec<DependencyRequirement<'a>> {
     let mut dependency_requirements =
         collect_dependency_requirements_from_document_tree(document_tree);
@@ -99,7 +99,7 @@ fn is_uv_dependency_accessor(accessors: &[Accessor]) -> bool {
 }
 
 fn collect_standard_dependency_requirements<'a>(
-    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree<'a>,
     dependency_requirements: &mut Vec<DependencyRequirement<'a>>,
 ) {
     collect_dependency_requirements_from_array_path(
@@ -134,7 +134,7 @@ fn collect_standard_dependency_requirements<'a>(
 }
 
 fn collect_dependency_requirements_from_array_path<'a>(
-    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree<'a>,
     path: &[&str],
     dependency_requirements: &mut Vec<DependencyRequirement<'a>>,
 ) {
@@ -148,7 +148,7 @@ fn collect_dependency_requirements_from_array_path<'a>(
 }
 
 fn collect_dependency_requirements_from_values<'a>(
-    dependencies: impl Iterator<Item = &'a tombi_document_tree_syntax::Value>,
+    dependencies: impl Iterator<Item = &'a tombi_document_tree_syntax::Value<'a>>,
 ) -> Vec<DependencyRequirement<'a>> {
     dependencies
         .filter_map(|value| {
@@ -165,9 +165,9 @@ fn collect_dependency_requirements_from_values<'a>(
 }
 
 pub(crate) fn find_dependency_group_key<'a>(
-    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree<'a>,
     group_name: &str,
-) -> Option<&'a tombi_document_tree_syntax::Key> {
+) -> Option<&'a tombi_document_tree_syntax::Key<'a>> {
     let (_, Value::Table(dependency_groups)) = dig_keys(document_tree, &["dependency-groups"])?
     else {
         return None;
@@ -178,9 +178,10 @@ pub(crate) fn find_dependency_group_key<'a>(
 }
 
 pub(crate) fn include_group_locations(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     pyproject_toml_path: &std::path::Path,
+    converter: tombi_extension::SpanConverter<'_, '_>,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     let Some(tombi_schema_store::Accessor::Key(group_name)) = accessors.get(1) else {
         return Ok(Vec::new());
@@ -192,20 +193,14 @@ pub(crate) fn include_group_locations(
 
     Ok(collect_include_group_values(document_tree, group_name)
         .into_iter()
-        .map(|include_group| tombi_extension::Location {
-            uri: uri.clone(),
-            span: Some(tombi_extension::LocatedSpan {
-                span: include_group.unquoted_span(),
-                line_index: std::sync::Arc::clone(document_tree.line_index()),
-            }),
-        })
+        .map(|include_group| converter.location(uri.clone(), include_group.unquoted_span()))
         .collect())
 }
 
 pub(crate) fn collect_include_group_values<'a>(
-    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree<'a>,
     group_name: &str,
-) -> Vec<&'a tombi_document_tree_syntax::String> {
+) -> Vec<&'a tombi_document_tree_syntax::String<'a>> {
     let Some((_, Value::Table(dependency_groups))) =
         dig_keys(document_tree, &["dependency-groups"])
     else {
@@ -240,19 +235,28 @@ pub(crate) fn collect_include_group_values<'a>(
 
 #[cfg(test)]
 mod tests {
+    use tombi_ast_syntax::AstNode as _;
     use tombi_config::TomlVersion;
     use tombi_document_tree_syntax::TryIntoDocumentTree;
 
     use super::*;
 
-    fn parse_document_tree(source: &str) -> tombi_document_tree_syntax::DocumentTree {
-        let root = tombi_parser::parse(source).into_root();
-        root.try_into_document_tree(TomlVersion::default()).unwrap()
+    fn with_document_tree(
+        source: &str,
+        f: impl FnOnce(&tombi_document_tree_syntax::DocumentTree<'_>),
+    ) {
+        let parsed = tombi_parser::parse(source);
+        let root = parsed.root();
+        let decoded = root.decode_strings(TomlVersion::default());
+        let document_tree = root
+            .try_into_document_tree(TomlVersion::default(), &decoded)
+            .unwrap();
+        f(&document_tree);
     }
 
     #[test]
     fn collects_tool_uv_dependency_lists_for_extended_features() {
-        let document_tree = parse_document_tree(
+        with_document_tree(
             r#"
             [project]
             dependencies = ["requests>=2.0"]
@@ -263,17 +267,18 @@ mod tests {
             override-dependencies = ["werkzeug==2.3.0"]
             build-constraint-dependencies = ["setuptools==60.0.0"]
             "#,
-        );
+            |document_tree| {
+                let dependency_names =
+                    collect_all_dependency_requirements_from_document_tree(document_tree)
+                        .into_iter()
+                        .map(|dependency| dependency.requirement.name.to_string())
+                        .collect::<Vec<_>>();
 
-        let dependency_names =
-            collect_all_dependency_requirements_from_document_tree(&document_tree)
-                .into_iter()
-                .map(|dependency| dependency.requirement.name.to_string())
-                .collect::<Vec<_>>();
-
-        assert_eq!(
-            dependency_names,
-            vec!["requests", "ruff", "pytest", "werkzeug", "setuptools"]
+                assert_eq!(
+                    dependency_names,
+                    vec!["requests", "ruff", "pytest", "werkzeug", "setuptools"]
+                );
+            },
         );
     }
 
@@ -308,26 +313,27 @@ mod tests {
 
     #[test]
     fn finds_dependency_group_key_and_include_group_values() {
-        let document_tree = parse_document_tree(
+        with_document_tree(
             r#"
             [dependency-groups]
             dev = [{ include-group = "ci" }]
             qa = [{ include-group = "ci" }]
             ci = ["ruff"]
             "#,
-        );
+            |document_tree| {
+                let group_key = find_dependency_group_key(document_tree, "ci")
+                    .expect("expected dependency group key to exist");
+                let include_group_values = collect_include_group_values(document_tree, "ci");
 
-        let group_key = find_dependency_group_key(&document_tree, "ci")
-            .expect("expected dependency group key to exist");
-        let include_group_values = collect_include_group_values(&document_tree, "ci");
-
-        assert_eq!(group_key.value(), "ci");
-        assert_eq!(
-            include_group_values
-                .into_iter()
-                .map(|include_group| include_group.value())
-                .collect::<Vec<_>>(),
-            vec!["ci", "ci"]
+                assert_eq!(group_key.value(), "ci");
+                assert_eq!(
+                    include_group_values
+                        .into_iter()
+                        .map(|include_group| include_group.value())
+                        .collect::<Vec<_>>(),
+                    vec!["ci", "ci"]
+                );
+            },
         );
     }
 }

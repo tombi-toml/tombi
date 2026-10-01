@@ -9,7 +9,7 @@ use crate::{
     token_set::TS_NEXT_SECTION,
 };
 
-impl Parse for tombi_ast_syntax::Table {
+impl Parse for tombi_ast_syntax::Table<'_> {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 

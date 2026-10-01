@@ -2,7 +2,7 @@ use tombi_ast_syntax::AstNode;
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder, TokenType};
 
-impl AppendSemanticTokens for tombi_ast_syntax::Value {
+impl AppendSemanticTokens for tombi_ast_syntax::Value<'_> {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         for comment in self.leading_comments() {
             comment.append_semantic_tokens(builder);

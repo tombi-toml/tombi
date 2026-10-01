@@ -54,9 +54,9 @@ fn write_trailing_comment_alignment_space(
     Ok(())
 }
 
-fn filter_map_unique_keys<'a>(
-    header_keys: tombi_ast_syntax::Keys,
-    parent_header_keys: impl Iterator<Item = tombi_ast_syntax::Keys> + 'a,
+fn filter_map_unique_keys<'a, 't: 'a>(
+    header_keys: tombi_ast_syntax::Keys<'t>,
+    parent_header_keys: impl Iterator<Item = tombi_ast_syntax::Keys<'t>> + 'a,
     toml_version: TomlVersion,
 ) -> impl Iterator<Item = Vec<String>> + 'a {
     parent_header_keys

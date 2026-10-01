@@ -45,7 +45,7 @@ impl From<chrono::format::ParseErrorKind> for ParseError {
 }
 
 pub(crate) fn try_new_offset_date_time(
-    node: &tombi_ast_syntax::OffsetDateTime,
+    node: &tombi_ast_syntax::OffsetDateTime<'_>,
     toml_version: TomlVersion,
 ) -> Result<tombi_date_time::OffsetDateTime, crate::Error> {
     let Some(token) = node.token() else {
@@ -69,7 +69,7 @@ pub(crate) fn try_new_offset_date_time(
 }
 
 pub(crate) fn try_new_local_date_time(
-    node: &tombi_ast_syntax::LocalDateTime,
+    node: &tombi_ast_syntax::LocalDateTime<'_>,
     toml_version: TomlVersion,
 ) -> Result<tombi_date_time::LocalDateTime, crate::Error> {
     let Some(token) = node.token() else {
@@ -93,7 +93,7 @@ pub(crate) fn try_new_local_date_time(
 }
 
 pub(crate) fn try_new_local_date(
-    node: &tombi_ast_syntax::LocalDate,
+    node: &tombi_ast_syntax::LocalDate<'_>,
     _toml_version: TomlVersion,
 ) -> Result<tombi_date_time::LocalDate, crate::Error> {
     let Some(token) = node.token() else {
@@ -110,7 +110,7 @@ pub(crate) fn try_new_local_date(
 }
 
 pub(crate) fn try_new_local_time(
-    node: &tombi_ast_syntax::LocalTime,
+    node: &tombi_ast_syntax::LocalTime<'_>,
     toml_version: TomlVersion,
 ) -> Result<tombi_date_time::LocalTime, crate::Error> {
     const HOUR_MINUTE_SIZE: usize = "00:00".len();

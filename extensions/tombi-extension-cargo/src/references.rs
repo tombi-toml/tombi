@@ -12,9 +12,10 @@ use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn references(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
+    converter: tombi_extension::SpanConverter<'_, '_>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
@@ -29,14 +30,26 @@ pub async fn references(
     }
 
     let locations = if matches_accessors!(accessors, ["package", "name"]) {
-        package_name_reference_locations(document_tree, accessors, &cargo_toml_path, toml_version)
-            .await?
+        package_name_reference_locations(
+            document_tree,
+            accessors,
+            &cargo_toml_path,
+            toml_version,
+            converter,
+        )
+        .await?
     } else if let Some(target) = feature_usage_target_for_feature_key(&cargo_toml_path, accessors) {
-        collect_feature_usage_locations(document_tree, &cargo_toml_path, &target, toml_version)
-            .await
-            .into_iter()
-            .filter_map(|location| location.get_location())
-            .collect_vec()
+        collect_feature_usage_locations(
+            document_tree,
+            &cargo_toml_path,
+            &target,
+            toml_version,
+            converter,
+        )
+        .await
+        .into_iter()
+        .filter_map(|location| location.get_location())
+        .collect_vec()
     } else if is_optional_dependency(document_tree, accessors)
         && let Some(target) =
             feature_usage_target_for_optional_dependency(&cargo_toml_path, accessors)
@@ -46,6 +59,7 @@ pub async fn references(
             &cargo_toml_path,
             &target,
             toml_version,
+            converter,
         )
         .into_iter()
         .filter_map(|location| location.get_location())
@@ -56,6 +70,7 @@ pub async fn references(
             accessors,
             &cargo_toml_path,
             toml_version,
+            converter.encoding(),
         )?
     } else {
         Vec::new()
@@ -65,64 +80,73 @@ pub async fn references(
 }
 
 pub(crate) async fn package_name_reference_locations(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    converter: tombi_extension::SpanConverter<'_, '_>,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     debug_assert!(matches_accessors!(accessors, ["package", "name"]));
 
     let Some((_, Value::String(package_name))) = dig_accessors(document_tree, accessors) else {
         return Ok(Vec::new());
     };
+    let encoding = converter.encoding();
 
-    let Some((workspace_cargo_toml_path, workspace_document_tree)) = load_workspace_cargo_toml(
+    let Some(locations) = load_workspace_cargo_toml(
         cargo_toml_path,
         get_workspace_cargo_toml_path(document_tree),
         toml_version,
+        |workspace_cargo_toml_path, workspace_document_tree, workspace_line_index| {
+            let mut locations = Vec::new();
+            collect_workspace_dependency_references(
+                &mut locations,
+                workspace_document_tree,
+                workspace_cargo_toml_path,
+                package_name.value(),
+                tombi_extension::SpanConverter::new(workspace_line_index, encoding),
+            );
+
+            for crate_location in goto_workspace_member_crates(
+                workspace_document_tree,
+                &[],
+                workspace_cargo_toml_path,
+                toml_version,
+                encoding,
+                "members",
+            )? {
+                load_cargo_toml(
+                    &crate_location.cargo_toml_path,
+                    toml_version,
+                    |crate_document_tree, crate_line_index| {
+                        collect_member_dependency_references(
+                            &mut locations,
+                            crate_document_tree,
+                            &crate_location.cargo_toml_path,
+                            package_name.value(),
+                            tombi_extension::SpanConverter::new(crate_line_index, encoding),
+                        );
+                    },
+                );
+            }
+
+            Ok::<_, tower_lsp::jsonrpc::Error>(locations)
+        },
     )
     .await
     else {
         return Ok(Vec::new());
     };
 
-    let mut locations = Vec::new();
-    collect_workspace_dependency_references(
-        &mut locations,
-        &workspace_document_tree,
-        &workspace_cargo_toml_path,
-        package_name.value(),
-    );
-
-    for crate_location in goto_workspace_member_crates(
-        &workspace_document_tree,
-        &[],
-        &workspace_cargo_toml_path,
-        toml_version,
-        "members",
-    )? {
-        let Some((_, crate_document_tree)) =
-            load_cargo_toml(&crate_location.cargo_toml_path, toml_version)
-        else {
-            continue;
-        };
-
-        collect_member_dependency_references(
-            &mut locations,
-            &crate_document_tree,
-            &crate_location.cargo_toml_path,
-            package_name.value(),
-        );
-    }
-
-    Ok(locations)
+    locations
 }
 
 fn collect_workspace_dependency_references(
     locations: &mut Vec<tombi_extension::Location>,
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     workspace_cargo_toml_path: &std::path::Path,
     package_name: &str,
+    converter: tombi_extension::SpanConverter<'_, '_>,
 ) {
     let Some((_, Value::Table(workspace_dependencies))) =
         dig_keys(workspace_document_tree, &["workspace", "dependencies"])
@@ -136,22 +160,17 @@ fn collect_workspace_dependency_references(
 
     for (dependency_key, dependency_value) in workspace_dependencies.key_values() {
         if dependency_package_name(dependency_key.value(), dependency_value) == package_name {
-            locations.push(tombi_extension::Location {
-                uri: uri.clone(),
-                span: Some(tombi_extension::LocatedSpan {
-                    span: dependency_key.unquoted_span(),
-                    line_index: std::sync::Arc::clone(workspace_document_tree.line_index()),
-                }),
-            });
+            locations.push(converter.location(uri.clone(), dependency_key.unquoted_span()));
         }
     }
 }
 
 fn collect_member_dependency_references(
     locations: &mut Vec<tombi_extension::Location>,
-    crate_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    crate_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     crate_cargo_toml_path: &std::path::Path,
     package_name: &str,
+    converter: tombi_extension::SpanConverter<'_, '_>,
 ) {
     let Ok(uri) = tombi_uri::Uri::from_file_path(crate_cargo_toml_path) else {
         return;
@@ -164,7 +183,7 @@ fn collect_member_dependency_references(
             collect_dependency_table_references(
                 locations,
                 &uri,
-                crate_document_tree.line_index(),
+                converter,
                 dependencies,
                 package_name,
             );
@@ -185,7 +204,7 @@ fn collect_member_dependency_references(
                 collect_dependency_table_references(
                     locations,
                     &uri,
-                    crate_document_tree.line_index(),
+                    converter,
                     dependencies,
                     package_name,
                 );
@@ -197,19 +216,13 @@ fn collect_member_dependency_references(
 fn collect_dependency_table_references(
     locations: &mut Vec<tombi_extension::Location>,
     uri: &tombi_uri::Uri,
-    line_index: &std::sync::Arc<tombi_text::LineIndex>,
-    dependencies: &tombi_document_tree_syntax::Table,
+    converter: tombi_extension::SpanConverter<'_, '_>,
+    dependencies: &tombi_document_tree_syntax::Table<'_>,
     package_name: &str,
 ) {
     for (dependency_key, dependency_value) in dependencies.key_values() {
         if dependency_package_name(dependency_key.value(), dependency_value) == package_name {
-            locations.push(tombi_extension::Location {
-                uri: uri.clone(),
-                span: Some(tombi_extension::LocatedSpan {
-                    span: dependency_key.unquoted_span(),
-                    line_index: std::sync::Arc::clone(line_index),
-                }),
-            });
+            locations.push(converter.location(uri.clone(), dependency_key.unquoted_span()));
         }
     }
 }

@@ -9,10 +9,10 @@ use crate::editor::rule::root_table_keys_order::root_table_keys_order;
 use tombi_ast_syntax::{DanglingCommentGroupOr, GetHeaderAccessors};
 use tombi_schema_store::TableOrderOverride;
 
-impl crate::editor::Edit for tombi_ast_syntax::Root {
-    fn edit<'a: 'b, 'b>(
+impl<'t> crate::editor::Edit for tombi_ast_syntax::Root<'t> {
+    fn edit<'a: 'b, 'b, 'd>(
         &'a self,
-        node: &'a tombi_document_tree_syntax::Value,
+        node: &'a tombi_document_tree_syntax::Value<'d>,
         _accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,

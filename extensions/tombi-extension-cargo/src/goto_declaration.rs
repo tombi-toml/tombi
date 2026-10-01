@@ -8,9 +8,10 @@ use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn goto_declaration(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
+    converter: tombi_extension::SpanConverter<'_, '_>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is Cargo.toml
@@ -30,6 +31,7 @@ pub async fn goto_declaration(
         accessors,
         &cargo_toml_path,
         toml_version,
+        converter.encoding(),
         false,
     )?;
 
@@ -60,9 +62,10 @@ fn cargo_goto_declaration_enabled(
 }
 
 pub fn get_current_declaration(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     cargo_toml_uri: &tombi_uri::Uri,
+    converter: tombi_extension::SpanConverter<'_, '_>,
 ) -> Option<tombi_extension::Location> {
     if !cargo_toml_uri.path().ends_with("Cargo.toml") {
         return None;
@@ -70,13 +73,7 @@ pub fn get_current_declaration(
 
     if matches_accessors!(accessors, ["features", _]) {
         let feature_key = feature_key_at_accessors(document_tree, accessors)?;
-        return Some(tombi_extension::Location {
-            uri: cargo_toml_uri.clone(),
-            span: Some(tombi_extension::LocatedSpan {
-                span: feature_key.unquoted_span(),
-                line_index: std::sync::Arc::clone(document_tree.line_index()),
-            }),
-        });
+        return Some(converter.location(cargo_toml_uri.clone(), feature_key.unquoted_span()));
     }
 
     if !is_optional_dependency(document_tree, accessors) {
@@ -92,11 +89,8 @@ pub fn get_current_declaration(
         return None;
     };
 
-    Some(tombi_extension::Location {
-        uri: cargo_toml_uri.clone(),
-        span: Some(tombi_extension::LocatedSpan {
-            span: optional_key.span() + optional.span(),
-            line_index: std::sync::Arc::clone(document_tree.line_index()),
-        }),
-    })
+    Some(converter.location(
+        cargo_toml_uri.clone(),
+        optional_key.span() + optional.span(),
+    ))
 }

@@ -7,14 +7,14 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
 
-impl Format for tombi_ast_syntax::InlineTable {
+impl<'t> Format for tombi_ast_syntax::InlineTable<'t> {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         WithAlignmentHint::new(self).format(f)
     }
 }
 
-impl Format for WithAlignmentHint<&tombi_ast_syntax::InlineTable> {
+impl<'t> Format for WithAlignmentHint<&tombi_ast_syntax::InlineTable<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if !f.single_line_mode()
             && (self.value.should_be_multiline(f.toml_version())
@@ -187,7 +187,7 @@ fn format_singleline_inline_table(
     Ok(())
 }
 
-impl Format for WithAlignmentHint<&tombi_ast_syntax::KeyValueWithCommaGroup> {
+impl<'t> Format for WithAlignmentHint<&tombi_ast_syntax::KeyValueWithCommaGroup<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let WithAlignmentHint {
             value: key_value_group,
@@ -238,7 +238,7 @@ impl Format for WithAlignmentHint<&tombi_ast_syntax::KeyValueWithCommaGroup> {
     }
 }
 
-impl Format for WithAlignmentHint<tombi_ast_syntax::KeyValueWithCommaGroup> {
+impl<'t> Format for WithAlignmentHint<tombi_ast_syntax::KeyValueWithCommaGroup<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         WithAlignmentHint {
             value: &self.value,

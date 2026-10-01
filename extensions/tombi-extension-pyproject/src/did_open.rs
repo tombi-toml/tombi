@@ -7,14 +7,15 @@ use tombi_extension::remote_cache::warm_remote_json_cache;
 use tombi_future::Boxable;
 
 use crate::{
-    collect_all_dependency_requirements_from_document_tree, find_workspace_pyproject_toml,
+    UNUSED_ENCODING, collect_all_dependency_requirements_from_document_tree,
+    find_workspace_pyproject_toml,
 };
 
 const PREFETCH_CONCURRENCY: usize = 10;
 
 pub fn did_open(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &DocumentTree,
+    document_tree: &DocumentTree<'_>,
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
@@ -51,10 +52,10 @@ pub fn did_open(
         return None;
     };
 
-    let document_tree = document_tree.clone();
+    // The tree borrows the document, so the URLs are collected before the future outlives it.
+    let urls = collect_prefetch_urls(document_tree, &pyproject_toml_path, toml_version);
     let cache_options = cache_options.cloned();
     let warm = async move {
-        let urls = collect_prefetch_urls(&document_tree, &pyproject_toml_path, toml_version);
         if urls.is_empty() {
             return;
         }
@@ -78,13 +79,11 @@ fn warming_disabled(offline: bool, cache_options: Option<&tombi_cache::Options>)
 }
 
 fn collect_prefetch_urls(
-    document_tree: &DocumentTree,
+    document_tree: &DocumentTree<'_>,
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Vec<String> {
     let current_sources = pyproject_sources(document_tree);
-    let workspace_sources =
-        workspace_pyproject_sources(document_tree, pyproject_toml_path, toml_version);
     let mut package_names = BTreeSet::new();
 
     for dependency_requirement in
@@ -98,16 +97,19 @@ fn collect_prefetch_urls(
         }
 
         let package_name = dependency_requirement.requirement.name.as_ref();
-        if has_source_override(current_sources, package_name)
-            || workspace_sources
-                .as_ref()
-                .is_some_and(|sources| has_source_override(Some(sources), package_name))
-        {
+        if has_source_override(current_sources, package_name) {
             continue;
         }
 
         package_names.insert(package_name.to_string());
     }
+
+    remove_workspace_source_overrides(
+        &mut package_names,
+        document_tree,
+        pyproject_toml_path,
+        toml_version,
+    );
 
     package_names
         .into_iter()
@@ -115,33 +117,40 @@ fn collect_prefetch_urls(
         .collect()
 }
 
-fn pyproject_sources(document_tree: &DocumentTree) -> Option<&Table> {
+fn pyproject_sources<'a, 't>(document_tree: &'a DocumentTree<'t>) -> Option<&'a Table<'t>> {
     match dig_keys(document_tree, &["tool", "uv", "sources"]) {
         Some((_, Value::Table(sources))) => Some(sources),
         _ => None,
     }
 }
 
-fn workspace_pyproject_sources(
-    document_tree: &DocumentTree,
+fn remove_workspace_source_overrides(
+    package_names: &mut BTreeSet<String>,
+    document_tree: &DocumentTree<'_>,
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
-) -> Option<Table> {
-    if dig_keys(document_tree, &["tool", "uv", "workspace"]).is_some() {
-        return None;
+) {
+    if package_names.is_empty() || dig_keys(document_tree, &["tool", "uv", "workspace"]).is_some() {
+        return;
     }
 
-    let (workspace_pyproject_toml_path, _, workspace_document_tree) =
-        find_workspace_pyproject_toml(pyproject_toml_path, toml_version)?;
+    find_workspace_pyproject_toml(
+        pyproject_toml_path,
+        toml_version,
+        UNUSED_ENCODING,
+        |workspace_pyproject_toml_path, _, workspace_document_tree, _| {
+            if workspace_pyproject_toml_path == pyproject_toml_path {
+                return;
+            }
 
-    if workspace_pyproject_toml_path == pyproject_toml_path {
-        return None;
-    }
-
-    pyproject_sources(&workspace_document_tree).cloned()
+            if let Some(sources) = pyproject_sources(workspace_document_tree) {
+                package_names.retain(|package_name| !sources.contains_key(package_name.as_str()));
+            }
+        },
+    );
 }
 
-fn has_source_override(sources: Option<&Table>, package_name: &str) -> bool {
+fn has_source_override(sources: Option<&Table<'_>>, package_name: &str) -> bool {
     sources.is_some_and(|sources| sources.contains_key(package_name))
 }
 
@@ -149,18 +158,24 @@ fn has_source_override(sources: Option<&Table>, package_name: &str) -> bool {
 mod tests {
     use std::str::FromStr;
 
+    use tombi_ast_syntax::AstNode as _;
     use tombi_document_tree_syntax::TryIntoDocumentTree;
 
     use super::*;
 
-    fn parse_document_tree(source: &str) -> DocumentTree {
-        let root = tombi_parser::parse(source).into_root();
-        root.try_into_document_tree(TomlVersion::default()).unwrap()
+    fn with_document_tree(source: &str, f: impl FnOnce(&DocumentTree<'_>)) {
+        let parsed = tombi_parser::parse(source);
+        let root = parsed.root();
+        let decoded = root.decode_strings(TomlVersion::default());
+        let document_tree = root
+            .try_into_document_tree(TomlVersion::default(), &decoded)
+            .unwrap();
+        f(&document_tree);
     }
 
     #[test]
     fn collects_registry_dependencies_without_source_overrides() {
-        let document_tree = parse_document_tree(
+        with_document_tree(
             r#"
             [project]
             dependencies = ["requests>=2.0"]
@@ -171,27 +186,28 @@ mod tests {
             [dependency-groups]
             dev = ["ruff>=0.3"]
             "#,
-        );
+            |document_tree| {
+                let urls = collect_prefetch_urls(
+                    document_tree,
+                    Path::new("/tmp/pyproject.toml"),
+                    TomlVersion::default(),
+                );
 
-        let urls = collect_prefetch_urls(
-            &document_tree,
-            Path::new("/tmp/pyproject.toml"),
-            TomlVersion::default(),
-        );
-
-        assert_eq!(
-            urls,
-            vec![
-                "https://pypi.org/pypi/pytest/json".to_string(),
-                "https://pypi.org/pypi/requests/json".to_string(),
-                "https://pypi.org/pypi/ruff/json".to_string(),
-            ]
+                assert_eq!(
+                    urls,
+                    vec![
+                        "https://pypi.org/pypi/pytest/json".to_string(),
+                        "https://pypi.org/pypi/requests/json".to_string(),
+                        "https://pypi.org/pypi/ruff/json".to_string(),
+                    ]
+                );
+            },
         );
     }
 
     #[test]
     fn excludes_direct_url_and_source_overrides() {
-        let document_tree = parse_document_tree(
+        with_document_tree(
             r#"
             [project]
             dependencies = [
@@ -202,15 +218,16 @@ mod tests {
             [tool.uv.sources]
             requests = { path = "../requests" }
             "#,
-        );
+            |document_tree| {
+                let urls = collect_prefetch_urls(
+                    document_tree,
+                    Path::new("/tmp/pyproject.toml"),
+                    TomlVersion::default(),
+                );
 
-        let urls = collect_prefetch_urls(
-            &document_tree,
-            Path::new("/tmp/pyproject.toml"),
-            TomlVersion::default(),
+                assert!(urls.is_empty());
+            },
         );
-
-        assert!(urls.is_empty());
     }
 
     #[test]
@@ -247,26 +264,32 @@ mod tests {
         )
         .unwrap();
 
-        let document_tree = parse_document_tree(&std::fs::read_to_string(&member_path).unwrap());
-        let urls = collect_prefetch_urls(&document_tree, &member_path, TomlVersion::default());
+        with_document_tree(
+            &std::fs::read_to_string(&member_path).unwrap(),
+            |document_tree| {
+                let urls =
+                    collect_prefetch_urls(document_tree, &member_path, TomlVersion::default());
 
-        assert_eq!(urls, vec!["https://pypi.org/pypi/pytest/json".to_string()]);
+                assert_eq!(urls, vec!["https://pypi.org/pypi/pytest/json".to_string()]);
+            },
+        );
     }
 
     #[test]
     fn did_open_ignores_non_pyproject_documents() {
-        let document_tree = parse_document_tree("");
-        let uri = tombi_uri::Uri::from_str("file:///tmp/Cargo.toml").unwrap();
+        with_document_tree("", |document_tree| {
+            let uri = tombi_uri::Uri::from_str("file:///tmp/Cargo.toml").unwrap();
 
-        let result = did_open(
-            &uri,
-            &document_tree,
-            TomlVersion::default(),
-            true,
-            None,
-            None,
-        );
+            let result = did_open(
+                &uri,
+                document_tree,
+                TomlVersion::default(),
+                true,
+                None,
+                None,
+            );
 
-        assert!(result.is_none());
+            assert!(result.is_none());
+        });
     }
 }

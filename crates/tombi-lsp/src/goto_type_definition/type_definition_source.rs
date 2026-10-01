@@ -2,29 +2,29 @@ use tombi_schema_store::{Accessor, CurrentSchema};
 
 use crate::schema_resolver::{remaining_keys, resolve_accessors_for_document_or_schema};
 
-pub(super) enum TypeDefinitionSource<'a> {
+pub(super) enum TypeDefinitionSource<'a, 't> {
     Root {
-        remaining_keys: &'a [tombi_document_tree_syntax::Key],
+        remaining_keys: &'a [tombi_document_tree_syntax::Key<'t>],
         accessors: Vec<Accessor>,
         current_schema: Option<CurrentSchema<'static>>,
     },
     Value {
-        remaining_keys: &'a [tombi_document_tree_syntax::Key],
+        remaining_keys: &'a [tombi_document_tree_syntax::Key<'t>],
         accessors: Vec<Accessor>,
         current_schema: Option<CurrentSchema<'static>>,
     },
     Schema {
-        remaining_keys: &'a [tombi_document_tree_syntax::Key],
+        remaining_keys: &'a [tombi_document_tree_syntax::Key<'t>],
         accessors: Vec<Accessor>,
         current_schema: CurrentSchema<'static>,
     },
 }
 
-impl<'a> TypeDefinitionSource<'a> {
+impl<'a, 't> TypeDefinitionSource<'a, 't> {
     pub(super) async fn new(
-        document_tree: &'a tombi_document_tree_syntax::DocumentTree,
+        document_tree: &'a tombi_document_tree_syntax::DocumentTree<'t>,
         offset: tombi_text::Offset,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'t>],
         schema_context: &tombi_schema_store::SchemaContext<'_>,
     ) -> Option<Self> {
         let accessors = tombi_document_tree_syntax::get_accessors(document_tree, keys, offset);

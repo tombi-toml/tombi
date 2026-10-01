@@ -49,7 +49,7 @@ impl<'a> Formatter<'a> {
 
     /// Format a TOML document and return the result as a string
     pub async fn format(self, source: &str) -> Result<String, Vec<Diagnostic>> {
-        self.format_parsed(tombi_parser::parse(source)).await
+        self.format_parsed(&tombi_parser::parse(source)).await
     }
 
     /// Format a parsed TOML document and return the result as a string.
@@ -58,7 +58,7 @@ impl<'a> Formatter<'a> {
     /// the diagnostics into ranges, without indexing the lines of the source again.
     pub async fn format_parsed(
         mut self,
-        parsed: tombi_parser::ParseResult,
+        parsed: &tombi_parser::ParseResult<'_>,
     ) -> Result<String, Vec<Diagnostic>> {
         let root = parsed.root();
         let (source_schema, tombi_document_comment_directive) = (
@@ -106,14 +106,12 @@ impl<'a> Formatter<'a> {
             tombi_config::LineEnding::Crlf => "\r\n",
         };
 
-        let (root, errors) = parsed.into_root_and_errors();
-
-        if !errors.is_empty() {
+        if !parsed.errors.is_empty() {
             log::trace!("parsed TOML AST with errors: {:#?}", root);
 
             let mut diagnostics = vec![];
-            for error in errors {
-                error.set_diagnostics(&mut diagnostics);
+            for error in &parsed.errors {
+                error.clone().set_diagnostics(&mut diagnostics);
             }
 
             return Err(diagnostics);
@@ -124,7 +122,7 @@ impl<'a> Formatter<'a> {
             Either::Right(path) => Some(path.to_path_buf()),
         });
 
-        let root = crate::editor::edit(
+        let edited_source = crate::editor::edit(
             root,
             source_path.as_deref(),
             &tombi_schema_store::SchemaContext {
@@ -157,6 +155,19 @@ impl<'a> Formatter<'a> {
             },
         )
         .await;
+
+        let edited = edited_source.as_deref().map(tombi_parser::parse);
+        let root = match &edited {
+            Some(edited) if edited.errors.is_empty() => edited.root(),
+            Some(edited) => {
+                log::error!(
+                    "formatter source rewrite produced invalid TOML: {:#?}",
+                    edited.errors
+                );
+                root
+            }
+            None => root,
+        };
 
         log::trace!("edited TOML AST: {:#?}", root);
 
@@ -205,7 +216,8 @@ impl<'a> Formatter<'a> {
         &mut self,
         content: &str,
     ) -> Result<String, std::fmt::Error> {
-        let Ok(root) = tombi_parser::parse(content).try_into_root() else {
+        let parsed = tombi_parser::parse(content);
+        let Ok(root) = parsed.try_root() else {
             return Ok(content.trim().to_string());
         };
         self.single_line_mode = true;
@@ -356,9 +368,9 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) fn key_value_equal_alignment_width(
+    pub(crate) fn key_value_equal_alignment_width<'b, 't: 'b>(
         &self,
-        key_values: impl Iterator<Item = &'a tombi_ast_syntax::KeyValue>,
+        key_values: impl Iterator<Item = &'b tombi_ast_syntax::KeyValue<'t>>,
     ) -> Option<AlignmentWidth> {
         if self.definitions.key_value_equal_alignment {
             key_values

@@ -17,11 +17,11 @@ use crate::HoverContent;
 
 use super::GetHoverContent;
 
-impl GetHoverContent for tombi_document_tree_syntax::Value {
+impl GetHoverContent for tombi_document_tree_syntax::Value<'_> {
     fn get_hover_content<'a: 'b, 'b>(
         &'a self,
         offset: tombi_text::Offset,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
@@ -155,7 +155,7 @@ impl GetHoverContent for SchemaView {
     fn get_hover_content<'a: 'b, 'b>(
         &'a self,
         offset: tombi_text::Offset,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,

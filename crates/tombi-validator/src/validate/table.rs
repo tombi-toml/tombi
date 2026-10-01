@@ -53,7 +53,7 @@ fn dependency_schema_context<'a>(
 /// `match_evidence` does not propagate out of a dependent schema.
 async fn validate_dependent_schemas<'a>(
     entries: &[(&'a str, &'a tombi_schema_store::SchemaItem)],
-    table_value: &tombi_document_tree_syntax::Table,
+    table_value: &tombi_document_tree_syntax::Table<'_>,
     accessors: &[tombi_schema_store::Accessor],
     keys: &[&str],
     current_schema: &CurrentSchema<'_>,
@@ -110,7 +110,7 @@ async fn validate_dependent_schemas<'a>(
     failures
 }
 
-impl Validate for tombi_document_tree_syntax::Table {
+impl Validate for tombi_document_tree_syntax::Table<'_> {
     fn validate<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::Accessor],
@@ -224,7 +224,7 @@ impl Validate for tombi_document_tree_syntax::Table {
 
 #[allow(clippy::result_large_err)]
 async fn validate_table(
-    table_value: &tombi_document_tree_syntax::Table,
+    table_value: &tombi_document_tree_syntax::Table<'_>,
     accessors: &[tombi_schema_store::Accessor],
     table_schema: &tombi_schema_store::TableSchema,
     current_schema: &CurrentSchema<'_>,
@@ -1050,7 +1050,7 @@ async fn validate_table(
 }
 
 fn collect_evaluated_properties_from_table_schema<'a>(
-    table_value: &'a tombi_document_tree_syntax::Table,
+    table_value: &'a tombi_document_tree_syntax::Table<'_>,
     accessors: &'a [tombi_schema_store::Accessor],
     table_schema: &'a tombi_schema_store::TableSchema,
     current_schema: &'a CurrentSchema<'a>,
@@ -1179,7 +1179,7 @@ fn collect_evaluated_properties_from_table_schema<'a>(
 }
 
 fn collect_evaluated_properties_from_referable_schemas<'a>(
-    table_value: &'a tombi_document_tree_syntax::Table,
+    table_value: &'a tombi_document_tree_syntax::Table<'_>,
     accessors: &'a [tombi_schema_store::Accessor],
     applicator: &'a (impl CompositeSchema + Sync),
     current_schema: &'a CurrentSchema<'a>,
@@ -1234,7 +1234,7 @@ fn collect_evaluated_properties_from_referable_schemas<'a>(
 
 #[allow(clippy::result_large_err)]
 async fn validate_table_without_schema(
-    table_value: &tombi_document_tree_syntax::Table,
+    table_value: &tombi_document_tree_syntax::Table<'_>,
     accessors: &[tombi_schema_store::Accessor],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Result<crate::Valid, crate::Invalid> {
@@ -1297,8 +1297,8 @@ async fn validate_table_without_schema(
 /// Convert deprecated diagnostics to warnings for the given value
 async fn convert_deprecated_diagnostics_span(
     current_schema: &CurrentSchema<'_>,
-    value: &tombi_document_tree_syntax::Value,
-    key: &tombi_document_tree_syntax::Key,
+    value: &tombi_document_tree_syntax::Value<'_>,
+    key: &tombi_document_tree_syntax::Key<'_>,
     schema_diagnostics: &mut [tombi_diagnostic::Diagnostic],
 ) {
     if current_schema.schema_view.deprecation().await.is_some() {

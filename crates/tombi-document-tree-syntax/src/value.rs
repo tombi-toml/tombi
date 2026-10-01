@@ -25,21 +25,21 @@ use tombi_document_tree::{ArrayKind, TableKind};
 use crate::{DocumentTreeAndErrors, IntoDocumentTreeWithContext};
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Value {
+pub enum Value<'t> {
     Boolean(Boolean),
     Integer(Integer),
     Float(Float),
-    String(String),
+    String(String<'t>),
     OffsetDateTime(OffsetDateTime),
     LocalDateTime(LocalDateTime),
     LocalDate(LocalDate),
     LocalTime(LocalTime),
-    Array(Array),
-    Table(Table),
+    Array(Array<'t>),
+    Table(Table<'t>),
     Incomplete { span: tombi_text::Span },
 }
 
-impl Value {
+impl<'t> Value<'t> {
     #[inline]
     pub fn span(&self) -> tombi_text::Span {
         match self {
@@ -186,7 +186,7 @@ impl Value {
     }
 }
 
-impl std::fmt::Display for Value {
+impl<'t> std::fmt::Display for Value<'t> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Boolean(boolean) => write!(f, "{}", boolean),
@@ -204,7 +204,7 @@ impl std::fmt::Display for Value {
     }
 }
 
-impl crate::ValueImpl for Value {
+impl<'t> crate::ValueImpl for Value<'t> {
     fn value_type(&self) -> crate::ValueType {
         match self {
             Value::Boolean(boolean) => boolean.value_type(),
@@ -226,11 +226,11 @@ impl crate::ValueImpl for Value {
     }
 }
 
-impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::Value {
+impl<'t> IntoDocumentTreeWithContext<'t, crate::Value<'t>> for tombi_ast_syntax::Value<'t> {
     fn into_document_tree_with_context(
         self,
-        context: &crate::DocumentTreeContext,
-    ) -> DocumentTreeAndErrors<crate::Value> {
+        context: &crate::DocumentTreeContext<'t>,
+    ) -> DocumentTreeAndErrors<crate::Value<'t>> {
         let mut errors = Vec::new();
         let mut comment_directives = vec![];
 
@@ -300,8 +300,8 @@ impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::Value {
     }
 }
 
-fn collect_comment_directives_and_errors(
-    node: &impl AstNode,
+fn collect_comment_directives_and_errors<'t>(
+    node: &impl AstNode<'t>,
 ) -> (Option<Vec<TombiValueCommentDirective>>, Vec<crate::Error>) {
     let mut comment_directives = vec![];
     let mut errors = vec![];

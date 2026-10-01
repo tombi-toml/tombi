@@ -3,45 +3,35 @@ use std::{ops::Deref, sync::Arc};
 use crate::{DocumentTreeAndErrors, IntoDocumentTreeWithContext, Table};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct DocumentTree {
-    table: Arc<Table>,
-    /// The line index of the source, built while parsing it.
-    line_index: Arc<tombi_text::LineIndex>,
+pub struct DocumentTree<'t> {
+    table: Arc<Table<'t>>,
 }
 
-impl DocumentTree {
-    /// The line index of the source, to convert the spans of the tree into ranges.
-    #[inline]
-    pub fn line_index(&self) -> &Arc<tombi_text::LineIndex> {
-        &self.line_index
-    }
-}
-
-impl From<DocumentTree> for Table {
-    fn from(tree: DocumentTree) -> Self {
+impl<'t> From<DocumentTree<'t>> for Table<'t> {
+    fn from(tree: DocumentTree<'t>) -> Self {
         Arc::try_unwrap(tree.table).unwrap_or_else(|table| (*table).clone())
     }
 }
 
-impl From<DocumentTree> for crate::Value {
-    fn from(tree: DocumentTree) -> Self {
+impl<'t> From<DocumentTree<'t>> for crate::Value<'t> {
+    fn from(tree: DocumentTree<'t>) -> Self {
         crate::Value::Table(tree.into())
     }
 }
 
-impl Deref for DocumentTree {
-    type Target = Table;
+impl<'t> Deref for DocumentTree<'t> {
+    type Target = Table<'t>;
 
     fn deref(&self) -> &Self::Target {
         &self.table
     }
 }
 
-impl IntoDocumentTreeWithContext<crate::DocumentTree> for tombi_ast_syntax::Root {
+impl<'t> IntoDocumentTreeWithContext<'t, crate::DocumentTree<'t>> for tombi_ast_syntax::Root<'t> {
     fn into_document_tree_with_context(
         self,
-        context: &crate::DocumentTreeContext,
-    ) -> crate::DocumentTreeAndErrors<crate::DocumentTree> {
+        context: &crate::DocumentTreeContext<'t>,
+    ) -> crate::DocumentTreeAndErrors<crate::DocumentTree<'t>> {
         let mut errors = vec![];
 
         let mut tree = {
@@ -65,7 +55,6 @@ impl IntoDocumentTreeWithContext<crate::DocumentTree> for tombi_ast_syntax::Root
 
             crate::DocumentTree {
                 table: Arc::new(table),
-                line_index: Arc::clone(tombi_ast_syntax::AstNode::syntax(&self).line_index()),
             }
         };
 

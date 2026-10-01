@@ -19,7 +19,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::LocalDateTime {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition<'a>,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -58,7 +58,7 @@ impl FindCompletionContents for LocalDateTimeSchema {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition<'a>,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,

@@ -19,9 +19,9 @@ use crate::{Backend, remote_file::open_remote_file};
 use self::type_definition_source::TypeDefinitionSource;
 
 pub async fn get_type_definition(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     cursor: crate::CursorPosition<'_>,
-    keys: &[tombi_document_tree_syntax::Key],
+    keys: &[tombi_document_tree_syntax::Key<'_>],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Vec<TypeDefinition> {
     let offset = cursor.offset();
@@ -185,7 +185,7 @@ pub(super) trait GetTypeDefinition {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition<'a>,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
@@ -202,7 +202,7 @@ pub(super) async fn adjacent_type_definition<
 >(
     value: &T,
     cursor: crate::CursorPosition<'_>,
-    keys: &[tombi_document_tree_syntax::Key],
+    keys: &[tombi_document_tree_syntax::Key<'_>],
     accessors: &[Accessor],
     current_schema: Option<&CurrentSchema<'_>>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,

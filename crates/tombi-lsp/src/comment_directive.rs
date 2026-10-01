@@ -195,7 +195,7 @@ where
 }
 
 pub fn get_array_comment_directive_content_with_schema_uri(
-    array: &tombi_document_tree_syntax::Array,
+    array: &tombi_document_tree_syntax::Array<'_>,
     offset: tombi_text::Offset,
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)> {
@@ -248,7 +248,7 @@ pub fn get_array_comment_directive_content_with_schema_uri(
 }
 
 pub fn get_table_comment_directive_content_with_schema_uri(
-    table: &tombi_document_tree_syntax::Table,
+    table: &tombi_document_tree_syntax::Table<'_>,
     offset: tombi_text::Offset,
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)> {

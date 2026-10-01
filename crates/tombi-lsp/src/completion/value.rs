@@ -37,11 +37,11 @@ use super::{
     schema_completion::SchemaCompletion,
 };
 
-impl FindCompletionContents for tombi_document_tree_syntax::Value {
+impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition<'a>,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -245,7 +245,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Value {
 }
 
 pub fn type_hint_value(
-    key: Option<&tombi_document_tree_syntax::Key>,
+    key: Option<&tombi_document_tree_syntax::Key<'_>>,
     offset: tombi_text::Offset,
     schema_base_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,

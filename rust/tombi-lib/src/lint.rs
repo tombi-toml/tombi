@@ -34,19 +34,18 @@ pub async fn lint_async(
     };
 
     let parsed = tombi_parser::parse(&source);
-    let line_index = std::sync::Arc::clone(parsed.line_index());
     match tombi_linter::Linter::new(
         toml_version,
         &lint_options,
         Some(itertools::Either::Right(&source_path)),
         &schema_store,
     )
-    .lint_parsed(parsed)
+    .lint_parsed(&parsed)
     .await
     {
         Ok(()) => Ok(LintResult::default()),
         Err(diagnostics) => Ok(LintResult {
-            diagnostics: Diagnostic::from_diagnostics(diagnostics, &line_index),
+            diagnostics: Diagnostic::from_diagnostics(diagnostics, parsed.line_index()),
         }),
     }
 }

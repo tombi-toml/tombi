@@ -76,7 +76,7 @@ impl std::fmt::Display for Key {
     }
 }
 
-impl IntoDocument<Key> for tombi_document_tree_syntax::Key {
+impl IntoDocument<Key> for tombi_document_tree_syntax::Key<'_> {
     fn into_document(self, _toml_version: TomlVersion) -> Key {
         Key {
             kind: self.kind().into(),

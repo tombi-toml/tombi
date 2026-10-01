@@ -1,5 +1,6 @@
 use tombi_config::TomlVersion;
 use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
+use tombi_extension::SpanConverter;
 use tombi_schema_store::matches_accessors;
 
 use crate::{
@@ -11,9 +12,10 @@ use crate::{
 
 pub async fn goto_declaration(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
+    converter: SpanConverter<'_, '_>,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is pyproject.toml
@@ -34,6 +36,7 @@ pub async fn goto_declaration(
             accessors,
             &pyproject_toml_path,
             toml_version,
+            converter,
             false,
         )?
     } else if is_uv_workspace_accessors(accessors) {
@@ -42,6 +45,7 @@ pub async fn goto_declaration(
             accessors,
             &pyproject_toml_path,
             toml_version,
+            converter.encoding(),
         )?
     } else if is_dependency_name_accessors(accessors) {
         goto_declaration_for_dependency_package(
@@ -49,6 +53,7 @@ pub async fn goto_declaration(
             accessors,
             &pyproject_toml_path,
             toml_version,
+            converter,
         )?
     } else {
         Vec::new()
@@ -62,10 +67,11 @@ pub async fn goto_declaration(
 }
 
 fn goto_declaration_for_dependency_package(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    converter: SpanConverter<'_, '_>,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     let Some((_, Value::String(dep_str))) = dig_accessors(document_tree, accessors) else {
         return Ok(Vec::new());
@@ -80,6 +86,7 @@ fn goto_declaration_for_dependency_package(
         pyproject_toml_path,
         package_name,
         toml_version,
+        converter,
     )?;
 
     if locations.is_empty() && requirement.version_or_url.is_none() {
@@ -87,6 +94,7 @@ fn goto_declaration_for_dependency_package(
             package_name,
             pyproject_toml_path,
             toml_version,
+            converter.encoding(),
         ));
     }
 
@@ -94,10 +102,11 @@ fn goto_declaration_for_dependency_package(
 }
 
 fn dependency_source_declaration_locations(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     pyproject_toml_path: &std::path::Path,
     package_name: &str,
     toml_version: TomlVersion,
+    converter: SpanConverter<'_, '_>,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     let Some((_, Value::Table(sources))) = dig_keys(document_tree, &["tool", "uv", "sources"])
     else {
@@ -122,6 +131,7 @@ fn dependency_source_declaration_locations(
             &accessors,
             pyproject_toml_path,
             toml_version,
+            converter,
             false,
         );
     }
@@ -130,13 +140,7 @@ fn dependency_source_declaration_locations(
         return Ok(Vec::new());
     };
 
-    Ok(vec![tombi_extension::Location {
-        uri,
-        span: Some(tombi_extension::LocatedSpan {
-            span: source_key.unquoted_span(),
-            line_index: std::sync::Arc::clone(document_tree.line_index()),
-        }),
-    }])
+    Ok(vec![converter.location(uri, source_key.unquoted_span())])
 }
 
 fn pyproject_goto_declaration_enabled(
@@ -159,9 +163,10 @@ fn pyproject_goto_declaration_enabled(
 }
 
 pub fn get_current_declaration(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     pyproject_toml_uri: &tombi_uri::Uri,
+    converter: SpanConverter<'_, '_>,
 ) -> Option<tombi_extension::Location> {
     if !pyproject_toml_uri.path().ends_with("pyproject.toml") {
         return None;
@@ -176,11 +181,5 @@ pub fn get_current_declaration(
         &["dependency-groups", accessors.get(1)?.as_key()?],
     )?;
 
-    Some(tombi_extension::Location {
-        uri: pyproject_toml_uri.clone(),
-        span: Some(tombi_extension::LocatedSpan {
-            span: group_key.unquoted_span(),
-            line_index: std::sync::Arc::clone(document_tree.line_index()),
-        }),
-    })
+    Some(converter.location(pyproject_toml_uri.clone(), group_key.unquoted_span()))
 }

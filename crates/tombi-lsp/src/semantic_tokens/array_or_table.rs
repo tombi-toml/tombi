@@ -2,7 +2,7 @@ use tombi_ast_syntax::DanglingCommentGroupOr;
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder, TokenType};
 
-impl AppendSemanticTokens for tombi_ast_syntax::ArrayOfTable {
+impl AppendSemanticTokens for tombi_ast_syntax::ArrayOfTable<'_> {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         for comment in self.header_leading_comments() {
             comment.append_semantic_tokens(builder);

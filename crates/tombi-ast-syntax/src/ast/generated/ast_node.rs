@@ -4,17 +4,17 @@ use crate::AstNode;
 use crate::support;
 use tombi_ast_syntax::{SyntaxKind, SyntaxKind::*, SyntaxNode, SyntaxToken, T};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Array {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Array<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl Array {
+impl<'t> Array<'t> {
     #[inline]
-    pub fn bracket_start(&self) -> Option<SyntaxToken> {
+    pub fn bracket_start(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, T!['['])
     }
     #[inline]
-    pub fn bracket_end(&self) -> Option<SyntaxToken> {
+    pub fn bracket_end(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, T![']'])
     }
     #[inline]
@@ -23,21 +23,21 @@ impl Array {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ArrayOfTable {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ArrayOfTable<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl ArrayOfTable {
+impl<'t> ArrayOfTable<'t> {
     #[inline]
-    pub fn header(&self) -> Option<Keys> {
+    pub fn header(&self) -> Option<Keys<'t>> {
         support::node::child(&self.syntax)
     }
     #[inline]
-    pub fn double_bracket_start(&self) -> Option<SyntaxToken> {
+    pub fn double_bracket_start(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, T!["[["])
     }
     #[inline]
-    pub fn double_bracket_end(&self) -> Option<SyntaxToken> {
+    pub fn double_bracket_end(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, T!["]]"])
     }
     #[inline]
@@ -46,13 +46,13 @@ impl ArrayOfTable {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct BareKey {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BareKey<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl BareKey {
+impl<'t> BareKey<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, BARE_KEY)
     }
     #[inline]
@@ -61,13 +61,13 @@ impl BareKey {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct BasicString {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BasicString<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl BasicString {
+impl<'t> BasicString<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, BASIC_STRING)
     }
     #[inline]
@@ -76,13 +76,13 @@ impl BasicString {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Boolean {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Boolean<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl Boolean {
+impl<'t> Boolean<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, BOOLEAN)
     }
     #[inline]
@@ -91,13 +91,13 @@ impl Boolean {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Comma {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Comma<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl Comma {
+impl<'t> Comma<'t> {
     #[inline]
-    pub fn comma(&self) -> Option<SyntaxToken> {
+    pub fn comma(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, T ! [,])
     }
     #[inline]
@@ -106,13 +106,13 @@ impl Comma {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Float {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Float<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl Float {
+impl<'t> Float<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, FLOAT)
     }
     #[inline]
@@ -121,17 +121,17 @@ impl Float {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct InlineTable {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct InlineTable<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl InlineTable {
+impl<'t> InlineTable<'t> {
     #[inline]
-    pub fn brace_start(&self) -> Option<SyntaxToken> {
+    pub fn brace_start(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, T!['{'])
     }
     #[inline]
-    pub fn brace_end(&self) -> Option<SyntaxToken> {
+    pub fn brace_end(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, T!['}'])
     }
     #[inline]
@@ -140,13 +140,13 @@ impl InlineTable {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct IntegerBin {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct IntegerBin<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl IntegerBin {
+impl<'t> IntegerBin<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, INTEGER_BIN)
     }
     #[inline]
@@ -155,13 +155,13 @@ impl IntegerBin {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct IntegerDec {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct IntegerDec<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl IntegerDec {
+impl<'t> IntegerDec<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, INTEGER_DEC)
     }
     #[inline]
@@ -170,13 +170,13 @@ impl IntegerDec {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct IntegerHex {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct IntegerHex<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl IntegerHex {
+impl<'t> IntegerHex<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, INTEGER_HEX)
     }
     #[inline]
@@ -185,13 +185,13 @@ impl IntegerHex {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct IntegerOct {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct IntegerOct<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl IntegerOct {
+impl<'t> IntegerOct<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, INTEGER_OCT)
     }
     #[inline]
@@ -200,21 +200,21 @@ impl IntegerOct {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct KeyValue {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct KeyValue<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl KeyValue {
+impl<'t> KeyValue<'t> {
     #[inline]
-    pub fn keys(&self) -> Option<Keys> {
+    pub fn keys(&self) -> Option<Keys<'t>> {
         support::node::child(&self.syntax)
     }
     #[inline]
-    pub fn value(&self) -> Option<Value> {
+    pub fn value(&self) -> Option<Value<'t>> {
         support::node::child(&self.syntax)
     }
     #[inline]
-    pub fn eq(&self) -> Option<SyntaxToken> {
+    pub fn eq(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, T ! [=])
     }
     #[inline]
@@ -223,13 +223,13 @@ impl KeyValue {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Keys {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Keys<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl Keys {
+impl<'t> Keys<'t> {
     #[inline]
-    pub fn keys(&self) -> impl Iterator<Item = Key> + use<> {
+    pub fn keys(&self) -> impl Iterator<Item = Key<'t>> + use<'t> {
         self.syntax.child_nodes().filter_map(Key::cast)
     }
     #[inline]
@@ -238,13 +238,13 @@ impl Keys {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LiteralString {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct LiteralString<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl LiteralString {
+impl<'t> LiteralString<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, LITERAL_STRING)
     }
     #[inline]
@@ -253,13 +253,13 @@ impl LiteralString {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LocalDate {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct LocalDate<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl LocalDate {
+impl<'t> LocalDate<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, LOCAL_DATE)
     }
     #[inline]
@@ -268,13 +268,13 @@ impl LocalDate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LocalDateTime {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct LocalDateTime<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl LocalDateTime {
+impl<'t> LocalDateTime<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, LOCAL_DATE_TIME)
     }
     #[inline]
@@ -283,13 +283,13 @@ impl LocalDateTime {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LocalTime {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct LocalTime<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl LocalTime {
+impl<'t> LocalTime<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, LOCAL_TIME)
     }
     #[inline]
@@ -298,13 +298,13 @@ impl LocalTime {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct MultiLineBasicString {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MultiLineBasicString<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl MultiLineBasicString {
+impl<'t> MultiLineBasicString<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, MULTI_LINE_BASIC_STRING)
     }
     #[inline]
@@ -313,13 +313,13 @@ impl MultiLineBasicString {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct MultiLineLiteralString {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MultiLineLiteralString<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl MultiLineLiteralString {
+impl<'t> MultiLineLiteralString<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, MULTI_LINE_LITERAL_STRING)
     }
     #[inline]
@@ -328,13 +328,13 @@ impl MultiLineLiteralString {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct OffsetDateTime {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct OffsetDateTime<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl OffsetDateTime {
+impl<'t> OffsetDateTime<'t> {
     #[inline]
-    pub fn token(&self) -> Option<SyntaxToken> {
+    pub fn token(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, OFFSET_DATE_TIME)
     }
     #[inline]
@@ -343,32 +343,32 @@ impl OffsetDateTime {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Root {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Root<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl Root {
+impl<'t> Root<'t> {
     #[inline]
     pub fn span(&self) -> tombi_text::Span {
         self.syntax.span()
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Table {
-    pub(crate) syntax: SyntaxNode,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Table<'t> {
+    pub(crate) syntax: SyntaxNode<'t>,
 }
-impl Table {
+impl<'t> Table<'t> {
     #[inline]
-    pub fn header(&self) -> Option<Keys> {
+    pub fn header(&self) -> Option<Keys<'t>> {
         support::node::child(&self.syntax)
     }
     #[inline]
-    pub fn bracket_start(&self) -> Option<SyntaxToken> {
+    pub fn bracket_start(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, T!['['])
     }
     #[inline]
-    pub fn bracket_end(&self) -> Option<SyntaxToken> {
+    pub fn bracket_end(&self) -> Option<SyntaxToken<'t>> {
         support::node::token(&self.syntax, T![']'])
     }
     #[inline]
@@ -377,46 +377,46 @@ impl Table {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Key {
-    BareKey(BareKey),
-    BasicString(BasicString),
-    LiteralString(LiteralString),
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Key<'t> {
+    BareKey(BareKey<'t>),
+    BasicString(BasicString<'t>),
+    LiteralString(LiteralString<'t>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum RootItem {
-    ArrayOfTable(ArrayOfTable),
-    KeyValue(KeyValue),
-    Table(Table),
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum RootItem<'t> {
+    ArrayOfTable(ArrayOfTable<'t>),
+    KeyValue(KeyValue<'t>),
+    Table(Table<'t>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Value {
-    Array(Array),
-    BasicString(BasicString),
-    Boolean(Boolean),
-    Float(Float),
-    InlineTable(InlineTable),
-    IntegerBin(IntegerBin),
-    IntegerDec(IntegerDec),
-    IntegerHex(IntegerHex),
-    IntegerOct(IntegerOct),
-    LiteralString(LiteralString),
-    LocalDate(LocalDate),
-    LocalDateTime(LocalDateTime),
-    LocalTime(LocalTime),
-    MultiLineBasicString(MultiLineBasicString),
-    MultiLineLiteralString(MultiLineLiteralString),
-    OffsetDateTime(OffsetDateTime),
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Value<'t> {
+    Array(Array<'t>),
+    BasicString(BasicString<'t>),
+    Boolean(Boolean<'t>),
+    Float(Float<'t>),
+    InlineTable(InlineTable<'t>),
+    IntegerBin(IntegerBin<'t>),
+    IntegerDec(IntegerDec<'t>),
+    IntegerHex(IntegerHex<'t>),
+    IntegerOct(IntegerOct<'t>),
+    LiteralString(LiteralString<'t>),
+    LocalDate(LocalDate<'t>),
+    LocalDateTime(LocalDateTime<'t>),
+    LocalTime(LocalTime<'t>),
+    MultiLineBasicString(MultiLineBasicString<'t>),
+    MultiLineLiteralString(MultiLineLiteralString<'t>),
+    OffsetDateTime(OffsetDateTime<'t>),
 }
-impl AstNode for Array {
+impl<'t> AstNode<'t> for Array<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::ARRAY
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -424,17 +424,17 @@ impl AstNode for Array {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for ArrayOfTable {
+impl<'t> AstNode<'t> for ArrayOfTable<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::ARRAY_OF_TABLE
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -442,17 +442,17 @@ impl AstNode for ArrayOfTable {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for BareKey {
+impl<'t> AstNode<'t> for BareKey<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::BARE_KEY
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -460,17 +460,17 @@ impl AstNode for BareKey {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for BasicString {
+impl<'t> AstNode<'t> for BasicString<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::BASIC_STRING
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -478,17 +478,17 @@ impl AstNode for BasicString {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for Boolean {
+impl<'t> AstNode<'t> for Boolean<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::BOOLEAN
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -496,17 +496,17 @@ impl AstNode for Boolean {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for Comma {
+impl<'t> AstNode<'t> for Comma<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::COMMA
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -514,17 +514,17 @@ impl AstNode for Comma {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for Float {
+impl<'t> AstNode<'t> for Float<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::FLOAT
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -532,17 +532,17 @@ impl AstNode for Float {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for InlineTable {
+impl<'t> AstNode<'t> for InlineTable<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::INLINE_TABLE
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -550,17 +550,17 @@ impl AstNode for InlineTable {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for IntegerBin {
+impl<'t> AstNode<'t> for IntegerBin<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::INTEGER_BIN
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -568,17 +568,17 @@ impl AstNode for IntegerBin {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for IntegerDec {
+impl<'t> AstNode<'t> for IntegerDec<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::INTEGER_DEC
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -586,17 +586,17 @@ impl AstNode for IntegerDec {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for IntegerHex {
+impl<'t> AstNode<'t> for IntegerHex<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::INTEGER_HEX
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -604,17 +604,17 @@ impl AstNode for IntegerHex {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for IntegerOct {
+impl<'t> AstNode<'t> for IntegerOct<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::INTEGER_OCT
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -622,17 +622,17 @@ impl AstNode for IntegerOct {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for KeyValue {
+impl<'t> AstNode<'t> for KeyValue<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::KEY_VALUE
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -640,17 +640,17 @@ impl AstNode for KeyValue {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for Keys {
+impl<'t> AstNode<'t> for Keys<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::KEYS
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -658,17 +658,17 @@ impl AstNode for Keys {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for LiteralString {
+impl<'t> AstNode<'t> for LiteralString<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::LITERAL_STRING
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -676,17 +676,17 @@ impl AstNode for LiteralString {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for LocalDate {
+impl<'t> AstNode<'t> for LocalDate<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::LOCAL_DATE
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -694,17 +694,17 @@ impl AstNode for LocalDate {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for LocalDateTime {
+impl<'t> AstNode<'t> for LocalDateTime<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::LOCAL_DATE_TIME
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -712,17 +712,17 @@ impl AstNode for LocalDateTime {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for LocalTime {
+impl<'t> AstNode<'t> for LocalTime<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::LOCAL_TIME
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -730,17 +730,17 @@ impl AstNode for LocalTime {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for MultiLineBasicString {
+impl<'t> AstNode<'t> for MultiLineBasicString<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::MULTI_LINE_BASIC_STRING
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -748,17 +748,17 @@ impl AstNode for MultiLineBasicString {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for MultiLineLiteralString {
+impl<'t> AstNode<'t> for MultiLineLiteralString<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::MULTI_LINE_LITERAL_STRING
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -766,17 +766,17 @@ impl AstNode for MultiLineLiteralString {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for OffsetDateTime {
+impl<'t> AstNode<'t> for OffsetDateTime<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::OFFSET_DATE_TIME
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -784,17 +784,17 @@ impl AstNode for OffsetDateTime {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for Root {
+impl<'t> AstNode<'t> for Root<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::ROOT
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -802,17 +802,17 @@ impl AstNode for Root {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl AstNode for Table {
+impl<'t> AstNode<'t> for Table<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::TABLE
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
         } else {
@@ -820,29 +820,29 @@ impl AstNode for Table {
         }
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         &self.syntax
     }
 }
-impl From<BareKey> for Key {
+impl<'t> From<BareKey<'t>> for Key<'t> {
     #[inline]
-    fn from(node: BareKey) -> Key {
+    fn from(node: BareKey<'t>) -> Key<'t> {
         Key::BareKey(node)
     }
 }
-impl From<BasicString> for Key {
+impl<'t> From<BasicString<'t>> for Key<'t> {
     #[inline]
-    fn from(node: BasicString) -> Key {
+    fn from(node: BasicString<'t>) -> Key<'t> {
         Key::BasicString(node)
     }
 }
-impl From<LiteralString> for Key {
+impl<'t> From<LiteralString<'t>> for Key<'t> {
     #[inline]
-    fn from(node: LiteralString) -> Key {
+    fn from(node: LiteralString<'t>) -> Key<'t> {
         Key::LiteralString(node)
     }
 }
-impl AstNode for Key {
+impl<'t> AstNode<'t> for Key<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -851,7 +851,7 @@ impl AstNode for Key {
         )
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         let res = match syntax.kind() {
             SyntaxKind::BARE_KEY => Key::BareKey(BareKey { syntax }),
             SyntaxKind::BASIC_STRING => Key::BasicString(BasicString { syntax }),
@@ -861,7 +861,7 @@ impl AstNode for Key {
         Some(res)
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         match self {
             Key::BareKey(it) => &it.syntax,
             Key::BasicString(it) => &it.syntax,
@@ -869,25 +869,25 @@ impl AstNode for Key {
         }
     }
 }
-impl From<ArrayOfTable> for RootItem {
+impl<'t> From<ArrayOfTable<'t>> for RootItem<'t> {
     #[inline]
-    fn from(node: ArrayOfTable) -> RootItem {
+    fn from(node: ArrayOfTable<'t>) -> RootItem<'t> {
         RootItem::ArrayOfTable(node)
     }
 }
-impl From<KeyValue> for RootItem {
+impl<'t> From<KeyValue<'t>> for RootItem<'t> {
     #[inline]
-    fn from(node: KeyValue) -> RootItem {
+    fn from(node: KeyValue<'t>) -> RootItem<'t> {
         RootItem::KeyValue(node)
     }
 }
-impl From<Table> for RootItem {
+impl<'t> From<Table<'t>> for RootItem<'t> {
     #[inline]
-    fn from(node: Table) -> RootItem {
+    fn from(node: Table<'t>) -> RootItem<'t> {
         RootItem::Table(node)
     }
 }
-impl AstNode for RootItem {
+impl<'t> AstNode<'t> for RootItem<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -896,7 +896,7 @@ impl AstNode for RootItem {
         )
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         let res = match syntax.kind() {
             SyntaxKind::ARRAY_OF_TABLE => RootItem::ArrayOfTable(ArrayOfTable { syntax }),
             SyntaxKind::KEY_VALUE => RootItem::KeyValue(KeyValue { syntax }),
@@ -906,7 +906,7 @@ impl AstNode for RootItem {
         Some(res)
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         match self {
             RootItem::ArrayOfTable(it) => &it.syntax,
             RootItem::KeyValue(it) => &it.syntax,
@@ -914,103 +914,103 @@ impl AstNode for RootItem {
         }
     }
 }
-impl From<Array> for Value {
+impl<'t> From<Array<'t>> for Value<'t> {
     #[inline]
-    fn from(node: Array) -> Value {
+    fn from(node: Array<'t>) -> Value<'t> {
         Value::Array(node)
     }
 }
-impl From<BasicString> for Value {
+impl<'t> From<BasicString<'t>> for Value<'t> {
     #[inline]
-    fn from(node: BasicString) -> Value {
+    fn from(node: BasicString<'t>) -> Value<'t> {
         Value::BasicString(node)
     }
 }
-impl From<Boolean> for Value {
+impl<'t> From<Boolean<'t>> for Value<'t> {
     #[inline]
-    fn from(node: Boolean) -> Value {
+    fn from(node: Boolean<'t>) -> Value<'t> {
         Value::Boolean(node)
     }
 }
-impl From<Float> for Value {
+impl<'t> From<Float<'t>> for Value<'t> {
     #[inline]
-    fn from(node: Float) -> Value {
+    fn from(node: Float<'t>) -> Value<'t> {
         Value::Float(node)
     }
 }
-impl From<InlineTable> for Value {
+impl<'t> From<InlineTable<'t>> for Value<'t> {
     #[inline]
-    fn from(node: InlineTable) -> Value {
+    fn from(node: InlineTable<'t>) -> Value<'t> {
         Value::InlineTable(node)
     }
 }
-impl From<IntegerBin> for Value {
+impl<'t> From<IntegerBin<'t>> for Value<'t> {
     #[inline]
-    fn from(node: IntegerBin) -> Value {
+    fn from(node: IntegerBin<'t>) -> Value<'t> {
         Value::IntegerBin(node)
     }
 }
-impl From<IntegerDec> for Value {
+impl<'t> From<IntegerDec<'t>> for Value<'t> {
     #[inline]
-    fn from(node: IntegerDec) -> Value {
+    fn from(node: IntegerDec<'t>) -> Value<'t> {
         Value::IntegerDec(node)
     }
 }
-impl From<IntegerHex> for Value {
+impl<'t> From<IntegerHex<'t>> for Value<'t> {
     #[inline]
-    fn from(node: IntegerHex) -> Value {
+    fn from(node: IntegerHex<'t>) -> Value<'t> {
         Value::IntegerHex(node)
     }
 }
-impl From<IntegerOct> for Value {
+impl<'t> From<IntegerOct<'t>> for Value<'t> {
     #[inline]
-    fn from(node: IntegerOct) -> Value {
+    fn from(node: IntegerOct<'t>) -> Value<'t> {
         Value::IntegerOct(node)
     }
 }
-impl From<LiteralString> for Value {
+impl<'t> From<LiteralString<'t>> for Value<'t> {
     #[inline]
-    fn from(node: LiteralString) -> Value {
+    fn from(node: LiteralString<'t>) -> Value<'t> {
         Value::LiteralString(node)
     }
 }
-impl From<LocalDate> for Value {
+impl<'t> From<LocalDate<'t>> for Value<'t> {
     #[inline]
-    fn from(node: LocalDate) -> Value {
+    fn from(node: LocalDate<'t>) -> Value<'t> {
         Value::LocalDate(node)
     }
 }
-impl From<LocalDateTime> for Value {
+impl<'t> From<LocalDateTime<'t>> for Value<'t> {
     #[inline]
-    fn from(node: LocalDateTime) -> Value {
+    fn from(node: LocalDateTime<'t>) -> Value<'t> {
         Value::LocalDateTime(node)
     }
 }
-impl From<LocalTime> for Value {
+impl<'t> From<LocalTime<'t>> for Value<'t> {
     #[inline]
-    fn from(node: LocalTime) -> Value {
+    fn from(node: LocalTime<'t>) -> Value<'t> {
         Value::LocalTime(node)
     }
 }
-impl From<MultiLineBasicString> for Value {
+impl<'t> From<MultiLineBasicString<'t>> for Value<'t> {
     #[inline]
-    fn from(node: MultiLineBasicString) -> Value {
+    fn from(node: MultiLineBasicString<'t>) -> Value<'t> {
         Value::MultiLineBasicString(node)
     }
 }
-impl From<MultiLineLiteralString> for Value {
+impl<'t> From<MultiLineLiteralString<'t>> for Value<'t> {
     #[inline]
-    fn from(node: MultiLineLiteralString) -> Value {
+    fn from(node: MultiLineLiteralString<'t>) -> Value<'t> {
         Value::MultiLineLiteralString(node)
     }
 }
-impl From<OffsetDateTime> for Value {
+impl<'t> From<OffsetDateTime<'t>> for Value<'t> {
     #[inline]
-    fn from(node: OffsetDateTime) -> Value {
+    fn from(node: OffsetDateTime<'t>) -> Value<'t> {
         Value::OffsetDateTime(node)
     }
 }
-impl AstNode for Value {
+impl<'t> AstNode<'t> for Value<'t> {
     #[inline]
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -1034,7 +1034,7 @@ impl AstNode for Value {
         )
     }
     #[inline]
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
+    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
         let res = match syntax.kind() {
             SyntaxKind::ARRAY => Value::Array(Array { syntax }),
             SyntaxKind::BASIC_STRING => Value::BasicString(BasicString { syntax }),
@@ -1061,7 +1061,7 @@ impl AstNode for Value {
         Some(res)
     }
     #[inline]
-    fn syntax(&self) -> &SyntaxNode {
+    fn syntax(&self) -> &SyntaxNode<'t> {
         match self {
             Value::Array(it) => &it.syntax,
             Value::BasicString(it) => &it.syntax,
@@ -1082,132 +1082,132 @@ impl AstNode for Value {
         }
     }
 }
-impl std::fmt::Display for Key {
+impl std::fmt::Display for Key<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for RootItem {
+impl std::fmt::Display for RootItem<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for Value {
+impl std::fmt::Display for Value<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for Array {
+impl std::fmt::Display for Array<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for ArrayOfTable {
+impl std::fmt::Display for ArrayOfTable<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for BareKey {
+impl std::fmt::Display for BareKey<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for BasicString {
+impl std::fmt::Display for BasicString<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for Boolean {
+impl std::fmt::Display for Boolean<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for Comma {
+impl std::fmt::Display for Comma<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for Float {
+impl std::fmt::Display for Float<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for InlineTable {
+impl std::fmt::Display for InlineTable<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for IntegerBin {
+impl std::fmt::Display for IntegerBin<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for IntegerDec {
+impl std::fmt::Display for IntegerDec<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for IntegerHex {
+impl std::fmt::Display for IntegerHex<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for IntegerOct {
+impl std::fmt::Display for IntegerOct<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for KeyValue {
+impl std::fmt::Display for KeyValue<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for Keys {
+impl std::fmt::Display for Keys<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for LiteralString {
+impl std::fmt::Display for LiteralString<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for LocalDate {
+impl std::fmt::Display for LocalDate<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for LocalDateTime {
+impl std::fmt::Display for LocalDateTime<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for LocalTime {
+impl std::fmt::Display for LocalTime<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for MultiLineBasicString {
+impl std::fmt::Display for MultiLineBasicString<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for MultiLineLiteralString {
+impl std::fmt::Display for MultiLineLiteralString<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for OffsetDateTime {
+impl std::fmt::Display for OffsetDateTime<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for Root {
+impl std::fmt::Display for Root<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for Table {
+impl std::fmt::Display for Table<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

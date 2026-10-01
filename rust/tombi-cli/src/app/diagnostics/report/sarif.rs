@@ -3,7 +3,7 @@ use std::path::Path;
 
 use percent_encoding::{AsciiSet, CONTROLS, utf8_percent_encode};
 use serde_json::json;
-use tombi_text::{EncodingKind, LineIndex};
+use tombi_text::EncodingKind;
 
 use super::{Report, ReportFormat, level_str, to_slash};
 
@@ -41,9 +41,13 @@ impl ReportFormat for SarifFormat {
     /// Columns count UTF-16 code units, as declared by `columnKind: utf16CodeUnits`.
     type Range = tower_lsp::lsp_types::Range;
 
-    fn convert_spans(line_index: &LineIndex, spans: &[tombi_text::Span]) -> Vec<Self::Range> {
-        let mut cursor = line_index.cursor(EncodingKind::Utf16);
-        spans.iter().map(|span| cursor.lsp_range(*span)).collect()
+    const ENCODING: EncodingKind = EncodingKind::Utf16;
+
+    fn convert_range(range: tombi_text::Range) -> Self::Range {
+        tower_lsp::lsp_types::Range::new(
+            tower_lsp::lsp_types::Position::new(range.start.line, range.start.column),
+            tower_lsp::lsp_types::Position::new(range.end.line, range.end.column),
+        )
     }
 
     /// Renders a SARIF 2.1.0 report.
@@ -186,6 +190,7 @@ fn uri_from_slash_path(path: &str, is_dir: bool) -> String {
 #[cfg(test)]
 mod tests {
     use tombi_diagnostic::Diagnostic;
+    use tombi_text::LineIndex;
 
     use super::super::{CollectedFile, FileReport, tests::*};
     use super::*;
@@ -337,12 +342,15 @@ mod tests {
     fn sarif_columns_are_utf16() {
         let root = test_root();
         let files = vec![FileReport {
-            line_index: index("\"😀\" = 1\n"),
-            diagnostics: vec![Diagnostic::new_error(
-                "error",
-                "code",
-                span("\"😀\" = 1\n", (0, 3), (0, 4)),
-            )],
+            diagnostics: reported(
+                "\"😀\" = 1\n",
+                EncodingKind::Utf16,
+                vec![Diagnostic::new_error(
+                    "error",
+                    "code",
+                    span("\"😀\" = 1\n", (0, 3), (0, 4)),
+                )],
+            ),
             ..clean_file("a.toml")
         }];
         let files = collect::<SarifFormat>(files);
@@ -379,9 +387,10 @@ mod tests {
             #[test]
             fn $name() {
                 let (start, end) = $range;
+                let line_index = LineIndex::new($source);
                 let file = FileReport::new(
                     Some(std::path::PathBuf::from("a.toml")),
-                    index($source),
+                    Some((&line_index, EncodingKind::Utf16)),
                     vec![Diagnostic::new_error(
                         "message",
                         "code",

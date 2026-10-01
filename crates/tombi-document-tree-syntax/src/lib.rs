@@ -13,6 +13,7 @@ pub use key::Key;
 pub use literal_value::LiteralValueRef;
 pub use root::DocumentTree;
 pub use text::DocumentText;
+pub use tombi_ast_syntax::DecodedTextResolver;
 use tombi_ast_syntax::TombiValueCommentDirective;
 pub use tombi_document_tree::{
     ArrayKind, IntegerKind, KeyKind, StringKind, TableKind, dig_accessors,
@@ -62,97 +63,111 @@ pub trait LikeString {
 }
 
 /// A structure that holds an incomplete tree and errors that are the reason for the incompleteness.
-pub trait IntoDocumentTreeAndErrors<T> {
-    fn into_document_tree_and_errors(self, toml_version: TomlVersion) -> DocumentTreeAndErrors<T>;
+///
+/// `decoded` is the pool of escaped strings made by [`tombi_ast_syntax::AstNode::decode_strings`].
+/// The tree borrows from it, so the caller keeps it next to the tree.
+pub trait IntoDocumentTreeAndErrors<'t, T> {
+    fn into_document_tree_and_errors(
+        self,
+        toml_version: TomlVersion,
+        decoded: &'t DecodedTextResolver,
+    ) -> DocumentTreeAndErrors<T>;
 }
 
-pub(crate) struct DocumentTreeContext {
+pub(crate) struct DocumentTreeContext<'t> {
     toml_version: TomlVersion,
-    decoded_text: tombi_ast_syntax::DecodedTextResolver,
+    decoded_text: &'t DecodedTextResolver,
 }
 
-impl DocumentTreeContext {
-    pub(crate) fn new(node: &tombi_ast_syntax::SyntaxNode, toml_version: TomlVersion) -> Self {
+impl<'t> DocumentTreeContext<'t> {
+    pub(crate) fn new(toml_version: TomlVersion, decoded_text: &'t DecodedTextResolver) -> Self {
         Self {
             toml_version,
-            decoded_text: node.decoded_text_resolver(toml_version),
+            decoded_text,
         }
     }
 }
 
-pub(crate) trait IntoDocumentTreeWithContext<T> {
+pub(crate) trait IntoDocumentTreeWithContext<'t, T> {
     fn into_document_tree_with_context(
         self,
-        context: &DocumentTreeContext,
+        context: &DocumentTreeContext<'t>,
     ) -> DocumentTreeAndErrors<T>;
 }
 
 macro_rules! impl_into_document_tree_and_errors {
-    ($syntax:ty => $tree:ty) => {
-        impl IntoDocumentTreeAndErrors<$tree> for $syntax {
+    ($syntax:ident => $tree:ty) => {
+        impl<'t> IntoDocumentTreeAndErrors<'t, $tree> for tombi_ast_syntax::$syntax<'t> {
             fn into_document_tree_and_errors(
                 self,
                 toml_version: TomlVersion,
+                decoded: &'t DecodedTextResolver,
             ) -> DocumentTreeAndErrors<$tree> {
-                let context = DocumentTreeContext::new(
-                    tombi_ast_syntax::AstNode::syntax(&self),
-                    toml_version,
-                );
+                let context = DocumentTreeContext::new(toml_version, decoded);
                 self.into_document_tree_with_context(&context)
             }
         }
     };
 }
 
-impl_into_document_tree_and_errors!(tombi_ast_syntax::Root => DocumentTree);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::Key => Option<Key>);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::Keys => Vec<Key>);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::Value => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::Boolean => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::Float => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::IntegerBin => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::IntegerOct => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::IntegerDec => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::IntegerHex => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::LocalDate => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::LocalTime => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::LocalDateTime => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::OffsetDateTime => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::BasicString => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::LiteralString => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::MultiLineBasicString => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::MultiLineLiteralString => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::Array => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::InlineTable => Value);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::Table => Table);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::ArrayOfTable => Table);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::TableOrArrayOfTable => Table);
-impl_into_document_tree_and_errors!(tombi_ast_syntax::KeyValue => Table);
+impl_into_document_tree_and_errors!(Root => DocumentTree<'t>);
+impl_into_document_tree_and_errors!(Key => Option<Key<'t>>);
+impl_into_document_tree_and_errors!(Keys => Vec<Key<'t>>);
+impl_into_document_tree_and_errors!(Value => Value<'t>);
+impl_into_document_tree_and_errors!(Boolean => Value<'t>);
+impl_into_document_tree_and_errors!(Float => Value<'t>);
+impl_into_document_tree_and_errors!(IntegerBin => Value<'t>);
+impl_into_document_tree_and_errors!(IntegerOct => Value<'t>);
+impl_into_document_tree_and_errors!(IntegerDec => Value<'t>);
+impl_into_document_tree_and_errors!(IntegerHex => Value<'t>);
+impl_into_document_tree_and_errors!(LocalDate => Value<'t>);
+impl_into_document_tree_and_errors!(LocalTime => Value<'t>);
+impl_into_document_tree_and_errors!(LocalDateTime => Value<'t>);
+impl_into_document_tree_and_errors!(OffsetDateTime => Value<'t>);
+impl_into_document_tree_and_errors!(BasicString => Value<'t>);
+impl_into_document_tree_and_errors!(LiteralString => Value<'t>);
+impl_into_document_tree_and_errors!(MultiLineBasicString => Value<'t>);
+impl_into_document_tree_and_errors!(MultiLineLiteralString => Value<'t>);
+impl_into_document_tree_and_errors!(Array => Value<'t>);
+impl_into_document_tree_and_errors!(InlineTable => Value<'t>);
+impl_into_document_tree_and_errors!(Table => Table<'t>);
+impl_into_document_tree_and_errors!(ArrayOfTable => Table<'t>);
+impl_into_document_tree_and_errors!(TableOrArrayOfTable => Table<'t>);
+impl_into_document_tree_and_errors!(KeyValue => Table<'t>);
 
 /// Get a complete tree or errors for incomplete reasons.
-pub trait TryIntoDocumentTree<T> {
-    fn try_into_document_tree(self, toml_version: TomlVersion) -> Result<T, Vec<crate::Error>>;
+pub trait TryIntoDocumentTree<'t, T> {
+    fn try_into_document_tree(
+        self,
+        toml_version: TomlVersion,
+        decoded: &'t DecodedTextResolver,
+    ) -> Result<T, Vec<crate::Error>>;
 }
 
-impl<T, U> TryIntoDocumentTree<T> for U
+impl<'t, T, U> TryIntoDocumentTree<'t, T> for U
 where
-    U: IntoDocumentTreeAndErrors<T>,
+    U: IntoDocumentTreeAndErrors<'t, T>,
 {
     #[inline]
-    fn try_into_document_tree(self, toml_version: TomlVersion) -> Result<T, Vec<crate::Error>> {
-        self.into_document_tree_and_errors(toml_version).ok()
+    fn try_into_document_tree(
+        self,
+        toml_version: TomlVersion,
+        decoded: &'t DecodedTextResolver,
+    ) -> Result<T, Vec<crate::Error>> {
+        self.into_document_tree_and_errors(toml_version, decoded)
+            .ok()
     }
 }
 
 /// Follows the given keys in order and retrieves the value if it exists.
 ///
 /// NOTE: You cannot follow indices. Use [`dig_accessors`] for that.
-pub fn dig_keys<'a, K>(
-    table: &'a crate::Table,
+pub fn dig_keys<'a, 't, K>(
+    table: &'a crate::Table<'t>,
     keys: &[&K],
-) -> Option<(&'a crate::Key, &'a crate::Value)>
+) -> Option<(&'a crate::Key<'t>, &'a crate::Value<'t>)>
 where
-    K: ?Sized + std::hash::Hash + tombi_hashmap::Equivalent<Key>,
+    K: ?Sized + std::hash::Hash + tombi_hashmap::Equivalent<Key<'t>>,
 {
     if keys.is_empty() {
         return None;
@@ -172,9 +187,9 @@ where
     Some((key, value))
 }
 
-pub fn get_accessors(
-    document_tree: &crate::DocumentTree,
-    keys: &[crate::Key],
+pub fn get_accessors<'t>(
+    document_tree: &crate::DocumentTree<'t>,
+    keys: &[crate::Key<'t>],
     offset: tombi_text::Offset,
 ) -> Vec<tombi_accessor::Accessor> {
     let mut accessors = Vec::new();
@@ -198,17 +213,17 @@ pub fn get_accessors(
 }
 
 #[derive(Clone, Copy)]
-enum CurrentValue<'a> {
-    Root(&'a crate::Table),
-    Value(&'a crate::Value),
+enum CurrentValue<'a, 't> {
+    Root(&'a crate::Table<'t>),
+    Value(&'a crate::Value<'t>),
 }
 
-fn find_value_in_current<'a>(
-    current: CurrentValue<'a>,
-    key: &crate::Key,
+fn find_value_in_current<'a, 't>(
+    current: CurrentValue<'a, 't>,
+    key: &crate::Key<'t>,
     accessors: &mut Vec<tombi_accessor::Accessor>,
     offset: tombi_text::Offset,
-) -> CurrentValue<'a> {
+) -> CurrentValue<'a, 't> {
     match current {
         CurrentValue::Root(table) => table.get(key).map_or(current, CurrentValue::Value),
         CurrentValue::Value(crate::Value::Array(array)) => {

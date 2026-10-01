@@ -1,7 +1,7 @@
 use super::LiteralNode;
 
-impl LiteralNode for tombi_ast_syntax::Float {
-    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
+impl<'t> LiteralNode<'t> for tombi_ast_syntax::Float<'t> {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken<'t>> {
         self.token()
     }
 }

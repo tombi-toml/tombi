@@ -7,8 +7,8 @@ use crate::{
     support::{self, comment::skip_trailing_comment},
 };
 
-impl crate::InlineTable {
-    pub fn parent_key_value(&self) -> Option<crate::KeyValue> {
+impl<'t> crate::InlineTable<'t> {
+    pub fn parent_key_value(&self) -> Option<crate::KeyValue<'t>> {
         self.syntax().parent().and_then(crate::KeyValue::cast)
     }
 
@@ -31,7 +31,7 @@ impl crate::InlineTable {
     /// }
     /// ```
     #[inline]
-    pub fn brace_start_trailing_comment(&self) -> Option<crate::TrailingComment> {
+    pub fn brace_start_trailing_comment(&self) -> Option<crate::TrailingComment<'t>> {
         support::comment::trailing_comment(self.syntax().child_elements(), T!('{'))
     }
 
@@ -48,7 +48,7 @@ impl crate::InlineTable {
     ///     "value"
     /// }
     #[inline]
-    pub fn dangling_comment_groups(&self) -> impl Iterator<Item = crate::DanglingCommentGroup> {
+    pub fn dangling_comment_groups(&self) -> impl Iterator<Item = crate::DanglingCommentGroup<'t>> {
         support::comment::dangling_comment_groups(skip_trailing_comment(
             self.syntax()
                 .child_elements()
@@ -61,7 +61,7 @@ impl crate::InlineTable {
     #[inline]
     pub fn key_value_with_comma_groups(
         &self,
-    ) -> impl Iterator<Item = DanglingCommentGroupOr<KeyValueWithCommaGroup>> {
+    ) -> impl Iterator<Item = DanglingCommentGroupOr<'t, KeyValueWithCommaGroup<'t>>> {
         support::comment::dangling_comment_group_or(skip_trailing_comment(
             self.syntax()
                 .child_elements()
@@ -72,7 +72,7 @@ impl crate::InlineTable {
     }
 
     #[inline]
-    pub fn key_values(&self) -> impl Iterator<Item = crate::KeyValue> {
+    pub fn key_values(&self) -> impl Iterator<Item = crate::KeyValue<'t>> {
         self.key_value_with_comma_groups()
             .filter_map(DanglingCommentGroupOr::into_item_group)
             .flat_map(KeyValueWithCommaGroup::into_key_values)
@@ -81,7 +81,7 @@ impl crate::InlineTable {
     #[inline]
     pub fn key_values_with_comma(
         &self,
-    ) -> impl Iterator<Item = (crate::KeyValue, Option<crate::Comma>)> {
+    ) -> impl Iterator<Item = (crate::KeyValue<'t>, Option<crate::Comma<'t>>)> {
         self.key_value_with_comma_groups()
             .filter_map(|group| {
                 group
@@ -182,8 +182,8 @@ impl crate::InlineTable {
     /// Newlines inside nested values (e.g., multi-line arrays) are ignored.
     #[inline]
     pub fn has_newlines_between_braces(&self) -> bool {
-        fn has_line_break_in_groups(node_or_token: tombi_ast_syntax::SyntaxElement) -> bool {
-            fn has_direct_line_break(node_or_token: tombi_ast_syntax::SyntaxElement) -> bool {
+        fn has_line_break_in_groups(node_or_token: tombi_ast_syntax::SyntaxElement<'_>) -> bool {
+            fn has_direct_line_break(node_or_token: tombi_ast_syntax::SyntaxElement<'_>) -> bool {
                 matches!(
                     node_or_token,
                     tombi_ast_syntax::SyntaxElement::Token(token)

@@ -6,18 +6,21 @@ use crate::editor::rule::array_values_order::{
     SortFailReason, SortableValues, try_array_values_order_by_from_item_schema,
 };
 
-pub(super) async fn create_local_time_sortable_values<'a>(
-    values_with_comma: Vec<(tombi_ast_syntax::Value, Option<tombi_ast_syntax::Comma>)>,
-    value_nodes: &'a [(usize, &'a tombi_document_tree_syntax::Value)],
+pub(super) async fn create_local_time_sortable_values<'a, 't, 'd>(
+    values_with_comma: Vec<(
+        tombi_ast_syntax::Value<'t>,
+        Option<tombi_ast_syntax::Comma<'t>>,
+    )>,
+    value_nodes: &'a [(usize, &'a tombi_document_tree_syntax::Value<'d>)],
     accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
-) -> Result<SortableValues, SortFailReason> {
+) -> Result<SortableValues<'t>, SortFailReason> {
     let mut sortable_values = Vec::with_capacity(values_with_comma.len());
     for ((value, comma), (value_node_index, value_node)) in
         values_with_comma.into_iter().zip(value_nodes.iter())
     {
-        match (value.clone(), value_node) {
+        match (value, value_node) {
             (
                 tombi_ast_syntax::Value::LocalTime(_),
                 tombi_document_tree_syntax::Value::LocalTime(local_time_node),

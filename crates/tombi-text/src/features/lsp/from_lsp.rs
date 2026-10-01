@@ -43,7 +43,7 @@ impl FromLsp<crate::Span> for tower_lsp::lsp_types::Range {
     }
 }
 
-impl crate::LineIndexCursor<'_> {
+impl crate::LineIndexCursor<'_, '_> {
     /// Converts `offset` into an LSP position, whose column is counted in the encoding of
     /// the cursor.
     ///

@@ -1,6 +1,9 @@
 use tower_lsp::lsp_types::DidSaveTextDocumentParams;
 
-use crate::{backend::Backend, document::DocumentSource};
+use crate::{
+    backend::Backend,
+    document::{DocumentSource, ParsedText},
+};
 
 pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParams) {
     log::info!("handle_did_save");
@@ -18,7 +21,7 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
     if let Some(text) = text {
         let mut document_sources = backend.document_sources.write().await;
 
-        let parsed = tombi_parser::parse(&text);
+        let parsed = ParsedText::parse(text.as_str());
         let toml_version = backend
             .text_document_toml_version(&text_document_uri, &parsed.root())
             .await;

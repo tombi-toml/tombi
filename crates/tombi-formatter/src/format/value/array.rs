@@ -6,14 +6,14 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
 
-impl Format for tombi_ast_syntax::Array {
+impl<'t> Format for tombi_ast_syntax::Array<'t> {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         WithAlignmentHint::new(self).format(f)
     }
 }
 
-impl Format for WithAlignmentHint<&tombi_ast_syntax::Array> {
+impl<'t> Format for WithAlignmentHint<&tombi_ast_syntax::Array<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if !f.single_line_mode()
             && (self.value.should_be_multiline(f.toml_version())
@@ -175,7 +175,7 @@ fn format_singleline_array(
     Ok(())
 }
 
-impl Format for WithAlignmentHint<&tombi_ast_syntax::ValueWithCommaGroup> {
+impl<'t> Format for WithAlignmentHint<&tombi_ast_syntax::ValueWithCommaGroup<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let WithAlignmentHint {
             value: value_group,
@@ -223,7 +223,7 @@ impl Format for WithAlignmentHint<&tombi_ast_syntax::ValueWithCommaGroup> {
     }
 }
 
-impl Format for WithAlignmentHint<tombi_ast_syntax::ValueWithCommaGroup> {
+impl<'t> Format for WithAlignmentHint<tombi_ast_syntax::ValueWithCommaGroup<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         WithAlignmentHint {
             value: &self.value,
@@ -667,7 +667,8 @@ mod tests {
     #[case("[1, 2, 3,]", true)]
     #[case("[1, 2, 3]", false)]
     fn has_last_value_trailing_comma(#[case] source: &str, #[case] expected: bool) {
-        let p = tombi_parser::parse(&format!("value = {source}"));
+        let source = format!("value = {source}");
+        let p = tombi_parser::parse(&source);
         pretty_assertions::assert_eq!(p.errors, Vec::<tombi_parser::Error>::new());
 
         let ast = p

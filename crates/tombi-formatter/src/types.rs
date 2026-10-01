@@ -44,11 +44,11 @@ impl<T> WithAlignmentHint<T> {
     }
 
     #[inline]
-    pub fn new_with_dangling_comment_group_or(
-        group: tombi_ast_syntax::DanglingCommentGroupOr<T>,
+    pub fn new_with_dangling_comment_group_or<'t>(
+        group: tombi_ast_syntax::DanglingCommentGroupOr<'t, T>,
         equal_alignment_width: Option<AlignmentWidth>,
         trailing_comment_alignment_width: Option<AlignmentWidth>,
-    ) -> tombi_ast_syntax::DanglingCommentGroupOr<Self> {
+    ) -> tombi_ast_syntax::DanglingCommentGroupOr<'t, Self> {
         match group {
             tombi_ast_syntax::DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
                 tombi_ast_syntax::DanglingCommentGroupOr::DanglingCommentGroup(comment_group)
@@ -64,7 +64,7 @@ impl<T> WithAlignmentHint<T> {
     }
 }
 
-impl<T: tombi_ast_syntax::AstNode> tombi_ast_syntax::AstNode for WithAlignmentHint<T> {
+impl<'t, T: tombi_ast_syntax::AstNode<'t>> tombi_ast_syntax::AstNode<'t> for WithAlignmentHint<T> {
     #[inline]
     fn can_cast(kind: tombi_ast_syntax::SyntaxKind) -> bool
     where
@@ -74,7 +74,7 @@ impl<T: tombi_ast_syntax::AstNode> tombi_ast_syntax::AstNode for WithAlignmentHi
     }
 
     #[inline]
-    fn cast(syntax: tombi_ast_syntax::SyntaxNode) -> Option<Self>
+    fn cast(syntax: tombi_ast_syntax::SyntaxNode<'t>) -> Option<Self>
     where
         Self: Sized,
     {
@@ -82,7 +82,7 @@ impl<T: tombi_ast_syntax::AstNode> tombi_ast_syntax::AstNode for WithAlignmentHi
     }
 
     #[inline]
-    fn syntax(&self) -> &tombi_ast_syntax::SyntaxNode {
+    fn syntax(&self) -> &tombi_ast_syntax::SyntaxNode<'t> {
         self.value.syntax()
     }
 }

@@ -8,7 +8,7 @@ use crate::{
     token_set::TS_INLINE_TABLE_END,
 };
 
-impl Parse for tombi_ast_syntax::InlineTable {
+impl Parse for tombi_ast_syntax::InlineTable<'_> {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 

@@ -6,32 +6,32 @@ use tombi_severity_level::SeverityLevelDefaultWarn;
 
 pub struct DottedKeysOutOfOrderRule;
 
-impl Rule<tombi_ast_syntax::Root> for DottedKeysOutOfOrderRule {
-    async fn check(root: &tombi_ast_syntax::Root, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::Root<'_>> for DottedKeysOutOfOrderRule {
+    async fn check(root: &tombi_ast_syntax::Root<'_>, l: &mut crate::Linter<'_>) {
         check_dotted_keys_out_of_order(root.key_values(), root.comment_directives(), l).await;
     }
 }
 
-impl Rule<tombi_ast_syntax::Table> for DottedKeysOutOfOrderRule {
-    async fn check(table: &tombi_ast_syntax::Table, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::Table<'_>> for DottedKeysOutOfOrderRule {
+    async fn check(table: &tombi_ast_syntax::Table<'_>, l: &mut crate::Linter<'_>) {
         check_dotted_keys_out_of_order(table.key_values(), table.comment_directives(), l).await;
     }
 }
 
-impl Rule<tombi_ast_syntax::ArrayOfTable> for DottedKeysOutOfOrderRule {
-    async fn check(table: &tombi_ast_syntax::ArrayOfTable, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::ArrayOfTable<'_>> for DottedKeysOutOfOrderRule {
+    async fn check(table: &tombi_ast_syntax::ArrayOfTable<'_>, l: &mut crate::Linter<'_>) {
         check_dotted_keys_out_of_order(table.key_values(), table.comment_directives(), l).await;
     }
 }
 
-impl Rule<tombi_ast_syntax::InlineTable> for DottedKeysOutOfOrderRule {
-    async fn check(table: &tombi_ast_syntax::InlineTable, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::InlineTable<'_>> for DottedKeysOutOfOrderRule {
+    async fn check(table: &tombi_ast_syntax::InlineTable<'_>, l: &mut crate::Linter<'_>) {
         check_dotted_keys_out_of_order(table.key_values(), table.comment_directives(), l).await;
     }
 }
 
 async fn check_dotted_keys_out_of_order(
-    key_values: impl Iterator<Item = tombi_ast_syntax::KeyValue>,
+    key_values: impl Iterator<Item = tombi_ast_syntax::KeyValue<'_>>,
     comment_directives: impl Iterator<Item = tombi_ast_syntax::TombiValueCommentDirective>,
     l: &mut crate::Linter<'_>,
 ) {

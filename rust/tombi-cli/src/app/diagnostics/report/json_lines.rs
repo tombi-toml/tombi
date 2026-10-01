@@ -10,11 +10,10 @@ impl ReportFormat for JsonLinesFormat {
     type Range = tombi_text::Range;
 
     /// Columns count grapheme clusters, like the output of `pretty`.
-    fn convert_spans(
-        line_index: &tombi_text::LineIndex,
-        spans: &[tombi_text::Span],
-    ) -> Vec<tombi_text::Range> {
-        super::grapheme_ranges(line_index, spans)
+    const ENCODING: tombi_text::EncodingKind = tombi_text::EncodingKind::GraphemeCluster;
+
+    fn convert_range(range: tombi_text::Range) -> Self::Range {
+        range
     }
 
     /// Renders a JSON object per line, in the same form as the elements of the JSON array.
@@ -43,6 +42,10 @@ impl JsonLinesReporter {
 }
 
 impl FormatReporter for JsonLinesReporter {
+    fn encoding(&self) -> tombi_text::EncodingKind {
+        JsonLinesFormat::ENCODING
+    }
+
     fn record(&mut self, file: FileReport, writer: &mut dyn std::io::Write) -> std::io::Result<()> {
         let files = [CollectedFile::new::<JsonLinesFormat>(file)];
         // Paths are relative to the current directory, so the project root is not used.

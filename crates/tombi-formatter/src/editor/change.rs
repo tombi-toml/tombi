@@ -35,7 +35,7 @@ impl Change {
         Self(ChangeKind::AppendTop { text })
     }
 
-    pub(super) fn append(base: &impl AstNode, text: String) -> Self {
+    pub(super) fn append<'t>(base: &impl AstNode<'t>, text: String) -> Self {
         Self(ChangeKind::Append {
             base: node_span(base.syntax()),
             text,
@@ -43,9 +43,9 @@ impl Change {
         })
     }
 
-    pub(super) fn append_replacing(
-        base: &impl AstNode,
-        replaced: &impl AstNode,
+    pub(super) fn append_replacing<'t, 'u>(
+        base: &impl AstNode<'t>,
+        replaced: &impl AstNode<'u>,
         text: String,
     ) -> Self {
         Self(ChangeKind::Append {
@@ -72,7 +72,7 @@ impl Change {
 }
 
 impl SourcePart {
-    pub(super) fn node(node: &impl AstNode) -> Self {
+    pub(super) fn node<'t>(node: &impl AstNode<'t>) -> Self {
         Self {
             source_span: node_span(node.syntax()),
             kind: node.syntax().kind(),

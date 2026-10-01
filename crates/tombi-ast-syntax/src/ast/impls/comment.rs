@@ -3,7 +3,7 @@ use crate::{
     comment_directive::TombiValueCommentDirective,
 };
 
-impl Comment {
+impl<'t> Comment<'t> {
     /// Returns the schema directive in the document header.
     ///
     /// ```toml
@@ -159,8 +159,8 @@ fn resolve_relative_file_schema_uri(
     }
 }
 
-impl AsRef<Comment> for Comment {
-    fn as_ref(&self) -> &Comment {
+impl<'t> AsRef<Comment<'t>> for Comment<'t> {
+    fn as_ref(&self) -> &Comment<'t> {
         self
     }
 }

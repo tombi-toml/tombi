@@ -2,7 +2,7 @@ use tombi_ast_syntax::{AstNode, DanglingCommentGroupOr};
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder};
 
-impl AppendSemanticTokens for tombi_ast_syntax::Array {
+impl AppendSemanticTokens for tombi_ast_syntax::Array<'_> {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         if let Some(trailing_comment) = self.bracket_start_trailing_comment() {
             trailing_comment.append_semantic_tokens(builder);

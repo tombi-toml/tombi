@@ -18,11 +18,11 @@ use crate::{
 };
 use tombi_future::Boxable;
 
-impl GetHoverContent for tombi_document_tree_syntax::String {
+impl GetHoverContent for tombi_document_tree_syntax::String<'_> {
     fn get_hover_content<'a: 'b, 'b>(
         &'a self,
         offset: tombi_text::Offset,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
@@ -314,7 +314,7 @@ impl GetHoverContent for StringSchema {
     fn get_hover_content<'a: 'b, 'b>(
         &'a self,
         _position: tombi_text::Offset,
-        _keys: &'a [tombi_document_tree_syntax::Key],
+        _keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,

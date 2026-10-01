@@ -40,14 +40,13 @@ pub async fn format_async(
     };
 
     let parsed = tombi_parser::parse(&source);
-    let line_index = std::sync::Arc::clone(parsed.line_index());
     match tombi_formatter::Formatter::new(
         toml_version,
         &format_options,
         Some(itertools::Either::Right(&source_path)),
         &schema_store,
     )
-    .format_parsed(parsed)
+    .format_parsed(&parsed)
     .await
     {
         Ok(formatted) => Ok(FormatResult {
@@ -56,7 +55,7 @@ pub async fn format_async(
         }),
         Err(diagnostics) => Ok(FormatResult {
             formatted: None,
-            diagnostics: Diagnostic::from_diagnostics(diagnostics, &line_index),
+            diagnostics: Diagnostic::from_diagnostics(diagnostics, parsed.line_index()),
         }),
     }
 }

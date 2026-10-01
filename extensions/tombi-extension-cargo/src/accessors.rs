@@ -90,7 +90,7 @@ pub(crate) fn is_workspace_flag_accessor(accessors: &[Accessor]) -> bool {
 
 #[inline]
 pub(crate) fn is_workspace_managed_dependency_accessor(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
 ) -> bool {
     is_dependency_accessor(accessors)

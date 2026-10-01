@@ -63,7 +63,7 @@ impl Table {
     }
 }
 
-impl IntoDocument<Table> for tombi_document_tree_syntax::Table {
+impl IntoDocument<Table> for tombi_document_tree_syntax::Table<'_> {
     fn into_document(self, toml_version: crate::TomlVersion) -> Table {
         let kind = self.kind().into();
         let key_values = tombi_hashmap::IndexMap::<

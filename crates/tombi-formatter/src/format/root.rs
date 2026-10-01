@@ -3,7 +3,7 @@ use tombi_ast_syntax::{AstNode, DanglingCommentGroupOr};
 
 use super::Format;
 
-impl Format for tombi_ast_syntax::Root {
+impl<'t> Format for tombi_ast_syntax::Root<'t> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         f.reset();
 
@@ -43,7 +43,7 @@ impl Format for tombi_ast_syntax::Root {
     }
 }
 
-impl Format for Vec<tombi_ast_syntax::TableOrArrayOfTable> {
+impl<'t> Format for Vec<tombi_ast_syntax::TableOrArrayOfTable<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let mut header = Header::Root;
         for (i, table_or_array_of_table) in self.iter().enumerate() {
@@ -143,17 +143,17 @@ impl Format for Vec<tombi_ast_syntax::TableOrArrayOfTable> {
 }
 
 #[derive(Debug)]
-enum Header {
+enum Header<'t> {
     Root,
 
     Table {
-        header_keys: tombi_ast_syntax::Keys,
+        header_keys: tombi_ast_syntax::Keys<'t>,
         key_value_size: usize,
         has_dangling_comments: bool,
     },
 
     ArrayOfTable {
-        header_keys: tombi_ast_syntax::Keys,
+        header_keys: tombi_ast_syntax::Keys<'t>,
         key_value_size: usize,
         has_dangling_comments: bool,
     },

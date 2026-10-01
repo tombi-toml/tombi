@@ -1,21 +1,21 @@
 use itertools::Itertools;
 use std::fmt::Write;
 
-use tombi_ast_syntax::AstNode;
+use tombi_ast_syntax::{AstNode, LocalDateTime, OffsetDateTime};
 
 use super::LiteralNode;
 use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
 
 macro_rules! impl_date_time_format {
-    (impl Format for $type:ty;) => {
-        impl Format for $type {
+    (impl Format for $type:ident;) => {
+        impl<'t> Format for $type<'t> {
             #[inline]
             fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
                 WithAlignmentHint::new(self).format(f)
             }
         }
 
-        impl Format for WithAlignmentHint<&$type> {
+        impl<'t> Format for WithAlignmentHint<&$type<'t>> {
             fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
                 let value = self.value;
                 value.leading_comments().collect_vec().format(f)?;
@@ -48,21 +48,21 @@ macro_rules! impl_date_time_format {
 }
 
 impl_date_time_format! {
-    impl Format for tombi_ast_syntax::OffsetDateTime;
+    impl Format for OffsetDateTime;
 }
 
 impl_date_time_format! {
-    impl Format for tombi_ast_syntax::LocalDateTime;
+    impl Format for LocalDateTime;
 }
 
-impl LiteralNode for tombi_ast_syntax::LocalDate {
-    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
+impl<'t> LiteralNode<'t> for tombi_ast_syntax::LocalDate<'t> {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken<'t>> {
         self.token()
     }
 }
 
-impl LiteralNode for tombi_ast_syntax::LocalTime {
-    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
+impl<'t> LiteralNode<'t> for tombi_ast_syntax::LocalTime<'t> {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken<'t>> {
         self.token()
     }
 }

@@ -22,7 +22,7 @@ use crate::{
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
 
-impl Validate for tombi_document_tree_syntax::String {
+impl Validate for tombi_document_tree_syntax::String<'_> {
     fn validate<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::Accessor],
@@ -33,7 +33,7 @@ impl Validate for tombi_document_tree_syntax::String {
     }
 }
 
-impl Validate for tombi_document_tree_syntax::Key {
+impl Validate for tombi_document_tree_syntax::Key<'_> {
     fn validate<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::Accessor],

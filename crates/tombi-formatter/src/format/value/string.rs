@@ -12,14 +12,14 @@ use crate::{
     types::WithAlignmentHint,
 };
 
-impl Format for tombi_ast_syntax::BasicString {
+impl<'t> Format for tombi_ast_syntax::BasicString<'t> {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         WithAlignmentHint::new(self).format(f)
     }
 }
 
-impl Format for WithAlignmentHint<&tombi_ast_syntax::BasicString> {
+impl<'t> Format for WithAlignmentHint<&tombi_ast_syntax::BasicString<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let value = self.value;
         value.leading_comments().collect_vec().format(f)?;
@@ -40,13 +40,13 @@ impl Format for WithAlignmentHint<&tombi_ast_syntax::BasicString> {
     }
 }
 
-impl Format for tombi_ast_syntax::LiteralString {
+impl<'t> Format for tombi_ast_syntax::LiteralString<'t> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         WithAlignmentHint::new(self).format(f)
     }
 }
 
-impl Format for WithAlignmentHint<&tombi_ast_syntax::LiteralString> {
+impl<'t> Format for WithAlignmentHint<&tombi_ast_syntax::LiteralString<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let value = self.value;
         value.leading_comments().collect_vec().format(f)?;
@@ -66,14 +66,14 @@ impl Format for WithAlignmentHint<&tombi_ast_syntax::LiteralString> {
         Ok(())
     }
 }
-impl LiteralNode for tombi_ast_syntax::MultiLineBasicString {
-    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
+impl<'t> LiteralNode<'t> for tombi_ast_syntax::MultiLineBasicString<'t> {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken<'t>> {
         self.token()
     }
 }
 
-impl LiteralNode for tombi_ast_syntax::MultiLineLiteralString {
-    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
+impl<'t> LiteralNode<'t> for tombi_ast_syntax::MultiLineLiteralString<'t> {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken<'t>> {
         self.token()
     }
 }

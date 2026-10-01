@@ -10,9 +10,9 @@ use crate::editor::change::SourcePart;
 use crate::editor::rule::table_keys_order::{get_sorted_accessors, table_keys_order};
 use tombi_schema_store::TableOrderOverrides;
 
-pub(in crate::editor) async fn root_table_keys_order<'a>(
-    key_value_groups: Vec<tombi_ast_syntax::KeyValueGroup>,
-    table_or_array_of_tables: Vec<tombi_ast_syntax::TableOrArrayOfTable>,
+pub(in crate::editor) async fn root_table_keys_order<'a, 't>(
+    key_value_groups: Vec<tombi_ast_syntax::KeyValueGroup<'t>>,
+    table_or_array_of_tables: Vec<tombi_ast_syntax::TableOrArrayOfTable<'t>>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     comment_directive: Option<
@@ -35,6 +35,18 @@ pub(in crate::editor) async fn root_table_keys_order<'a>(
         .as_ref()
         .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
 
+    let Some(decoded) = key_value_groups
+        .first()
+        .map(|group| group.decode_strings(schema_context.toml_version))
+        .or_else(|| {
+            table_or_array_of_tables
+                .first()
+                .map(|table| table.decode_strings(schema_context.toml_version))
+        })
+    else {
+        return Vec::new();
+    };
+
     let mut changes = Vec::new();
     for key_value_group in key_value_groups {
         let key_values_with_comma = key_value_group.key_values_with_comma().collect_vec();
@@ -47,9 +59,9 @@ pub(in crate::editor) async fn root_table_keys_order<'a>(
                 &tombi_document_tree_syntax::Value::Table(
                     key_values_with_comma
                         .iter()
-                        .map(|(kv, _)| kv.clone())
+                        .map(|(kv, _)| *kv)
                         .collect_vec()
-                        .into_document_tree_and_errors(schema_context.toml_version)
+                        .into_document_tree_and_errors(schema_context.toml_version, &decoded)
                         .tree,
                 ),
                 &[],
@@ -80,14 +92,14 @@ pub(in crate::editor) async fn root_table_keys_order<'a>(
         .iter()
         .map(|table| table.syntax().span())
         .collect_vec();
-    let old_first = table_or_array_of_tables.first().unwrap().syntax().clone();
-    let old_last = table_or_array_of_tables.last().unwrap().syntax().clone();
+    let old_first = *table_or_array_of_tables.first().unwrap().syntax();
+    let old_last = *table_or_array_of_tables.last().unwrap().syntax();
 
     let Some(sorted_table) = get_sorted_accessors(
         &tombi_document_tree_syntax::Value::Table(
             table_or_array_of_tables
                 .clone()
-                .into_document_tree_and_errors(schema_context.toml_version)
+                .into_document_tree_and_errors(schema_context.toml_version, &decoded)
                 .tree,
         ),
         &[],

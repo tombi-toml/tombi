@@ -1,9 +1,12 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
+use tombi_ast_syntax::AstNode as _;
 use tombi_config::TomlVersion;
 use tombi_document_tree_syntax::{TryIntoDocumentTree, Value, dig_accessors, dig_keys};
+use tombi_extension::SpanConverter;
 use tombi_schema_store::{Accessor, matches_accessors};
+use tombi_text::EncodingKind;
 
 const CONFIG_PATHS: &[&str] = &["nagi.toml", ".nagi.toml", ".config/nagi.toml"];
 
@@ -16,9 +19,10 @@ pub fn is_nagi_config(uri: &tombi_uri::Uri) -> bool {
 
 pub(crate) fn workspace_navigation(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     toml_version: TomlVersion,
+    converter: SpanConverter<'_, '_>,
 ) -> Vec<tombi_extension::Location> {
     let Ok(config_path) = text_document_uri.to_file_path() else {
         return Vec::new();
@@ -33,9 +37,15 @@ pub(crate) fn workspace_navigation(
     if matches_accessors!(accessors, ["sources", _])
         || matches_accessors!(accessors, ["sources", _, "workspace"])
     {
-        return workspace_source_location(document_tree, accessors, &config_path, toml_version)
-            .into_iter()
-            .collect();
+        return workspace_source_location(
+            document_tree,
+            accessors,
+            &config_path,
+            toml_version,
+            converter,
+        )
+        .into_iter()
+        .collect();
     }
 
     Vec::new()
@@ -43,8 +53,9 @@ pub(crate) fn workspace_navigation(
 
 pub(crate) fn workspace_source_definition_location(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
+    converter: SpanConverter<'_, '_>,
 ) -> Option<tombi_extension::Location> {
     if !matches_accessors!(accessors, ["workspace", "sources", _]) {
         return None;
@@ -53,23 +64,23 @@ pub(crate) fn workspace_source_definition_location(
     let source_name = accessors.get(2)?.as_key()?;
     let (source_key, _) = dig_keys(document_tree, &["workspace", "sources", source_name])?;
 
-    Some(tombi_extension::Location {
-        uri: text_document_uri.clone(),
-        span: Some(tombi_extension::LocatedSpan {
-            span: source_key.unquoted_span(),
-            line_index: std::sync::Arc::clone(document_tree.line_index()),
-        }),
-    })
+    Some(converter.location(text_document_uri.clone(), source_key.unquoted_span()))
 }
 
 pub(crate) fn workspace_source_reference_locations(
     text_document_uri: &tombi_uri::Uri,
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     toml_version: TomlVersion,
+    converter: SpanConverter<'_, '_>,
 ) -> Vec<tombi_extension::Location> {
-    if workspace_source_definition_location(text_document_uri, workspace_document_tree, accessors)
-        .is_none()
+    if workspace_source_definition_location(
+        text_document_uri,
+        workspace_document_tree,
+        accessors,
+        converter,
+    )
+    .is_none()
     {
         return Vec::new();
     }
@@ -95,18 +106,39 @@ pub(crate) fn workspace_source_reference_locations(
         )
         .filter_map(|config_path| {
             if config_path == workspace_config_path {
-                source_reference_location(workspace_document_tree, &config_path, source_name)
+                source_reference_location(
+                    workspace_document_tree,
+                    &config_path,
+                    source_name,
+                    converter,
+                )
             } else {
-                let document_tree = load_config(&config_path, toml_version)?;
-                if dig_keys(&document_tree, &["workspace"]).is_some()
-                    || !matches!(
-                        find_workspace_config(&config_path, toml_version),
-                        Some((authority_path, _)) if authority_path == workspace_config_path
-                    )
-                {
-                    return None;
-                }
-                source_reference_location(&document_tree, &config_path, source_name)
+                load_config(
+                    &config_path,
+                    toml_version,
+                    converter.encoding(),
+                    |document_tree, member_converter| {
+                        if dig_keys(document_tree, &["workspace"]).is_some()
+                            || !matches!(
+                                find_workspace_config(
+                                    &config_path,
+                                    toml_version,
+                                    converter.encoding(),
+                                    |authority_path, _, _| Some(authority_path),
+                                ),
+                                Some(authority_path) if authority_path == workspace_config_path
+                            )
+                        {
+                            return None;
+                        }
+                        source_reference_location(
+                            document_tree,
+                            &config_path,
+                            source_name,
+                            member_converter,
+                        )
+                    },
+                )
             }
         })
         .collect()
@@ -137,9 +169,10 @@ fn config_paths_under(root: &Path) -> BTreeSet<PathBuf> {
 }
 
 fn source_reference_location(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     config_path: &Path,
     source_name: &str,
+    converter: SpanConverter<'_, '_>,
 ) -> Option<tombi_extension::Location> {
     let (source_key, Value::Table(source)) = dig_keys(document_tree, &["sources", source_name])?
     else {
@@ -152,17 +185,14 @@ fn source_reference_location(
         return None;
     }
 
-    Some(tombi_extension::Location {
-        uri: tombi_uri::Uri::from_file_path(config_path).ok()?,
-        span: Some(tombi_extension::LocatedSpan {
-            span: source_key.unquoted_span(),
-            line_index: std::sync::Arc::clone(document_tree.line_index()),
-        }),
-    })
+    Some(converter.location(
+        tombi_uri::Uri::from_file_path(config_path).ok()?,
+        source_key.unquoted_span(),
+    ))
 }
 
 fn member_config_locations(
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     workspace_config_path: &Path,
 ) -> Vec<tombi_extension::Location> {
@@ -171,14 +201,14 @@ fn member_config_locations(
         .filter_map(|config_path| {
             Some(tombi_extension::Location {
                 uri: tombi_uri::Uri::from_file_path(config_path).ok()?,
-                span: None,
+                range: None,
             })
         })
         .collect()
 }
 
 fn member_config_paths(
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     workspace_config_path: &Path,
 ) -> BTreeSet<PathBuf> {
@@ -220,10 +250,11 @@ fn member_config_paths(
 }
 
 fn workspace_source_location(
-    member_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    member_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     member_config_path: &Path,
     toml_version: TomlVersion,
+    converter: SpanConverter<'_, '_>,
 ) -> Option<tombi_extension::Location> {
     let member_root = config_root(member_config_path)?;
     if find_config_path(member_root).is_some_and(|path| path != member_config_path) {
@@ -245,43 +276,56 @@ fn workspace_source_location(
     if dig_keys(member_document_tree, &["workspace"]).is_some() {
         let (source_key, _) =
             dig_keys(member_document_tree, &["workspace", "sources", source_name])?;
-        return Some(tombi_extension::Location {
-            uri: tombi_uri::Uri::from_file_path(member_config_path).ok()?,
-            span: Some(tombi_extension::LocatedSpan {
-                span: source_key.unquoted_span(),
-                line_index: std::sync::Arc::clone(member_document_tree.line_index()),
-            }),
-        });
+        return Some(converter.location(
+            tombi_uri::Uri::from_file_path(member_config_path).ok()?,
+            source_key.unquoted_span(),
+        ));
     }
 
-    let (workspace_config_path, workspace_document_tree) =
-        find_workspace_config(member_config_path, toml_version)?;
-    let (source_key, _) = dig_keys(
-        &workspace_document_tree,
-        &["workspace", "sources", source_name],
-    )?;
+    find_workspace_config(
+        member_config_path,
+        toml_version,
+        converter.encoding(),
+        |workspace_config_path, workspace_document_tree, workspace_converter| {
+            let (source_key, _) = dig_keys(
+                workspace_document_tree,
+                &["workspace", "sources", source_name],
+            )?;
 
-    Some(tombi_extension::Location {
-        uri: tombi_uri::Uri::from_file_path(workspace_config_path).ok()?,
-        span: Some(tombi_extension::LocatedSpan {
-            span: source_key.unquoted_span(),
-            line_index: std::sync::Arc::clone(workspace_document_tree.line_index()),
-        }),
-    })
+            Some(workspace_converter.location(
+                tombi_uri::Uri::from_file_path(workspace_config_path).ok()?,
+                source_key.unquoted_span(),
+            ))
+        },
+    )
 }
 
-fn find_workspace_config(
+fn find_workspace_config<R>(
     member_config_path: &Path,
     toml_version: TomlVersion,
-) -> Option<(PathBuf, tombi_document_tree_syntax::DocumentTree)> {
+    encoding: EncodingKind,
+    f: impl FnOnce(
+        PathBuf,
+        &tombi_document_tree_syntax::DocumentTree<'_>,
+        SpanConverter<'_, '_>,
+    ) -> Option<R>,
+) -> Option<R> {
+    let mut f = Some(f);
     let mut current_dir = config_root(member_config_path)?.parent();
 
     while let Some(dir) = current_dir {
         if let Some(candidate) = find_config_path(dir)
-            && let Some(document_tree) = load_config(&candidate, toml_version)
-            && dig_keys(&document_tree, &["workspace"]).is_some()
+            && let Some(result) = load_config(
+                &candidate,
+                toml_version,
+                encoding,
+                |document_tree, converter| {
+                    dig_keys(document_tree, &["workspace"])?;
+                    Some(f.take()?(candidate.clone(), document_tree, converter))
+                },
+            )
         {
-            return Some((candidate, document_tree));
+            return result;
         }
         current_dir = dir.parent();
     }
@@ -289,21 +333,28 @@ fn find_workspace_config(
     None
 }
 
-fn load_config(
+/// Parses `config_path` and runs `f` on it, since the tree borrows the text read here.
+fn load_config<R>(
     config_path: &Path,
     toml_version: TomlVersion,
-) -> Option<tombi_document_tree_syntax::DocumentTree> {
+    encoding: EncodingKind,
+    f: impl FnOnce(&tombi_document_tree_syntax::DocumentTree<'_>, SpanConverter<'_, '_>) -> Option<R>,
+) -> Option<R> {
     let source = tombi_fs::read_to_string(config_path).ok()?;
-    tombi_parser::parse(&source)
-        .into_root()
-        .try_into_document_tree(toml_version)
-        .ok()
+    let parsed = tombi_parser::parse(&source);
+    let root = parsed.root();
+    let decoded = root.decode_strings(toml_version);
+    let document_tree = root.try_into_document_tree(toml_version, &decoded).ok()?;
+    f(
+        &document_tree,
+        SpanConverter::new(parsed.line_index(), encoding),
+    )
 }
 
 fn member_patterns<'a>(
-    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
-) -> Vec<&'a tombi_document_tree_syntax::String> {
+) -> Vec<&'a tombi_document_tree_syntax::String<'a>> {
     if matches_accessors!(accessors, ["workspace", "members", _]) {
         return match dig_accessors(document_tree, accessors) {
             Some((_, Value::String(pattern))) => vec![pattern],
@@ -324,7 +375,7 @@ fn member_patterns<'a>(
 }
 
 fn excluded_member_roots(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     workspace_root: &Path,
 ) -> Vec<PathBuf> {
     let Some((_, Value::Array(excludes))) = dig_keys(document_tree, &["workspace", "exclude"])

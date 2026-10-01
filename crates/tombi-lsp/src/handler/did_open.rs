@@ -1,6 +1,9 @@
 use tower_lsp::lsp_types::DidOpenTextDocumentParams;
 
-use crate::{backend::Backend, document::DocumentSource};
+use crate::{
+    backend::Backend,
+    document::{DocumentSource, ParsedText},
+};
 
 fn select_cache_warming<T>(
     cargo_enabled: bool,
@@ -22,7 +25,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
 
     let text_document_uri: tombi_uri::Uri = text_document.uri.into();
     backend.begin_document_open(text_document_uri.clone());
-    let parsed = tombi_parser::parse(&text_document.text);
+    let parsed = ParsedText::parse(text_document.text);
     let toml_version = backend
         .text_document_toml_version(&text_document_uri, &parsed.root())
         .await;
@@ -33,13 +36,15 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         toml_version,
         encoding_kind,
     );
-    let document_tree = document_source.document_tree();
+    // The stored snapshot is replaced by the next edit, so this one is kept for the extensions.
+    let document_source_for_extensions = document_source.clone();
 
     {
         let mut document_sources = backend.document_sources.write().await;
 
         document_sources.insert(text_document_uri.clone(), document_source);
     }
+    let document_tree = document_source_for_extensions.document_tree();
 
     backend
         .workspace_diagnostics_cache
@@ -59,7 +64,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         || {
             tombi_extension_cargo::did_open(
                 &text_document_uri,
-                document_tree.as_ref(),
+                document_tree,
                 toml_version,
                 offline,
                 cache_options,
@@ -70,7 +75,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         || {
             tombi_extension_pyproject::did_open(
                 &text_document_uri,
-                document_tree.as_ref(),
+                document_tree,
                 toml_version,
                 offline,
                 cache_options,

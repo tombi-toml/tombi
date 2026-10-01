@@ -142,6 +142,15 @@ impl DiagnosticsReporter {
         })
     }
 
+    /// The unit of the columns that the spans of the diagnostics are converted into.
+    ///
+    /// The tasks that check files convert them before they return, because the source
+    /// does not outlive the task.
+    #[inline]
+    pub fn encoding(&self) -> tombi_text::EncodingKind {
+        self.reporter.encoding()
+    }
+
     /// Exits with a usage error if the diagnostics file is also read by the command.
     ///
     /// The file is not truncated until something is written, so this must be called

@@ -24,10 +24,10 @@ use tombi_schema_store::{
 
 use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
 
-pub fn get_comment_context(
-    root: &tombi_ast_syntax::Root,
+pub fn get_comment_context<'t>(
+    root: &tombi_ast_syntax::Root<'t>,
     offset: tombi_text::Offset,
-) -> Option<CommentContext<tombi_ast_syntax::Comment>> {
+) -> Option<CommentContext<tombi_ast_syntax::Comment<'t>>> {
     if let Some(comment_group) = root.dangling_comment_groups().next() {
         for comment in comment_group.comments() {
             if comment.syntax().span().contains_inclusive(offset)
@@ -49,7 +49,7 @@ pub fn get_comment_context(
         })
     {
         for leading_comment in leading_comments {
-            let comment: tombi_ast_syntax::Comment = leading_comment.into();
+            let comment: tombi_ast_syntax::Comment<'_> = leading_comment.into();
             if comment.syntax().span().contains_inclusive(offset)
                 && comment.syntax().text()[1..].trim_start().starts_with(":")
             {
@@ -66,8 +66,8 @@ pub fn get_comment_context(
 }
 
 fn _get_comment_context(
-    comment: tombi_ast_syntax::Comment,
-) -> Option<CommentContext<tombi_ast_syntax::Comment>> {
+    comment: tombi_ast_syntax::Comment<'_>,
+) -> Option<CommentContext<tombi_ast_syntax::Comment<'_>>> {
     if comment.get_tombi_value_directive().is_some() {
         Some(CommentContext::ValueDirective(comment))
     } else {
@@ -75,13 +75,17 @@ fn _get_comment_context(
     }
 }
 
-pub fn extract_keys_and_hint(
-    root: &tombi_ast_syntax::Root,
+pub fn extract_keys_and_hint<'t>(
+    root: &tombi_ast_syntax::Root<'t>,
+    decoded: &'t tombi_ast_syntax::DecodedTextResolver,
     offset: tombi_text::Offset,
     toml_version: TomlVersion,
-    comment_context: Option<&CommentContext<tombi_ast_syntax::Comment>>,
-) -> Option<(Vec<tombi_document_tree_syntax::Key>, Option<CompletionHint>)> {
-    let mut keys: Vec<tombi_document_tree_syntax::Key> = vec![];
+    comment_context: Option<&CommentContext<tombi_ast_syntax::Comment<'_>>>,
+) -> Option<(
+    Vec<tombi_document_tree_syntax::Key<'t>>,
+    Option<CompletionHint>,
+)> {
+    let mut keys: Vec<tombi_document_tree_syntax::Key<'t>> = vec![];
     let mut completion_hint = None;
     let is_tombi_value_comment_directive =
         matches!(comment_context, Some(CommentContext::ValueDirective(_)));
@@ -182,7 +186,9 @@ pub fn extract_keys_and_hint(
                 .keys()
                 .take_while(|key| key.token().unwrap().span().start <= offset)
             {
-                let document_tree_key = key.into_document_tree_and_errors(toml_version).tree;
+                let document_tree_key = key
+                    .into_document_tree_and_errors(toml_version, decoded)
+                    .tree;
                 if let Some(document_tree_key) = document_tree_key {
                     new_keys.push(document_tree_key);
                 }
@@ -191,7 +197,7 @@ pub fn extract_keys_and_hint(
         } else {
             let mut new_keys = Vec::with_capacity(ast_keys.keys().count());
             for key in ast_keys.keys() {
-                match key.try_into_document_tree(toml_version) {
+                match key.try_into_document_tree(toml_version, decoded) {
                     Ok(Some(key)) => new_keys.push(key),
                     _ => return None,
                 }
@@ -206,9 +212,9 @@ pub fn extract_keys_and_hint(
 }
 
 pub async fn find_completion_contents(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     cursor: crate::CursorPosition<'_>,
-    keys: &[tombi_document_tree_syntax::Key],
+    keys: &[tombi_document_tree_syntax::Key<'_>],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
@@ -281,7 +287,7 @@ pub trait FindCompletionContents {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition<'a>,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -394,7 +400,7 @@ fn is_generic_literal_type_hint(completion_item: &CompletionContent) -> bool {
 
 pub(super) async fn merge_adjacent_schema_completion_items(
     cursor: crate::CursorPosition<'_>,
-    keys: &[tombi_document_tree_syntax::Key],
+    keys: &[tombi_document_tree_syntax::Key<'_>],
     accessors: &[Accessor],
     current_schema: Option<&CurrentSchema<'_>>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
@@ -856,11 +862,12 @@ fn tombi_json_value_to_completion_enum_item(
     ))
 }
 
-pub async fn get_completion_keys_with_context(
-    root: &tombi_ast_syntax::Root,
+pub async fn get_completion_keys_with_context<'t>(
+    root: &tombi_ast_syntax::Root<'t>,
+    decoded: &'t tombi_ast_syntax::DecodedTextResolver,
     offset: tombi_text::Offset,
     toml_version: tombi_config::TomlVersion,
-) -> Option<(Vec<tombi_document_tree_syntax::Key>, Vec<KeyContext>)> {
+) -> Option<(Vec<tombi_document_tree_syntax::Key<'t>>, Vec<KeyContext>)> {
     let mut keys_vec = vec![];
     let mut key_contexts = vec![];
 
@@ -875,7 +882,7 @@ pub async fn get_completion_keys_with_context(
                 keys.keys().collect_vec()
             };
             for (i, key) in keys.into_iter().rev().enumerate() {
-                match key.try_into_document_tree(toml_version) {
+                match key.try_into_document_tree(toml_version, decoded) {
                     Ok(Some(key_dt)) => {
                         let kind = if i == 0 {
                             AccessorKeyKind::KeyValue
@@ -894,7 +901,7 @@ pub async fn get_completion_keys_with_context(
         } else if let tombi_ast_syntax::TomlNode::Table(table) = node {
             if let Some(header) = table.header() {
                 for key in header.keys_rev() {
-                    match key.try_into_document_tree(toml_version) {
+                    match key.try_into_document_tree(toml_version, decoded) {
                         Ok(Some(key_dt)) => {
                             keys_vec.push(key_dt.clone());
                             key_contexts.push(KeyContext {
@@ -910,7 +917,7 @@ pub async fn get_completion_keys_with_context(
             && let Some(header) = array_of_table.header()
         {
             for key in header.keys_rev() {
-                match key.try_into_document_tree(toml_version) {
+                match key.try_into_document_tree(toml_version, decoded) {
                     Ok(Some(key_dt)) => {
                         keys_vec.push(key_dt.clone());
                         key_contexts.push(KeyContext {

@@ -7,6 +7,9 @@ use super::FileReport;
 /// A reporter either writes each file as soon as it is recorded,
 /// or collects all files and writes a single report in [`FormatReporter::finish`].
 pub(super) trait FormatReporter: Send {
+    /// The unit of the columns of the ranges in the recorded [`FileReport`]s.
+    fn encoding(&self) -> tombi_text::EncodingKind;
+
     /// Records the result of a checked file.
     fn record(&mut self, file: FileReport, writer: &mut dyn Write) -> std::io::Result<()>;
 

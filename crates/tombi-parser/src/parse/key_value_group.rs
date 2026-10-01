@@ -7,7 +7,7 @@ use crate::{
     token_set::TS_KEY_FIRST,
 };
 
-impl Parse for tombi_ast_syntax::KeyValueGroup {
+impl Parse for tombi_ast_syntax::KeyValueGroup<'_> {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 

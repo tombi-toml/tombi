@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use tombi_ast_syntax::AstNode as _;
 use tombi_comment_directive::{
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
     document::TombiDocumentDirectiveContent,
@@ -19,7 +20,7 @@ use crate::{
 };
 
 pub async fn get_document_comment_directive_hover_content(
-    root: &tombi_ast_syntax::Root,
+    root: &tombi_ast_syntax::Root<'_>,
     offset: tombi_text::Offset,
     source_path: Option<&std::path::Path>,
 ) -> Option<HoverContent> {
@@ -111,11 +112,13 @@ async fn get_comment_directive_toml_content_hover_content(
 ) -> Option<HoverContent> {
     let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
     // Parse the directive content as TOML
-    let (directive_ast, _) = tombi_parser::parse(&content).into_root_and_errors();
+    let parsed = tombi_parser::parse(&content);
+    let directive_ast = parsed.root();
+    let decoded = directive_ast.decode_strings(toml_version);
 
     // Get hover information from the directive AST
     if let Some((keys, span)) =
-        get_hover_keys_with_span(&directive_ast, offset_in_content, toml_version).await
+        get_hover_keys_with_span(&directive_ast, &decoded, offset_in_content, toml_version).await
     {
         // Adjust the span to match the original comment directive offset
         let adjusted_span = span.map(|span| span + content_span.start);
@@ -140,7 +143,7 @@ async fn get_comment_directive_toml_content_hover_content(
 
         if let Some(hover_content) = get_hover_content(
             &directive_ast
-                .into_document_tree_and_errors(toml_version)
+                .into_document_tree_and_errors(toml_version, &decoded)
                 .tree,
             offset_in_content,
             &keys,

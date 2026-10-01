@@ -40,8 +40,7 @@ pub(crate) use goto_definition::{
 };
 pub(crate) use manifest::{
     PackageLocation, find_workspace_pyproject_toml, get_project_name,
-    load_pyproject_toml_document_tree, resolve_member_pyproject_toml_path,
-    resolve_relative_path_uri,
+    resolve_member_pyproject_toml_path, resolve_relative_path_uri, with_pyproject_toml,
 };
 pub(crate) use pypi_org::fetch_pypi_project;
 use tombi_schema_store::matches_accessors;
@@ -50,6 +49,12 @@ pub(crate) use workspace::{
     find_pyproject_toml_paths, goto_definition_for_member_pyproject_toml,
     goto_definition_for_workspace_pyproject_toml, goto_member_pyprojects,
 };
+
+/// The encoding for loading a manifest whose ranges are never read.
+///
+/// A range is counted in the client's encoding, so only the code that builds a `Location`
+/// or a `RangeTextEdit` has to know it.
+pub(crate) const UNUSED_ENCODING: tombi_text::EncodingKind = tombi_text::EncodingKind::Utf16;
 
 pub(crate) enum PyprojectNavigationFeature {
     Dependency,

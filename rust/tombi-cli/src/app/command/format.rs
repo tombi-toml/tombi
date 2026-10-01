@@ -212,6 +212,9 @@ where
     let runtime = super::runtime(FileInputType::from(args.files.as_ref()) == FileInputType::Stdin)
         .map_err(|error| format!("failed to create tokio runtime: {error}"))?;
 
+    // The tasks convert the spans of the diagnostics before their sources are dropped.
+    let encoding = diagnostics_reporter.encoding();
+
     runtime.block_on(async {
         // Run schema loading and file discovery concurrently
         let (schema_result, input) = tokio::join!(
@@ -249,6 +252,7 @@ where
                     args.diff,
                     &format_options,
                     &schema_store,
+                    encoding,
                 )
                 .await;
                 record_format_result(formatted, &mut summary, &printer, diagnostics_reporter);
@@ -300,6 +304,7 @@ where
                                             args.diff,
                                             &format_options,
                                             &schema_store,
+                                            encoding,
                                         )
                                         .await
                                     }
@@ -344,6 +349,7 @@ async fn format_stdin(
     diff: bool,
     format_options: &FormatOptions,
     schema_store: &tombi_schema_store::SchemaStore,
+    encoding: tombi_text::EncodingKind,
 ) -> FormattedFile {
     let mut source = String::new();
     if let Err(error) = file.read_to_string(&mut source).await {
@@ -354,14 +360,13 @@ async fn format_stdin(
     }
 
     let parsed = tombi_parser::parse(&source);
-    let line_index = std::sync::Arc::clone(parsed.line_index());
     let (result, diagnostics) = match tombi_formatter::Formatter::new(
         toml_version,
         format_options,
         file.source().map(itertools::Either::Right),
         schema_store,
     )
-    .format_parsed(parsed)
+    .format_parsed(&parsed)
     .await
     {
         Ok(formatted) => {
@@ -392,7 +397,7 @@ async fn format_stdin(
         result,
         report: FileReport::new(
             file.source().map(ToOwned::to_owned),
-            Some(line_index),
+            Some((parsed.line_index(), encoding)),
             diagnostics,
         ),
     }
@@ -406,6 +411,7 @@ async fn format_file(
     diff: bool,
     format_options: &FormatOptions,
     schema_store: &tombi_schema_store::SchemaStore,
+    encoding: tombi_text::EncodingKind,
 ) -> FormattedFile {
     let mut source = String::new();
     if let Err(error) = file.read_to_string(&mut source).await {
@@ -416,14 +422,13 @@ async fn format_file(
     }
 
     let parsed = tombi_parser::parse(&source);
-    let line_index = std::sync::Arc::clone(parsed.line_index());
     let (result, diagnostics) = match tombi_formatter::Formatter::new(
         toml_version,
         format_options,
         Some(itertools::Either::Right(source_path)),
         schema_store,
     )
-    .format_parsed(parsed)
+    .format_parsed(&parsed)
     .await
     {
         Ok(formatted) => {
@@ -461,7 +466,11 @@ async fn format_file(
 
     FormattedFile {
         result,
-        report: FileReport::new(Some(source_path.to_owned()), Some(line_index), diagnostics),
+        report: FileReport::new(
+            Some(source_path.to_owned()),
+            Some((parsed.line_index(), encoding)),
+            diagnostics,
+        ),
     }
 }
 

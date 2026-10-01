@@ -2,7 +2,7 @@ use tombi_future::{BoxFuture, Boxable};
 
 use super::Validate;
 
-impl Validate for tombi_document_tree_syntax::Value {
+impl Validate for tombi_document_tree_syntax::Value<'_> {
     fn validate<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::Accessor],

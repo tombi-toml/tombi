@@ -141,7 +141,7 @@ impl Value {
     }
 }
 
-impl IntoDocument<Value> for tombi_document_tree_syntax::Value {
+impl IntoDocument<Value> for tombi_document_tree_syntax::Value<'_> {
     fn into_document(self, toml_version: crate::TomlVersion) -> Value {
         match self {
             tombi_document_tree_syntax::Value::Boolean(value) => Value::Boolean(value.into()),

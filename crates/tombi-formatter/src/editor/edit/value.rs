@@ -2,10 +2,10 @@ use tombi_document_tree_syntax::TableKind;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::Accessor;
 
-impl crate::editor::Edit for tombi_ast_syntax::Value {
-    fn edit<'a: 'b, 'b>(
+impl<'t> crate::editor::Edit for tombi_ast_syntax::Value<'t> {
+    fn edit<'a: 'b, 'b, 'd>(
         &'a self,
-        node: &'a tombi_document_tree_syntax::Value,
+        node: &'a tombi_document_tree_syntax::Value<'d>,
         accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,

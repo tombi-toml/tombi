@@ -1,12 +1,13 @@
 use std::{
     borrow::Borrow,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use futures::{StreamExt, stream};
 use serde::{Deserialize, Serialize};
 use tombi_config::TomlVersion;
-use tombi_document_tree_syntax::{TryIntoDocumentTree, Value, dig_keys};
+use tombi_document_tree_syntax::{Value, dig_keys};
 use tombi_extension::{
     InlayHint, InlayHintKind, fetch_cached_remote_json, file_cache_version, get_or_load_json,
 };
@@ -17,9 +18,9 @@ use crate::{
         CARGO_EXTENSION_ID, CargoLock, CargoLockPackage, find_cargo_lock_path,
         load_cached_cargo_lock, load_cargo_lock_from_path,
     },
+    cargo_toml::with_cargo_toml_text,
     crates_io::CratesIoVersionDetailResponse,
     dependency_package_name, find_workspace_cargo_toml, get_workspace_cargo_toml_path,
-    load_cargo_toml,
     workspace::{extract_exclude_patterns, find_package_cargo_toml_paths},
 };
 
@@ -114,16 +115,19 @@ struct WorkspaceMemberPackage {
     version: String,
 }
 
+/// Texts of the `Cargo.toml` files that were read while collecting the hints of one request.
+///
+/// A syntax tree borrows its text, so the texts are kept and parsed when they are needed.
 #[derive(Default)]
 struct LocalCargoTomlCache {
-    cargo_tomls: HashMap<PathBuf, tombi_document_tree_syntax::DocumentTree>,
+    cargo_toml_texts: HashMap<PathBuf, Arc<str>>,
     workspace_cargo_tomls: HashMap<PathBuf, Option<PathBuf>>,
     workspace_member_packages: HashMap<PathBuf, Vec<WorkspaceMemberPackage>>,
 }
 
 struct LocalCargoTomlData {
     cargo_toml_path: PathBuf,
-    document_tree: tombi_document_tree_syntax::DocumentTree,
+    toml_text: Arc<str>,
 }
 
 #[derive(Default)]
@@ -132,23 +136,23 @@ struct LocalCargoTomlRequests {
     workspace_dependencies: HashSet<String>,
 }
 
-enum WorkspaceDocumentTree<'a> {
-    Current(&'a tombi_document_tree_syntax::DocumentTree),
-    External(tombi_document_tree_syntax::DocumentTree),
+enum WorkspaceCargoToml {
+    /// The document of the request is the workspace `Cargo.toml`.
+    Current,
+    External {
+        cargo_toml_path: PathBuf,
+        toml_text: Arc<str>,
+    },
 }
 
-impl WorkspaceDocumentTree<'_> {
-    fn as_tree(&self) -> &tombi_document_tree_syntax::DocumentTree {
-        match self {
-            Self::Current(document_tree) => document_tree,
-            Self::External(document_tree) => document_tree,
-        }
-    }
+struct LoadedCargoTomlText {
+    toml_text: Arc<str>,
+    has_workspace: bool,
 }
 
 pub async fn inlay_hint(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     visible_span: tombi_text::Span,
     toml_version: TomlVersion,
     offline: bool,
@@ -203,24 +207,16 @@ pub async fn inlay_hint(
         }
     );
 
-    let sync_text_document_uri = text_document_uri.clone();
-    let sync_document_tree = document_tree.clone();
-    let sync_features = features.cloned();
-    let sync_hints = tombi_fs::run_blocking(move || {
-        inlay_hint_impl(
-            &sync_text_document_uri,
-            &sync_document_tree,
-            visible_span,
-            cargo_lock_cache,
-            local_cargo_toml_cache,
-            toml_version,
-            sync_features.as_ref(),
-        )
-    })
-    .await
-    .map_err(|_| tower_lsp::jsonrpc::Error::new(tower_lsp::jsonrpc::ErrorCode::InternalError))??;
-
-    let mut hints = sync_hints.unwrap_or_default();
+    let mut hints = inlay_hint_impl(
+        text_document_uri,
+        document_tree,
+        visible_span,
+        cargo_lock_cache,
+        local_cargo_toml_cache,
+        toml_version,
+        features,
+    )?
+    .unwrap_or_default();
 
     if features
         .and_then(|features| features.lsp())
@@ -253,7 +249,7 @@ pub async fn inlay_hint(
 
 fn inlay_hint_impl(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     visible_span: tombi_text::Span,
     cargo_lock_cache: Option<CargoLockInlayCacheData>,
     mut local_cargo_toml_cache: LocalCargoTomlCache,
@@ -353,7 +349,7 @@ fn inlay_hint_impl(
 }
 
 fn collect_workspace_value_inlay_hints(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
@@ -364,33 +360,31 @@ fn collect_workspace_value_inlay_hints(
         return;
     }
 
-    let Some(workspace_document_tree) = workspace_document_tree(
+    with_workspace_document_tree(
         document_tree,
         cargo_toml_path,
         local_cargo_toml_cache,
         toml_version,
-    ) else {
-        return;
-    };
-    let workspace_document_tree = workspace_document_tree.as_tree();
-
-    collect_workspace_package_inlay_hints(
-        document_tree,
-        workspace_document_tree,
-        visible_span,
-        hints,
-    );
-    collect_workspace_lints_inlay_hints(
-        document_tree,
-        workspace_document_tree,
-        visible_span,
-        hints,
+        |_, _, workspace_document_tree| {
+            collect_workspace_package_inlay_hints(
+                document_tree,
+                workspace_document_tree,
+                visible_span,
+                hints,
+            );
+            collect_workspace_lints_inlay_hints(
+                document_tree,
+                workspace_document_tree,
+                visible_span,
+                hints,
+            );
+        },
     );
 }
 
 fn collect_workspace_package_inlay_hints(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     visible_span: tombi_text::Span,
     hints: &mut Vec<InlayHint>,
 ) {
@@ -416,8 +410,8 @@ fn collect_workspace_package_inlay_hints(
 }
 
 fn collect_workspace_lints_inlay_hints(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     visible_span: tombi_text::Span,
     hints: &mut Vec<InlayHint>,
 ) {
@@ -438,7 +432,7 @@ fn collect_workspace_lints_inlay_hints(
 }
 
 fn has_visible_workspace_value_targets(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     visible_span: tombi_text::Span,
 ) -> bool {
     WORKSPACE_PACKAGE_ITEMS.iter().any(|package_item| {
@@ -458,7 +452,7 @@ fn has_visible_workspace_value_targets(
 
 fn push_workspace_value_hint(
     workspace: &tombi_document_tree_syntax::Boolean,
-    workspace_value: &Value,
+    workspace_value: &Value<'_>,
     visible_span: tombi_text::Span,
     hints: &mut Vec<InlayHint>,
 ) {
@@ -481,7 +475,7 @@ fn push_workspace_value_hint(
 }
 
 fn collect_dependency_inlay_hints(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     dependency_keys: &[&str],
     cargo_toml_path: &Path,
     cargo_lock_cache: Option<&CargoLockInlayCacheData>,
@@ -643,7 +637,7 @@ fn collect_dependency_inlay_hints(
 }
 fn dependency_version_hint(
     dependency_key: &str,
-    dependency_value: &Value,
+    dependency_value: &Value<'_>,
 ) -> Option<DependencyVersionHint> {
     let dependency_name = dependency_package_name(dependency_key, dependency_value).to_string();
 
@@ -707,28 +701,28 @@ fn dependency_version_hint(
 }
 
 fn dependency_local_version(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     source: Option<&LocalVersionSource>,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
 ) -> Option<String> {
     match source? {
-        LocalVersionSource::Path(path) => {
-            let (dependency_cargo_toml_path, dependency_document_tree) =
-                load_local_dependency_document_tree_cached(
+        LocalVersionSource::Path(path) => with_local_dependency_cargo_toml(
+            local_cargo_toml_cache,
+            cargo_toml_path,
+            path,
+            toml_version,
+            |local_cargo_toml_cache, dependency_cargo_toml_path, dependency_document_tree| {
+                package_version(
+                    dependency_document_tree,
+                    dependency_cargo_toml_path,
                     local_cargo_toml_cache,
-                    cargo_toml_path,
-                    path,
                     toml_version,
-                )?;
-            package_version(
-                &dependency_document_tree,
-                &dependency_cargo_toml_path,
-                local_cargo_toml_cache,
-                toml_version,
-            )
-        }
+                )
+            },
+        )
+        .flatten(),
         LocalVersionSource::WorkspaceDependency(dependency_key) => {
             workspace_path_dependency_version(
                 document_tree,
@@ -742,75 +736,53 @@ fn dependency_local_version(
 }
 
 fn workspace_path_dependency_version(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     dependency_key: &str,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
 ) -> Option<String> {
-    if document_tree.contains_key("workspace") {
-        let (_, workspace_dependency_value) = dig_keys(
-            document_tree,
-            &["workspace", "dependencies", dependency_key],
-        )?;
-        let Value::Table(workspace_dependency_table) = workspace_dependency_value else {
-            return None;
-        };
-        let Some(Value::String(path)) = workspace_dependency_table.get("path") else {
-            return None;
-        };
-        let (dependency_cargo_toml_path, dependency_document_tree) =
-            load_local_dependency_document_tree_cached(
-                local_cargo_toml_cache,
-                cargo_toml_path,
-                path.value(),
-                toml_version,
-            )?;
-        return package_version(
-            &dependency_document_tree,
-            &dependency_cargo_toml_path,
-            local_cargo_toml_cache,
-            toml_version,
-        );
-    }
-
-    let (workspace_cargo_toml_path, workspace_document_tree) =
-        find_workspace_cargo_toml_with_local_cache(
-            local_cargo_toml_cache,
-            cargo_toml_path,
-            get_workspace_cargo_toml_path(document_tree),
-            toml_version,
-        )?;
-    let (_, workspace_dependency_value) = dig_keys(
-        &workspace_document_tree,
-        &["workspace", "dependencies", dependency_key],
-    )?;
-    let Value::Table(workspace_dependency_table) = workspace_dependency_value else {
-        return None;
-    };
-    let Some(Value::String(path)) = workspace_dependency_table.get("path") else {
-        return None;
-    };
-    let (dependency_cargo_toml_path, dependency_document_tree) =
-        load_local_dependency_document_tree_cached(
-            local_cargo_toml_cache,
-            &workspace_cargo_toml_path,
-            path.value(),
-            toml_version,
-        )?;
-
-    package_version(
-        &dependency_document_tree,
-        &dependency_cargo_toml_path,
+    with_workspace_document_tree(
+        document_tree,
+        cargo_toml_path,
         local_cargo_toml_cache,
         toml_version,
+        |local_cargo_toml_cache, workspace_cargo_toml_path, workspace_document_tree| {
+            let (_, workspace_dependency_value) = dig_keys(
+                workspace_document_tree,
+                &["workspace", "dependencies", dependency_key],
+            )?;
+            let Value::Table(workspace_dependency_table) = workspace_dependency_value else {
+                return None;
+            };
+            let Some(Value::String(path)) = workspace_dependency_table.get("path") else {
+                return None;
+            };
+
+            with_local_dependency_cargo_toml(
+                local_cargo_toml_cache,
+                workspace_cargo_toml_path,
+                path.value(),
+                toml_version,
+                |local_cargo_toml_cache, dependency_cargo_toml_path, dependency_document_tree| {
+                    package_version(
+                        dependency_document_tree,
+                        dependency_cargo_toml_path,
+                        local_cargo_toml_cache,
+                        toml_version,
+                    )
+                },
+            )
+            .flatten()
+        },
     )
+    .flatten()
 }
 
 fn dependency_default_features_hint(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     dependency_key: &str,
-    dependency_value: &Value,
+    dependency_value: &Value<'_>,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
@@ -844,9 +816,9 @@ fn dependency_default_features_hint(
 }
 
 fn dependency_default_features(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     dependency_key: &str,
-    dependency_value: &Value,
+    dependency_value: &Value<'_>,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
@@ -856,13 +828,14 @@ fn dependency_default_features(
     };
 
     if let Some(Value::String(path)) = table.get("path") {
-        let (_, dependency_document_tree) = load_local_dependency_document_tree_cached(
+        return with_local_dependency_cargo_toml(
             local_cargo_toml_cache,
             cargo_toml_path,
             path.value(),
             toml_version,
-        )?;
-        return package_default_features(&dependency_document_tree);
+            |_, _, dependency_document_tree| package_default_features(dependency_document_tree),
+        )
+        .flatten();
     }
 
     let Some(Value::Boolean(workspace)) = table.get("workspace") else {
@@ -872,40 +845,43 @@ fn dependency_default_features(
         return None;
     }
 
-    let (workspace_cargo_toml_path, workspace_document_tree) =
-        find_workspace_cargo_toml_with_local_cache(
-            local_cargo_toml_cache,
-            cargo_toml_path,
-            get_workspace_cargo_toml_path(document_tree),
-            toml_version,
-        )?;
-    let (_, workspace_dependency_value) = dig_keys(
-        &workspace_document_tree,
-        &["workspace", "dependencies", dependency_key],
-    )?;
-    let Value::Table(workspace_dependency_table) = workspace_dependency_value else {
-        return None;
-    };
-
-    if dependency_table_default_features_disabled(workspace_dependency_table) {
-        return None;
-    }
-
-    let Some(Value::String(path)) = workspace_dependency_table.get("path") else {
-        return None;
-    };
-
-    let (_, dependency_document_tree) = load_local_dependency_document_tree_cached(
+    with_workspace_document_tree(
+        document_tree,
+        cargo_toml_path,
         local_cargo_toml_cache,
-        &workspace_cargo_toml_path,
-        path.value(),
         toml_version,
-    )?;
-    package_default_features(&dependency_document_tree)
+        |local_cargo_toml_cache, workspace_cargo_toml_path, workspace_document_tree| {
+            let (_, workspace_dependency_value) = dig_keys(
+                workspace_document_tree,
+                &["workspace", "dependencies", dependency_key],
+            )?;
+            let Value::Table(workspace_dependency_table) = workspace_dependency_value else {
+                return None;
+            };
+
+            if dependency_table_default_features_disabled(workspace_dependency_table) {
+                return None;
+            }
+
+            let Some(Value::String(path)) = workspace_dependency_table.get("path") else {
+                return None;
+            };
+
+            with_local_dependency_cargo_toml(
+                local_cargo_toml_cache,
+                workspace_cargo_toml_path,
+                path.value(),
+                toml_version,
+                |_, _, dependency_document_tree| package_default_features(dependency_document_tree),
+            )
+            .flatten()
+        },
+    )
+    .flatten()
 }
 
 async fn preload_local_cargo_toml_cache(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     cargo_toml_path: &Path,
     visible_span: tombi_text::Span,
     toml_version: TomlVersion,
@@ -922,51 +898,67 @@ async fn preload_local_cargo_toml_cache(
     let current_cargo_toml_path = canonicalize_or_original(cargo_toml_path.to_path_buf());
     let workspace_cargo_toml =
         if preload_workspace_cargo_toml || !requests.workspace_dependencies.is_empty() {
-            load_workspace_document_tree_async(document_tree, cargo_toml_path, toml_version).await
+            load_workspace_cargo_toml_async(document_tree, cargo_toml_path, toml_version).await
         } else {
             None
         };
 
+    let (workspace_base_cargo_toml_path, workspace_dependency_paths) = match &workspace_cargo_toml {
+        Some(WorkspaceCargoToml::Current) => (
+            cargo_toml_path.to_path_buf(),
+            workspace_dependency_request_paths(document_tree, &requests.workspace_dependencies),
+        ),
+        Some(WorkspaceCargoToml::External {
+            cargo_toml_path,
+            toml_text,
+        }) => (
+            cargo_toml_path.clone(),
+            with_cargo_toml_text(toml_text, toml_version, |workspace_document_tree, _| {
+                workspace_dependency_request_paths(
+                    workspace_document_tree,
+                    &requests.workspace_dependencies,
+                )
+            })
+            .unwrap_or_default(),
+        ),
+        None => (PathBuf::new(), Vec::new()),
+    };
+
     let (path_dependencies, workspace_dependencies) = tokio::join!(
         load_local_cargo_toml_entries(cargo_toml_path, requests.path_dependencies, toml_version),
-        async {
-            match workspace_cargo_toml.as_ref() {
-                Some((workspace_cargo_toml_path, workspace_document_tree)) => {
-                    load_workspace_cargo_toml_entries(
-                        workspace_document_tree,
-                        workspace_cargo_toml_path,
-                        requests.workspace_dependencies,
-                        toml_version,
-                    )
-                    .await
-                }
-                None => Vec::new(),
-            }
-        }
+        load_local_cargo_toml_entries(
+            &workspace_base_cargo_toml_path,
+            workspace_dependency_paths,
+            toml_version
+        )
     );
 
     let mut local_cargo_toml_cache = LocalCargoTomlCache::default();
-    if let Some((workspace_cargo_toml_path, workspace_document_tree)) = workspace_cargo_toml {
+    if let Some(WorkspaceCargoToml::External {
+        cargo_toml_path: workspace_cargo_toml_path,
+        toml_text,
+    }) = workspace_cargo_toml
+    {
         local_cargo_toml_cache.workspace_cargo_tomls.insert(
             current_cargo_toml_path,
             Some(workspace_cargo_toml_path.clone()),
         );
         local_cargo_toml_cache
-            .cargo_tomls
-            .insert(workspace_cargo_toml_path, workspace_document_tree);
+            .cargo_toml_texts
+            .insert(workspace_cargo_toml_path, toml_text);
     }
 
     for cargo_toml in path_dependencies.into_iter().chain(workspace_dependencies) {
         local_cargo_toml_cache
-            .cargo_tomls
-            .insert(cargo_toml.cargo_toml_path, cargo_toml.document_tree);
+            .cargo_toml_texts
+            .insert(cargo_toml.cargo_toml_path, cargo_toml.toml_text);
     }
 
     local_cargo_toml_cache
 }
 
 fn collect_local_cargo_toml_requests(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     visible_span: tombi_text::Span,
     dependency_version_enabled: bool,
     default_features_enabled: bool,
@@ -1016,7 +1008,7 @@ fn collect_local_cargo_toml_requests(
 }
 
 fn collect_local_cargo_toml_requests_from_keys(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     dependency_keys: &[&str],
     visible_span: tombi_text::Span,
     dependency_version_enabled: bool,
@@ -1057,7 +1049,7 @@ fn collect_local_cargo_toml_requests_from_keys(
 
 fn needs_visible_local_cargo_toml_prefetch(
     dependency_key: &str,
-    dependency_value: &Value,
+    dependency_value: &Value<'_>,
     visible_span: tombi_text::Span,
     dependency_version_enabled: bool,
     default_features_enabled: bool,
@@ -1076,7 +1068,9 @@ fn needs_visible_local_cargo_toml_prefetch(
             .is_some_and(|offset| tombi_text::Span::empty(offset).intersects(visible_span))
 }
 
-fn local_default_features_request_offset(dependency_value: &Value) -> Option<tombi_text::Offset> {
+fn local_default_features_request_offset(
+    dependency_value: &Value<'_>,
+) -> Option<tombi_text::Offset> {
     let Value::Table(table) = dependency_value else {
         return None;
     };
@@ -1095,7 +1089,7 @@ fn local_default_features_request_offset(dependency_value: &Value) -> Option<tom
 
 async fn load_local_cargo_toml_entries(
     base_cargo_toml_path: &Path,
-    dependency_paths: HashSet<String>,
+    dependency_paths: impl IntoIterator<Item = String>,
     toml_version: TomlVersion,
 ) -> Vec<LocalCargoTomlData> {
     let base_cargo_toml_path = base_cargo_toml_path.to_path_buf();
@@ -1117,18 +1111,12 @@ async fn load_local_cargo_toml_entries(
     .await
 }
 
-async fn load_workspace_cargo_toml_entries(
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
-    workspace_cargo_toml_path: &Path,
-    dependency_keys: HashSet<String>,
-    toml_version: TomlVersion,
-) -> Vec<LocalCargoTomlData> {
-    if dependency_keys.is_empty() {
-        return Vec::new();
-    }
-
-    let workspace_requests = dependency_keys
-        .into_iter()
+fn workspace_dependency_request_paths(
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
+    dependency_keys: &HashSet<String>,
+) -> Vec<String> {
+    dependency_keys
+        .iter()
         .filter_map(|dependency_key| {
             let (_, workspace_dependency_value) = dig_keys(
                 workspace_document_tree,
@@ -1142,32 +1130,16 @@ async fn load_workspace_cargo_toml_entries(
             };
             Some(path.value().to_string())
         })
-        .collect::<Vec<_>>();
-
-    stream::iter(workspace_requests.into_iter().map(|dependency_path| {
-        let workspace_cargo_toml_path = workspace_cargo_toml_path.to_path_buf();
-        async move {
-            load_cargo_toml_data_for_dependency_path(
-                &workspace_cargo_toml_path,
-                &dependency_path,
-                toml_version,
-            )
-            .await
-        }
-    }))
-    .buffer_unordered(LOCAL_CARGO_TOML_PREFETCH_CONCURRENCY)
-    .filter_map(|entry| async move { entry })
-    .collect()
-    .await
+        .collect()
 }
 
-async fn load_workspace_document_tree_async(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+async fn load_workspace_cargo_toml_async(
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
-) -> Option<(PathBuf, tombi_document_tree_syntax::DocumentTree)> {
+) -> Option<WorkspaceCargoToml> {
     if document_tree.contains_key("workspace") {
-        return Some((cargo_toml_path.to_path_buf(), document_tree.clone()));
+        return Some(WorkspaceCargoToml::Current);
     }
 
     if let Some(workspace_path) = get_workspace_cargo_toml_path(document_tree) {
@@ -1177,25 +1149,29 @@ async fn load_workspace_document_tree_async(
             "Cargo.toml",
         )?;
         let workspace_cargo_toml_path = canonicalize_or_original(workspace_cargo_toml_path);
-        let workspace_document_tree =
-            load_cargo_toml_async(&workspace_cargo_toml_path, toml_version).await?;
+        let loaded = load_cargo_toml_text_async(&workspace_cargo_toml_path, toml_version).await?;
 
-        return workspace_document_tree
-            .contains_key("workspace")
-            .then_some((workspace_cargo_toml_path, workspace_document_tree));
+        return loaded
+            .has_workspace
+            .then_some(WorkspaceCargoToml::External {
+                cargo_toml_path: workspace_cargo_toml_path,
+                toml_text: loaded.toml_text,
+            });
     }
 
-    let (workspace_cargo_toml_path, workspace_document_tree) =
+    let (workspace_cargo_toml_path, loaded) =
         tombi_extension_manifest::find_ancestor_manifest_async(
             cargo_toml_path,
             "Cargo.toml",
-            |path| async move { load_cargo_toml_async(&path, toml_version).await },
-            |tree| tree.contains_key("workspace"),
+            |path| async move { load_cargo_toml_text_async(&path, toml_version).await },
+            |loaded| loaded.has_workspace,
         )
         .await?;
-    let workspace_cargo_toml_path = canonicalize_or_original(workspace_cargo_toml_path);
 
-    Some((workspace_cargo_toml_path, workspace_document_tree))
+    Some(WorkspaceCargoToml::External {
+        cargo_toml_path: canonicalize_or_original(workspace_cargo_toml_path),
+        toml_text: loaded.toml_text,
+    })
 }
 
 async fn load_cargo_toml_data_for_dependency_path(
@@ -1209,11 +1185,11 @@ async fn load_cargo_toml_data_for_dependency_path(
         "Cargo.toml",
     )?;
     let cargo_toml_path = canonicalize_or_original(cargo_toml_path);
-    let document_tree = load_cargo_toml_async(&cargo_toml_path, toml_version).await?;
+    let loaded = load_cargo_toml_text_async(&cargo_toml_path, toml_version).await?;
 
     Some(LocalCargoTomlData {
         cargo_toml_path,
-        document_tree,
+        toml_text: loaded.toml_text,
     })
 }
 
@@ -1224,15 +1200,22 @@ fn canonicalize_or_original(path: PathBuf) -> PathBuf {
     }
 }
 
-async fn load_cargo_toml_async(
+/// Reads `cargo_toml_path` and checks that it is a valid manifest.
+async fn load_cargo_toml_text_async(
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
-) -> Option<tombi_document_tree_syntax::DocumentTree> {
+) -> Option<LoadedCargoTomlText> {
     let toml_text = tombi_fs::read_to_string_async(cargo_toml_path).await.ok()?;
 
     tombi_fs::run_blocking(move || {
-        let root = tombi_parser::parse(&toml_text).into_root();
-        root.try_into_document_tree(toml_version).ok()
+        let has_workspace = with_cargo_toml_text(&toml_text, toml_version, |document_tree, _| {
+            document_tree.contains_key("workspace")
+        })?;
+
+        Some(LoadedCargoTomlText {
+            toml_text: Arc::from(toml_text),
+            has_workspace,
+        })
     })
     .await
     .ok()
@@ -1243,121 +1226,159 @@ fn canonicalize_or_original_sync(path: PathBuf) -> PathBuf {
     tombi_fs::canonicalize(&path).unwrap_or(path)
 }
 
-fn load_cached_cargo_toml_document_tree(
+/// Runs `f` on the `Cargo.toml` at `cargo_toml_path`, reading it once per request.
+fn with_cached_cargo_toml<R>(
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
-) -> Option<(PathBuf, tombi_document_tree_syntax::DocumentTree)> {
+    f: impl FnOnce(&mut LocalCargoTomlCache, &Path, &tombi_document_tree_syntax::DocumentTree<'_>) -> R,
+) -> Option<R> {
     let canonicalized_path = canonicalize_or_original_sync(cargo_toml_path.to_path_buf());
-    if let Some(document_tree) = local_cargo_toml_cache.cargo_tomls.get(&canonicalized_path) {
-        return Some((canonicalized_path, document_tree.clone()));
-    }
+    let toml_text = match local_cargo_toml_cache
+        .cargo_toml_texts
+        .get(&canonicalized_path)
+    {
+        Some(toml_text) => Arc::clone(toml_text),
+        None => {
+            let toml_text: Arc<str> =
+                Arc::from(tombi_fs::read_to_string(&canonicalized_path).ok()?);
+            local_cargo_toml_cache
+                .cargo_toml_texts
+                .insert(canonicalized_path.clone(), Arc::clone(&toml_text));
+            toml_text
+        }
+    };
 
-    let (_, document_tree) = load_cargo_toml(&canonicalized_path, toml_version)?;
-    local_cargo_toml_cache
-        .cargo_tomls
-        .insert(canonicalized_path.clone(), document_tree.clone());
-
-    Some((canonicalized_path, document_tree))
+    with_cargo_toml_text(&toml_text, toml_version, |document_tree, _| {
+        f(local_cargo_toml_cache, &canonicalized_path, document_tree)
+    })
 }
 
-fn load_local_dependency_document_tree_cached(
+fn with_local_dependency_cargo_toml<R>(
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     cargo_toml_path: &Path,
     dependency_path: &str,
     toml_version: TomlVersion,
-) -> Option<(PathBuf, tombi_document_tree_syntax::DocumentTree)> {
+    f: impl FnOnce(&mut LocalCargoTomlCache, &Path, &tombi_document_tree_syntax::DocumentTree<'_>) -> R,
+) -> Option<R> {
     let dependency_cargo_toml_path = tombi_extension_manifest::resolve_manifest_path(
         cargo_toml_path,
         Path::new(dependency_path),
         "Cargo.toml",
     )?;
 
-    load_cached_cargo_toml_document_tree(
+    with_cached_cargo_toml(
         local_cargo_toml_cache,
         &dependency_cargo_toml_path,
         toml_version,
+        f,
     )
 }
 
-// Inlay hints keep a short-lived local cache to avoid reparsing Cargo.toml
+/// Runs `f` on the workspace `Cargo.toml` of the document.
+///
+/// The document itself is used when it is the workspace.
+fn with_workspace_document_tree<R>(
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
+    cargo_toml_path: &Path,
+    local_cargo_toml_cache: &mut LocalCargoTomlCache,
+    toml_version: TomlVersion,
+    f: impl FnOnce(&mut LocalCargoTomlCache, &Path, &tombi_document_tree_syntax::DocumentTree<'_>) -> R,
+) -> Option<R> {
+    if document_tree.contains_key("workspace") {
+        return Some(f(local_cargo_toml_cache, cargo_toml_path, document_tree));
+    }
+
+    let workspace_cargo_toml_path = find_workspace_cargo_toml_path_with_local_cache(
+        local_cargo_toml_cache,
+        cargo_toml_path,
+        get_workspace_cargo_toml_path(document_tree),
+        toml_version,
+    )?;
+
+    with_cached_cargo_toml(
+        local_cargo_toml_cache,
+        &workspace_cargo_toml_path,
+        toml_version,
+        f,
+    )
+}
+
+// Inlay hints keep a short-lived local cache to avoid rereading Cargo.toml
 // files while collecting multiple hints for the same request.
-fn find_workspace_cargo_toml_with_local_cache(
+fn find_workspace_cargo_toml_path_with_local_cache(
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     cargo_toml_path: &Path,
     workspace_path: Option<&str>,
     toml_version: TomlVersion,
-) -> Option<(PathBuf, tombi_document_tree_syntax::DocumentTree)> {
+) -> Option<PathBuf> {
     let cache_key = canonicalize_or_original_sync(cargo_toml_path.to_path_buf());
 
     if let Some(cached_workspace_path) =
         local_cargo_toml_cache.workspace_cargo_tomls.get(&cache_key)
     {
-        let workspace_cargo_toml_path = cached_workspace_path.clone()?;
-        return load_cached_cargo_toml_document_tree(
-            local_cargo_toml_cache,
-            &workspace_cargo_toml_path,
-            toml_version,
-        );
+        return cached_workspace_path.clone();
     }
 
-    let workspace_cargo_toml = if let Some(workspace_path) = workspace_path {
+    let workspace_cargo_toml_path = if let Some(workspace_path) = workspace_path {
         let workspace_cargo_toml_path = tombi_extension_manifest::resolve_manifest_path(
             cargo_toml_path,
             Path::new(workspace_path),
             "Cargo.toml",
         )?;
-        let (workspace_cargo_toml_path, workspace_document_tree) =
-            load_cached_cargo_toml_document_tree(
-                local_cargo_toml_cache,
-                &workspace_cargo_toml_path,
-                toml_version,
-            )?;
 
-        workspace_document_tree
-            .contains_key("workspace")
-            .then_some((workspace_cargo_toml_path, workspace_document_tree))
+        with_cached_cargo_toml(
+            local_cargo_toml_cache,
+            &workspace_cargo_toml_path,
+            toml_version,
+            |_, workspace_cargo_toml_path, workspace_document_tree| {
+                workspace_document_tree
+                    .contains_key("workspace")
+                    .then(|| workspace_cargo_toml_path.to_path_buf())
+            },
+        )?
     } else {
         let mut current_dir = cargo_toml_path.parent()?;
 
-        let mut workspace_cargo_toml = None;
+        let mut workspace_cargo_toml_path = None;
         while let Some(target_dir) = current_dir.parent() {
             current_dir = target_dir;
-            let workspace_cargo_toml_path = current_dir.join("Cargo.toml");
+            let candidate_cargo_toml_path = current_dir.join("Cargo.toml");
 
-            if !tombi_fs::is_file(&workspace_cargo_toml_path) {
+            if !tombi_fs::is_file(&candidate_cargo_toml_path) {
                 continue;
             }
 
-            let (workspace_cargo_toml_path, workspace_document_tree) =
-                load_cached_cargo_toml_document_tree(
-                    local_cargo_toml_cache,
-                    &workspace_cargo_toml_path,
-                    toml_version,
-                )?;
+            let candidate_workspace_cargo_toml_path = with_cached_cargo_toml(
+                local_cargo_toml_cache,
+                &candidate_cargo_toml_path,
+                toml_version,
+                |_, candidate_cargo_toml_path, candidate_document_tree| {
+                    candidate_document_tree
+                        .contains_key("workspace")
+                        .then(|| candidate_cargo_toml_path.to_path_buf())
+                },
+            )?;
 
-            if workspace_document_tree.contains_key("workspace") {
-                workspace_cargo_toml = Some((workspace_cargo_toml_path, workspace_document_tree));
+            if candidate_workspace_cargo_toml_path.is_some() {
+                workspace_cargo_toml_path = candidate_workspace_cargo_toml_path;
                 break;
             }
         }
 
-        workspace_cargo_toml
+        workspace_cargo_toml_path
     };
 
-    local_cargo_toml_cache.workspace_cargo_tomls.insert(
-        cache_key,
-        workspace_cargo_toml
-            .as_ref()
-            .map(|(workspace_cargo_toml_path, _)| workspace_cargo_toml_path.clone()),
-    );
+    local_cargo_toml_cache
+        .workspace_cargo_tomls
+        .insert(cache_key, workspace_cargo_toml_path.clone());
 
-    workspace_cargo_toml
+    workspace_cargo_toml_path
 }
 
 async fn registry_default_features_inlay_hints(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     visible_span: tombi_text::Span,
     toml_version: TomlVersion,
     offline: bool,
@@ -1429,7 +1450,7 @@ async fn registry_default_features_inlay_hints(
 }
 
 async fn collect_registry_default_features_inlay_hints(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     dependency_keys: &[&str],
     cargo_toml_path: &Path,
     cargo_lock: Option<&CargoLock>,
@@ -1477,9 +1498,9 @@ async fn collect_registry_default_features_inlay_hints(
 }
 
 async fn registry_dependency_default_features_hint(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     dependency_key: &str,
-    dependency_value: &Value,
+    dependency_value: &Value<'_>,
     cargo_toml_path: &Path,
     cargo_lock: Option<&CargoLock>,
     toml_version: TomlVersion,
@@ -1505,37 +1526,40 @@ async fn registry_dependency_default_features_hint(
         ))
     } else if matches!(table.get("workspace"), Some(Value::Boolean(workspace)) if workspace.value())
     {
-        let Some((_, _, workspace_document_tree)) = find_workspace_cargo_toml(
+        let Some(workspace_registry_dependency) = find_workspace_cargo_toml(
             cargo_toml_path,
             get_workspace_cargo_toml_path(document_tree),
             toml_version,
-        ) else {
-            return Ok(None);
-        };
-        let Some((_, workspace_dependency_value)) = dig_keys(
-            &workspace_document_tree,
-            &["workspace", "dependencies", dependency_key],
-        ) else {
-            return Ok(None);
-        };
-        let Value::Table(workspace_dependency_table) = workspace_dependency_value else {
+            |_, workspace_document_tree, _| {
+                let (_, workspace_dependency_value) = dig_keys(
+                    workspace_document_tree,
+                    &["workspace", "dependencies", dependency_key],
+                )?;
+                let Value::Table(workspace_dependency_table) = workspace_dependency_value else {
+                    return None;
+                };
+
+                if dependency_table_default_features_disabled(workspace_dependency_table)
+                    || workspace_dependency_table.get("path").is_some()
+                {
+                    return None;
+                }
+
+                let Some(Value::String(version)) = workspace_dependency_table.get("version") else {
+                    return None;
+                };
+
+                Some((
+                    dependency_package_name(dependency_key, workspace_dependency_value).to_string(),
+                    version.value().to_string(),
+                ))
+            },
+        )
+        .flatten() else {
             return Ok(None);
         };
 
-        if dependency_table_default_features_disabled(workspace_dependency_table)
-            || workspace_dependency_table.get("path").is_some()
-        {
-            return Ok(None);
-        }
-
-        let Some(Value::String(version)) = workspace_dependency_table.get("version") else {
-            return Ok(None);
-        };
-
-        Some((
-            dependency_package_name(dependency_key, workspace_dependency_value).to_string(),
-            version.value().to_string(),
-        ))
+        Some(workspace_registry_dependency)
     } else {
         None
     };
@@ -1579,7 +1603,7 @@ async fn fetch_registry_crate_features(
     Some(resp.version.features)
 }
 
-fn collect_feature_names(features: &tombi_document_tree_syntax::Array) -> HashSet<String> {
+fn collect_feature_names(features: &tombi_document_tree_syntax::Array<'_>) -> HashSet<String> {
     features
         .values()
         .iter()
@@ -1590,7 +1614,9 @@ fn collect_feature_names(features: &tombi_document_tree_syntax::Array) -> HashSe
         .collect()
 }
 
-fn dependency_table_default_features_disabled(table: &tombi_document_tree_syntax::Table) -> bool {
+fn dependency_table_default_features_disabled(
+    table: &tombi_document_tree_syntax::Table<'_>,
+) -> bool {
     table
         .get("default-features")
         .is_some_and(|value| match value {
@@ -1646,7 +1672,7 @@ fn format_default_features_tooltip(default_features: &[String]) -> String {
 }
 
 fn package_default_features(
-    dependency_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    dependency_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
 ) -> Option<Vec<String>> {
     let (_, Value::Array(default_features)) =
         dig_keys(dependency_document_tree, &["features", "default"])?
@@ -1763,58 +1789,30 @@ fn workspace_dependency_lock_versions<'a>(
 }
 
 fn workspace_member_packages(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
 ) -> Option<Vec<WorkspaceMemberPackage>> {
-    if document_tree.contains_key("workspace") {
-        return workspace_member_packages_for_workspace(
-            document_tree,
-            cargo_toml_path,
-            local_cargo_toml_cache,
-            toml_version,
-        );
-    }
-
-    let (workspace_cargo_toml_path, workspace_document_tree) =
-        find_workspace_cargo_toml_with_local_cache(
-            local_cargo_toml_cache,
-            cargo_toml_path,
-            get_workspace_cargo_toml_path(document_tree),
-            toml_version,
-        )?;
-
-    workspace_member_packages_for_workspace(
-        &workspace_document_tree,
-        &workspace_cargo_toml_path,
-        local_cargo_toml_cache,
-        toml_version,
-    )
-}
-
-fn workspace_document_tree<'a>(
-    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
-    cargo_toml_path: &Path,
-    local_cargo_toml_cache: &mut LocalCargoTomlCache,
-    toml_version: TomlVersion,
-) -> Option<WorkspaceDocumentTree<'a>> {
-    if document_tree.contains_key("workspace") {
-        return Some(WorkspaceDocumentTree::Current(document_tree));
-    }
-
-    let (_, workspace_document_tree) = find_workspace_cargo_toml_with_local_cache(
-        local_cargo_toml_cache,
+    with_workspace_document_tree(
+        document_tree,
         cargo_toml_path,
-        get_workspace_cargo_toml_path(document_tree),
+        local_cargo_toml_cache,
         toml_version,
-    )?;
-
-    Some(WorkspaceDocumentTree::External(workspace_document_tree))
+        |local_cargo_toml_cache, workspace_cargo_toml_path, workspace_document_tree| {
+            workspace_member_packages_for_workspace(
+                workspace_document_tree,
+                workspace_cargo_toml_path,
+                local_cargo_toml_cache,
+                toml_version,
+            )
+        },
+    )
+    .flatten()
 }
 
 fn workspace_member_packages_for_workspace(
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     workspace_cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
@@ -1840,23 +1838,28 @@ fn workspace_member_packages_for_workspace(
     for (_, cargo_toml_path) in
         find_package_cargo_toml_paths(&member_patterns, &exclude_patterns, workspace_dir_path)
     {
-        let (cargo_toml_path, member_document_tree) = load_cached_cargo_toml_document_tree(
+        let member_package = with_cached_cargo_toml(
             local_cargo_toml_cache,
             &cargo_toml_path,
             toml_version,
-        )?;
-        let package_name = current_package_name(&member_document_tree)?;
-        let package_version = package_version(
-            &member_document_tree,
-            &cargo_toml_path,
-            local_cargo_toml_cache,
-            toml_version,
-        )?;
+            |local_cargo_toml_cache, cargo_toml_path, member_document_tree| {
+                let package_name = current_package_name(member_document_tree)?.to_string();
+                let package_version = package_version(
+                    member_document_tree,
+                    cargo_toml_path,
+                    local_cargo_toml_cache,
+                    toml_version,
+                )?;
 
-        workspace_member_packages.push(WorkspaceMemberPackage {
-            name: package_name.to_string(),
-            version: package_version,
-        });
+                Some(WorkspaceMemberPackage {
+                    name: package_name,
+                    version: package_version,
+                })
+            },
+        )
+        .flatten()?;
+
+        workspace_member_packages.push(member_package);
     }
 
     local_cargo_toml_cache
@@ -1867,7 +1870,7 @@ fn workspace_member_packages_for_workspace(
 }
 
 fn current_package<'a>(
-    document_tree: &'a tombi_document_tree_syntax::DocumentTree,
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree<'_>,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
@@ -1883,9 +1886,9 @@ fn current_package<'a>(
     })
 }
 
-fn workspace_member_patterns(
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
-) -> Vec<&tombi_document_tree_syntax::String> {
+fn workspace_member_patterns<'a, 't>(
+    workspace_document_tree: &'a tombi_document_tree_syntax::DocumentTree<'t>,
+) -> Vec<&'a tombi_document_tree_syntax::String<'t>> {
     match dig_keys(workspace_document_tree, &["workspace", "members"]) {
         Some((_, Value::Array(members))) => members
             .iter()
@@ -1941,7 +1944,7 @@ fn cargo_lock_cache_key(cargo_lock_path: &Path) -> String {
 }
 
 fn package_version(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     cargo_toml_path: &Path,
     local_cargo_toml_cache: &mut LocalCargoTomlCache,
     toml_version: TomlVersion,
@@ -1958,37 +1961,32 @@ fn package_version(
                 return None;
             }
 
-            if document_tree.contains_key("workspace") {
-                let (_, Value::String(version)) =
-                    dig_keys(document_tree, &["workspace", "package", "version"])?
-                else {
-                    return None;
-                };
-
-                return Some(version.value().to_string());
-            }
-
-            let (_, workspace_document_tree) = find_workspace_cargo_toml_with_local_cache(
-                local_cargo_toml_cache,
+            with_workspace_document_tree(
+                document_tree,
                 cargo_toml_path,
-                get_workspace_cargo_toml_path(document_tree),
+                local_cargo_toml_cache,
                 toml_version,
-            )?;
-            let (_, Value::String(version)) = dig_keys(
-                &workspace_document_tree,
-                &["workspace", "package", "version"],
-            )?
-            else {
-                return None;
-            };
+                |_, _, workspace_document_tree| {
+                    let (_, Value::String(version)) = dig_keys(
+                        workspace_document_tree,
+                        &["workspace", "package", "version"],
+                    )?
+                    else {
+                        return None;
+                    };
 
-            Some(version.value().to_string())
+                    Some(version.value().to_string())
+                },
+            )
+            .flatten()
         }
         _ => None,
     }
 }
 
-fn current_package_name(document_tree: &tombi_document_tree_syntax::DocumentTree) -> Option<&str> {
+fn current_package_name<'a>(
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree<'_>,
+) -> Option<&'a str> {
     let (_, Value::String(package_name)) = dig_keys(document_tree, &["package", "name"])? else {
         return None;
     };
@@ -2008,7 +2006,7 @@ fn version_hint_label(
     Some(format!(r#" → "{resolved_version}""#))
 }
 
-fn workspace_value_hint_label(value: &Value) -> Option<String> {
+fn workspace_value_hint_label(value: &Value<'_>) -> Option<String> {
     if matches!(value, Value::Incomplete { .. }) {
         return None;
     }
@@ -2016,7 +2014,7 @@ fn workspace_value_hint_label(value: &Value) -> Option<String> {
     Some(format!(" → {}", sanitize_value_for_hint(value)))
 }
 
-fn sanitize_value_for_hint(value: &Value) -> String {
+fn sanitize_value_for_hint(value: &Value<'_>) -> String {
     let sanitized = value.to_string().replace('\r', "\\r").replace('\n', "\\n");
     let value_len = sanitized.chars().count();
     if value_len <= MAX_WORKSPACE_VALUE_HINT_CHARS {
@@ -2159,88 +2157,99 @@ mod tests {
 
     use super::*;
     use crate::cargo_lock::{CargoLockDependency, CargoLockPackage};
-    use tombi_ast_syntax::AstNode as _;
-    use tombi_document_tree_syntax::TryIntoDocumentTree;
     use tombi_text::EncodingKind;
 
-    fn parse_document_tree(source: &str) -> tombi_document_tree_syntax::DocumentTree {
-        let root = tombi_parser::parse(source).into_root();
-        root.try_into_document_tree(TomlVersion::default())
-            .expect("expected document tree")
+    fn with_document_tree<R>(
+        source: &str,
+        f: impl FnOnce(&tombi_document_tree_syntax::DocumentTree<'_>) -> R,
+    ) -> R {
+        with_cargo_toml_text(source, TomlVersion::default(), |document_tree, _| {
+            f(document_tree)
+        })
+        .expect("expected document tree")
     }
 
-    fn parse_value(source: &str) -> Value {
-        let document_tree = parse_document_tree(source);
-        let (_, value) = dig_keys(&document_tree, &["value"]).expect("expected value");
-        value.clone()
+    fn with_value<R>(source: &str, f: impl FnOnce(&Value<'_>) -> R) -> R {
+        with_document_tree(source, |document_tree| {
+            let (_, value) = dig_keys(document_tree, &["value"]).expect("expected value");
+            f(value)
+        })
     }
 
     #[test]
     fn collects_local_cargo_toml_requests_only_for_visible_path_dependency_hints() {
-        let document_tree = parse_document_tree(
+        with_document_tree(
             r#"
             [dependencies]
             serde = { path = "../serde" }
             tokio = { path = "../tokio" }
             "#,
-        );
-        let (_, serde_value) =
-            dig_keys(&document_tree, &["dependencies", "serde"]).expect("expected serde");
-        let visible_span = tombi_text::Span::empty(
-            dependency_version_hint("serde", serde_value)
-                .unwrap()
-                .offset,
-        );
+            |document_tree| {
+                let (_, serde_value) =
+                    dig_keys(document_tree, &["dependencies", "serde"]).expect("expected serde");
+                let visible_span = tombi_text::Span::empty(
+                    dependency_version_hint("serde", serde_value)
+                        .unwrap()
+                        .offset,
+                );
 
-        let requests = collect_local_cargo_toml_requests(&document_tree, visible_span, true, false);
+                let requests =
+                    collect_local_cargo_toml_requests(document_tree, visible_span, true, false);
 
-        assert_eq!(requests.path_dependencies.len(), 1);
-        assert!(requests.path_dependencies.contains("../serde"));
-        assert!(!requests.path_dependencies.contains("../tokio"));
-        assert!(requests.workspace_dependencies.is_empty());
+                assert_eq!(requests.path_dependencies.len(), 1);
+                assert!(requests.path_dependencies.contains("../serde"));
+                assert!(!requests.path_dependencies.contains("../tokio"));
+                assert!(requests.workspace_dependencies.is_empty());
+            },
+        );
     }
 
     #[test]
     fn collects_local_cargo_toml_requests_for_visible_workspace_default_feature_hints() {
-        let document_tree = parse_document_tree(
+        with_document_tree(
             r#"
             [dependencies]
             serde = { workspace = true, features = ["derive"] }
             tokio = { workspace = true, features = ["rt"] }
             "#,
-        );
-        let (_, serde_value) =
-            dig_keys(&document_tree, &["dependencies", "serde"]).expect("expected serde");
-        let visible_span = tombi_text::Span::empty(
-            local_default_features_request_offset(serde_value).expect("expected feature offset"),
-        );
+            |document_tree| {
+                let (_, serde_value) =
+                    dig_keys(document_tree, &["dependencies", "serde"]).expect("expected serde");
+                let visible_span = tombi_text::Span::empty(
+                    local_default_features_request_offset(serde_value)
+                        .expect("expected feature offset"),
+                );
 
-        let requests = collect_local_cargo_toml_requests(&document_tree, visible_span, false, true);
+                let requests =
+                    collect_local_cargo_toml_requests(document_tree, visible_span, false, true);
 
-        assert!(requests.path_dependencies.is_empty());
-        assert_eq!(requests.workspace_dependencies.len(), 1);
-        assert!(requests.workspace_dependencies.contains("serde"));
-        assert!(!requests.workspace_dependencies.contains("tokio"));
+                assert!(requests.path_dependencies.is_empty());
+                assert_eq!(requests.workspace_dependencies.len(), 1);
+                assert!(requests.workspace_dependencies.contains("serde"));
+                assert!(!requests.workspace_dependencies.contains("tokio"));
+            },
+        );
     }
 
     #[test]
     fn skips_local_cargo_toml_requests_when_local_hints_are_offscreen() {
-        let document_tree = parse_document_tree(
+        with_document_tree(
             r#"
             [dependencies]
             serde = { path = "../serde" }
             "#,
-        );
+            |document_tree| {
+                let requests = collect_local_cargo_toml_requests(
+                    document_tree,
+                    tombi_text::Span::empty(tombi_text::Offset::new(0)),
+                    true,
+                    true,
+                );
 
-        let requests = collect_local_cargo_toml_requests(
-            &document_tree,
-            tombi_text::Span::empty(tombi_text::Offset::new(0)),
-            true,
-            true,
+                assert!(requests.path_dependencies.is_empty());
+                assert!(requests.workspace_dependencies.is_empty());
+            },
         );
-
-        assert!(requests.path_dependencies.is_empty());
-        assert!(requests.workspace_dependencies.is_empty());
     }
 
     #[test]
@@ -2274,39 +2283,41 @@ mod tests {
 
     #[test]
     fn renders_workspace_value_hint_label() {
-        let value = parse_value(r#"value = ["tombi", "cargo"]"#);
-
-        assert_eq!(
-            workspace_value_hint_label(&value),
-            Some(r#" → ["tombi", "cargo"]"#.to_string())
-        );
+        with_value(r#"value = ["tombi", "cargo"]"#, |value| {
+            assert_eq!(
+                workspace_value_hint_label(value),
+                Some(r#" → ["tombi", "cargo"]"#.to_string())
+            );
+        });
     }
 
     #[test]
     fn normalizes_workspace_value_hint_label_to_single_line() {
-        let value = parse_value(
+        with_value(
             r#"
             value = """
             hello
             world
             """
             "#,
+            |value| {
+                let label = workspace_value_hint_label(value).expect("expected label");
+                assert!(!label.contains('\n'));
+                assert!(label.contains("\\n"));
+            },
         );
-
-        let label = workspace_value_hint_label(&value).expect("expected label");
-        assert!(!label.contains('\n'));
-        assert!(label.contains("\\n"));
     }
 
     #[test]
     fn truncates_workspace_value_hint_label() {
-        let value = parse_value(
+        with_value(
             r#"value = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz""#,
+            |value| {
+                let label = workspace_value_hint_label(value).expect("expected label");
+                assert!(label.ends_with("..."));
+                assert!(label.chars().count() <= MAX_WORKSPACE_VALUE_HINT_CHARS + 3);
+            },
         );
-
-        let label = workspace_value_hint_label(&value).expect("expected label");
-        assert!(label.ends_with("..."));
-        assert!(label.chars().count() <= MAX_WORKSPACE_VALUE_HINT_CHARS + 3);
     }
 
     #[test]
@@ -2329,9 +2340,6 @@ mod tests {
         )
         .expect("expected Cargo.toml");
 
-        let (root, document_tree) =
-            load_cargo_toml(&cargo_toml_path, TomlVersion::default()).expect("expected Cargo.toml");
-        let line_index = root.syntax().line_index();
         let uri = tombi_uri::Uri::from_file_path(&cargo_toml_path).expect("expected uri");
         let features = tombi_config::CargoExtensionFeatures::Features(
             tombi_config::CargoExtensionFeatureTree {
@@ -2352,37 +2360,44 @@ mod tests {
             },
         );
 
-        let hints = inlay_hint_impl(
-            &uri,
-            &document_tree,
-            line_index.span(
-                tombi_text::Range::new(
-                    tombi_text::Position::new(0, 0),
-                    tombi_text::Position::new(8, 0),
-                ),
-                EncodingKind::GraphemeCluster,
-            ),
-            None,
-            LocalCargoTomlCache::default(),
+        crate::cargo_toml::load_cargo_toml(
+            &cargo_toml_path,
             TomlVersion::default(),
-            Some(&features),
-        )
-        .expect("expected inlay hint result");
+            |document_tree, line_index| {
+                let hints = inlay_hint_impl(
+                    &uri,
+                    document_tree,
+                    line_index.span(
+                        tombi_text::Range::new(
+                            tombi_text::Position::new(0, 0),
+                            tombi_text::Position::new(8, 0),
+                        ),
+                        EncodingKind::GraphemeCluster,
+                    ),
+                    None,
+                    LocalCargoTomlCache::default(),
+                    TomlVersion::default(),
+                    Some(&features),
+                )
+                .expect("expected inlay hint result");
 
-        assert_eq!(
-            hints,
-            Some(vec![InlayHint {
-                offset: line_index.offset(
-                    tombi_text::Position::new(3, 40),
-                    EncodingKind::GraphemeCluster,
-                ),
-                label: r#" → "0.0.0-dev""#.to_string(),
-                kind: Some(InlayHintKind::TYPE),
-                tooltip: Some(WORKSPACE_INHERITED_VALUE_TOOLTIP.to_string()),
-                padding_left: Some(true),
-                padding_right: Some(false),
-            }])
-        );
+                assert_eq!(
+                    hints,
+                    Some(vec![InlayHint {
+                        offset: line_index.offset(
+                            tombi_text::Position::new(3, 40),
+                            EncodingKind::GraphemeCluster,
+                        ),
+                        label: r#" → "0.0.0-dev""#.to_string(),
+                        kind: Some(InlayHintKind::TYPE),
+                        tooltip: Some(WORKSPACE_INHERITED_VALUE_TOOLTIP.to_string()),
+                        padding_left: Some(true),
+                        padding_right: Some(false),
+                    }])
+                );
+            },
+        )
+        .expect("expected Cargo.toml");
     }
 
     #[test]
@@ -2405,9 +2420,6 @@ mod tests {
         )
         .expect("expected Cargo.toml");
 
-        let (root, document_tree) =
-            load_cargo_toml(&cargo_toml_path, TomlVersion::default()).expect("expected Cargo.toml");
-        let line_index = root.syntax().line_index();
         let uri = tombi_uri::Uri::from_file_path(&cargo_toml_path).expect("expected uri");
         let features = tombi_config::CargoExtensionFeatures::Features(
             tombi_config::CargoExtensionFeatureTree {
@@ -2428,24 +2440,31 @@ mod tests {
             },
         );
 
-        let hints = inlay_hint_impl(
-            &uri,
-            &document_tree,
-            line_index.span(
-                tombi_text::Range::new(
-                    tombi_text::Position::new(0, 0),
-                    tombi_text::Position::new(8, 0),
-                ),
-                EncodingKind::GraphemeCluster,
-            ),
-            None,
-            LocalCargoTomlCache::default(),
+        crate::cargo_toml::load_cargo_toml(
+            &cargo_toml_path,
             TomlVersion::default(),
-            Some(&features),
-        )
-        .expect("expected inlay hint result");
+            |document_tree, line_index| {
+                let hints = inlay_hint_impl(
+                    &uri,
+                    document_tree,
+                    line_index.span(
+                        tombi_text::Range::new(
+                            tombi_text::Position::new(0, 0),
+                            tombi_text::Position::new(8, 0),
+                        ),
+                        EncodingKind::GraphemeCluster,
+                    ),
+                    None,
+                    LocalCargoTomlCache::default(),
+                    TomlVersion::default(),
+                    Some(&features),
+                )
+                .expect("expected inlay hint result");
 
-        assert_eq!(hints, None);
+                assert_eq!(hints, None);
+            },
+        )
+        .expect("expected Cargo.toml");
     }
 
     #[test]

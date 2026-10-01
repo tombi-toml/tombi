@@ -18,8 +18,8 @@ use crate::{
 use super::{CompletionContent, CompletionEdit};
 
 pub async fn get_document_comment_directive_completion_contents(
-    root: &tombi_ast_syntax::Root,
-    comment: &tombi_ast_syntax::Comment,
+    root: &tombi_ast_syntax::Root<'_>,
+    comment: &tombi_ast_syntax::Comment<'_>,
     offset: tombi_text::Offset,
     text_document_uri: &Uri,
 ) -> Option<Vec<CompletionContent>> {
@@ -84,7 +84,7 @@ pub async fn get_document_comment_directive_completion_contents(
 }
 
 fn document_comment_directive_completion_contents(
-    root: &tombi_ast_syntax::Root,
+    root: &tombi_ast_syntax::Root<'_>,
     offset: tombi_text::Offset,
     comment_span: tombi_text::Span,
     text_document_uri: &Uri,
@@ -129,17 +129,21 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
     };
 
     let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
-    let (root, _) = tombi_parser::parse(&content).into_root_and_errors();
+    let parsed = tombi_parser::parse(&content);
+    let root = parsed.root();
+    let decoded = root.decode_strings(toml_version);
 
     let Some((keys, completion_hint)) =
-        extract_keys_and_hint(&root, offset_in_content, toml_version, None)
+        extract_keys_and_hint(&root, &decoded, offset_in_content, toml_version, None)
     else {
         return Some(Vec::new());
     };
 
     // The positions are in the content of the directive, which is parsed as a separate document.
-    let line_index = std::sync::Arc::clone(root.syntax().line_index());
-    let document_tree = root.into_document_tree_and_errors(toml_version).tree;
+    let line_index = parsed.line_index();
+    let document_tree = root
+        .into_document_tree_and_errors(toml_version, &decoded)
+        .tree;
 
     let schema_store = tombi_comment_directive_store::schema_store().await;
     let document_schema = comment_directive_document_schema(schema_store, schema_uri).await;
@@ -162,7 +166,7 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
     Some(
         find_completion_contents(
             &document_tree,
-            crate::CursorPosition::new(offset_in_content, &line_index),
+            crate::CursorPosition::new(offset_in_content, line_index),
             &keys,
             &schema_context,
             completion_hint,
@@ -178,7 +182,7 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
 }
 
 fn get_schema_text_and_span<'a>(
-    comment: &'a tombi_ast_syntax::Comment,
+    comment: &'a tombi_ast_syntax::Comment<'_>,
     schema_directive: &'a SchemaDocumentCommentDirective,
 ) -> Option<(&'a str, tombi_text::Span)> {
     let schema_text = match &schema_directive.uri {

@@ -47,7 +47,7 @@ pub(super) async fn collect_branch_completions<'a, T>(
     applicator: tombi_validator::Applicator,
     value: &'a T,
     cursor: crate::CursorPosition<'a>,
-    keys: &'a [tombi_document_tree_syntax::Key],
+    keys: &'a [tombi_document_tree_syntax::Key<'_>],
     accessors: &'a [Accessor],
     resolved_schemas: &'a [CurrentSchema<'a>],
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,

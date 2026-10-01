@@ -4,7 +4,7 @@ use tombi_ast_syntax::{AstNode, DanglingCommentGroupOr, LeadingComment, Trailing
 
 use super::Format;
 
-impl Format for tombi_ast_syntax::DanglingCommentGroup {
+impl<'t> Format for tombi_ast_syntax::DanglingCommentGroup<'t> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if f.skip_comment() {
             return Ok(());
@@ -21,7 +21,7 @@ impl Format for tombi_ast_syntax::DanglingCommentGroup {
     }
 }
 
-impl Format for Vec<tombi_ast_syntax::DanglingCommentGroup> {
+impl<'t> Format for Vec<tombi_ast_syntax::DanglingCommentGroup<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if f.skip_comment() {
             return Ok(());
@@ -47,7 +47,7 @@ impl Format for Vec<tombi_ast_syntax::DanglingCommentGroup> {
     }
 }
 
-impl<T: Format + AstNode> Format for Vec<DanglingCommentGroupOr<T>> {
+impl<'t, T: Format + AstNode<'t>> Format for Vec<DanglingCommentGroupOr<'t, T>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let mut has_written_group = false;
 
@@ -91,7 +91,7 @@ impl<T: Format + AstNode> Format for Vec<DanglingCommentGroupOr<T>> {
     }
 }
 
-impl Format for Vec<LeadingComment> {
+impl<'t> Format for Vec<LeadingComment<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if f.skip_comment() {
             return Ok(());
@@ -110,7 +110,7 @@ impl Format for Vec<LeadingComment> {
     }
 }
 
-impl Format for TrailingComment {
+impl<'t> Format for TrailingComment<'t> {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if f.skip_comment() {
@@ -366,7 +366,8 @@ mod tests {
         .trim()
         .to_string();
 
-        let root = tombi_parser::parse(&source).into_root();
+        let parsed = tombi_parser::parse(&source);
+        let root = parsed.root();
         let groups = root.key_value_groups().collect_vec();
 
         let schema_store = tombi_schema_store::SchemaStore::new();

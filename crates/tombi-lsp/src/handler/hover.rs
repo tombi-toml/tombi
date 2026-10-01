@@ -51,12 +51,13 @@ pub async fn handle_hover(
 
     log::info!("handle_hover");
 
-    let Ok(document_sources) = backend.document_sources.try_read() else {
+    let Some(document_source) = backend.document_source(&text_document_uri) else {
         return Ok(None);
     };
-    let Some(document_source) = document_sources.get(&text_document_uri) else {
-        return Ok(None);
-    };
+    let converter = tombi_extension::SpanConverter::new(
+        document_source.line_index(),
+        document_source.encoding_kind(),
+    );
     let (root, document_tree, toml_version, offset): (_, _, _, tombi_text::Offset) = (
         document_source.ast(),
         document_source.document_tree(),
@@ -81,7 +82,9 @@ pub async fn handle_hover(
         return Ok(Some(content));
     }
 
-    let Some((keys, span)) = get_hover_keys_with_span(&root, offset, toml_version).await else {
+    let Some((keys, span)) =
+        get_hover_keys_with_span(&root, document_source.decoded(), offset, toml_version).await
+    else {
         log::debug!("failed to get hover keys with span");
         return Ok(None);
     };
@@ -101,12 +104,12 @@ pub async fn handle_hover(
         strict,
     );
 
-    let mut hover_content = get_hover_content(&document_tree, offset, &keys, &schema_context).await;
+    let mut hover_content = get_hover_content(document_tree, offset, &keys, &schema_context).await;
 
     if let Some(HoverContent::Value(hover_value_content)) = &mut hover_content {
         hover_value_content.span = span;
 
-        let accessors = tombi_document_tree_syntax::get_accessors(&document_tree, &keys, offset);
+        let accessors = tombi_document_tree_syntax::get_accessors(document_tree, &keys, offset);
         let offline = schema_store.offline();
         let cache_options = schema_store.cache_options();
         let tombi_hover_enabled = config
@@ -152,7 +155,7 @@ pub async fn handle_hover(
         let extension_hover = if tombi_hover_enabled {
             tombi_extension_tombi::hover(
                 &text_document_uri,
-                &document_tree,
+                document_tree,
                 &accessors,
                 offset,
                 toml_version,
@@ -170,10 +173,11 @@ pub async fn handle_hover(
             {
                 tombi_extension_cargo::hover(
                     &text_document_uri,
-                    &document_tree,
+                    document_tree,
                     &accessors,
                     offset,
                     toml_version,
+                    converter,
                     offline,
                     cache_options,
                     cargo_dependency_detail_hover_enabled,
@@ -189,7 +193,7 @@ pub async fn handle_hover(
             None if pyproject_dependency_detail_hover_enabled => {
                 tombi_extension_pyproject::hover(
                     &text_document_uri,
-                    &document_tree,
+                    document_tree,
                     &accessors,
                     offset,
                     toml_version,
@@ -231,12 +235,13 @@ fn apply_hover_text_change(target: &mut Option<String>, change: Option<HoverText
     }
 }
 
-pub async fn get_hover_keys_with_span(
-    root: &tombi_ast_syntax::Root,
+pub async fn get_hover_keys_with_span<'t>(
+    root: &tombi_ast_syntax::Root<'t>,
+    decoded: &'t tombi_ast_syntax::DecodedTextResolver,
     offset: tombi_text::Offset,
     toml_version: tombi_config::TomlVersion,
 ) -> Option<(
-    Vec<tombi_document_tree_syntax::Key>,
+    Vec<tombi_document_tree_syntax::Key<'t>>,
     Option<tombi_text::Span>,
 )> {
     let mut keys_vec = vec![];
@@ -484,7 +489,9 @@ pub async fn get_hover_keys_with_span(
                 .keys()
                 .take_while(|key| key.token().unwrap().span().start <= offset)
             {
-                let document_tree_key = key.into_document_tree_and_errors(toml_version).tree;
+                let document_tree_key = key
+                    .into_document_tree_and_errors(toml_version, decoded)
+                    .tree;
                 if let Some(document_tree_key) = document_tree_key {
                     new_keys.push(document_tree_key);
                 }
@@ -493,7 +500,9 @@ pub async fn get_hover_keys_with_span(
         } else {
             let mut new_keys = Vec::with_capacity(keys.keys().count());
             for key in keys.keys() {
-                let document_tree_key = key.into_document_tree_and_errors(toml_version).tree;
+                let document_tree_key = key
+                    .into_document_tree_and_errors(toml_version, decoded)
+                    .tree;
                 if let Some(document_tree_key) = document_tree_key {
                     new_keys.push(document_tree_key);
                 }
@@ -515,7 +524,7 @@ pub async fn get_hover_keys_with_span(
 }
 
 fn key_value_parent_or_self_span(
-    root: &tombi_ast_syntax::Root,
+    root: &tombi_ast_syntax::Root<'_>,
     fallback_span: tombi_text::Span,
 ) -> tombi_text::Span {
     root.enclosing_key_value(fallback_span.start)
@@ -524,8 +533,8 @@ fn key_value_parent_or_self_span(
 
 #[inline]
 fn array_value_hover_span(
-    value_or_key_value: &tombi_ast_syntax::ValueOrKeyValue,
-    comma: Option<&tombi_ast_syntax::Comma>,
+    value_or_key_value: &tombi_ast_syntax::ValueOrKeyValue<'_>,
+    comma: Option<&tombi_ast_syntax::Comma<'_>>,
 ) -> Option<tombi_text::Span> {
     let start = value_or_key_value
         .leading_comments()
@@ -550,8 +559,8 @@ fn array_value_hover_span(
 
 #[inline]
 fn inline_table_key_value_hover_span(
-    key_value: &tombi_ast_syntax::KeyValue,
-    comma: Option<&tombi_ast_syntax::Comma>,
+    key_value: &tombi_ast_syntax::KeyValue<'_>,
+    comma: Option<&tombi_ast_syntax::Comma<'_>>,
 ) -> Option<tombi_text::Span> {
     let start = key_value
         .leading_comments()
@@ -570,7 +579,7 @@ fn inline_table_key_value_hover_span(
 fn with_comma_item_hover_span(
     start: tombi_text::Offset,
     end: tombi_text::Offset,
-    comma: Option<&tombi_ast_syntax::Comma>,
+    comma: Option<&tombi_ast_syntax::Comma<'_>>,
 ) -> tombi_text::Span {
     let mut span = tombi_text::Span::new(start, end);
     if let Some(comma) = comma {
@@ -587,18 +596,15 @@ mod tests {
     use tombi_parser::parse;
     use tombi_text::{EncodingKind, Offset};
 
-    fn parse_root_and_offset_with_marker(
-        source_with_marker: &str,
-    ) -> (tombi_ast_syntax::Root, Offset) {
+    fn source_and_offset_with_marker(source_with_marker: &str) -> (String, Offset) {
         let marker = '█';
         let mut source = dedent(source_with_marker).trim().to_string();
         let marker_index = source.find(marker).unwrap();
         source.remove(marker_index);
 
-        let root = parse(&source).into_root();
         let offset = Offset::of(&source[..marker_index]);
 
-        (root, offset)
+        (source, offset)
     }
 
     macro_rules! test_hover_range {
@@ -607,11 +613,15 @@ mod tests {
         ) -> Ok((($start_line:expr, $start_col:expr), ($end_line:expr, $end_col:expr))) $(;)?) => {
             #[tokio::test]
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
-                let (root, offset) = parse_root_and_offset_with_marker($source);
+                let (source, offset) = source_and_offset_with_marker($source);
+                let parsed = parse(&source);
+                let root = parsed.root();
+                let decoded = root.decode_strings(TomlVersion::V1_0_0);
 
-                let (_, hover_span) = get_hover_keys_with_span(&root, offset, TomlVersion::V1_0_0)
-                    .await
-                    .ok_or("failed to get hover keys with span")?;
+                let (_, hover_span) =
+                    get_hover_keys_with_span(&root, &decoded, offset, TomlVersion::V1_0_0)
+                        .await
+                        .ok_or("failed to get hover keys with span")?;
 
                 pretty_assertions::assert_eq!(
                     hover_span.map(|span| {

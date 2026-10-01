@@ -9,11 +9,10 @@ impl ReportFormat for GithubFormat {
     type Range = tombi_text::Range;
 
     /// Columns count grapheme clusters, like the output of `pretty`.
-    fn convert_spans(
-        line_index: &tombi_text::LineIndex,
-        spans: &[tombi_text::Span],
-    ) -> Vec<tombi_text::Range> {
-        super::grapheme_ranges(line_index, spans)
+    const ENCODING: tombi_text::EncodingKind = tombi_text::EncodingKind::GraphemeCluster;
+
+    fn convert_range(range: tombi_text::Range) -> Self::Range {
+        range
     }
 
     /// Renders GitHub Actions workflow commands, one annotation per line.
@@ -79,6 +78,7 @@ mod tests {
 
     use super::super::{FileReport, tests::*};
     use super::*;
+    use tombi_text::EncodingKind;
 
     #[cfg(unix)]
     test_report! {
@@ -99,8 +99,7 @@ mod tests {
         fn github_multiline_range_has_no_columns(
             GithubFormat,
             [FileReport {
-                line_index: index("a = \"\"\"\n\"\"\"\n"),
-                diagnostics: vec![Diagnostic::new_error("invalid", "invalid", span("a = \"\"\"\n\"\"\"\n", (0, 4), (1, 3)))],
+                diagnostics: reported("a = \"\"\"\n\"\"\"\n", EncodingKind::GraphemeCluster, vec![Diagnostic::new_error("invalid", "invalid", span("a = \"\"\"\n\"\"\"\n", (0, 4), (1, 3)))]),
                 ..clean_file("a.toml")
             }],
         ) -> Ok("::error file=/project/a.toml,line=1,endLine=2,title=tombi (invalid)::a.toml:1:5: invalid\n");
@@ -112,7 +111,7 @@ mod tests {
         fn github_escapes_data_and_properties(
             GithubFormat,
             [FileReport {
-                diagnostics: vec![Diagnostic::new_error("100%\r\nsure: a, b", "a:b,c", span("a = 1\n", (0, 0), (0, 1)))],
+                diagnostics: reported("a = 1\n", EncodingKind::GraphemeCluster, vec![Diagnostic::new_error("100%\r\nsure: a, b", "a:b,c", span("a = 1\n", (0, 0), (0, 1)))]),
                 ..clean_file("a,b:c.toml")
             }],
         ) -> Ok("::error file=/project/a%2Cb%3Ac.toml,line=1,endLine=1,col=1,endColumn=2,title=tombi (a%3Ab%2Cc)::a,b:c.toml:1:1: 100%25%0D%0Asure: a, b\n");

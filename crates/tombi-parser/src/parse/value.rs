@@ -9,7 +9,7 @@ use crate::{
     token_set::TS_COMMEMT_OR_LINE_END,
 };
 
-impl Parse for tombi_ast_syntax::Value {
+impl Parse for tombi_ast_syntax::Value<'_> {
     fn parse(p: &mut Parser<'_>) {
         let n = peek_leading_comments(p);
         match p.nth(n) {

@@ -40,12 +40,13 @@ pub async fn handle_goto_definition(
 
     log::info!("handle_goto_definition");
 
-    let Ok(document_sources) = backend.document_sources.try_read() else {
+    let Some(document_source) = backend.document_source(&text_document_uri) else {
         return Ok(Default::default());
     };
-    let Some(document_source) = document_sources.get(&text_document_uri) else {
-        return Ok(Default::default());
-    };
+    let converter = tombi_extension::SpanConverter::new(
+        document_source.line_index(),
+        document_source.encoding_kind(),
+    );
 
     let root = document_source.ast();
     let toml_version = document_source.toml_version;
@@ -58,19 +59,22 @@ pub async fn handle_goto_definition(
         return Ok(Some(vec![location]));
     }
 
-    let Some((keys, _)) = get_hover_keys_with_span(&root, offset, toml_version).await else {
+    let Some((keys, _)) =
+        get_hover_keys_with_span(&root, document_source.decoded(), offset, toml_version).await
+    else {
         return Ok(Default::default());
     };
 
     let document_tree = document_source.document_tree();
-    let accessors = tombi_document_tree_syntax::get_accessors(&document_tree, &keys, offset);
+    let accessors = tombi_document_tree_syntax::get_accessors(document_tree, &keys, offset);
 
     if config.cargo_extension_enabled()
         && let Some(locations) = tombi_extension_cargo::goto_definition(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             &accessors,
             toml_version,
+            converter,
             config.cargo_extension_features(),
         )
         .await?
@@ -81,9 +85,10 @@ pub async fn handle_goto_definition(
     if config.nagi_sql_extension_enabled()
         && let Some(locations) = tombi_extension_nagi_sql::goto_definition(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             &accessors,
             toml_version,
+            converter,
             config.nagi_sql_extension_features(),
         )
         .await?
@@ -94,9 +99,10 @@ pub async fn handle_goto_definition(
     if config.pyproject_extension_enabled()
         && let Some(locations) = tombi_extension_pyproject::goto_definition(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             &accessors,
             toml_version,
+            converter,
             config.pyproject_extension_features(),
         )
         .await?
@@ -107,7 +113,7 @@ pub async fn handle_goto_definition(
     if config.tombi_extension_enabled()
         && let Some(locations) = tombi_extension_tombi::goto_definition(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             &accessors,
             toml_version,
             config.tombi_extension_features(),
@@ -121,7 +127,7 @@ pub async fn handle_goto_definition(
 }
 
 fn resolve_schema_location(
-    root: &tombi_ast_syntax::Root,
+    root: &tombi_ast_syntax::Root<'_>,
     text_document_uri: &tombi_uri::Uri,
     offset: tombi_text::Offset,
 ) -> Option<tombi_extension::Location> {
@@ -149,6 +155,6 @@ fn resolve_schema_location(
 
     Some(tombi_extension::Location {
         uri: uri.into(),
-        span: None,
+        range: None,
     })
 }

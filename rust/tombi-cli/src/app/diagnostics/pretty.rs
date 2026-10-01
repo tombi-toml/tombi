@@ -18,13 +18,15 @@ impl PrettyReporter {
 }
 
 impl FormatReporter for PrettyReporter {
+    fn encoding(&self) -> tombi_text::EncodingKind {
+        tombi_text::EncodingKind::GraphemeCluster
+    }
+
     fn record(&mut self, file: FileReport, writer: &mut dyn Write) -> std::io::Result<()> {
-        let Some(line_index) = &file.line_index else {
-            return Ok(());
-        };
-        for diagnostic in &file.diagnostics {
-            diagnostic
-                .located(line_index, tombi_text::EncodingKind::GraphemeCluster)
+        for reported in &file.diagnostics {
+            reported
+                .diagnostic
+                .with_range(reported.range)
                 .print(&self.printer, writer)?;
         }
         Ok(())

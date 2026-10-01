@@ -65,8 +65,8 @@ impl<'a> std::hash::Hash for LiteralValueRef<'a> {
     }
 }
 
-impl<'a> From<&'a crate::Value> for Option<LiteralValueRef<'a>> {
-    fn from(value: &'a crate::Value) -> Self {
+impl<'a, 't> From<&'a crate::Value<'t>> for Option<LiteralValueRef<'a>> {
+    fn from(value: &'a crate::Value<'t>) -> Self {
         match value {
             crate::Value::Boolean(boolean) => Some(LiteralValueRef::Boolean(boolean.value())),
             crate::Value::Integer(integer) => Some(LiteralValueRef::Integer(integer.value())),

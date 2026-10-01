@@ -11,10 +11,10 @@ use crate::editor::rule::{
     array_values_order::array_values_order,
 };
 
-impl crate::editor::Edit for tombi_ast_syntax::Array {
-    fn edit<'a: 'b, 'b>(
+impl<'t> crate::editor::Edit for tombi_ast_syntax::Array<'t> {
+    fn edit<'a: 'b, 'b, 'd>(
         &'a self,
-        node: &'a tombi_document_tree_syntax::Value,
+        node: &'a tombi_document_tree_syntax::Value<'d>,
         accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
@@ -128,8 +128,8 @@ impl crate::editor::Edit for tombi_ast_syntax::Array {
     }
 }
 
-fn resolve_array_item_edit_context<'a: 'b, 'b>(
-    node: &'a tombi_document_tree_syntax::Array,
+fn resolve_array_item_edit_context<'a: 'b, 'b, 'd>(
+    node: &'a tombi_document_tree_syntax::Array<'d>,
     accessors: &'a [Accessor],
     current_schema: Option<tombi_schema_store::CurrentSchema<'a>>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,

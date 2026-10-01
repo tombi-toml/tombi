@@ -14,12 +14,12 @@ impl<T, I> WithCommaIter<T, I> {
     }
 }
 
-impl<T, I> Iterator for WithCommaIter<T, I>
+impl<'t, T, I> Iterator for WithCommaIter<T, I>
 where
-    T: AstNode,
-    I: Iterator<Item = tombi_ast_syntax::SyntaxNode>,
+    T: AstNode<'t>,
+    I: Iterator<Item = tombi_ast_syntax::SyntaxNode<'t>>,
 {
-    type Item = (T, Option<crate::Comma>);
+    type Item = (T, Option<crate::Comma<'t>>);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {

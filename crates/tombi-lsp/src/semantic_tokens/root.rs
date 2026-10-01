@@ -2,7 +2,7 @@ use tombi_ast_syntax::DanglingCommentGroupOr;
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder};
 
-impl AppendSemanticTokens for tombi_ast_syntax::Root {
+impl AppendSemanticTokens for tombi_ast_syntax::Root<'_> {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         let source_path = builder.text_document_uri.to_file_path().ok();
         let schema_document_directive =
@@ -16,12 +16,11 @@ impl AppendSemanticTokens for tombi_ast_syntax::Root {
                         .contains_inclusive(schema_document_directive.directive_span.start)
                 {
                     builder
-                        .add_comment_directive(&comment, schema_document_directive.directive_span);
+                        .add_comment_directive(comment, schema_document_directive.directive_span);
                     continue;
                 }
                 if let Some(tombi_document_directive) = comment.get_tombi_document_directive() {
-                    builder
-                        .add_comment_directive(&comment, tombi_document_directive.directive_span);
+                    builder.add_comment_directive(comment, tombi_document_directive.directive_span);
                 } else {
                     comment.append_semantic_tokens(builder);
                 }
@@ -49,7 +48,7 @@ impl AppendSemanticTokens for tombi_ast_syntax::Root {
     }
 }
 
-impl AppendSemanticTokens for tombi_ast_syntax::TableOrArrayOfTable {
+impl AppendSemanticTokens for tombi_ast_syntax::TableOrArrayOfTable<'_> {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         match self {
             Self::Table(table) => table.append_semantic_tokens(builder),

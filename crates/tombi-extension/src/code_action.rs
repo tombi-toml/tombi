@@ -41,10 +41,16 @@ pub struct WorkspaceEdit {
     pub document_changes: Option<DocumentChanges>,
 }
 
+/// A text edit whose range is already counted in the client's encoding.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RangeTextEdit {
+    pub range: tombi_text::Range,
+    pub new_text: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DocumentEdits {
-    pub line_index: std::sync::Arc<tombi_text::LineIndex>,
-    pub edits: Vec<crate::TextEdit>,
+    pub edits: Vec<RangeTextEdit>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -55,8 +61,7 @@ pub enum DocumentChanges {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextDocumentEdit {
     pub text_document: OptionalVersionedTextDocumentIdentifier,
-    pub line_index: std::sync::Arc<tombi_text::LineIndex>,
-    pub edits: Vec<OneOf<crate::TextEdit, AnnotatedTextEdit>>,
+    pub edits: Vec<OneOf<RangeTextEdit, AnnotatedTextEdit>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -67,7 +72,7 @@ pub struct OptionalVersionedTextDocumentIdentifier {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AnnotatedTextEdit {
-    pub text_edit: crate::TextEdit,
+    pub text_edit: RangeTextEdit,
     pub annotation_id: String,
 }
 

@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Either;
+use tombi_ast_syntax::AstNode as _;
 use tombi_config::TomlVersion;
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
@@ -11,7 +12,7 @@ use crate::lint::Lint;
 pub struct Linter<'a> {
     toml_version: TomlVersion,
     options: Cow<'a, crate::LintOptions>,
-    line_index: Option<std::sync::Arc<tombi_text::LineIndex>>,
+    source_text: &'a str,
     source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
     schema_store: &'a tombi_schema_store::SchemaStore,
     pub(crate) diagnostics: Vec<tombi_diagnostic::Diagnostic>,
@@ -27,15 +28,15 @@ impl<'a> Linter<'a> {
         Self {
             toml_version,
             options: Cow::Borrowed(options),
-            line_index: None,
+            source_text: "",
             source_uri_or_path,
             schema_store,
             diagnostics: Vec::new(),
         }
     }
 
-    pub async fn lint(self, source: &str) -> Result<(), Vec<Diagnostic>> {
-        self.lint_parsed(tombi_parser::parse(source)).await
+    pub async fn lint(self, source: &'a str) -> Result<(), Vec<Diagnostic>> {
+        self.lint_parsed(&tombi_parser::parse(source)).await
     }
 
     /// Lints a parsed document.
@@ -44,12 +45,12 @@ impl<'a> Linter<'a> {
     /// the diagnostics into ranges, without indexing the lines of the source again.
     pub async fn lint_parsed(
         mut self,
-        parsed: tombi_parser::ParseResult,
+        parsed: &tombi_parser::ParseResult<'a>,
     ) -> Result<(), Vec<Diagnostic>> {
-        self.line_index = Some(std::sync::Arc::clone(parsed.line_index()));
+        self.source_text = parsed.source();
 
-        let (root, errors) = parsed.into_root_and_errors();
-        for error in errors {
+        let root = parsed.root();
+        for error in parsed.errors.iter().cloned() {
             error.set_diagnostics(&mut self.diagnostics);
         }
 
@@ -115,8 +116,10 @@ impl<'a> Linter<'a> {
             .count()
             == 0
         {
-            let (document_tree, errors) =
-                root.into_document_tree_and_errors(self.toml_version).into();
+            let decoded = root.decode_strings(self.toml_version);
+            let (document_tree, errors) = root
+                .into_document_tree_and_errors(self.toml_version, &decoded)
+                .into();
 
             errors.set_diagnostics(&mut self.diagnostics);
 
@@ -168,9 +171,7 @@ impl<'a> Linter<'a> {
     }
 
     pub fn source_text(&self) -> &str {
-        self.line_index
-            .as_ref()
-            .map_or("", |line_index| line_index.text())
+        self.source_text
     }
 
     #[inline]

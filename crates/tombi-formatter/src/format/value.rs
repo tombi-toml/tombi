@@ -13,13 +13,13 @@ use tombi_ast_syntax::SyntaxToken;
 
 use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
 
-impl Format for tombi_ast_syntax::Value {
+impl<'t> Format for tombi_ast_syntax::Value<'t> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         WithAlignmentHint::new(self).format(f)
     }
 }
 
-impl Format for WithAlignmentHint<&tombi_ast_syntax::Value> {
+impl<'t> Format for WithAlignmentHint<&tombi_ast_syntax::Value<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         match self.value {
             tombi_ast_syntax::Value::Array(value) => WithAlignmentHint {
@@ -122,13 +122,13 @@ impl Format for WithAlignmentHint<&tombi_ast_syntax::Value> {
     }
 }
 
-trait LiteralNode {
-    fn token(&self) -> Option<SyntaxToken>;
+trait LiteralNode<'t> {
+    fn token(&self) -> Option<SyntaxToken<'t>>;
 }
 
-impl<T> Format for T
+impl<'t, T> Format for T
 where
-    T: LiteralNode + tombi_ast_syntax::AstNode,
+    T: LiteralNode<'t> + tombi_ast_syntax::AstNode<'t>,
 {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
@@ -136,9 +136,9 @@ where
     }
 }
 
-impl<T> Format for WithAlignmentHint<&T>
+impl<'t, T> Format for WithAlignmentHint<&T>
 where
-    T: LiteralNode + tombi_ast_syntax::AstNode,
+    T: LiteralNode<'t> + tombi_ast_syntax::AstNode<'t>,
 {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let value = self.value;

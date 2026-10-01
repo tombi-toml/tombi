@@ -16,10 +16,13 @@ use tombi_x_keyword::{TableKeysOrder, TableKeysOrderGroupKind};
 use crate::editor::change::SourcePart;
 use tombi_schema_store::TableOrderOverrides;
 
-pub(in crate::editor) async fn table_keys_order<'a>(
-    value: &'a tombi_document_tree_syntax::Value,
+pub(in crate::editor) async fn table_keys_order<'a, 't, 'd>(
+    value: &'a tombi_document_tree_syntax::Value<'d>,
     accessors: &'a [Accessor],
-    key_values_with_comma: Vec<(tombi_ast_syntax::KeyValue, Option<tombi_ast_syntax::Comma>)>,
+    key_values_with_comma: Vec<(
+        tombi_ast_syntax::KeyValue<'t>,
+        Option<tombi_ast_syntax::Comma<'t>>,
+    )>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     comment_directive: Option<
@@ -57,12 +60,11 @@ pub(in crate::editor) async fn table_keys_order<'a>(
         .iter()
         .map(|(key_value, _)| key_value.syntax().span())
         .collect_vec();
-    let old_first = key_values_with_comma.first().unwrap().0.syntax().clone();
+    let old_first = *key_values_with_comma.first().unwrap().0.syntax();
     let (last_key_value, last_comma) = key_values_with_comma.last().unwrap();
-    let old_last = last_comma.as_ref().map_or_else(
-        || last_key_value.syntax().clone(),
-        |comma| comma.syntax().clone(),
-    );
+    let old_last = last_comma
+        .as_ref()
+        .map_or_else(|| *last_key_value.syntax(), |comma| *comma.syntax());
 
     let Some(sorted_key_values_with_comma) = get_sorted_accessors(
         value,
@@ -107,8 +109,8 @@ pub(in crate::editor) async fn table_keys_order<'a>(
     )]
 }
 
-pub(super) fn get_sorted_accessors<'a: 'b, 'b, T>(
-    value: &'a tombi_document_tree_syntax::Value,
+pub(super) fn get_sorted_accessors<'a: 'b, 'b, 'd, T>(
+    value: &'a tombi_document_tree_syntax::Value<'d>,
     accessors: &'a [tombi_schema_store::Accessor],
     targets: Vec<(Vec<tombi_schema_store::Accessor>, T)>,
     current_schema: Option<&'a CurrentSchema<'a>>,

@@ -9,10 +9,10 @@ use tombi_schema_store::Accessor;
 
 use crate::editor::{edit::edit_recursive, rule::table_keys_order::table_keys_order};
 
-impl crate::editor::Edit for tombi_ast_syntax::ArrayOfTable {
-    fn edit<'a: 'b, 'b>(
+impl<'t> crate::editor::Edit for tombi_ast_syntax::ArrayOfTable<'t> {
+    fn edit<'a: 'b, 'b, 'd>(
         &'a self,
-        node: &'a tombi_document_tree_syntax::Value,
+        node: &'a tombi_document_tree_syntax::Value<'d>,
         accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,

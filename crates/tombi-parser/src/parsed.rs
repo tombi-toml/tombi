@@ -1,20 +1,24 @@
-use tombi_ast_syntax::{AstNode, SyntaxNode};
+use tombi_ast_syntax::{AstNode, SyntaxTree};
 
-#[derive(Debug, Clone)]
-pub struct ParseResult {
-    syntax: SyntaxNode,
+/// The result of parsing a source text.
+///
+/// It owns the syntax tape, which borrows the source for `'src`.
+/// The root and every node reached from it borrow the result.
+#[derive(Debug)]
+pub struct ParseResult<'src> {
+    tree: SyntaxTree<'src>,
     pub errors: Vec<crate::Error>,
     pub line_ending: tombi_text::LineEnding,
 }
 
-impl ParseResult {
+impl<'src> ParseResult<'src> {
     pub(crate) fn new(
-        syntax: SyntaxNode,
+        tree: SyntaxTree<'src>,
         errors: Vec<crate::Error>,
         line_ending: tombi_text::LineEnding,
     ) -> Self {
         Self {
-            syntax,
+            tree,
             errors,
             line_ending,
         }
@@ -22,29 +26,27 @@ impl ParseResult {
 
     /// The line index built while parsing, to convert spans of the source into ranges.
     #[inline]
-    pub fn line_index(&self) -> &std::sync::Arc<tombi_text::LineIndex> {
-        self.syntax.line_index()
+    pub fn line_index(&self) -> &tombi_text::LineIndex<'src> {
+        self.tree.line_index()
     }
 
-    pub fn root(&self) -> tombi_ast_syntax::Root {
-        tombi_ast_syntax::Root::cast(self.syntax.clone())
+    /// The source text that was parsed.
+    #[inline]
+    pub fn source(&self) -> &'src str {
+        self.tree.line_index().text()
+    }
+
+    pub fn root(&self) -> tombi_ast_syntax::Root<'_> {
+        tombi_ast_syntax::Root::cast(self.tree.root())
             .expect("a TOML parse always produces a root node")
     }
 
-    pub fn into_root(self) -> tombi_ast_syntax::Root {
-        tombi_ast_syntax::Root::cast(self.syntax).expect("a TOML parse always produces a root node")
-    }
-
-    pub fn into_root_and_errors(self) -> (tombi_ast_syntax::Root, Vec<crate::Error>) {
-        let Self { syntax, errors, .. } = self;
-        let root =
-            tombi_ast_syntax::Root::cast(syntax).expect("a TOML parse always produces a root node");
-        (root, errors)
-    }
-
+    /// The root, or the errors if the source has any.
     #[inline]
-    pub fn try_into_root(self) -> Result<tombi_ast_syntax::Root, Vec<crate::Error>> {
-        let (root, errors) = self.into_root_and_errors();
-        errors.is_empty().then_some(root).ok_or(errors)
+    pub fn try_root(&self) -> Result<tombi_ast_syntax::Root<'_>, &[crate::Error]> {
+        self.errors
+            .is_empty()
+            .then(|| self.root())
+            .ok_or(&self.errors[..])
     }
 }

@@ -58,23 +58,16 @@ pub async fn handle_formatting(
         }
     }
 
-    let (toml_version, parsed, line_index, encoding, version) = {
-        let Ok(document_sources) = backend.document_sources.try_read() else {
-            return Ok(None);
-        };
-        let Some(document_source) = document_sources.get(&text_document_uri) else {
-            return Ok(None);
-        };
-
-        (
-            document_source.toml_version,
-            document_source.parsed().clone(),
-            document_source.line_index_arc(),
-            document_source.encoding_kind(),
-            document_source.version,
-        )
+    let Some(document_source) = backend.document_source(&text_document_uri) else {
+        return Ok(None);
     };
-    let document_text = line_index.text();
+    let (toml_version, encoding, version) = (
+        document_source.toml_version,
+        document_source.encoding_kind(),
+        document_source.version,
+    );
+    let line_index = document_source.line_index();
+    let document_text = document_source.text();
 
     // Get format options with override support
     let text_document_path = text_document_uri.to_file_path().ok();
@@ -96,18 +89,18 @@ pub async fn handle_formatting(
         Some(Either::Left(&text_document_uri)),
         &schema_store,
     )
-    .format_parsed(parsed)
+    .format_parsed(document_source.parsed())
     .await
     {
         Ok(formatted) => {
             if document_text != formatted {
-                let edits = compute_text_edits(&formatted, &line_index, encoding);
+                let edits = compute_text_edits(&formatted, line_index, encoding);
                 log::debug!("edits: {:?}", edits);
                 if let Ok(mut document_sources) = backend.document_sources.try_write()
-                    && let Some(document_source) = document_sources.get_mut(&text_document_uri)
-                    && document_source.text() == document_text
+                    && let Some(stored) = document_sources.get_mut(&text_document_uri)
+                    && stored.text() == document_text
                 {
-                    document_source.set_text(&formatted, toml_version);
+                    stored.set_text(formatted.as_str(), toml_version);
                 }
 
                 return Ok(Some(edits));
@@ -131,7 +124,7 @@ pub async fn handle_formatting(
                     uri: text_document_uri.into(),
                     diagnostics: diagnostics
                         .into_iter()
-                        .map(|diagnostic| diagnostic.into_lsp(line_index.as_ref(), encoding))
+                        .map(|diagnostic| diagnostic.into_lsp(line_index, encoding))
                         .collect_vec(),
                     version,
                 })
@@ -147,7 +140,7 @@ pub async fn handle_formatting(
 /// Uses a grapheme-aware prefix/suffix diff so edits stay minimal and on character boundaries
 fn compute_text_edits(
     new_text: &str,
-    line_index: &tombi_text::LineIndex,
+    line_index: &tombi_text::LineIndex<'_>,
     encoding: tombi_text::EncodingKind,
 ) -> Vec<TextEdit> {
     let old_text = line_index.text();

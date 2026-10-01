@@ -3,12 +3,12 @@ use tombi_toml_version::TomlVersion;
 
 use crate::AstNode;
 
-impl crate::KeyValue {
+impl<'t> crate::KeyValue<'t> {
     /// Source span of this inline-table or array item, extended through its
     /// comma when one is present.
     pub fn item_span_with_comma(&self, offset: tombi_text::Offset) -> Option<tombi_text::Span> {
         for syntax_node in self.syntax().ancestors() {
-            if let Some(group) = crate::KeyValueWithCommaGroup::cast(syntax_node.clone()) {
+            if let Some(group) = crate::KeyValueWithCommaGroup::cast(syntax_node) {
                 for (item, comma) in group.key_values_with_comma() {
                     if item.syntax() == self.syntax() {
                         let start = item

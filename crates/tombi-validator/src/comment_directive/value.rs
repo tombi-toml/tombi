@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use tombi_ast_syntax::AstNode as _;
 use tombi_comment_directive::{
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
     value::{
@@ -41,15 +42,12 @@ where
     let schema_uri =
         TombiValueDirectiveContent::<FormatRules, LintRules>::comment_directive_schema_url();
 
-    let (document_tree_table, diagnostics) =
-        get_comment_directive_document_tree_and_diagnostics(comment_directives, schema_uri).await;
+    let (document_table, diagnostics) =
+        get_comment_directive_document_and_diagnostics(comment_directives, schema_uri).await;
 
-    if let Some(total_document_tree_table) = document_tree_table {
+    if let Some(document_table) = document_table {
         (
-            TombiValueDirectiveContent::<FormatRules, LintRules>::deserialize(
-                &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
-            )
-            .ok(),
+            TombiValueDirectiveContent::<FormatRules, LintRules>::deserialize(&document_table).ok(),
             diagnostics,
         )
     } else {
@@ -58,7 +56,7 @@ where
 }
 
 pub async fn get_tombi_array_comment_directive_and_diagnostics(
-    array: &tombi_document_tree_syntax::Array,
+    array: &tombi_document_tree_syntax::Array<'_>,
     accessors: &[tombi_schema_store::Accessor],
 ) -> (
     Option<ArrayCommonLintRules>,
@@ -138,7 +136,7 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
 }
 
 pub async fn get_tombi_table_comment_directive_and_diagnostics(
-    table: &tombi_document_tree_syntax::Table,
+    table: &tombi_document_tree_syntax::Table<'_>,
     accessors: &[tombi_schema_store::Accessor],
 ) -> (
     Option<TableCommonLintRules>,
@@ -389,15 +387,15 @@ where
     }
 }
 
-pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
+pub async fn get_comment_directive_document_and_diagnostics<'a>(
     comment_directives: impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
     schema_uri: SchemaUri,
 ) -> (
-    Option<tombi_document_tree_syntax::Table>,
+    Option<tombi_document::Table>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
     let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
-    let mut total_document_tree_table: Option<tombi_document_tree_syntax::Table> = None;
+    let mut total_document_tree_table: Option<tombi_document_tree_syntax::Table<'_>> = None;
     let mut total_diagnostics = Vec::new();
     let schema_store = tombi_comment_directive_store::schema_store().await;
 
@@ -424,29 +422,37 @@ pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
         strict: None,
     };
 
-    for tombi_ast_syntax::TombiValueCommentDirective {
-        content,
-        content_span,
-        ..
-    } in comment_directives
-    {
-        let (root, errors) = tombi_parser::parse(content).into_root_and_errors();
+    // The merged document tree borrows every parse result and decoded pool,
+    // so they are all kept until the tree is converted into an owned document.
+    let directives = comment_directives.collect::<Vec<_>>();
+    let parsed = directives
+        .iter()
+        .map(|directive| tombi_parser::parse(&directive.content))
+        .collect::<Vec<_>>();
+    let decoded = parsed
+        .iter()
+        .map(|parsed| parsed.root().decode_strings(toml_version))
+        .collect::<Vec<_>>();
+
+    for ((directive, parsed), decoded) in directives.iter().zip(&parsed).zip(&decoded) {
+        let content_span = directive.content_span;
         // Check if there are any parsing errors
-        if !errors.is_empty() {
+        if !parsed.errors.is_empty() {
             let mut diagnostics = Vec::new();
-            for error in errors {
+            for error in parsed.errors.iter().cloned() {
                 error.set_diagnostics(&mut diagnostics);
             }
             total_diagnostics.extend(
                 diagnostics
                     .into_iter()
-                    .map(|diagnostic| into_directive_diagnostic(&diagnostic, *content_span)),
+                    .map(|diagnostic| into_directive_diagnostic(&diagnostic, content_span)),
             );
             continue;
         }
 
-        let (document_tree, errors) = root
-            .into_document_tree_and_errors(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION)
+        let (document_tree, errors) = parsed
+            .root()
+            .into_document_tree_and_errors(toml_version, decoded)
             .into();
 
         if !errors.is_empty() {
@@ -457,7 +463,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
             total_diagnostics.extend(
                 diagnostics
                     .into_iter()
-                    .map(|diagnostic| into_directive_diagnostic(&diagnostic, *content_span)),
+                    .map(|diagnostic| into_directive_diagnostic(&diagnostic, content_span)),
             );
         } else if let Err(diagnostics) =
             crate::validate(document_tree.clone(), Some(&source_schema), &schema_context).await
@@ -465,7 +471,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
             total_diagnostics.extend(
                 diagnostics
                     .into_iter()
-                    .map(|diagnostic| into_directive_diagnostic(&diagnostic, *content_span)),
+                    .map(|diagnostic| into_directive_diagnostic(&diagnostic, content_span)),
             );
         }
 
@@ -478,7 +484,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
                 total_diagnostics.extend(
                     diagnostics
                         .into_iter()
-                        .map(|diagnostic| into_directive_diagnostic(&diagnostic, *content_span)),
+                        .map(|diagnostic| into_directive_diagnostic(&diagnostic, content_span)),
                 );
             }
         } else {
@@ -486,5 +492,8 @@ pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
         }
     }
 
-    (total_document_tree_table, total_diagnostics)
+    (
+        total_document_tree_table.map(|table| table.into_document(toml_version)),
+        total_diagnostics,
+    )
 }

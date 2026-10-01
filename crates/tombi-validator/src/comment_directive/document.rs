@@ -1,3 +1,4 @@
+use tombi_ast_syntax::AstNode as _;
 use tombi_comment_directive::{
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
     document::TombiDocumentDirectiveContent,
@@ -10,7 +11,7 @@ use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 use crate::comment_directive::into_directive_diagnostic;
 
 pub async fn get_tombi_document_comment_directive(
-    root: &tombi_ast_syntax::Root,
+    root: &tombi_ast_syntax::Root<'_>,
 ) -> Option<TombiDocumentDirectiveContent> {
     get_tombi_document_comment_directive_and_diagnostics(root)
         .await
@@ -18,19 +19,19 @@ pub async fn get_tombi_document_comment_directive(
 }
 
 pub async fn get_tombi_document_comment_directive_and_diagnostics(
-    root: &tombi_ast_syntax::Root,
+    root: &tombi_ast_syntax::Root<'_>,
 ) -> (
     Option<TombiDocumentDirectiveContent>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
     use serde::Deserialize;
 
-    let mut total_document_tree_table: Option<tombi_document_tree_syntax::Table> = None;
     let mut total_diagnostics = Vec::new();
     let mut tombi_directive_iter = root.tombi_document_comment_directives().peekable();
 
     if tombi_directive_iter.peek().is_some() {
         let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
+        let mut total_document_tree_table: Option<tombi_document_tree_syntax::Table<'_>> = None;
         let schema_store = tombi_comment_directive_store::schema_store().await;
         let document_schema = comment_directive_document_schema(
             schema_store,
@@ -61,17 +62,24 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
             strict: None,
         };
 
-        for tombi_ast_syntax::TombiDocumentCommentDirective {
-            content,
-            content_span,
-            ..
-        } in tombi_directive_iter
-        {
-            let (root, errors) = tombi_parser::parse(&content).into_root_and_errors();
+        // The merged document tree borrows every parse result and decoded pool,
+        // so they are all kept until the tree is converted into an owned document.
+        let directives = tombi_directive_iter.collect::<Vec<_>>();
+        let parsed = directives
+            .iter()
+            .map(|directive| tombi_parser::parse(&directive.content))
+            .collect::<Vec<_>>();
+        let decoded = parsed
+            .iter()
+            .map(|parsed| parsed.root().decode_strings(toml_version))
+            .collect::<Vec<_>>();
+
+        for ((directive, parsed), decoded) in directives.iter().zip(&parsed).zip(&decoded) {
+            let content_span = directive.content_span;
             // Check if there are any parsing errors
-            if !errors.is_empty() {
+            if !parsed.errors.is_empty() {
                 let mut diagnostics = Vec::new();
-                for error in errors {
+                for error in parsed.errors.iter().cloned() {
                     error.set_diagnostics(&mut diagnostics);
                 }
                 total_diagnostics.extend(
@@ -82,8 +90,9 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
                 continue;
             }
 
-            let (document_tree, errors) = root
-                .into_document_tree_and_errors(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION)
+            let (document_tree, errors) = parsed
+                .root()
+                .into_document_tree_and_errors(toml_version, decoded)
                 .into();
 
             // Check for errors during document tree construction
@@ -122,17 +131,17 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
                 total_document_tree_table = Some(document_tree.into());
             }
         }
+
+        if let Some(total_document_tree_table) = total_document_tree_table {
+            return (
+                TombiDocumentDirectiveContent::deserialize(
+                    &total_document_tree_table.into_document(toml_version),
+                )
+                .ok(),
+                total_diagnostics,
+            );
+        }
     }
 
-    if let Some(total_document_tree_table) = total_document_tree_table {
-        (
-            TombiDocumentDirectiveContent::deserialize(
-                &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
-            )
-            .ok(),
-            total_diagnostics,
-        )
-    } else {
-        (None, total_diagnostics)
-    }
+    (None, total_diagnostics)
 }

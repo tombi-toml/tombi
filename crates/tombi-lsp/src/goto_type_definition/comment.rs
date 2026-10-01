@@ -14,7 +14,7 @@ use crate::{
     handler::get_hover_keys_with_span,
 };
 pub async fn get_tombi_document_comment_directive_type_definition(
-    root: &tombi_ast_syntax::Root,
+    root: &tombi_ast_syntax::Root<'_>,
     offset: tombi_text::Offset,
 ) -> Vec<TypeDefinition> {
     if let Some(comment_directive_context) = root
@@ -46,10 +46,12 @@ pub async fn get_tombi_value_comment_directive_type_definition(
     };
 
     let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
-    let (root, _) = tombi_parser::parse(&content).into_root_and_errors();
+    let parsed = tombi_parser::parse(&content);
+    let root = parsed.root();
+    let decoded = root.decode_strings(toml_version);
 
     let Some((keys, range)) =
-        get_hover_keys_with_span(&root, offset_in_content, toml_version).await
+        get_hover_keys_with_span(&root, &decoded, offset_in_content, toml_version).await
     else {
         return Vec::new();
     };
@@ -59,8 +61,10 @@ pub async fn get_tombi_value_comment_directive_type_definition(
     }
 
     // The positions are in the content of the directive, which is parsed as a separate document.
-    let line_index = std::sync::Arc::clone(root.syntax().line_index());
-    let document_tree = root.into_document_tree_and_errors(toml_version).tree;
+    let line_index = parsed.line_index();
+    let document_tree = root
+        .into_document_tree_and_errors(toml_version, &decoded)
+        .tree;
 
     let schema_store = tombi_comment_directive_store::schema_store().await;
     let source_schema = tombi_schema_store::SourceSchema::new(
@@ -82,7 +86,7 @@ pub async fn get_tombi_value_comment_directive_type_definition(
 
     get_type_definition(
         &document_tree,
-        crate::CursorPosition::new(offset_in_content, &line_index),
+        crate::CursorPosition::new(offset_in_content, line_index),
         &keys,
         &schema_context,
     )

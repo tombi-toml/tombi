@@ -11,14 +11,14 @@ use crate::{
 use tombi_document_tree::StringKind;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct String {
+pub struct String<'t> {
     kind: StringKind,
-    value: crate::DocumentText,
+    value: crate::DocumentText<'t>,
     span: tombi_text::Span,
     pub(crate) comment_directives: Option<Vec<TombiValueCommentDirective>>,
 }
 
-impl std::fmt::Display for String {
+impl<'t> std::fmt::Display for String<'t> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.kind {
             StringKind::BasicString => write!(f, "{}", to_basic_string(&self.value)),
@@ -33,10 +33,10 @@ impl std::fmt::Display for String {
     }
 }
 
-impl crate::String {
+impl<'t> crate::String<'t> {
     fn new(
         kind: StringKind,
-        value: crate::DocumentText,
+        value: crate::DocumentText<'t>,
         span: tombi_text::Span,
         comment_directives: Option<Vec<TombiValueCommentDirective>>,
     ) -> Self {
@@ -89,7 +89,7 @@ impl crate::String {
     }
 }
 
-impl ValueImpl for crate::String {
+impl<'t> ValueImpl for crate::String<'t> {
     fn value_type(&self) -> ValueType {
         ValueType::String
     }
@@ -99,7 +99,7 @@ impl ValueImpl for crate::String {
     }
 }
 
-impl LikeString for crate::String {
+impl<'t> LikeString for crate::String<'t> {
     fn value(&self) -> &str {
         &self.value
     }
@@ -109,11 +109,11 @@ impl LikeString for crate::String {
     }
 }
 
-impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::BasicString {
+impl<'t> IntoDocumentTreeWithContext<'t, crate::Value<'t>> for tombi_ast_syntax::BasicString<'t> {
     fn into_document_tree_with_context(
         self,
-        context: &crate::DocumentTreeContext,
-    ) -> DocumentTreeAndErrors<crate::Value> {
+        context: &crate::DocumentTreeContext<'t>,
+    ) -> DocumentTreeAndErrors<crate::Value<'t>> {
         let token = self.token();
         let span = self.span();
 
@@ -121,11 +121,11 @@ impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::BasicString
     }
 }
 
-impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::LiteralString {
+impl<'t> IntoDocumentTreeWithContext<'t, crate::Value<'t>> for tombi_ast_syntax::LiteralString<'t> {
     fn into_document_tree_with_context(
         self,
-        context: &crate::DocumentTreeContext,
-    ) -> DocumentTreeAndErrors<crate::Value> {
+        context: &crate::DocumentTreeContext<'t>,
+    ) -> DocumentTreeAndErrors<crate::Value<'t>> {
         let token = self.token();
         let span = self.span();
 
@@ -133,11 +133,13 @@ impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::LiteralStri
     }
 }
 
-impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::MultiLineBasicString {
+impl<'t> IntoDocumentTreeWithContext<'t, crate::Value<'t>>
+    for tombi_ast_syntax::MultiLineBasicString<'t>
+{
     fn into_document_tree_with_context(
         self,
-        context: &crate::DocumentTreeContext,
-    ) -> DocumentTreeAndErrors<crate::Value> {
+        context: &crate::DocumentTreeContext<'t>,
+    ) -> DocumentTreeAndErrors<crate::Value<'t>> {
         let token = self.token();
         let span = self.span();
 
@@ -145,11 +147,13 @@ impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::MultiLineBa
     }
 }
 
-impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::MultiLineLiteralString {
+impl<'t> IntoDocumentTreeWithContext<'t, crate::Value<'t>>
+    for tombi_ast_syntax::MultiLineLiteralString<'t>
+{
     fn into_document_tree_with_context(
         self,
-        context: &crate::DocumentTreeContext,
-    ) -> DocumentTreeAndErrors<crate::Value> {
+        context: &crate::DocumentTreeContext<'t>,
+    ) -> DocumentTreeAndErrors<crate::Value<'t>> {
         let token = self.token();
         let span = self.span();
 
@@ -163,13 +167,13 @@ impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::MultiLineLi
     }
 }
 
-fn into_string_and_errors<T: AstNode>(
+fn into_string_and_errors<'t, T: AstNode<'t>>(
     node: T,
     string_kind: StringKind,
-    token: Option<tombi_ast_syntax::SyntaxToken>,
+    token: Option<tombi_ast_syntax::SyntaxToken<'t>>,
     span: tombi_text::Span,
-    context: &crate::DocumentTreeContext,
-) -> DocumentTreeAndErrors<crate::Value> {
+    context: &crate::DocumentTreeContext<'t>,
+) -> DocumentTreeAndErrors<crate::Value<'t>> {
     let (comment_directives, mut errors) = collect_comment_directives_and_errors(&node);
 
     let Some(token) = token else {
@@ -181,7 +185,7 @@ fn into_string_and_errors<T: AstNode>(
         };
     };
 
-    let value = match crate::DocumentText::try_new(node.syntax(), &context.decoded_text) {
+    let value = match crate::DocumentText::try_new(node.syntax(), context.decoded_text) {
         Ok(value) => crate::Value::String(crate::String::new(
             string_kind,
             value,

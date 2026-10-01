@@ -1,19 +1,84 @@
 use std::sync::Arc;
 
+use tombi_ast_syntax::AstNode as _;
 use tombi_diagnostic::SetDiagnostics;
+use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 use tombi_text::{EncodingKind, LineIndex};
 
-use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
+self_cell::self_cell!(
+    /// A text with the result of parsing it, which borrows the text.
+    struct ParsedCell {
+        owner: Box<str>,
 
-#[derive(Debug, Clone)]
+        #[covariant]
+        dependent: ParseResult,
+    }
+);
+
+use tombi_parser::ParseResult;
+
+/// A text and the result of parsing it.
+///
+/// It is the part of a [`DocumentSource`] that does not depend on the TOML version,
+/// so it is shared when only the TOML version changes.
+pub struct ParsedText(ParsedCell);
+
+impl ParsedText {
+    pub fn parse(text: impl Into<Box<str>>) -> Self {
+        Self(ParsedCell::new(text.into(), |text| {
+            tombi_parser::parse(text)
+        }))
+    }
+
+    pub fn text(&self) -> &str {
+        self.0.borrow_owner()
+    }
+
+    pub fn parsed(&self) -> &ParseResult<'_> {
+        self.0.borrow_dependent()
+    }
+
+    pub fn root(&self) -> tombi_ast_syntax::Root<'_> {
+        self.parsed().root()
+    }
+}
+
+/// The owner of a [`DocumentTree`](tombi_document_tree_syntax::DocumentTree):
+/// what the tree borrows from.
+struct TreeOwner {
+    parsed: Arc<ParsedText>,
+    /// The escaped strings decoded for the TOML version of the tree.
+    decoded: tombi_ast_syntax::DecodedTextResolver,
+}
+
+/// What is built from the [`TreeOwner`]. It borrows the owner.
+struct Analyzed<'a> {
+    /// Parsed AST (always exists, even with errors)
+    ast: tombi_ast_syntax::Root<'a>,
+
+    /// Parsed DocumentTree (always exists)
+    document_tree: tombi_document_tree_syntax::DocumentTree<'a>,
+
+    /// DocumentTree generation errors (empty if no errors)
+    document_tree_errors: Vec<tombi_diagnostic::Diagnostic>,
+}
+
+self_cell::self_cell!(
+    struct AnalyzedCell {
+        owner: TreeOwner,
+
+        #[covariant]
+        dependent: Analyzed,
+    }
+);
+
+/// A snapshot of a document: its text, the syntax tree, and the document tree.
+///
+/// The text and everything built from it are borrowed from the same owner, so a clone of a
+/// snapshot shares the owner with one [`Arc`] instead of reference-counting every node.
+#[derive(Clone)]
 pub struct DocumentSource {
-    /// The parse result of the text, which owns the text and its line index.
-    ///
-    /// The linter and the formatter reuse it, so the text is parsed and indexed only once.
-    parsed: tombi_parser::ParseResult,
-
-    /// The line index of the text, built while parsing it.
-    line_index: Arc<LineIndex>,
+    cell: Arc<AnalyzedCell>,
 
     /// The column unit of the LSP client.
     encoding_kind: EncodingKind,
@@ -25,73 +90,113 @@ pub struct DocumentSource {
 
     pub toml_version: tombi_config::TomlVersion,
 
-    /// Parsed AST (always exists, even with errors)
-    ast: Arc<tombi_ast_syntax::Root>,
-
     /// AST generation errors (empty if no errors)
-    ast_errors: Vec<tombi_diagnostic::Diagnostic>,
+    ast_errors: Arc<[tombi_diagnostic::Diagnostic]>,
+}
 
-    /// Parsed DocumentTree (always exists)
-    document_tree: Arc<tombi_document_tree_syntax::DocumentTree>,
-
-    /// DocumentTree generation errors (empty if no errors)
-    document_tree_errors: Vec<tombi_diagnostic::Diagnostic>,
+impl std::fmt::Debug for DocumentSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DocumentSource")
+            .field("version", &self.version)
+            .field("toml_version", &self.toml_version)
+            .field("encoding_kind", &self.encoding_kind)
+            .finish_non_exhaustive()
+    }
 }
 
 impl DocumentSource {
     pub fn new(
-        parsed: tombi_parser::ParseResult,
+        parsed: ParsedText,
         version: Option<i32>,
         toml_version: tombi_config::TomlVersion,
         encoding_kind: EncodingKind,
     ) -> Self {
-        let ast = parsed.root();
-        let mut ast_errors = Vec::with_capacity(parsed.errors.len());
-        for error in parsed.errors.iter().cloned() {
+        Self::from_parsed(Arc::new(parsed), version, toml_version, encoding_kind)
+    }
+
+    fn from_parsed(
+        parsed: Arc<ParsedText>,
+        version: Option<i32>,
+        toml_version: tombi_config::TomlVersion,
+        encoding_kind: EncodingKind,
+    ) -> Self {
+        let mut ast_errors = Vec::with_capacity(parsed.parsed().errors.len());
+        for error in parsed.parsed().errors.iter().cloned() {
             error.set_diagnostics(&mut ast_errors);
         }
-        let (document_tree, document_tree_errors) = build_document_tree(&ast, toml_version);
+        let decoded = parsed.root().decode_strings(toml_version);
 
         Self {
-            line_index: Arc::clone(parsed.line_index()),
-            parsed,
+            cell: Arc::new(AnalyzedCell::new(TreeOwner { parsed, decoded }, |owner| {
+                let ast = owner.parsed.root();
+                let (document_tree, document_tree_errors) =
+                    build_document_tree(ast, toml_version, &owner.decoded);
+                Analyzed {
+                    ast,
+                    document_tree,
+                    document_tree_errors,
+                }
+            })),
             encoding_kind,
             version,
             toml_version,
-            ast: Arc::new(ast),
-            ast_errors,
-            document_tree,
-            document_tree_errors,
+            ast_errors: ast_errors.into(),
         }
     }
 
-    pub fn text(&self) -> &str {
-        self.line_index.text()
-    }
-
-    /// The parse result of the text, to lint or format it without parsing it again.
-    pub fn parsed(&self) -> &tombi_parser::ParseResult {
-        &self.parsed
-    }
-
-    pub fn set_text(&mut self, text: &str, toml_version: tombi_config::TomlVersion) {
-        *self = Self::new(
-            tombi_parser::parse(text),
+    /// A snapshot of `text`, with the version and the encoding of this one.
+    pub fn with_text(
+        &self,
+        text: impl Into<Box<str>>,
+        toml_version: tombi_config::TomlVersion,
+    ) -> Self {
+        Self::new(
+            ParsedText::parse(text),
             self.version,
             toml_version,
             self.encoding_kind,
-        );
+        )
+    }
+
+    pub fn set_text(&mut self, text: impl Into<Box<str>>, toml_version: tombi_config::TomlVersion) {
+        *self = self.with_text(text, toml_version);
     }
 
     /// Rebuilds only the document tree for `toml_version`, reusing the parsed AST.
     pub fn set_toml_version(&mut self, toml_version: tombi_config::TomlVersion) {
-        self.toml_version = toml_version;
-        (self.document_tree, self.document_tree_errors) =
-            build_document_tree(&self.ast, toml_version);
+        *self = self.with_toml_version(toml_version);
     }
 
-    pub fn line_index(&self) -> &LineIndex {
-        self.line_index.as_ref()
+    /// A snapshot that builds only the document tree for `toml_version`, reusing the parsed AST.
+    pub fn with_toml_version(&self, toml_version: tombi_config::TomlVersion) -> Self {
+        Self::from_parsed(
+            Arc::clone(&self.cell.borrow_owner().parsed),
+            self.version,
+            toml_version,
+            self.encoding_kind,
+        )
+    }
+
+    pub fn text(&self) -> &str {
+        self.parsed_text().text()
+    }
+
+    fn parsed_text(&self) -> &ParsedText {
+        &self.cell.borrow_owner().parsed
+    }
+
+    /// The parse result of the text, to lint or format it without parsing it again.
+    pub fn parsed(&self) -> &ParseResult<'_> {
+        self.parsed_text().parsed()
+    }
+
+    /// The pool of escaped strings that the document tree borrows.
+    pub fn decoded(&self) -> &tombi_ast_syntax::DecodedTextResolver {
+        &self.cell.borrow_owner().decoded
+    }
+
+    pub fn line_index(&self) -> &LineIndex<'_> {
+        self.parsed().line_index()
     }
 
     /// The column unit of the LSP client, to convert spans into LSP ranges.
@@ -99,13 +204,9 @@ impl DocumentSource {
         self.encoding_kind
     }
 
-    pub fn line_index_arc(&self) -> Arc<LineIndex> {
-        Arc::clone(&self.line_index)
-    }
-
     /// Get the parsed AST (always exists)
-    pub fn ast(&self) -> Arc<tombi_ast_syntax::Root> {
-        Arc::clone(&self.ast)
+    pub fn ast(&self) -> tombi_ast_syntax::Root<'_> {
+        self.cell.borrow_dependent().ast
     }
 
     /// Get AST generation errors
@@ -114,32 +215,32 @@ impl DocumentSource {
     }
 
     /// Get the parsed DocumentTree (always exists)
-    pub fn document_tree(&self) -> Arc<tombi_document_tree_syntax::DocumentTree> {
-        Arc::clone(&self.document_tree)
+    pub fn document_tree(&self) -> &tombi_document_tree_syntax::DocumentTree<'_> {
+        &self.cell.borrow_dependent().document_tree
     }
 
     /// Get DocumentTree generation errors
     pub fn document_tree_errors(&self) -> &[tombi_diagnostic::Diagnostic] {
-        &self.document_tree_errors
+        &self.cell.borrow_dependent().document_tree_errors
     }
 }
 
-fn build_document_tree(
-    ast: &tombi_ast_syntax::Root,
+fn build_document_tree<'a>(
+    ast: tombi_ast_syntax::Root<'a>,
     toml_version: tombi_config::TomlVersion,
+    decoded: &'a tombi_ast_syntax::DecodedTextResolver,
 ) -> (
-    Arc<tombi_document_tree_syntax::DocumentTree>,
+    tombi_document_tree_syntax::DocumentTree<'a>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
     let (document_tree, errors) = ast
-        .clone()
-        .into_document_tree_and_errors(toml_version)
+        .into_document_tree_and_errors(toml_version, decoded)
         .into();
     let mut document_tree_errors = Vec::with_capacity(errors.len());
     for error in errors {
         error.set_diagnostics(&mut document_tree_errors);
     }
-    (Arc::new(document_tree), document_tree_errors)
+    (document_tree, document_tree_errors)
 }
 
 #[cfg(test)]
@@ -147,20 +248,37 @@ mod tests {
     use tombi_config::TomlVersion;
     use tombi_text::EncodingKind;
 
-    use super::DocumentSource;
+    use super::{DocumentSource, ParsedText};
 
     #[test]
-    fn line_index_arc_keeps_original_text_alive() {
-        let mut document_source = DocumentSource::new(
-            tombi_parser::parse("name = \"before\"\nversion = \"1.0.0\""),
+    fn snapshot_keeps_its_own_text_after_the_next_snapshot_is_built() {
+        let document_source = DocumentSource::new(
+            ParsedText::parse("name = \"before\"\nversion = \"1.0.0\""),
             Some(1),
             TomlVersion::default(),
             EncodingKind::Utf16,
         );
-        let line_index = document_source.line_index_arc();
+        let next = document_source.with_text("name = \"after\"", TomlVersion::default());
 
-        document_source.set_text("name = \"after\"", TomlVersion::default());
+        assert_eq!(
+            document_source.line_index().line_text(1),
+            Some("version = \"1.0.0\"")
+        );
+        assert_eq!(next.text(), "name = \"after\"");
+    }
 
-        assert_eq!(line_index.line_text(1), Some("version = \"1.0.0\""));
+    #[test]
+    fn toml_version_change_shares_the_parse_result() {
+        let document_source = DocumentSource::new(
+            ParsedText::parse("name = \"a\""),
+            None,
+            TomlVersion::default(),
+            EncodingKind::Utf16,
+        );
+
+        let next = document_source.with_toml_version(TomlVersion::V1_0_0);
+
+        assert!(std::ptr::eq(document_source.parsed(), next.parsed()));
+        assert_eq!(next.toml_version, TomlVersion::V1_0_0);
     }
 }

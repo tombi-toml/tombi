@@ -10,10 +10,10 @@ use crate::editor::rule::{
     inline_table_keys_order::inline_table_keys_order,
 };
 
-impl crate::editor::Edit for tombi_ast_syntax::InlineTable {
-    fn edit<'a: 'b, 'b>(
+impl<'t> crate::editor::Edit for tombi_ast_syntax::InlineTable<'t> {
+    fn edit<'a: 'b, 'b, 'd>(
         &'a self,
-        node: &'a tombi_document_tree_syntax::Value,
+        node: &'a tombi_document_tree_syntax::Value<'d>,
         accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,

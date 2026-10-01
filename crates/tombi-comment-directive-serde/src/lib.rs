@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use tombi_ast_syntax::AstNode as _;
 use tombi_comment_directive::{
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
     value::TombiValueDirectiveContent,
@@ -16,11 +17,27 @@ where
 {
     let mut total_document_tree_table: Option<tombi_document_tree_syntax::Table> = None;
 
-    for tombi_ast_syntax::TombiValueCommentDirective { content, .. } in comment_directives {
-        let root = tombi_parser::parse(&content).try_into_root().ok()?;
+    // The document tree borrows the contents, the parse results and the decoded strings.
+    let contents = comment_directives
+        .into_iter()
+        .map(|directive| directive.content)
+        .collect::<Vec<_>>();
+    let parsed = contents
+        .iter()
+        .map(|content| tombi_parser::parse(content))
+        .collect::<Vec<_>>();
+    let roots = parsed
+        .iter()
+        .map(|parsed| parsed.try_root().ok())
+        .collect::<Option<Vec<_>>>()?;
+    let decoded = roots
+        .iter()
+        .map(|root| root.decode_strings(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION))
+        .collect::<Vec<_>>();
 
+    for (root, decoded) in roots.into_iter().zip(&decoded) {
         let document_tree = root
-            .try_into_document_tree(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION)
+            .try_into_document_tree(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, decoded)
             .ok()?;
 
         if let Some(total_document_tree_table) = total_document_tree_table.as_mut() {

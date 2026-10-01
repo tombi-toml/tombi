@@ -18,7 +18,7 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Integer {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition<'a>,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
@@ -130,7 +130,7 @@ impl GetTypeDefinition for tombi_schema_store::IntegerSchema {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         _cursor: crate::CursorPosition<'a>,
-        _keys: &'a [tombi_document_tree_syntax::Key],
+        _keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,

@@ -2,7 +2,7 @@ use tombi_future::Boxable;
 
 use crate::Lint;
 
-impl Lint for tombi_ast_syntax::BasicString {
+impl Lint for tombi_ast_syntax::BasicString<'_> {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,
@@ -11,7 +11,7 @@ impl Lint for tombi_ast_syntax::BasicString {
     }
 }
 
-impl Lint for tombi_ast_syntax::LiteralString {
+impl Lint for tombi_ast_syntax::LiteralString<'_> {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,
@@ -20,7 +20,7 @@ impl Lint for tombi_ast_syntax::LiteralString {
     }
 }
 
-impl Lint for tombi_ast_syntax::MultiLineBasicString {
+impl Lint for tombi_ast_syntax::MultiLineBasicString<'_> {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,
@@ -29,7 +29,7 @@ impl Lint for tombi_ast_syntax::MultiLineBasicString {
     }
 }
 
-impl Lint for tombi_ast_syntax::MultiLineLiteralString {
+impl Lint for tombi_ast_syntax::MultiLineLiteralString<'_> {
     fn lint<'a: 'b, 'b>(
         &'a self,
         _l: &'a mut crate::Linter<'_>,

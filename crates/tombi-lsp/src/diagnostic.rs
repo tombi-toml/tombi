@@ -69,19 +69,12 @@ pub async fn get_diagnostics_result(
         }
     }
 
-    let (parsed, line_index, version, toml_version, encoding) = {
-        let Ok(document_sources) = backend.document_sources.try_read() else {
-            return None;
-        };
-        let document_source = document_sources.get(text_document_uri)?;
-        (
-            document_source.parsed().clone(),
-            document_source.line_index_arc(),
-            document_source.version,
-            document_source.toml_version,
-            document_source.encoding_kind(),
-        )
-    };
+    let document_source = backend.document_source(text_document_uri)?;
+    let (version, toml_version, encoding) = (
+        document_source.version,
+        document_source.toml_version,
+        document_source.encoding_kind(),
+    );
 
     // Get lint options with override support
     let text_document_path = text_document_uri.to_file_path().ok();
@@ -100,14 +93,14 @@ pub async fn get_diagnostics_result(
         Some(Either::Left(text_document_uri)),
         &schema_store,
     )
-    .lint_parsed(parsed)
+    .lint_parsed(document_source.parsed())
     .await
     {
         Ok(_) => Vec::new(),
         Err(diagnostics) => diagnostics
             .into_iter()
             .unique()
-            .map(|diagnostic| diagnostic.into_lsp(&line_index, encoding))
+            .map(|diagnostic| diagnostic.into_lsp(document_source.line_index(), encoding))
             .collect_vec(),
     };
 

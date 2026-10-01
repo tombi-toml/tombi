@@ -27,9 +27,9 @@ pub(super) enum CompositeKind {
 }
 
 pub async fn get_hover_content(
-    tree: &tombi_document_tree_syntax::DocumentTree,
+    tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     offset: tombi_text::Offset,
-    keys: &[tombi_document_tree_syntax::Key],
+    keys: &[tombi_document_tree_syntax::Key<'_>],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Option<HoverContent> {
     let table = tree.deref();
@@ -52,7 +52,7 @@ pub(super) trait GetHoverContent {
     fn get_hover_content<'a: 'b, 'b>(
         &'a self,
         offset: tombi_text::Offset,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
@@ -274,7 +274,7 @@ pub(super) async fn merge_adjacent_hover_content<
 >(
     value: &T,
     offset: tombi_text::Offset,
-    keys: &[tombi_document_tree_syntax::Key],
+    keys: &[tombi_document_tree_syntax::Key<'_>],
     accessors: &[Accessor],
     current_schema: Option<&CurrentSchema<'_>>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,

@@ -26,7 +26,7 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
             let kind = format_ident!("{}", node.name.to_case(Case::UpperSnake));
             let traits = node.traits.iter().map(|trait_name| {
                 let trait_name = format_ident!("{}", trait_name);
-                quote!(impl tombi_ast_syntax::#trait_name for #name {})
+                quote!(impl<'t> tombi_ast_syntax::#trait_name for #name<'t> {})
             });
 
             let methods = node.fields.iter().filter_map(|field| {
@@ -40,21 +40,21 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
                 if field.is_many() {
                     Some(quote! {
                         #[inline]
-                        pub fn #method_name(&self) -> impl Iterator<Item = #ty> + use<> {
+                        pub fn #method_name(&self) -> impl Iterator<Item = #ty<'t>> + use<'t> {
                             self.syntax.child_nodes().filter_map(#ty::cast)
                         }
                     })
                 } else if let Some(token_kind) = field.token_kind() {
                     Some(quote! {
                         #[inline]
-                        pub fn #method_name(&self) -> Option<#ty> {
+                        pub fn #method_name(&self) -> Option<#ty<'t>> {
                             support::node::token(&self.syntax, #token_kind)
                         }
                     })
                 } else {
                     Some(quote! {
                         #[inline]
-                        pub fn #method_name(&self) -> Option<#ty> {
+                        pub fn #method_name(&self) -> Option<#ty<'t>> {
                             support::node::child(&self.syntax)
                         }
                     })
@@ -62,14 +62,14 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
             });
             (
                 quote! {
-                    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-                    pub struct #name {
-                        pub(crate) syntax: SyntaxNode,
+                    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+                    pub struct #name<'t> {
+                        pub(crate) syntax: SyntaxNode<'t>,
                     }
 
                     #(#traits)*
 
-                    impl #name {
+                    impl<'t> #name<'t> {
                         #(#methods)*
 
                         #[inline]
@@ -79,17 +79,17 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
                     }
                 },
                 quote! {
-                    impl AstNode for #name {
+                    impl<'t> AstNode<'t> for #name<'t> {
                         #[inline]
                         fn can_cast(kind: SyntaxKind) -> bool {
                             kind == SyntaxKind::#kind
                         }
                         #[inline]
-                        fn cast(syntax: SyntaxNode) -> Option<Self> {
+                        fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
                             if Self::can_cast(syntax.kind()) { Some(Self { syntax }) } else { None }
                         }
                         #[inline]
-                        fn syntax(&self) -> &SyntaxNode { &self.syntax }
+                        fn syntax(&self) -> &SyntaxNode<'t> { &self.syntax }
                     }
                 },
             )
@@ -113,17 +113,17 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
                 .collect();
             let traits = en.traits.iter().sorted().map(|trait_name| {
                 let trait_name = format_ident!("{}", trait_name);
-                quote!(impl tombi_ast_syntax::#trait_name for #name {})
+                quote!(impl<'t> tombi_ast_syntax::#trait_name for #name<'t> {})
             });
 
             let ast_node = quote! {
-                impl AstNode for #name {
+                impl<'t> AstNode<'t> for #name<'t> {
                     #[inline]
                     fn can_cast(kind: SyntaxKind) -> bool {
                         matches!(kind, #(SyntaxKind::#kinds)|*)
                     }
                     #[inline]
-                    fn cast(syntax: SyntaxNode) -> Option<Self> {
+                    fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
                         let res = match syntax.kind() {
                             #(
                             SyntaxKind::#kinds => #name::#variants(#variants { syntax }),
@@ -133,7 +133,7 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
                         Some(res)
                     }
                     #[inline]
-                    fn syntax(&self) -> &SyntaxNode {
+                    fn syntax(&self) -> &SyntaxNode<'t> {
                         match self {
                             #(
                             #name::#variants(it) => &it.syntax,
@@ -145,18 +145,18 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
 
             (
                 quote! {
-                    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-                    pub enum #name {
-                        #(#variants(#variants),)*
+                    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+                    pub enum #name<'t> {
+                        #(#variants(#variants<'t>),)*
                     }
 
                     #(#traits)*
                 },
                 quote! {
                     #(
-                        impl From<#variants> for #name {
+                        impl<'t> From<#variants<'t>> for #name<'t> {
                             #[inline]
-                            fn from(node: #variants) -> #name {
+                            fn from(node: #variants<'t>) -> #name<'t> {
                                 #name::#variants(node)
                             }
                         }
@@ -185,40 +185,40 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
             (
                 quote! {
                     #[pretty_doc_comment_placeholder_workaround]
-                    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-                    pub struct #name {
-                        pub(crate) syntax: SyntaxNode,
+                    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+                    pub struct #name<'t> {
+                        pub(crate) syntax: SyntaxNode<'t>,
                     }
-                    impl tombi_ast_syntax::#trait_name for #name {}
+                    impl<'t> tombi_ast_syntax::#trait_name for #name<'t> {}
                 },
                 quote! {
-                    impl #name {
+                    impl<'t> #name<'t> {
                         #[inline]
-                        pub fn new<T: tombi_ast_syntax::#trait_name>(node: T) -> #name {
+                        pub fn new<T: tombi_ast_syntax::#trait_name + AstNode<'t>>(node: T) -> #name<'t> {
                             #name {
-                                syntax: node.syntax().clone()
+                                syntax: *node.syntax()
                             }
                         }
                     }
-                    impl AstNode for #name {
+                    impl<'t> AstNode<'t> for #name<'t> {
                         #[inline]
                         fn can_cast(kind: SyntaxKind) -> bool {
                             matches!(kind, #(#kinds)|*)
                         }
                         #[inline]
-                        fn cast(syntax: SyntaxNode) -> Option<Self> {
+                        fn cast(syntax: SyntaxNode<'t>) -> Option<Self> {
                             Self::can_cast(syntax.kind()).then_some(#name { syntax })
                         }
                         #[inline]
-                        fn syntax(&self) -> &SyntaxNode {
+                        fn syntax(&self) -> &SyntaxNode<'t> {
                             &self.syntax
                         }
                     }
 
                     #(
-                        impl From<#nodes> for #name {
+                        impl<'t> From<#nodes<'t>> for #name<'t> {
                             #[inline]
-                            fn from(node: #nodes) -> #name {
+                            fn from(node: #nodes<'t>) -> #name<'t> {
                                 #name { syntax: node.syntax }
                             }
                         }
@@ -236,7 +236,7 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
         .map(|it| format_ident!("{}", it))
         .map(|name| {
             quote! {
-                impl std::fmt::Display for #name {
+                impl std::fmt::Display for #name<'_> {
                     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         std::fmt::Display::fmt(self.syntax(), f)
                     }

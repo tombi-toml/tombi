@@ -9,7 +9,7 @@ use crate::{
     types::{AlignmentWidth, WithAlignmentHint},
 };
 
-impl Format for WithAlignmentHint<&tombi_ast_syntax::Keys> {
+impl<'t> Format for WithAlignmentHint<&tombi_ast_syntax::Keys<'t>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let keys = self.value;
         let mut keys_string = keys
@@ -38,13 +38,13 @@ impl Format for WithAlignmentHint<&tombi_ast_syntax::Keys> {
     }
 }
 
-impl Format for tombi_ast_syntax::BareKey {
+impl<'t> Format for tombi_ast_syntax::BareKey<'t> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         write!(f, "{}", self.syntax().text())
     }
 }
 
-impl Format for tombi_ast_syntax::Key {
+impl<'t> Format for tombi_ast_syntax::Key<'t> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         match self {
             Self::BareKey(it) => it.format(f),

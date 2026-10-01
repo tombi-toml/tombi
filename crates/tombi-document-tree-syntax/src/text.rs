@@ -1,48 +1,41 @@
-use std::{borrow::Borrow, fmt, hash::Hash, ops::Deref, sync::Arc};
+use std::{borrow::Borrow, fmt, hash::Hash, ops::Deref};
 
-/// TOML text backed by one shared immutable buffer.
+/// TOML text borrowed from the source or from the decoded-string pool.
 ///
-/// Unescaped text points into the original source buffer. Escaped text points
-/// into the decoded buffer for the document's TOML version. The span is local
-/// to the selected buffer, so their combined length never shares one offset
-/// space.
-#[derive(Clone)]
-pub struct DocumentText {
-    buffer: Arc<Box<str>>,
-    span: tombi_text::Span,
-}
+/// Unescaped text points into the original source. Escaped text points into
+/// the decoded pool for the document's TOML version.
+#[derive(Clone, Copy)]
+pub struct DocumentText<'t>(&'t str);
 
-impl DocumentText {
+impl<'t> DocumentText<'t> {
     #[inline]
     pub(crate) fn try_new(
-        syntax: &tombi_ast_syntax::SyntaxNode,
-        resolver: &tombi_ast_syntax::DecodedTextResolver,
+        syntax: &tombi_ast_syntax::SyntaxNode<'t>,
+        resolver: &'t tombi_ast_syntax::DecodedTextResolver,
     ) -> Result<Self, tombi_toml_text::ParseError> {
-        let (buffer, span) = syntax.resolve_text(resolver)?;
-        Ok(Self { buffer, span })
+        syntax.resolve_text(resolver).map(Self)
     }
 
     #[inline]
     pub(crate) fn new_raw(
-        syntax: &tombi_ast_syntax::SyntaxNode,
+        syntax: &tombi_ast_syntax::SyntaxNode<'t>,
         resolver: &tombi_ast_syntax::DecodedTextResolver,
     ) -> Self {
-        let (buffer, span) = syntax.resolve_raw_text(resolver);
-        Self { buffer, span }
+        Self(syntax.resolve_raw_text(resolver))
     }
 
     #[inline]
-    pub fn as_str(&self) -> &str {
-        &self.buffer[self.span]
+    pub fn as_str(&self) -> &'t str {
+        self.0
     }
 
     #[inline]
     pub fn into_string(self) -> String {
-        self.as_str().to_owned()
+        self.0.to_owned()
     }
 }
 
-impl Deref for DocumentText {
+impl Deref for DocumentText<'_> {
     type Target = str;
 
     #[inline]
@@ -51,114 +44,96 @@ impl Deref for DocumentText {
     }
 }
 
-impl AsRef<str> for DocumentText {
+impl AsRef<str> for DocumentText<'_> {
     #[inline]
     fn as_ref(&self) -> &str {
         self.as_str()
     }
 }
 
-impl Borrow<str> for DocumentText {
+impl Borrow<str> for DocumentText<'_> {
     #[inline]
     fn borrow(&self) -> &str {
         self.as_str()
     }
 }
 
-impl fmt::Debug for DocumentText {
+impl fmt::Debug for DocumentText<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.as_str().fmt(f)
     }
 }
 
-impl fmt::Display for DocumentText {
+impl fmt::Display for DocumentText<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
 }
 
-impl PartialEq for DocumentText {
+impl PartialEq for DocumentText<'_> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.as_str() == other.as_str()
     }
 }
 
-impl Eq for DocumentText {}
+impl Eq for DocumentText<'_> {}
 
-impl Hash for DocumentText {
+impl Hash for DocumentText<'_> {
     #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.as_str().hash(state);
     }
 }
 
-impl PartialEq<str> for DocumentText {
+impl PartialEq<str> for DocumentText<'_> {
     #[inline]
     fn eq(&self, other: &str) -> bool {
         self.as_str() == other
     }
 }
 
-impl PartialEq<&str> for DocumentText {
+impl PartialEq<&str> for DocumentText<'_> {
     #[inline]
     fn eq(&self, other: &&str) -> bool {
         self.as_str() == *other
     }
 }
 
-impl PartialEq<String> for DocumentText {
+impl PartialEq<String> for DocumentText<'_> {
     #[inline]
     fn eq(&self, other: &String) -> bool {
         self.as_str() == other
     }
 }
 
-impl PartialEq<DocumentText> for str {
+impl PartialEq<DocumentText<'_>> for str {
     #[inline]
-    fn eq(&self, other: &DocumentText) -> bool {
+    fn eq(&self, other: &DocumentText<'_>) -> bool {
         self == other.as_str()
     }
 }
 
-impl PartialEq<DocumentText> for &str {
+impl PartialEq<DocumentText<'_>> for &str {
     #[inline]
-    fn eq(&self, other: &DocumentText) -> bool {
+    fn eq(&self, other: &DocumentText<'_>) -> bool {
         *self == other.as_str()
     }
 }
 
-impl PartialEq<DocumentText> for String {
+impl PartialEq<DocumentText<'_>> for String {
     #[inline]
-    fn eq(&self, other: &DocumentText) -> bool {
+    fn eq(&self, other: &DocumentText<'_>) -> bool {
         self == other.as_str()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use super::DocumentText;
 
     #[test]
     fn document_text_is_compact() {
         assert_eq!(std::mem::size_of::<DocumentText>(), 16);
-    }
-
-    #[test]
-    fn document_text_span_is_local_to_its_buffer() {
-        let span = tombi_text::Span::new(0.into(), 6.into());
-        let source = DocumentText {
-            buffer: Arc::new("source".into()),
-            span,
-        };
-        let decoded = DocumentText {
-            buffer: Arc::new("decoded".into()),
-            span,
-        };
-
-        assert_eq!(source.as_str(), "source");
-        assert_eq!(decoded.as_str(), "decode");
     }
 }

@@ -6,8 +6,8 @@ use tombi_toml_version::TomlVersion;
 
 use crate::AstNode;
 
-impl crate::Key {
-    pub fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
+impl<'t> crate::Key<'t> {
+    pub fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken<'t>> {
         match self {
             Self::BareKey(key) => key.token(),
             Self::BasicString(key) => key.token(),
@@ -41,7 +41,7 @@ impl crate::Key {
     }
 }
 
-impl PartialOrd for crate::Key {
+impl<'t> PartialOrd for crate::Key<'t> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (
             self.try_to_content(TomlVersion::latest()),
@@ -53,10 +53,10 @@ impl PartialOrd for crate::Key {
     }
 }
 
-impl crate::Keys {
+impl<'t> crate::Keys<'t> {
     /// Returns the last dot written in this TOML key path, including an
     /// incomplete path such as `package.`.
-    pub fn last_dot(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
+    pub fn last_dot(&self) -> Option<tombi_ast_syntax::SyntaxToken<'t>> {
         self.syntax()
             .child_elements()
             .filter_map(tombi_ast_syntax::SyntaxElement::into_token)
@@ -92,7 +92,7 @@ impl crate::Keys {
         self.keys().count() == other.keys().count() && self.starts_with(other)
     }
 
-    pub fn keys_rev(&self) -> impl Iterator<Item = crate::Key> {
+    pub fn keys_rev(&self) -> impl Iterator<Item = crate::Key<'t>> {
         self.keys().collect_vec().into_iter().rev()
     }
 }

@@ -9,16 +9,20 @@ mod rule;
 use change::Change;
 use edit::Edit;
 
+/// Applies the formatter rewrite rules to `root`.
+///
+/// Returns the rewritten source, or `None` when nothing has to be rewritten.
+/// The caller parses the returned source again, since the new syntax tree
+/// has to borrow the new source.
 pub(crate) async fn edit<'a>(
-    root: tombi_ast_syntax::Root,
+    root: tombi_ast_syntax::Root<'_>,
     source_path: Option<&'a std::path::Path>,
     schema_context: &'a SchemaContext<'a>,
-) -> tombi_ast_syntax::Root {
-    let Ok(document_tree) = root
-        .clone()
-        .try_into_document_tree(schema_context.toml_version)
+) -> Option<String> {
+    let decoded = root.decode_strings(schema_context.toml_version);
+    let Ok(document_tree) = root.try_into_document_tree(schema_context.toml_version, &decoded)
     else {
-        return root;
+        return None;
     };
     let current_schema = schema_context
         .root_schema
@@ -35,21 +39,14 @@ pub(crate) async fn edit<'a>(
         )
         .await;
     if changes.is_empty() {
-        return root;
+        return None;
     }
 
-    let source = match change::apply(root.syntax(), changes) {
-        Ok(source) => source,
+    match change::apply(root.syntax(), changes) {
+        Ok(source) => Some(source),
         Err(error) => {
             log::error!("failed to apply formatter source rewrite: {error:?}");
-            return root;
+            None
         }
-    };
-    let (edited_root, errors) = tombi_parser::parse(&source).into_root_and_errors();
-    if errors.is_empty() {
-        edited_root
-    } else {
-        log::error!("formatter source rewrite produced invalid TOML: {errors:#?}");
-        root
     }
 }

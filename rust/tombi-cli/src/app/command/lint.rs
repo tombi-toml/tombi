@@ -187,6 +187,9 @@ where
     let runtime = super::runtime(FileInputType::from(args.files.as_ref()) == FileInputType::Stdin)
         .map_err(|error| format!("failed to create tokio runtime: {error}"))?;
 
+    // The tasks convert the spans of the diagnostics before their sources are dropped.
+    let encoding = diagnostics_reporter.encoding();
+
     runtime.block_on(async {
         // Run schema loading and file discovery concurrently
         let (schema_result, input) = tokio::join!(
@@ -222,6 +225,7 @@ where
                     &lint_options,
                     &schema_store,
                     args.error_on_warnings,
+                    encoding,
                 )
                 .await;
                 record_lint_result(result, &mut summary, &printer, diagnostics_reporter);
@@ -269,6 +273,7 @@ where
                                             &lint_options,
                                             &schema_store,
                                             args.error_on_warnings,
+                                            encoding,
                                         )
                                         .await
                                     }
@@ -312,6 +317,7 @@ async fn lint_file<R>(
     lint_options: &LintOptions,
     schema_store: &tombi_schema_store::SchemaStore,
     error_on_warnings: bool,
+    encoding: tombi_text::EncodingKind,
 ) -> LintedFile
 where
     R: AsyncReadExt + Unpin + Send,
@@ -322,14 +328,13 @@ where
     }
 
     let parsed = tombi_parser::parse(&source);
-    let line_index = std::sync::Arc::clone(parsed.line_index());
     let diagnostics = tombi_linter::Linter::new(
         toml_version,
         lint_options,
         source_path.map(itertools::Either::Right),
         schema_store,
     )
-    .lint_parsed(parsed)
+    .lint_parsed(&parsed)
     .await
     .err()
     .unwrap_or_default();
@@ -344,7 +349,7 @@ where
         result: Ok(success),
         report: FileReport::new(
             source_path.map(ToOwned::to_owned),
-            Some(line_index),
+            Some((parsed.line_index(), encoding)),
             diagnostics,
         ),
     }

@@ -7,7 +7,7 @@ use crate::{
     token_set::{TS_INLINE_TABLE_END, TS_KEY_FIRST},
 };
 
-impl Parse for tombi_ast_syntax::KeyValueWithCommaGroup {
+impl Parse for tombi_ast_syntax::KeyValueWithCommaGroup<'_> {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 

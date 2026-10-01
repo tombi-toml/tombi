@@ -8,8 +8,8 @@ use crate::Rule;
 
 pub struct TablesOutOfOrderRule;
 
-impl Rule<tombi_ast_syntax::Root> for TablesOutOfOrderRule {
-    async fn check(node: &tombi_ast_syntax::Root, l: &mut crate::Linter<'_>) {
+impl Rule<tombi_ast_syntax::Root<'_>> for TablesOutOfOrderRule {
+    async fn check(node: &tombi_ast_syntax::Root<'_>, l: &mut crate::Linter<'_>) {
         let comment_directive = get_comment_directive_content::<
             TableCommonFormatRules,
             RootTableCommonLintRules,

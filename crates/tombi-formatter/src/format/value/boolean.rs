@@ -2,8 +2,8 @@ use tombi_ast_syntax::Boolean;
 
 use super::LiteralNode;
 
-impl LiteralNode for Boolean {
-    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken> {
+impl<'t> LiteralNode<'t> for Boolean<'t> {
+    fn token(&self) -> Option<tombi_ast_syntax::SyntaxToken<'t>> {
         self.token()
     }
 }

@@ -1,6 +1,7 @@
 use std::io::Read;
 
 use clap::Parser;
+use tombi_ast_syntax::AstNode as _;
 use tombi_document_tree_syntax::TryIntoDocumentTree;
 use tombi_toml_version::TomlVersion;
 use toml_test::{INVALID_MESSAGE, IntoValue, Value};
@@ -49,15 +50,16 @@ fn decode(source: &str, toml_version: TomlVersion) -> Result<Value, anyhow::Erro
     let p = tombi_parser::parse(source);
 
     if !p.errors.is_empty() {
-        for error in p.errors {
+        for error in &p.errors {
             eprintln!("{error}");
         }
         return Err(anyhow::anyhow!(INVALID_MESSAGE));
     }
 
-    let root = p.into_root();
+    let root = p.root();
+    let decoded = root.decode_strings(toml_version);
 
-    let root = match root.try_into_document_tree(toml_version) {
+    let root = match root.try_into_document_tree(toml_version, &decoded) {
         Ok(root) => root,
         Err(errors) => {
             for error in errors {

@@ -7,14 +7,14 @@ use tombi_extension::{HoverMetadata, HoverTextChange, append_latest_version};
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
-    fetch_pypi_project, find_member_project_toml, find_workspace_pyproject_toml,
-    get_dependency_accessors, get_project_name, load_pyproject_toml_document_tree,
-    parse_requirement, resolve_member_pyproject_toml_path,
+    UNUSED_ENCODING, fetch_pypi_project, find_member_project_toml, find_workspace_pyproject_toml,
+    get_dependency_accessors, get_project_name, parse_requirement,
+    resolve_member_pyproject_toml_path, with_pyproject_toml,
 };
 
 pub async fn hover(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     offset: tombi_text::Offset,
     toml_version: TomlVersion,
@@ -82,9 +82,9 @@ pub async fn hover(
 }
 
 fn resolve_pyproject_dependency_metadata_from_sources(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     package_name: &str,
-    current_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    current_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<HoverMetadata> {
@@ -104,7 +104,7 @@ fn resolve_pyproject_dependency_metadata_from_sources(
 }
 
 fn resolve_pyproject_source_metadata(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     source_accessors: &[Accessor],
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
@@ -125,8 +125,8 @@ fn resolve_pyproject_source_metadata(
 
 fn resolve_source_value_metadata(
     package_name: &str,
-    source: &Value,
-    current_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    source: &Value<'_>,
+    current_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<HoverMetadata> {
@@ -156,7 +156,7 @@ fn resolve_source_value_metadata(
 
 fn resolve_workspace_member_metadata(
     package_name: &str,
-    current_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    current_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<HoverMetadata> {
@@ -167,18 +167,26 @@ fn resolve_workspace_member_metadata(
                 current_document_tree,
                 pyproject_toml_path,
                 toml_version,
+                UNUSED_ENCODING,
             )?;
             package_location.pyproject_toml_path
         } else {
-            let (workspace_pyproject_toml_path, _, workspace_document_tree) =
-                find_workspace_pyproject_toml(pyproject_toml_path, toml_version)?;
-            let (package_location, _) = find_member_project_toml(
-                package_name,
-                &workspace_document_tree,
-                &workspace_pyproject_toml_path,
+            find_workspace_pyproject_toml(
+                pyproject_toml_path,
                 toml_version,
-            )?;
-            package_location.pyproject_toml_path
+                UNUSED_ENCODING,
+                |workspace_pyproject_toml_path, _, workspace_document_tree, _| {
+                    let (package_location, _) = find_member_project_toml(
+                        package_name,
+                        workspace_document_tree,
+                        &workspace_pyproject_toml_path,
+                        toml_version,
+                        UNUSED_ENCODING,
+                    )?;
+                    Some(package_location.pyproject_toml_path)
+                },
+            )
+            .flatten()?
         };
 
     load_project_metadata(&member_pyproject_toml_path, toml_version)
@@ -188,21 +196,28 @@ fn load_project_metadata(
     pyproject_toml_path: &Path,
     toml_version: TomlVersion,
 ) -> Option<HoverMetadata> {
-    let document_tree = load_pyproject_toml_document_tree(pyproject_toml_path, toml_version)?;
-    let project_name = get_project_name(&document_tree).map(|name| name.value().to_string());
-    let description = match dig_keys(&document_tree, &["project", "description"]) {
-        Some((_, Value::String(description))) => Some(description.value().to_string()),
-        _ => None,
-    };
+    with_pyproject_toml(
+        pyproject_toml_path,
+        toml_version,
+        UNUSED_ENCODING,
+        |_, document_tree, _| {
+            let project_name = get_project_name(document_tree).map(|name| name.value().to_string());
+            let description = match dig_keys(document_tree, &["project", "description"]) {
+                Some((_, Value::String(description))) => Some(description.value().to_string()),
+                _ => None,
+            };
 
-    if project_name.is_none() && description.is_none() {
-        return None;
-    }
+            if project_name.is_none() && description.is_none() {
+                return None;
+            }
 
-    Some(HoverMetadata {
-        title: project_name.map(HoverTextChange::Replace),
-        description: description.map(HoverTextChange::Replace),
-    })
+            Some(HoverMetadata {
+                title: project_name.map(HoverTextChange::Replace),
+                description: description.map(HoverTextChange::Replace),
+            })
+        },
+    )
+    .flatten()
 }
 
 async fn fetch_pypi_metadata(

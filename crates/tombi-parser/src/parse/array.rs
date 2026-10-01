@@ -8,7 +8,7 @@ use crate::{
     token_set::TS_ARRAY_END,
 };
 
-impl Parse for tombi_ast_syntax::Array {
+impl Parse for tombi_ast_syntax::Array<'_> {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 

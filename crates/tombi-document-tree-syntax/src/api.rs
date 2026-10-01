@@ -3,7 +3,7 @@ use tombi_document_tree as api;
 macro_rules! impl_node {
     ($($ty:ty),+ $(,)?) => {
         $(
-            impl api::Node for $ty {
+            impl<'t> api::Node for $ty {
                 #[inline]
                 fn span(&self) -> tombi_text::Span {
                     <$ty>::span(self)
@@ -18,7 +18,7 @@ impl_node!(
     crate::Boolean,
     crate::Integer,
     crate::Float,
-    crate::String,
+    crate::String<'t>,
     crate::OffsetDateTime,
     crate::LocalDateTime,
     crate::LocalDate,
@@ -26,34 +26,34 @@ impl_node!(
 );
 
 macro_rules! impl_node_with_symbol_span {
-    ($($ty:ty),+ $(,)?) => {
+    ($($ty:ident),+ $(,)?) => {
         $(
-            impl api::Node for $ty {
+            impl api::Node for crate::$ty<'_> {
                 #[inline]
                 fn span(&self) -> tombi_text::Span {
-                    <$ty>::span(self)
+                    crate::$ty::span(self)
                 }
 
                 #[inline]
                 fn symbol_span(&self) -> tombi_text::Span {
-                    <$ty>::symbol_span(self)
+                    crate::$ty::symbol_span(self)
                 }
             }
         )+
     };
 }
 
-impl_node_with_symbol_span!(crate::Array, crate::Table, crate::Value);
+impl_node_with_symbol_span!(Array, Table, Value);
 
-impl api::Node for crate::Key {
+impl api::Node for crate::Key<'_> {
     #[inline]
     fn span(&self) -> tombi_text::Span {
         self.span()
     }
 }
 
-impl api::DocumentTree for crate::DocumentTree {
-    type Table = crate::Table;
+impl<'t> api::DocumentTree for crate::DocumentTree<'t> {
+    type Table = crate::Table<'t>;
 
     #[inline]
     fn root(&self) -> &Self::Table {
@@ -61,7 +61,7 @@ impl api::DocumentTree for crate::DocumentTree {
     }
 }
 
-impl api::Key for crate::Key {
+impl api::Key for crate::Key<'_> {
     #[inline]
     fn kind(&self) -> api::KeyKind {
         self.kind()
@@ -78,8 +78,8 @@ impl api::Key for crate::Key {
     }
 }
 
-impl api::Array for crate::Array {
-    type Value = crate::Value;
+impl<'t> api::Array for crate::Array<'t> {
+    type Value = crate::Value<'t>;
 
     #[inline]
     fn kind(&self) -> api::ArrayKind {
@@ -97,9 +97,9 @@ impl api::Array for crate::Array {
     }
 }
 
-impl api::Table for crate::Table {
-    type Key = crate::Key;
-    type Value = crate::Value;
+impl<'t> api::Table for crate::Table<'t> {
+    type Key = crate::Key<'t>;
+    type Value = crate::Value<'t>;
 
     #[inline]
     fn kind(&self) -> api::TableKind {
@@ -122,12 +122,12 @@ impl api::Table for crate::Table {
     }
 }
 
-impl api::ValueNode for crate::Value {
-    type Array = crate::Array;
-    type Table = crate::Table;
+impl<'t> api::ValueNode for crate::Value<'t> {
+    type Array = crate::Array<'t>;
+    type Table = crate::Table<'t>;
 
     #[inline]
-    fn value(&self) -> api::Value<'_, crate::Array, crate::Table> {
+    fn value(&self) -> api::Value<'_, crate::Array<'t>, crate::Table<'t>> {
         match self {
             crate::Value::Boolean(value) => {
                 api::Value::Boolean(api::BooleanValue::new(value.value(), value.span()))

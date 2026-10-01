@@ -6,7 +6,7 @@ use crate::{
     TombiValueCommentDirective, support,
 };
 
-impl crate::Table {
+impl<'t> crate::Table<'t> {
     /// Span from the opening bracket through the last non-trivia element
     /// owned directly by this table.
     pub fn content_span(&self) -> Option<tombi_text::Span> {
@@ -48,7 +48,7 @@ impl crate::Table {
     /// [table]
     /// ```
     #[inline]
-    pub fn header_leading_comments(&self) -> impl Iterator<Item = crate::LeadingComment> {
+    pub fn header_leading_comments(&self) -> impl Iterator<Item = crate::LeadingComment<'t>> {
         support::comment::leading_comments(self.syntax().child_elements())
     }
 
@@ -58,7 +58,7 @@ impl crate::Table {
     /// [table]  # This comment
     /// ```
     #[inline]
-    pub fn header_trailing_comment(&self) -> Option<crate::TrailingComment> {
+    pub fn header_trailing_comment(&self) -> Option<crate::TrailingComment<'t>> {
         support::comment::trailing_comment(self.syntax().child_elements(), T!(']'))
     }
 
@@ -75,7 +75,7 @@ impl crate::Table {
     /// key = "value"
     /// ```
     #[inline]
-    pub fn dangling_comment_groups(&self) -> impl Iterator<Item = crate::DanglingCommentGroup> {
+    pub fn dangling_comment_groups(&self) -> impl Iterator<Item = crate::DanglingCommentGroup<'t>> {
         support::comment::dangling_comment_groups(
             self.syntax()
                 .child_elements()
@@ -87,7 +87,9 @@ impl crate::Table {
     }
 
     #[inline]
-    pub fn key_value_groups(&self) -> impl Iterator<Item = DanglingCommentGroupOr<KeyValueGroup>> {
+    pub fn key_value_groups(
+        &self,
+    ) -> impl Iterator<Item = DanglingCommentGroupOr<'t, KeyValueGroup<'t>>> {
         support::comment::dangling_comment_group_or(
             self.syntax()
                 .child_elements()
@@ -99,7 +101,7 @@ impl crate::Table {
     }
 
     #[inline]
-    pub fn key_values(&self) -> impl Iterator<Item = crate::KeyValue> {
+    pub fn key_values(&self) -> impl Iterator<Item = crate::KeyValue<'t>> {
         self.key_value_groups()
             .filter_map(DanglingCommentGroupOr::into_item_group)
             .flat_map(KeyValueGroup::into_key_values)
@@ -125,10 +127,9 @@ impl crate::Table {
     /// key = true
     /// ```
     #[inline]
-    pub fn sub_tables(&self) -> impl Iterator<Item = TableOrArrayOfTable> + '_ {
-        support::node::next_siblings_nodes(self)
-            .skip(1)
-            .take_while(|t: &TableOrArrayOfTable| {
+    pub fn sub_tables(&self) -> impl Iterator<Item = TableOrArrayOfTable<'t>> + '_ {
+        support::node::next_siblings_nodes(self).skip(1).take_while(
+            |t: &TableOrArrayOfTable<'t>| {
                 let Some(keys) = t.header() else {
                     return false;
                 };
@@ -137,16 +138,17 @@ impl crate::Table {
                 };
 
                 keys.starts_with(&self_keys) && keys.keys().count() != self_keys.keys().count()
-            })
+            },
+        )
     }
 
     #[inline]
     pub fn parent_table_or_array_of_table_keys(
         &self,
         toml_version: TomlVersion,
-    ) -> impl Iterator<Item = crate::Keys> + '_ {
+    ) -> impl Iterator<Item = crate::Keys<'t>> + '_ {
         support::node::prev_siblings_nodes(self)
-            .filter_map(|node: TableOrArrayOfTable| node.header())
+            .filter_map(|node: TableOrArrayOfTable<'t>| node.header())
             .take_while(move |keys| {
                 match (
                     self.header().and_then(|header| header.keys().next()),
@@ -173,9 +175,9 @@ impl crate::Table {
     pub fn parent_array_of_tables_keys(
         &self,
         toml_version: TomlVersion,
-    ) -> impl Iterator<Item = crate::Keys> + '_ {
+    ) -> impl Iterator<Item = crate::Keys<'t>> + '_ {
         support::node::prev_siblings_nodes(self)
-            .filter_map(|node: ArrayOfTable| node.header())
+            .filter_map(|node: ArrayOfTable<'t>| node.header())
             .take_while(move |keys| {
                 match (
                     self.header().and_then(|header| header.keys().next()),

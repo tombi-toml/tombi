@@ -12,22 +12,22 @@ pub fn generate_ast_token() -> Result<String, anyhow::Error> {
             let name = format_ident!("{}", token.to_case(Case::Pascal));
             let kind = format_ident!("{}", token.to_case(Case::UpperSnake));
             quote! {
-                #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+                #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
                 #[allow(dead_code)]
-                pub struct #name {
-                    pub(crate) syntax: SyntaxToken,
+                pub struct #name<'t> {
+                    pub(crate) syntax: SyntaxToken<'t>,
                 }
-                impl std::fmt::Display for #name {
+                impl std::fmt::Display for #name<'_> {
                     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         std::fmt::Display::fmt(&self.syntax, f)
                     }
                 }
-                impl AstToken for #name {
+                impl<'t> AstToken<'t> for #name<'t> {
                     fn can_cast(kind: SyntaxKind) -> bool { kind == SyntaxKind::#kind }
-                    fn cast(syntax: SyntaxToken) -> Option<Self> {
+                    fn cast(syntax: SyntaxToken<'t>) -> Option<Self> {
                         if Self::can_cast(syntax.kind()) { Some(Self { syntax }) } else { None }
                     }
-                    fn syntax(&self) -> &SyntaxToken { &self.syntax }
+                    fn syntax(&self) -> &SyntaxToken<'t> { &self.syntax }
                 }
             }
         });

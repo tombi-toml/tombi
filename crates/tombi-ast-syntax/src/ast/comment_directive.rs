@@ -5,8 +5,8 @@ pub struct DocumentCommentDirectives {
 }
 
 impl DocumentCommentDirectives {
-    pub fn from_comments(
-        comments: impl Iterator<Item = crate::Comment>,
+    pub fn from_comments<'a>(
+        comments: impl Iterator<Item = crate::Comment<'a>>,
         source_path: Option<&std::path::Path>,
     ) -> Option<Self> {
         let mut document_comment_directives = DocumentCommentDirectives::default();

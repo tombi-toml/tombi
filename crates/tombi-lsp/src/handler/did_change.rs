@@ -30,7 +30,7 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
     // diagnostics against the previous version. The TOML version is reused from the
     // previous parse here and refined below only if the edit actually changed it
     // (e.g. an edited `#:schema` directive).
-    let (need_publish_diagnostics, previous_toml_version, ast) = {
+    let (need_publish_diagnostics, previous_toml_version, document_source) = {
         let mut document_sources = backend.document_sources.write().await;
         let Some(document) = document_sources.get_mut(&text_document_uri) else {
             return;
@@ -42,14 +42,14 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
         let previous_toml_version = document.toml_version;
 
         if let Some(text) = latest_text.as_ref() {
-            document.set_text(text, previous_toml_version);
+            document.set_text(text.as_str(), previous_toml_version);
         }
         document.version = Some(text_document.version);
 
         (
             need_publish_diagnostics,
             previous_toml_version,
-            document.ast(),
+            document.clone(),
         )
     };
 
@@ -64,7 +64,7 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
     if latest_text.is_some() {
         // The edited text is already parsed above, so its AST is reused here.
         let toml_version = backend
-            .text_document_toml_version(&text_document_uri, &ast)
+            .text_document_toml_version(&text_document_uri, &document_source.ast())
             .await;
 
         if toml_version != previous_toml_version {

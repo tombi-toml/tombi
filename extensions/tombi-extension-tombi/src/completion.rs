@@ -4,7 +4,7 @@ use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     offset: tombi_text::Offset,
     accessors: &[Accessor],
     _toml_version: TomlVersion,

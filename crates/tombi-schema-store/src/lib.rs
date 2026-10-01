@@ -255,7 +255,7 @@ pub fn build_accessor_contexts(
 
 #[cfg(feature = "ast-syntax")]
 pub async fn lint_source_schema_from_ast(
-    root: &tombi_ast_syntax::Root,
+    root: &tombi_ast_syntax::Root<'_>,
     source_uri_or_path: Option<Either<&tombi_uri::Uri, &std::path::Path>>,
     schema_store: &SchemaStore,
 ) -> (

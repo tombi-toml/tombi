@@ -22,11 +22,11 @@ use crate::{
     schema_resolver::resolve_table_unevaluated_property_schema,
 };
 
-impl GetHoverContent for tombi_document_tree_syntax::Table {
+impl GetHoverContent for tombi_document_tree_syntax::Table<'_> {
     fn get_hover_content<'a: 'b, 'b>(
         &'a self,
         offset: tombi_text::Offset,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
@@ -711,7 +711,7 @@ impl GetHoverContent for tombi_document_tree_syntax::Table {
 }
 
 fn comment_directive_table_keys_order(
-    table: &tombi_document_tree_syntax::Table,
+    table: &tombi_document_tree_syntax::Table<'_>,
 ) -> Option<tombi_schema_store::TableOrderOverride> {
     let comment_directive = get_comment_directive_content::<
         TableCommonFormatRules,
@@ -734,7 +734,7 @@ impl GetHoverContent for TableSchema {
     fn get_hover_content<'a: 'b, 'b>(
         &'a self,
         _position: tombi_text::Offset,
-        _keys: &'a [tombi_document_tree_syntax::Key],
+        _keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,

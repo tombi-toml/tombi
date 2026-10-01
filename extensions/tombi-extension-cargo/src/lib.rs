@@ -34,7 +34,7 @@ pub(crate) use accessors::{
 };
 pub(crate) use cargo_toml::{
     CrateLocation, dependency_package_name, find_cargo_toml, get_uri_relative_to_cargo_toml,
-    load_cargo_toml,
+    load_cargo_toml, load_cargo_toml_with_root,
 };
 pub(crate) use crates_io::fetch_crates_io_crate;
 pub(crate) use feature_navigation::{

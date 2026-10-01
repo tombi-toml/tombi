@@ -1,5 +1,3 @@
-use tombi_text::IntoLsp;
-
 use crate::{Backend, remote_file::open_remote_file};
 
 pub async fn into_lsp_locations(
@@ -17,20 +15,18 @@ pub async fn into_lsp_locations(
         }
     }
 
-    let encoding = backend.capabilities.read().await.encoding_kind;
-
     let mut lsp_locations = Vec::with_capacity(locations.len());
     for mut location in locations {
         if let Some(remote_uri) = uri_set.get(&location.uri) {
             location.uri = remote_uri.clone();
         }
-        let range = match location.span {
-            // The span is an offset into the text its line index was built from,
-            // so it must be converted with that line index, even if the file is open
-            // with unsaved changes.
-            Some(tombi_extension::LocatedSpan { span, line_index }) => {
-                span.into_lsp(&line_index, encoding)
-            }
+        let range = match location.range {
+            // The extension converted the range with the text it was built from,
+            // even if the file is open with unsaved changes.
+            Some(range) => tower_lsp::lsp_types::Range::new(
+                tower_lsp::lsp_types::Position::new(range.start.line, range.start.column),
+                tower_lsp::lsp_types::Position::new(range.end.line, range.end.column),
+            ),
             // A file that is not parsed is opened at its start.
             None => tower_lsp::lsp_types::Range::default(),
         };

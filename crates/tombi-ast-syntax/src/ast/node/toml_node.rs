@@ -7,28 +7,28 @@ use crate::{
 
 /// A closed, TOML-specific view of a node in source order.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum TomlNode {
-    Root(Root),
-    Table(Table),
-    ArrayOfTable(ArrayOfTable),
-    KeyValue(KeyValue),
-    Keys(Keys),
-    Array(Array),
-    InlineTable(InlineTable),
-    BasicString(BasicString),
-    Boolean(Boolean),
-    Float(Float),
-    IntegerBin(IntegerBin),
-    IntegerDec(IntegerDec),
-    IntegerHex(IntegerHex),
-    IntegerOct(IntegerOct),
-    LiteralString(LiteralString),
-    LocalDate(LocalDate),
-    LocalDateTime(LocalDateTime),
-    LocalTime(LocalTime),
-    MultiLineBasicString(MultiLineBasicString),
-    MultiLineLiteralString(MultiLineLiteralString),
-    OffsetDateTime(OffsetDateTime),
+pub enum TomlNode<'t> {
+    Root(Root<'t>),
+    Table(Table<'t>),
+    ArrayOfTable(ArrayOfTable<'t>),
+    KeyValue(KeyValue<'t>),
+    Keys(Keys<'t>),
+    Array(Array<'t>),
+    InlineTable(InlineTable<'t>),
+    BasicString(BasicString<'t>),
+    Boolean(Boolean<'t>),
+    Float(Float<'t>),
+    IntegerBin(IntegerBin<'t>),
+    IntegerDec(IntegerDec<'t>),
+    IntegerHex(IntegerHex<'t>),
+    IntegerOct(IntegerOct<'t>),
+    LiteralString(LiteralString<'t>),
+    LocalDate(LocalDate<'t>),
+    LocalDateTime(LocalDateTime<'t>),
+    LocalTime(LocalTime<'t>),
+    MultiLineBasicString(MultiLineBasicString<'t>),
+    MultiLineLiteralString(MultiLineLiteralString<'t>),
+    OffsetDateTime(OffsetDateTime<'t>),
     Invalid(tombi_text::Span),
 }
 
@@ -42,8 +42,8 @@ pub struct AdjacentCommas {
     pub after: Option<tombi_text::Span>,
 }
 
-impl TomlNode {
-    pub(crate) fn cast(node: SyntaxNode) -> Option<Self> {
+impl<'t> TomlNode<'t> {
+    pub(crate) fn cast(node: SyntaxNode<'t>) -> Option<Self> {
         Some(match node.kind() {
             SyntaxKind::ROOT => Self::Root(Root::cast(node)?),
             SyntaxKind::TABLE => Self::Table(Table::cast(node)?),

@@ -3,15 +3,17 @@ use tombi_config::TomlVersion;
 use tombi_document_tree_syntax::dig_accessors;
 use tombi_schema_store::matches_accessors;
 
+use tombi_extension::SpanConverter;
+use tombi_text::EncodingKind;
+
 use crate::{
-    PackageLocation, find_workspace_pyproject_toml, get_project_name,
-    load_pyproject_toml_document_tree,
+    PackageLocation, find_workspace_pyproject_toml, get_project_name, manifest::with_pyproject_toml,
 };
 
-pub(crate) fn extract_member_patterns<'a>(
-    workspace_document_tree: &'a tombi_document_tree_syntax::DocumentTree,
-    accessors: &'a [tombi_schema_store::Accessor],
-) -> Vec<&'a tombi_document_tree_syntax::String> {
+pub(crate) fn extract_member_patterns<'a, 't>(
+    workspace_document_tree: &'a tombi_document_tree_syntax::DocumentTree<'t>,
+    accessors: &[tombi_schema_store::Accessor],
+) -> Vec<&'a tombi_document_tree_syntax::String<'t>> {
     if matches_accessors!(accessors, ["tool", "uv", "workspace", "members", _]) {
         let Some((_, tombi_document_tree_syntax::Value::String(member))) =
             dig_accessors(workspace_document_tree, accessors)
@@ -38,9 +40,9 @@ pub(crate) fn extract_member_patterns<'a>(
     }
 }
 
-pub(crate) fn extract_exclude_patterns(
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
-) -> Vec<&tombi_document_tree_syntax::String> {
+pub(crate) fn extract_exclude_patterns<'a, 't>(
+    workspace_document_tree: &'a tombi_document_tree_syntax::DocumentTree<'t>,
+) -> Vec<&'a tombi_document_tree_syntax::String<'t>> {
     match tombi_document_tree_syntax::dig_keys(
         workspace_document_tree,
         &["tool", "uv", "workspace", "exclude"],
@@ -56,11 +58,16 @@ pub(crate) fn extract_exclude_patterns(
     }
 }
 
-pub(crate) fn find_pyproject_toml_paths<'a>(
-    member_patterns: &'a [&'a tombi_document_tree_syntax::String],
-    exclude_patterns: &'a [&'a tombi_document_tree_syntax::String],
+pub(crate) fn find_pyproject_toml_paths<'a, 't>(
+    member_patterns: &'a [&'a tombi_document_tree_syntax::String<'t>],
+    exclude_patterns: &'a [&'a tombi_document_tree_syntax::String<'t>],
     workspace_dir_path: &'a std::path::Path,
-) -> impl Iterator<Item = (&'a tombi_document_tree_syntax::String, std::path::PathBuf)> + 'a {
+) -> impl Iterator<
+    Item = (
+        &'a tombi_document_tree_syntax::String<'t>,
+        std::path::PathBuf,
+    ),
+> + 'a {
     let exclude_patterns = exclude_patterns
         .iter()
         .filter_map(|pattern| glob::Pattern::new(pattern.value()).ok())
@@ -107,10 +114,11 @@ pub(crate) fn find_pyproject_toml_paths<'a>(
 }
 
 pub(crate) fn goto_definition_for_member_pyproject_toml(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    converter: SpanConverter<'_, '_>,
     jump_to_package: bool,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     if matches_accessors!(accessors, ["tool", "uv", "sources", _])
@@ -121,6 +129,7 @@ pub(crate) fn goto_definition_for_member_pyproject_toml(
             accessors,
             pyproject_toml_path,
             toml_version,
+            converter,
             jump_to_package,
         )? {
             Some(location) => Ok(vec![location]),
@@ -132,10 +141,11 @@ pub(crate) fn goto_definition_for_member_pyproject_toml(
 }
 
 pub(crate) fn goto_definition_for_workspace_pyproject_toml(
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    encoding: EncodingKind,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     if matches_accessors!(accessors, ["tool", "uv", "workspace", "members"])
         || matches_accessors!(accessors, ["tool", "uv", "workspace", "members", _])
@@ -145,6 +155,7 @@ pub(crate) fn goto_definition_for_workspace_pyproject_toml(
             accessors,
             workspace_pyproject_toml_path,
             toml_version,
+            encoding,
         )
         .map(|locations| locations.into_iter().filter_map(Into::into).collect_vec())
     } else {
@@ -153,22 +164,17 @@ pub(crate) fn goto_definition_for_workspace_pyproject_toml(
 }
 
 pub(crate) fn goto_workspace_member(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    converter: SpanConverter<'_, '_>,
     jump_to_package: bool,
 ) -> Result<Option<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     debug_assert!(
         matches_accessors!(accessors, ["tool", "uv", "sources", _])
             || matches_accessors!(accessors, ["tool", "uv", "sources", _, "workspace"])
     );
-
-    let Some((workspace_pyproject_toml_path, _, workspace_pyproject_toml_document_tree)) =
-        find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
-    else {
-        return Ok(None);
-    };
 
     let package_name = if let tombi_schema_store::Accessor::Key(key) = &accessors[3] {
         key
@@ -183,53 +189,50 @@ pub(crate) fn goto_workspace_member(
         return Ok(None);
     }
 
-    let Some((package_location, member_span)) = find_member_project_toml(
-        package_name,
-        &workspace_pyproject_toml_document_tree,
-        &workspace_pyproject_toml_path,
+    Ok(find_workspace_pyproject_toml(
+        pyproject_toml_path,
         toml_version,
-    ) else {
-        return Ok(None);
-    };
+        converter.encoding(),
+        |workspace_pyproject_toml_path,
+         _,
+         workspace_pyproject_toml_document_tree,
+         workspace_converter| {
+            let (package_location, member_span) = find_member_project_toml(
+                package_name,
+                workspace_pyproject_toml_document_tree,
+                &workspace_pyproject_toml_path,
+                toml_version,
+                workspace_converter.encoding(),
+            )?;
 
-    if jump_to_package {
-        let Ok(package_pyproject_toml_uri) =
-            tombi_uri::Uri::from_file_path(&package_location.pyproject_toml_path)
-        else {
-            return Ok(None);
-        };
+            if jump_to_package {
+                let package_pyproject_toml_uri =
+                    tombi_uri::Uri::from_file_path(&package_location.pyproject_toml_path).ok()?;
 
-        Ok(Some(tombi_extension::Location {
-            uri: package_pyproject_toml_uri,
-            span: Some(tombi_extension::LocatedSpan {
-                span: package_location.package_name_key_span,
-                line_index: package_location.line_index,
-            }),
-        }))
-    } else {
-        let Ok(workspace_pyproject_toml_uri) =
-            tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path)
-        else {
-            return Ok(None);
-        };
+                Some(tombi_extension::Location {
+                    uri: package_pyproject_toml_uri,
+                    range: Some(package_location.package_name_key_range),
+                })
+            } else {
+                let workspace_pyproject_toml_uri =
+                    tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path).ok()?;
 
-        Ok(Some(tombi_extension::Location {
-            uri: workspace_pyproject_toml_uri,
-            span: Some(tombi_extension::LocatedSpan {
-                span: member_span,
-                line_index: std::sync::Arc::clone(
-                    workspace_pyproject_toml_document_tree.line_index(),
-                ),
-            }),
-        }))
-    }
+                Some(tombi_extension::Location {
+                    uri: workspace_pyproject_toml_uri,
+                    range: Some(workspace_converter.range(member_span)),
+                })
+            }
+        },
+    )
+    .flatten())
 }
 
 pub(crate) fn goto_member_pyprojects(
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    encoding: EncodingKind,
 ) -> Result<Vec<PackageLocation>, tower_lsp::jsonrpc::Error> {
     let member_patterns = extract_member_patterns(workspace_document_tree, accessors);
     if member_patterns.is_empty() {
@@ -246,31 +249,38 @@ pub(crate) fn goto_member_pyprojects(
     for (_, pyproject_toml_path) in
         find_pyproject_toml_paths(&member_patterns, &exclude_patterns, workspace_dir_path)
     {
-        let Some(member_document_tree) =
-            load_pyproject_toml_document_tree(&pyproject_toml_path, toml_version)
-        else {
-            continue;
-        };
-
-        let Some(package_name) = get_project_name(&member_document_tree) else {
+        let Some(package_name_key_range) = with_pyproject_toml(
+            &pyproject_toml_path,
+            toml_version,
+            encoding,
+            |_, member_document_tree, member_converter| {
+                get_project_name(member_document_tree)
+                    .map(|package_name| member_converter.range(package_name.unquoted_span()))
+            },
+        )
+        .flatten() else {
             continue;
         };
 
         locations.push(PackageLocation {
             pyproject_toml_path,
-            package_name_key_span: package_name.unquoted_span(),
-            line_index: std::sync::Arc::clone(member_document_tree.line_index()),
+            package_name_key_range,
         });
     }
 
     Ok(locations)
 }
 
+/// Finds the member of the workspace named `package_name`.
+///
+/// The returned span is the member pattern that matched in the workspace document,
+/// and the range of the package name is counted in `encoding`.
 pub(crate) fn find_member_project_toml(
     package_name: &str,
-    workspace_pyproject_toml_document_tree: &tombi_document_tree_syntax::DocumentTree,
+    workspace_pyproject_toml_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    encoding: EncodingKind,
 ) -> Option<(PackageLocation, tombi_text::Span)> {
     let workspace_dir_path = workspace_pyproject_toml_path.parent()?;
 
@@ -280,26 +290,27 @@ pub(crate) fn find_member_project_toml(
     for (member_item, package_project_toml_path) in
         find_pyproject_toml_paths(&member_patterns, &exclude_patterns, workspace_dir_path)
     {
-        let Some(package_project_toml_document_tree) =
-            load_pyproject_toml_document_tree(&package_project_toml_path, toml_version)
-        else {
+        let Some(package_name_key_range) = with_pyproject_toml(
+            &package_project_toml_path,
+            toml_version,
+            encoding,
+            |_, package_project_toml_document_tree, package_converter| {
+                get_project_name(package_project_toml_document_tree)
+                    .filter(|name| name.value() == package_name)
+                    .map(|name| package_converter.range(name.unquoted_span()))
+            },
+        )
+        .flatten() else {
             continue;
         };
 
-        if let Some(name) = get_project_name(&package_project_toml_document_tree)
-            && name.value() == package_name
-        {
-            return Some((
-                PackageLocation {
-                    pyproject_toml_path: package_project_toml_path,
-                    package_name_key_span: name.unquoted_span(),
-                    line_index: std::sync::Arc::clone(
-                        package_project_toml_document_tree.line_index(),
-                    ),
-                },
-                member_item.unquoted_span(),
-            ));
-        }
+        return Some((
+            PackageLocation {
+                pyproject_toml_path: package_project_toml_path,
+                package_name_key_range,
+            },
+            member_item.unquoted_span(),
+        ));
     }
 
     None

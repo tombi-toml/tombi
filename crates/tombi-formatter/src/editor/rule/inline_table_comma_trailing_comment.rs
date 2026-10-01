@@ -2,9 +2,9 @@ use tombi_ast_syntax::AstNode;
 
 use crate::editor::change::Change;
 
-pub(in crate::editor) fn inline_table_comma_trailing_comment(
-    key_value: &tombi_ast_syntax::KeyValue,
-    comma: Option<&tombi_ast_syntax::Comma>,
+pub(in crate::editor) fn inline_table_comma_trailing_comment<'t>(
+    key_value: &tombi_ast_syntax::KeyValue<'t>,
+    comma: Option<&tombi_ast_syntax::Comma<'t>>,
     should_append_missing_comma: bool,
 ) -> Vec<Change> {
     match comma {

@@ -9,5 +9,7 @@ pub(crate) use ast::comment_directive;
 pub use ast::*;
 pub use generated::SyntaxKind;
 pub(crate) use tape::SyntaxElement;
-pub use tape::{DebugTree, DecodedTextResolver, SyntaxNode, SyntaxToken, SyntaxTreeBuilder};
+pub use tape::{
+    DebugTree, DecodedTextResolver, SyntaxNode, SyntaxToken, SyntaxTree, SyntaxTreeBuilder,
+};
 pub(crate) use utility_types::{Direction, NodeOrToken, TokenAtOffset, WalkEvent};

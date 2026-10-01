@@ -31,9 +31,12 @@ use crate::editor::change::SourcePart;
 use crate::editor::rule::array_comma_trailing_comment::array_comma_trailing_comment;
 use tombi_schema_store::ArrayOrderOverrides;
 
-pub(in crate::editor) async fn array_values_order<'a>(
-    nodes: Vec<(usize, &'a tombi_document_tree_syntax::Value)>,
-    values_with_comma: Vec<(tombi_ast_syntax::Value, Option<tombi_ast_syntax::Comma>)>,
+pub(in crate::editor) async fn array_values_order<'a, 't, 'd>(
+    nodes: Vec<(usize, &'a tombi_document_tree_syntax::Value<'d>)>,
+    values_with_comma: Vec<(
+        tombi_ast_syntax::Value<'t>,
+        Option<tombi_ast_syntax::Comma<'t>>,
+    )>,
     accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -99,8 +102,8 @@ pub(in crate::editor) async fn array_values_order<'a>(
         .map(|(_, comma)| comma.is_some())
         .unwrap_or_default();
 
-    let old_first = values_with_comma.first().unwrap().0.syntax().clone();
-    let old_last = values_with_comma.last().unwrap().0.syntax().clone();
+    let old_first = *values_with_comma.first().unwrap().0.syntax();
+    let old_last = *values_with_comma.last().unwrap().0.syntax();
     let sorted_values_with_comma = match values_order {
         XTombiArrayValuesOrder::All(values_order) => {
             get_sorted_values_order_all(
@@ -176,14 +179,22 @@ pub(in crate::editor) async fn array_values_order<'a>(
     changes
 }
 
-async fn get_sorted_values_order_all<'a>(
-    values_with_comma: Vec<(tombi_ast_syntax::Value, Option<tombi_ast_syntax::Comma>)>,
-    value_nodes: Vec<(usize, &'a tombi_document_tree_syntax::Value)>,
+async fn get_sorted_values_order_all<'a, 't, 'd>(
+    values_with_comma: Vec<(
+        tombi_ast_syntax::Value<'t>,
+        Option<tombi_ast_syntax::Comma<'t>>,
+    )>,
+    value_nodes: Vec<(usize, &'a tombi_document_tree_syntax::Value<'d>)>,
     accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     order: ArrayValuesOrder,
-) -> Option<Vec<(tombi_ast_syntax::Value, Option<tombi_ast_syntax::Comma>)>> {
+) -> Option<
+    Vec<(
+        tombi_ast_syntax::Value<'t>,
+        Option<tombi_ast_syntax::Comma<'t>>,
+    )>,
+> {
     let sortable_values = match SortableValues::try_new(
         values_with_comma,
         value_nodes.as_slice(),
@@ -202,14 +213,22 @@ async fn get_sorted_values_order_all<'a>(
     Some(sort_array_values(sortable_values, order))
 }
 
-async fn get_sorted_values_order_groups<'a>(
-    mut values_with_comma: Vec<(tombi_ast_syntax::Value, Option<tombi_ast_syntax::Comma>)>,
-    mut value_nodes: Vec<(usize, &'a tombi_document_tree_syntax::Value)>,
+async fn get_sorted_values_order_groups<'a, 't, 'd>(
+    mut values_with_comma: Vec<(
+        tombi_ast_syntax::Value<'t>,
+        Option<tombi_ast_syntax::Comma<'t>>,
+    )>,
+    mut value_nodes: Vec<(usize, &'a tombi_document_tree_syntax::Value<'d>)>,
     accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     values_order_group: ArrayValuesOrderGroup,
-) -> Option<Vec<(tombi_ast_syntax::Value, Option<tombi_ast_syntax::Comma>)>> {
+) -> Option<
+    Vec<(
+        tombi_ast_syntax::Value<'t>,
+        Option<tombi_ast_syntax::Comma<'t>>,
+    )>,
+> {
     let current_schema = current_schema?;
 
     match (values_order_group, current_schema.schema_view.as_ref()) {
@@ -288,10 +307,13 @@ async fn get_sorted_values_order_groups<'a>(
     }
 }
 
-fn sort_array_values(
-    sortable_values: SortableValues,
+fn sort_array_values<'t>(
+    sortable_values: SortableValues<'t>,
     values_order: ArrayValuesOrder,
-) -> Vec<(tombi_ast_syntax::Value, Option<tombi_ast_syntax::Comma>)> {
+) -> Vec<(
+    tombi_ast_syntax::Value<'t>,
+    Option<tombi_ast_syntax::Comma<'t>>,
+)> {
     match values_order {
         ArrayValuesOrder::Ascending => sortable_values.sorted(),
         ArrayValuesOrder::Descending => sortable_values.sorted().into_iter().rev().collect_vec(),
@@ -299,8 +321,8 @@ fn sort_array_values(
     }
 }
 
-fn try_array_values_order_by_from_item_schema<'a: 'b, 'b>(
-    table_node: &'a tombi_document_tree_syntax::Table,
+fn try_array_values_order_by_from_item_schema<'a: 'b, 'b, 'd>(
+    table_node: &'a tombi_document_tree_syntax::Table<'d>,
     accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -367,62 +389,62 @@ enum SortableType {
     LocalTime,
 }
 
-enum SortableValues {
+enum SortableValues<'t> {
     Boolean(
         Vec<(
             bool,
-            tombi_ast_syntax::Value,
-            Option<tombi_ast_syntax::Comma>,
+            tombi_ast_syntax::Value<'t>,
+            Option<tombi_ast_syntax::Comma<'t>>,
         )>,
     ),
     Integer(
         Vec<(
             i64,
-            tombi_ast_syntax::Value,
-            Option<tombi_ast_syntax::Comma>,
+            tombi_ast_syntax::Value<'t>,
+            Option<tombi_ast_syntax::Comma<'t>>,
         )>,
     ),
     String(
         Vec<(
             String,
-            tombi_ast_syntax::Value,
-            Option<tombi_ast_syntax::Comma>,
+            tombi_ast_syntax::Value<'t>,
+            Option<tombi_ast_syntax::Comma<'t>>,
         )>,
     ),
     OffsetDateTime(
         Vec<(
             String,
-            tombi_ast_syntax::Value,
-            Option<tombi_ast_syntax::Comma>,
+            tombi_ast_syntax::Value<'t>,
+            Option<tombi_ast_syntax::Comma<'t>>,
         )>,
     ),
     LocalDateTime(
         Vec<(
             String,
-            tombi_ast_syntax::Value,
-            Option<tombi_ast_syntax::Comma>,
+            tombi_ast_syntax::Value<'t>,
+            Option<tombi_ast_syntax::Comma<'t>>,
         )>,
     ),
     LocalDate(
         Vec<(
             String,
-            tombi_ast_syntax::Value,
-            Option<tombi_ast_syntax::Comma>,
+            tombi_ast_syntax::Value<'t>,
+            Option<tombi_ast_syntax::Comma<'t>>,
         )>,
     ),
     LocalTime(
         Vec<(
             String,
-            tombi_ast_syntax::Value,
-            Option<tombi_ast_syntax::Comma>,
+            tombi_ast_syntax::Value<'t>,
+            Option<tombi_ast_syntax::Comma<'t>>,
         )>,
     ),
 }
 
 impl SortableType {
-    fn try_new<'a: 'b, 'b>(
-        value: &'a tombi_ast_syntax::Value,
-        value_node: &'a tombi_document_tree_syntax::Value,
+    fn try_new<'a: 'b, 'b, 't, 'd>(
+        value: &'a tombi_ast_syntax::Value<'t>,
+        value_node: &'a tombi_document_tree_syntax::Value<'d>,
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a SchemaContext<'a>,
@@ -549,10 +571,13 @@ enum SortFailReason {
     DottedKeysInlineTableNotSupported,
 }
 
-impl SortableValues {
-    async fn try_new<'a>(
-        values_with_comma: Vec<(tombi_ast_syntax::Value, Option<tombi_ast_syntax::Comma>)>,
-        value_nodes: &'a [(usize, &'a tombi_document_tree_syntax::Value)],
+impl<'t> SortableValues<'t> {
+    async fn try_new<'a, 'd>(
+        values_with_comma: Vec<(
+            tombi_ast_syntax::Value<'t>,
+            Option<tombi_ast_syntax::Comma<'t>>,
+        )>,
+        value_nodes: &'a [(usize, &'a tombi_document_tree_syntax::Value<'d>)],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a SchemaContext<'a>,
@@ -675,7 +700,12 @@ impl SortableValues {
         Ok(sortable_values)
     }
 
-    fn sorted(self) -> Vec<(tombi_ast_syntax::Value, Option<tombi_ast_syntax::Comma>)> {
+    fn sorted(
+        self,
+    ) -> Vec<(
+        tombi_ast_syntax::Value<'t>,
+        Option<tombi_ast_syntax::Comma<'t>>,
+    )> {
         match self {
             Self::Boolean(mut sortable_values) => {
                 sortable_values.sort_by_key(|(key, _, _)| *key);
@@ -736,7 +766,12 @@ impl SortableValues {
         }
     }
 
-    fn sorted_version(self) -> Vec<(tombi_ast_syntax::Value, Option<tombi_ast_syntax::Comma>)> {
+    fn sorted_version(
+        self,
+    ) -> Vec<(
+        tombi_ast_syntax::Value<'t>,
+        Option<tombi_ast_syntax::Comma<'t>>,
+    )> {
         match self {
             Self::String(mut sortable_values) => {
                 sortable_values

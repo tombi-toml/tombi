@@ -94,6 +94,15 @@ impl Diagnostic {
         line_index.range(self.span, encoding)
     }
 
+    /// Pairs the diagnostic with a range already converted from its span.
+    #[inline]
+    pub fn with_range(&self, range: tombi_text::Range) -> LocatedDiagnostic<'_> {
+        LocatedDiagnostic {
+            diagnostic: self,
+            range,
+        }
+    }
+
     /// Pairs the diagnostic with its range in the source indexed by `line_index`,
     /// whose columns are counted in `encoding`.
     pub fn located<'a>(

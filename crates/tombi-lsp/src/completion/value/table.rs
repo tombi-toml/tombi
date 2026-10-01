@@ -21,11 +21,11 @@ use crate::{
     schema_resolver::resolve_table_unevaluated_property_schema,
 };
 
-impl FindCompletionContents for tombi_document_tree_syntax::Table {
+impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition<'a>,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -957,7 +957,7 @@ impl FindCompletionContents for TableSchema {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition<'a>,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -1135,10 +1135,10 @@ async fn count_table_or_array_schema(
 }
 
 fn get_property_value_completion_contents<'a: 'b, 'b>(
-    value: &'a tombi_document_tree_syntax::Value,
+    value: &'a tombi_document_tree_syntax::Value<'_>,
     cursor: crate::CursorPosition<'a>,
-    key: &'a tombi_document_tree_syntax::Key,
-    keys: &'a [tombi_document_tree_syntax::Key],
+    key: &'a tombi_document_tree_syntax::Key<'_>,
+    keys: &'a [tombi_document_tree_syntax::Key<'_>],
     accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -1222,7 +1222,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
 }
 
 fn check_used_table_value(
-    value: &tombi_document_tree_syntax::Value,
+    value: &tombi_document_tree_syntax::Value<'_>,
     is_root: bool,
     completion_hint: Option<CompletionHint>,
 ) -> bool {
@@ -1257,7 +1257,7 @@ fn check_used_table_value(
 }
 
 fn table_schema_has_remaining_key_completion<'a>(
-    table: &'a tombi_document_tree_syntax::Table,
+    table: &'a tombi_document_tree_syntax::Table<'_>,
     table_schema: &'a TableSchema,
     schema_base_uri: Cow<'a, tombi_schema_store::SchemaUri>,
     definitions: Cow<'a, tombi_schema_store::SchemaDefinitions>,
@@ -1347,7 +1347,7 @@ fn table_schema_has_remaining_key_completion<'a>(
 }
 
 fn collect_table_key_completion_contents<'a: 'b, 'b>(
-    table: &'a tombi_document_tree_syntax::Table,
+    table: &'a tombi_document_tree_syntax::Table<'_>,
     key_name: &'a str,
     offset: tombi_text::Offset,
     replace_span: Option<tombi_text::Span>,
@@ -1553,7 +1553,7 @@ fn matching_subschema_completion_key<'a>(
 }
 
 fn current_editing_key_span(
-    keys: &[tombi_document_tree_syntax::Key],
+    keys: &[tombi_document_tree_syntax::Key<'_>],
     offset: tombi_text::Offset,
 ) -> Option<tombi_text::Span> {
     keys.last().and_then(|key| {

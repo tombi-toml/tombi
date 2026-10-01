@@ -15,7 +15,7 @@ use crate::{
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
 
-impl Validate for tombi_document_tree_syntax::Array {
+impl Validate for tombi_document_tree_syntax::Array<'_> {
     fn validate<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::Accessor],
@@ -126,7 +126,7 @@ impl Validate for tombi_document_tree_syntax::Array {
 
 #[allow(clippy::result_large_err)]
 async fn validate_array(
-    array_value: &tombi_document_tree_syntax::Array,
+    array_value: &tombi_document_tree_syntax::Array<'_>,
     accessors: &[tombi_schema_store::Accessor],
     array_schema: &tombi_schema_store::ArraySchema,
     current_schema: &CurrentSchema<'_>,
@@ -774,7 +774,7 @@ async fn validate_array(
 
 #[allow(clippy::result_large_err)]
 async fn validate_array_without_schema(
-    array_value: &tombi_document_tree_syntax::Array,
+    array_value: &tombi_document_tree_syntax::Array<'_>,
     accessors: &[tombi_schema_store::Accessor],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Result<crate::Valid, crate::Invalid> {
@@ -822,7 +822,7 @@ async fn validate_array_without_schema(
 }
 
 fn get_duplicated_spans(
-    array_value: &tombi_document_tree_syntax::Array,
+    array_value: &tombi_document_tree_syntax::Array<'_>,
 ) -> Option<Vec<tombi_text::Span>> {
     let values = array_value
         .values()

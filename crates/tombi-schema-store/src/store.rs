@@ -1283,7 +1283,7 @@ impl SchemaStore {
     #[allow(clippy::result_large_err)]
     pub async fn resolve_source_schema_from_ast(
         &self,
-        root: &tombi_ast_syntax::Root,
+        root: &tombi_ast_syntax::Root<'_>,
         source_uri_or_path: Option<Either<&tombi_uri::Uri, &std::path::Path>>,
     ) -> Result<Option<SourceSchema>, (crate::Error, tombi_text::Span)> {
         let source_path = match source_uri_or_path {

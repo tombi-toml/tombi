@@ -14,9 +14,10 @@ use tombi_schema_store::{Accessor, matches_accessors};
 
 pub async fn goto_definition(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
+    converter: tombi_extension::SpanConverter<'_, '_>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is Cargo.toml
@@ -32,17 +33,23 @@ pub async fn goto_definition(
     }
 
     let locations = if is_package_name_accessor(accessors) {
-        goto_definition_for_package_name(document_tree, accessors, text_document_uri)
+        goto_definition_for_package_name(document_tree, accessors, text_document_uri, converter)
     } else if is_feature_key_accessor(accessors) {
-        goto_definition_for_feature_key(document_tree, accessors, text_document_uri)
+        goto_definition_for_feature_key(document_tree, accessors, text_document_uri, converter)
     } else if is_optional_dependency_accessor(accessors) {
-        goto_definition_for_optional_dependency(document_tree, accessors, text_document_uri)
+        goto_definition_for_optional_dependency(
+            document_tree,
+            accessors,
+            text_document_uri,
+            converter,
+        )
     } else if let Some(feature_string) = feature_table_string_at_accessors(document_tree, accessors)
         && let Some(location) = resolve_feature_table_string(
             document_tree,
             &cargo_toml_path,
             feature_string,
             toml_version,
+            converter,
         )
         && let Some(location) = location.get_location()
     {
@@ -54,6 +61,7 @@ pub async fn goto_definition(
             text_document_uri,
             &cargo_toml_path,
             toml_version,
+            converter,
         )?
     } else if let Some((feature_string, dependency_accessors)) =
         dependency_feature_string_context(document_tree, accessors)
@@ -63,6 +71,7 @@ pub async fn goto_definition(
             dependency_accessors.as_slice(),
             feature_string,
             toml_version,
+            converter,
         )
         && let Some(location) = location.get_location()
     {
@@ -73,6 +82,7 @@ pub async fn goto_definition(
             accessors,
             &cargo_toml_path,
             toml_version,
+            converter.encoding(),
             false,
         )?
     } else if is_workspace_managed_dependency_accessor(document_tree, accessors) {
@@ -81,6 +91,7 @@ pub async fn goto_definition(
             accessors,
             &cargo_toml_path,
             toml_version,
+            converter,
         )?
     } else {
         goto_dependency_definition_locations(
@@ -88,6 +99,7 @@ pub async fn goto_definition(
             accessors,
             &cargo_toml_path,
             toml_version,
+            converter,
         )?
     };
 
@@ -99,9 +111,10 @@ pub async fn goto_definition(
 }
 
 fn goto_definition_for_package_name(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
+    converter: tombi_extension::SpanConverter<'_, '_>,
 ) -> Vec<tombi_extension::Location> {
     debug_assert!(matches_accessors!(accessors, ["package", "name"]));
 
@@ -110,19 +123,14 @@ fn goto_definition_for_package_name(
         return Vec::new();
     };
 
-    vec![tombi_extension::Location {
-        uri: text_document_uri.clone(),
-        span: Some(tombi_extension::LocatedSpan {
-            span: package_name.unquoted_span(),
-            line_index: std::sync::Arc::clone(document_tree.line_index()),
-        }),
-    }]
+    vec![converter.location(text_document_uri.clone(), package_name.unquoted_span())]
 }
 
 fn goto_definition_for_feature_key(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
+    converter: tombi_extension::SpanConverter<'_, '_>,
 ) -> Vec<tombi_extension::Location> {
     debug_assert!(matches_accessors!(accessors, ["features", _]));
 
@@ -134,19 +142,14 @@ fn goto_definition_for_feature_key(
         return Vec::new();
     };
 
-    vec![tombi_extension::Location {
-        uri: text_document_uri.clone(),
-        span: Some(tombi_extension::LocatedSpan {
-            span: key.unquoted_span(),
-            line_index: std::sync::Arc::clone(document_tree.line_index()),
-        }),
-    }]
+    vec![converter.location(text_document_uri.clone(), key.unquoted_span())]
 }
 
 fn goto_definition_for_optional_dependency(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
+    converter: tombi_extension::SpanConverter<'_, '_>,
 ) -> Vec<tombi_extension::Location> {
     if !is_optional_dependency(document_tree, accessors) {
         return Vec::new();
@@ -161,27 +164,26 @@ fn goto_definition_for_optional_dependency(
         return Vec::new();
     };
 
-    vec![tombi_extension::Location {
-        uri: text_document_uri.clone(),
-        span: Some(tombi_extension::LocatedSpan {
-            span: optional_key.span() + optional.span(),
-            line_index: std::sync::Arc::clone(document_tree.line_index()),
-        }),
-    }]
+    vec![converter.location(
+        text_document_uri.clone(),
+        optional_key.span() + optional.span(),
+    )]
 }
 
 fn goto_workspace_definition_locations(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     text_document_uri: &tombi_uri::Uri,
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    converter: tombi_extension::SpanConverter<'_, '_>,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     let locations = goto_definition_for_workspace_cargo_toml(
         document_tree,
         accessors,
         cargo_toml_path,
         toml_version,
+        converter.encoding(),
         true,
     )?;
 
@@ -199,26 +201,24 @@ fn goto_workspace_definition_locations(
         return Ok(Vec::new());
     };
 
-    Ok(vec![tombi_extension::Location {
-        uri: text_document_uri.clone(),
-        span: Some(tombi_extension::LocatedSpan {
-            span: key.unquoted_span(),
-            line_index: std::sync::Arc::clone(document_tree.line_index()),
-        }),
-    }])
+    Ok(vec![
+        converter.location(text_document_uri.clone(), key.unquoted_span()),
+    ])
 }
 
 fn goto_workspace_dependency_locations(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    converter: tombi_extension::SpanConverter<'_, '_>,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     let resolved_target_locations = goto_dependency_definition_locations(
         document_tree,
         accessors,
         cargo_toml_path,
         toml_version,
+        converter,
     )?;
 
     if resolved_target_locations.is_empty() {
@@ -227,6 +227,7 @@ fn goto_workspace_dependency_locations(
             accessors,
             cargo_toml_path,
             toml_version,
+            converter.encoding(),
             false,
         );
     }
@@ -235,16 +236,18 @@ fn goto_workspace_dependency_locations(
 }
 
 fn goto_dependency_definition_locations(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[Accessor],
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    converter: tombi_extension::SpanConverter<'_, '_>,
 ) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
     let mut locations = goto_workspace_managed_dependency_locations(
         document_tree,
         accessors,
         cargo_toml_path,
         toml_version,
+        converter.encoding(),
         true,
     )?;
 
@@ -258,8 +261,8 @@ fn goto_dependency_definition_locations(
         cargo_toml_path,
         get_workspace_cargo_toml_path(document_tree),
         toml_version,
-    )
-    .map(|(workspace_path, _, _)| workspace_path);
+        |workspace_path, _, _| workspace_path.to_path_buf(),
+    );
 
     locations.retain(|location| {
         let Ok(location_path) = location.uri.to_file_path() else {

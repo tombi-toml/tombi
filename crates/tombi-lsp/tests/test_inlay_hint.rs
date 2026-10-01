@@ -150,10 +150,10 @@ async fn collect_inlay_hints_with_backend(
     // LSP notifications and requests are received in order, but their futures
     // can overlap after `didOpen` first yields.
     let (_, result) = tokio::join!(biased; did_open, inlay_hint);
-    Ok(result?.map(|(hints, line_index, _)| {
+    Ok(result?.map(|(hints, document_source)| {
         hints
             .into_iter()
-            .map(|hint| PositionedInlayHint::new(hint, &line_index))
+            .map(|hint| PositionedInlayHint::new(hint, document_source.line_index()))
             .collect()
     }))
 }
@@ -180,7 +180,7 @@ struct PositionedInlayHint {
 }
 
 impl PositionedInlayHint {
-    fn new(hint: InlayHint, line_index: &tombi_text::LineIndex) -> Self {
+    fn new(hint: InlayHint, line_index: &tombi_text::LineIndex<'_>) -> Self {
         Self {
             position: line_index.position(hint.offset, tombi_text::EncodingKind::GraphemeCluster),
             label: hint.label,

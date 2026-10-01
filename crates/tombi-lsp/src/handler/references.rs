@@ -42,12 +42,13 @@ pub async fn handle_references(
 
     log::info!("handle_references");
 
-    let Ok(document_sources) = backend.document_sources.try_read() else {
+    let Some(document_source) = backend.document_source(&text_document_uri) else {
         return Ok(None);
     };
-    let Some(document_source) = document_sources.get(&text_document_uri) else {
-        return Ok(None);
-    };
+    let converter = tombi_extension::SpanConverter::new(
+        document_source.line_index(),
+        document_source.encoding_kind(),
+    );
 
     let root = document_source.ast();
     let toml_version = document_source.toml_version;
@@ -56,19 +57,22 @@ pub async fn handle_references(
 
     let offset: tombi_text::Offset = position.into_lsp(line_index, encoding);
 
-    let Some((keys, _)) = get_hover_keys_with_span(&root, offset, toml_version).await else {
+    let Some((keys, _)) =
+        get_hover_keys_with_span(&root, document_source.decoded(), offset, toml_version).await
+    else {
         return Ok(None);
     };
 
     let document_tree = document_source.document_tree();
-    let accessors = tombi_document_tree_syntax::get_accessors(&document_tree, &keys, offset);
+    let accessors = tombi_document_tree_syntax::get_accessors(document_tree, &keys, offset);
 
     let locations = if config.cargo_extension_enabled()
         && let Some(locations) = tombi_extension_cargo::references(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             &accessors,
             toml_version,
+            converter,
             config.cargo_extension_features(),
         )
         .await?
@@ -77,9 +81,10 @@ pub async fn handle_references(
     } else if config.nagi_sql_extension_enabled()
         && let Some(locations) = tombi_extension_nagi_sql::references(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             &accessors,
             toml_version,
+            converter,
             config.nagi_sql_extension_features(),
         )
         .await?
@@ -88,9 +93,10 @@ pub async fn handle_references(
     } else if config.pyproject_extension_enabled()
         && let Some(locations) = tombi_extension_pyproject::references(
             &text_document_uri,
-            &document_tree,
+            document_tree,
             &accessors,
             toml_version,
+            converter,
             config.pyproject_extension_features(),
         )
         .await?
@@ -105,9 +111,10 @@ pub async fn handle_references(
         if config.cargo_extension_enabled() && text_document_uri.path().ends_with("Cargo.toml") {
             if let Some(declaration_locations) = tombi_extension_cargo::goto_declaration(
                 &text_document_uri,
-                &document_tree,
+                document_tree,
                 &accessors,
                 toml_version,
+                converter,
                 config.cargo_extension_features(),
             )
             .await?
@@ -116,9 +123,10 @@ pub async fn handle_references(
             }
 
             if let Some(location) = tombi_extension_cargo::get_current_declaration(
-                &document_tree,
+                document_tree,
                 &accessors,
                 &text_document_uri,
+                converter,
             ) {
                 location_set.insert(location);
             }
@@ -128,8 +136,9 @@ pub async fn handle_references(
         {
             if let Some(declaration_location) = tombi_extension_nagi_sql::get_current_declaration(
                 &text_document_uri,
-                &document_tree,
+                document_tree,
                 &accessors,
+                converter,
             ) {
                 location_set.insert(declaration_location);
             }
@@ -138,9 +147,10 @@ pub async fn handle_references(
         {
             if let Some(declaration_locations) = tombi_extension_pyproject::goto_declaration(
                 &text_document_uri,
-                &document_tree,
+                document_tree,
                 &accessors,
                 toml_version,
+                converter,
                 config.pyproject_extension_features(),
             )
             .await?
@@ -149,9 +159,10 @@ pub async fn handle_references(
             }
 
             if let Some(location) = tombi_extension_pyproject::get_current_declaration(
-                &document_tree,
+                document_tree,
                 &accessors,
                 &text_document_uri,
+                converter,
             ) {
                 location_set.insert(location);
             }

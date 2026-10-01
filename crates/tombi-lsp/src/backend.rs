@@ -107,6 +107,20 @@ impl Backend {
         }
     }
 
+    /// The snapshot of the document, which shares its text and trees with the stored one.
+    ///
+    /// `None` if the document is not open, or is being updated.
+    pub(crate) fn document_source(
+        &self,
+        text_document_uri: &tombi_uri::Uri,
+    ) -> Option<DocumentSource> {
+        self.document_sources
+            .try_read()
+            .ok()?
+            .get(text_document_uri)
+            .cloned()
+    }
+
     pub(crate) fn begin_document_open(&self, text_document_uri: tombi_uri::Uri) {
         let (ready, _) = tokio::sync::watch::channel(false);
         self.opening_documents
@@ -205,7 +219,7 @@ impl Backend {
     pub async fn text_document_toml_version(
         &self,
         text_document_uri: &tombi_uri::Uri,
-        root: &tombi_ast_syntax::Root,
+        root: &tombi_ast_syntax::Root<'_>,
     ) -> TomlVersion {
         self.text_document_toml_version_and_source(text_document_uri, root)
             .await
@@ -216,7 +230,7 @@ impl Backend {
     pub async fn text_document_toml_version_and_source(
         &self,
         text_document_uri: &tombi_uri::Uri,
-        root: &tombi_ast_syntax::Root,
+        root: &tombi_ast_syntax::Root<'_>,
     ) -> (TomlVersion, TomlVersionSource) {
         let ConfigSchemaStore {
             config,
@@ -391,10 +405,7 @@ impl tower_lsp::LanguageServer for Backend {
             .uri
             .clone()
             .into();
-        let Ok(document_sources) = self.document_sources.try_read() else {
-            return Ok(None);
-        };
-        let Some(document_source) = document_sources.get(&text_document_uri) else {
+        let Some(document_source) = self.document_source(&text_document_uri) else {
             return Ok(None);
         };
 
@@ -443,36 +454,33 @@ impl tower_lsp::LanguageServer for Backend {
             .uri
             .clone()
             .into();
-        let (line_index, encoding) = {
-            let Ok(document_sources) = self.document_sources.try_read() else {
-                return Ok(None);
-            };
-            let Some(document_source) = document_sources.get(&text_document_uri) else {
-                return Ok(None);
-            };
-            (
-                document_source.line_index_arc(),
-                document_source.encoding_kind(),
-            )
+        let Some(document_source) = self.document_source(&text_document_uri) else {
+            return Ok(None);
         };
 
-        handle_hover(self, params)
-            .await
-            .map(|response| response.map(|content| content.into_lsp(line_index.as_ref(), encoding)))
+        handle_hover(self, params).await.map(|response| {
+            response.map(|content| {
+                content.into_lsp(
+                    document_source.line_index(),
+                    document_source.encoding_kind(),
+                )
+            })
+        })
     }
 
     async fn inlay_hint(
         &self,
         params: InlayHintParams,
     ) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
-        let Some((hints, line_index, encoding)) = handle_inlay_hint(self, params).await? else {
+        let Some((hints, document_source)) = handle_inlay_hint(self, params).await? else {
             return Ok(None);
         };
+        let encoding = document_source.encoding_kind();
 
         Ok(Some(
             hints
                 .into_iter()
-                .map(|hint| hint.into_lsp_type(line_index.as_ref(), encoding))
+                .map(|hint| hint.into_lsp_type(document_source.line_index(), encoding))
                 .collect(),
         ))
     }

@@ -11,7 +11,9 @@ pub(crate) fn try_from_comment(value: &str) -> Result<String, ParseError> {
     Ok(comment.into_owned())
 }
 
-pub(crate) fn try_new_comment(node: &tombi_ast_syntax::Comment) -> Result<String, crate::Error> {
+pub(crate) fn try_new_comment(
+    node: &tombi_ast_syntax::Comment<'_>,
+) -> Result<String, crate::Error> {
     try_from_comment(node.syntax().text()).map_err(|error| crate::Error::ParseCommentError {
         error,
         span: node.syntax().span(),

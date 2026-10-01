@@ -6,7 +6,7 @@ use tombi_schema_store::matches_accessors;
 
 pub async fn goto_definition(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     _toml_version: TomlVersion,
     features: Option<&tombi_config::TombiExtensionFeatures>,
@@ -46,7 +46,7 @@ pub async fn goto_definition(
                 dig_accessors(document_tree, accessors)
             && let Some(uri) = get_definition_link(path.value(), &tombi_toml_path)
         {
-            locations.push(tombi_extension::Location { uri, span: None });
+            locations.push(tombi_extension::Location { uri, range: None });
         }
 
         if matches!(accessors.len(), 3 | 4)
@@ -66,7 +66,7 @@ pub async fn goto_definition(
                     continue;
                 }
                 if let Some(uri) = get_definition_link(path.value(), &tombi_toml_path) {
-                    locations.push(tombi_extension::Location { uri, span: None });
+                    locations.push(tombi_extension::Location { uri, range: None });
                 }
             }
         }

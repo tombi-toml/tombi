@@ -47,28 +47,34 @@ pub async fn handle_code_action(
 
     log::info!("handle_code_action");
 
-    let Ok(document_sources) = backend.document_sources.try_read() else {
+    let Some(document_source) = backend.document_source(&text_document_uri) else {
         return Ok(None);
     };
-    let Some(document_source) = document_sources.get(&text_document_uri) else {
-        return Ok(None);
-    };
+    let converter = tombi_extension::SpanConverter::new(
+        document_source.line_index(),
+        document_source.encoding_kind(),
+    );
 
     let toml_version = document_source.toml_version;
-    let line_index = &document_source.line_index_arc();
+    let line_index = document_source.line_index();
     let encoding = document_source.encoding_kind();
 
     let offset: tombi_text::Offset = range.start.into_lsp(line_index, encoding);
 
-    let Some((keys, key_contexts)) =
-        get_completion_keys_with_context(&document_source.ast(), offset, toml_version).await
+    let Some((keys, key_contexts)) = get_completion_keys_with_context(
+        &document_source.ast(),
+        document_source.decoded(),
+        offset,
+        toml_version,
+    )
+    .await
     else {
         return Ok(None);
     };
 
     let root = document_source.ast();
     let document_tree = document_source.document_tree();
-    let accessors = get_accessors(&document_tree, &keys, offset);
+    let accessors = get_accessors(document_tree, &keys, offset);
     let mut key_contexts = key_contexts.into_iter();
     let accessor_contexts = build_accessor_contexts(&accessors, &mut key_contexts);
 
@@ -79,7 +85,7 @@ pub async fn handle_code_action(
         line_index,
         encoding,
         &root,
-        &document_tree,
+        document_tree,
         &accessors,
         &accessor_contexts,
     ) {
@@ -91,7 +97,7 @@ pub async fn handle_code_action(
         line_index,
         encoding,
         &root,
-        &document_tree,
+        document_tree,
         &accessors,
         &accessor_contexts,
     ) {
@@ -101,9 +107,9 @@ pub async fn handle_code_action(
     if config.cargo_extension_enabled()
         && let Some(extension_code_actions) = tombi_extension_cargo::code_action(
             &text_document_uri,
-            line_index,
+            converter,
             &root,
-            &document_tree,
+            document_tree,
             &accessors,
             &accessor_contexts,
             document_source.toml_version,
@@ -124,10 +130,10 @@ pub async fn handle_code_action(
         && let Some(extension_code_actions) = tombi_extension_pyproject::code_action(
             &text_document_uri,
             &root,
-            &document_tree,
+            document_tree,
             &accessors,
             document_source.toml_version,
-            line_index,
+            converter,
             config.pyproject_extension_features(),
             schema_store.offline(),
             schema_store.cache_options(),
@@ -162,13 +168,16 @@ mod tests {
             #[tokio::test]
             async fn $name() {
                 let src = $src.trim();
-                let root = parse(src).into_root();
+                let parsed = parse(src);
+                let root = parsed.root();
+                let decoded = root.decode_strings(TomlVersion::V1_0_0);
                 let offset = root
                     .syntax()
                     .line_index()
                     .offset($pos, EncodingKind::GraphemeCluster);
                 let result =
-                    get_completion_keys_with_context(&root, offset, TomlVersion::V1_0_0).await;
+                    get_completion_keys_with_context(&root, &decoded, offset, TomlVersion::V1_0_0)
+                        .await;
 
                 assert!(result.is_none());
             }
@@ -178,13 +187,16 @@ mod tests {
             #[tokio::test]
             async fn $name() {
                 let src = $src.trim();
-                let root = parse(src).into_root();
+                let parsed = parse(src);
+                let root = parsed.root();
+                let decoded = root.decode_strings(TomlVersion::V1_0_0);
                 let offset = root
                     .syntax()
                     .line_index()
                     .offset($pos, EncodingKind::GraphemeCluster);
                 let result =
-                    get_completion_keys_with_context(&root, offset, TomlVersion::V1_0_0).await;
+                    get_completion_keys_with_context(&root, &decoded, offset, TomlVersion::V1_0_0)
+                        .await;
 
                 assert!(result.is_some());
                 let ($keys, $contexts) = result.unwrap();

@@ -1,4 +1,4 @@
-impl crate::Value {
+impl<'t> crate::Value<'t> {
     pub fn span(&self) -> tombi_text::Span {
         match self {
             Self::Boolean(boolean) => boolean.span(),

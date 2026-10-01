@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
+use tombi_ast_syntax::AstNode as _;
 use tombi_config::TomlVersion;
 use tombi_document_tree_syntax::{TryIntoDocumentTree, Value, dig_keys};
 use tombi_extension::{file_cache_version, get_or_load_json};
@@ -57,8 +58,10 @@ pub(crate) fn load_cargo_lock_from_path(
     toml_version: TomlVersion,
 ) -> Option<CargoLock> {
     let cargo_lock_text = tombi_fs::read_to_string(cargo_lock_path).ok()?;
-    let root = tombi_parser::parse(&cargo_lock_text).into_root();
-    let document_tree = root.try_into_document_tree(toml_version).ok()?;
+    let parsed = tombi_parser::parse(&cargo_lock_text);
+    let root = parsed.root();
+    let decoded = root.decode_strings(toml_version);
+    let document_tree = root.try_into_document_tree(toml_version, &decoded).ok()?;
 
     CargoLock::from_document_tree(&document_tree)
 }
@@ -86,7 +89,7 @@ impl CargoLock {
     }
 
     fn from_document_tree(
-        document_tree: &tombi_document_tree_syntax::DocumentTree,
+        document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     ) -> Option<Self> {
         let (_, Value::Array(packages)) = dig_keys(document_tree, &["package"])? else {
             return None;
@@ -195,7 +198,7 @@ fn compute_unique_package_versions(
 }
 
 impl CargoLockPackage {
-    fn from_value(value: &Value) -> Option<Self> {
+    fn from_value(value: &Value<'_>) -> Option<Self> {
         let Value::Table(table) = value else {
             return None;
         };
@@ -225,7 +228,7 @@ impl CargoLockPackage {
 }
 
 impl CargoLockDependency {
-    fn from_value(value: &Value) -> Option<Self> {
+    fn from_value(value: &Value<'_>) -> Option<Self> {
         let Value::String(dependency) = value else {
             return None;
         };

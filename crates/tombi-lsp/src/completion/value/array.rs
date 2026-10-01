@@ -18,11 +18,11 @@ use crate::{
     schema_resolver::resolve_array_item_schema,
 };
 
-impl FindCompletionContents for tombi_document_tree_syntax::Array {
+impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition<'a>,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -484,7 +484,7 @@ fn add_leading_comma(
 }
 
 fn new_item_completion_hint(
-    array: &tombi_document_tree_syntax::Array,
+    array: &tombi_document_tree_syntax::Array<'_>,
     new_item_index: usize,
     new_item_start_offset: Option<tombi_text::Offset>,
     cursor: crate::CursorPosition<'_>,
@@ -536,7 +536,7 @@ impl FindCompletionContents for ArraySchema {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition<'a>,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext<'a>,

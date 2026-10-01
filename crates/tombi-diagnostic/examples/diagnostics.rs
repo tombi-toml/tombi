@@ -30,7 +30,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let source_file = source_file();
-    let line_index = LineIndex::new(std::fs::read_to_string(&source_file)?);
+    let source_text = std::fs::read_to_string(&source_file)?;
+    let line_index = LineIndex::new(&source_text);
     let span = line_index.span(
         ((2, 1), (2, 3)).into(),
         tombi_text::EncodingKind::GraphemeCluster,

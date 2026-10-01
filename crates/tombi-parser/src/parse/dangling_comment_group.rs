@@ -6,7 +6,7 @@ use crate::{
     token_set::{TS_DANGLING_COMMENT_GROUP_END, TS_LINE_END},
 };
 
-impl Parse for Vec<tombi_ast_syntax::DanglingCommentGroup> {
+impl Parse for Vec<tombi_ast_syntax::DanglingCommentGroup<'_>> {
     fn parse(p: &mut Parser<'_>) {
         loop {
             while p.eat(LINE_BREAK) {}

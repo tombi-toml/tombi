@@ -47,11 +47,11 @@ impl ValueImpl for Boolean {
     }
 }
 
-impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::Boolean {
+impl<'t> IntoDocumentTreeWithContext<'t, crate::Value<'t>> for tombi_ast_syntax::Boolean<'t> {
     fn into_document_tree_with_context(
         self,
-        _context: &crate::DocumentTreeContext,
-    ) -> DocumentTreeAndErrors<crate::Value> {
+        _context: &crate::DocumentTreeContext<'t>,
+    ) -> DocumentTreeAndErrors<crate::Value<'t>> {
         let span = self.span();
         let (comment_directives, mut errors) = collect_comment_directives_and_errors(&self);
 

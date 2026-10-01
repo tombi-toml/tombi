@@ -10,11 +10,14 @@ pub(crate) struct CursorPosition<'a> {
     line_start: tombi_text::Offset,
     /// The start of the next line, or `None` on the last line.
     next_line_start: Option<tombi_text::Offset>,
-    line_index: &'a tombi_text::LineIndex,
+    line_index: &'a tombi_text::LineIndex<'a>,
 }
 
 impl<'a> CursorPosition<'a> {
-    pub(crate) fn new(offset: tombi_text::Offset, line_index: &'a tombi_text::LineIndex) -> Self {
+    pub(crate) fn new(
+        offset: tombi_text::Offset,
+        line_index: &'a tombi_text::LineIndex<'a>,
+    ) -> Self {
         let line = line_index.line(offset);
         Self {
             offset,

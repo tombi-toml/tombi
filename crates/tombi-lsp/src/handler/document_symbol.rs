@@ -15,10 +15,7 @@ pub async fn handle_document_symbol(
 
     let text_document_uri = text_document.uri.into();
 
-    let Ok(document_sources) = backend.document_sources.try_read() else {
-        return Ok(None);
-    };
-    let Some(document_source) = document_sources.get(&text_document_uri) else {
+    let Some(document_source) = backend.document_source(&text_document_uri) else {
         return Ok(None);
     };
 
@@ -27,13 +24,13 @@ pub async fn handle_document_symbol(
         .line_index()
         .cursor(document_source.encoding_kind());
 
-    let symbols = create_symbols(&document_tree, &mut cursor);
+    let symbols = create_symbols(document_tree, &mut cursor);
 
     Ok(Some(DocumentSymbolResponse::Nested(symbols)))
 }
 
 fn create_symbols(
-    tree: &tombi_document_tree_syntax::DocumentTree,
+    tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     cursor: &mut tombi_text::LineIndexCursor,
 ) -> Vec<DocumentSymbol> {
     let mut symbols: Vec<DocumentSymbol> = vec![];
@@ -48,7 +45,7 @@ fn create_symbols(
 #[allow(deprecated)]
 fn symbols_for_value(
     mut name: String,
-    value: &tombi_document_tree_syntax::Value,
+    value: &tombi_document_tree_syntax::Value<'_>,
     parent_key_span: Option<tombi_text::Span>,
     cursor: &mut tombi_text::LineIndexCursor,
     symbols: &mut Vec<DocumentSymbol>,

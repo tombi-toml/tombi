@@ -6,8 +6,8 @@ use tombi_config::TomlVersion;
 use tombi_document_tree_syntax::dig_keys;
 
 use crate::{
-    dependency::UV_DEPENDENCY_KEYS, find_member_project_toml, find_workspace_pyproject_toml,
-    goto_member_pyprojects,
+    UNUSED_ENCODING, dependency::UV_DEPENDENCY_KEYS, find_member_project_toml,
+    find_workspace_pyproject_toml, goto_member_pyprojects,
 };
 
 pub enum DocumentLinkToolTip {
@@ -52,7 +52,7 @@ impl std::fmt::Display for DocumentLinkToolTip {
 
 pub async fn document_link(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     toml_version: TomlVersion,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
@@ -198,8 +198,8 @@ pub async fn document_link(
 }
 
 fn document_link_for_workspace_pyproject_toml(
-    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree,
-    workspace: &tombi_document_tree_syntax::Table,
+    workspace_document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
+    workspace: &tombi_document_tree_syntax::Table<'_>,
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
 ) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
@@ -224,6 +224,7 @@ fn document_link_for_workspace_pyproject_toml(
             ],
             workspace_pyproject_toml_path,
             toml_version,
+            UNUSED_ENCODING,
         ) else {
             continue;
         };
@@ -259,8 +260,8 @@ fn document_link_for_workspace_pyproject_toml(
 }
 
 fn document_link_for_member_pyproject_toml(
-    package_name_key: &tombi_document_tree_syntax::Key,
-    source: &tombi_document_tree_syntax::Value,
+    package_name_key: &tombi_document_tree_syntax::Key<'_>,
+    source: &tombi_document_tree_syntax::Value<'_>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,
@@ -273,51 +274,54 @@ fn document_link_for_member_pyproject_toml(
         return Ok(Vec::new());
     };
 
-    let Some((workspace_pyproject_toml_path, _, workspace_pyproject_toml_document_tree)) =
-        find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
-    else {
-        return Ok(Vec::new());
-    };
+    Ok(find_workspace_pyproject_toml(
+        pyproject_toml_path,
+        toml_version,
+        UNUSED_ENCODING,
+        |workspace_pyproject_toml_path, _, workspace_pyproject_toml_document_tree, _| {
+            let Ok(workspace_pyproject_toml_uri) =
+                tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path)
+            else {
+                return Vec::new();
+            };
 
-    let Ok(workspace_pyproject_toml_uri) =
-        tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path)
-    else {
-        return Ok(Vec::new());
-    };
+            let mut document_links = vec![];
+            if let Some((workspace_key, tombi_document_tree_syntax::Value::Boolean(is_workspace))) =
+                source.get_key_value("workspace")
+                && is_workspace.value()
+                && let Some((package_location, _)) = find_member_project_toml(
+                    package_name_key.value(),
+                    workspace_pyproject_toml_document_tree,
+                    &workspace_pyproject_toml_path,
+                    toml_version,
+                    UNUSED_ENCODING,
+                )
+            {
+                if let Ok(member_project_toml_uri) =
+                    tombi_uri::Uri::from_file_path(&package_location.pyproject_toml_path)
+                {
+                    document_links.push(tombi_extension::DocumentLink {
+                        target: member_project_toml_uri,
+                        span: package_name_key.unquoted_span(),
+                        tooltip: DocumentLinkToolTip::PyprojectToml.into(),
+                    });
+                }
+                document_links.push(tombi_extension::DocumentLink {
+                    target: workspace_pyproject_toml_uri.clone(),
+                    span: workspace_key.span() + is_workspace.span(),
+                    tooltip: DocumentLinkToolTip::WorkspacePyprojectToml.into(),
+                });
+            }
 
-    let mut document_links = vec![];
-    if let Some((workspace_key, tombi_document_tree_syntax::Value::Boolean(is_workspace))) =
-        source.get_key_value("workspace")
-        && is_workspace.value()
-        && let Some((package_location, _)) = find_member_project_toml(
-            package_name_key.value(),
-            &workspace_pyproject_toml_document_tree,
-            &workspace_pyproject_toml_path,
-            toml_version,
-        )
-    {
-        if let Ok(member_project_toml_uri) =
-            tombi_uri::Uri::from_file_path(&package_location.pyproject_toml_path)
-        {
-            document_links.push(tombi_extension::DocumentLink {
-                target: member_project_toml_uri,
-                span: package_name_key.unquoted_span(),
-                tooltip: DocumentLinkToolTip::PyprojectToml.into(),
-            });
-        }
-        document_links.push(tombi_extension::DocumentLink {
-            target: workspace_pyproject_toml_uri.clone(),
-            span: workspace_key.span() + is_workspace.span(),
-            tooltip: DocumentLinkToolTip::WorkspacePyprojectToml.into(),
-        });
-    }
-
-    Ok(document_links)
+            document_links
+        },
+    )
+    .unwrap_or_default())
 }
 
 fn document_link_for_project_dependencies(
-    dependencies: &tombi_document_tree_syntax::Array,
-    pyproject_sources: Option<&tombi_document_tree_syntax::Table>,
+    dependencies: &tombi_document_tree_syntax::Array<'_>,
+    pyproject_sources: Option<&tombi_document_tree_syntax::Table<'_>>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,
@@ -386,8 +390,8 @@ fn document_link_for_project_dependencies(
 }
 
 fn document_link_for_dependency_groups(
-    dependency_groups: &tombi_document_tree_syntax::Table,
-    pyproject_sources: Option<&tombi_document_tree_syntax::Table>,
+    dependency_groups: &tombi_document_tree_syntax::Table<'_>,
+    pyproject_sources: Option<&tombi_document_tree_syntax::Table<'_>>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,
@@ -414,8 +418,8 @@ fn document_link_for_dependency_groups(
 }
 
 fn document_link_for_optional_dependencies(
-    optional_dependencies: &tombi_document_tree_syntax::Table,
-    pyproject_sources: Option<&tombi_document_tree_syntax::Table>,
+    optional_dependencies: &tombi_document_tree_syntax::Table<'_>,
+    pyproject_sources: Option<&tombi_document_tree_syntax::Table<'_>>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,
@@ -442,8 +446,8 @@ fn document_link_for_optional_dependencies(
 }
 
 fn document_link_for_tool_uv_dependencies(
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
-    pyproject_sources: Option<&tombi_document_tree_syntax::Table>,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
+    pyproject_sources: Option<&tombi_document_tree_syntax::Table<'_>>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     pyproject_toml_enabled: bool,

@@ -5,54 +5,54 @@ macro_rules! impl_comment {
         #[derive(Debug, Clone, PartialEq, Eq, AsRef, From, Into)]
         pub struct $name:ident(crate::Comment);
     ) => {
-        #[derive(Debug, Clone, PartialEq, Eq)]
-        pub struct $name(crate::Comment);
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        pub struct $name<'t>(crate::Comment<'t>);
 
-        impl $name {
-            pub fn syntax(&self) -> &tombi_ast_syntax::SyntaxToken {
+        impl<'t> $name<'t> {
+            pub fn syntax(&self) -> &tombi_ast_syntax::SyntaxToken<'t> {
                 self.0.syntax()
             }
         }
 
-        impl AsRef<crate::Comment> for $name {
-            fn as_ref(&self) -> &crate::Comment {
+        impl<'t> AsRef<crate::Comment<'t>> for $name<'t> {
+            fn as_ref(&self) -> &crate::Comment<'t> {
                 &self.0
             }
         }
 
-        impl std::ops::Deref for $name {
-            type Target = crate::Comment;
+        impl<'t> std::ops::Deref for $name<'t> {
+            type Target = crate::Comment<'t>;
 
             fn deref(&self) -> &Self::Target {
                 &self.0
             }
         }
 
-        impl From<crate::Comment> for $name {
-            fn from(comment: crate::Comment) -> Self {
+        impl<'t> From<crate::Comment<'t>> for $name<'t> {
+            fn from(comment: crate::Comment<'t>) -> Self {
                 $name(comment)
             }
         }
 
-        impl From<$name> for crate::Comment {
-            fn from(comment: $name) -> Self {
+        impl<'t> From<$name<'t>> for crate::Comment<'t> {
+            fn from(comment: $name<'t>) -> Self {
                 comment.0
             }
         }
 
-        impl AstToken for $name {
+        impl<'t> AstToken<'t> for $name<'t> {
             #[inline]
             fn can_cast(kind: tombi_ast_syntax::SyntaxKind) -> bool {
                 crate::Comment::can_cast(kind)
             }
 
             #[inline]
-            fn cast(syntax: tombi_ast_syntax::SyntaxToken) -> Option<Self> {
+            fn cast(syntax: tombi_ast_syntax::SyntaxToken<'t>) -> Option<Self> {
                 crate::Comment::cast(syntax).map($name::from)
             }
 
             #[inline]
-            fn syntax(&self) -> &tombi_ast_syntax::SyntaxToken {
+            fn syntax(&self) -> &tombi_ast_syntax::SyntaxToken<'t> {
                 self.0.syntax()
             }
         }

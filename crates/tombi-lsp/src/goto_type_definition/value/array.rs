@@ -14,11 +14,11 @@ use crate::{
     schema_resolver::resolve_array_item_schema,
 };
 
-impl GetTypeDefinition for tombi_document_tree_syntax::Array {
+impl GetTypeDefinition for tombi_document_tree_syntax::Array<'_> {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition<'a>,
-        keys: &'a [tombi_document_tree_syntax::Key],
+        keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
@@ -220,7 +220,7 @@ impl GetTypeDefinition for ArraySchema {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
         _cursor: crate::CursorPosition<'a>,
-        _keys: &'a [tombi_document_tree_syntax::Key],
+        _keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,

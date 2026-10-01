@@ -25,6 +25,30 @@ impl PrefetchUrls {
     }
 }
 
+/// The dependencies of a manifest, detached from the syntax tree it was read from.
+struct PrefetchSource {
+    workspace_path: Option<String>,
+    dependencies: Vec<PendingDependency>,
+}
+
+impl PrefetchSource {
+    fn new(document_tree: &DocumentTree<'_>) -> Self {
+        Self {
+            workspace_path: get_workspace_cargo_toml_path(document_tree).map(str::to_owned),
+            dependencies: collect_registry_dependencies(document_tree),
+        }
+    }
+}
+
+/// A dependency that may need the workspace manifest to be resolved.
+enum PendingDependency {
+    Registry(RegistryDependency),
+    Workspace {
+        dependency_key: String,
+        dependency_kind: String,
+    },
+}
+
 #[derive(Debug, Clone)]
 struct RegistryDependency {
     crate_name: String,
@@ -34,7 +58,7 @@ struct RegistryDependency {
 
 pub fn did_open(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &DocumentTree,
+    document_tree: &DocumentTree<'_>,
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
@@ -60,17 +84,12 @@ pub fn did_open(
         return None;
     };
 
-    let document_tree = document_tree.clone();
+    let source = PrefetchSource::new(document_tree);
     let cache_options = cache_options.cloned();
     let features = features.cloned();
     let warm = async move {
-        let urls = collect_prefetch_urls(
-            &document_tree,
-            &cargo_toml_path,
-            toml_version,
-            features.as_ref(),
-        )
-        .await;
+        let urls =
+            collect_prefetch_urls(source, &cargo_toml_path, toml_version, features.as_ref()).await;
         if urls.is_empty() {
             return;
         }
@@ -117,7 +136,7 @@ fn warming_disabled(offline: bool, cache_options: Option<&tombi_cache::Options>)
 }
 
 async fn collect_prefetch_urls(
-    document_tree: &DocumentTree,
+    source: PrefetchSource,
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
     features: Option<&CargoExtensionFeatures>,
@@ -200,7 +219,6 @@ async fn collect_prefetch_urls(
         return PrefetchUrls::default();
     }
 
-    let workspace_path = get_workspace_cargo_toml_path(document_tree);
     let cargo_lock_fut = async {
         if warm_feature_details
             || warm_feature_dependencies_hover
@@ -212,11 +230,17 @@ async fn collect_prefetch_urls(
             None
         }
     };
-    let workspace_fut = load_workspace_cargo_toml(cargo_toml_path, workspace_path, toml_version);
+    let workspace_fut = load_workspace_cargo_toml(
+        cargo_toml_path,
+        source.workspace_path.as_deref(),
+        toml_version,
+        |_, workspace_document_tree, _| {
+            resolve_registry_dependencies(&source.dependencies, Some(workspace_document_tree))
+        },
+    );
     let (workspace, cargo_lock) = tokio::join!(workspace_fut, cargo_lock_fut);
-    let workspace_document_tree = workspace.as_ref().map(|(_, dt)| dt);
     let registry_dependencies =
-        collect_registry_dependencies(document_tree, workspace_document_tree);
+        workspace.unwrap_or_else(|| resolve_registry_dependencies(&source.dependencies, None));
     let mut urls = PrefetchUrls::default();
 
     for dependency in registry_dependencies {
@@ -282,10 +306,27 @@ async fn collect_prefetch_urls(
     urls
 }
 
-fn collect_registry_dependencies(
-    document_tree: &DocumentTree,
-    workspace_document_tree: Option<&DocumentTree>,
+fn resolve_registry_dependencies(
+    dependencies: &[PendingDependency],
+    workspace_document_tree: Option<&DocumentTree<'_>>,
 ) -> Vec<RegistryDependency> {
+    dependencies
+        .iter()
+        .filter_map(|dependency| match dependency {
+            PendingDependency::Registry(dependency) => Some(dependency.clone()),
+            PendingDependency::Workspace {
+                dependency_key,
+                dependency_kind,
+            } => workspace_registry_dependency(
+                dependency_key,
+                dependency_kind,
+                workspace_document_tree,
+            ),
+        })
+        .collect()
+}
+
+fn collect_registry_dependencies(document_tree: &DocumentTree<'_>) -> Vec<PendingDependency> {
     let mut dependencies = Vec::new();
 
     if let Some((_, Value::Table(workspace_dependencies))) =
@@ -294,7 +335,6 @@ fn collect_registry_dependencies(
         collect_registry_dependencies_from_table(
             workspace_dependencies,
             "dependencies",
-            workspace_document_tree,
             &mut dependencies,
         );
     }
@@ -306,7 +346,6 @@ fn collect_registry_dependencies(
             collect_registry_dependencies_from_table(
                 dependency_table,
                 dependency_kind,
-                workspace_document_tree,
                 &mut dependencies,
             );
         }
@@ -325,7 +364,6 @@ fn collect_registry_dependencies(
                     collect_registry_dependencies_from_table(
                         dependency_table,
                         dependency_kind,
-                        workspace_document_tree,
                         &mut dependencies,
                     );
                 }
@@ -337,18 +375,14 @@ fn collect_registry_dependencies(
 }
 
 fn collect_registry_dependencies_from_table(
-    dependencies: &Table,
+    dependencies: &Table<'_>,
     dependency_kind: &str,
-    workspace_document_tree: Option<&DocumentTree>,
-    registry_dependencies: &mut Vec<RegistryDependency>,
+    registry_dependencies: &mut Vec<PendingDependency>,
 ) {
     for (dependency_key, dependency_value) in dependencies.key_values() {
-        if let Some(dependency) = registry_dependency(
-            dependency_key.value(),
-            dependency_value,
-            dependency_kind,
-            workspace_document_tree,
-        ) {
+        if let Some(dependency) =
+            registry_dependency(dependency_key.value(), dependency_value, dependency_kind)
+        {
             registry_dependencies.push(dependency);
         }
     }
@@ -356,16 +390,17 @@ fn collect_registry_dependencies_from_table(
 
 fn registry_dependency(
     dependency_key: &str,
-    dependency_value: &Value,
+    dependency_value: &Value<'_>,
     dependency_kind: &str,
-    workspace_document_tree: Option<&DocumentTree>,
-) -> Option<RegistryDependency> {
+) -> Option<PendingDependency> {
     match dependency_value {
-        Value::String(version_requirement) => Some(RegistryDependency {
-            crate_name: dependency_key.to_string(),
-            version_requirement: Some(version_requirement.value().to_string()),
-            default_features_hint: false,
-        }),
+        Value::String(version_requirement) => {
+            Some(PendingDependency::Registry(RegistryDependency {
+                crate_name: dependency_key.to_string(),
+                version_requirement: Some(version_requirement.value().to_string()),
+                default_features_hint: false,
+            }))
+        }
         Value::Table(table) => {
             if table.contains_key("path")
                 || table.contains_key("git")
@@ -377,14 +412,13 @@ fn registry_dependency(
             if let Some(Value::Boolean(workspace)) = table.get("workspace")
                 && workspace.value()
             {
-                return workspace_registry_dependency(
-                    dependency_key,
-                    dependency_kind,
-                    workspace_document_tree,
-                );
+                return Some(PendingDependency::Workspace {
+                    dependency_key: dependency_key.to_string(),
+                    dependency_kind: dependency_kind.to_string(),
+                });
             }
 
-            Some(RegistryDependency {
+            Some(PendingDependency::Registry(RegistryDependency {
                 crate_name: match table.get("package") {
                     Some(Value::String(package)) => package.value().to_string(),
                     _ => dependency_key.to_string(),
@@ -396,7 +430,7 @@ fn registry_dependency(
                 default_features_hint: table.get("version").is_some()
                     && table.get("features").is_some()
                     && !dependency_table_default_features_disabled(table),
-            })
+            }))
         }
         _ => None,
     }
@@ -405,7 +439,7 @@ fn registry_dependency(
 fn workspace_registry_dependency(
     dependency_key: &str,
     dependency_kind: &str,
-    workspace_document_tree: Option<&DocumentTree>,
+    workspace_document_tree: Option<&DocumentTree<'_>>,
 ) -> Option<RegistryDependency> {
     let workspace_document_tree = workspace_document_tree?;
 
@@ -451,7 +485,7 @@ fn workspace_registry_dependency(
     }
 }
 
-fn dependency_table_default_features_disabled(table: &Table) -> bool {
+fn dependency_table_default_features_disabled(table: &Table<'_>) -> bool {
     table
         .get("default-features")
         .is_some_and(|value| matches!(value, Value::Boolean(boolean) if !boolean.value()))
@@ -467,13 +501,16 @@ mod tests {
         CargoHoverFeatures, CargoInlayHintFeatureTree, CargoInlayHintFeatures, CargoLspFeatureTree,
         CargoLspFeatures, ToggleFeatureDefaultTrue,
     };
-    use tombi_document_tree_syntax::TryIntoDocumentTree;
 
     use super::*;
 
-    fn parse_document_tree(source: &str) -> DocumentTree {
-        let root = tombi_parser::parse(source).into_root();
-        root.try_into_document_tree(TomlVersion::default()).unwrap()
+    fn prefetch_source(source: &str) -> PrefetchSource {
+        crate::cargo_toml::with_cargo_toml_text(
+            source,
+            TomlVersion::default(),
+            |document_tree, _| PrefetchSource::new(document_tree),
+        )
+        .unwrap()
     }
 
     fn uri_for(path: &Path) -> tombi_uri::Uri {
@@ -519,7 +556,7 @@ mod tests {
 
     #[tokio::test(flavor = "current_thread")]
     async fn collects_registry_dependencies_from_member_and_workspace_sections() {
-        let document_tree = parse_document_tree(
+        let source = prefetch_source(
             r#"
             [workspace.dependencies]
             serde_toml = { version = "0.1", package = "toml" }
@@ -533,7 +570,7 @@ mod tests {
         );
 
         let urls = collect_prefetch_urls(
-            &document_tree,
+            source,
             Path::new("/tmp/Cargo.toml"),
             TomlVersion::default(),
             None,
@@ -557,7 +594,7 @@ mod tests {
 
     #[tokio::test(flavor = "current_thread")]
     async fn excludes_path_git_and_registry_dependencies() {
-        let document_tree = parse_document_tree(
+        let source = prefetch_source(
             r#"
             [dependencies]
             local = { path = "../local" }
@@ -568,7 +605,7 @@ mod tests {
         );
 
         let urls = collect_prefetch_urls(
-            &document_tree,
+            source,
             Path::new("/tmp/Cargo.toml"),
             TomlVersion::default(),
             None,
@@ -619,9 +656,8 @@ mod tests {
         )
         .unwrap();
 
-        let document_tree = parse_document_tree(&std::fs::read_to_string(&member_path).unwrap());
-        let urls =
-            collect_prefetch_urls(&document_tree, &member_path, TomlVersion::default(), None).await;
+        let source = prefetch_source(&std::fs::read_to_string(&member_path).unwrap());
+        let urls = collect_prefetch_urls(source, &member_path, TomlVersion::default(), None).await;
 
         assert_eq!(
             sorted_urls(&urls.background),
@@ -667,10 +703,9 @@ mod tests {
         )
         .unwrap();
 
-        let document_tree =
-            parse_document_tree(&std::fs::read_to_string(&cargo_toml_path).unwrap());
+        let source = prefetch_source(&std::fs::read_to_string(&cargo_toml_path).unwrap());
         let urls = collect_prefetch_urls(
-            &document_tree,
+            source,
             &cargo_toml_path,
             TomlVersion::default(),
             Some(&default_features_only()),
@@ -686,19 +721,26 @@ mod tests {
 
     #[test]
     fn did_open_ignores_non_cargo_documents() {
-        let document_tree = parse_document_tree("");
         let uri = tombi_uri::Uri::from_str("file:///tmp/pyproject.toml").unwrap();
 
-        let result = did_open(
-            &uri,
-            &document_tree,
+        let result = crate::cargo_toml::with_cargo_toml_text(
+            "",
             TomlVersion::default(),
-            true,
-            None,
-            None,
-        );
+            |document_tree, _| {
+                did_open(
+                    &uri,
+                    document_tree,
+                    TomlVersion::default(),
+                    true,
+                    None,
+                    None,
+                )
+                .is_none()
+            },
+        )
+        .unwrap();
 
-        assert!(result.is_none());
+        assert!(result);
     }
 
     #[test]

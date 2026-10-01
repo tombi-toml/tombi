@@ -53,11 +53,13 @@ impl From<crate::OffsetDateTime> for tombi_date_time::OffsetDateTime {
     }
 }
 
-impl IntoDocumentTreeWithContext<crate::Value> for tombi_ast_syntax::OffsetDateTime {
+impl<'t> IntoDocumentTreeWithContext<'t, crate::Value<'t>>
+    for tombi_ast_syntax::OffsetDateTime<'t>
+{
     fn into_document_tree_with_context(
         self,
-        context: &crate::DocumentTreeContext,
-    ) -> DocumentTreeAndErrors<crate::Value> {
+        context: &crate::DocumentTreeContext<'t>,
+    ) -> DocumentTreeAndErrors<crate::Value<'t>> {
         let span = self.span();
         let (comment_directives, mut errors) = collect_comment_directives_and_errors(&self);
 

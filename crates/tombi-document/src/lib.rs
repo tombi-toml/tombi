@@ -57,7 +57,7 @@ pub trait IntoDocument<T> {
     fn into_document(self, toml_version: TomlVersion) -> T;
 }
 
-impl IntoDocument<Document> for tombi_document_tree_syntax::DocumentTree {
+impl IntoDocument<Document> for tombi_document_tree_syntax::DocumentTree<'_> {
     fn into_document(self, toml_version: TomlVersion) -> Document {
         Document(tombi_document_tree_syntax::Table::from(self).into_document(toml_version))
     }
@@ -113,6 +113,7 @@ macro_rules! test_deserialize {
         #[cfg(feature = "serde")]
         #[test]
         fn $name() {
+            use tombi_ast_syntax::AstNode as _;
             use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
             use $crate::IntoDocument;
 
@@ -121,8 +122,11 @@ macro_rules! test_deserialize {
             let source = textwrap::dedent($source);
             let p = tombi_parser::parse(&source.trim());
             pretty_assertions::assert_eq!(p.errors, Vec::<tombi_parser::Error>::new());
-            let root = p.into_root();
-            let (document_tree, errors) = root.into_document_tree_and_errors($toml_version).into();
+            let root = p.root();
+            let decoded = root.decode_strings($toml_version);
+            let (document_tree, errors) = root
+                .into_document_tree_and_errors($toml_version, &decoded)
+                .into();
             pretty_assertions::assert_eq!(errors, vec![]);
             let document: $crate::Document = document_tree.into_document($toml_version);
             let serialized = serde_json::to_string(&document).unwrap();
@@ -139,11 +143,12 @@ macro_rules! test_deserialize {
         #[test]
         fn $name() {
             use itertools::Itertools;
+            use tombi_ast_syntax::AstNode as _;
             use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 
             let source = textwrap::dedent($source);
             let p = tombi_parser::parse(&source.trim());
-            let line_index = std::sync::Arc::clone(p.line_index());
+            let line_index = p.line_index();
             let range = |span| line_index.range(span, tombi_text::EncodingKind::GraphemeCluster);
             let expected_errors = $errors
                 .into_iter()
@@ -159,8 +164,11 @@ macro_rules! test_deserialize {
                     expected_errors,
                 );
             }
-            let root = p.into_root();
-            let (_, errs) = root.into_document_tree_and_errors($toml_version).into();
+            let root = p.root();
+            let decoded = root.decode_strings($toml_version);
+            let (_, errs) = root
+                .into_document_tree_and_errors($toml_version, &decoded)
+                .into();
             pretty_assertions::assert_eq!(
                 errs
                     .iter()

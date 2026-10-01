@@ -2,7 +2,6 @@ use std::{
     borrow::Cow,
     fmt,
     hash::{Hash, Hasher},
-    sync::Arc,
 };
 
 use crate::{Direction, NodeOrToken, SyntaxKind, TokenAtOffset, WalkEvent};
@@ -14,8 +13,7 @@ const DECODE_ERROR_SPAN: tombi_text::Span = tombi_text::Span::MAX;
 #[doc(hidden)]
 pub struct DecodedTextResolver {
     version: tombi_toml_version::TomlVersion,
-    source: Arc<Box<str>>,
-    decoded: Arc<Box<str>>,
+    decoded: Box<str>,
     token_ids: Box<[u32]>,
     spans: Box<[tombi_text::Span]>,
     errors: Box<[(u32, tombi_toml_text::ParseError)]>,
@@ -42,42 +40,31 @@ impl DecodedTextResolver {
         }
     }
 
-    fn resolve(
-        &self,
-        tree: &Tree,
+    fn resolve<'r>(
+        &'r self,
+        tree: &SyntaxTree<'r>,
         token_id: u32,
-    ) -> Result<(Arc<Box<str>>, tombi_text::Span), tombi_toml_text::ParseError> {
-        debug_assert!(Arc::ptr_eq(&self.source, tree.source_arc()));
+    ) -> Result<&'r str, tombi_toml_text::ParseError> {
         let entry = tree.entry(token_id);
         if entry.needs_decode() {
             let index = self.decoded_index(token_id);
             let span = self.decoded_span(index)?;
-            return Ok((Arc::clone(&self.decoded), span));
+            return Ok(&self.decoded[span]);
         }
 
-        let content = tree.try_to_token_content(token_id, self.version)?;
-        let Cow::Borrowed(content) = content else {
-            unreachable!("escaped basic strings must use decoded text storage")
-        };
-        let source_start = self.source.as_ptr() as usize;
-        let start = content.as_ptr() as usize - source_start;
-        Ok((
-            Arc::clone(&self.source),
-            tombi_text::Span::new(
-                (start as u32).into(),
-                ((start + content.len()) as u32).into(),
-            ),
-        ))
+        match tree.try_to_token_content(token_id, self.version)? {
+            Cow::Borrowed(content) => Ok(content),
+            Cow::Owned(_) => unreachable!("escaped basic strings must use decoded text storage"),
+        }
     }
 
-    fn resolve_raw(&self, tree: &Tree, token_id: u32) -> (Arc<Box<str>>, tombi_text::Span) {
-        debug_assert!(Arc::ptr_eq(&self.source, tree.source_arc()));
-        (Arc::clone(&self.source), tree.entry(token_id).span)
+    fn resolve_raw<'r>(&self, tree: &SyntaxTree<'r>, token_id: u32) -> &'r str {
+        &tree.source()[tree.entry(token_id).span]
     }
 }
 
 fn decode_escaped_basic_strings(
-    tree: &Tree,
+    tree: &SyntaxTree<'_>,
     version: tombi_toml_version::TomlVersion,
 ) -> DecodedTextResolver {
     let mut token_ids = Vec::new();
@@ -124,8 +111,7 @@ fn decode_escaped_basic_strings(
 
     DecodedTextResolver {
         version,
-        source: Arc::clone(tree.source_arc()),
-        decoded: Arc::new(decoded.into_boxed_str()),
+        decoded: decoded.into_boxed_str(),
         token_ids: token_ids.into_boxed_slice(),
         spans: spans.into_boxed_slice(),
         errors: errors.into_boxed_slice(),
@@ -176,27 +162,37 @@ impl Entry {
     }
 }
 
+/// The owner of a source-backed preorder syntax tape.
+///
+/// Syntax handles borrow it, so it must outlive every [`SyntaxNode`] and [`SyntaxToken`].
 #[derive(Debug)]
-struct Tree {
-    line_index: Arc<tombi_text::LineIndex>,
+pub struct SyntaxTree<'src> {
+    line_index: tombi_text::LineIndex<'src>,
     entries: Box<[Entry]>,
     token_ids: Box<[u32]>,
 }
 
-impl Tree {
+impl<'src> SyntaxTree<'src> {
+    /// The root node of the tape.
+    #[inline]
+    pub fn root(&self) -> SyntaxNode<'_> {
+        SyntaxNode::new(self, 0)
+    }
+
+    /// The line index of the whole source, to convert spans into ranges.
+    #[inline]
+    pub fn line_index(&self) -> &tombi_text::LineIndex<'src> {
+        &self.line_index
+    }
+
     #[inline]
     fn entry(&self, id: u32) -> Entry {
         self.entries[id as usize]
     }
 
     #[inline]
-    fn source(&self) -> &str {
+    fn source(&self) -> &'src str {
         self.line_index.text()
-    }
-
-    #[inline]
-    fn source_arc(&self) -> &Arc<Box<str>> {
-        self.line_index.text_arc()
     }
 
     fn text_token_id(&self, id: u32) -> u32 {
@@ -217,7 +213,7 @@ impl Tree {
         &self,
         id: u32,
         version: tombi_toml_version::TomlVersion,
-    ) -> Result<Cow<'_, str>, tombi_toml_text::ParseError> {
+    ) -> Result<Cow<'src, str>, tombi_toml_text::ParseError> {
         let id = self.text_token_id(id);
         self.try_to_token_content(id, version)
     }
@@ -226,7 +222,7 @@ impl Tree {
         &self,
         token_id: u32,
         version: tombi_toml_version::TomlVersion,
-    ) -> Result<Cow<'_, str>, tombi_toml_text::ParseError> {
+    ) -> Result<Cow<'src, str>, tombi_toml_text::ParseError> {
         let entry = self.entry(token_id);
         debug_assert!(entry.is_token());
         let text = &self.source()[entry.span];
@@ -252,11 +248,11 @@ impl Tree {
     }
 
     #[inline]
-    fn element(self: &Arc<Self>, id: u32) -> SyntaxElement {
+    fn element<'t>(&'t self, id: u32) -> SyntaxElement<'t> {
         if self.entry(id).is_token() {
-            NodeOrToken::Token(SyntaxToken::new(Arc::clone(self), id))
+            NodeOrToken::Token(SyntaxToken::new(self, id))
         } else {
-            NodeOrToken::Node(SyntaxNode::new(Arc::clone(self), id))
+            NodeOrToken::Node(SyntaxNode::new(self, id))
         }
     }
 }
@@ -264,20 +260,20 @@ impl Tree {
 /// Direct builder for a source-backed preorder syntax tape.
 #[derive(Debug)]
 #[doc(hidden)]
-pub struct SyntaxTreeBuilder {
-    line_index: Arc<tombi_text::LineIndex>,
+pub struct SyntaxTreeBuilder<'src> {
+    line_index: tombi_text::LineIndex<'src>,
     entries: Vec<Entry>,
     token_ids: Vec<u32>,
     open: Vec<u32>,
     last_child: Vec<u32>,
 }
 
-impl SyntaxTreeBuilder {
-    pub fn new(line_index: Arc<tombi_text::LineIndex>) -> Self {
+impl<'src> SyntaxTreeBuilder<'src> {
+    pub fn new(line_index: tombi_text::LineIndex<'src>) -> Self {
         Self::with_capacity(line_index, 0)
     }
 
-    pub fn with_capacity(line_index: Arc<tombi_text::LineIndex>, capacity: usize) -> Self {
+    pub fn with_capacity(line_index: tombi_text::LineIndex<'src>, capacity: usize) -> Self {
         Self {
             line_index,
             entries: Vec::with_capacity(capacity),
@@ -340,19 +336,18 @@ impl SyntaxTreeBuilder {
         entry.subtree_end = subtree_end;
     }
 
-    pub fn finish(self) -> SyntaxNode {
+    pub fn finish(self) -> SyntaxTree<'src> {
         assert!(self.open.is_empty(), "unclosed syntax nodes");
         assert!(!self.entries.is_empty(), "syntax tape has no root");
-        let tree = Arc::new(Tree {
+        SyntaxTree {
             line_index: self.line_index,
             token_ids: self.token_ids.into_boxed_slice(),
             entries: self.entries.into_boxed_slice(),
-        });
-        SyntaxNode::new(tree, 0)
+        }
     }
 }
 
-pub(crate) type SyntaxElement = NodeOrToken<SyntaxNode, SyntaxToken>;
+pub(crate) type SyntaxElement<'t> = NodeOrToken<SyntaxNode<'t>, SyntaxToken<'t>>;
 
 /// Materialized syntax hierarchy intended only for diagnostics and parser
 /// snapshot tests. Runtime consumers should use the typed TOML accessors.
@@ -369,16 +364,16 @@ pub enum DebugTree {
     },
 }
 
-/// A lightweight node cursor (`Arc` plus preorder id).
-#[derive(Clone)]
-pub struct SyntaxNode {
-    tree: Arc<Tree>,
+/// A lightweight node cursor (borrowed tree plus preorder id).
+#[derive(Clone, Copy)]
+pub struct SyntaxNode<'t> {
+    tree: &'t SyntaxTree<'t>,
     id: u32,
 }
 
-impl SyntaxNode {
+impl<'t> SyntaxNode<'t> {
     #[inline]
-    fn new(tree: Arc<Tree>, id: u32) -> Self {
+    fn new(tree: &'t SyntaxTree<'t>, id: u32) -> Self {
         debug_assert!(!tree.entry(id).is_token());
         Self { tree, id }
     }
@@ -389,11 +384,11 @@ impl SyntaxNode {
     }
 
     #[inline]
-    fn element(&self, id: u32) -> SyntaxElement {
+    fn element(&self, id: u32) -> SyntaxElement<'t> {
         self.tree.element(id)
     }
 
-    fn next_sibling_raw(&self) -> Option<SyntaxElement> {
+    fn next_sibling_raw(&self) -> Option<SyntaxElement<'t>> {
         let entry = self.entry();
         let next = entry.subtree_end;
         (entry.parent != ROOT_PARENT
@@ -402,49 +397,49 @@ impl SyntaxNode {
             .then(|| self.element(next))
     }
 
-    fn prev_sibling_raw(&self) -> Option<SyntaxElement> {
+    fn prev_sibling_raw(&self) -> Option<SyntaxElement<'t>> {
         let prev = self.entry().prev_sibling;
         (prev != ROOT_PARENT).then(|| self.element(prev))
     }
 
     fn parent_node(&self) -> Option<Self> {
         let parent = self.entry().parent;
-        (parent != ROOT_PARENT).then(|| Self::new(Arc::clone(&self.tree), parent))
+        (parent != ROOT_PARENT).then(|| Self::new(self.tree, parent))
     }
 
-    fn child_ids(&self) -> ChildIds {
+    fn child_ids(&self) -> ChildIds<'t> {
         let entry = self.entry();
         ChildIds {
-            tree: Arc::clone(&self.tree),
+            tree: self.tree,
             next: self.id + 1,
             end: entry.subtree_end,
         }
     }
 }
 
-impl PartialEq for SyntaxNode {
+impl PartialEq for SyntaxNode<'_> {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && Arc::ptr_eq(&self.tree, &other.tree)
+        self.id == other.id && std::ptr::eq(self.tree, other.tree)
     }
 }
-impl Eq for SyntaxNode {}
-impl Hash for SyntaxNode {
+impl Eq for SyntaxNode<'_> {}
+impl Hash for SyntaxNode<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Arc::as_ptr(&self.tree).hash(state);
+        std::ptr::from_ref(self.tree).hash(state);
         self.id.hash(state);
     }
 }
 
-/// A lightweight token cursor (`Arc` plus preorder id).
-#[derive(Clone)]
-pub struct SyntaxToken {
-    tree: Arc<Tree>,
+/// A lightweight token cursor (borrowed tree plus preorder id).
+#[derive(Clone, Copy)]
+pub struct SyntaxToken<'t> {
+    tree: &'t SyntaxTree<'t>,
     id: u32,
 }
 
-impl SyntaxToken {
+impl<'t> SyntaxToken<'t> {
     #[inline]
-    fn new(tree: Arc<Tree>, id: u32) -> Self {
+    fn new(tree: &'t SyntaxTree<'t>, id: u32) -> Self {
         debug_assert!(tree.entry(id).is_token());
         Self { tree, id }
     }
@@ -454,12 +449,12 @@ impl SyntaxToken {
         self.tree.entry(self.id)
     }
 
-    fn parent_node(&self) -> Option<SyntaxNode> {
+    fn parent_node(&self) -> Option<SyntaxNode<'t>> {
         let parent = self.entry().parent;
-        (parent != ROOT_PARENT).then(|| SyntaxNode::new(Arc::clone(&self.tree), parent))
+        (parent != ROOT_PARENT).then(|| SyntaxNode::new(self.tree, parent))
     }
 
-    fn next_sibling_raw(&self) -> Option<SyntaxElement> {
+    fn next_sibling_raw(&self) -> Option<SyntaxElement<'t>> {
         let entry = self.entry();
         let next = self.id + 1;
         (entry.parent != ROOT_PARENT
@@ -468,33 +463,33 @@ impl SyntaxToken {
             .then(|| self.tree.element(next))
     }
 
-    fn prev_sibling_raw(&self) -> Option<SyntaxElement> {
+    fn prev_sibling_raw(&self) -> Option<SyntaxElement<'t>> {
         let prev = self.entry().prev_sibling;
         (prev != ROOT_PARENT).then(|| self.tree.element(prev))
     }
 }
 
-impl PartialEq for SyntaxToken {
+impl PartialEq for SyntaxToken<'_> {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && Arc::ptr_eq(&self.tree, &other.tree)
+        self.id == other.id && std::ptr::eq(self.tree, other.tree)
     }
 }
-impl Eq for SyntaxToken {}
-impl Hash for SyntaxToken {
+impl Eq for SyntaxToken<'_> {}
+impl Hash for SyntaxToken<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Arc::as_ptr(&self.tree).hash(state);
+        std::ptr::from_ref(self.tree).hash(state);
         self.id.hash(state);
     }
 }
 
 #[derive(Clone)]
-struct ChildIds {
-    tree: Arc<Tree>,
+struct ChildIds<'t> {
+    tree: &'t SyntaxTree<'t>,
     next: u32,
     end: u32,
 }
 
-impl Iterator for ChildIds {
+impl Iterator for ChildIds<'_> {
     type Item = u32;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -508,7 +503,7 @@ impl Iterator for ChildIds {
     }
 }
 
-impl SyntaxNode {
+impl<'t> SyntaxNode<'t> {
     #[inline]
     pub fn kind(&self) -> SyntaxKind {
         self.entry().kind
@@ -521,11 +516,11 @@ impl SyntaxNode {
 
     /// The line index of the whole source, to convert spans into ranges.
     #[inline]
-    pub fn line_index(&self) -> &Arc<tombi_text::LineIndex> {
+    pub fn line_index(&self) -> &'t tombi_text::LineIndex<'t> {
         &self.tree.line_index
     }
 
-    pub fn text(&self) -> &str {
+    pub fn text(&self) -> &'t str {
         &self.tree.source()[self.span()]
     }
 
@@ -534,7 +529,7 @@ impl SyntaxNode {
     pub fn try_to_content(
         &self,
         version: tombi_toml_version::TomlVersion,
-    ) -> Result<Cow<'_, str>, tombi_toml_text::ParseError> {
+    ) -> Result<Cow<'t, str>, tombi_toml_text::ParseError> {
         self.tree.try_to_content(self.id, version)
     }
 
@@ -549,20 +544,20 @@ impl SyntaxNode {
 
     #[inline]
     #[doc(hidden)]
-    pub fn resolve_text(
+    pub fn resolve_text<'r>(
         &self,
-        resolver: &DecodedTextResolver,
-    ) -> Result<(Arc<Box<str>>, tombi_text::Span), tombi_toml_text::ParseError> {
-        resolver.resolve(&self.tree, self.tree.text_token_id(self.id))
+        resolver: &'r DecodedTextResolver,
+    ) -> Result<&'r str, tombi_toml_text::ParseError>
+    where
+        't: 'r,
+    {
+        resolver.resolve(self.tree, self.tree.text_token_id(self.id))
     }
 
     #[inline]
     #[doc(hidden)]
-    pub fn resolve_raw_text(
-        &self,
-        resolver: &DecodedTextResolver,
-    ) -> (Arc<Box<str>>, tombi_text::Span) {
-        resolver.resolve_raw(&self.tree, self.tree.text_token_id(self.id))
+    pub fn resolve_raw_text(&self, resolver: &DecodedTextResolver) -> &'t str {
+        resolver.resolve_raw(self.tree, self.tree.text_token_id(self.id))
     }
 
     #[doc(hidden)]
@@ -602,20 +597,19 @@ impl SyntaxNode {
         self.parent_node()
     }
 
-    pub(crate) fn ancestors(&self) -> impl Iterator<Item = Self> {
+    pub(crate) fn ancestors(&self) -> impl Iterator<Item = Self> + use<'t> {
         std::iter::successors(self.parent(), Self::parent)
     }
 
-    pub(crate) fn child_nodes(&self) -> impl Iterator<Item = Self> + use<> {
-        let tree = Arc::clone(&self.tree);
-        let filter_tree = Arc::clone(&tree);
+    pub(crate) fn child_nodes(&self) -> impl Iterator<Item = Self> + use<'t> {
+        let tree = self.tree;
         self.child_ids()
-            .filter(move |id| !filter_tree.entry(*id).is_token())
-            .map(move |id| Self::new(Arc::clone(&tree), id))
+            .filter(move |id| !tree.entry(*id).is_token())
+            .map(move |id| Self::new(tree, id))
     }
 
-    pub(crate) fn child_elements(&self) -> impl Iterator<Item = SyntaxElement> + use<> {
-        let tree = Arc::clone(&self.tree);
+    pub(crate) fn child_elements(&self) -> impl Iterator<Item = SyntaxElement<'t>> + use<'t> {
+        let tree = self.tree;
         self.child_ids().map(move |id| tree.element(id))
     }
 
@@ -623,15 +617,15 @@ impl SyntaxNode {
         self.child_nodes().last()
     }
 
-    pub(crate) fn first_child_or_token(&self) -> Option<SyntaxElement> {
+    pub(crate) fn first_child_or_token(&self) -> Option<SyntaxElement<'t>> {
         self.child_elements().next()
     }
 
-    pub(crate) fn next_sibling_or_token(&self) -> Option<SyntaxElement> {
+    pub(crate) fn next_sibling_or_token(&self) -> Option<SyntaxElement<'t>> {
         self.next_sibling_raw()
     }
 
-    pub(crate) fn prev_sibling_or_token(&self) -> Option<SyntaxElement> {
+    pub(crate) fn prev_sibling_or_token(&self) -> Option<SyntaxElement<'t>> {
         self.prev_sibling_raw()
     }
 
@@ -657,28 +651,28 @@ impl SyntaxNode {
         None
     }
 
-    pub(crate) fn first_token(&self) -> Option<SyntaxToken> {
+    pub(crate) fn first_token(&self) -> Option<SyntaxToken<'t>> {
         let entry = self.entry();
         (self.id + 1..entry.subtree_end).find_map(|id| {
             self.tree
                 .entry(id)
                 .is_token()
-                .then(|| SyntaxToken::new(Arc::clone(&self.tree), id))
+                .then(|| SyntaxToken::new(self.tree, id))
         })
     }
 
-    pub(crate) fn last_token(&self) -> Option<SyntaxToken> {
+    pub(crate) fn last_token(&self) -> Option<SyntaxToken<'t>> {
         let entry = self.entry();
         (self.id + 1..entry.subtree_end).rev().find_map(|id| {
             self.tree
                 .entry(id)
                 .is_token()
-                .then(|| SyntaxToken::new(Arc::clone(&self.tree), id))
+                .then(|| SyntaxToken::new(self.tree, id))
         })
     }
 
-    pub(crate) fn siblings(&self, direction: Direction) -> impl Iterator<Item = Self> {
-        let first = Some(self.clone());
+    pub(crate) fn siblings(&self, direction: Direction) -> impl Iterator<Item = Self> + use<'t> {
+        let first = Some(*self);
         std::iter::successors(first, move |node| match direction {
             Direction::Next => node.next_sibling(),
             Direction::Prev => node.prev_sibling(),
@@ -688,35 +682,37 @@ impl SyntaxNode {
     pub(crate) fn siblings_with_tokens(
         &self,
         direction: Direction,
-    ) -> impl Iterator<Item = SyntaxElement> {
-        let first = Some(NodeOrToken::Node(self.clone()));
+    ) -> impl Iterator<Item = SyntaxElement<'t>> + use<'t> {
+        let first = Some(NodeOrToken::Node(*self));
         std::iter::successors(first, move |element| match direction {
             Direction::Next => element.next_sibling_or_token(),
             Direction::Prev => element.prev_sibling_or_token(),
         })
     }
 
-    pub(crate) fn descendants(&self) -> impl Iterator<Item = Self> {
-        let tree = Arc::clone(&self.tree);
-        let filter_tree = Arc::clone(&tree);
+    pub(crate) fn descendants(&self) -> impl Iterator<Item = Self> + use<'t> {
+        let tree = self.tree;
         let entry = self.entry();
         (self.id..entry.subtree_end)
-            .filter(move |id| !filter_tree.entry(*id).is_token())
-            .map(move |id| Self::new(Arc::clone(&tree), id))
+            .filter(move |id| !tree.entry(*id).is_token())
+            .map(move |id| Self::new(tree, id))
     }
 
-    pub(crate) fn preorder_with_tokens(&self) -> PreorderWithTokens {
-        PreorderWithTokens::new(self.clone())
+    pub(crate) fn preorder_with_tokens(&self) -> PreorderWithTokens<'t> {
+        PreorderWithTokens::new(*self)
     }
 
-    pub(crate) fn token_at_offset(&self, offset: tombi_text::Offset) -> TokenAtOffset<SyntaxToken> {
+    pub(crate) fn token_at_offset(
+        &self,
+        offset: tombi_text::Offset,
+    ) -> TokenAtOffset<SyntaxToken<'t>> {
         let subtree = self.id + 1..self.entry().subtree_end;
         let token_ids = &self.tree.token_ids;
         let first = token_ids.partition_point(|id| *id < subtree.start);
         let last = token_ids.partition_point(|id| *id < subtree.end);
         let tokens = &token_ids[first..last];
         let index = tokens.partition_point(|id| self.tree.entry(*id).span.end <= offset);
-        let token = |id: u32| SyntaxToken::new(Arc::clone(&self.tree), id);
+        let token = |id: u32| SyntaxToken::new(self.tree, id);
         let left = index
             .checked_sub(1)
             .and_then(|index| tokens.get(index))
@@ -743,65 +739,65 @@ impl SyntaxNode {
     }
 }
 
-impl fmt::Debug for SyntaxNode {
+impl fmt::Debug for SyntaxNode<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?} @{}", self.kind(), self.span())
     }
 }
-impl fmt::Display for SyntaxNode {
+impl fmt::Display for SyntaxNode<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.tree.source()[self.span()])
     }
 }
 
-impl SyntaxToken {
+impl<'t> SyntaxToken<'t> {
     pub fn kind(&self) -> SyntaxKind {
         self.entry().kind
     }
     pub fn span(&self) -> tombi_text::Span {
         self.entry().span
     }
-    pub fn text(&self) -> &str {
+    pub fn text(&self) -> &'t str {
         &self.tree.source()[self.span()]
     }
-    pub(crate) fn parent(&self) -> Option<SyntaxNode> {
+    pub(crate) fn parent(&self) -> Option<SyntaxNode<'t>> {
         self.parent_node()
     }
-    pub(crate) fn parent_ancestors(&self) -> impl Iterator<Item = SyntaxNode> {
+    pub(crate) fn parent_ancestors(&self) -> impl Iterator<Item = SyntaxNode<'t>> + use<'t> {
         std::iter::successors(self.parent(), SyntaxNode::parent)
     }
-    pub(crate) fn next_sibling_or_token(&self) -> Option<SyntaxElement> {
+    pub(crate) fn next_sibling_or_token(&self) -> Option<SyntaxElement<'t>> {
         self.next_sibling_raw()
     }
-    pub(crate) fn prev_sibling_or_token(&self) -> Option<SyntaxElement> {
+    pub(crate) fn prev_sibling_or_token(&self) -> Option<SyntaxElement<'t>> {
         self.prev_sibling_raw()
     }
 }
 
-impl fmt::Debug for SyntaxToken {
+impl fmt::Debug for SyntaxToken<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?} @{} {:?}", self.kind(), self.span(), self.text())
     }
 }
-impl fmt::Display for SyntaxToken {
+impl fmt::Display for SyntaxToken<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.text())
     }
 }
 
-impl From<SyntaxNode> for SyntaxElement {
-    fn from(node: SyntaxNode) -> Self {
+impl<'t> From<SyntaxNode<'t>> for SyntaxElement<'t> {
+    fn from(node: SyntaxNode<'t>) -> Self {
         NodeOrToken::Node(node)
     }
 }
 
-impl From<SyntaxToken> for SyntaxElement {
-    fn from(token: SyntaxToken) -> Self {
+impl<'t> From<SyntaxToken<'t>> for SyntaxElement<'t> {
+    fn from(token: SyntaxToken<'t>) -> Self {
         NodeOrToken::Token(token)
     }
 }
 
-impl SyntaxElement {
+impl<'t> SyntaxElement<'t> {
     pub(crate) fn span(&self) -> tombi_text::Span {
         match self {
             NodeOrToken::Node(node) => node.span(),
@@ -828,14 +824,14 @@ impl SyntaxElement {
     }
 }
 
-pub(crate) struct PreorderWithTokens {
-    tree: Arc<Tree>,
+pub(crate) struct PreorderWithTokens<'t> {
+    tree: &'t SyntaxTree<'t>,
     next: u32,
     end: u32,
     leaving: Vec<u32>,
 }
-impl PreorderWithTokens {
-    fn new(root: SyntaxNode) -> Self {
+impl<'t> PreorderWithTokens<'t> {
+    fn new(root: SyntaxNode<'t>) -> Self {
         let entry = root.entry();
         Self {
             tree: root.tree,
@@ -845,8 +841,8 @@ impl PreorderWithTokens {
         }
     }
 }
-impl Iterator for PreorderWithTokens {
-    type Item = WalkEvent<SyntaxElement>;
+impl<'t> Iterator for PreorderWithTokens<'t> {
+    type Item = WalkEvent<SyntaxElement<'t>>;
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(id) = self.leaving.last().copied()
             && self.next >= self.tree.entry(id).subtree_end

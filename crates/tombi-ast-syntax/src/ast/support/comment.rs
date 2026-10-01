@@ -6,9 +6,9 @@ use tombi_ast_syntax::{
 use crate::{AstNode, AstToken, DanglingCommentGroupOr};
 
 #[inline]
-pub fn dangling_comment_groups<I: Iterator<Item = tombi_ast_syntax::SyntaxElement>>(
+pub fn dangling_comment_groups<'t, I: Iterator<Item = tombi_ast_syntax::SyntaxElement<'t>>>(
     iter: I,
-) -> impl Iterator<Item = crate::DanglingCommentGroup> {
+) -> impl Iterator<Item = crate::DanglingCommentGroup<'t>> {
     iter.take_while(|node_or_token| {
         matches!(
             node_or_token.kind(),
@@ -23,11 +23,12 @@ pub fn dangling_comment_groups<I: Iterator<Item = tombi_ast_syntax::SyntaxElemen
 
 #[inline]
 pub fn dangling_comment_group_or<
-    T: AstNode,
-    I: Iterator<Item = tombi_ast_syntax::SyntaxElement>,
+    't,
+    T: AstNode<'t>,
+    I: Iterator<Item = tombi_ast_syntax::SyntaxElement<'t>>,
 >(
     iter: I,
-) -> impl Iterator<Item = DanglingCommentGroupOr<T>> {
+) -> impl Iterator<Item = DanglingCommentGroupOr<'t, T>> {
     iter.skip_while(|node_or_token| {
         matches!(
             node_or_token.kind(),
@@ -48,9 +49,9 @@ pub fn dangling_comment_group_or<
 }
 
 #[inline]
-pub fn leading_comments<I: Iterator<Item = tombi_ast_syntax::SyntaxElement>>(
+pub fn leading_comments<'t, I: Iterator<Item = tombi_ast_syntax::SyntaxElement<'t>>>(
     iter: I,
-) -> impl Iterator<Item = crate::LeadingComment> {
+) -> impl Iterator<Item = crate::LeadingComment<'t>> {
     iter.take_while(|node_or_token| {
         matches!(node_or_token.kind(), COMMENT | LINE_BREAK | WHITESPACE)
     })
@@ -61,10 +62,10 @@ pub fn leading_comments<I: Iterator<Item = tombi_ast_syntax::SyntaxElement>>(
 }
 
 #[inline]
-pub fn trailing_comment<I: Iterator<Item = tombi_ast_syntax::SyntaxElement>>(
+pub fn trailing_comment<'t, I: Iterator<Item = tombi_ast_syntax::SyntaxElement<'t>>>(
     iter: I,
     end: tombi_ast_syntax::SyntaxKind,
-) -> Option<crate::TrailingComment> {
+) -> Option<crate::TrailingComment<'t>> {
     let mut iter = iter
         .skip_while(|item| item.kind() != end && item.kind() != EOF)
         .skip(1);
@@ -86,9 +87,9 @@ pub fn trailing_comment<I: Iterator<Item = tombi_ast_syntax::SyntaxElement>>(
 }
 
 #[inline]
-pub fn skip_trailing_comment<I>(mut iter: std::iter::Peekable<I>) -> std::iter::Peekable<I>
+pub fn skip_trailing_comment<'t, I>(mut iter: std::iter::Peekable<I>) -> std::iter::Peekable<I>
 where
-    I: Iterator<Item = tombi_ast_syntax::SyntaxElement>,
+    I: Iterator<Item = tombi_ast_syntax::SyntaxElement<'t>>,
 {
     iter.next_if(|node_or_token| matches!(node_or_token.kind(), SyntaxKind::WHITESPACE));
     if iter
@@ -102,12 +103,12 @@ where
 }
 
 #[inline]
-pub fn has_inner_comments<I: Iterator<Item = tombi_ast_syntax::SyntaxElement>>(
+pub fn has_inner_comments<'t, I: Iterator<Item = tombi_ast_syntax::SyntaxElement<'t>>>(
     iter: I,
     start: SyntaxKind,
     end: SyntaxKind,
 ) -> bool {
-    fn contains_comment(node_or_token: tombi_ast_syntax::SyntaxElement) -> bool {
+    fn contains_comment(node_or_token: tombi_ast_syntax::SyntaxElement<'_>) -> bool {
         match node_or_token {
             tombi_ast_syntax::SyntaxElement::Token(token) => token.kind() == COMMENT,
             tombi_ast_syntax::SyntaxElement::Node(node) => {

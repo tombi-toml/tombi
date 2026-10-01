@@ -25,7 +25,7 @@ pub trait IntoValue {
     fn into_value(self, toml_version: TomlVersion) -> Value;
 }
 
-impl IntoValue for tombi_document_tree_syntax::Value {
+impl IntoValue for tombi_document_tree_syntax::Value<'_> {
     #[allow(clippy::only_used_in_recursion)]
     fn into_value(self, toml_version: TomlVersion) -> Value {
         match self {
@@ -80,7 +80,7 @@ impl IntoValue for tombi_document_tree_syntax::Value {
     }
 }
 
-impl IntoValue for tombi_document_tree_syntax::DocumentTree {
+impl IntoValue for tombi_document_tree_syntax::DocumentTree<'_> {
     fn into_value(self, toml_version: TomlVersion) -> Value {
         Value::Table(
             tombi_document_tree_syntax::Table::from(self)

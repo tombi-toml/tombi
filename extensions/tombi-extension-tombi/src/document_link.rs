@@ -38,7 +38,7 @@ impl std::fmt::Display for DocumentLinkToolTip {
 
 pub async fn document_link(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree_syntax::DocumentTree,
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     _toml_version: TomlVersion,
     features: Option<&tombi_config::TombiExtensionFeatures>,
 ) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
