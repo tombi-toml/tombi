@@ -181,6 +181,7 @@ struct Tree {
     line_index: Arc<tombi_text::LineIndex>,
     entries: Box<[Entry]>,
     token_ids: Box<[u32]>,
+    header_index: std::sync::OnceLock<crate::ast::HeaderIndex>,
 }
 
 impl Tree {
@@ -347,6 +348,7 @@ impl SyntaxTreeBuilder {
             line_index: self.line_index,
             token_ids: self.token_ids.into_boxed_slice(),
             entries: self.entries.into_boxed_slice(),
+            header_index: Default::default(),
         });
         SyntaxNode::new(tree, 0)
     }
@@ -602,6 +604,22 @@ impl SyntaxNode {
         self.parent_node()
     }
 
+    #[inline]
+    pub(crate) fn id(&self) -> u32 {
+        self.id
+    }
+
+    /// Lazily built, per-tree index shared by every node of this tree.
+    pub(crate) fn header_index(&self) -> &crate::ast::HeaderIndex {
+        self.tree
+            .header_index
+            .get_or_init(|| crate::ast::HeaderIndex::build(self))
+    }
+
+    pub(crate) fn node_at(&self, id: u32) -> Self {
+        Self::new(Arc::clone(&self.tree), id)
+    }
+
     pub(crate) fn ancestors(&self) -> impl Iterator<Item = Self> {
         std::iter::successors(self.parent(), Self::parent)
     }
@@ -635,28 +653,6 @@ impl SyntaxNode {
         self.prev_sibling_raw()
     }
 
-    pub(crate) fn next_sibling(&self) -> Option<Self> {
-        let mut element = self.next_sibling_or_token();
-        while let Some(current) = element {
-            match current {
-                NodeOrToken::Node(node) => return Some(node),
-                NodeOrToken::Token(token) => element = token.next_sibling_or_token(),
-            }
-        }
-        None
-    }
-
-    pub(crate) fn prev_sibling(&self) -> Option<Self> {
-        let mut element = self.prev_sibling_or_token();
-        while let Some(current) = element {
-            match current {
-                NodeOrToken::Node(node) => return Some(node),
-                NodeOrToken::Token(token) => element = token.prev_sibling_or_token(),
-            }
-        }
-        None
-    }
-
     pub(crate) fn first_token(&self) -> Option<SyntaxToken> {
         let entry = self.entry();
         (self.id + 1..entry.subtree_end).find_map(|id| {
@@ -674,14 +670,6 @@ impl SyntaxNode {
                 .entry(id)
                 .is_token()
                 .then(|| SyntaxToken::new(Arc::clone(&self.tree), id))
-        })
-    }
-
-    pub(crate) fn siblings(&self, direction: Direction) -> impl Iterator<Item = Self> {
-        let first = Some(self.clone());
-        std::iter::successors(first, move |node| match direction {
-            Direction::Next => node.next_sibling(),
-            Direction::Prev => node.prev_sibling(),
         })
     }
 

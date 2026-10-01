@@ -1,8 +1,7 @@
 use tombi_ast_syntax::{SyntaxKind::*, T};
-use tombi_toml_version::TomlVersion;
 
 use crate::{
-    ArrayOfTable, AstNode, DanglingCommentGroupOr, KeyValueGroup, TableOrArrayOfTable,
+    AstNode, DanglingCommentGroupOr, KeyValueGroup, TableOrArrayOfTable,
     TombiValueCommentDirective, support,
 };
 
@@ -114,7 +113,7 @@ impl crate::Table {
                 .is_none_or(|end| offset <= end.span().start)
     }
 
-    /// Returns an iterator over the sub-tables of this table.
+    /// Returns the last of the sub-tables of this table.
     ///
     /// ```toml
     /// [foo]  # <- This is a self table
@@ -125,76 +124,22 @@ impl crate::Table {
     /// key = true
     /// ```
     #[inline]
-    pub fn sub_tables(&self) -> impl Iterator<Item = TableOrArrayOfTable> + '_ {
-        support::node::next_siblings_nodes(self)
-            .skip(1)
-            .take_while(|t: &TableOrArrayOfTable| {
-                let Some(keys) = t.header() else {
-                    return false;
-                };
-                let Some(self_keys) = self.header() else {
-                    return false;
-                };
-
-                keys.starts_with(&self_keys) && keys.keys().count() != self_keys.keys().count()
-            })
+    pub fn last_sub_table(&self) -> Option<TableOrArrayOfTable> {
+        let id = crate::header_info(self.syntax()).last_sub_table?;
+        TableOrArrayOfTable::cast(self.syntax().node_at(id))
     }
 
+    /// The number of distinct shorter key-prefixes of the header that were already declared by a
+    /// preceding `[table]` / `[[array_of_tables]]` header.
     #[inline]
-    pub fn parent_table_or_array_of_table_keys(
-        &self,
-        toml_version: TomlVersion,
-    ) -> impl Iterator<Item = crate::Keys> + '_ {
-        support::node::prev_siblings_nodes(self)
-            .filter_map(|node: TableOrArrayOfTable| node.header())
-            .take_while(move |keys| {
-                match (
-                    self.header().and_then(|header| header.keys().next()),
-                    keys.keys().next(),
-                ) {
-                    (Some(a), Some(b)) => match (
-                        a.try_to_content(toml_version),
-                        b.try_to_content(toml_version),
-                    ) {
-                        (Ok(a), Ok(b)) => a == b,
-                        _ => false,
-                    },
-                    _ => false,
-                }
-            })
-            .filter(|keys| {
-                self.header()
-                    .map(|header_keys| header_keys.starts_with(keys))
-                    .unwrap_or_default()
-            })
+    pub fn parent_table_or_array_of_table_count(&self) -> usize {
+        crate::header_info(self.syntax()).parent_header_count
     }
 
+    /// For each key-prefix of the header (prefix length `i + 1` at index `i`), the number of
+    /// preceding `[[array_of_tables]]` headers that equal that prefix.
     #[inline]
-    pub fn parent_array_of_tables_keys(
-        &self,
-        toml_version: TomlVersion,
-    ) -> impl Iterator<Item = crate::Keys> + '_ {
-        support::node::prev_siblings_nodes(self)
-            .filter_map(|node: ArrayOfTable| node.header())
-            .take_while(move |keys| {
-                match (
-                    self.header().and_then(|header| header.keys().next()),
-                    keys.keys().next(),
-                ) {
-                    (Some(a), Some(b)) => match (
-                        a.try_to_content(toml_version),
-                        b.try_to_content(toml_version),
-                    ) {
-                        (Ok(a), Ok(b)) => a == b,
-                        _ => false,
-                    },
-                    _ => false,
-                }
-            })
-            .filter(|keys| {
-                self.header()
-                    .map(|header_keys| header_keys.starts_with(keys))
-                    .unwrap_or_default()
-            })
+    pub fn parent_array_of_tables_prefix_counts(&self) -> Vec<usize> {
+        crate::header_info(self.syntax()).array_of_tables_counts
     }
 }

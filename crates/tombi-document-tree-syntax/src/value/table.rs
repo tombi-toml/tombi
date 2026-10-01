@@ -548,11 +548,7 @@ impl IntoDocumentTreeWithContext<crate::Table> for tombi_ast_syntax::Table {
             }
         }
 
-        let array_of_table_keys = get_array_of_tables_keys(
-            self.parent_array_of_tables_keys(context.toml_version),
-            context,
-            &mut errors,
-        );
+        let parent_array_of_tables_counts = self.parent_array_of_tables_prefix_counts();
 
         let mut is_array_of_table = false;
         while let Some(mut key) = header_keys.pop() {
@@ -567,7 +563,8 @@ impl IntoDocumentTreeWithContext<crate::Table> for tombi_ast_syntax::Table {
                 errors.extend(errs);
             };
 
-            is_array_of_table = array_of_table_keys.contains(&header_keys);
+            is_array_of_table =
+                is_parent_array_of_tables(&parent_array_of_tables_counts, header_keys.len());
         }
 
         DocumentTreeAndErrors {
@@ -675,8 +672,7 @@ impl IntoDocumentTreeWithContext<Table> for tombi_ast_syntax::ArrayOfTable {
             }
         }
 
-        let array_of_table_keys =
-            get_array_of_tables_keys(self.parent_array_of_tables_keys(), context, &mut errors);
+        let parent_array_of_tables_counts = self.parent_array_of_tables_prefix_counts();
 
         if let Some(mut key) = header_keys.pop() {
             key.comment_directives = table.header_comment_directives.take();
@@ -685,7 +681,8 @@ impl IntoDocumentTreeWithContext<Table> for tombi_ast_syntax::ArrayOfTable {
             }
         }
 
-        let mut is_array_of_table = array_of_table_keys.contains(&header_keys);
+        let mut is_array_of_table =
+            is_parent_array_of_tables(&parent_array_of_tables_counts, header_keys.len());
         while let Some(key) = header_keys.pop() {
             if is_array_of_table {
                 if let Err(errs) =
@@ -697,7 +694,8 @@ impl IntoDocumentTreeWithContext<Table> for tombi_ast_syntax::ArrayOfTable {
                 errors.extend(errs);
             };
 
-            is_array_of_table = array_of_table_keys.contains(&header_keys);
+            is_array_of_table =
+                is_parent_array_of_tables(&parent_array_of_tables_counts, header_keys.len());
         }
 
         DocumentTreeAndErrors {
@@ -1040,28 +1038,12 @@ impl IntoIterator for Table {
     }
 }
 
-fn get_array_of_tables_keys(
-    keys_iter: impl Iterator<Item = tombi_ast_syntax::Keys>,
-    context: &crate::DocumentTreeContext,
-    errors: &mut Vec<crate::Error>,
-) -> Vec<Vec<Key>> {
-    keys_iter
-        .filter_map(|keys| {
-            let mut new_keys = vec![];
-            for key in keys.keys() {
-                let (key, errs) = key.into_document_tree_with_context(context).into();
-                if !errs.is_empty() {
-                    errors.extend(errs);
-                    return None;
-                }
-                if let Some(key) = key {
-                    new_keys.push(key);
-                }
-            }
-            Some(new_keys)
-        })
-        .unique()
-        .collect_vec()
+/// Whether the header prefix of `prefix_len` keys is a parent `[[array_of_tables]]`.
+fn is_parent_array_of_tables(counts: &[usize], prefix_len: usize) -> bool {
+    prefix_len
+        .checked_sub(1)
+        .and_then(|i| counts.get(i))
+        .is_some_and(|count| *count > 0)
 }
 
 fn insert_table(table: &mut Table, key: Key) -> Result<(), Vec<crate::Error>> {

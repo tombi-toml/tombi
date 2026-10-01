@@ -417,8 +417,7 @@ impl GetRegionFoldingSpan for tombi_ast_syntax::Table {
         self.content_span().map(|span| {
             tombi_text::Span::new(
                 span.start,
-                self.sub_tables()
-                    .last()
+                self.last_sub_table()
                     .and_then(|t| t.get_folding_span())
                     .unwrap_or(span)
                     .end,
@@ -432,8 +431,7 @@ impl GetRegionFoldingSpan for tombi_ast_syntax::ArrayOfTable {
         self.content_span().map(|span| {
             tombi_text::Span::new(
                 span.start,
-                self.sub_tables()
-                    .last()
+                self.last_sub_table()
                     .and_then(|t| t.get_folding_span())
                     .unwrap_or(span)
                     .end,
@@ -526,5 +524,50 @@ impl GetCommentFoldingSpan for Vec<Vec<tombi_ast_syntax::DanglingComment>> {
             first.syntax().span().start,
             last.syntax().span().end,
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tombi_ast_syntax::{AstNode, TableOrArrayOfTable};
+
+    fn last_sub_tables(source: &str) -> Vec<(String, Option<String>)> {
+        let root = tombi_parser::parse(source).try_into_root().ok().unwrap();
+        let header =
+            |item: &TableOrArrayOfTable| item.header().unwrap().syntax().text().to_string();
+        root.table_or_array_of_tables()
+            .map(|item| {
+                let last = match &item {
+                    TableOrArrayOfTable::Table(table) => table.last_sub_table(),
+                    TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
+                        array_of_table.last_sub_table()
+                    }
+                };
+                (header(&item), last.as_ref().map(header))
+            })
+            .collect()
+    }
+
+    #[test]
+    fn last_sub_table_of_nested_and_sibling_headers() {
+        let source = "[a]\n[a.b]\n[a.b.c]\n[a.d]\n[other]\n[[x]]\n[x.y]\n[[x]]\n[[x.z]]\n[[x.z]]\n";
+        let expected = [
+            ("a", Some("a.d")),
+            ("a.b", Some("a.b.c")),
+            ("a.b.c", None),
+            ("a.d", None),
+            ("other", None),
+            ("x", Some("x.y")),
+            ("x.y", None),
+            ("x", Some("x.z")),
+            ("x.z", None),
+            ("x.z", None),
+        ];
+        let actual = last_sub_tables(source);
+        assert_eq!(actual.len(), expected.len());
+        for ((header, last), (expected_header, expected_last)) in actual.iter().zip(expected) {
+            assert_eq!(header.trim(), expected_header);
+            assert_eq!(last.as_deref().map(str::trim), expected_last, "{header}");
+        }
     }
 }

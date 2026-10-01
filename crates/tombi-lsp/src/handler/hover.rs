@@ -376,12 +376,8 @@ pub async fn get_hover_keys_with_span(
                     }))
             {
                 let mut span = table.syntax().span();
-                if let Some(max_end) = table
-                    .sub_tables()
-                    .map(|subtable| subtable.syntax().span().end)
-                    .max()
-                {
-                    span.end = max_end;
+                if let Some(last_sub_table) = table.last_sub_table() {
+                    span.end = last_sub_table.syntax().span().end;
                 }
                 hover_span = Some(span);
             } else {
@@ -423,12 +419,8 @@ pub async fn get_hover_keys_with_span(
                         }))
             {
                 let mut span = array_of_table.syntax().span();
-                if let Some(max_end) = array_of_table
-                    .sub_tables()
-                    .map(|subtable| subtable.syntax().span().end)
-                    .max()
-                {
-                    span.end = max_end;
+                if let Some(last_sub_table) = array_of_table.last_sub_table() {
+                    span.end = last_sub_table.syntax().span().end;
                 }
                 hover_span = Some(span);
             } else {

@@ -3,20 +3,14 @@ use std::fmt::Write;
 use itertools::Itertools;
 use tombi_ast_syntax::DanglingCommentGroupOr;
 
-use crate::{Format, format::filter_map_unique_keys, types::WithAlignmentHint};
+use crate::{Format, types::WithAlignmentHint};
 
 impl Format for tombi_ast_syntax::Table {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let header = self.header().unwrap();
-        let toml_version = f.toml_version();
 
         if f.indent_sub_tables() {
-            filter_map_unique_keys(
-                header.clone(),
-                self.parent_table_or_array_of_table_keys(toml_version),
-                toml_version,
-            )
-            .for_each(|_| f.inc_indent());
+            (0..self.parent_table_or_array_of_table_count()).for_each(|_| f.inc_indent());
         }
 
         self.header_leading_comments().collect_vec().format(f)?;
@@ -50,12 +44,7 @@ impl Format for tombi_ast_syntax::Table {
         }
 
         if f.indent_sub_tables() {
-            filter_map_unique_keys(
-                header,
-                self.parent_table_or_array_of_table_keys(toml_version),
-                toml_version,
-            )
-            .for_each(|_| f.dec_indent());
+            (0..self.parent_table_or_array_of_table_count()).for_each(|_| f.dec_indent());
         }
 
         Ok(())
@@ -80,6 +69,51 @@ mod tests {
         async fn table_only_header_with_basic_string_key(
             r#"[dependencies."unicase"]"#
         ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn table_indent_sub_tables_by_declared_parents(
+            r#"
+            [a]
+            x = 1
+
+            [a.b]
+            y = 1
+
+            [a.b.c]
+            z = 1
+
+            [other]
+            w = 1
+
+            [a.d]
+            v = 1
+            "#,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    indent_sub_tables: Some(true),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(
+            r#"
+            [a]
+            x = 1
+
+              [a.b]
+              y = 1
+
+                [a.b.c]
+                z = 1
+
+              [a.d]
+              v = 1
+
+            [other]
+            w = 1
+            "#
+        )
     }
 
     test_format! {
