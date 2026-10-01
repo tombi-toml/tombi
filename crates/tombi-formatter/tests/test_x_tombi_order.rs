@@ -1,6 +1,104 @@
 mod table_keys_order {
     use tombi_formatter::{Formatter, test_format};
 
+    test_format! {
+        #[tokio::test]
+        async fn test_array_of_tables_keep_their_sub_tables_when_sorted(
+            r#"
+            # tombi: format.rules.table-keys-order = "ascending"
+
+            [[x]]
+            b = 1
+
+            [x.sub]
+            z = 1
+
+            [[x]]
+            b = 2
+
+            [x.sub]
+            z = 3
+
+            [[x]]
+            b = 4
+
+            [x.sub]
+            z = 5
+
+            [a]
+            k = 1
+            "#,
+        ) -> Ok(
+            r#"
+            # tombi: format.rules.table-keys-order = "ascending"
+
+            [a]
+            k = 1
+
+            [[x]]
+            b = 1
+
+            [x.sub]
+            z = 1
+
+            [[x]]
+            b = 2
+
+            [x.sub]
+            z = 3
+
+            [[x]]
+            b = 4
+
+            [x.sub]
+            z = 5
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn test_nested_array_of_tables_keep_their_sub_tables_when_sorted(
+            r#"
+            # tombi: format.rules.table-keys-order = "ascending"
+
+            [[x.y]]
+            b = 1
+
+            [x.y.sub]
+            z = 1
+
+            [[x.y]]
+            b = 2
+
+            [x.y.sub]
+            z = 3
+
+            [x.other]
+            k = 1
+            "#,
+        ) -> Ok(
+            r#"
+            # tombi: format.rules.table-keys-order = "ascending"
+
+            [x.other]
+            k = 1
+
+            [[x.y]]
+            b = 1
+
+            [x.y.sub]
+            z = 1
+
+            [[x.y]]
+            b = 2
+
+            [x.y.sub]
+            z = 3
+            "#
+        )
+    }
+
     mod pyproject {
         use super::*;
         use tombi_config::FormatRules;

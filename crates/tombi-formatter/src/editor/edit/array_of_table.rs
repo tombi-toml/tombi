@@ -7,11 +7,15 @@ use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::Accessor;
 
-use crate::editor::{edit::edit_recursive, rule::table_keys_order::table_keys_order};
+use crate::editor::{
+    edit::{Edit, EditWithHeaderAccessors, edit_recursive},
+    rule::table_keys_order::table_keys_order,
+};
 
-impl crate::editor::Edit for tombi_ast_syntax::ArrayOfTable {
-    fn edit<'a: 'b, 'b>(
+impl crate::editor::edit::EditWithHeaderAccessors for tombi_ast_syntax::ArrayOfTable {
+    fn edit_with_header_accessors<'a: 'b, 'b>(
         &'a self,
+        header_accessors: Vec<Accessor>,
         node: &'a tombi_document_tree_syntax::Value,
         accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
@@ -21,11 +25,6 @@ impl crate::editor::Edit for tombi_ast_syntax::ArrayOfTable {
         log::trace!("current_schema = {:?}", current_schema);
 
         async move {
-            let Some(header_accessors) = self.get_header_accessors(schema_context.toml_version)
-            else {
-                return Vec::new();
-            };
-
             let comment_directive = get_comment_directive_content::<
                 TableCommonFormatRules,
                 TableCommonLintRules,
@@ -81,6 +80,35 @@ impl crate::editor::Edit for tombi_ast_syntax::ArrayOfTable {
                 &header_accessors,
                 Arc::from(accessors.to_vec()),
                 current_schema.cloned(),
+                schema_context,
+            )
+            .await
+        }
+        .boxed()
+    }
+}
+
+impl crate::editor::Edit for tombi_ast_syntax::ArrayOfTable {
+    fn edit<'a: 'b, 'b>(
+        &'a self,
+        node: &'a tombi_document_tree_syntax::Value,
+        accessors: &'a [Accessor],
+        source_path: Option<&'a std::path::Path>,
+        current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
+        schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    ) -> BoxFuture<'b, Vec<crate::editor::Change>> {
+        async move {
+            let Some(header_accessors) = self.get_header_accessors(schema_context.toml_version)
+            else {
+                return Vec::new();
+            };
+
+            self.edit_with_header_accessors(
+                header_accessors,
+                node,
+                accessors,
+                source_path,
+                current_schema,
                 schema_context,
             )
             .await

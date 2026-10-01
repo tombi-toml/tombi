@@ -20,7 +20,7 @@ pub use tombi_document_tree::{
 use tombi_toml_version::TomlVersion;
 pub use value::{
     Array, Boolean, Float, Integer, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, String,
-    Table, Value,
+    Table, Value, top_level_tables_into_document_tree_and_errors,
 };
 pub use value_type::ValueType;
 

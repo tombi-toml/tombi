@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use itertools::Itertools;
 use tombi_ast_syntax::{AstNode, TombiValueCommentDirective};
 
@@ -456,6 +458,23 @@ impl IntoDocumentTreeWithContext<crate::Table> for tombi_ast_syntax::Table {
         self,
         context: &crate::DocumentTreeContext,
     ) -> DocumentTreeAndErrors<crate::Table> {
+        let (array_of_table_keys, parent_errors) = get_array_of_tables_keys(
+            self.parent_array_of_tables_keys(context.toml_version),
+            context,
+        );
+
+        self.into_document_tree_with_array_of_tables(context, &array_of_table_keys, parent_errors)
+    }
+}
+
+impl IntoDocumentTreeWithArrayOfTables for tombi_ast_syntax::Table {
+    /// Converts the table, given the preceding array-of-tables headers.
+    fn into_document_tree_with_array_of_tables(
+        self,
+        context: &crate::DocumentTreeContext,
+        array_of_table_keys: &HashSet<Vec<Key>>,
+        parent_errors: Vec<crate::Error>,
+    ) -> DocumentTreeAndErrors<Table> {
         let mut table = Table::new_table(&self);
         let mut errors = vec![];
 
@@ -548,11 +567,7 @@ impl IntoDocumentTreeWithContext<crate::Table> for tombi_ast_syntax::Table {
             }
         }
 
-        let array_of_table_keys = get_array_of_tables_keys(
-            self.parent_array_of_tables_keys(context.toml_version),
-            context,
-            &mut errors,
-        );
+        errors.extend(parent_errors);
 
         let mut is_array_of_table = false;
         while let Some(mut key) = header_keys.pop() {
@@ -581,6 +596,21 @@ impl IntoDocumentTreeWithContext<Table> for tombi_ast_syntax::ArrayOfTable {
     fn into_document_tree_with_context(
         self,
         context: &crate::DocumentTreeContext,
+    ) -> DocumentTreeAndErrors<Table> {
+        let (array_of_table_keys, parent_errors) =
+            get_array_of_tables_keys(self.parent_array_of_tables_keys(), context);
+
+        self.into_document_tree_with_array_of_tables(context, &array_of_table_keys, parent_errors)
+    }
+}
+
+impl IntoDocumentTreeWithArrayOfTables for tombi_ast_syntax::ArrayOfTable {
+    /// Converts the table, given the preceding array-of-tables headers.
+    fn into_document_tree_with_array_of_tables(
+        self,
+        context: &crate::DocumentTreeContext,
+        array_of_table_keys: &HashSet<Vec<Key>>,
+        parent_errors: Vec<crate::Error>,
     ) -> DocumentTreeAndErrors<Table> {
         let mut table = Table::new_array_of_table(&self);
         let mut errors = vec![];
@@ -675,8 +705,7 @@ impl IntoDocumentTreeWithContext<Table> for tombi_ast_syntax::ArrayOfTable {
             }
         }
 
-        let array_of_table_keys =
-            get_array_of_tables_keys(self.parent_array_of_tables_keys(), context, &mut errors);
+        errors.extend(parent_errors);
 
         if let Some(mut key) = header_keys.pop() {
             key.comment_directives = table.header_comment_directives.take();
@@ -1040,28 +1069,117 @@ impl IntoIterator for Table {
     }
 }
 
+/// Converts the keys of one `[[...]]` header.
+///
+/// Returns `None` for the keys when any of them is invalid. The errors are
+/// those of the keys converted up to and including the first invalid one.
+fn convert_array_of_tables_keys(
+    keys: &tombi_ast_syntax::Keys,
+    context: &crate::DocumentTreeContext,
+) -> (Option<Vec<Key>>, Vec<crate::Error>) {
+    let mut errors = vec![];
+    let mut new_keys = vec![];
+    for key in keys.keys() {
+        let (key, errs) = key.into_document_tree_with_context(context).into();
+        if !errs.is_empty() {
+            errors.extend(errs);
+            return (None, errors);
+        }
+        if let Some(key) = key {
+            new_keys.push(key);
+        }
+    }
+    (Some(new_keys), errors)
+}
+
 fn get_array_of_tables_keys(
     keys_iter: impl Iterator<Item = tombi_ast_syntax::Keys>,
     context: &crate::DocumentTreeContext,
-    errors: &mut Vec<crate::Error>,
-) -> Vec<Vec<Key>> {
-    keys_iter
-        .filter_map(|keys| {
-            let mut new_keys = vec![];
-            for key in keys.keys() {
-                let (key, errs) = key.into_document_tree_with_context(context).into();
-                if !errs.is_empty() {
-                    errors.extend(errs);
-                    return None;
+) -> (HashSet<Vec<Key>>, Vec<crate::Error>) {
+    let mut array_of_table_keys = HashSet::new();
+    let mut errors = vec![];
+    for keys in keys_iter {
+        let (keys, errs) = convert_array_of_tables_keys(&keys, context);
+        errors.extend(errs);
+        if let Some(keys) = keys {
+            array_of_table_keys.insert(keys);
+        }
+    }
+    (array_of_table_keys, errors)
+}
+
+/// The `[[...]]` headers recorded by [`ArrayOfTablesKeysScope`].
+#[derive(Debug, Default)]
+pub(crate) struct ArrayOfTablesKeys {
+    keys: HashSet<Vec<Key>>,
+    /// Headers with invalid keys, which are reported by every table that follows them.
+    invalid_headers: Vec<(tombi_ast_syntax::Keys, Vec<crate::Error>)>,
+}
+
+/// Accumulates the `[[...]]` headers of the top-level tables visited in source order,
+/// instead of rescanning the previous siblings for every table.
+#[derive(Debug, Default)]
+pub(crate) struct ArrayOfTablesKeysScope(tombi_ast_syntax::ArrayOfTablesScope<ArrayOfTablesKeys>);
+
+impl ArrayOfTablesKeysScope {
+    pub(crate) fn convert(
+        &mut self,
+        table_or_array_of_table: tombi_ast_syntax::TableOrArrayOfTable,
+        context: &crate::DocumentTreeContext,
+    ) -> DocumentTreeAndErrors<Table> {
+        let empty = ArrayOfTablesKeys::default();
+        match table_or_array_of_table {
+            tombi_ast_syntax::TableOrArrayOfTable::Table(table) => {
+                let header = table.header();
+                let scoped = self.0.get(header.as_ref(), context.toml_version);
+                let (keys, parent_errors) =
+                    Self::parent_keys(scoped.unwrap_or(&empty), header.as_ref());
+                table.into_document_tree_with_array_of_tables(context, keys, parent_errors)
+            }
+            tombi_ast_syntax::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
+                let header = array_of_table.header();
+                let scoped = self
+                    .0
+                    .get(header.as_ref(), tombi_toml_version::TomlVersion::latest());
+                let (keys, parent_errors) =
+                    Self::parent_keys(scoped.unwrap_or(&empty), header.as_ref());
+                let result = array_of_table.into_document_tree_with_array_of_tables(
+                    context,
+                    keys,
+                    parent_errors,
+                );
+
+                if let Some(header) = header
+                    && let Some(scope) = self.0.enter(Some(&header))
+                {
+                    match convert_array_of_tables_keys(&header, context) {
+                        (Some(keys), _) => {
+                            scope.keys.insert(keys);
+                        }
+                        (None, errors) => scope.invalid_headers.push((header, errors)),
+                    }
                 }
-                if let Some(key) = key {
-                    new_keys.push(key);
+
+                result
+            }
+        }
+    }
+
+    fn parent_keys<'a>(
+        scoped: &'a ArrayOfTablesKeys,
+        header: Option<&tombi_ast_syntax::Keys>,
+    ) -> (&'a HashSet<Vec<Key>>, Vec<crate::Error>) {
+        let mut errors = vec![];
+        if let Some(header) = header {
+            // The nearest header comes first, as when walking the previous siblings backwards.
+            for (invalid_header, errs) in scoped.invalid_headers.iter().rev() {
+                if header.starts_with(invalid_header) {
+                    errors.extend(errs.iter().cloned());
                 }
             }
-            Some(new_keys)
-        })
-        .unique()
-        .collect_vec()
+        }
+        (&scoped.keys, errors)
+    }
 }
 
 fn insert_table(table: &mut Table, key: Key) -> Result<(), Vec<crate::Error>> {
@@ -1140,5 +1258,62 @@ fn append_header_comment_directives(
     } else {
         // Key doesn't match, put it back
         table.key_values.insert(key, value);
+    }
+}
+/// Converts a table with the array-of-tables headers that precede it.
+///
+/// `parent_errors` are the errors of those headers' keys, which every following
+/// table has always reported.
+trait IntoDocumentTreeWithArrayOfTables {
+    fn into_document_tree_with_array_of_tables(
+        self,
+        context: &crate::DocumentTreeContext,
+        array_of_table_keys: &HashSet<Vec<Key>>,
+        parent_errors: Vec<crate::Error>,
+    ) -> DocumentTreeAndErrors<Table>;
+}
+
+/// Converts all the top-level tables of a document, given in source order.
+///
+/// This is the same as converting a `Vec` of them, but the array-of-tables
+/// headers are accumulated instead of rescanning the previous siblings of every
+/// table, which is quadratic for a document with many tables.
+///
+/// `tables` must be every top-level table of the document, in source order.
+pub fn top_level_tables_into_document_tree_and_errors(
+    tables: Vec<tombi_ast_syntax::TableOrArrayOfTable>,
+    toml_version: tombi_toml_version::TomlVersion,
+) -> DocumentTreeAndErrors<Table> {
+    let Some(first) = tables.first() else {
+        return DocumentTreeAndErrors {
+            tree: Table::new_empty(),
+            errors: Vec::new(),
+        };
+    };
+    let context = crate::DocumentTreeContext::new(first.syntax(), toml_version);
+
+    let mut errors = Vec::new();
+    let mut scope = ArrayOfTablesKeysScope::default();
+    let tables = tables
+        .into_iter()
+        .map(|table| {
+            let (table, errs) = scope.convert(table, &context).into();
+            if !errs.is_empty() {
+                errors.extend(errs);
+            }
+            table
+        })
+        .collect_vec();
+
+    let table = tables.into_iter().reduce(|mut acc, other| {
+        if let Err(errs) = acc.merge(other) {
+            errors.extend(errs);
+        }
+        acc
+    });
+
+    DocumentTreeAndErrors {
+        tree: table.unwrap_or_else(Table::new_empty),
+        errors,
     }
 }

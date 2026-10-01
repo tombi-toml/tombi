@@ -102,16 +102,9 @@ impl IntoDocumentTreeWithContext<crate::DocumentTree> for tombi_ast_syntax::Root
             }
         }
 
+        let mut scope = crate::value::ArrayOfTablesKeysScope::default();
         for table_or_array_of_table in self.table_or_array_of_tables() {
-            let (table, errs) = match table_or_array_of_table {
-                tombi_ast_syntax::TableOrArrayOfTable::Table(table) => {
-                    table.into_document_tree_with_context(context)
-                }
-                tombi_ast_syntax::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
-                    array_of_table.into_document_tree_with_context(context)
-                }
-            }
-            .into();
+            let (table, errs) = scope.convert(table_or_array_of_table, context).into();
 
             if !errs.is_empty() {
                 errors.extend(errs);

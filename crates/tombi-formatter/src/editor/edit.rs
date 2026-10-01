@@ -26,6 +26,19 @@ pub(super) trait Edit {
     ) -> BoxFuture<'b, Vec<crate::editor::Change>>;
 }
 
+/// Like `Edit`, for a table whose header accessors were computed by the caller.
+pub(super) trait EditWithHeaderAccessors {
+    fn edit_with_header_accessors<'a: 'b, 'b>(
+        &'a self,
+        header_accessors: Vec<Accessor>,
+        node: &'a tombi_document_tree_syntax::Value,
+        accessors: &'a [Accessor],
+        source_path: Option<&'a std::path::Path>,
+        current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
+        schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    ) -> BoxFuture<'b, Vec<crate::editor::Change>>;
+}
+
 fn edit_recursive<'a: 'b, 'b>(
     node: &'a tombi_document_tree_syntax::Value,
     edit_fn: impl FnOnce(

@@ -5,8 +5,9 @@ use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{Accessor, CurrentSchema, PatternAccessor};
 
+use crate::editor::edit::EditWithHeaderAccessors;
 use crate::editor::rule::root_table_keys_order::root_table_keys_order;
-use tombi_ast_syntax::{DanglingCommentGroupOr, GetHeaderAccessors};
+use tombi_ast_syntax::{DanglingCommentGroupOr, HeaderAccessorsTracker};
 use tombi_schema_store::TableOrderOverride;
 
 impl crate::editor::Edit for tombi_ast_syntax::Root {
@@ -23,6 +24,8 @@ impl crate::editor::Edit for tombi_ast_syntax::Root {
             let mut key_value_groups = vec![];
             let mut table_or_array_of_tables = vec![];
             let mut table_order_overrides = tombi_schema_store::TableOrderOverrides::default();
+            let mut table_header_accessors = vec![];
+            let mut header_accessors_tracker = HeaderAccessorsTracker::new();
 
             // Detect document comment directives.
             // If dangling comments exist, directives should already be there.
@@ -82,26 +85,43 @@ impl crate::editor::Edit for tombi_ast_syntax::Root {
             }
 
             for table_or_array_of_table in self.table_or_array_of_tables() {
-                match &table_or_array_of_table {
-                    tombi_ast_syntax::TableOrArrayOfTable::Table(table) => {
-                        changes.extend(
-                            table
-                                .edit(node, &[], source_path, current_schema, schema_context)
-                                .await,
-                        );
-                    }
-                    tombi_ast_syntax::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
-                        changes.extend(
-                            array_of_table
-                                .edit(node, &[], source_path, current_schema, schema_context)
-                                .await,
-                        );
-                    }
-                };
+                let header_accessors = header_accessors_tracker
+                    .header_accessors(&table_or_array_of_table, schema_context.toml_version);
 
-                if let Some(header_accessors) =
-                    table_or_array_of_table.get_header_accessors(schema_context.toml_version)
-                {
+                if let Some(header_accessors) = &header_accessors {
+                    match &table_or_array_of_table {
+                        tombi_ast_syntax::TableOrArrayOfTable::Table(table) => {
+                            changes.extend(
+                                table
+                                    .edit_with_header_accessors(
+                                        header_accessors.clone(),
+                                        node,
+                                        &[],
+                                        source_path,
+                                        current_schema,
+                                        schema_context,
+                                    )
+                                    .await,
+                            );
+                        }
+                        tombi_ast_syntax::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
+                            changes.extend(
+                                array_of_table
+                                    .edit_with_header_accessors(
+                                        header_accessors.clone(),
+                                        node,
+                                        &[],
+                                        source_path,
+                                        current_schema,
+                                        schema_context,
+                                    )
+                                    .await,
+                            );
+                        }
+                    };
+                }
+
+                if let Some(header_accessors) = &header_accessors {
                     let comment_directive = match &table_or_array_of_table {
                         tombi_ast_syntax::TableOrArrayOfTable::Table(table) => {
                             get_comment_directive_content::<
@@ -124,7 +144,7 @@ impl crate::editor::Edit for tombi_ast_syntax::Root {
                         let order = comment_directive.table_keys_order().map(Into::into);
                         if disabled || order.is_some() {
                             table_order_overrides.push(TableOrderOverride {
-                                target: accessors_to_root(&header_accessors),
+                                target: accessors_to_root(header_accessors),
                                 disabled,
                                 order,
                             });
@@ -132,6 +152,7 @@ impl crate::editor::Edit for tombi_ast_syntax::Root {
                     }
                 }
 
+                table_header_accessors.push(header_accessors.unwrap_or_default());
                 table_or_array_of_tables.push(table_or_array_of_table);
             }
 
@@ -144,6 +165,7 @@ impl crate::editor::Edit for tombi_ast_syntax::Root {
                 root_table_keys_order(
                     key_value_groups,
                     table_or_array_of_tables,
+                    table_header_accessors,
                     current_schema,
                     schema_context,
                     comment_directive,

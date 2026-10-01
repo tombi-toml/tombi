@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use tombi_ast_syntax::{AstNode, GetHeaderAccessors};
+use tombi_ast_syntax::AstNode;
 use tombi_comment_directive::value::{
     TableCommonFormatRules, TableCommonLintRules, TombiValueDirectiveContent,
 };
@@ -13,6 +13,7 @@ use tombi_schema_store::TableOrderOverrides;
 pub(in crate::editor) async fn root_table_keys_order<'a>(
     key_value_groups: Vec<tombi_ast_syntax::KeyValueGroup>,
     table_or_array_of_tables: Vec<tombi_ast_syntax::TableOrArrayOfTable>,
+    table_header_accessors: Vec<Vec<tombi_schema_store::Accessor>>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     comment_directive: Option<
@@ -85,22 +86,17 @@ pub(in crate::editor) async fn root_table_keys_order<'a>(
 
     let Some(sorted_table) = get_sorted_accessors(
         &tombi_document_tree_syntax::Value::Table(
-            table_or_array_of_tables
-                .clone()
-                .into_document_tree_and_errors(schema_context.toml_version)
-                .tree,
+            tombi_document_tree_syntax::top_level_tables_into_document_tree_and_errors(
+                table_or_array_of_tables.clone(),
+                schema_context.toml_version,
+            )
+            .tree,
         ),
         &[],
         table_or_array_of_tables
             .into_iter()
-            .map(|table| {
-                (
-                    table
-                        .get_header_accessors(schema_context.toml_version)
-                        .unwrap_or_default(),
-                    table,
-                )
-            })
+            .zip(table_header_accessors)
+            .map(|(table, header_accessors)| (header_accessors, table))
             .collect_vec(),
         current_schema,
         schema_context,

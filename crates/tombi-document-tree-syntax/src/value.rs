@@ -18,7 +18,8 @@ pub use local_date_time::LocalDateTime;
 pub use local_time::LocalTime;
 pub use offset_date_time::OffsetDateTime;
 pub use string::String;
-pub use table::Table;
+pub(crate) use table::ArrayOfTablesKeysScope;
+pub use table::{Table, top_level_tables_into_document_tree_and_errors};
 use tombi_ast_syntax::{AstNode, TombiValueCommentDirective};
 use tombi_document_tree::{ArrayKind, TableKind};
 
