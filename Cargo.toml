@@ -101,6 +101,7 @@ tombi-date-time = { path = "crates/tombi-date-time" }
 tombi-diagnostic = { path = "crates/tombi-diagnostic", default-features = false }
 tombi-document = { path = "crates/tombi-document" }
 tombi-document-tree = { path = "crates/tombi-document-tree" }
+tombi-document-snapshot = { path = "crates/tombi-document-snapshot" }
 tombi-document-tree-syntax = { path = "crates/tombi-document-tree-syntax" }
 tombi-extension = { path = "crates/tombi-extension" }
 tombi-extension-cargo = { path = "extensions/tombi-extension-cargo", default-features = false }

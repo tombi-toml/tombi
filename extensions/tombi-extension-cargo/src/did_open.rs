@@ -2,6 +2,7 @@ use std::{collections::BTreeSet, path::Path};
 
 use futures::stream::{self, StreamExt};
 use tombi_config::{CargoExtensionFeatures, TomlVersion};
+use tombi_document_snapshot::DocumentSnapshot;
 use tombi_document_tree_syntax::{DocumentTree, Table, Value, dig_keys};
 use tombi_extension::remote_cache::warm_remote_json_cache;
 use tombi_future::Boxable;
@@ -25,21 +26,6 @@ impl PrefetchUrls {
     }
 }
 
-/// The dependencies of a manifest, detached from the syntax tree it was read from.
-struct PrefetchSource {
-    workspace_path: Option<String>,
-    dependencies: Vec<PendingDependency>,
-}
-
-impl PrefetchSource {
-    fn new(document_tree: &DocumentTree<'_>) -> Self {
-        Self {
-            workspace_path: get_workspace_cargo_toml_path(document_tree).map(str::to_owned),
-            dependencies: collect_registry_dependencies(document_tree),
-        }
-    }
-}
-
 /// A dependency that may need the workspace manifest to be resolved.
 enum PendingDependency {
     Registry(RegistryDependency),
@@ -58,7 +44,7 @@ struct RegistryDependency {
 
 pub fn did_open(
     text_document_uri: &tombi_uri::Uri,
-    document_tree: &DocumentTree<'_>,
+    snapshot: &DocumentSnapshot,
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
@@ -84,12 +70,17 @@ pub fn did_open(
         return None;
     };
 
-    let source = PrefetchSource::new(document_tree);
+    let snapshot = snapshot.clone();
     let cache_options = cache_options.cloned();
     let features = features.cloned();
     let warm = async move {
-        let urls =
-            collect_prefetch_urls(source, &cargo_toml_path, toml_version, features.as_ref()).await;
+        let urls = collect_prefetch_urls(
+            snapshot.document_tree(),
+            &cargo_toml_path,
+            toml_version,
+            features.as_ref(),
+        )
+        .await;
         if urls.is_empty() {
             return;
         }
@@ -136,7 +127,7 @@ fn warming_disabled(offline: bool, cache_options: Option<&tombi_cache::Options>)
 }
 
 async fn collect_prefetch_urls(
-    source: PrefetchSource,
+    document_tree: &DocumentTree<'_>,
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
     features: Option<&CargoExtensionFeatures>,
@@ -230,17 +221,18 @@ async fn collect_prefetch_urls(
             None
         }
     };
+    let dependencies = collect_registry_dependencies(document_tree);
     let workspace_fut = load_workspace_cargo_toml(
         cargo_toml_path,
-        source.workspace_path.as_deref(),
+        get_workspace_cargo_toml_path(document_tree),
         toml_version,
         |_, workspace_document_tree, _| {
-            resolve_registry_dependencies(&source.dependencies, Some(workspace_document_tree))
+            resolve_registry_dependencies(&dependencies, Some(workspace_document_tree))
         },
     );
     let (workspace, cargo_lock) = tokio::join!(workspace_fut, cargo_lock_fut);
     let registry_dependencies =
-        workspace.unwrap_or_else(|| resolve_registry_dependencies(&source.dependencies, None));
+        workspace.unwrap_or_else(|| resolve_registry_dependencies(&dependencies, None));
     let mut urls = PrefetchUrls::default();
 
     for dependency in registry_dependencies {
@@ -504,13 +496,8 @@ mod tests {
 
     use super::*;
 
-    fn prefetch_source(source: &str) -> PrefetchSource {
-        crate::cargo_toml::with_cargo_toml_text(
-            source,
-            TomlVersion::default(),
-            |document_tree, _| PrefetchSource::new(document_tree),
-        )
-        .unwrap()
+    fn prefetch_source(source: &str) -> DocumentSnapshot {
+        DocumentSnapshot::parse(source, TomlVersion::default())
     }
 
     fn uri_for(path: &Path) -> tombi_uri::Uri {
@@ -570,7 +557,7 @@ mod tests {
         );
 
         let urls = collect_prefetch_urls(
-            source,
+            source.document_tree(),
             Path::new("/tmp/Cargo.toml"),
             TomlVersion::default(),
             None,
@@ -605,7 +592,7 @@ mod tests {
         );
 
         let urls = collect_prefetch_urls(
-            source,
+            source.document_tree(),
             Path::new("/tmp/Cargo.toml"),
             TomlVersion::default(),
             None,
@@ -657,7 +644,13 @@ mod tests {
         .unwrap();
 
         let source = prefetch_source(&std::fs::read_to_string(&member_path).unwrap());
-        let urls = collect_prefetch_urls(source, &member_path, TomlVersion::default(), None).await;
+        let urls = collect_prefetch_urls(
+            source.document_tree(),
+            &member_path,
+            TomlVersion::default(),
+            None,
+        )
+        .await;
 
         assert_eq!(
             sorted_urls(&urls.background),
@@ -705,7 +698,7 @@ mod tests {
 
         let source = prefetch_source(&std::fs::read_to_string(&cargo_toml_path).unwrap());
         let urls = collect_prefetch_urls(
-            source,
+            source.document_tree(),
             &cargo_toml_path,
             TomlVersion::default(),
             Some(&default_features_only()),
@@ -723,22 +716,9 @@ mod tests {
     fn did_open_ignores_non_cargo_documents() {
         let uri = tombi_uri::Uri::from_str("file:///tmp/pyproject.toml").unwrap();
 
-        let result = crate::cargo_toml::with_cargo_toml_text(
-            "",
-            TomlVersion::default(),
-            |document_tree, _| {
-                did_open(
-                    &uri,
-                    document_tree,
-                    TomlVersion::default(),
-                    true,
-                    None,
-                    None,
-                )
-                .is_none()
-            },
-        )
-        .unwrap();
+        let snapshot = prefetch_source("");
+
+        let result = did_open(&uri, &snapshot, TomlVersion::default(), true, None, None).is_none();
 
         assert!(result);
     }

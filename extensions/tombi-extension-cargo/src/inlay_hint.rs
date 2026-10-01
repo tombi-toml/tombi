@@ -1,12 +1,12 @@
 use std::{
     borrow::Borrow,
     path::{Path, PathBuf},
-    sync::Arc,
 };
 
 use futures::{StreamExt, stream};
 use serde::{Deserialize, Serialize};
 use tombi_config::TomlVersion;
+use tombi_document_snapshot::DocumentSnapshot;
 use tombi_document_tree_syntax::{Value, dig_keys};
 use tombi_extension::{
     InlayHint, InlayHintKind, fetch_cached_remote_json, file_cache_version, get_or_load_json,
@@ -18,7 +18,7 @@ use crate::{
         CARGO_EXTENSION_ID, CargoLock, CargoLockPackage, find_cargo_lock_path,
         load_cached_cargo_lock, load_cargo_lock_from_path,
     },
-    cargo_toml::with_cargo_toml_text,
+    cargo_toml::load_cargo_toml_snapshot,
     crates_io::CratesIoVersionDetailResponse,
     dependency_package_name, find_workspace_cargo_toml, get_workspace_cargo_toml_path,
     workspace::{extract_exclude_patterns, find_package_cargo_toml_paths},
@@ -115,19 +115,19 @@ struct WorkspaceMemberPackage {
     version: String,
 }
 
-/// Texts of the `Cargo.toml` files that were read while collecting the hints of one request.
+/// The `Cargo.toml` files that were read while collecting the hints of one request.
 ///
-/// A syntax tree borrows its text, so the texts are kept and parsed when they are needed.
+/// Each file is parsed once, and every hint that needs it reuses the snapshot.
 #[derive(Default)]
 struct LocalCargoTomlCache {
-    cargo_toml_texts: HashMap<PathBuf, Arc<str>>,
+    cargo_tomls: HashMap<PathBuf, DocumentSnapshot>,
     workspace_cargo_tomls: HashMap<PathBuf, Option<PathBuf>>,
     workspace_member_packages: HashMap<PathBuf, Vec<WorkspaceMemberPackage>>,
 }
 
 struct LocalCargoTomlData {
     cargo_toml_path: PathBuf,
-    toml_text: Arc<str>,
+    snapshot: DocumentSnapshot,
 }
 
 #[derive(Default)]
@@ -141,13 +141,8 @@ enum WorkspaceCargoToml {
     Current,
     External {
         cargo_toml_path: PathBuf,
-        toml_text: Arc<str>,
+        snapshot: DocumentSnapshot,
     },
-}
-
-struct LoadedCargoTomlText {
-    toml_text: Arc<str>,
-    has_workspace: bool,
 }
 
 pub async fn inlay_hint(
@@ -910,16 +905,13 @@ async fn preload_local_cargo_toml_cache(
         ),
         Some(WorkspaceCargoToml::External {
             cargo_toml_path,
-            toml_text,
+            snapshot,
         }) => (
             cargo_toml_path.clone(),
-            with_cargo_toml_text(toml_text, toml_version, |workspace_document_tree, _| {
-                workspace_dependency_request_paths(
-                    workspace_document_tree,
-                    &requests.workspace_dependencies,
-                )
-            })
-            .unwrap_or_default(),
+            workspace_dependency_request_paths(
+                snapshot.document_tree(),
+                &requests.workspace_dependencies,
+            ),
         ),
         None => (PathBuf::new(), Vec::new()),
     };
@@ -936,7 +928,7 @@ async fn preload_local_cargo_toml_cache(
     let mut local_cargo_toml_cache = LocalCargoTomlCache::default();
     if let Some(WorkspaceCargoToml::External {
         cargo_toml_path: workspace_cargo_toml_path,
-        toml_text,
+        snapshot,
     }) = workspace_cargo_toml
     {
         local_cargo_toml_cache.workspace_cargo_tomls.insert(
@@ -944,14 +936,14 @@ async fn preload_local_cargo_toml_cache(
             Some(workspace_cargo_toml_path.clone()),
         );
         local_cargo_toml_cache
-            .cargo_toml_texts
-            .insert(workspace_cargo_toml_path, toml_text);
+            .cargo_tomls
+            .insert(workspace_cargo_toml_path, snapshot);
     }
 
     for cargo_toml in path_dependencies.into_iter().chain(workspace_dependencies) {
         local_cargo_toml_cache
-            .cargo_toml_texts
-            .insert(cargo_toml.cargo_toml_path, cargo_toml.toml_text);
+            .cargo_tomls
+            .insert(cargo_toml.cargo_toml_path, cargo_toml.snapshot);
     }
 
     local_cargo_toml_cache
@@ -1149,28 +1141,29 @@ async fn load_workspace_cargo_toml_async(
             "Cargo.toml",
         )?;
         let workspace_cargo_toml_path = canonicalize_or_original(workspace_cargo_toml_path);
-        let loaded = load_cargo_toml_text_async(&workspace_cargo_toml_path, toml_version).await?;
+        let snapshot = load_cargo_toml_async(&workspace_cargo_toml_path, toml_version).await?;
 
-        return loaded
-            .has_workspace
+        return snapshot
+            .document_tree()
+            .contains_key("workspace")
             .then_some(WorkspaceCargoToml::External {
                 cargo_toml_path: workspace_cargo_toml_path,
-                toml_text: loaded.toml_text,
+                snapshot,
             });
     }
 
-    let (workspace_cargo_toml_path, loaded) =
+    let (workspace_cargo_toml_path, snapshot) =
         tombi_extension_manifest::find_ancestor_manifest_async(
             cargo_toml_path,
             "Cargo.toml",
-            |path| async move { load_cargo_toml_text_async(&path, toml_version).await },
-            |loaded| loaded.has_workspace,
+            |path| async move { load_cargo_toml_async(&path, toml_version).await },
+            |snapshot| snapshot.document_tree().contains_key("workspace"),
         )
         .await?;
 
     Some(WorkspaceCargoToml::External {
         cargo_toml_path: canonicalize_or_original(workspace_cargo_toml_path),
-        toml_text: loaded.toml_text,
+        snapshot,
     })
 }
 
@@ -1185,11 +1178,11 @@ async fn load_cargo_toml_data_for_dependency_path(
         "Cargo.toml",
     )?;
     let cargo_toml_path = canonicalize_or_original(cargo_toml_path);
-    let loaded = load_cargo_toml_text_async(&cargo_toml_path, toml_version).await?;
+    let snapshot = load_cargo_toml_async(&cargo_toml_path, toml_version).await?;
 
     Some(LocalCargoTomlData {
         cargo_toml_path,
-        toml_text: loaded.toml_text,
+        snapshot,
     })
 }
 
@@ -1200,22 +1193,20 @@ fn canonicalize_or_original(path: PathBuf) -> PathBuf {
     }
 }
 
-/// Reads `cargo_toml_path` and checks that it is a valid manifest.
-async fn load_cargo_toml_text_async(
+/// Reads and parses `cargo_toml_path`. It is `None` when the file is not a valid manifest.
+async fn load_cargo_toml_async(
     cargo_toml_path: &Path,
     toml_version: TomlVersion,
-) -> Option<LoadedCargoTomlText> {
+) -> Option<DocumentSnapshot> {
     let toml_text = tombi_fs::read_to_string_async(cargo_toml_path).await.ok()?;
 
     tombi_fs::run_blocking(move || {
-        let has_workspace = with_cargo_toml_text(&toml_text, toml_version, |document_tree, _| {
-            document_tree.contains_key("workspace")
-        })?;
+        let snapshot = DocumentSnapshot::parse(toml_text, toml_version);
 
-        Some(LoadedCargoTomlText {
-            toml_text: Arc::from(toml_text),
-            has_workspace,
-        })
+        snapshot
+            .document_tree_errors()
+            .is_empty()
+            .then_some(snapshot)
     })
     .await
     .ok()
@@ -1234,24 +1225,22 @@ fn with_cached_cargo_toml<R>(
     f: impl FnOnce(&mut LocalCargoTomlCache, &Path, &tombi_document_tree_syntax::DocumentTree<'_>) -> R,
 ) -> Option<R> {
     let canonicalized_path = canonicalize_or_original_sync(cargo_toml_path.to_path_buf());
-    let toml_text = match local_cargo_toml_cache
-        .cargo_toml_texts
-        .get(&canonicalized_path)
-    {
-        Some(toml_text) => Arc::clone(toml_text),
+    let snapshot = match local_cargo_toml_cache.cargo_tomls.get(&canonicalized_path) {
+        Some(snapshot) => snapshot.clone(),
         None => {
-            let toml_text: Arc<str> =
-                Arc::from(tombi_fs::read_to_string(&canonicalized_path).ok()?);
+            let snapshot = load_cargo_toml_snapshot(&canonicalized_path, toml_version)?;
             local_cargo_toml_cache
-                .cargo_toml_texts
-                .insert(canonicalized_path.clone(), Arc::clone(&toml_text));
-            toml_text
+                .cargo_tomls
+                .insert(canonicalized_path.clone(), snapshot.clone());
+            snapshot
         }
     };
 
-    with_cargo_toml_text(&toml_text, toml_version, |document_tree, _| {
-        f(local_cargo_toml_cache, &canonicalized_path, document_tree)
-    })
+    Some(f(
+        local_cargo_toml_cache,
+        &canonicalized_path,
+        snapshot.document_tree(),
+    ))
 }
 
 fn with_local_dependency_cargo_toml<R>(
@@ -2157,6 +2146,7 @@ mod tests {
 
     use super::*;
     use crate::cargo_lock::{CargoLockDependency, CargoLockPackage};
+    use crate::cargo_toml::with_cargo_toml_text;
     use tombi_text::EncodingKind;
 
     fn with_document_tree<R>(

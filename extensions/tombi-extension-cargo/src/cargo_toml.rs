@@ -1,8 +1,65 @@
-use std::path::Path;
+use std::{
+    path::{Path, PathBuf},
+    sync::{LazyLock, Mutex},
+};
 
 use tombi_ast_syntax::AstNode as _;
 use tombi_config::TomlVersion;
+use tombi_document_snapshot::DocumentSnapshot;
 use tombi_document_tree_syntax::TryIntoDocumentTree;
+use tombi_extension::file_cache_version;
+use tombi_hashmap::HashMap;
+
+const MAX_PARSED_CARGO_TOML_CACHE_ENTRIES: usize = 128;
+
+type ParsedCargoTomls = HashMap<PathBuf, (Option<u64>, DocumentSnapshot)>;
+
+/// The snapshots of the `Cargo.toml` files on disk, by the version of the file they were read from.
+///
+/// The files of a workspace are read by many requests and many hints of a request, and a
+/// snapshot is built once per version of the file instead of once per read.
+static PARSED_CARGO_TOML_CACHE: LazyLock<Mutex<ParsedCargoTomls>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// The snapshot of the `Cargo.toml` at `cargo_toml_path`. It is `None` when the file cannot be
+/// read or is not a valid manifest.
+pub(crate) fn load_cargo_toml_snapshot(
+    cargo_toml_path: &Path,
+    toml_version: TomlVersion,
+) -> Option<DocumentSnapshot> {
+    let version = file_cache_version(cargo_toml_path);
+    let lock = || {
+        PARSED_CARGO_TOML_CACHE
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    };
+
+    if let Some((cached_version, snapshot)) = lock().get(cargo_toml_path)
+        && *cached_version == version
+        && snapshot.toml_version == toml_version
+    {
+        return Some(snapshot.clone());
+    }
+
+    let snapshot = DocumentSnapshot::parse(
+        tombi_fs::read_to_string(cargo_toml_path).ok()?,
+        toml_version,
+    );
+    if !snapshot.document_tree_errors().is_empty() {
+        return None;
+    }
+
+    let mut cache = lock();
+    if !cache.contains_key(cargo_toml_path)
+        && cache.len() >= MAX_PARSED_CARGO_TOML_CACHE_ENTRIES
+        && let Some(evicted_path) = cache.keys().next().cloned()
+    {
+        cache.remove(&evicted_path);
+    }
+    cache.insert(cargo_toml_path.to_path_buf(), (version, snapshot.clone()));
+
+    Some(snapshot)
+}
 
 #[derive(Debug, Clone)]
 pub(crate) struct CrateLocation {
@@ -61,9 +118,9 @@ pub(crate) fn load_cargo_toml<R>(
     toml_version: TomlVersion,
     f: impl FnOnce(&tombi_document_tree_syntax::DocumentTree<'_>, &tombi_text::LineIndex<'_>) -> R,
 ) -> Option<R> {
-    let toml_text = tombi_fs::read_to_string(cargo_toml_path).ok()?;
+    let snapshot = load_cargo_toml_snapshot(cargo_toml_path, toml_version)?;
 
-    with_cargo_toml_text(&toml_text, toml_version, f)
+    Some(f(snapshot.document_tree(), snapshot.line_index()))
 }
 
 /// Like [`load_cargo_toml`], and also gives the AST root to `f`.
@@ -76,9 +133,13 @@ pub(crate) fn load_cargo_toml_with_root<R>(
         &tombi_text::LineIndex<'_>,
     ) -> R,
 ) -> Option<R> {
-    let toml_text = tombi_fs::read_to_string(cargo_toml_path).ok()?;
+    let snapshot = load_cargo_toml_snapshot(cargo_toml_path, toml_version)?;
 
-    with_cargo_toml_text_and_root(&toml_text, toml_version, f)
+    Some(f(
+        snapshot.ast(),
+        snapshot.document_tree(),
+        snapshot.line_index(),
+    ))
 }
 
 /// Resolves the `Cargo.toml` of `crate_path` and runs `f` on its canonicalized path,
@@ -122,4 +183,33 @@ pub(crate) fn get_uri_relative_to_cargo_toml(
     cargo_toml_path: &Path,
 ) -> Option<tombi_uri::Uri> {
     tombi_extension_manifest::resolve_relative_file_uri(cargo_toml_path, relative_path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn snapshot_is_reused_until_the_file_changes() {
+        let temp_dir = tempfile::tempdir().expect("expected temp dir");
+        let cargo_toml_path = temp_dir.path().join("Cargo.toml");
+        std::fs::write(&cargo_toml_path, "[package]\nname = \"a\"\n").unwrap();
+
+        let first = load_cargo_toml_snapshot(&cargo_toml_path, TomlVersion::default()).unwrap();
+        let second = load_cargo_toml_snapshot(&cargo_toml_path, TomlVersion::default()).unwrap();
+        assert!(std::ptr::eq(first.parsed(), second.parsed()));
+
+        std::fs::write(&cargo_toml_path, "[package]\nname = \"changed\"\n").unwrap();
+        let third = load_cargo_toml_snapshot(&cargo_toml_path, TomlVersion::default()).unwrap();
+        assert_eq!(third.text(), "[package]\nname = \"changed\"\n");
+    }
+
+    #[test]
+    fn invalid_manifest_has_no_snapshot() {
+        let temp_dir = tempfile::tempdir().expect("expected temp dir");
+        let cargo_toml_path = temp_dir.path().join("Cargo.toml");
+        std::fs::write(&cargo_toml_path, "[package]\nname = \"a\"\nname = \"b\"\n").unwrap();
+
+        assert!(load_cargo_toml_snapshot(&cargo_toml_path, TomlVersion::default()).is_none());
+    }
 }

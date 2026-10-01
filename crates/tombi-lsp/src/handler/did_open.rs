@@ -64,7 +64,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         || {
             tombi_extension_cargo::did_open(
                 &text_document_uri,
-                document_tree,
+                document_source_for_extensions.snapshot(),
                 toml_version,
                 offline,
                 cache_options,

@@ -1,0 +1,19 @@
+[package]
+name = "tombi-document-snapshot"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+self_cell.workspace = true
+tombi-ast-syntax.workspace = true
+tombi-config.workspace = true
+tombi-diagnostic.workspace = true
+tombi-document-tree-syntax.workspace = true
+tombi-parser.workspace = true
+tombi-text.workspace = true
+
+[lints]
+workspace = true

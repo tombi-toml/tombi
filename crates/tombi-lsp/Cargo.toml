@@ -10,7 +10,6 @@ chrono.workspace = true
 futures.workspace = true
 itertools.workspace = true
 log.workspace = true
-self_cell.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_tombi.workspace = true
@@ -23,6 +22,7 @@ tombi-comment-directive-store.workspace = true
 tombi-config.workspace = true
 tombi-date-time.workspace = true
 tombi-diagnostic = { workspace = true, features = ["lsp"] }
+tombi-document-snapshot.workspace = true
 tombi-document-tree-syntax.workspace = true
 tombi-extension.workspace = true
 tombi-extension-cargo.workspace = true

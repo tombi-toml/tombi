@@ -2875,6 +2875,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "tombi-document-snapshot"
+version = "0.0.0-dev"
+dependencies = [
+ "self_cell",
+ "tombi-ast-syntax",
+ "tombi-config",
+ "tombi-diagnostic",
+ "tombi-document-tree-syntax",
+ "tombi-parser",
+ "tombi-text",
+]
+
+[[package]]
 name = "tombi-document-tree"
 version = "0.0.0-dev"
 dependencies = [
@@ -2936,6 +2949,7 @@ dependencies = [
  "tombi-ast-syntax",
  "tombi-cache",
  "tombi-config",
+ "tombi-document-snapshot",
  "tombi-document-tree-syntax",
  "tombi-extension",
  "tombi-extension-manifest",
@@ -3234,7 +3248,6 @@ dependencies = [
  "log",
  "pretty_assertions",
  "rstest",
- "self_cell",
  "serde",
  "serde_json",
  "serde_tombi",
@@ -3249,6 +3262,7 @@ dependencies = [
  "tombi-config",
  "tombi-date-time",
  "tombi-diagnostic",
+ "tombi-document-snapshot",
  "tombi-document-tree-syntax",
  "tombi-extension",
  "tombi-extension-cargo",
