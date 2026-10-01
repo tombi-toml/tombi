@@ -202,8 +202,10 @@ impl Table {
         let mut is_conflict = false;
         match (self.kind, other.kind) {
             (KeyValue, KeyValue) => {
-                for (self_key, self_value) in self.key_values() {
-                    if let Some(other_value) = other.key_values.get(self_key)
+                // Iterate `other` and look up in `self`: `other` is typically small
+                // (a single key-value) while `self` can be the huge root table.
+                for (other_key, other_value) in other.key_values() {
+                    if let Some(self_value) = self.key_values.get(other_key)
                         && match (self_value, other_value) {
                             (Value::Table(table1), _) => {
                                 matches!(table1.kind(), TableKind::InlineTable { .. })

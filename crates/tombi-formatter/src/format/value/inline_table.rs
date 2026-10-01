@@ -31,6 +31,19 @@ pub(crate) fn exceeds_line_width(
     node: &tombi_ast_syntax::InlineTable,
     f: &mut crate::Formatter,
 ) -> Result<bool, std::fmt::Error> {
+    let key = f.exceeds_line_width_key(false, node.syntax());
+    if let Some(cached) = f.cached_exceeds_line_width(&key) {
+        return Ok(cached);
+    }
+    let result = compute_exceeds_line_width(node, f)?;
+    f.cache_exceeds_line_width(key, result);
+    Ok(result)
+}
+
+fn compute_exceeds_line_width(
+    node: &tombi_ast_syntax::InlineTable,
+    f: &mut crate::Formatter,
+) -> Result<bool, std::fmt::Error> {
     if f.toml_version() == TomlVersion::V1_0_0 {
         return Ok(false);
     }
