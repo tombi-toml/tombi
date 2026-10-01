@@ -7,59 +7,9 @@ use tombi_ast_syntax::AstNode as _;
 use tombi_config::TomlVersion;
 use tombi_document_snapshot::DocumentSnapshot;
 use tombi_document_tree_syntax::TryIntoDocumentTree;
-use tombi_extension::file_cache_version;
 use tombi_hashmap::HashMap;
 
 const MAX_PARSED_CARGO_TOML_CACHE_ENTRIES: usize = 128;
-
-type ParsedCargoTomls = HashMap<PathBuf, (Option<u64>, DocumentSnapshot)>;
-
-/// The snapshots of the `Cargo.toml` files on disk, by the version of the file they were read from.
-///
-/// The files of a workspace are read by many requests and many hints of a request, and a
-/// snapshot is built once per version of the file instead of once per read.
-static PARSED_CARGO_TOML_CACHE: LazyLock<Mutex<ParsedCargoTomls>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
-
-/// The snapshot of the `Cargo.toml` at `cargo_toml_path`. It is `None` when the file cannot be
-/// read or is not a valid manifest.
-pub(crate) fn load_cargo_toml_snapshot(
-    cargo_toml_path: &Path,
-    toml_version: TomlVersion,
-) -> Option<DocumentSnapshot> {
-    let version = file_cache_version(cargo_toml_path);
-    let lock = || {
-        PARSED_CARGO_TOML_CACHE
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-    };
-
-    if let Some((cached_version, snapshot)) = lock().get(cargo_toml_path)
-        && *cached_version == version
-        && snapshot.toml_version == toml_version
-    {
-        return Some(snapshot.clone());
-    }
-
-    let snapshot = DocumentSnapshot::parse(
-        tombi_fs::read_to_string(cargo_toml_path).ok()?,
-        toml_version,
-    );
-    if !snapshot.document_tree_errors().is_empty() {
-        return None;
-    }
-
-    let mut cache = lock();
-    if !cache.contains_key(cargo_toml_path)
-        && cache.len() >= MAX_PARSED_CARGO_TOML_CACHE_ENTRIES
-        && let Some(evicted_path) = cache.keys().next().cloned()
-    {
-        cache.remove(&evicted_path);
-    }
-    cache.insert(cargo_toml_path.to_path_buf(), (version, snapshot.clone()));
-
-    Some(snapshot)
-}
 
 #[derive(Debug, Clone)]
 pub(crate) struct CrateLocation {
@@ -79,6 +29,53 @@ impl From<CrateLocation> for Option<tombi_extension::Location> {
             range: Some(crate_location.package_name_key_range),
         })
     }
+}
+
+/// The snapshots of the `Cargo.toml` files on disk.
+///
+/// The files of a workspace are read by many requests and many hints of a request, and a
+/// snapshot is built once per content of the file instead of once per read.
+static PARSED_CARGO_TOML_CACHE: LazyLock<Mutex<HashMap<PathBuf, DocumentSnapshot>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// The snapshot of the `Cargo.toml` at `cargo_toml_path`. It is `None` when the file cannot be
+/// read or is not a valid manifest.
+///
+/// The file is always read, and the cached snapshot is reused only when its text is the same,
+/// so a rewrite is never missed whatever the timestamp of the file says.
+pub(crate) fn load_cargo_toml_snapshot(
+    cargo_toml_path: &Path,
+    toml_version: TomlVersion,
+) -> Option<DocumentSnapshot> {
+    let toml_text = tombi_fs::read_to_string(cargo_toml_path).ok()?;
+    let lock = || {
+        PARSED_CARGO_TOML_CACHE
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    };
+
+    if let Some(snapshot) = lock().get(cargo_toml_path)
+        && snapshot.toml_version == toml_version
+        && snapshot.text() == toml_text
+    {
+        return Some(snapshot.clone());
+    }
+
+    let snapshot = DocumentSnapshot::parse(toml_text, toml_version);
+    if !snapshot.document_tree_errors().is_empty() {
+        return None;
+    }
+
+    let mut cache = lock();
+    if !cache.contains_key(cargo_toml_path)
+        && cache.len() >= MAX_PARSED_CARGO_TOML_CACHE_ENTRIES
+        && let Some(evicted_path) = cache.keys().next().cloned()
+    {
+        cache.remove(&evicted_path);
+    }
+    cache.insert(cargo_toml_path.to_path_buf(), snapshot.clone());
+
+    Some(snapshot)
 }
 
 /// Parses `toml_text` and runs `f` on the document tree and the line index of the text.
@@ -199,9 +196,10 @@ mod tests {
         let second = load_cargo_toml_snapshot(&cargo_toml_path, TomlVersion::default()).unwrap();
         assert!(std::ptr::eq(first.parsed(), second.parsed()));
 
-        std::fs::write(&cargo_toml_path, "[package]\nname = \"changed\"\n").unwrap();
+        // The same size, as a rewrite within the resolution of the timestamp would be.
+        std::fs::write(&cargo_toml_path, "[package]\nname = \"b\"\n").unwrap();
         let third = load_cargo_toml_snapshot(&cargo_toml_path, TomlVersion::default()).unwrap();
-        assert_eq!(third.text(), "[package]\nname = \"changed\"\n");
+        assert_eq!(third.text(), "[package]\nname = \"b\"\n");
     }
 
     #[test]
