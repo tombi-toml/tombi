@@ -426,12 +426,8 @@ impl<'a> Formatter<'a> {
 
     #[inline]
     pub(crate) fn current_line_width(&self) -> usize {
-        self.buf
-            .split("\n")
-            .last()
-            .unwrap_or_default()
-            .graphemes(true)
-            .count()
+        let line_start = self.buf.rfind('\n').map_or(0, |index| index + 1);
+        self.buf[line_start..].graphemes(true).count()
     }
 }
 
