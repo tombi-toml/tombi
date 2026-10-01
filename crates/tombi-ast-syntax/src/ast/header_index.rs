@@ -148,8 +148,9 @@ impl HeaderIndex {
                 &mut open_headers,
                 prev_header,
                 |open_path_id, open_key_count| {
-                    is_complete
-                        && open_key_count < key_count
+                    // Only the keys up to the open header's length have to be convertible.
+                    open_key_count < key_count
+                        && path_ids.len() >= open_key_count
                         && path_ids[open_key_count - 1] == open_path_id
                 },
             );

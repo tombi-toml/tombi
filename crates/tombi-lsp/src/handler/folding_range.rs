@@ -549,6 +549,13 @@ mod tests {
     }
 
     #[test]
+    fn last_sub_table_with_unconvertible_trailing_key() {
+        let actual = last_sub_tables("[a]\n[a.\"\\q\"]\n[other]\n");
+        assert_eq!(actual[0].1.as_deref().map(str::trim), Some("a.\"\\q\""));
+        assert_eq!(actual[1].1, None);
+    }
+
+    #[test]
     fn last_sub_table_of_nested_and_sibling_headers() {
         let source = "[a]\n[a.b]\n[a.b.c]\n[a.d]\n[other]\n[[x]]\n[x.y]\n[[x]]\n[[x.z]]\n[[x.z]]\n";
         let expected = [
