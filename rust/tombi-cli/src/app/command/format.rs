@@ -577,8 +577,10 @@ impl FormatFile {
             Self::File { file, .. } => {
                 file.seek(std::io::SeekFrom::Start(0)).await?;
                 file.write_all(buf).await?;
-                file.set_len(buf.len() as u64).await?;
-                file.flush().await
+                // tokio's `write_all` may return before the background write finishes,
+                // so confirm it with `flush` before truncating.
+                file.flush().await?;
+                file.set_len(buf.len() as u64).await
             }
         }
     }
