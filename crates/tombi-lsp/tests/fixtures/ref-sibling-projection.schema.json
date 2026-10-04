@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "plain_ref": {
+      "$ref": "#/$defs/Text"
+    },
+    "constrained_ref": {
+      "$ref": "#/$defs/Text",
+      "maxLength": 10
+    },
+    "typed_ref": {
+      "$ref": "#/$defs/Scalar",
+      "type": "string"
+    },
+    "typed_one_of_ref": {
+      "$ref": "#/$defs/Color",
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "Text": {
+      "type": "string",
+      "description": "Text description."
+    },
+    "Scalar": {
+      "type": ["string", "integer"],
+      "description": "Scalar description."
+    },
+    "Color": {
+      "description": "Enum description.",
+      "oneOf": [
+        { "const": "red", "description": "Red: like a ripe tomato." },
+        { "const": "green", "description": "Green: like an unripe tomato." }
+      ]
+    }
+  }
+}

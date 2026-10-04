@@ -37,26 +37,16 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Value<'_> {
                     .await;
             }
 
-            let instance_type = tombi_schema_store::SchemaType::from_value_type(
-                tombi_document_tree_syntax::ValueImpl::value_type(self),
-            );
             let projected_schema = current_schema.and_then(|schema| {
-                instance_type.and_then(|instance_type| {
-                    schema.for_instance_type(instance_type, schema_context.string_formats())
-                })
+                crate::schema_resolver::project_schema_for_presentation(
+                    self,
+                    schema,
+                    schema_context,
+                )
             });
-            let current_schema = match current_schema {
-                Some(schema)
-                    if schema.semantic_schema.is_some()
-                        && instance_type.is_some()
-                        && !schema
-                            .semantic_schema
-                            .as_deref()
-                            .is_some_and(|semantic| semantic.has_applicators()) =>
-                {
-                    projected_schema.as_ref()
-                }
-                schema => schema,
+            let current_schema = match &projected_schema {
+                Some(projected_schema) => projected_schema.as_ref(),
+                None => current_schema,
             };
 
             let type_definition = match self {

@@ -3296,6 +3296,168 @@ mod completion_labels {
         }
     }
 
+    mod ref_sibling_projection_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/ref-sibling-projection.schema.json")
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn typed_one_of_ref_without_input(
+                r#"
+                typed_one_of_ref = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+    }
+
+    mod one_of_const_description_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/one-of-const-description.schema.json")
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn inline_one_of_without_input(
+                r#"
+                inline = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn inline_one_of_inside_quotes(
+                r#"
+                inline = "█"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_ref_one_of_without_input(
+                r#"
+                wrapped = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_ref_one_of_inside_quotes(
+                r#"
+                wrapped = "█"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn ref_one_of_inside_quotes(
+                r#"
+                referenced = "█"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn any_of_without_input(
+                r#"
+                any_of = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn one_of_value_without_description_falls_back(
+                r#"
+                partial = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Property description." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn integer_one_of_without_input(
+                r#"
+                number = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "1", "documentation": "One: a single tomato." },
+                { "label": "2", "documentation": "Two: a pair of tomatoes." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn array_item_ref_one_of_without_input(
+                r#"
+                array = [█]
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn nested_all_of_ref_one_of_without_input(
+                r#"
+                [table]
+                color = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+    }
+
     #[macro_export]
     macro_rules! test_completion_labels {
         (

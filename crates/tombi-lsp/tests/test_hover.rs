@@ -2490,6 +2490,138 @@ mod hover_keys_value {
         );
     }
 
+    mod one_of_const_description_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/one-of-const-description.schema.json")
+        }
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn inline_one_of_value_description(
+                r#"
+                inline = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "inline",
+                "Value": "String?",
+                "Description": Some("Red: like a ripe tomato.")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn all_of_ref_one_of_value_description(
+                r#"
+                wrapped = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "wrapped",
+                "Value": "String?",
+                "Description": Some("Red: like a ripe tomato.")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn nested_all_of_ref_one_of_value_description(
+                r#"
+                [table]
+                color = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "table.color",
+                "Value": "String?",
+                "Description": Some("Red: like a ripe tomato.")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn one_of_value_title_and_description(
+                r#"
+                titled = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "titled",
+                "Value": "String?",
+                "Title": Some("Red"),
+                "Description": Some("Red: like a ripe tomato.")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn one_of_value_without_description_falls_back(
+                r#"
+                partial = "gr█een"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "partial",
+                "Value": "String?",
+                "Description": Some("Property description.")
+            });
+        );
+    }
+
+    mod ref_sibling_projection_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/ref-sibling-projection.schema.json")
+        }
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn constrained_ref_value(
+                r#"
+                constrained_ref = "a█bc"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "constrained_ref",
+                "Value": "String?",
+                "Description": Some("Text description.")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn typed_ref_value(
+                r#"
+                typed_ref = "a█bc"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "typed_ref",
+                "Value": "String?",
+                "Description": Some("Scalar description.")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn typed_one_of_ref_value(
+                r#"
+                typed_one_of_ref = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "typed_one_of_ref",
+                "Value": "String?",
+                "Description": Some("Red: like a ripe tomato.")
+            });
+        );
+    }
+
     #[macro_export]
     macro_rules! test_hover_keys_value {
         (#[tokio::test] async fn $name:ident(
