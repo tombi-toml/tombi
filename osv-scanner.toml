@@ -1,0 +1,17 @@
+# OSV-Scanner configuration.
+# See https://google.github.io/osv-scanner/configuration/
+
+# braces@3.0.3 (latest) has no fixed release yet.
+# It is pulled in only by build-time tooling (micromatch / chokidar@3) with trusted glob patterns.
+[[IgnoredVulns]]
+id = "CVE-2026-93687"
+ignoreUntil = 2027-01-05
+reason = "No fixed braces release; only used by dev tooling with trusted patterns."
+
+# node-forge@1.4.0 (latest) has no fixed release yet.
+# It is pulled in only by listhen (docs dev server) to generate self-signed certificates,
+# and RSA PKCS#1 v1.5 signature verification is never used.
+[[IgnoredVulns]]
+id = "CVE-2026-33894"
+ignoreUntil = 2027-01-05
+reason = "No fixed node-forge release; only used by the docs dev server, which does not verify RSA signatures."
