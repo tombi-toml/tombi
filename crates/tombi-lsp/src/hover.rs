@@ -142,17 +142,26 @@ fn merge_constraints(
     }
 }
 
+/// `prefer_adjacent_annotations` lets the branch selected by an adjacent
+/// `oneOf` / `anyOf` describe the value, e.g. the per-value description of
+/// `oneOf: [{ "const": "red", "description": "..." }]`.
 pub(super) fn merge_hover_value_content(
     mut base: HoverValueContent,
     mut adjacent: HoverValueContent,
+    prefer_adjacent_annotations: bool,
 ) -> HoverValueContent {
     base.schema_tooltip = match (base.schema_tooltip.take(), adjacent.schema_tooltip.take()) {
         (Some(base), Some(adjacent)) => Some(base.combine(adjacent)),
         (Some(tooltip), None) | (None, Some(tooltip)) => Some(tooltip),
         (None, None) => None,
     };
-    base.title = base.title.or(adjacent.title);
-    base.description = base.description.or(adjacent.description);
+    if prefer_adjacent_annotations && (adjacent.title.is_some() || adjacent.description.is_some()) {
+        base.title = adjacent.title;
+        base.description = adjacent.description;
+    } else {
+        base.title = base.title.or(adjacent.title);
+        base.description = base.description.or(adjacent.description);
+    }
     base.constraints = merge_constraints(base.constraints, adjacent.constraints);
     base.schema_document_uri = base.schema_document_uri.or(adjacent.schema_document_uri);
     base.span = base.span.or(adjacent.span);
@@ -251,21 +260,30 @@ pub(super) fn inherit_matching_nullable_type(composite: &ValueType, value_type: 
 fn merge_hover_content(
     base: Option<HoverContent>,
     adjacent: Option<HoverContent>,
+    prefer_adjacent_annotations: bool,
 ) -> Option<HoverContent> {
     match (base, adjacent) {
-        (Some(HoverContent::Value(base)), Some(HoverContent::Value(adjacent))) => Some(
-            HoverContent::Value(merge_hover_value_content(base, adjacent)),
-        ),
+        (Some(HoverContent::Value(base)), Some(HoverContent::Value(adjacent))) => {
+            Some(HoverContent::Value(merge_hover_value_content(
+                base,
+                adjacent,
+                prefer_adjacent_annotations,
+            )))
+        }
         (
             Some(HoverContent::DirectiveContent(base)),
             Some(HoverContent::DirectiveContent(adjacent)),
         ) => Some(HoverContent::DirectiveContent(merge_hover_value_content(
-            base, adjacent,
+            base,
+            adjacent,
+            prefer_adjacent_annotations,
         ))),
         (Some(HoverContent::Value(base)), Some(HoverContent::DirectiveContent(adjacent)))
         | (Some(HoverContent::DirectiveContent(base)), Some(HoverContent::Value(adjacent))) => {
             Some(HoverContent::Value(merge_hover_value_content(
-                base, adjacent,
+                base,
+                adjacent,
+                prefer_adjacent_annotations,
             )))
         }
         (Some(base), None) => Some(base),
@@ -313,6 +331,7 @@ pub(super) async fn merge_adjacent_hover_content<
                 schema_context,
             )
             .await,
+            true,
         );
     }
     if let Some(any_of_schema) = any_of_schema {
@@ -328,6 +347,7 @@ pub(super) async fn merge_adjacent_hover_content<
                 schema_context,
             )
             .await,
+            true,
         );
     }
     if let Some(all_of_schema) = all_of_schema {
@@ -343,6 +363,7 @@ pub(super) async fn merge_adjacent_hover_content<
                 schema_context,
             )
             .await,
+            false,
         );
     }
 

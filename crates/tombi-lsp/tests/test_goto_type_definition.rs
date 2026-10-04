@@ -877,6 +877,90 @@ mod goto_type_definition_tests {
         );
     }
 
+    mod one_of_const_description_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/one-of-const-description.schema.json")
+        }
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn inline_one_of_value(
+                r#"
+                inline = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((4, 4), (4, 12)).into()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn all_of_ref_one_of_value(
+                r#"
+                wrapped = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((11, 4), (11, 13)).into()),
+            ) -> Ok(schema_path());
+        );
+    }
+
+    mod ref_sibling_projection_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/ref-sibling-projection.schema.json")
+        }
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn plain_ref_value(
+                r#"
+                plain_ref = "a█bc"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((4, 4), (4, 15)).into()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn constrained_ref_value(
+                r#"
+                constrained_ref = "a█bc"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((7, 4), (7, 21)).into()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn typed_ref_value(
+                r#"
+                typed_ref = "a█bc"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((11, 4), (11, 15)).into()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn typed_one_of_ref_value(
+                r#"
+                typed_one_of_ref = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((15, 4), (15, 22)).into()),
+            ) -> Ok(schema_path());
+        );
+    }
+
     #[macro_export]
     macro_rules! test_goto_type_definition {
         (#[tokio::test] async fn $name:ident(

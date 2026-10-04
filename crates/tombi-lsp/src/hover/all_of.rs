@@ -45,7 +45,7 @@ where
         .await?;
 
         for resolved_schema in &resolved_schemas {
-            let projected_schema = crate::schema_resolver::project_schema_for_concrete_value(
+            let projected_schema = crate::schema_resolver::project_composite_branch_schema(
                 value,
                 resolved_schema,
                 schema_context,
@@ -91,6 +91,20 @@ where
             }
         }
 
+        // A `$ref` with sibling keywords is a single schema split into
+        // `[siblings, target]`: the first of them that describes the value wins,
+        // as `$ref` siblings override the referenced annotations.
+        let reference_annotations = all_of_schema
+            .reference_siblings
+            .then(|| {
+                hover_value_contents
+                    .iter()
+                    .filter(|content| content.accessors.as_ref().len() == accessors.len())
+                    .find(|content| content.title.is_some() || content.description.is_some())
+                    .map(|content| (content.title.clone(), content.description.clone()))
+            })
+            .flatten();
+
         let mut hover_value_content = super::first_most_specific_hover_value_content(
             hover_value_contents,
             CompositeKind::All,
@@ -119,7 +133,10 @@ where
                 )
             });
 
-        if hover_value_content.title.is_none() && hover_value_content.description.is_none() {
+        if let Some((title, description)) = reference_annotations {
+            hover_value_content.title = title;
+            hover_value_content.description = description;
+        } else if hover_value_content.title.is_none() && hover_value_content.description.is_none() {
             hover_value_content.title = all_of_schema.title.clone();
             hover_value_content.description = all_of_schema.description.clone();
         }

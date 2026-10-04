@@ -102,7 +102,7 @@ where
             if has_applicable_branch && !branch_applicability.is_applicable() {
                 continue;
             }
-            let projected_schema = crate::schema_resolver::project_schema_for_concrete_value(
+            let projected_schema = crate::schema_resolver::project_composite_branch_schema(
                 value,
                 resolved_schema,
                 schema_context,
