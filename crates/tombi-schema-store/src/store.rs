@@ -705,6 +705,12 @@ impl SchemaStore {
                         log::debug!("fetch schema from uri: {}", schema_uri);
                         bytes
                     }
+                    Err(err @ crate::FetchError::AuthenticationFailed { .. }) => {
+                        return Err(crate::Error::SchemaFetchFailed {
+                            schema_uri: schema_uri.clone(),
+                            reason: err.to_string(),
+                        });
+                    }
                     Err(err) => {
                         if let Ok(Some(schema_document)) = load_json_schema_from_cache_ignoring_ttl(
                             schema_uri,
@@ -722,18 +728,18 @@ impl SchemaStore {
                     }
                 };
 
+                let schema_document = tombi_json::Document::from_reader(std::io::Cursor::new(
+                    &bytes,
+                ))
+                .map_err(|err| crate::Error::SchemaFileParseFailed {
+                    schema_uri: schema_uri.to_owned(),
+                    reason: err.to_string(),
+                })?;
                 if let Err(err) = save_to_cache(schema_cache_path.as_deref(), &bytes).await {
                     log::warn!("{err}");
                 }
 
-                Ok(Some(
-                    tombi_json::Document::from_reader(std::io::Cursor::new(bytes)).map_err(
-                        |err| crate::Error::SchemaFileParseFailed {
-                            schema_uri: schema_uri.to_owned(),
-                            reason: err.to_string(),
-                        },
-                    )?,
-                ))
+                Ok(Some(schema_document))
             }
             "tombi" => {
                 let Some(content) = get_tombi_schemastore_content(schema_uri) else {

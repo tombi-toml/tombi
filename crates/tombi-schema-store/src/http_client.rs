@@ -21,6 +21,8 @@ fn http_timeout_secs() -> u64 {
         .unwrap_or(DEFAULT_HTTP_TIMEOUT)
 }
 
+#[cfg(all(feature = "reqwest", not(target_arch = "wasm32")))]
+mod github_credentials;
 #[cfg(feature = "reqwest")]
 mod reqwest_client;
 #[cfg(feature = "reqwest")]

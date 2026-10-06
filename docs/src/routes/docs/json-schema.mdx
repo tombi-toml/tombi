@@ -14,6 +14,36 @@ This section explains how Tombi prioritizes the application of `x-tombi-*` keys 
 2. JSON Schema specified in [the Tombi configuration file](/docs/configuration#search-priority)
 3. JSON Schema from the [JSON Schema Store](https://www.schemastore.org)
 
+## Private GitHub schemas
+
+The native CLI and editor language server can fetch schemas from private GitHub repositories using raw URLs. For example, add this directive to `nagi.toml`:
+
+```toml
+#:schema https://raw.githubusercontent.com/nagi-sql/nagi-config/refs/heads/main/jsonschema/generated/nagi.json
+```
+
+Or add a schema entry to `tombi.toml`:
+
+```toml
+[[schemas]]
+path = "https://raw.githubusercontent.com/nagi-sql/nagi-config/refs/heads/main/jsonschema/generated/nagi.json"
+include = ["nagi.toml"]
+```
+
+Use a raw URL, rather than a GitHub `blob` page URL. Tombi first fetches the schema without authentication. If GitHub returns HTTP 401, 403, or 404, Tombi retries with credentials in this order:
+
+1. `GH_TOKEN`
+2. `GITHUB_TOKEN`
+3. `gh auth token --hostname github.com`
+
+The account or token must have read access to the repository. If an environment token is set but invalid, Tombi reports the fetch failure without switching to another credential source. If neither token is set and `gh` is unavailable or not signed in, fetching fails without opening a login prompt.
+
+Credentials must be available to the Tombi process. For an editor running in a container, remote host, or WSL, configure the environment or `gh` authentication there. This feature is not available in the browser/WASM build.
+
+<Note>
+Tokens are used only for the authenticated request and are not cached. The downloaded schema JSON is cached locally, including schemas from private repositories. The default cache lifetime is 24 hours; offline mode can continue using the local copy. See [environment variables](/docs/environment-variables) for cache controls.
+</Note>
+
 ## Built-in schemas
 
 Tombi embeds a subset of JSON Schema Store schemas into the binary. To use an embedded schema, replace the `https://` scheme with `tombi://`.

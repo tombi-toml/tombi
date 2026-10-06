@@ -156,7 +156,25 @@ pub async fn save_to_cache(
                 });
             }
         }
-        if let Err(err) = tokio::fs::write(cache_file_path, &bytes).await {
+        use tokio::io::AsyncWriteExt;
+
+        let mut options = tokio::fs::OpenOptions::new();
+        options.create(true).write(true).truncate(true);
+        #[cfg(unix)]
+        options.mode(0o600);
+        let write_result = async {
+            let mut file = options.open(cache_file_path).await?;
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                file.set_permissions(std::fs::Permissions::from_mode(0o600))
+                    .await?;
+            }
+            file.write_all(bytes).await?;
+            file.flush().await
+        }
+        .await;
+        if let Err(err) = write_result {
             return Err(crate::Error::CacheFileSaveFailed {
                 cache_file_path: cache_file_path.to_owned(),
                 reason: err.to_string(),

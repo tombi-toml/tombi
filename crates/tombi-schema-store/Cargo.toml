@@ -35,9 +35,13 @@ tombi-text.workspace = true
 tombi-uri.workspace = true
 tombi-x-keyword.workspace = true
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { workspace = true, features = ["process", "time"] }
+
 [dev-dependencies]
 pretty_assertions.workspace = true
 reqwest = { workspace = true, features = ["blocking"] }
+rstest.workspace = true
 tempfile.workspace = true
 tokio = { workspace = true, features = ["macros", "test-util"] }
 tombi-config.workspace = true

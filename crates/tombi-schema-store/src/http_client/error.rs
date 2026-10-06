@@ -4,6 +4,8 @@ pub enum FetchError {
     FetchFailed { reason: String },
     #[error("unexpected status: {status}")]
     StatusNotOk { status: u16 },
+    #[error("GitHub authentication failed: {reason}")]
+    AuthenticationFailed { reason: String },
     #[error("failed to read body: {reason}")]
     BodyReadFailed { reason: String },
 }
