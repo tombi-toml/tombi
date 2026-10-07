@@ -21,6 +21,7 @@ use tombi_ast_syntax::SchemaDocumentCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
 use tombi_config::{SchemaItem, SchemaOverviewOptions, TomlVersion, config_base_dir};
 use tombi_future::{BoxFuture, Boxable};
+use tombi_severity_level::SeverityLevelDefaultWarn;
 use tombi_uri::SchemaUri;
 
 type DocumentSchemas = Arc<RwLock<tombi_hashmap::HashMap<SchemaUri, CachedDocumentSchema>>>;
@@ -302,6 +303,16 @@ impl SchemaStore {
     /// Strict mode in global level.
     pub fn strict(&self) -> Option<tombi_schema_type::BoolDefaultTrue> {
         self.options.strict
+    }
+
+    /// Global schema deprecation severity from `[schema.lint.rules]`.
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevelDefaultWarn> {
+        self.options
+            .lint
+            .as_ref()
+            .and_then(|lint| lint.rules.as_ref())
+            .and_then(|rules| rules.deprecated)
+            .map(Into::into)
     }
 
     pub async fn refresh_cache(

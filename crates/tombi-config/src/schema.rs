@@ -25,6 +25,9 @@ pub struct SchemaOverviewOptions {
     /// which is different from the JSON Schema specification.
     pub strict: Option<BoolDefaultTrue>,
 
+    /// # Schema lint options
+    pub lint: Option<SchemaOverviewLintOptions>,
+
     /// # Schema catalog options
     pub catalog: Option<SchemaCatalog>,
 }
@@ -34,6 +37,7 @@ impl SchemaOverviewOptions {
         Self {
             enabled: None,
             strict: None,
+            lint: None,
             catalog: None,
         }
     }
@@ -53,6 +57,42 @@ impl SchemaOverviewOptions {
 
     pub fn strict(&self) -> Option<BoolDefaultTrue> {
         self.strict
+    }
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaOverviewLintOptions {
+    pub rules: Option<SchemaOverviewLintRules>,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaOverviewLintRules {
+    pub deprecated: Option<SchemaDeprecatedSeverity>,
+}
+
+/// Severity supported by the global schema deprecation rule.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SchemaDeprecatedSeverity {
+    Warn,
+    Error,
+}
+
+impl From<SchemaDeprecatedSeverity> for SeverityLevelDefaultWarn {
+    fn from(level: SchemaDeprecatedSeverity) -> Self {
+        match level {
+            SchemaDeprecatedSeverity::Warn => tombi_severity_level::SeverityLevel::Warn.into(),
+            SchemaDeprecatedSeverity::Error => tombi_severity_level::SeverityLevel::Error.into(),
+        }
     }
 }
 
@@ -567,5 +607,24 @@ mod tests {
 
         let expected: Vec<SchemaCatalogPath> = vec![];
         pretty_assertions::assert_eq!(schema.catalog_paths(), Some(expected));
+    }
+
+    #[test]
+    fn schema_deprecated_severity_accepts_warn_and_error_only() {
+        for severity in ["warn", "error"] {
+            assert!(
+                serde_json::from_value::<SchemaOverviewOptions>(serde_json::json!({
+                    "lint": { "rules": { "deprecated": severity } }
+                }))
+                .is_ok()
+            );
+        }
+
+        assert!(
+            serde_json::from_value::<SchemaOverviewOptions>(serde_json::json!({
+                "lint": { "rules": { "deprecated": "off" } }
+            }))
+            .is_err()
+        );
     }
 }

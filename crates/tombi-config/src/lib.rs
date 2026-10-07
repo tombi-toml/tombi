@@ -24,6 +24,7 @@ pub use schema::{
     SchemaOverrideItem, SchemaOverrideLintOptions, SchemaOverrideLintRules,
     SchemaOverrideTableKeysOrderRule, SchemaTableKeysOrderRule, SubSchema,
 };
+pub use schema::{SchemaDeprecatedSeverity, SchemaOverviewLintOptions, SchemaOverviewLintRules};
 pub use server::{LspCompletion, LspDiagnostic, LspOptions, LspWorkspaceDiagnostic};
 pub use tombi_severity_level::SeverityLevel;
 pub use tombi_toml_version::TomlVersion;

@@ -96,6 +96,9 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
 - [schema](#schema)
   - [schema.enabled](#schema-enabled)
   - [schema.strict](#schema-strict)
+  - [schema.lint](#schema-lint)
+    - [schema.lint.rules](#schema-lint-rules)
+      - [schema.lint.rules.deprecated](#schema-lint-rules-deprecated)
   - [schema.catalog](#schema-catalog)
     - [schema.catalog.paths](#schema-catalog-paths)
 - [schemas](#schemas)
@@ -948,6 +951,21 @@ Enable strict schema validation. If `additionalProperties` is not specified in t
 
 - Type: `Boolean`
 - Default: `true`
+
+### schema.lint
+
+Configure lint rules for values deprecated by the active JSON Schema.
+
+### schema.lint.rules
+
+Configure global schema lint rules. Schema-specific rules and overrides take precedence over these settings.
+
+### schema.lint.rules.deprecated
+
+Set the severity for values marked as `deprecated: true` by the active JSON Schema. This is the fallback for all schemas when no more specific deprecated severity is configured.
+
+- Type: `"warn" | "error"`
+- Default: `"warn"` when no schema-specific setting applies
 
 ### schema.catalog
 

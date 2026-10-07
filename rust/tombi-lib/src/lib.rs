@@ -82,6 +82,7 @@ fn new_schema_store(config: &tombi_config::Config) -> tombi_schema_store::Schema
     tombi_schema_store::SchemaStore::new_with_options(tombi_schema_store::Options {
         offline: None,
         strict: schema_options.and_then(|schema_options| schema_options.strict()),
+        lint: schema_options.and_then(|schema_options| schema_options.lint.clone()),
         cache: None,
     })
 }

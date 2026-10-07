@@ -137,6 +137,7 @@ fn root_schema_without_strict_config(global_strict: bool) -> tombi_config::Confi
     config.schema = Some(tombi_config::SchemaOverviewOptions {
         enabled: None,
         strict: Some(global_strict.into()),
+        lint: None,
         catalog: None,
     });
     config.schemas = Some(vec![tombi_config::SchemaItem::Root(
@@ -159,6 +160,7 @@ fn sub_schema_without_root_or_strict_config(global_strict: bool) -> tombi_config
     config.schema = Some(tombi_config::SchemaOverviewOptions {
         enabled: None,
         strict: Some(global_strict.into()),
+        lint: None,
         catalog: None,
     });
     config.schemas = Some(vec![tombi_config::SchemaItem::Sub(
@@ -618,6 +620,54 @@ fn deprecated_exact_index_precedence_config() -> tombi_config::Config {
     config
 }
 
+fn global_deprecated_schema_config(
+    level: tombi_config::SchemaDeprecatedSeverity,
+) -> tombi_config::Config {
+    let mut config = deprecated_schema_config(None);
+    config.schema = Some(tombi_config::SchemaOverviewOptions {
+        lint: Some(tombi_config::SchemaOverviewLintOptions {
+            rules: Some(tombi_config::SchemaOverviewLintRules {
+                deprecated: Some(level),
+            }),
+        }),
+        ..Default::default()
+    });
+    config
+}
+
+test_lint! {
+    #[test]
+    fn test_global_deprecated_lint_level_error(
+        "value = 1\n",
+        Config(global_deprecated_schema_config(tombi_config::SchemaDeprecatedSeverity::Error)),
+    ) -> Diagnostics([{
+        code: "deprecated",
+        level: tombi_diagnostic::Level::ERROR,
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn test_schema_deprecated_lint_level_overrides_global_fallback(
+        "value = 1\n",
+        Config({
+            let mut config = deprecated_schema_config(Some(SeverityLevel::Error));
+            config.schema = Some(tombi_config::SchemaOverviewOptions {
+                lint: Some(tombi_config::SchemaOverviewLintOptions {
+                    rules: Some(tombi_config::SchemaOverviewLintRules {
+                        deprecated: Some(tombi_config::SchemaDeprecatedSeverity::Warn),
+                    }),
+                }),
+                ..Default::default()
+            });
+            config
+        }),
+    ) -> Diagnostics([{
+        code: "deprecated",
+        level: tombi_diagnostic::Level::ERROR,
+    }])
+}
+
 test_lint! {
     #[test]
     fn test_deprecated_schema_lint_level_default_config(
@@ -668,6 +718,25 @@ test_lint! {
         code: "deprecated",
         level: tombi_diagnostic::Level::ERROR,
     }])
+}
+
+test_lint! {
+    #[test]
+    fn test_schema_deprecated_lint_level_overrides_global_level(
+        "value = 1\n",
+        Config({
+            let mut config = deprecated_override_config(SeverityLevel::Off);
+            config.schema = Some(tombi_config::SchemaOverviewOptions {
+                lint: Some(tombi_config::SchemaOverviewLintOptions {
+                    rules: Some(tombi_config::SchemaOverviewLintRules {
+                        deprecated: Some(tombi_config::SchemaDeprecatedSeverity::Error),
+                    }),
+                }),
+                ..Default::default()
+            });
+            config
+        }),
+    ) -> Ok(_)
 }
 
 test_lint! {
