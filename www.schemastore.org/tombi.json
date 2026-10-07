@@ -976,6 +976,17 @@
             }
           ]
         },
+        "lint": {
+          "title": "Schema lint options",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaOverviewLintOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "catalog": {
           "title": "Schema catalog options",
           "anyOf": [
@@ -990,6 +1001,46 @@
       },
       "additionalProperties": false,
       "x-tombi-table-keys-order": "schema"
+    },
+    "SchemaOverviewLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaOverviewLintRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SchemaOverviewLintRules": {
+      "type": "object",
+      "properties": {
+        "deprecated": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaDeprecatedSeverity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SchemaDeprecatedSeverity": {
+      "description": "Severity supported by the global schema deprecation rule.",
+      "type": "string",
+      "enum": [
+        "warn",
+        "error"
+      ]
     },
     "SchemaCatalog": {
       "type": "object",

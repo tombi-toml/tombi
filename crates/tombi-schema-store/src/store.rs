@@ -21,6 +21,7 @@ use tombi_ast_syntax::SchemaDocumentCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
 use tombi_config::{SchemaItem, SchemaOverviewOptions, TomlVersion, config_base_dir};
 use tombi_future::{BoxFuture, Boxable};
+use tombi_severity_level::SeverityLevelDefaultWarn;
 use tombi_uri::SchemaUri;
 
 type DocumentSchemas = Arc<RwLock<tombi_hashmap::HashMap<SchemaUri, CachedDocumentSchema>>>;
@@ -169,6 +170,7 @@ pub struct SchemaStore {
     schema_resource_index: SchemaResourceIndex,
     schemas: Arc<RwLock<Vec<StoredSchema>>>,
     options: crate::Options,
+    lint_options: Arc<ParkingRwLock<Option<tombi_config::SchemaOverviewLintOptions>>>,
     base_dir_path: Arc<RwLock<Option<std::path::PathBuf>>>,
 }
 
@@ -284,6 +286,7 @@ impl SchemaStore {
             document_schemas: Arc::new(RwLock::default()),
             schema_resource_index: Arc::new(ParkingRwLock::default()),
             schemas: Arc::new(RwLock::new(Vec::new())),
+            lint_options: Arc::new(ParkingRwLock::new(options.lint.clone())),
             options,
             base_dir_path: Arc::new(RwLock::new(None)),
         }
@@ -302,6 +305,21 @@ impl SchemaStore {
     /// Strict mode in global level.
     pub fn strict(&self) -> Option<tombi_schema_type::BoolDefaultTrue> {
         self.options.strict
+    }
+
+    /// Global schema deprecation severity from `[schema.lint.rules]`.
+    pub fn deprecated_lint_level(&self) -> Option<SeverityLevelDefaultWarn> {
+        self.lint_options
+            .read()
+            .as_ref()
+            .and_then(|lint| lint.rules.as_ref())
+            .and_then(|rules| rules.deprecated)
+            .map(Into::into)
+    }
+
+    /// Update global schema lint options after a configuration reload.
+    pub fn set_lint_options(&self, lint_options: Option<tombi_config::SchemaOverviewLintOptions>) {
+        *self.lint_options.write() = lint_options;
     }
 
     pub async fn refresh_cache(

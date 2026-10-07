@@ -504,6 +504,7 @@ mod completion_labels {
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
                 "catalog",
+                "lint",
             ]);
         }
 
