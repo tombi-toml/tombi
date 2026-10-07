@@ -187,12 +187,15 @@ impl ConfigManager {
             .or_insert(ConfigSchemaStore::new(
                 config.clone(),
                 Some(config_path.to_owned()),
-                SchemaStore::new_with_options(schema_options),
+                SchemaStore::new_with_options(schema_options.clone()),
             ));
         config_schema_store
             .schema_store
             .reload_config(&config, Some(config_path))
             .await?;
+        config_schema_store
+            .schema_store
+            .set_lint_options(schema_options.lint);
         config_schema_store.config = config;
         Ok(())
     }
