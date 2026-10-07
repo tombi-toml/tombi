@@ -176,6 +176,7 @@ async fn validate_case(schema: &JsonValue, data: &JsonValue) -> Result<bool> {
         strict: Some(false.into()),
         offline: Some(true),
         cache: None,
+        lint: None,
     });
     let schema_uri = SchemaUri::from_file_path(&schema_path)
         .expect("failed to convert suite schema path to schema uri");
