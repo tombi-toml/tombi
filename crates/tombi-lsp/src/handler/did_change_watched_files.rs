@@ -1,11 +1,11 @@
-use tower_lsp::lsp_types::{DidChangeWatchedFilesParams, FileChangeType};
+use tower_lsp::lsp_types::{DidChangeWatchedFilesParams, FileChangeType, TextDocumentIdentifier};
 
 use crate::{
     backend::Backend,
     workspace_config::{
         WorkspaceConfig, get_workspace_configs, is_workspace_ignored, is_workspace_target,
     },
-    workspace_diagnostic::upsert_document_source,
+    workspace_diagnostic::{refresh_diagnostics_after_config_change, upsert_document_source},
 };
 
 use super::diagnostic::push_diagnostics;
@@ -18,6 +18,7 @@ pub async fn handle_did_change_watched_files(
     log::trace!("{:?}", params);
 
     let mut should_refresh_pull_diagnostics = false;
+    let mut config_changed = false;
     let home_dir = tombi_fs::home_dir();
     let mut workspace_configs: Option<Vec<WorkspaceConfig>> = None;
 
@@ -25,6 +26,22 @@ pub async fn handle_did_change_watched_files(
         let uri: tombi_uri::Uri = change.uri.clone().into();
 
         log::debug!("detected {:?} via watcher: {}", change.typ, uri);
+
+        if is_config_file(&uri) {
+            // Config files changed outside the editor are reloaded as on save.
+            // Config discovery must be redone since a config may have been added or removed.
+            backend.config_manager.clear_source_config_paths().await;
+            config_changed = true;
+            if matches!(
+                change.typ,
+                FileChangeType::CREATED | FileChangeType::CHANGED
+            ) {
+                let identifier = TextDocumentIdentifier::new(change.uri.clone());
+                if let Err(err) = crate::handler::handle_update_config(backend, identifier).await {
+                    log::warn!("failed to reload config: {err}");
+                }
+            }
+        }
 
         if matches!(
             change.typ,
@@ -128,7 +145,19 @@ pub async fn handle_did_change_watched_files(
         }
     }
 
+    if config_changed {
+        refresh_diagnostics_after_config_change(backend).await;
+    }
+
     if should_refresh_pull_diagnostics {
         backend.refresh_pull_diagnostics().await;
     }
+}
+
+fn is_config_file(uri: &tombi_uri::Uri) -> bool {
+    uri.to_file_path().ok().is_some_and(|path| {
+        path.file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| tombi_config::SUPPORTED_CONFIG_FILENAMES.contains(&name))
+    })
 }

@@ -99,6 +99,11 @@ impl ConfigManager {
         }
     }
 
+    /// Forget which config each source file uses, so config discovery runs again.
+    pub async fn clear_source_config_paths(&self) {
+        self.source_config_paths.write().await.clear();
+    }
+
     /// Get config for a URI
     pub async fn config_schema_store_for_uri(
         &self,
@@ -326,6 +331,32 @@ impl ConfigManager {
 
     pub async fn refresh_cache(&self) -> Result<bool, tombi_schema_store::Error> {
         let mut updated = false;
+
+        // Re-read config files from disk so that changes made outside the editor are applied.
+        // Collect the keys so the read lock is released before `update_config_with_path` takes the write lock.
+        let config_paths: Vec<PathBuf> = self
+            .config_schema_stores
+            .read()
+            .await
+            .keys()
+            .cloned()
+            .collect();
+        for config_path in config_paths {
+            match serde_tombi::config::try_from_path(&config_path) {
+                Ok(Some(config)) => {
+                    self.update_config_with_path(config, &config_path).await?;
+                    updated = true;
+                }
+                Ok(None) => {}
+                Err(err) => {
+                    log::warn!(
+                        "failed to reload config for {config_path}: {err}",
+                        config_path = config_path.display()
+                    );
+                }
+            }
+        }
+
         let mut config_schema_stores = self.config_schema_stores.write().await;
         for (
             config_path,

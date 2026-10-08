@@ -35,6 +35,39 @@ pub async fn push_workspace_diagnostics(
     Ok(())
 }
 
+/// Drop cached diagnostics and re-diagnose open documents and workspace targets
+/// after the effective config or schemas changed.
+pub async fn refresh_diagnostics_after_config_change(backend: &Backend) {
+    backend.workspace_diagnostics_cache.write().await.reset();
+
+    if backend.is_diagnostic_mode_push().await {
+        // Open documents may be outside the workspace targets, so re-diagnose them explicitly.
+        let open_document_uris = backend
+            .document_sources
+            .read()
+            .await
+            .iter()
+            .filter_map(|(uri, source)| source.version.is_some().then_some(uri.clone()))
+            .collect::<Vec<_>>();
+        for uri in open_document_uris {
+            backend.push_diagnostics(uri).await;
+        }
+
+        if let Err(err) = push_workspace_diagnostics(
+            backend,
+            &WorkspaceDiagnosticOptions {
+                include_open_files: true,
+            },
+        )
+        .await
+        {
+            log::warn!("failed to push workspace diagnostics: {err}");
+        }
+    } else {
+        backend.refresh_pull_diagnostics().await;
+    }
+}
+
 pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_uri::Uri> {
     if let Some(targets) = backend
         .workspace_diagnostics_cache

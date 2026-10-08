@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::Backend;
+use crate::{Backend, workspace_diagnostic::refresh_diagnostics_after_config_change};
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,6 +15,7 @@ pub async fn handle_refresh_cache(
     match backend.config_manager.refresh_cache().await {
         Ok(true) => {
             log::info!("cache refreshed");
+            refresh_diagnostics_after_config_change(backend).await;
             Ok(true)
         }
         Ok(false) => {
