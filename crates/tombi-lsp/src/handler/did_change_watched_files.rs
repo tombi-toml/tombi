@@ -5,9 +5,7 @@ use crate::{
     workspace_config::{
         WorkspaceConfig, get_workspace_configs, is_workspace_ignored, is_workspace_target,
     },
-    workspace_diagnostic::{
-        WorkspaceDiagnosticOptions, push_workspace_diagnostics, upsert_document_source,
-    },
+    workspace_diagnostic::{refresh_diagnostics_after_config_change, upsert_document_source},
 };
 
 use super::diagnostic::push_diagnostics;
@@ -20,7 +18,7 @@ pub async fn handle_did_change_watched_files(
     log::trace!("{:?}", params);
 
     let mut should_refresh_pull_diagnostics = false;
-    let mut config_reloaded = false;
+    let mut config_changed = false;
     let home_dir = tombi_fs::home_dir();
     let mut workspace_configs: Option<Vec<WorkspaceConfig>> = None;
 
@@ -29,18 +27,19 @@ pub async fn handle_did_change_watched_files(
 
         log::debug!("detected {:?} via watcher: {}", change.typ, uri);
 
-        if matches!(
-            change.typ,
-            FileChangeType::CREATED | FileChangeType::CHANGED
-        ) && is_config_file(&uri)
-        {
+        if is_config_file(&uri) {
             // Config files changed outside the editor are reloaded as on save.
-            let identifier = TextDocumentIdentifier::new(change.uri.clone());
+            // Config discovery must be redone since a config may have been added or removed.
+            backend.config_manager.clear_source_config_paths().await;
+            config_changed = true;
             if matches!(
-                crate::handler::handle_update_config(backend, identifier).await,
-                Ok(true)
+                change.typ,
+                FileChangeType::CREATED | FileChangeType::CHANGED
             ) {
-                config_reloaded = true;
+                let identifier = TextDocumentIdentifier::new(change.uri.clone());
+                if let Err(err) = crate::handler::handle_update_config(backend, identifier).await {
+                    log::warn!("failed to reload config: {err}");
+                }
             }
         }
 
@@ -146,17 +145,8 @@ pub async fn handle_did_change_watched_files(
         }
     }
 
-    if config_reloaded {
-        if let Err(err) = push_workspace_diagnostics(
-            backend,
-            &WorkspaceDiagnosticOptions {
-                include_open_files: true,
-            },
-        )
-        .await
-        {
-            log::warn!("failed to push workspace diagnostics: {err}");
-        }
+    if config_changed {
+        refresh_diagnostics_after_config_change(backend).await;
         should_refresh_pull_diagnostics = true;
     }
 

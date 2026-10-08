@@ -99,6 +99,11 @@ impl ConfigManager {
         }
     }
 
+    /// Forget which config each source file uses, so config discovery runs again.
+    pub async fn clear_source_config_paths(&self) {
+        self.source_config_paths.write().await.clear();
+    }
+
     /// Get config for a URI
     pub async fn config_schema_store_for_uri(
         &self,
