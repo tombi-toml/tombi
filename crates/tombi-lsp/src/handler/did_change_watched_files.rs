@@ -147,7 +147,6 @@ pub async fn handle_did_change_watched_files(
 
     if config_changed {
         refresh_diagnostics_after_config_change(backend).await;
-        should_refresh_pull_diagnostics = true;
     }
 
     if should_refresh_pull_diagnostics {
@@ -156,12 +155,9 @@ pub async fn handle_did_change_watched_files(
 }
 
 fn is_config_file(uri: &tombi_uri::Uri) -> bool {
-    uri.to_file_path()
-        .ok()
-        .and_then(|path| {
-            path.file_name()
-                .and_then(|name| name.to_str())
-                .map(|name| tombi_config::SUPPORTED_CONFIG_FILENAMES.contains(&name))
-        })
-        .unwrap_or(false)
+    uri.to_file_path().ok().is_some_and(|path| {
+        path.file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| tombi_config::SUPPORTED_CONFIG_FILENAMES.contains(&name))
+    })
 }
