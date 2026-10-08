@@ -333,6 +333,7 @@ impl ConfigManager {
         let mut updated = false;
 
         // Re-read config files from disk so that changes made outside the editor are applied.
+        // Collect the keys so the read lock is released before `update_config_with_path` takes the write lock.
         let config_paths: Vec<PathBuf> = self
             .config_schema_stores
             .read()
