@@ -325,3 +325,45 @@ async fn json_pointer_into_retrieval_uri_uses_canonical_root_base() {
         "pointer targets under a retrieval URI must keep the root resource `$id` as base"
     );
 }
+
+#[tokio::test]
+async fn update_schema_rebuilds_local_schemas_referencing_it() {
+    let dir = tempfile::tempdir().expect("temporary directory");
+    let child_path = dir.path().join("child.json");
+    let parent_path = dir.path().join("parent.json");
+    std::fs::write(&child_path, r#"{ "enum": ["x"] }"#).expect("write child");
+    std::fs::write(
+        &parent_path,
+        r#"{ "properties": { "a": { "$ref": "child.json" } } }"#,
+    )
+    .expect("write parent");
+    let child_uri = SchemaUri::from_file_path(&child_path).expect("valid child URI");
+    let parent_uri = SchemaUri::from_file_path(&parent_path).expect("valid parent URI");
+    let schema_store = SchemaStore::new();
+
+    let parent_before = schema_store
+        .try_get_document_schema(&parent_uri)
+        .await
+        .expect("load parent")
+        .expect("parent schema");
+    schema_store
+        .try_get_document_schema(&child_uri)
+        .await
+        .expect("load child")
+        .expect("child schema");
+
+    std::fs::write(&child_path, r#"{ "enum": ["x", "y"] }"#).expect("rewrite child");
+    assert!(
+        schema_store
+            .update_schema(child_uri)
+            .await
+            .expect("update child")
+    );
+
+    let parent_after = schema_store
+        .try_get_document_schema(&parent_uri)
+        .await
+        .expect("reload parent")
+        .expect("parent schema");
+    assert!(!std::sync::Arc::ptr_eq(&parent_before, &parent_after));
+}
