@@ -44,6 +44,7 @@ macro_rules! test_format {
                 pub config_text: Option<String>,
                 pub schema_path: Option<std::path::PathBuf>,
                 pub source_path: Option<std::path::PathBuf>,
+                pub trusted_hosts: Option<Vec<String>>,
             }
 
             #[allow(unused)]
@@ -93,6 +94,16 @@ macro_rules! test_format {
                 }
             }
 
+            /// Add hosts allowed to resolve to non-public addresses.
+            #[allow(unused)]
+            pub struct TrustedHosts(pub Vec<String>);
+
+            impl ApplyTestArg for TrustedHosts {
+                fn apply(self, args: &mut TestArgs) {
+                    args.trusted_hosts.get_or_insert_default().extend(self.0);
+                }
+            }
+
             #[allow(unused_mut)]
             let mut args = TestArgs::default();
             $(
@@ -100,7 +111,10 @@ macro_rules! test_format {
             )*
 
             // Initialize schema store
-            let schema_store = SchemaStore::new();
+            let schema_store = SchemaStore::new_with_options(tombi_schema_store::Options {
+                trusted_hosts: args.trusted_hosts.clone(),
+                ..Default::default()
+            });
 
             if let Some(config_text) = &args.config_text {
                 let config: tombi_config::Config = serde_tombi::from_str_async(config_text)
@@ -186,6 +200,7 @@ macro_rules! test_format {
                 pub config_text: Option<String>,
                 pub schema_path: Option<std::path::PathBuf>,
                 pub source_path: Option<std::path::PathBuf>,
+                pub trusted_hosts: Option<Vec<String>>,
             }
 
             #[allow(unused)]
@@ -235,6 +250,16 @@ macro_rules! test_format {
                 }
             }
 
+            /// Add hosts allowed to resolve to non-public addresses.
+            #[allow(unused)]
+            pub struct TrustedHosts(pub Vec<String>);
+
+            impl ApplyTestArg for TrustedHosts {
+                fn apply(self, config: &mut TestArgs) {
+                    config.trusted_hosts.get_or_insert_default().extend(self.0);
+                }
+            }
+
             #[allow(unused_mut)]
             let mut config = TestArgs::default();
             $(
@@ -242,7 +267,10 @@ macro_rules! test_format {
             )*
 
             // Initialize schema store
-            let schema_store = SchemaStore::new();
+            let schema_store = SchemaStore::new_with_options(tombi_schema_store::Options {
+                trusted_hosts: config.trusted_hosts.clone(),
+                ..Default::default()
+            });
 
             if let Some(config_text) = &config.config_text {
                 let config_value: tombi_config::Config = serde_tombi::from_str_async(config_text)

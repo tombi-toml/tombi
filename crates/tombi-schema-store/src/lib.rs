@@ -6,6 +6,7 @@ mod keyword_support;
 pub mod macros;
 mod options;
 mod schema;
+mod schema_fetch_policy;
 mod store;
 mod value_type;
 mod x_taplo;

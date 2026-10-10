@@ -3,7 +3,7 @@ mod schema_uri;
 
 pub use catalog_uri::CatalogUri;
 pub use schema_uri::SchemaUri;
-pub use url::ParseError;
+pub use url::{Host, ParseError};
 
 #[macro_export]
 macro_rules! schemastore_hostname {
