@@ -68,9 +68,14 @@ async fn register_workspace_toml_watcher(
         glob_pattern: GlobPattern::String("**/*.toml".to_string()),
         kind: Some(WatchKind::Create | WatchKind::Change | WatchKind::Delete),
     };
+    // Local JSON Schema files changed outside the editor.
+    let schema_watcher = FileSystemWatcher {
+        glob_pattern: GlobPattern::String("**/*.json".to_string()),
+        kind: Some(WatchKind::Create | WatchKind::Change),
+    };
 
     let options = DidChangeWatchedFilesRegistrationOptions {
-        watchers: vec![watcher],
+        watchers: vec![watcher, schema_watcher],
     };
 
     let registration = Registration {

@@ -19,6 +19,7 @@ pub async fn handle_did_change_watched_files(
 
     let mut should_refresh_pull_diagnostics = false;
     let mut config_changed = false;
+    let mut schema_changed = false;
     let home_dir = tombi_fs::home_dir();
     let mut workspace_configs: Option<Vec<WorkspaceConfig>> = None;
 
@@ -26,6 +27,24 @@ pub async fn handle_did_change_watched_files(
         let uri: tombi_uri::Uri = change.uri.clone().into();
 
         log::debug!("detected {:?} via watcher: {}", change.typ, uri);
+
+        if is_json_file(&uri) {
+            // Only schemas already loaded by the schema stores are updated.
+            if matches!(
+                change.typ,
+                FileChangeType::CREATED | FileChangeType::CHANGED
+            ) {
+                match backend
+                    .config_manager
+                    .update_schema(tombi_schema_store::SchemaUri::from(change.uri))
+                    .await
+                {
+                    Ok(updated) => schema_changed |= updated,
+                    Err(err) => log::warn!("failed to update schema {uri}: {err}"),
+                }
+            }
+            continue;
+        }
 
         if is_config_file(&uri) {
             // Config files changed outside the editor are reloaded as on save.
@@ -145,7 +164,7 @@ pub async fn handle_did_change_watched_files(
         }
     }
 
-    if config_changed {
+    if config_changed || schema_changed {
         refresh_diagnostics_after_config_change(backend).await;
     }
 
@@ -160,4 +179,10 @@ fn is_config_file(uri: &tombi_uri::Uri) -> bool {
             .and_then(|name| name.to_str())
             .is_some_and(|name| tombi_config::SUPPORTED_CONFIG_FILENAMES.contains(&name))
     })
+}
+
+fn is_json_file(uri: &tombi_uri::Uri) -> bool {
+    uri.to_file_path()
+        .ok()
+        .is_some_and(|path| path.extension().is_some_and(|ext| ext == "json"))
 }

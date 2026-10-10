@@ -619,13 +619,29 @@ impl SchemaStore {
             && let Some(document_schema) = self.fetch_document_schema(&schema_uri).await.transpose()
         {
             let version = schema_cache_version(&schema_uri).await;
-            self.document_schemas.write().await.insert(
-                schema_uri.clone(),
-                CachedDocumentSchema {
-                    version,
-                    document_schema,
-                },
-            );
+            {
+                let mut document_schemas = self.document_schemas.write().await;
+                // Other local schemas may `$ref` this one and hold its old content,
+                // so drop them and let them be rebuilt on next use.
+                if schema_uri.scheme() == "file" {
+                    // Cached under an `$id` alias, a local document is keyed by a non-`file:` URI,
+                    // so also check the physical document URI.
+                    document_schemas.retain(|uri, cached| {
+                        *uri == schema_uri
+                            || !(uri.scheme() == "file"
+                                || cached.document_schema.as_ref().is_ok_and(|schema| {
+                                    schema.schema_document_uri().scheme() == "file"
+                                }))
+                    });
+                }
+                document_schemas.insert(
+                    schema_uri.clone(),
+                    CachedDocumentSchema {
+                        version,
+                        document_schema,
+                    },
+                );
+            }
             log::debug!("update schema: {}", schema_uri);
             return Ok(true);
         }
