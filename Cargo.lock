@@ -3364,6 +3364,7 @@ dependencies = [
  "tombi-text",
  "tombi-uri",
  "tombi-x-keyword",
+ "web-sys",
 ]
 
 [[package]]

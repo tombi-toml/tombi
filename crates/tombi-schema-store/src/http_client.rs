@@ -67,6 +67,13 @@ impl DefaultHttpClient {
     pub fn new() -> Self {
         Self
     }
+
+    /// The stub cannot connect anywhere, so the policy is not needed.
+    pub(crate) fn with_policy(
+        _policy: std::sync::Arc<crate::schema_fetch_policy::SchemaFetchPolicy>,
+    ) -> Self {
+        Self
+    }
 }
 
 #[cfg(not(any(feature = "reqwest", all(feature = "gloo-net", target_arch = "wasm32"))))]

@@ -495,6 +495,7 @@ fn schema_store_options(
             no_cache: backend_options.no_cache,
             ..Default::default()
         }),
+        trusted_hosts: None,
     }
 }
 

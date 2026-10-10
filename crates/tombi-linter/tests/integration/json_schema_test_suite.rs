@@ -34,6 +34,7 @@ async fn validate_test_suite(
         lint: None,
         offline: Some(true),
         cache: None,
+        trusted_hosts: None,
     });
     let schema_uri = SchemaUri::from_file_path(&schema_path)
         .expect("failed to convert suite schema path to schema uri");
