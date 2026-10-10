@@ -2111,6 +2111,78 @@ mod schema_format_rules {
     }
 }
 
+mod global_schema_format_rules {
+    use tombi_formatter::{Formatter, test_format};
+
+    test_format! {
+        #[tokio::test]
+        async fn test_global_schema_format_rules_disabled_keeps_schema_order_targets_unsorted(
+            r#"
+            [project]
+            version = "0.1.0"
+            name = "test-project"
+            dependencies = ["tombi-cli>=0.0.0", "maturin>=1.5,<2.0"]
+            description = "A test project"
+            requires-python = ">=3.10"
+            "#,
+            ConfigText(
+                r#"
+                [schema.format.rules]
+                array-values-order.enabled = false
+                table-keys-order.enabled = false
+
+                [[schemas]]
+                path = "tombi://www.schemastore.org/pyproject.json"
+                include = ["*.toml"]
+                "#,
+            ),
+        ) -> Ok(
+            r#"
+            [project]
+            version = "0.1.0"
+            name = "test-project"
+            dependencies = ["tombi-cli>=0.0.0", "maturin>=1.5,<2.0"]
+            description = "A test project"
+            requires-python = ">=3.10"
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn test_schemas_format_rules_take_precedence_over_global_format_rules(
+            r#"
+            [project]
+            version = "0.1.0"
+            name = "test-project"
+            description = "A test project"
+            requires-python = ">=3.10"
+            "#,
+            ConfigText(
+                r#"
+                [schema.format.rules]
+                table-keys-order.enabled = false
+
+                [[schemas]]
+                path = "tombi://www.schemastore.org/pyproject.json"
+                include = ["*.toml"]
+
+                [schemas.format.rules]
+                table-keys-order.enabled = true
+                "#,
+            ),
+        ) -> Ok(
+            r#"
+            [project]
+            name = "test-project"
+            version = "0.1.0"
+            description = "A test project"
+            requires-python = ">=3.10"
+            "#
+        )
+    }
+}
+
 mod schema_overrides {
     use tombi_formatter::{Formatter, test_format};
 

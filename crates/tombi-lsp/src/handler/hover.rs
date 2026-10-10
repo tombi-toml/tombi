@@ -179,7 +179,7 @@ pub async fn handle_hover(
                     toml_version,
                     converter,
                     offline,
-                    cache_options,
+                    cache_options.as_ref(),
                     cargo_dependency_detail_hover_enabled,
                     cargo_feature_dependencies_hover_enabled,
                     cargo_default_features_hover_enabled,
@@ -198,7 +198,7 @@ pub async fn handle_hover(
                     offset,
                     toml_version,
                     offline,
-                    cache_options,
+                    cache_options.as_ref(),
                 )
                 .await?
             }

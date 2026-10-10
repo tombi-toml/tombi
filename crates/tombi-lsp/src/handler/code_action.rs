@@ -115,7 +115,7 @@ pub async fn handle_code_action(
             document_source.toml_version,
             config.cargo_extension_features(),
             schema_store.offline(),
-            schema_store.cache_options(),
+            schema_store.cache_options().as_ref(),
         )
         .await?
     {
@@ -136,7 +136,7 @@ pub async fn handle_code_action(
             converter,
             config.pyproject_extension_features(),
             schema_store.offline(),
-            schema_store.cache_options(),
+            schema_store.cache_options().as_ref(),
         )
         .await?
     {

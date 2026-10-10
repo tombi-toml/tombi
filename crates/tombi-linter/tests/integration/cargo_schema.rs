@@ -137,6 +137,7 @@ fn root_schema_without_strict_config(global_strict: bool) -> tombi_config::Confi
     config.schema = Some(tombi_config::SchemaOverviewOptions {
         enabled: None,
         strict: Some(global_strict.into()),
+        format: None,
         lint: None,
         catalog: None,
     });
@@ -160,6 +161,7 @@ fn sub_schema_without_root_or_strict_config(global_strict: bool) -> tombi_config
     config.schema = Some(tombi_config::SchemaOverviewOptions {
         enabled: None,
         strict: Some(global_strict.into()),
+        format: None,
         lint: None,
         catalog: None,
     });

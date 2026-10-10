@@ -177,6 +177,7 @@ async fn validate_case(schema: &JsonValue, data: &JsonValue) -> Result<bool> {
         offline: Some(true),
         cache: None,
         lint: None,
+        format: None,
         trusted_hosts: None,
     });
     let schema_uri = SchemaUri::from_file_path(&schema_path)

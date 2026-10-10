@@ -67,7 +67,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
                 document_source_for_extensions.snapshot(),
                 toml_version,
                 offline,
-                cache_options,
+                cache_options.as_ref(),
                 config_schema_store.config.cargo_extension_features(),
             )
         },
@@ -78,7 +78,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
                 document_tree,
                 toml_version,
                 offline,
-                cache_options,
+                cache_options.as_ref(),
                 config_schema_store.config.pyproject_extension_features(),
             )
         },

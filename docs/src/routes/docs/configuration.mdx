@@ -96,6 +96,10 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
 - [schema](#schema)
   - [schema.enabled](#schema-enabled)
   - [schema.strict](#schema-strict)
+  - [schema.format](#schema-format)
+    - [schema.format.rules](#schema-format-rules)
+      - [schema.format.rules.array-values-order](#schema-format-rules-array-values-order)
+      - [schema.format.rules.table-keys-order](#schema-format-rules-table-keys-order)
   - [schema.lint](#schema-lint)
     - [schema.lint.rules](#schema-lint-rules)
       - [schema.lint.rules.deprecated](#schema-lint-rules-deprecated)
@@ -948,6 +952,40 @@ Enable or disable schema validation.
 ### schema.strict
 
 Enable strict schema validation. If `additionalProperties` is not specified in the JSON Schema, the strict mode treats it as `additionalProperties: false`, which is different from the JSON Schema specification.
+
+- Type: `Boolean`
+- Default: `true`
+
+### schema.format
+
+Configure format rules for schema-defined ordering.
+
+### schema.format.rules
+
+Configure global schema format rules. Matching `[[schemas]]` format rules, `[[schemas.overrides]]`, and comment directives take precedence over these settings.
+
+### schema.format.rules.array-values-order
+
+Configure schema-defined ordering for array values.
+
+- Type: `Table`
+
+### schema.format.rules.array-values-order.enabled
+
+Enable or disable schema-defined array value ordering for all schemas. This is the fallback when no more specific setting applies.
+
+- Type: `Boolean`
+- Default: `true`
+
+### schema.format.rules.table-keys-order
+
+Configure schema-defined ordering for table keys.
+
+- Type: `Table`
+
+### schema.format.rules.table-keys-order.enabled
+
+Enable or disable schema-defined table key ordering for all schemas. This is the fallback when no more specific setting applies.
 
 - Type: `Boolean`
 - Default: `true`

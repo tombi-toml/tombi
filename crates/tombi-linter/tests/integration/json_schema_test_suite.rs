@@ -32,6 +32,7 @@ async fn validate_test_suite(
     let schema_store = SchemaStore::new_with_options(SchemaStoreOptions {
         strict: Some(false.into()),
         lint: None,
+        format: None,
         offline: Some(true),
         cache: None,
         trusted_hosts: None,

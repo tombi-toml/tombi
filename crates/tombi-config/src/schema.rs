@@ -25,6 +25,9 @@ pub struct SchemaOverviewOptions {
     /// which is different from the JSON Schema specification.
     pub strict: Option<BoolDefaultTrue>,
 
+    /// # Schema format options
+    pub format: Option<SchemaOverviewFormatOptions>,
+
     /// # Schema lint options
     pub lint: Option<SchemaOverviewLintOptions>,
 
@@ -37,6 +40,7 @@ impl SchemaOverviewOptions {
         Self {
             enabled: None,
             strict: None,
+            format: None,
             lint: None,
             catalog: None,
         }
@@ -58,6 +62,21 @@ impl SchemaOverviewOptions {
     pub fn strict(&self) -> Option<BoolDefaultTrue> {
         self.strict
     }
+}
+
+/// # Global schema format options
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaOverviewFormatOptions {
+    /// # Global schema format rules
+    ///
+    /// Used when neither a matching `[[schemas]]` entry nor a comment directive
+    /// specifies the same rule.
+    pub rules: Option<SchemaFormatRules>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -607,6 +626,27 @@ mod tests {
 
         let expected: Vec<SchemaCatalogPath> = vec![];
         pretty_assertions::assert_eq!(schema.catalog_paths(), Some(expected));
+    }
+
+    #[test]
+    fn schema_overview_format_rules_deserialize() {
+        let options = serde_json::from_value::<SchemaOverviewOptions>(serde_json::json!({
+            "format": { "rules": {
+                "array-values-order": { "enabled": false },
+                "table-keys-order": { "enabled": false }
+            } }
+        }))
+        .unwrap();
+
+        let rules = options.format.unwrap().rules.unwrap();
+        assert_eq!(
+            rules.array_values_order.unwrap().enabled.map(|e| e.value()),
+            Some(false)
+        );
+        assert_eq!(
+            rules.table_keys_order.unwrap().enabled.map(|e| e.value()),
+            Some(false)
+        );
     }
 
     #[test]
