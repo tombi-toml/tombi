@@ -110,6 +110,7 @@ impl SchemaContext<'_> {
         self.schema_format_rules(current_schema)
             .and_then(|rules| rules.array_values_order.as_ref())
             .and_then(|rule| rule.enabled)
+            .or_else(|| self.store.array_values_order_enabled())
             .unwrap_or_default()
             .value()
     }
@@ -122,6 +123,7 @@ impl SchemaContext<'_> {
         self.schema_format_rules(current_schema)
             .and_then(|rules| rules.table_keys_order.as_ref())
             .and_then(|rule| rule.enabled)
+            .or_else(|| self.store.table_keys_order_enabled())
             .unwrap_or_default()
             .value()
     }

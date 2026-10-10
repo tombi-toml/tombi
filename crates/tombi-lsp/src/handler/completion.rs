@@ -191,7 +191,7 @@ pub async fn handle_completion(
             completion_hint,
             comment_context.is_some(),
             offline,
-            cache_options,
+            cache_options.as_ref(),
             config.cargo_extension_features(),
         )
         .await?

@@ -198,9 +198,6 @@ impl ConfigManager {
             .schema_store
             .reload_config(&config, Some(config_path))
             .await?;
-        config_schema_store
-            .schema_store
-            .set_lint_options(schema_options.lint);
         config_schema_store.config = config;
         Ok(())
     }
@@ -487,6 +484,10 @@ fn schema_store_options(
     tombi_schema_store::Options {
         offline: backend_options.offline,
         strict: config.schema.as_ref().and_then(|schema| schema.strict()),
+        format: config
+            .schema
+            .as_ref()
+            .and_then(|schema| schema.format.clone()),
         lint: config
             .schema
             .as_ref()
