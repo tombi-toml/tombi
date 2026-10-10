@@ -36,10 +36,6 @@ pub(crate) struct SchemaFetchPolicy {
 }
 
 impl SchemaFetchPolicy {
-    pub(crate) fn from_environment() -> Self {
-        Self::from_options(&crate::Options::default())
-    }
-
     /// Build the policy from the process environment plus the trusted hosts
     /// supplied by the embedding application through [`crate::Options`].
     ///

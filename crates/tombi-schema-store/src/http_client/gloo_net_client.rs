@@ -17,7 +17,7 @@ impl Default for GlooNetHttpClient {
 
 impl GlooNetHttpClient {
     pub fn new() -> Self {
-        Self::with_policy(Arc::new(SchemaFetchPolicy::from_environment()))
+        Self::with_options(&crate::Options::default())
     }
 
     /// Create a client whose trust policy is the environment plus `options`.
