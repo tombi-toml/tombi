@@ -28,7 +28,14 @@ pub async fn warm_remote_json_cache(
 ) -> bool {
     let cache_file_path = get_cached_remote_json_file_path(url).await;
 
-    warm_remote_json_cache_from_path(url, cache_file_path.as_deref(), offline, cache_options).await
+    warm_remote_json_cache_from_path(
+        &*HTTP_CLIENT,
+        url,
+        cache_file_path.as_deref(),
+        offline,
+        cache_options,
+    )
+    .await
 }
 
 async fn get_cached_remote_json_file_path(url: &str) -> Option<PathBuf> {
@@ -85,6 +92,7 @@ async fn fetch_cached_remote_json_from_path<T: DeserializeOwned>(
 }
 
 async fn warm_remote_json_cache_from_path(
+    http_client: &dyn HttpClient,
     url: &str,
     cache_file_path: Option<&Path>,
     offline: bool,
@@ -113,7 +121,7 @@ async fn warm_remote_json_cache_from_path(
         return false;
     }
 
-    let bytes = match HTTP_CLIENT.get_bytes(url).await {
+    let bytes = match http_client.get_bytes(url).await {
         Ok(bytes) => {
             log::debug!("warm remote metadata cache from url: {url}");
             bytes
@@ -267,6 +275,10 @@ mod tests {
                 match listener.accept() {
                     Ok((mut stream, _)) => {
                         request_count_for_thread.fetch_add(1, Ordering::SeqCst);
+                        // Accepted sockets inherit the listener's non-blocking mode on
+                        // some platforms; read the whole request before replying.
+                        let _ = stream.set_nonblocking(false);
+                        let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
                         let mut buffer = [0; 1024];
                         let _ = stream.read(&mut buffer);
                         let response = format!(
@@ -464,8 +476,15 @@ mod tests {
         let _cache_home = TestCacheHome::new();
         let (url, request_count, stop, handle) = spawn_test_server(r#"{"name":"cached"}"#);
 
-        let warmed = warm_remote_json_cache(&url, false, None).await;
+        let http_client =
+            tombi_schema_store::DefaultHttpClient::with_options(&tombi_schema_store::Options {
+                trusted_hosts: Some(vec!["127.0.0.1".to_string()]),
+                ..Default::default()
+            });
         let cache_path = get_cached_remote_json_file_path(&url).await.unwrap();
+        let warmed =
+            warm_remote_json_cache_from_path(&http_client, &url, Some(&cache_path), false, None)
+                .await;
         stop.store(true, Ordering::SeqCst);
         handle.join().unwrap();
 

@@ -55,3 +55,14 @@ This environment variable controls how long Tombi will wait for HTTP requests to
 
 - Type: `Integer` (seconds)
 - Default: `5`
+
+## TOMBI_SCHEMA_TRUSTED_HOSTS
+
+Allow schema and catalog requests to connect to non-public addresses returned for these exact host names or IP addresses.
+
+Set a comma-separated list such as `schema.internal,10.20.30.40`. Entries are exact hosts; wildcards are not supported. A trusted host grants access to its non-public addresses over any HTTP or HTTPS port, so add only hosts you trust. Public destinations remain available without this setting.
+
+Native HTTP requests reject credentials in URLs, reject private or special-use destination addresses, recheck every redirect, and bypass environment-configured proxies so DNS checks cover the address used by the connection. The browser/WASM build can reject unsafe URL literals and redirects, but the browser controls DNS and socket routing.
+
+- Type: comma-separated host names or IP addresses
+- Default: unset

@@ -8,6 +8,11 @@ pub struct Options {
     pub format: Option<tombi_config::SchemaOverviewFormatOptions>,
     pub offline: Option<bool>,
     pub cache: Option<tombi_cache::Options>,
+    /// Host names or IP addresses allowed to resolve to non-public addresses.
+    ///
+    /// Added to `TOMBI_SCHEMA_TRUSTED_HOSTS`. This is for the embedding
+    /// application; project configuration cannot set it.
+    pub trusted_hosts: Option<Vec<String>>,
 }
 
 impl Default for Options {
@@ -18,6 +23,7 @@ impl Default for Options {
             format: None,
             offline: None,
             cache: Some(tombi_cache::Options::default()),
+            trusted_hosts: None,
         }
     }
 }

@@ -209,6 +209,7 @@ where
                 no_cache: args.common.no_cache.then_some(true),
                 ..Default::default()
             }),
+            trusted_hosts: None,
         });
 
     let runtime = super::runtime(FileInputType::from(args.files.as_ref()) == FileInputType::Stdin)

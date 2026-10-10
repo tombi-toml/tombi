@@ -85,6 +85,7 @@ fn new_schema_store(config: &tombi_config::Config) -> tombi_schema_store::Schema
         format: schema_options.and_then(|schema_options| schema_options.format.clone()),
         lint: schema_options.and_then(|schema_options| schema_options.lint.clone()),
         cache: None,
+        trusted_hosts: None,
     })
 }
 
