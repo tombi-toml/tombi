@@ -24,6 +24,18 @@ impl<'t> crate::Root<'t> {
         }
     }
 
+    /// All comments in source order, wherever they are attached in the tree.
+    pub fn comments(&self) -> impl Iterator<Item = crate::Comment<'t>> {
+        use crate::{AstToken, NodeOrToken, WalkEvent};
+
+        self.syntax()
+            .preorder_with_tokens()
+            .filter_map(|event| match event {
+                WalkEvent::Enter(NodeOrToken::Token(token)) => crate::Comment::cast(token),
+                _ => None,
+            })
+    }
+
     /// TOML nodes in source order. Punctuation and trivia are intentionally
     /// excluded; malformed syntax is represented by `TomlNode::Invalid`.
     pub fn nodes(&self) -> impl Iterator<Item = crate::TomlNode<'t>> {

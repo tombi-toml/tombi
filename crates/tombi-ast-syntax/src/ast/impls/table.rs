@@ -11,18 +11,8 @@ impl<'t> crate::Table<'t> {
     pub fn content_span(&self) -> Option<tombi_text::Span> {
         let mut elements = self.syntax().child_elements();
         let first = elements.find(|element| element.kind() == T!('['))?;
-        let last = self
-            .syntax()
-            .child_elements()
-            .filter(|element| {
-                !matches!(
-                    element.kind(),
-                    tombi_ast_syntax::SyntaxKind::WHITESPACE
-                        | tombi_ast_syntax::SyntaxKind::LINE_BREAK
-                )
-            })
-            .last()?;
-        Some(tombi_text::Span::new(first.span().start, last.span().end))
+        let end = crate::ast::impls::comment::content_end(self.syntax())?;
+        Some(tombi_text::Span::new(first.span().start, end))
     }
 
     #[inline]

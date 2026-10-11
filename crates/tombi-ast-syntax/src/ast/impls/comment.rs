@@ -3,7 +3,52 @@ use crate::{
     comment_directive::TombiValueCommentDirective,
 };
 
+/// A `# region` / `# endregion` marker, as used by editors for custom folding.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RegionMarker {
+    Start,
+    End,
+}
+
+/// Returns the end of `node`'s content, ignoring trailing whitespace, line
+/// breaks and region marker comments, which belong to the enclosing region
+/// rather than to the node.
+pub(crate) fn content_end(node: &tombi_ast_syntax::SyntaxNode<'_>) -> Option<tombi_text::Offset> {
+    use crate::{AstNode, DanglingCommentGroup, SyntaxKind};
+
+    let mut end = None;
+    for element in node.child_elements() {
+        match element.kind() {
+            SyntaxKind::WHITESPACE | SyntaxKind::LINE_BREAK => {}
+            SyntaxKind::DANGLING_COMMENT_GROUP => {
+                let group = element.into_node().and_then(DanglingCommentGroup::cast);
+                let comment_end = group.and_then(|group| {
+                    group
+                        .comments()
+                        .filter(|comment| comment.region_marker().is_none())
+                        .last()
+                        .map(|comment| comment.syntax().span().end)
+                });
+                end = comment_end.or(end);
+            }
+            _ => end = Some(element.span().end),
+        }
+    }
+    end
+}
+
 impl<'t> Comment<'t> {
+    /// Recognizes `# region [description]` and `# endregion [description]`.
+    pub fn region_marker(&self) -> Option<RegionMarker> {
+        let body = self.syntax().text().strip_prefix('#')?.trim_start();
+
+        match body.split_whitespace().next()? {
+            "region" => Some(RegionMarker::Start),
+            "endregion" => Some(RegionMarker::End),
+            _ => None,
+        }
+    }
+
     /// Returns the schema directive in the document header.
     ///
     /// ```toml

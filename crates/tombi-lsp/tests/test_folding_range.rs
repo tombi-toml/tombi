@@ -392,6 +392,220 @@ mod folding_range_tests {
         ];
     );
 
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_markers(
+            r#"
+            # region Application
+            key1 = 1
+            # endregion
+
+            # region Logging
+            key2 = 2
+            # endregion
+            "#,
+        ) -> [
+            0..2,
+            4..6,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn nested_region_markers(
+            r#"
+            #region Outer
+            key1 = 1
+            # region Inner
+            key2 = 2
+            # endregion Inner
+            key3 = 3
+            #endregion Outer
+            "#,
+        ) -> [
+            0..6,
+            2..4,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn unmatched_region_markers(
+            r#"
+            # endregion
+            key1 = 1
+            # region
+            key2 = 2
+            # regional note
+            "#,
+        ) -> [
+            4..4,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_marker_followed_by_blank_line(
+            r#"
+            [tool.ruff]
+            line-length = 100
+
+            # region
+
+            [tool.pytest]
+            addopts = ["-v"]
+
+            [tool.uv.workspace]
+            members = [
+              "python/tombi",
+              "python/tombi-lib",
+            ]
+
+            # endregion
+            "#,
+        ) -> [
+            0..1,
+            3..14,
+            5..6,
+            6..6,
+            8..12,
+            9..12,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_marker_across_sections(
+            r#"
+            #:tombi toml-version = "v1.0.0"
+
+            # region
+
+            [dependency-groups]
+            dev = [
+              "maturin>=1.5,<2.0",
+              { include-group = "stub" },
+            ]
+            stub = [
+              "pytest-stub>=1.1.0",
+            ]
+
+            [tool.pytest]
+            addopts = ["-v"]
+
+            [tool.uv.workspace]
+            members = [
+              "python/tombi",
+            ]
+
+            # endregion
+            "#,
+        ) -> [
+            2..21,
+            4..11,
+            5..8,
+            7..7,
+            9..11,
+            13..14,
+            14..14,
+            16..19,
+            17..19,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_marker_ends_inside_table(
+            r#"
+            # region
+            [a]
+            x = 1
+            # endregion
+            y = 2
+            "#,
+        ) -> [
+            0..3,
+            1..2,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_marker_across_array_of_tables(
+            r#"
+            [[a]]
+            x = 1
+
+            # region
+            [[a]]
+            x = 2
+
+            [[a]]
+            x = 3
+            # endregion
+
+            [b]
+            y = 1
+            "#,
+        ) -> [
+            0..1,
+            3..9,
+            4..5,
+            7..8,
+            11..12,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_marker_between_comments(
+            r#"
+            # note 1
+            # note 2
+            # region
+            # note 3
+            # note 4
+            key = 1
+            # endregion
+            "#,
+        ) -> [
+            0..1,
+            2..6,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_marker_inside_table(
+            r#"
+            [a]
+            # region
+            x = 1
+            y = 2
+            # endregion
+            z = 3
+            "#,
+        ) -> [
+            0..5,
+            1..4,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn unclosed_nested_region_marker(
+            r#"
+            # region Outer
+            key1 = 1
+            # region Inner
+            key2 = 2
+            # endregion
+            "#,
+        ) -> [
+            2..4,
+        ];
+    );
+
     #[macro_export]
     macro_rules! test_folding_range {
         (#[tokio::test] async fn $name:ident($source:expr $(,)?) -> [$($expected:expr),* $(,)?];) => {

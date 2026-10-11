@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use tombi_ast_syntax::{AstNode, DanglingCommentGroupOr};
+use tombi_ast_syntax::{AstNode, AstToken, DanglingCommentGroupOr};
 use tower_lsp::lsp_types::{FoldingRange, FoldingRangeKind, FoldingRangeParams};
 
 use crate::backend::Backend;
@@ -21,20 +21,31 @@ pub async fn handle_folding_range(
     let mut cursor = document_source
         .line_index()
         .cursor(document_source.encoding_kind());
-    let folding_ranges = create_folding_spans(&document_source.ast())
-        .into_iter()
-        .map(|FoldingSpan { span, kind }| {
-            let range = cursor.lsp_range(span);
-            FoldingRange {
-                start_line: range.start.line,
-                start_character: Some(range.start.character),
-                end_line: range.end.line,
-                end_character: Some(range.end.character),
-                kind: Some(kind),
-                collapsed_text: None,
-            }
-        })
-        .collect_vec();
+    let folding_ranges = resolve_region_overlaps(
+        create_folding_spans(&document_source.ast())
+            .into_iter()
+            .map(
+                |FoldingSpan {
+                     span,
+                     kind,
+                     is_region_marker,
+                 }| {
+                    let range = cursor.lsp_range(span);
+                    (
+                        FoldingRange {
+                            start_line: range.start.line,
+                            start_character: Some(range.start.character),
+                            end_line: range.end.line,
+                            end_character: Some(range.end.character),
+                            kind: Some(kind),
+                            collapsed_text: None,
+                        },
+                        is_region_marker,
+                    )
+                },
+            )
+            .collect_vec(),
+    );
 
     if !folding_ranges.is_empty() {
         Ok(Some(folding_ranges))
@@ -47,10 +58,57 @@ pub async fn handle_folding_range(
 struct FoldingSpan {
     span: tombi_text::Span,
     kind: FoldingRangeKind,
+    /// Whether the span comes from a `# region` / `# endregion` pair.
+    is_region_marker: bool,
+}
+
+/// Editors discard folding ranges that partially overlap another one, so a
+/// range that crosses a `# region` boundary would hide the whole region.
+/// The marker pair is the user's explicit intent, so the crossing range is
+/// shortened to stay on one side of it, or dropped if nothing is left.
+fn resolve_region_overlaps(ranges: Vec<(FoldingRange, bool)>) -> Vec<FoldingRange> {
+    let markers = ranges
+        .iter()
+        .filter(|(_, is_region_marker)| *is_region_marker)
+        .map(|(range, _)| (range.start_line, range.end_line))
+        .collect_vec();
+
+    ranges
+        .into_iter()
+        .filter_map(|(mut range, is_region_marker)| {
+            if is_region_marker {
+                return Some(range);
+            }
+
+            let mut clamped = false;
+            for &(start, end) in &markers {
+                if range.start_line < start && start <= range.end_line && range.end_line < end {
+                    // Starts before the region and ends inside it.
+                    range.end_line = start - 1;
+                    clamped = true;
+                } else if start < range.start_line
+                    && range.start_line <= end
+                    && end < range.end_line
+                {
+                    // Starts inside the region and ends after it.
+                    range.end_line = end - 1;
+                    clamped = true;
+                }
+            }
+
+            if clamped {
+                range.end_character = None;
+                if range.end_line <= range.start_line {
+                    return None;
+                }
+            }
+            Some(range)
+        })
+        .collect()
 }
 
 fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>) -> Vec<FoldingSpan> {
-    let mut spans: Vec<FoldingSpan> = vec![];
+    let mut spans: Vec<FoldingSpan> = region_marker_folding_spans(root);
 
     for node in root.nodes() {
         if let tombi_ast_syntax::TomlNode::KeyValue(key_value) = node {
@@ -385,6 +443,34 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>) -> Vec<FoldingSpan> {
     spans
 }
 
+/// Pairs `# region` / `# endregion` comments into folding spans.
+///
+/// The markers are matched like a stack, so regions can be nested.
+/// An unmatched `# endregion` is ignored, and so is an unclosed `# region`.
+fn region_marker_folding_spans(root: &tombi_ast_syntax::Root<'_>) -> Vec<FoldingSpan> {
+    let mut spans = vec![];
+    let mut starts = vec![];
+
+    for comment in root.comments() {
+        let span = comment.syntax().span();
+        match comment.region_marker() {
+            Some(tombi_ast_syntax::RegionMarker::Start) => starts.push(span.start),
+            Some(tombi_ast_syntax::RegionMarker::End) => {
+                if let Some(start) = starts.pop() {
+                    spans.push(FoldingSpan {
+                        span: tombi_text::Span::new(start, span.end),
+                        kind: FoldingRangeKind::Region,
+                        is_region_marker: true,
+                    });
+                }
+            }
+            None => {}
+        }
+    }
+
+    spans
+}
+
 trait GetRegionFoldingSpan {
     fn get_folding_span(&self) -> Option<tombi_text::Span>;
 
@@ -393,6 +479,7 @@ trait GetRegionFoldingSpan {
         self.get_folding_span().map(|span| FoldingSpan {
             span,
             kind: FoldingRangeKind::Region,
+            is_region_marker: false,
         })
     }
 }
@@ -405,6 +492,7 @@ trait GetCommentFoldingSpan {
         self.get_folding_span().map(|span| FoldingSpan {
             span,
             kind: FoldingRangeKind::Comment,
+            is_region_marker: false,
         })
     }
 }
@@ -480,47 +568,55 @@ impl GetRegionFoldingSpan for tombi_ast_syntax::MultiLineLiteralString<'_> {
     }
 }
 
+/// Spans of the first and the last comment, ignoring region markers, which
+/// are folded by their own `# region` / `# endregion` range.
+fn first_and_last_comment_spans<'a, 't: 'a, C>(
+    comments: impl Iterator<Item = &'a C>,
+) -> Option<(tombi_text::Span, tombi_text::Span)>
+where
+    C: std::ops::Deref<Target = tombi_ast_syntax::Comment<'t>> + 'a,
+{
+    let mut spans = comments
+        .filter(|comment| comment.region_marker().is_none())
+        .map(|comment| comment.syntax().span());
+    let first = spans.next()?;
+
+    Some((first, spans.last().unwrap_or(first)))
+}
+
+fn comments_folding_span<'a, 't: 'a, C>(
+    comments: impl Iterator<Item = &'a C>,
+) -> Option<tombi_text::Span>
+where
+    C: std::ops::Deref<Target = tombi_ast_syntax::Comment<'t>> + 'a,
+{
+    let (first, last) = first_and_last_comment_spans(comments)?;
+
+    Some(tombi_text::Span::new(first.start, last.end))
+}
+
 impl GetCommentFoldingSpan for Vec<tombi_ast_syntax::LeadingComment<'_>> {
     fn get_folding_span(&self) -> Option<tombi_text::Span> {
-        let first = self.first()?;
-        let last = self.last()?;
-        Some(tombi_text::Span::new(
-            first.syntax().span().start,
-            last.syntax().span().end,
-        ))
+        comments_folding_span(self.iter())
     }
 }
 
 impl GetCommentFoldingSpan for Vec<tombi_ast_syntax::DanglingComment<'_>> {
     fn get_folding_span(&self) -> Option<tombi_text::Span> {
-        let first = self.first()?;
-        let last = self.last()?;
-        Some(tombi_text::Span::new(
-            first.syntax().span().start,
-            last.syntax().span().end,
-        ))
+        comments_folding_span(self.iter())
     }
 }
 
 impl GetCommentFoldingSpan for Vec<Vec<tombi_ast_syntax::DanglingComment<'_>>> {
     fn get_folding_span(&self) -> Option<tombi_text::Span> {
-        let first = self.iter().find(|group| !group.is_empty())?.iter().next()?;
-        let last = self
-            .iter()
-            .rev()
-            .find(|group| !group.is_empty())?
-            .iter()
-            .next_back()?;
+        let (first, last) = first_and_last_comment_spans(self.iter().flatten())?;
 
         // A comment ends at the end of its line, so the comments are on one line only if they are the same.
-        if first.syntax().span() == last.syntax().span() {
+        if first == last {
             return None;
         }
 
-        Some(tombi_text::Span::new(
-            first.syntax().span().start,
-            last.syntax().span().end,
-        ))
+        Some(tombi_text::Span::new(first.start, last.end))
     }
 }
 
