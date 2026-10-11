@@ -184,21 +184,22 @@ impl ConfigManager {
         config: Config,
         config_path: &Path,
     ) -> Result<(), tombi_schema_store::Error> {
+        // `SchemaStore` options are fixed at construction, so a config change builds a new store.
+        let associated_schemas = self.associated_schemas.read().await;
         let schema_options = schema_store_options(&config, &self.backend_options);
+        let schema_store = SchemaStore::new_with_options(schema_options);
+        load_schema_store_with_associations(
+            &schema_store,
+            &config,
+            Some(config_path),
+            &associated_schemas,
+        )
+        .await?;
 
-        let mut config_schema_stores = self.config_schema_stores.write().await;
-        let config_schema_store = config_schema_stores
-            .entry(config_path.to_owned())
-            .or_insert(ConfigSchemaStore::new(
-                config.clone(),
-                Some(config_path.to_owned()),
-                SchemaStore::new_with_options(schema_options.clone()),
-            ));
-        config_schema_store
-            .schema_store
-            .reload_config(&config, Some(config_path))
-            .await?;
-        config_schema_store.config = config;
+        self.config_schema_stores.write().await.insert(
+            config_path.to_owned(),
+            ConfigSchemaStore::new(config, Some(config_path.to_owned()), schema_store),
+        );
         Ok(())
     }
 
