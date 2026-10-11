@@ -184,6 +184,9 @@ impl ConfigManager {
         config: Config,
         config_path: &Path,
     ) -> Result<(), tombi_schema_store::Error> {
+        // Hold the write lock while loading so concurrent reloads of the same config apply in order.
+        let mut config_schema_stores = self.config_schema_stores.write().await;
+
         // `SchemaStore` options are fixed at construction, so a config change builds a new store.
         let associated_schemas = self.associated_schemas.read().await;
         let schema_options = schema_store_options(&config, &self.backend_options);
@@ -196,7 +199,7 @@ impl ConfigManager {
         )
         .await?;
 
-        self.config_schema_stores.write().await.insert(
+        config_schema_stores.insert(
             config_path.to_owned(),
             ConfigSchemaStore::new(config, Some(config_path.to_owned()), schema_store),
         );
