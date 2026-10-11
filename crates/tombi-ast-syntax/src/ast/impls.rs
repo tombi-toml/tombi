@@ -3,7 +3,8 @@ mod array;
 #[path = "impls/array_of_table.rs"]
 mod array_of_table;
 #[path = "impls/comment.rs"]
-pub(crate) mod comment;
+mod comment;
+pub use comment::RegionMarker;
 #[path = "impls/inline_table.rs"]
 mod inline_table;
 #[path = "impls/key.rs"]

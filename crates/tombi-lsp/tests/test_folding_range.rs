@@ -408,6 +408,10 @@ mod folding_range_tests {
             0..2,
             4..6,
         ];
+        regions: [
+            0..2,
+            4..6,
+        ];
     );
 
     test_folding_range!(
@@ -426,22 +430,31 @@ mod folding_range_tests {
             0..6,
             2..4,
         ];
+        regions: [
+            0..6,
+            2..4,
+        ];
     );
 
     test_folding_range!(
-        #[tokio::test]
-        async fn unmatched_region_markers(
-            r#"
+            #[tokio::test]
+            async fn unmatched_region_markers(
+                r#"
             # endregion
             key1 = 1
             # region
             key2 = 2
             # regional note
             "#,
-        ) -> [
-            4..4,
-        ];
-    );
+            ) -> [
+                0..0,
+                2..2,
+                4..4,
+            ];
+            regions: [
+    ,
+            ];
+        );
 
     test_folding_range!(
         #[tokio::test]
@@ -468,7 +481,7 @@ mod folding_range_tests {
             3..14,
             5..6,
             6..6,
-            8..12,
+            8..14,
             9..12,
         ];
     );
@@ -508,7 +521,7 @@ mod folding_range_tests {
             9..11,
             13..14,
             14..14,
-            16..19,
+            16..21,
             17..19,
         ];
     );
@@ -551,7 +564,7 @@ mod folding_range_tests {
             0..1,
             3..9,
             4..5,
-            7..8,
+            7..9,
             11..12,
         ];
     );
@@ -571,6 +584,7 @@ mod folding_range_tests {
         ) -> [
             0..1,
             2..6,
+            3..4,
         ];
     );
 
@@ -602,13 +616,71 @@ mod folding_range_tests {
             # endregion
             "#,
         ) -> [
+            0..0,
+            2..4,
+        ];
+        regions: [
             2..4,
         ];
     );
 
+    test_folding_range!(
+        #[tokio::test]
+        async fn unclosed_region_marker_keeps_table_range(
+            r#"
+            [a]
+            x = 1
+            # region
+            "#,
+        ) -> [
+            0..2,
+            2..2,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn comment_range_is_split_at_region_markers(
+            r#"
+            # note 1
+            # note 2
+            # region
+            # note 3
+            # note 4
+            # endregion
+            # note 5
+            # note 6
+            key = 1
+            "#,
+        ) -> [
+            0..1,
+            2..5,
+            3..4,
+            6..7,
+        ];
+        regions: [
+            2..5,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn trailing_comment_is_not_region_marker(
+            r#"
+            a = 1 # region
+            b = 2
+            # endregion
+            c = 3
+            "#,
+        ) -> [
+            2..2,
+        ];
+        regions: [];
+    );
+
     #[macro_export]
     macro_rules! test_folding_range {
-        (#[tokio::test] async fn $name:ident($source:expr $(,)?) -> [$($expected:expr),* $(,)?];) => {
+        (#[tokio::test] async fn $name:ident($source:expr $(,)?) -> [$($expected:expr),* $(,)?]; $(regions: [$($region:expr),* $(,)?];)?) => {
             #[tokio::test]
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
                 use tombi_test_lib::tombi_schema_path;
@@ -660,14 +732,28 @@ mod folding_range_tests {
                     .expect("folding range request failed");
 
                 let expected: Vec<std::ops::Range<u32>> = vec![$($expected),*];
-                let actual: Vec<std::ops::Range<u32>> = result
+                let ranges = result
                     .unwrap_or_default()
                     .into_iter()
                     .sorted_by_key(|r| (r.start_line, r.start_character))
+                    .collect_vec();
+                let actual: Vec<std::ops::Range<u32>> = ranges
+                    .iter()
                     .map(|r| r.start_line..r.end_line)
                     .collect();
 
                 pretty_assertions::assert_eq!(actual, expected);
+
+                $(
+                    let expected_regions: Vec<std::ops::Range<u32>> = vec![$($region),*];
+                    let actual_regions: Vec<std::ops::Range<u32>> = ranges
+                        .iter()
+                        .filter(|r| r.kind == Some(tower_lsp::lsp_types::FoldingRangeKind::Region))
+                        .map(|r| r.start_line..r.end_line)
+                        .collect();
+
+                    pretty_assertions::assert_eq!(actual_regions, expected_regions);
+                )?
 
                 Ok(())
             }

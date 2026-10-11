@@ -7,13 +7,6 @@ pub enum NodeOrToken<N, T> {
 }
 
 impl<N, T> NodeOrToken<N, T> {
-    pub fn into_node(self) -> Option<N> {
-        match self {
-            NodeOrToken::Node(node) => Some(node),
-            NodeOrToken::Token(_) => None,
-        }
-    }
-
     pub fn into_token(self) -> Option<T> {
         match self {
             NodeOrToken::Node(_) => None,
