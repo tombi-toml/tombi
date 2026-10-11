@@ -171,7 +171,7 @@ pub struct SchemaStore {
     document_schemas: DocumentSchemas,
     schema_resource_index: SchemaResourceIndex,
     schemas: Arc<RwLock<Vec<StoredSchema>>>,
-    options: Arc<ParkingRwLock<crate::Options>>,
+    options: crate::Options,
     base_dir_path: Arc<RwLock<Option<std::path::PathBuf>>>,
 }
 
@@ -306,30 +306,29 @@ impl SchemaStore {
             document_schemas: Arc::new(RwLock::default()),
             schema_resource_index: Arc::new(ParkingRwLock::default()),
             schemas: Arc::new(RwLock::new(Vec::new())),
-            options: Arc::new(ParkingRwLock::new(options)),
+            options,
             base_dir_path: Arc::new(RwLock::new(None)),
         }
     }
 
     /// Offline mode
     pub fn offline(&self) -> bool {
-        self.options.read().offline.unwrap_or_default()
+        self.options.offline.unwrap_or_default()
     }
 
     /// Cache options
-    pub fn cache_options(&self) -> Option<tombi_cache::Options> {
-        self.options.read().cache.clone()
+    pub fn cache_options(&self) -> Option<&tombi_cache::Options> {
+        self.options.cache.as_ref()
     }
 
     /// Strict mode in global level.
     pub fn strict(&self) -> Option<tombi_schema_type::BoolDefaultTrue> {
-        self.options.read().strict
+        self.options.strict
     }
 
     /// Global schema deprecation severity from `[schema.lint.rules]`.
     pub fn deprecated_lint_level(&self) -> Option<SeverityLevelDefaultWarn> {
         self.options
-            .read()
             .lint
             .as_ref()
             .and_then(|lint| lint.rules.as_ref())
@@ -340,7 +339,6 @@ impl SchemaStore {
     /// Global `[schema.format.rules.array-values-order].enabled`.
     pub fn array_values_order_enabled(&self) -> Option<BoolDefaultTrue> {
         self.options
-            .read()
             .format
             .as_ref()
             .and_then(|format| format.rules.as_ref())
@@ -351,7 +349,6 @@ impl SchemaStore {
     /// Global `[schema.format.rules.table-keys-order].enabled`.
     pub fn table_keys_order_enabled(&self) -> Option<BoolDefaultTrue> {
         self.options
-            .read()
             .format
             .as_ref()
             .and_then(|format| format.rules.as_ref())
@@ -401,13 +398,6 @@ impl SchemaStore {
             Some(schema) => schema,
             None => &SchemaOverviewOptions::default(),
         };
-
-        {
-            // Global format/lint settings follow the loaded config.
-            let mut options = self.options.write();
-            options.format = schema_options.format.clone();
-            options.lint = schema_options.lint.clone();
-        }
 
         if schema_options.enabled.unwrap_or_default().value() {
             self.load_config_schemas(
@@ -542,12 +532,11 @@ impl SchemaStore {
             }
             "http" | "https" => {
                 let catalog_cache_path = get_cache_file_path(catalog_uri).await;
-                let cache_options = self.cache_options();
                 if let Some(catalog_cache_path) = &catalog_cache_path
                     && let Ok(Some(catalog)) = load_catalog_from_cache(
                         catalog_uri,
                         catalog_cache_path,
-                        cache_options.as_ref(),
+                        self.cache_options(),
                     )
                     .await
                 {
@@ -558,7 +547,7 @@ impl SchemaStore {
                     if let Ok(Some(catalog)) = load_catalog_from_cache_ignoring_ttl(
                         catalog_uri,
                         catalog_cache_path.as_deref(),
-                        self.cache_options(),
+                        self.cache_options().cloned(),
                     )
                     .await
                     {
@@ -583,7 +572,7 @@ impl SchemaStore {
                         if let Ok(Some(catalog)) = load_catalog_from_cache_ignoring_ttl(
                             catalog_uri,
                             catalog_cache_path.as_deref(),
-                            self.cache_options(),
+                            self.cache_options().cloned(),
                         )
                         .await
                         {
@@ -775,12 +764,11 @@ impl SchemaStore {
             }
             "http" | "https" => {
                 let schema_cache_path = get_cache_file_path(schema_uri).await;
-                let cache_options = self.cache_options();
                 if let Some(schema_cache_path) = &schema_cache_path
                     && let Ok(Some(schema_document)) = load_json_schema_from_cache(
                         schema_uri,
                         schema_cache_path,
-                        cache_options.as_ref(),
+                        self.cache_options(),
                     )
                     .await
                 {
@@ -791,7 +779,7 @@ impl SchemaStore {
                     if let Ok(Some(schema_document)) = load_json_schema_from_cache_ignoring_ttl(
                         schema_uri,
                         schema_cache_path.as_deref(),
-                        self.cache_options(),
+                        self.cache_options().cloned(),
                     )
                     .await
                     {
@@ -819,7 +807,7 @@ impl SchemaStore {
                         if let Ok(Some(schema_document)) = load_json_schema_from_cache_ignoring_ttl(
                             schema_uri,
                             schema_cache_path.as_deref(),
-                            self.cache_options(),
+                            self.cache_options().cloned(),
                         )
                         .await
                         {

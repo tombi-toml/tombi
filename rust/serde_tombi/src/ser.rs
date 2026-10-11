@@ -115,26 +115,30 @@ impl Serializer<'_> {
 
         let format_options = FormatOptions::default();
 
+        let owned_schema_store;
         let schema_store = match self.schema_store {
             Some(schema_store) => schema_store,
-            None => &SchemaStore::new(),
-        };
-        if self.schema_store.is_none() {
-            match self.config {
-                Some(config) => {
-                    if self.schema_store.is_none() {
-                        schema_store.load_config(config, self.config_path).await?;
+            None => {
+                let loaded_config;
+                let (config, config_path) = match self.config {
+                    Some(config) => (config, self.config_path),
+                    None => {
+                        loaded_config =
+                            crate::config::load_with_path(std::env::current_dir().ok())?;
+                        (&loaded_config.0, loaded_config.1.as_deref())
                     }
-                }
-                None => {
-                    let (config, config_path) =
-                        crate::config::load_with_path(std::env::current_dir().ok())?;
-                    schema_store
-                        .load_config(&config, config_path.as_deref())
-                        .await?;
-                }
+                };
+                let schema_options = config.schema.as_ref();
+                owned_schema_store = SchemaStore::new_with_options(tombi_schema_store::Options {
+                    strict: schema_options.and_then(|schema| schema.strict()),
+                    format: schema_options.and_then(|schema| schema.format.clone()),
+                    lint: schema_options.and_then(|schema| schema.lint.clone()),
+                    ..Default::default()
+                });
+                owned_schema_store.load_config(config, config_path).await?;
+                &owned_schema_store
             }
-        }
+        };
 
         let formatter = tombi_formatter::Formatter::new(
             TomlVersion::default(),

@@ -45,7 +45,7 @@ pub async fn handle_inlay_hint(
             visible_span,
             toml_version,
             schema_store.offline(),
-            schema_store.cache_options().as_ref(),
+            schema_store.cache_options(),
             config.cargo_extension_features(),
         )
         .await?
