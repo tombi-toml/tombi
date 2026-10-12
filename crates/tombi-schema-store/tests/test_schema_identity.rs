@@ -76,6 +76,32 @@ async fn store_rejects_duplicate_canonical_schema_resource_uri() {
 }
 
 #[tokio::test]
+async fn documents_sharing_an_id_are_each_returned_by_their_own_uri() {
+    let write_schema = || {
+        let mut schema_file =
+            tempfile::NamedTempFile::with_suffix(".json").expect("temporary schema file");
+        schema_file
+            .write_all(br#"{ "$id": "shoko://shared/root", "type": "object" }"#)
+            .expect("write schema");
+        schema_file
+    };
+    let first_file = write_schema();
+    let second_file = write_schema();
+    let first_uri = SchemaUri::from_file_path(first_file.path()).expect("valid schema file URI");
+    let second_uri = SchemaUri::from_file_path(second_file.path()).expect("valid schema file URI");
+    let schema_store = SchemaStore::new();
+
+    for schema_uri in [&first_uri, &second_uri] {
+        let document_schema = schema_store
+            .try_get_document_schema(schema_uri)
+            .await
+            .expect("a shared `$id` must not be an error")
+            .expect("document schema");
+        assert_eq!(document_schema.schema_document_uri(), schema_uri);
+    }
+}
+
+#[tokio::test]
 async fn reload_config_drops_embedded_resource_index() {
     let mut schema_file =
         tempfile::NamedTempFile::with_suffix(".json").expect("temporary schema file");

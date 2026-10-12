@@ -933,36 +933,12 @@ impl SchemaStore {
                 root_schema_resource_uri.clone(),
             ));
         }
-        // Stable order so cross-document duplicate diagnostics are deterministic.
-        aliases.sort_by(|left, right| left.0.as_str().cmp(right.0.as_str()));
-
+        // The same `$id` may legitimately be claimed by several documents (for example an
+        // embedded schema and a copy fetched from a `#:schema` directive). The alias stays with
+        // the document registered first, matching the catalog / `[[schemas]]` priority. A
+        // document is always looked up by its own URI, so a `#:schema` directive still wins.
         let stale_schema_resource_uris = {
             let mut index = self.schema_resource_index.write();
-            for (alias_uri, schema_resource_uri) in &aliases {
-                if let Some(existing) = index.get(alias_uri)
-                    && existing.schema_document_uri != *schema_document_uri
-                    && let Some(existing_resources) = existing.schema_resources.upgrade()
-                {
-                    let existing_location = existing_resources
-                        .resource(&existing.schema_resource_uri)
-                        .map(|resource| resource.location.clone())
-                        .unwrap_or_else(|| "#".to_string());
-                    let conflicting_location = schema_resources
-                        .resource(schema_resource_uri)
-                        .map(|resource| resource.location.clone())
-                        .unwrap_or_else(|| "#".to_string());
-                    return Err(crate::Error::DuplicateSchemaResourceAcrossDocuments(
-                        Box::new(crate::error::DuplicateSchemaResourceAcrossDocuments {
-                            schema_uri: alias_uri.clone(),
-                            existing_schema_document_uri: existing.schema_document_uri.clone(),
-                            existing_location,
-                            conflicting_schema_document_uri: schema_document_uri.clone(),
-                            conflicting_location,
-                        }),
-                    ));
-                }
-            }
-
             let stale_schema_resource_uris = index
                 .iter()
                 .filter_map(|(uri, location)| {
@@ -974,14 +950,13 @@ impl SchemaStore {
                     && location.schema_resources.upgrade().is_some()
             });
             for (alias_uri, schema_resource_uri) in aliases {
-                index.insert(
-                    alias_uri,
-                    SchemaResourceLocation {
+                index
+                    .entry(alias_uri)
+                    .or_insert_with(|| SchemaResourceLocation {
                         schema_document_uri: schema_document_uri.clone(),
                         schema_resource_uri,
                         schema_resources: Arc::downgrade(&schema_resources),
-                    },
-                );
+                    });
             }
             stale_schema_resource_uris
         };
