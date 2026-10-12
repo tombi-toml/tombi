@@ -12,7 +12,7 @@ use tombi_config::{FormatOptions, LintOptions, OverrideFilesOptions, config_base
 pub use error::Error;
 pub use file_match::{MatchResult, matches_file_patterns};
 pub use file_search::{FileInputType, FileSearch, FileSearchEntry, search_pattern_matched_paths};
-pub use walk_dir::{WalkDir, is_path_ignored};
+pub use walk_dir::{WalkDir, is_in_vcs_metadata_dir, is_path_ignored};
 
 pub fn get_format_options(
     config: &tombi_config::Config,
