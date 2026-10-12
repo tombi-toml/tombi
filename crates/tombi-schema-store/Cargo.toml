@@ -20,7 +20,7 @@ serde_json.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["sync"] }
 tombi-accessor.workspace = true
-tombi-ast-syntax = { workspace = true, optional = true }
+tombi-ast-syntax.workspace = true
 tombi-cache.workspace = true
 tombi-config.workspace = true
 tombi-diagnostic.workspace = true
@@ -50,7 +50,6 @@ tokio = { workspace = true, features = ["process", "time"] }
 
 [features]
 default = ["native"]
-ast-syntax = ["dep:tombi-ast-syntax"]
 document-tree = ["dep:tombi-document-tree-syntax"]
 gloo-net = ["dep:gloo-net", "dep:web-sys"]
 gloo-net06 = ["gloo-net"]

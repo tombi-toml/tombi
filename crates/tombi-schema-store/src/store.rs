@@ -15,7 +15,6 @@ use crate::{
 use itertools::{Either, Itertools};
 use parking_lot::RwLock as ParkingRwLock;
 use tokio::sync::RwLock;
-#[cfg(feature = "ast-syntax")]
 use tombi_ast_syntax::SchemaDocumentCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
 use tombi_config::{
@@ -1322,7 +1321,6 @@ impl SchemaStore {
     }
 
     #[inline]
-    #[cfg(feature = "ast-syntax")]
     async fn try_get_source_schema_from_remote_url(
         &self,
         schema_uri: &SchemaUri,
@@ -1394,7 +1392,6 @@ impl SchemaStore {
         Ok(Some(source_schema))
     }
 
-    #[cfg(feature = "ast-syntax")]
     // Preserve the existing tuple error API without boxing every failure.
     #[allow(clippy::result_large_err)]
     pub async fn resolve_source_schema_from_ast(

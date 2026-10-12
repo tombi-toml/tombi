@@ -29,7 +29,7 @@ tombi-formatter.workspace = true
 tombi-fs.workspace = true
 tombi-hashmap = { workspace = true, features = ["serde"] }
 tombi-parser.workspace = true
-tombi-schema-store = { workspace = true, features = ["ast-syntax"] }
+tombi-schema-store.workspace = true
 tombi-toml-text.workspace = true
 tombi-toml-version.workspace = true
 tombi-validator.workspace = true

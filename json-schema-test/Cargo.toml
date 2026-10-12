@@ -24,7 +24,7 @@ tokio = { workspace = true, features = ["fs", "macros", "rt-multi-thread"] }
 tombi-config.workspace = true
 tombi-diagnostic.workspace = true
 tombi-linter.workspace = true
-tombi-schema-store = { workspace = true, features = ["ast-syntax", "native"] }
+tombi-schema-store = { workspace = true, features = ["native"] }
 
 [lints]
 workspace = true
