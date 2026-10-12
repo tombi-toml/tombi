@@ -686,14 +686,14 @@ mod folding_range_tests {
                 use tombi_test_lib::tombi_schema_path;
                 use tombi_lsp::handler::{handle_did_open, handle_folding_range};
                 use tombi_lsp::Backend;
-                use tower_lsp::{
-                    lsp_types::{
+                use tower_lsp_server::{
+                    gen_lsp_types::{
                         DidOpenTextDocumentParams,
                         FoldingRangeParams,
                         PartialResultParams,
                         TextDocumentIdentifier,
                         TextDocumentItem,
-                        Url,
+                        Uri,
                         WorkDoneProgressParams,
                     },
                     LspService,
@@ -705,7 +705,7 @@ mod folding_range_tests {
                 });
                 let backend = service.inner();
 
-                let toml_file_url = Url::from_file_path(tombi_schema_path())
+                let toml_file_url = Uri::from_file_path(tombi_schema_path())
                     .expect("failed to convert file path to URL");
                 let toml_text = textwrap::dedent($source).trim().to_string();
 
@@ -714,7 +714,7 @@ mod folding_range_tests {
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
                             uri: toml_file_url.clone(),
-                            language_id: "toml".to_string(),
+                            language_id: "toml".to_string().into(),
                             version: 0,
                             text: toml_text.clone(),
                         },
@@ -748,7 +748,7 @@ mod folding_range_tests {
                     let expected_regions: Vec<std::ops::Range<u32>> = vec![$($region),*];
                     let actual_regions: Vec<std::ops::Range<u32>> = ranges
                         .iter()
-                        .filter(|r| r.kind == Some(tower_lsp::lsp_types::FoldingRangeKind::Region))
+                        .filter(|r| r.kind == Some(tower_lsp_server::gen_lsp_types::FoldingRangeKind::Region))
                         .map(|r| r.start_line..r.end_line)
                         .collect();
 

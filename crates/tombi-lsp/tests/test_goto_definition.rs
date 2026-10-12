@@ -1373,11 +1373,11 @@ mod goto_definition_tests {
         use tombi_lsp::Backend;
         use tombi_lsp::handler::{handle_did_open, handle_goto_definition};
         use tombi_text::IntoLsp;
-        use tower_lsp::{
+        use tower_lsp_server::{
             LspService,
-            lsp_types::{
-                DidOpenTextDocumentParams, GotoDefinitionParams, PartialResultParams,
-                TextDocumentIdentifier, TextDocumentItem, TextDocumentPositionParams, Url,
+            gen_lsp_types::{
+                DefinitionParams, DidOpenTextDocumentParams, PartialResultParams,
+                TextDocumentIdentifier, TextDocumentItem, TextDocumentPositionParams, Uri,
                 WorkDoneProgressParams,
             },
         };
@@ -1463,7 +1463,7 @@ mod goto_definition_tests {
         }
 
         let toml_file_url =
-            Url::from_file_path(source_path).expect("failed to convert source file path to URL");
+            Uri::from_file_path(source_path).expect("failed to convert source file path to URL");
 
         let mut toml_text = textwrap::dedent(source).trim().to_string();
         let Some(index) = toml_text.as_str().find("█") else {
@@ -1477,7 +1477,7 @@ mod goto_definition_tests {
             DidOpenTextDocumentParams {
                 text_document: TextDocumentItem {
                     uri: toml_file_url.clone(),
-                    language_id: "toml".to_string(),
+                    language_id: "toml".to_string().into(),
                     version: 0,
                     text: toml_text.clone(),
                 },
@@ -1485,7 +1485,7 @@ mod goto_definition_tests {
         )
         .await;
 
-        let params = GotoDefinitionParams {
+        let params = DefinitionParams {
             text_document_position_params: TextDocumentPositionParams {
                 text_document: TextDocumentIdentifier { uri: toml_file_url },
                 position: tombi_text::Offset::of(&toml_text[..index])

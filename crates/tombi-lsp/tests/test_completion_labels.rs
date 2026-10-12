@@ -3571,11 +3571,11 @@ mod completion_labels {
                 use itertools::Itertools;
                 use tombi_lsp::Backend;
                 use std::io::Write;
-                use tower_lsp::{
-                    lsp_types::{
+                use tower_lsp_server::{
+                    gen_lsp_types::{
                         CompletionParams, DidOpenTextDocumentParams,
                         PartialResultParams, TextDocumentIdentifier, TextDocumentItem,
-                        TextDocumentPositionParams, Url, WorkDoneProgressParams,
+                        TextDocumentPositionParams, Uri, WorkDoneProgressParams,
                     },
                     LspService,
                 };
@@ -3780,7 +3780,7 @@ mod completion_labels {
                     tombi_text::LineIndex::new(toml_text.as_str());
 
                 let source_path = args.source_file_path.as_deref().unwrap_or(temp_file.path());
-                let toml_file_url = Url::from_file_path(source_path)
+                let toml_file_url = Uri::from_file_path(source_path)
                     .map_err(|_| "failed to convert file path to URL")?;
 
                 if !schema_items.is_empty() {
@@ -3816,7 +3816,7 @@ mod completion_labels {
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
                             uri: toml_file_url.clone(),
-                            language_id: "toml".to_string(),
+                            language_id: "toml".to_string().into(),
                             version: 0,
                             text: toml_text.clone(),
                         },
@@ -3827,7 +3827,7 @@ mod completion_labels {
                 let Ok(Some(completions)) = tombi_lsp::handler::handle_completion(
                     &backend,
                     CompletionParams {
-                        text_document_position: TextDocumentPositionParams {
+                        text_document_position_params: TextDocumentPositionParams {
                             text_document: TextDocumentIdentifier { uri: toml_file_url },
                             position: tombi_text::Offset::of(&toml_text[..index]).into_lsp(&line_index, tombi_text::EncodingKind::Utf16),
                         },
@@ -3897,10 +3897,10 @@ mod completion_labels {
                     };
 
                     let documentation = match &item.documentation {
-                        Some(tower_lsp::lsp_types::Documentation::String(value)) => {
+                        Some(tower_lsp_server::gen_lsp_types::Documentation::String(value)) => {
                             Some(value.clone())
                         }
-                        Some(tower_lsp::lsp_types::Documentation::MarkupContent(content)) => {
+                        Some(tower_lsp_server::gen_lsp_types::Documentation::MarkupContent(content)) => {
                             Some(content.value.clone())
                         }
                         None => None,

@@ -1798,11 +1798,11 @@ mod hover_keys_value {
 
             use tombi_lsp::{Backend, HoverContent, backend::Options, handler::handle_did_open};
             use tombi_text::IntoLsp;
-            use tower_lsp::{
+            use tower_lsp_server::{
                 LspService,
-                lsp_types::{
+                gen_lsp_types::{
                     DidOpenTextDocumentParams, TextDocumentIdentifier, TextDocumentItem,
-                    TextDocumentPositionParams, Url, WorkDoneProgressParams,
+                    TextDocumentPositionParams, Uri, WorkDoneProgressParams,
                 },
             };
 
@@ -1890,7 +1890,7 @@ mod hover_keys_value {
             }
 
             let line_index = tombi_text::LineIndex::new(toml_text.as_str());
-            let toml_file_url = Url::from_file_path(&source_path)
+            let toml_file_url = Uri::from_file_path(&source_path)
                 .map_err(|_| "failed to convert source file path to URL")?;
 
             handle_did_open(
@@ -1898,7 +1898,7 @@ mod hover_keys_value {
                 DidOpenTextDocumentParams {
                     text_document: TextDocumentItem {
                         uri: toml_file_url.clone(),
-                        language_id: "toml".to_string(),
+                        language_id: "toml".to_string().into(),
                         version: 0,
                         text: toml_text.clone(),
                     },
@@ -1908,7 +1908,7 @@ mod hover_keys_value {
 
             let hover_content = tombi_lsp::handler::handle_hover(
                 backend,
-                tower_lsp::lsp_types::HoverParams {
+                tower_lsp_server::gen_lsp_types::HoverParams {
                     text_document_position_params: TextDocumentPositionParams {
                         text_document: TextDocumentIdentifier { uri: toml_file_url },
                         position: tombi_text::Offset::of(&toml_text[..index])
@@ -2648,9 +2648,9 @@ mod hover_keys_value {
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
                 use tombi_lsp::Backend;
                 use std::io::Write;
-                use tower_lsp::{
-                    lsp_types::{
-                        TextDocumentIdentifier, Url, WorkDoneProgressParams, DidOpenTextDocumentParams,
+                use tower_lsp_server::{
+                    gen_lsp_types::{
+                        TextDocumentIdentifier, Uri, WorkDoneProgressParams, DidOpenTextDocumentParams,
                         TextDocumentItem,
                     },
                     LspService,
@@ -2837,7 +2837,7 @@ mod hover_keys_value {
 
                 let source_path = args.source_file_path.as_deref().unwrap_or(temp_file.path());
 
-                let Ok(toml_file_url) = Url::from_file_path(source_path) else {
+                let Ok(toml_file_url) = Uri::from_file_path(source_path) else {
                     return Err("failed to convert file path to URL".into());
                 };
 
@@ -2874,7 +2874,7 @@ mod hover_keys_value {
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
                             uri: toml_file_url.clone(),
-                            language_id: "toml".to_string(),
+                            language_id: "toml".to_string().into(),
                             version: 0,
                             text: toml_text.clone(),
                         },
@@ -2884,8 +2884,8 @@ mod hover_keys_value {
 
                 let Ok(Some(tombi_lsp::HoverContent::Value(hover_content) | tombi_lsp::HoverContent::DirectiveContent(hover_content))) = tombi_lsp::handler::handle_hover(
                     &backend,
-                    tower_lsp::lsp_types::HoverParams {
-                        text_document_position_params: tower_lsp::lsp_types::TextDocumentPositionParams {
+                    tower_lsp_server::gen_lsp_types::HoverParams {
+                        text_document_position_params: tower_lsp_server::gen_lsp_types::TextDocumentPositionParams {
                             text_document: TextDocumentIdentifier {
                                 uri: toml_file_url,
                             },

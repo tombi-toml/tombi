@@ -1261,11 +1261,11 @@ mod completion_edit {
                 use tombi_lsp::handler::handle_did_open;
                 use tombi_lsp::Backend;
                 use std::io::Write;
-                use tower_lsp::{
-                    lsp_types::{
+                use tower_lsp_server::{
+                    gen_lsp_types::{
                         CompletionParams, DidOpenTextDocumentParams, PartialResultParams,
                         TextDocumentIdentifier, TextDocumentItem, TextDocumentPositionParams,
-                        Url, WorkDoneProgressParams,
+                        Uri, WorkDoneProgressParams,
                     },
                     LspService,
                 };
@@ -1377,7 +1377,7 @@ mod completion_edit {
                 tombi_text::LineIndex::new(toml_text.as_str());
 
                 let source_path = args.source_file_path.as_deref().unwrap_or(temp_file.path());
-                let toml_file_url = Url::from_file_path(source_path)
+                let toml_file_url = Uri::from_file_path(source_path)
                     .map_err(|_| "failed to convert file path to URL")?;
 
                 if !schema_items.is_empty() {
@@ -1413,7 +1413,7 @@ mod completion_edit {
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
                             uri: toml_file_url.clone(),
-                            language_id: "toml".to_string(),
+                            language_id: "toml".to_string().into(),
                             version: 0,
                             text: toml_text.clone(),
                         },
@@ -1426,7 +1426,7 @@ mod completion_edit {
                 let Ok(Some(completion_contents)) = tombi_lsp::handler::handle_completion(
                     &backend,
                     CompletionParams {
-                        text_document_position: TextDocumentPositionParams {
+                        text_document_position_params: TextDocumentPositionParams {
                             text_document: TextDocumentIdentifier {
                                 uri: toml_file_url,
                             },

@@ -63,9 +63,11 @@ mod get_status {
         use std::str::FromStr;
 
         use tombi_schema_store::{AssociateSchemaOptions, SchemaUri};
-        use tower_lsp::{
+        use tower_lsp_server::{
             LspService,
-            lsp_types::{DidOpenTextDocumentParams, TextDocumentIdentifier, TextDocumentItem, Url},
+            gen_lsp_types::{
+                DidOpenTextDocumentParams, TextDocumentIdentifier, TextDocumentItem, Uri,
+            },
         };
 
         #[tokio::test]
@@ -85,7 +87,7 @@ mod get_status {
             let (service, _) = LspService::new(|client| Backend::new(client, &Default::default()));
             let backend = service.inner();
 
-            let uri = Url::from_file_path(&source_path)
+            let uri = Uri::from_file_path(&source_path)
                 .map_err(|_| format!("Failed to convert path to URL: {}", source_path.display()))?;
 
             handle_did_open(
@@ -93,7 +95,7 @@ mod get_status {
                 DidOpenTextDocumentParams {
                     text_document: TextDocumentItem {
                         uri: uri.clone(),
-                        language_id: "toml".to_string(),
+                        language_id: "toml".to_string().into(),
                         version: 0,
                         text: "answer = 42\n".to_string(),
                     },
@@ -133,7 +135,7 @@ mod get_status {
         use std::str::FromStr;
 
         use tombi_schema_store::{AssociateSchemaOptions, SchemaUri};
-        use tower_lsp::LspService;
+        use tower_lsp_server::LspService;
 
         #[tokio::test]
         async fn applies_strict_and_keeps_associated_schema()
@@ -214,9 +216,9 @@ macro_rules! test_get_status {
         #[tokio::test]
         async fn $name() -> Result<(), Box<dyn std::error::Error>> {
             use tombi_lsp::Backend;
-            use tower_lsp::{
-                lsp_types::{
-                    Url, DidOpenTextDocumentParams,
+            use tower_lsp_server::{
+                gen_lsp_types::{
+                    Uri, DidOpenTextDocumentParams,
                     TextDocumentItem, TextDocumentIdentifier,
                 },
                 LspService,
@@ -308,7 +310,7 @@ macro_rules! test_get_status {
                     .map_err(|e| format!("Failed to read source file {}: {}", source_path.display(), e))?
             };
 
-            let toml_file_url = Url::from_file_path(source_path)
+            let toml_file_url = Uri::from_file_path(source_path)
                 .map_err(|_| format!("Failed to convert path to URL: {}", source_path.display()))?;
 
             handle_did_open(
@@ -316,7 +318,7 @@ macro_rules! test_get_status {
                 DidOpenTextDocumentParams {
                     text_document: TextDocumentItem {
                         uri: toml_file_url.clone(),
-                        language_id: "toml".to_string(),
+                        language_id: "toml".to_string().into(),
                         version: 0,
                         text: toml_text,
                     },

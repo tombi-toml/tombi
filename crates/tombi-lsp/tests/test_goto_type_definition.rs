@@ -972,10 +972,10 @@ mod goto_type_definition_tests {
                 use itertools::Itertools;
                 use tombi_lsp::handler::{handle_did_open, handle_goto_type_definition};
                 use tombi_lsp::Backend;
-                use tower_lsp::{
-                    lsp_types::{
+                use tower_lsp_server::{
+                    gen_lsp_types::{
                         DidOpenTextDocumentParams, PartialResultParams, TextDocumentIdentifier,
-                        TextDocumentItem, TextDocumentPositionParams, Url, WorkDoneProgressParams,
+                        TextDocumentItem, TextDocumentPositionParams, Uri, WorkDoneProgressParams,
                     },
                     LspService,
                 };
@@ -1126,7 +1126,7 @@ mod goto_type_definition_tests {
                 let line_index =
                 tombi_text::LineIndex::new(toml_text.as_str());
 
-                let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
+                let Ok(toml_file_url) = Uri::from_file_path(temp_file.path()) else {
                     return Err("failed to convert temporary file path to URL".into());
                 };
 
@@ -1163,7 +1163,7 @@ mod goto_type_definition_tests {
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
                             uri: toml_file_url.clone(),
-                            language_id: "toml".to_string(),
+                            language_id: "toml".to_string().into(),
                             version: 0,
                             text: toml_text.clone(),
                         },
@@ -1171,7 +1171,7 @@ mod goto_type_definition_tests {
                 )
                 .await;
 
-                let params = tower_lsp::lsp_types::request::GotoTypeDefinitionParams {
+                let params = tower_lsp_server::gen_lsp_types::TypeDefinitionParams {
                     text_document_position_params: TextDocumentPositionParams {
                         text_document: TextDocumentIdentifier { uri: toml_file_url },
                         position: tombi_text::Offset::of(&toml_text[..index]).into_lsp(&line_index, tombi_text::EncodingKind::Utf16),
