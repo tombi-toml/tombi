@@ -123,6 +123,18 @@ fn root_and_sub_schema_strict_config(
     config
 }
 
+fn sub_schema_under_rejected_key_config() -> tombi_config::Config {
+    let mut config = root_and_sub_schema_strict_config(false, None);
+    if let Some(tombi_config::SchemaItem::Sub(sub_schema)) = config
+        .schemas
+        .as_mut()
+        .and_then(|schemas| schemas.last_mut())
+    {
+        sub_schema.root = "tool.uv".to_string();
+    }
+    config
+}
+
 fn sub_and_root_schema_strict_config(
     strict: bool,
     sub_strict: Option<bool>,
@@ -906,4 +918,22 @@ test_lint! {
         code: "unused-noqa",
         level: tombi_diagnostic::Level::WARNING,
     }])
+}
+
+test_lint! {
+    #[test]
+    fn test_sub_schema_applies_under_key_rejected_by_root_schema(
+        r#"
+        [tool.uv]
+        members = 1
+        "#,
+        Config(sub_schema_under_rejected_key_config()),
+        SourcePath(project_root_path().join("priority.toml")),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::KeyNotAllowed { key: "tool".to_string() },
+        tombi_validator::DiagnosticKind::TypeMismatch {
+            expected: tombi_schema_store::ValueType::Array,
+            actual: tombi_document_tree_syntax::ValueType::Integer,
+        },
+    ])
 }
