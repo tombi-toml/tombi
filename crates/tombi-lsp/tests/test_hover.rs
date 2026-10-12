@@ -1714,8 +1714,8 @@ mod hover_keys_value {
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok({
                 "Keys": "tool.uv.sources.my-package1.workspace",
-                "Value": "Boolean",
-                "Description": Some("When set to `false`, the package will be fetched from the remote index, rather than\nincluded as a workspace package."),
+                "Value": "Boolean | String",
+                "Hover Contains": ["When set to `false`, the package will be fetched from the remote index"],
             });
         );
 

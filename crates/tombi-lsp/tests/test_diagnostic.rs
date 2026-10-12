@@ -377,7 +377,7 @@ mod diagnostic {
 
         test_diagnostic_file!(
             #[tokio::test]
-            async fn rejects_canonical_resource_id_owned_by_another_source(
+            async fn allows_canonical_resource_id_shared_with_another_source(
                 r#"
                 #:schema ./cross-source-duplicate-schema.json
 
@@ -388,12 +388,7 @@ mod diagnostic {
                     offline: Some(true),
                     no_cache: Some(true),
                 },
-            ) -> Ok([
-                Diagnostic {
-                    message: "duplicate $id `https://example.com/cross-source-duplicate`: already defined in cross-source-duplicate-schema.json at `#/$defs/local`, also claimed by cross-source-duplicate-target.json at `#`",
-                    range: ((2, 0), (2, 12)),
-                }
-            ]);
+            ) -> Ok([]);
         );
 
         test_diagnostic_file!(
