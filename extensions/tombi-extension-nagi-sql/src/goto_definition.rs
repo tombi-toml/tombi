@@ -11,7 +11,7 @@ pub async fn goto_definition(
     toml_version: TomlVersion,
     converter: tombi_extension::SpanConverter<'_, '_>,
     features: Option<&tombi_config::NagiSqlExtensionFeatures>,
-) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp_server::jsonrpc::Error> {
     if !is_nagi_config(text_document_uri)
         || !features
             .and_then(|features| features.lsp())

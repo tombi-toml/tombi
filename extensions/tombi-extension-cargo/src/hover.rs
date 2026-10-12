@@ -30,7 +30,7 @@ pub async fn hover(
     dependency_detail_hover_enabled: bool,
     feature_dependencies_hover_enabled: bool,
     default_features_hover_enabled: bool,
-) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<HoverMetadata>, tower_lsp_server::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
@@ -292,7 +292,7 @@ async fn dependency_features_hover_metadata(
     cache_options: Option<&tombi_cache::Options>,
     feature_dependencies_hover_enabled: bool,
     default_features_hover_enabled: bool,
-) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<HoverMetadata>, tower_lsp_server::jsonrpc::Error> {
     if !feature_dependencies_hover_enabled && !default_features_hover_enabled {
         return Ok(None);
     }
@@ -397,7 +397,7 @@ async fn try_get_dependency_feature_metadata(
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<DependencyFeatureMetadata>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<DependencyFeatureMetadata>, tower_lsp_server::jsonrpc::Error> {
     let Value::Table(table) = dependency_value else {
         return Ok(None);
     };
@@ -539,7 +539,7 @@ async fn registry_dependency_feature_metadata(
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<DependencyFeatureMetadata>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<DependencyFeatureMetadata>, tower_lsp_server::jsonrpc::Error> {
     let Some(version) = (if let Some(version) = exact_crates_io_version(version_requirement) {
         Some(version)
     } else {

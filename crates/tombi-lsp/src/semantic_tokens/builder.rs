@@ -1,5 +1,5 @@
 use tombi_ast_syntax::AstToken;
-use tower_lsp::lsp_types::SemanticToken;
+use tower_lsp_server::gen_lsp_types::SemanticToken;
 
 use super::token_type::TokenType;
 

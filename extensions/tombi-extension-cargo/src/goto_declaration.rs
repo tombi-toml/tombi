@@ -13,7 +13,7 @@ pub async fn goto_declaration(
     toml_version: TomlVersion,
     converter: tombi_extension::SpanConverter<'_, '_>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp_server::jsonrpc::Error> {
     // Check if current file is Cargo.toml
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(Default::default());

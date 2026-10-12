@@ -57,14 +57,14 @@ compile_error!("'text' crate assumes usize >= u32 and does not work on 16-bit ta
 
 #[cfg(feature = "lsp")]
 #[inline]
-/// Converts a `Range` to a `tower_lsp::lsp_types::Range`.
+/// Converts a `Range` to a `tower_lsp_server::gen_lsp_types::Range`.
 ///
 /// Use this only for a range whose columns are already counted in the encoding of the client,
 /// or for a file without a [`LineIndex`], at the cost of accuracy.
 ///
-pub fn convert_range_to_lsp(range: Range) -> tower_lsp::lsp_types::Range {
-    tower_lsp::lsp_types::Range::new(
-        tower_lsp::lsp_types::Position::new(range.start.line, range.start.column),
-        tower_lsp::lsp_types::Position::new(range.end.line, range.end.column),
+pub fn convert_range_to_lsp(range: Range) -> tower_lsp_server::gen_lsp_types::Range {
+    tower_lsp_server::gen_lsp_types::Range::new(
+        tower_lsp_server::gen_lsp_types::Position::new(range.start.line, range.start.column),
+        tower_lsp_server::gen_lsp_types::Position::new(range.end.line, range.end.column),
     )
 }

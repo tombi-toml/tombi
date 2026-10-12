@@ -19,7 +19,7 @@ pub async fn goto_definition(
     toml_version: TomlVersion,
     converter: tombi_extension::SpanConverter<'_, '_>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp_server::jsonrpc::Error> {
     // Check if current file is Cargo.toml
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(Default::default());
@@ -177,7 +177,7 @@ fn goto_workspace_definition_locations(
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     converter: tombi_extension::SpanConverter<'_, '_>,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     let locations = goto_definition_for_workspace_cargo_toml(
         document_tree,
         accessors,
@@ -212,7 +212,7 @@ fn goto_workspace_dependency_locations(
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     converter: tombi_extension::SpanConverter<'_, '_>,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     let resolved_target_locations = goto_dependency_definition_locations(
         document_tree,
         accessors,
@@ -241,7 +241,7 @@ fn goto_dependency_definition_locations(
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     converter: tombi_extension::SpanConverter<'_, '_>,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     let mut locations = goto_workspace_managed_dependency_locations(
         document_tree,
         accessors,

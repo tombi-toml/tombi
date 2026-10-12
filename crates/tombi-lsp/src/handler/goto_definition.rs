@@ -1,5 +1,5 @@
 use tombi_text::IntoLsp;
-use tower_lsp::lsp_types::{GotoDefinitionParams, TextDocumentPositionParams};
+use tower_lsp_server::gen_lsp_types::{DefinitionParams, TextDocumentPositionParams};
 
 use crate::Backend;
 use crate::config_manager::ConfigSchemaStore;
@@ -7,11 +7,11 @@ use crate::handler::hover::get_hover_keys_with_span;
 
 pub async fn handle_goto_definition(
     backend: &Backend,
-    params: GotoDefinitionParams,
-) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
+    params: DefinitionParams,
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp_server::jsonrpc::Error> {
     log::trace!("{:?}", params);
 
-    let GotoDefinitionParams {
+    let DefinitionParams {
         text_document_position_params:
             TextDocumentPositionParams {
                 text_document,

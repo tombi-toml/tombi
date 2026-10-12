@@ -11,7 +11,7 @@ pub trait IntoLsp {
 }
 
 impl IntoLsp for tombi_extension::DocumentLink {
-    type Lsp = tower_lsp::lsp_types::DocumentLink;
+    type Lsp = tower_lsp_server::gen_lsp_types::DocumentLink;
 
     fn into_lsp_type(
         self,
@@ -28,7 +28,7 @@ impl IntoLsp for tombi_extension::DocumentLink {
 }
 
 impl IntoLsp for tombi_extension::InlayHint {
-    type Lsp = tower_lsp::lsp_types::InlayHint;
+    type Lsp = tower_lsp_server::gen_lsp_types::InlayHint;
 
     fn into_lsp_type(
         self,
@@ -39,9 +39,11 @@ impl IntoLsp for tombi_extension::InlayHint {
             position: self.offset.into_lsp(line_index, encoding),
             label: self.label.into(),
             kind: self.kind.map(|kind| match kind {
-                tombi_extension::InlayHintKind::Type => tower_lsp::lsp_types::InlayHintKind::TYPE,
+                tombi_extension::InlayHintKind::Type => {
+                    tower_lsp_server::gen_lsp_types::InlayHintKind::Type
+                }
                 tombi_extension::InlayHintKind::Parameter => {
-                    tower_lsp::lsp_types::InlayHintKind::PARAMETER
+                    tower_lsp_server::gen_lsp_types::InlayHintKind::Parameter
                 }
             }),
             text_edits: None,
@@ -54,7 +56,7 @@ impl IntoLsp for tombi_extension::InlayHint {
 }
 
 impl IntoLsp for tombi_extension::TextEdit {
-    type Lsp = tower_lsp::lsp_types::TextEdit;
+    type Lsp = tower_lsp_server::gen_lsp_types::TextEdit;
 
     fn into_lsp_type(
         self,
@@ -69,7 +71,7 @@ impl IntoLsp for tombi_extension::TextEdit {
 }
 
 impl IntoLsp for tombi_extension::InsertReplaceEdit {
-    type Lsp = tower_lsp::lsp_types::InsertReplaceEdit;
+    type Lsp = tower_lsp_server::gen_lsp_types::InsertReplaceEdit;
 
     fn into_lsp_type(
         self,
@@ -85,7 +87,7 @@ impl IntoLsp for tombi_extension::InsertReplaceEdit {
 }
 
 impl IntoLsp for tombi_extension::CompletionTextEdit {
-    type Lsp = tower_lsp::lsp_types::CompletionTextEdit;
+    type Lsp = tower_lsp_server::gen_lsp_types::CompletionItemTextEdit;
 
     fn into_lsp_type(
         self,
@@ -94,25 +96,28 @@ impl IntoLsp for tombi_extension::CompletionTextEdit {
     ) -> Self::Lsp {
         match self {
             tombi_extension::CompletionTextEdit::Edit(edit) => {
-                Self::Lsp::Edit(edit.into_lsp_type(line_index, encoding))
+                Self::Lsp::TextEdit(edit.into_lsp_type(line_index, encoding))
             }
             tombi_extension::CompletionTextEdit::InsertAndReplace(edit) => {
-                Self::Lsp::InsertAndReplace(edit.into_lsp_type(line_index, encoding))
+                Self::Lsp::InsertReplaceEdit(edit.into_lsp_type(line_index, encoding))
             }
         }
     }
 }
 
 impl IntoLsp for tombi_extension::CompletionContent {
-    type Lsp = tower_lsp::lsp_types::CompletionItem;
+    type Lsp = tower_lsp_server::gen_lsp_types::CompletionItem;
 
+    // `CompletionItem::deprecated` is deprecated in LSP 3.15+, but is still set
+    // to keep the wire format unchanged for clients that rely on it.
+    #[allow(deprecated)]
     fn into_lsp_type(
         self,
         line_index: &tombi_text::LineIndex,
         encoding: tombi_text::EncodingKind,
     ) -> Self::Lsp {
         use tombi_extension::CompletionContentPriority as Priority;
-        use tower_lsp::lsp_types::{
+        use tower_lsp_server::gen_lsp_types::{
             CompletionItem, CompletionItemLabelDetails, Documentation, InsertTextMode,
             MarkupContent, MarkupKind,
         };
@@ -144,10 +149,10 @@ impl IntoLsp for tombi_extension::CompletionContent {
             Some(edit) => (
                 edit.insert_text_format.map(|format| match format {
                     tombi_extension::InsertTextFormat::PlainText => {
-                        tower_lsp::lsp_types::InsertTextFormat::PLAIN_TEXT
+                        tower_lsp_server::gen_lsp_types::InsertTextFormat::PlainText
                     }
                     tombi_extension::InsertTextFormat::Snippet => {
-                        tower_lsp::lsp_types::InsertTextFormat::SNIPPET
+                        tower_lsp_server::gen_lsp_types::InsertTextFormat::Snippet
                     }
                 }),
                 Some(edit.text_edit.into_lsp_type(line_index, encoding)),
@@ -228,7 +233,7 @@ impl IntoLsp for tombi_extension::CompletionContent {
             filter_text: self.filter_text,
             insert_text_format,
             text_edit,
-            insert_text_mode: Some(InsertTextMode::ADJUST_INDENTATION),
+            insert_text_mode: Some(InsertTextMode::AdjustIndentation),
             additional_text_edits,
             preselect: self.preselect,
             deprecated: self.deprecated,
@@ -238,7 +243,7 @@ impl IntoLsp for tombi_extension::CompletionContent {
 }
 
 impl IntoLsp for tombi_extension::CodeActionOrCommand {
-    type Lsp = tower_lsp::lsp_types::CodeActionOrCommand;
+    type Lsp = tower_lsp_server::gen_lsp_types::CodeActionResponse;
 
     fn into_lsp_type(
         self,
@@ -250,10 +255,11 @@ impl IntoLsp for tombi_extension::CodeActionOrCommand {
                 Self::Lsp::CodeAction(action.into_lsp_type(line_index, encoding))
             }
             tombi_extension::CodeActionOrCommand::Command(command) => {
-                Self::Lsp::Command(tower_lsp::lsp_types::Command {
+                Self::Lsp::Command(tower_lsp_server::gen_lsp_types::Command {
                     title: command.title,
                     command: command.command,
                     arguments: command.arguments,
+                    tooltip: None,
                 })
             }
         }
@@ -261,7 +267,7 @@ impl IntoLsp for tombi_extension::CodeActionOrCommand {
 }
 
 impl IntoLsp for tombi_extension::CodeAction {
-    type Lsp = tower_lsp::lsp_types::CodeAction;
+    type Lsp = tower_lsp_server::gen_lsp_types::CodeAction;
 
     fn into_lsp_type(
         self,
@@ -272,24 +278,24 @@ impl IntoLsp for tombi_extension::CodeAction {
             title: self.title,
             kind: self.kind.map(|kind| match kind {
                 tombi_extension::CodeActionKind::RefactorRewrite => {
-                    tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE
+                    tower_lsp_server::gen_lsp_types::CodeActionKind::RefactorRewrite
                 }
             }),
             edit: self
                 .edit
                 .map(|edit| edit.into_lsp_type(line_index, encoding)),
-            disabled: self
-                .disabled
-                .map(|disabled| tower_lsp::lsp_types::CodeActionDisabled {
+            disabled: self.disabled.map(|disabled| {
+                tower_lsp_server::gen_lsp_types::CodeActionDisabled {
                     reason: disabled.reason,
-                }),
+                }
+            }),
             ..Default::default()
         }
     }
 }
 
 impl IntoLsp for tombi_extension::WorkspaceEdit {
-    type Lsp = tower_lsp::lsp_types::WorkspaceEdit;
+    type Lsp = tower_lsp_server::gen_lsp_types::WorkspaceEdit;
 
     fn into_lsp_type(
         self,
@@ -313,14 +319,14 @@ impl IntoLsp for tombi_extension::WorkspaceEdit {
                     .collect()
             }),
             document_changes: self.document_changes.map(|changes| match changes {
-                tombi_extension::DocumentChanges::Edits(edits) => {
-                    tower_lsp::lsp_types::DocumentChanges::Edits(
-                        edits
-                            .into_iter()
-                            .map(|edit| edit.into_lsp_type(line_index, encoding))
-                            .collect(),
-                    )
-                }
+                tombi_extension::DocumentChanges::Edits(edits) => edits
+                    .into_iter()
+                    .map(|edit| {
+                        tower_lsp_server::gen_lsp_types::DocumentChange::TextDocumentEdit(
+                            edit.into_lsp_type(line_index, encoding),
+                        )
+                    })
+                    .collect(),
             }),
             change_annotations: None,
         }
@@ -328,7 +334,7 @@ impl IntoLsp for tombi_extension::WorkspaceEdit {
 }
 
 impl IntoLsp for tombi_extension::TextDocumentEdit {
-    type Lsp = tower_lsp::lsp_types::TextDocumentEdit;
+    type Lsp = tower_lsp_server::gen_lsp_types::TextDocumentEdit;
 
     fn into_lsp_type(
         self,
@@ -336,34 +342,48 @@ impl IntoLsp for tombi_extension::TextDocumentEdit {
         _encoding: tombi_text::EncodingKind,
     ) -> Self::Lsp {
         Self::Lsp {
-            text_document: tower_lsp::lsp_types::OptionalVersionedTextDocumentIdentifier {
-                uri: self.text_document.uri.into(),
-                version: self.text_document.version,
-            },
+            text_document:
+                tower_lsp_server::gen_lsp_types::OptionalVersionedTextDocumentIdentifier {
+                    text_document_identifier:
+                        tower_lsp_server::gen_lsp_types::TextDocumentIdentifier {
+                            uri: self.text_document.uri.into(),
+                        },
+                    version: self.text_document.version,
+                },
             edits: self
                 .edits
                 .into_iter()
                 .map(|edit| match edit {
                     tombi_extension::OneOf::Left(edit) => {
-                        tower_lsp::lsp_types::OneOf::Left(range_text_edit(edit))
+                        tower_lsp_server::gen_lsp_types::Edit::TextEdit(range_text_edit(edit))
                     }
-                    tombi_extension::OneOf::Right(edit) => tower_lsp::lsp_types::OneOf::Right(
-                        tower_lsp::lsp_types::AnnotatedTextEdit {
-                            text_edit: range_text_edit(edit.text_edit),
-                            annotation_id: edit.annotation_id,
-                        },
-                    ),
+                    tombi_extension::OneOf::Right(edit) => {
+                        tower_lsp_server::gen_lsp_types::Edit::AnnotatedTextEdit(
+                            tower_lsp_server::gen_lsp_types::AnnotatedTextEdit {
+                                text_edit: range_text_edit(edit.text_edit),
+                                annotation_id: edit.annotation_id,
+                            },
+                        )
+                    }
                 })
                 .collect(),
         }
     }
 }
 
-fn range_text_edit(edit: tombi_extension::RangeTextEdit) -> tower_lsp::lsp_types::TextEdit {
-    tower_lsp::lsp_types::TextEdit {
-        range: tower_lsp::lsp_types::Range::new(
-            tower_lsp::lsp_types::Position::new(edit.range.start.line, edit.range.start.column),
-            tower_lsp::lsp_types::Position::new(edit.range.end.line, edit.range.end.column),
+fn range_text_edit(
+    edit: tombi_extension::RangeTextEdit,
+) -> tower_lsp_server::gen_lsp_types::TextEdit {
+    tower_lsp_server::gen_lsp_types::TextEdit {
+        range: tower_lsp_server::gen_lsp_types::Range::new(
+            tower_lsp_server::gen_lsp_types::Position::new(
+                edit.range.start.line,
+                edit.range.start.column,
+            ),
+            tower_lsp_server::gen_lsp_types::Position::new(
+                edit.range.end.line,
+                edit.range.end.column,
+            ),
         ),
         new_text: edit.new_text,
     }
@@ -372,31 +392,33 @@ fn range_text_edit(edit: tombi_extension::RangeTextEdit) -> tower_lsp::lsp_types
 fn label_details(
     default: &str,
     detail: &Option<String>,
-) -> Option<tower_lsp::lsp_types::CompletionItemLabelDetails> {
-    Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
-        detail: None,
-        description: Some(detail.clone().unwrap_or_else(|| default.to_string())),
-    })
+) -> Option<tower_lsp_server::gen_lsp_types::CompletionItemLabelDetails> {
+    Some(
+        tower_lsp_server::gen_lsp_types::CompletionItemLabelDetails {
+            detail: None,
+            description: Some(detail.clone().unwrap_or_else(|| default.to_string())),
+        },
+    )
 }
 
 fn completion_kind(
     kind: tombi_extension::CompletionKind,
-) -> tower_lsp::lsp_types::CompletionItemKind {
+) -> tower_lsp_server::gen_lsp_types::CompletionItemKind {
     use tombi_extension::CompletionKind as Kind;
-    use tower_lsp::lsp_types::CompletionItemKind;
+    use tower_lsp_server::gen_lsp_types::CompletionItemKind;
 
     match kind {
-        Kind::Boolean => CompletionItemKind::CONSTANT,
-        Kind::Integer | Kind::Float => CompletionItemKind::VALUE,
-        Kind::String => CompletionItemKind::TEXT,
-        Kind::Enum => CompletionItemKind::ENUM_MEMBER,
+        Kind::Boolean => CompletionItemKind::Constant,
+        Kind::Integer | Kind::Float => CompletionItemKind::Value,
+        Kind::String => CompletionItemKind::Text,
+        Kind::Enum => CompletionItemKind::EnumMember,
         Kind::OffsetDateTime | Kind::LocalDateTime | Kind::LocalDate | Kind::LocalTime => {
-            CompletionItemKind::EVENT
+            CompletionItemKind::Event
         }
-        Kind::Array | Kind::Table => CompletionItemKind::STRUCT,
-        Kind::Key => CompletionItemKind::FIELD,
-        Kind::MagicTrigger => CompletionItemKind::METHOD,
-        Kind::CommentDirective => CompletionItemKind::KEYWORD,
-        Kind::File => CompletionItemKind::FILE,
+        Kind::Array | Kind::Table => CompletionItemKind::Struct,
+        Kind::Key => CompletionItemKind::Field,
+        Kind::MagicTrigger => CompletionItemKind::Method,
+        Kind::CommentDirective => CompletionItemKind::Keyword,
+        Kind::File => CompletionItemKind::File,
     }
 }

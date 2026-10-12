@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::DidChangeConfigurationParams;
+use tower_lsp_server::gen_lsp_types::DidChangeConfigurationParams;
 
 use crate::backend::Backend;
 

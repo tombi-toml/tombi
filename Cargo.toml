@@ -136,7 +136,9 @@ tombi-validator = { path = "crates/tombi-validator" }
 tombi-version-sort = { path = "crates/tombi-version-sort" }
 tombi-x-keyword = { path = "crates/tombi-x-keyword" }
 tower = { version = "0.5.2", default-features = false, features = ["util"] }
-tower-lsp = { version = "0.20.0", default-features = false }
+tower-lsp-server = { version = "=0.24.0-rc.1", default-features = false, features = [
+  "url-url",
+] }
 typed-builder = "0.21.0"
 ungrammar.version = "1.16.1"
 unicode-segmentation = "1.12.0"

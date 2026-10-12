@@ -24,7 +24,7 @@ tombi-fs = { workspace = true, optional = true }
 tombi-lib = { workspace = true, default-features = false, optional = true }
 tombi-lsp = { workspace = true, optional = true }
 tombi-uri = { workspace = true, optional = true }
-tower-lsp = { workspace = true, optional = true }
+tower-lsp-server = { workspace = true, optional = true }
 wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
 wasm-streams = { workspace = true, optional = true }
@@ -48,10 +48,10 @@ lsp = [
   "dep:tombi-fs",
   "dep:tombi-lsp",
   "dep:tombi-uri",
-  "dep:tower-lsp",
+  "dep:tower-lsp-server",
   "dep:wasm-streams",
   "dep:web-sys",
-  "tower-lsp/runtime-agnostic",
+  "tower-lsp-server/runtime-agnostic",
   "wasm-bindgen-futures/futures-core-03-stream",
   "web-sys/WritableStream",
   "web-sys/console",

@@ -377,7 +377,7 @@ pub enum HoverContent {
     DirectiveContent(HoverValueContent),
 }
 
-impl FromLsp<HoverContent> for tower_lsp::lsp_types::Hover {
+impl FromLsp<HoverContent> for tower_lsp_server::gen_lsp_types::Hover {
     fn from_lsp(
         source: HoverContent,
         line_index: &tombi_text::LineIndex,
@@ -398,16 +398,16 @@ pub struct HoverDirectiveContent {
     pub span: tombi_text::Span,
 }
 
-impl FromLsp<HoverDirectiveContent> for tower_lsp::lsp_types::Hover {
+impl FromLsp<HoverDirectiveContent> for tower_lsp_server::gen_lsp_types::Hover {
     fn from_lsp(
         source: HoverDirectiveContent,
         line_index: &tombi_text::LineIndex,
         encoding: tombi_text::EncodingKind,
     ) -> Self {
-        tower_lsp::lsp_types::Hover {
-            contents: tower_lsp::lsp_types::HoverContents::Markup(
-                tower_lsp::lsp_types::MarkupContent {
-                    kind: tower_lsp::lsp_types::MarkupKind::Markdown,
+        tower_lsp_server::gen_lsp_types::Hover {
+            contents: tower_lsp_server::gen_lsp_types::Contents::MarkupContent(
+                tower_lsp_server::gen_lsp_types::MarkupContent {
+                    kind: tower_lsp_server::gen_lsp_types::MarkupKind::Markdown,
                     value: format!("#### {}\n\n{}", source.title, source.description),
                 },
             ),
@@ -501,16 +501,16 @@ impl std::fmt::Display for HoverValueContent {
     }
 }
 
-impl FromLsp<HoverValueContent> for tower_lsp::lsp_types::Hover {
+impl FromLsp<HoverValueContent> for tower_lsp_server::gen_lsp_types::Hover {
     fn from_lsp(
         source: HoverValueContent,
         line_index: &tombi_text::LineIndex,
         encoding: tombi_text::EncodingKind,
     ) -> Self {
-        tower_lsp::lsp_types::Hover {
-            contents: tower_lsp::lsp_types::HoverContents::Markup(
-                tower_lsp::lsp_types::MarkupContent {
-                    kind: tower_lsp::lsp_types::MarkupKind::Markdown,
+        tower_lsp_server::gen_lsp_types::Hover {
+            contents: tower_lsp_server::gen_lsp_types::Contents::MarkupContent(
+                tower_lsp_server::gen_lsp_types::MarkupContent {
+                    kind: tower_lsp_server::gen_lsp_types::MarkupKind::Markdown,
                     value: source.to_string(),
                 },
             ),

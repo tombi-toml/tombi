@@ -21,12 +21,12 @@ mod tests {
     fn test_ascii_into_lsp() {
         let line_index = LineIndex::new("hello\nworld");
         let span = Span::new(Offset::new(8), Offset::new(9));
-        let expected_range = tower_lsp::lsp_types::Range {
-            start: tower_lsp::lsp_types::Position::new(1, 2),
-            end: tower_lsp::lsp_types::Position::new(1, 3),
+        let expected_range = tower_lsp_server::gen_lsp_types::Range {
+            start: tower_lsp_server::gen_lsp_types::Position::new(1, 2),
+            end: tower_lsp_server::gen_lsp_types::Position::new(1, 3),
         };
 
-        let lsp_range: tower_lsp::lsp_types::Range =
+        let lsp_range: tower_lsp_server::gen_lsp_types::Range =
             span.into_lsp(&line_index, EncodingKind::Utf16);
         pretty_assertions::assert_eq!(lsp_range, expected_range);
     }
@@ -35,12 +35,12 @@ mod tests {
     fn test_tombi_emoji_into_lsp() {
         let line_index = LineIndex::new("🦅 Tombi");
         let span = Span::new(Offset::new(0), Offset::new(4));
-        let expected_range = tower_lsp::lsp_types::Range {
-            start: tower_lsp::lsp_types::Position::new(0, 0),
-            end: tower_lsp::lsp_types::Position::new(0, 2),
+        let expected_range = tower_lsp_server::gen_lsp_types::Range {
+            start: tower_lsp_server::gen_lsp_types::Position::new(0, 0),
+            end: tower_lsp_server::gen_lsp_types::Position::new(0, 2),
         };
 
-        let lsp_range: tower_lsp::lsp_types::Range =
+        let lsp_range: tower_lsp_server::gen_lsp_types::Range =
             span.into_lsp(&line_index, EncodingKind::Utf16);
         pretty_assertions::assert_eq!(lsp_range, expected_range);
     }

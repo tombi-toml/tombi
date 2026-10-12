@@ -34,15 +34,15 @@ pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
 async fn serve<I, O>(
     input: I,
     output: O,
-    socket: tower_lsp::ClientSocket,
-    service: tower_lsp::LspService<tombi_lsp::Backend>,
+    socket: tower_lsp_server::ClientSocket,
+    service: tower_lsp_server::LspService<tombi_lsp::Backend>,
 ) where
     I: tokio::io::AsyncRead + Unpin,
     O: tokio::io::AsyncWrite,
 {
     let (exit_tx, exit_rx) = tokio::sync::oneshot::channel();
     let mut exit_tx = Some(exit_tx);
-    let service = service.map_request(move |request: tower_lsp::jsonrpc::Request| {
+    let service = service.map_request(move |request: tower_lsp_server::jsonrpc::Request| {
         if request.method() == "exit"
             && let Some(exit_tx) = exit_tx.take()
         {
@@ -52,7 +52,7 @@ async fn serve<I, O>(
     });
 
     tokio::select! {
-        _ = tower_lsp::Server::new(input, output, socket).serve(service) => {}
+        _ = tower_lsp_server::Server::new(input, output, socket).serve(service) => {}
         _ = exit_rx => {}
     }
 }

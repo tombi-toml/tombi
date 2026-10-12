@@ -47,7 +47,7 @@ tombi-toml-text.workspace = true
 tombi-uri.workspace = true
 tombi-validator.workspace = true
 tombi-x-keyword.workspace = true
-tower-lsp.workspace = true
+tower-lsp-server.workspace = true
 unicode-segmentation.workspace = true
 
 [dev-dependencies]
@@ -65,7 +65,7 @@ tombi-extension-nagi-sql = { workspace = true, features = ["native"] }
 tombi-extension-pyproject = { workspace = true, features = ["native"] }
 tombi-future = { workspace = true, features = ["native"] }
 tombi-schema-store = { workspace = true, features = ["native"] }
-tower-lsp = { workspace = true, features = ["runtime-tokio"] }
+tower-lsp-server = { workspace = true, features = ["runtime-tokio"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 serde_tombi = { workspace = true, features = ["wasm"] }
@@ -74,7 +74,7 @@ tombi-extension-nagi-sql = { workspace = true, features = ["wasm"] }
 tombi-extension-pyproject = { workspace = true, features = ["wasm"] }
 tombi-future = { workspace = true, features = ["wasm", "wasm-send"] }
 tombi-schema-store = { workspace = true, features = ["wasm"] }
-tower-lsp = { workspace = true, features = ["runtime-agnostic"] }
+tower-lsp-server = { workspace = true, features = ["runtime-agnostic"] }
 
 [lints]
 workspace = true

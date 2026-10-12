@@ -1,6 +1,6 @@
 use tombi_hashmap::IndexSet;
 use tombi_text::IntoLsp;
-use tower_lsp::lsp_types::{ReferenceParams, TextDocumentPositionParams};
+use tower_lsp_server::gen_lsp_types::{ReferenceParams, TextDocumentPositionParams};
 
 use crate::Backend;
 use crate::config_manager::ConfigSchemaStore;
@@ -9,11 +9,11 @@ use crate::handler::hover::get_hover_keys_with_span;
 pub async fn handle_references(
     backend: &Backend,
     params: ReferenceParams,
-) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp_server::jsonrpc::Error> {
     log::trace!("{:?}", params);
 
     let ReferenceParams {
-        text_document_position:
+        text_document_position_params:
             TextDocumentPositionParams {
                 text_document,
                 position,

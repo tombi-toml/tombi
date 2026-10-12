@@ -1,12 +1,15 @@
 use tombi_text::FromLsp;
-use tower_lsp::lsp_types::InlayHintParams;
+use tower_lsp_server::gen_lsp_types::InlayHintParams;
 
 use crate::{Backend, config_manager::ConfigSchemaStore, document::DocumentSource};
 
 pub async fn handle_inlay_hint(
     backend: &Backend,
     params: InlayHintParams,
-) -> Result<Option<(Vec<tombi_extension::InlayHint>, DocumentSource)>, tower_lsp::jsonrpc::Error> {
+) -> Result<
+    Option<(Vec<tombi_extension::InlayHint>, DocumentSource)>,
+    tower_lsp_server::jsonrpc::Error,
+> {
     log::info!("handle_inlay_hint");
     log::trace!("{:?}", params);
 

@@ -18,7 +18,7 @@ pub struct WorkspaceDiagnosticOptions {
 pub async fn push_workspace_diagnostics(
     backend: &Backend,
     options: &WorkspaceDiagnosticOptions,
-) -> Result<(), tower_lsp::jsonrpc::Error> {
+) -> Result<(), tower_lsp_server::jsonrpc::Error> {
     let targets = collect_workspace_diagnostic_targets(backend).await;
 
     if targets.is_empty() {

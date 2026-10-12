@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::DidCloseTextDocumentParams;
+use tower_lsp_server::gen_lsp_types::DidCloseTextDocumentParams;
 
 use crate::{Backend, config_manager::ConfigSchemaStore};
 

@@ -1,13 +1,13 @@
 use itertools::Itertools;
 use tombi_ast_syntax::{AstNode, AstToken, DanglingCommentGroupOr};
-use tower_lsp::lsp_types::{FoldingRange, FoldingRangeKind, FoldingRangeParams};
+use tower_lsp_server::gen_lsp_types::{FoldingRange, FoldingRangeKind, FoldingRangeParams};
 
 use crate::backend::Backend;
 
 pub async fn handle_folding_range(
     backend: &Backend,
     params: FoldingRangeParams,
-) -> Result<Option<Vec<FoldingRange>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<FoldingRange>>, tower_lsp_server::jsonrpc::Error> {
     log::info!("handle_folding_range");
     log::trace!("{:?}", params);
 

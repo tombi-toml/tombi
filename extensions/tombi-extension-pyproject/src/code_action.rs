@@ -109,7 +109,7 @@ pub async fn code_action(
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp_server::jsonrpc::Error> {
     // Check if the file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(None);
@@ -241,7 +241,7 @@ async fn update_dependency_to_latest_version_code_action(
     accessors: &[Accessor],
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<CodeAction>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<CodeAction>, tower_lsp_server::jsonrpc::Error> {
     let Some((_, dependency_value)) =
         tombi_document_tree_syntax::dig_accessors(document_tree, accessors)
     else {

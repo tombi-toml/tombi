@@ -9,7 +9,7 @@ license.workspace = true
 nu-ansi-term.workspace = true
 serde.workspace = true
 tombi-text.workspace = true
-tower-lsp = { workspace = true, optional = true }
+tower-lsp-server = { workspace = true, optional = true }
 
 [dev-dependencies]
 clap.workspace = true
@@ -17,7 +17,7 @@ env_logger.workspace = true
 
 [features]
 default = ["lsp"]
-lsp = ["dep:tower-lsp", "tombi-text/lsp"]
+lsp = ["dep:tower-lsp-server", "tombi-text/lsp"]
 
 [lints]
 workspace = true

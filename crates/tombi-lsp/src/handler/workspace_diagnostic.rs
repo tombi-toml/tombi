@@ -3,9 +3,9 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use tower_lsp::lsp_types::{
+use tower_lsp_server::gen_lsp_types::{
     FullDocumentDiagnosticReport, UnchangedDocumentDiagnosticReport, WorkspaceDiagnosticParams,
-    WorkspaceDiagnosticReport, WorkspaceDiagnosticReportResult, WorkspaceDocumentDiagnosticReport,
+    WorkspaceDiagnosticReport, WorkspaceDocumentDiagnosticReport,
     WorkspaceFullDocumentDiagnosticReport, WorkspaceUnchangedDocumentDiagnosticReport,
 };
 
@@ -18,7 +18,7 @@ use crate::{
 pub async fn handle_workspace_diagnostic(
     backend: &Backend,
     params: WorkspaceDiagnosticParams,
-) -> Result<WorkspaceDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
+) -> Result<WorkspaceDiagnosticReport, tower_lsp_server::jsonrpc::Error> {
     let previous_result_ids = params
         .previous_result_ids
         .into_iter()
@@ -28,9 +28,7 @@ pub async fn handle_workspace_diagnostic(
     let targets = collect_workspace_diagnostic_targets(backend).await;
 
     if targets.is_empty() && previous_result_ids.is_empty() {
-        return Ok(WorkspaceDiagnosticReportResult::Report(
-            WorkspaceDiagnosticReport { items: Vec::new() },
-        ));
+        return Ok(WorkspaceDiagnosticReport { items: Vec::new() });
     }
 
     log::info!("handle_workspace_diagnostic");
@@ -58,26 +56,30 @@ pub async fn handle_workspace_diagnostic(
             .get(&text_document_uri)
             .is_some_and(|previous_result_id| previous_result_id == &result_id)
         {
-            items.push(WorkspaceDocumentDiagnosticReport::Unchanged(
-                WorkspaceUnchangedDocumentDiagnosticReport {
-                    uri: text_document_uri.into(),
-                    version: version.map(i64::from),
-                    unchanged_document_diagnostic_report: UnchangedDocumentDiagnosticReport {
-                        result_id,
+            items.push(
+                WorkspaceDocumentDiagnosticReport::WorkspaceUnchangedDocumentDiagnosticReport(
+                    WorkspaceUnchangedDocumentDiagnosticReport {
+                        uri: text_document_uri.into(),
+                        version,
+                        unchanged_document_diagnostic_report: UnchangedDocumentDiagnosticReport {
+                            result_id,
+                        },
                     },
-                },
-            ));
+                ),
+            );
         } else {
-            items.push(WorkspaceDocumentDiagnosticReport::Full(
-                WorkspaceFullDocumentDiagnosticReport {
-                    uri: text_document_uri.into(),
-                    version: version.map(i64::from),
-                    full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                        result_id: Some(result_id),
-                        items: diagnostics,
+            items.push(
+                WorkspaceDocumentDiagnosticReport::WorkspaceFullDocumentDiagnosticReport(
+                    WorkspaceFullDocumentDiagnosticReport {
+                        uri: text_document_uri.into(),
+                        version,
+                        full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                            result_id: Some(result_id),
+                            items: diagnostics,
+                        },
                     },
-                },
-            ));
+                ),
+            );
         }
     }
 
@@ -86,26 +88,26 @@ pub async fn handle_workspace_diagnostic(
             continue;
         }
 
-        items.push(WorkspaceDocumentDiagnosticReport::Full(
-            WorkspaceFullDocumentDiagnosticReport {
-                uri: previous_text_document_uri.clone().into(),
-                version: None,
-                full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                    result_id: Some(workspace_diagnostic_result_id(None, &[])),
-                    items: Vec::new(),
+        items.push(
+            WorkspaceDocumentDiagnosticReport::WorkspaceFullDocumentDiagnosticReport(
+                WorkspaceFullDocumentDiagnosticReport {
+                    uri: previous_text_document_uri.clone().into(),
+                    version: None,
+                    full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                        result_id: Some(workspace_diagnostic_result_id(None, &[])),
+                        items: Vec::new(),
+                    },
                 },
-            },
-        ));
+            ),
+        );
     }
 
-    Ok(WorkspaceDiagnosticReportResult::Report(
-        WorkspaceDiagnosticReport { items },
-    ))
+    Ok(WorkspaceDiagnosticReport { items })
 }
 
 pub fn workspace_diagnostic_result_id(
     version: Option<i32>,
-    diagnostics: &[tower_lsp::lsp_types::Diagnostic],
+    diagnostics: &[tower_lsp_server::gen_lsp_types::Diagnostic],
 ) -> String {
     let mut hasher = DefaultHasher::new();
     version.hash(&mut hasher);

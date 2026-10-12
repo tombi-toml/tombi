@@ -4,7 +4,7 @@ use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 use tombi_extension::{HoverMetadata, HoverTextChange};
 use tombi_schema_store::SchemaContext;
 use tombi_text::IntoLsp;
-use tower_lsp::lsp_types::{HoverParams, TextDocumentPositionParams};
+use tower_lsp_server::gen_lsp_types::{HoverParams, TextDocumentPositionParams};
 
 use crate::{
     backend,
@@ -15,7 +15,7 @@ use crate::{
 pub async fn handle_hover(
     backend: &backend::Backend,
     params: HoverParams,
-) -> Result<Option<HoverContent>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<HoverContent>, tower_lsp_server::jsonrpc::Error> {
     log::trace!("{:?}", params);
 
     let HoverParams {

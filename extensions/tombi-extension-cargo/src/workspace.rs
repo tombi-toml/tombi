@@ -293,7 +293,7 @@ pub(crate) fn goto_workspace(
     toml_version: TomlVersion,
     encoding: tombi_text::EncodingKind,
     jump_to_subcrate: bool,
-) -> Result<Option<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     debug_assert!(matches!(
         accessors.last(),
         Some(tombi_schema_store::Accessor::Key(key)) if key == "workspace"
@@ -373,7 +373,7 @@ pub(crate) fn goto_dependency_crates(
     toml_version: TomlVersion,
     encoding: tombi_text::EncodingKind,
     jump_to_subcrate: bool,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     debug_assert!(is_workspace_dependency_accessor(accessors) || is_dependency_accessor(accessors));
 
     let Some((tombi_schema_store::Accessor::Key(_crate_name), crate_value)) =
@@ -429,7 +429,7 @@ pub(crate) fn workspace_dependency_usage_locations(
     workspace_cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     encoding: tombi_text::EncodingKind,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     debug_assert!(matches_accessors!(
         accessors,
         ["workspace", "dependencies", _]
@@ -518,7 +518,7 @@ pub(crate) fn goto_crate_package(
     workspace_cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     encoding: tombi_text::EncodingKind,
-) -> Result<Option<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     debug_assert!(
         matches_accessors!(accessors, ["workspace", "dependencies", _, "path"])
             || is_dependency_path_accessor(accessors)
@@ -544,7 +544,7 @@ pub(crate) fn goto_bin_path_target(
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     accessors: &[tombi_schema_store::Accessor],
     cargo_toml_path: &std::path::Path,
-) -> Result<Option<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     debug_assert!(matches_accessors!(accessors, ["bin", _, "path"]));
 
     let Some((_, tombi_document_tree_syntax::Value::String(path_value))) =
@@ -679,7 +679,7 @@ pub(crate) fn goto_definition_for_workspace_cargo_toml(
     toml_version: TomlVersion,
     encoding: tombi_text::EncodingKind,
     jump_to_subcrate: bool,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     if matches_accessors!(accessors, ["workspace", "dependencies", _]) {
         goto_dependency_crates(
             workspace_document_tree,
@@ -734,7 +734,7 @@ pub(crate) fn goto_workspace_managed_dependency_locations(
     toml_version: TomlVersion,
     encoding: tombi_text::EncodingKind,
     jump_to_subcrate: bool,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     let location = if is_dependency_accessor(accessors) {
         return goto_dependency_crates(
             document_tree,
@@ -780,7 +780,7 @@ pub(crate) fn goto_workspace_member_crates(
     toml_version: TomlVersion,
     encoding: tombi_text::EncodingKind,
     members_key: &'static str,
-) -> Result<Vec<CrateLocation>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<CrateLocation>, tower_lsp_server::jsonrpc::Error> {
     let member_patterns = extract_member_patterns(workspace_document_tree, accessors, members_key);
     if member_patterns.is_empty() {
         return Ok(Vec::new());

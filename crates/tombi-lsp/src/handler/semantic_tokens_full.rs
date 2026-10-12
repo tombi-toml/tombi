@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::{SemanticTokens, SemanticTokensParams, SemanticTokensResult};
+use tower_lsp_server::gen_lsp_types::{SemanticTokens, SemanticTokensParams};
 
 use crate::{
     backend::Backend,
@@ -8,7 +8,7 @@ use crate::{
 pub async fn handle_semantic_tokens_full(
     backend: &Backend,
     params: SemanticTokensParams,
-) -> Result<Option<SemanticTokensResult>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<SemanticTokens>, tower_lsp_server::jsonrpc::Error> {
     log::info!("handle_semantic_tokens_full");
     log::trace!("{:?}", params);
 
@@ -35,8 +35,8 @@ pub async fn handle_semantic_tokens_full(
 
     let tokens = tokens_builder.build();
 
-    Ok(Some(SemanticTokensResult::Tokens(SemanticTokens {
+    Ok(Some(SemanticTokens {
         result_id: None,
         data: tokens,
-    })))
+    }))
 }

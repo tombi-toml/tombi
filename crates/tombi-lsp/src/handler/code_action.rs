@@ -8,12 +8,12 @@ use crate::{
 use tombi_document_tree_syntax::get_accessors;
 use tombi_schema_store::build_accessor_contexts;
 use tombi_text::IntoLsp;
-use tower_lsp::lsp_types::{CodeActionOrCommand, CodeActionParams};
+use tower_lsp_server::gen_lsp_types::{CodeActionParams, CodeActionResponse};
 
 pub async fn handle_code_action(
     backend: &Backend,
     params: CodeActionParams,
-) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CodeActionResponse>>, tower_lsp_server::jsonrpc::Error> {
     log::trace!("{:?}", params);
 
     let CodeActionParams {
@@ -89,7 +89,7 @@ pub async fn handle_code_action(
         &accessors,
         &accessor_contexts,
     ) {
-        code_actions.push(CodeActionOrCommand::CodeAction(code_action));
+        code_actions.push(CodeActionResponse::CodeAction(code_action));
     }
 
     if let Some(code_action) = inline_table_to_dot_keys_code_action(
@@ -101,7 +101,7 @@ pub async fn handle_code_action(
         &accessors,
         &accessor_contexts,
     ) {
-        code_actions.push(CodeActionOrCommand::CodeAction(code_action));
+        code_actions.push(CodeActionResponse::CodeAction(code_action));
     }
 
     if config.cargo_extension_enabled()

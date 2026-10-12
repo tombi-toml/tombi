@@ -18,14 +18,14 @@ pretty_assertions.workspace = true
 rstest.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-tower-lsp = { workspace = true, features = ["runtime-tokio"], optional = true }
+tower-lsp-server = { workspace = true, features = ["runtime-tokio"], optional = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-tower-lsp = { workspace = true, features = ["runtime-agnostic"], optional = true }
+tower-lsp-server = { workspace = true, features = ["runtime-agnostic"], optional = true }
 
 [features]
 default = ["lsp", "serde"]
-lsp = ["dep:tower-lsp"]
+lsp = ["dep:tower-lsp-server"]
 serde = ["dep:serde"]
 wasm = ["dep:wasm-bindgen", "serde"]
 

@@ -1,4 +1,6 @@
-use tower_lsp::lsp_types::DidChangeTextDocumentParams;
+use tower_lsp_server::gen_lsp_types::{
+    DidChangeTextDocumentParams, TextDocumentContentChangeEvent,
+};
 
 use crate::backend::Backend;
 
@@ -11,14 +13,17 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
         content_changes,
     } = params;
 
-    let text_document_uri = text_document.uri.into();
+    let text_document_uri = text_document.text_document_identifier.uri.into();
     let mut latest_text = None;
 
     for content_change in content_changes {
-        if let Some(range) = content_change.range {
-            log::warn!("range change is not supported: {:?}", range);
-        } else {
-            latest_text = Some(content_change.text);
+        match content_change {
+            TextDocumentContentChangeEvent::TextDocumentContentChangePartial(change) => {
+                log::warn!("range change is not supported: {:?}", change.range);
+            }
+            TextDocumentContentChangeEvent::TextDocumentContentChangeWholeDocument(change) => {
+                latest_text = Some(change.text);
+            }
         }
     }
 

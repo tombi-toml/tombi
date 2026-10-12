@@ -17,7 +17,7 @@ pub(crate) async fn fetch_pypi_project(
     package_name: &str,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<PypiProjectResponse>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<PypiProjectResponse>, tower_lsp_server::jsonrpc::Error> {
     let url = format!("https://pypi.org/pypi/{package_name}/json");
     Ok(fetch_cached_remote_json::<PypiProjectResponse>(&url, offline, cache_options).await)
 }

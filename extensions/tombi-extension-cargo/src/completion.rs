@@ -41,7 +41,7 @@ pub async fn completion(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
@@ -197,7 +197,7 @@ async fn completion_workspace(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error> {
     if matches_accessors!(accessors, ["workspace", "dependencies", _]) {
         if !cargo_completion_enabled(features, CargoCompletionFeature::DependencyVersion) {
             return Ok(None);
@@ -276,7 +276,7 @@ async fn completion_member(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error> {
     if let Some(completions) = complete_workspace_dependency_inheritance(
         document_tree,
         cargo_toml_path,
@@ -540,7 +540,7 @@ async fn complete_crate_version(
     completion_hint: Option<CompletionHint>,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error> {
     let version_value = match dig_accessors(document_tree, accessors) {
         Some((_, value))
             if matches!(
@@ -688,7 +688,7 @@ async fn complete_crate_feature(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     editing_feature_string: Option<&tombi_document_tree_syntax::String<'_>>,
-) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error> {
     let mut lookup = crate_feature_lookup(document_tree, features_accessors);
     let mut cargo_toml_path = cargo_toml_path.to_path_buf();
 

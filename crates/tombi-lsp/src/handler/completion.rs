@@ -1,7 +1,7 @@
 use itertools::Either;
 use tombi_extension::{CommentContext, CompletionContent, CompletionHint};
 use tombi_text::IntoLsp;
-use tower_lsp::lsp_types::{CompletionParams, TextDocumentPositionParams};
+use tower_lsp_server::gen_lsp_types::{CompletionParams, TextDocumentPositionParams};
 
 use crate::{
     backend,
@@ -15,11 +15,11 @@ use crate::{
 pub async fn handle_completion(
     backend: &backend::Backend,
     params: CompletionParams,
-) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error> {
     log::trace!("{:?}", params);
 
     let CompletionParams {
-        text_document_position:
+        text_document_position_params:
             TextDocumentPositionParams {
                 text_document,
                 position,

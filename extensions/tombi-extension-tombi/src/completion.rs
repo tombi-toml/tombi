@@ -11,7 +11,7 @@ pub async fn completion(
     _completion_hint: Option<CompletionHint>,
     in_comment: bool,
     features: Option<&tombi_config::TombiExtensionFeatures>,
-) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error> {
     if in_comment {
         return Ok(None);
     }
