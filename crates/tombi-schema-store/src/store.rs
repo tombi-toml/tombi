@@ -916,6 +916,20 @@ impl SchemaStore {
         Ok(())
     }
 
+    pub(crate) fn is_schema_resource_owned_by_other_document(
+        &self,
+        schema_resource_uri: &SchemaUri,
+        schema_document_uri: &SchemaUri,
+    ) -> bool {
+        self.schema_resource_index
+            .read()
+            .get(schema_resource_uri)
+            .is_some_and(|location| {
+                location.schema_document_uri != *schema_document_uri
+                    && location.schema_resources.upgrade().is_some()
+            })
+    }
+
     pub(crate) async fn replace_schema_resources(
         &self,
         schema_resources: Arc<SchemaDocumentResources>,

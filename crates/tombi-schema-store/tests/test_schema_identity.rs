@@ -1,6 +1,6 @@
 use std::{io::Write, str::FromStr};
 
-use tombi_schema_store::{DocumentSchema, SchemaStore, SchemaUri};
+use tombi_schema_store::{DocumentSchema, SchemaStore, SchemaUri, SchemaView};
 
 #[tokio::test]
 async fn distinguishes_schema_document_uri_schema_resource_uri_and_optional_id() {
@@ -76,29 +76,59 @@ async fn store_rejects_duplicate_canonical_schema_resource_uri() {
 }
 
 #[tokio::test]
-async fn documents_sharing_an_id_are_each_returned_by_their_own_uri() {
-    let write_schema = || {
+async fn first_document_owns_a_shared_id_and_later_documents_keep_their_own_base() {
+    let write_schema = |local_type: &str| {
         let mut schema_file =
             tempfile::NamedTempFile::with_suffix(".json").expect("temporary schema file");
         schema_file
-            .write_all(br#"{ "$id": "shoko://shared/root", "type": "object" }"#)
+            .write_all(
+                format!(
+                    r##"{{
+                        "$id": "shoko://shared/root",
+                        "$ref": "#/$defs/local",
+                        "$defs": {{ "local": {{ "type": "{local_type}" }} }}
+                    }}"##
+                )
+                .as_bytes(),
+            )
             .expect("write schema");
         schema_file
     };
-    let first_file = write_schema();
-    let second_file = write_schema();
+    let first_file = write_schema("boolean");
+    let second_file = write_schema("string");
     let first_uri = SchemaUri::from_file_path(first_file.path()).expect("valid schema file URI");
     let second_uri = SchemaUri::from_file_path(second_file.path()).expect("valid schema file URI");
+    let shared_id = SchemaUri::from_str("shoko://shared/root").expect("valid shared id");
     let schema_store = SchemaStore::new();
 
-    for schema_uri in [&first_uri, &second_uri] {
-        let document_schema = schema_store
-            .try_get_document_schema(schema_uri)
-            .await
-            .expect("a shared `$id` must not be an error")
-            .expect("document schema");
-        assert_eq!(document_schema.schema_document_uri(), schema_uri);
-    }
+    let first = schema_store
+        .try_get_document_schema(&first_uri)
+        .await
+        .expect("first document")
+        .expect("document schema");
+    let second = schema_store
+        .try_get_document_schema(&second_uri)
+        .await
+        .expect("a shared `$id` must not be an error")
+        .expect("document schema");
+
+    assert_eq!(first.schema_document_uri(), &first_uri);
+    assert_eq!(first.schema_base_uri(), &shared_id);
+    assert!(
+        matches!(first.schema_view.as_deref(), Some(SchemaView::Boolean(_))),
+        "{:?}",
+        first.schema_view
+    );
+    // The later document is identified by its own retrieval URI, so its `$ref`s stay inside it
+    // instead of resolving through the shared `$id` to the first document.
+    assert_eq!(second.schema_document_uri(), &second_uri);
+    assert_eq!(second.schema_base_uri(), &second_uri);
+    assert_eq!(second.id, None);
+    assert!(
+        matches!(second.schema_view.as_deref(), Some(SchemaView::String(_))),
+        "{:?}",
+        second.schema_view
+    );
 }
 
 #[tokio::test]
