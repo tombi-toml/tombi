@@ -28,6 +28,11 @@ pub async fn handle_did_change_watched_files(
 
         log::debug!("detected {:?} via watcher: {}", change.typ, uri);
 
+        if is_in_vcs_metadata_dir_uri(&uri) {
+            log::debug!("skip watcher event inside VCS metadata directory: {uri}");
+            continue;
+        }
+
         if is_json_file(&uri) {
             // Only schemas already loaded by the schema stores are updated.
             if matches!(
@@ -173,6 +178,12 @@ pub async fn handle_did_change_watched_files(
     }
 }
 
+fn is_in_vcs_metadata_dir_uri(uri: &tombi_uri::Uri) -> bool {
+    uri.to_file_path()
+        .ok()
+        .is_some_and(|path| tombi_glob::is_in_vcs_metadata_dir(&path))
+}
+
 fn is_config_file(uri: &tombi_uri::Uri) -> bool {
     uri.to_file_path().ok().is_some_and(|path| {
         path.file_name()
@@ -185,4 +196,24 @@ fn is_json_file(uri: &tombi_uri::Uri) -> bool {
     uri.to_file_path()
         .ok()
         .is_some_and(|path| path.extension().is_some_and(|ext| ext == "json"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! test_vcs_metadata_dir_uri {
+        ($name:ident, $uri:literal, $expected:literal) => {
+            #[test]
+            fn $name() {
+                let uri = tombi_uri::Uri::from_file_path($uri).unwrap();
+                assert_eq!(is_in_vcs_metadata_dir_uri(&uri), $expected);
+            }
+        };
+    }
+
+    test_vcs_metadata_dir_uri!(skips_git_temp_file, "/ws/.git/.gitstatus.NRH2rp", true);
+    test_vcs_metadata_dir_uri!(skips_git_refs_toml, "/ws/.git/refs/codex/a.toml", true);
+    test_vcs_metadata_dir_uri!(keeps_regular_toml, "/ws/pyproject.toml", false);
+    test_vcs_metadata_dir_uri!(keeps_github_dir, "/ws/.github/a.toml", false);
 }
