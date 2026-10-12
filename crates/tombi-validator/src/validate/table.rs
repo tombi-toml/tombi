@@ -225,20 +225,31 @@ impl Validate for tombi_document_tree_syntax::Table<'_> {
 /// A key rejected by the current schema has no schema for its value, but an
 /// explicit `[[schemas]]` sub-schema rooted at or below it must still apply.
 /// Validating without a schema lets `get_subschema` pick those up.
+///
+/// Returns whether the sub-schema validation failed an assertion, so callers
+/// that do not already fail the parent (strict warnings) can propagate it.
 async fn validate_rejected_value_for_sub_schema(
     value: &tombi_document_tree_syntax::Value<'_>,
     accessors: &[tombi_schema_store::Accessor],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     total_diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-) {
-    if schema_context.sub_schema_link_map.is_none() {
-        return;
+) -> bool {
+    if schema_context
+        .sub_schema_link_map
+        .is_none_or(|sub_schema_link_map| sub_schema_link_map.is_empty())
+    {
+        return false;
     }
-    if let Err(crate::Invalid { diagnostics, .. }) =
-        value.validate(accessors, None, schema_context).await
+    if let Err(crate::Invalid {
+        diagnostics,
+        assertion_failed,
+        ..
+    }) = value.validate(accessors, None, schema_context).await
     {
         total_diagnostics.extend(diagnostics);
+        return assertion_failed;
     }
+    false
 }
 
 #[allow(clippy::result_large_err)]
@@ -639,7 +650,7 @@ async fn validate_table(
                         SeverityLevelDefaultError::default(),
                         &mut total_diagnostics,
                     );
-                    validate_rejected_value_for_sub_schema(
+                    assertion_failed |= validate_rejected_value_for_sub_schema(
                         value,
                         &new_accessors,
                         schema_context,
@@ -669,7 +680,7 @@ async fn validate_table(
                 }
                 .push_diagnostic_with_level(SeverityLevel::Warn, &mut total_diagnostics);
 
-                validate_rejected_value_for_sub_schema(
+                assertion_failed |= validate_rejected_value_for_sub_schema(
                     value,
                     &new_accessors,
                     schema_context,
@@ -698,7 +709,7 @@ async fn validate_table(
                     span: key.span() + value.span(),
                 }
                 .push_diagnostic_with_level(level, &mut total_diagnostics);
-                validate_rejected_value_for_sub_schema(
+                assertion_failed |= validate_rejected_value_for_sub_schema(
                     value,
                     &new_accessors,
                     schema_context,

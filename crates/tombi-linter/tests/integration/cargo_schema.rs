@@ -123,14 +123,14 @@ fn root_and_sub_schema_strict_config(
     config
 }
 
-fn sub_schema_under_rejected_key_config() -> tombi_config::Config {
-    let mut config = root_and_sub_schema_strict_config(false, None);
+fn sub_schema_under_rejected_key_config(strict: bool, root: &str) -> tombi_config::Config {
+    let mut config = root_and_sub_schema_strict_config(strict, None);
     if let Some(tombi_config::SchemaItem::Sub(sub_schema)) = config
         .schemas
         .as_mut()
         .and_then(|schemas| schemas.last_mut())
     {
-        sub_schema.root = "tool.uv".to_string();
+        sub_schema.root = root.to_string();
     }
     config
 }
@@ -927,10 +927,34 @@ test_lint! {
         [tool.uv]
         members = 1
         "#,
-        Config(sub_schema_under_rejected_key_config()),
+        Config(sub_schema_under_rejected_key_config(false, "tool.uv")),
         SourcePath(project_root_path().join("priority.toml")),
     ) -> Err([
         tombi_validator::DiagnosticKind::KeyNotAllowed { key: "tool".to_string() },
+        tombi_validator::DiagnosticKind::TypeMismatch {
+            expected: tombi_schema_store::ValueType::Array,
+            actual: tombi_document_tree_syntax::ValueType::Integer,
+        },
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_sub_schema_applies_under_key_warned_by_strict_root_schema(
+        r#"
+        [workspace.foo]
+        members = 1
+        "#,
+        Config(sub_schema_under_rejected_key_config(true, "workspace.foo")),
+        SourcePath(project_root_path().join("priority.toml")),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::TableStrictAdditionalKeys {
+            accessors: tombi_accessor::MarkdownSchemaAccessors::from(vec![
+                tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
+            ]),
+            schema_uri: tombi_schema_store::SchemaUri::from_file_path(cargo_schema_path()).unwrap(),
+            key: "foo".to_string(),
+        },
         tombi_validator::DiagnosticKind::TypeMismatch {
             expected: tombi_schema_store::ValueType::Array,
             actual: tombi_document_tree_syntax::ValueType::Integer,
