@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import matter from "gray-matter";
+import { readCodeFile } from "../src/remark/code";
 
 interface DocumentData {
   id: number;
@@ -11,6 +12,10 @@ interface DocumentData {
 
 function extractTextContent(markdown: string): string {
   return markdown
+    .replace(
+      /^```\S*([^\n]*)\n[\s\S]*?^```$/gm,
+      (block, meta) => readCodeFile(meta) ?? block,
+    ) // Embedded code files
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Link
     .replace(/[#*`]/g, "") // Headings, bold, code
     .replace(/\n+/g, " ") // Newline

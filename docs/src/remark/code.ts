@@ -8,7 +8,7 @@ import { visit } from "unist-util-visit";
 const DOCS_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 // Embed an external file into a code block: ```toml file="snippets/example.toml"
-function readCodeFile(meta: string | null | undefined): string | undefined {
+export function readCodeFile(meta: string | null | undefined): string | undefined {
   const path = meta?.match(/(?:^|\s)file="([^"]+)"/)?.[1];
   if (!path) {
     return undefined;
