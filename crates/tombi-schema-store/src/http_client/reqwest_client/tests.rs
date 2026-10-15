@@ -158,3 +158,46 @@ async fn private_dns_answers_are_reported_as_policy_denials() {
 
     assert!(matches!(result, Err(crate::FetchError::HostNotTrusted)));
 }
+
+#[rstest]
+#[case::with_scheme("http://10.0.0.1:3128", "10.0.0.1")]
+#[case::without_scheme("proxy.corp.example:3128", "proxy.corp.example")]
+#[case::with_credentials("http://user:secret@Proxy.Corp.Example.:8080/", "proxy.corp.example")]
+#[case::ipv6("http://[::1]:3128", "[::1]")]
+fn proxy_hosts_are_read_like_reqwest(#[case] value: &str, #[case] expected: &str) {
+    let hosts = super::proxy_hosts([value.to_string()].into_iter());
+
+    assert_eq!(
+        hosts,
+        std::collections::HashSet::from([expected.to_string()])
+    );
+}
+
+#[test]
+fn empty_proxy_values_are_ignored() {
+    let hosts = super::proxy_hosts(["".to_string(), "  ".to_string()].into_iter());
+
+    assert!(hosts.is_empty());
+}
+
+#[rstest]
+#[case::configured_proxy(&["localhost"], true)]
+#[case::any_other_host(&["proxy.corp.example"], false)]
+#[tokio::test(flavor = "current_thread")]
+async fn only_configured_proxy_hosts_may_resolve_to_private_addresses(
+    #[case] proxy_hosts: &[&str],
+    #[case] allowed: bool,
+) {
+    use reqwest::dns::Resolve;
+    use std::str::FromStr;
+
+    let resolver = super::FilteredDnsResolver {
+        policy: Arc::new(crate::schema_fetch_policy::SchemaFetchPolicy::default()),
+        proxy_hosts: Arc::new(proxy_hosts.iter().map(|host| host.to_string()).collect()),
+    };
+    let result = resolver
+        .resolve(reqwest::dns::Name::from_str("localhost").unwrap())
+        .await;
+
+    assert_eq!(result.is_ok(), allowed);
+}
