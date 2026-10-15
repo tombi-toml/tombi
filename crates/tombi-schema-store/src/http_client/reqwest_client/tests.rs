@@ -212,3 +212,15 @@ fn schema_urls_must_not_target_the_proxy_host(#[case] url: &str, #[case] allowed
 
     assert_eq!(result.is_ok(), allowed);
 }
+
+#[rstest]
+#[case::resolves_to_loopback("http://localhost/schema.json", false)]
+#[case::ip_literal_is_left_to_url_check("http://127.0.0.1/schema.json", true)]
+#[case::unresolvable_is_left_to_the_proxy("http://tombi-unresolvable.invalid/schema.json", true)]
+#[tokio::test(flavor = "current_thread")]
+async fn proxied_destinations_are_checked_locally(#[case] url: &str, #[case] allowed: bool) {
+    let policy = crate::schema_fetch_policy::SchemaFetchPolicy::default();
+    let result = super::check_local_resolution(&policy, &reqwest::Url::parse(url).unwrap()).await;
+
+    assert_eq!(result.is_ok(), allowed);
+}

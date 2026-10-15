@@ -254,6 +254,14 @@ async fn check_proxied_destination(
         return Ok(());
     }
     check_not_proxy_host(&proxy_hosts, url)?;
+    check_local_resolution(policy, url).await
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+async fn check_local_resolution(
+    policy: &SchemaFetchPolicy,
+    url: &reqwest::Url,
+) -> Result<(), FetchError> {
     let Some(host) = url.domain() else {
         // IP literals were already checked by `check_http_url`.
         return Ok(());
