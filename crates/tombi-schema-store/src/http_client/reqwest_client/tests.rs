@@ -201,3 +201,14 @@ async fn only_configured_proxy_hosts_may_resolve_to_private_addresses(
 
     assert_eq!(result.is_ok(), allowed);
 }
+
+#[rstest]
+#[case::same_name("http://proxy.corp.example/schema.json", false)]
+#[case::case_and_trailing_dot("http://Proxy.Corp.Example./schema.json", false)]
+#[case::other_host("http://schema.example/schema.json", true)]
+fn schema_urls_must_not_target_the_proxy_host(#[case] url: &str, #[case] allowed: bool) {
+    let proxy_hosts = std::collections::HashSet::from(["proxy.corp.example".to_string()]);
+    let result = super::check_not_proxy_host(&proxy_hosts, &reqwest::Url::parse(url).unwrap());
+
+    assert_eq!(result.is_ok(), allowed);
+}

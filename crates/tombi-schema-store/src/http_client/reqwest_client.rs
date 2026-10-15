@@ -249,13 +249,15 @@ async fn check_proxied_destination(
     policy: &SchemaFetchPolicy,
     url: &reqwest::Url,
 ) -> Result<(), FetchError> {
+    let proxy_hosts = env_proxy_hosts();
+    if proxy_hosts.is_empty() {
+        return Ok(());
+    }
+    check_not_proxy_host(&proxy_hosts, url)?;
     let Some(host) = url.domain() else {
         // IP literals were already checked by `check_http_url`.
         return Ok(());
     };
-    if env_proxy_hosts().is_empty() {
-        return Ok(());
-    }
 
     let lookup = tokio::time::timeout(
         PROXIED_DESTINATION_LOOKUP_TIMEOUT,
@@ -274,6 +276,23 @@ async fn check_proxied_destination(
     policy
         .check_resolved_addresses(host, &resolved_ips)
         .map_err(FetchError::from)
+}
+
+/// The resolver lets proxy hosts resolve to non-public addresses so the proxy
+/// itself stays reachable. A schema URL must not reuse that exemption to reach
+/// the proxy's own address on arbitrary ports.
+#[cfg(not(target_arch = "wasm32"))]
+fn check_not_proxy_host(
+    proxy_hosts: &HashSet<String>,
+    url: &reqwest::Url,
+) -> Result<(), FetchError> {
+    let is_proxy_host = url
+        .host_str()
+        .is_some_and(|host| proxy_hosts.contains(&host.trim_end_matches('.').to_ascii_lowercase()));
+    if is_proxy_host {
+        return Err(FetchError::HostNotTrusted);
+    }
+    Ok(())
 }
 
 #[cfg(not(target_arch = "wasm32"))]
