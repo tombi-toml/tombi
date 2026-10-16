@@ -56,7 +56,7 @@ document-tree = ["dep:tombi-document-tree-syntax"]
 gloo-net = ["dep:gloo-net", "dep:web-sys"]
 gloo-net06 = ["gloo-net"]
 native = ["reqwest", "tombi-future/native"]
-reqwest = ["dep:reqwest", "dep:http", "dep:hyper-util"]
+reqwest = ["dep:http", "dep:hyper-util", "dep:reqwest"]
 reqwest01 = ["reqwest"]
 wasm = ["gloo-net", "tombi-future/wasm"]
 
