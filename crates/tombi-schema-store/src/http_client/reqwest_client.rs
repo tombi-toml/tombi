@@ -12,6 +12,8 @@ use tombi_future::Boxable;
 
 #[cfg(not(target_arch = "wasm32"))]
 use super::github_credentials::github_authorization;
+#[cfg(not(target_arch = "wasm32"))]
+use super::system_proxy::{SystemProxy, normalize_host};
 
 #[derive(Debug, Clone)]
 pub struct ReqwestHttpClient {
@@ -156,9 +158,16 @@ fn build_client(policy: Arc<SchemaFetchPolicy>) -> Result<reqwest::Client, Fetch
 
     #[cfg(not(target_arch = "wasm32"))]
     {
+        let proxy = SystemProxy::current();
+        // Proxies are installed explicitly so the resolver exemption and the
+        // client always agree on which proxies exist.
+        builder = builder.no_proxy();
+        for reqwest_proxy in proxy.reqwest_proxies() {
+            builder = builder.proxy(reqwest_proxy);
+        }
         builder = builder.dns_resolver(Arc::new(FilteredDnsResolver {
             policy,
-            proxy_hosts: Arc::new(env_proxy_hosts()),
+            proxy_hosts: proxy.hosts().clone(),
         }));
     }
 
@@ -191,53 +200,9 @@ fn fetch_error_from_reqwest(error: reqwest::Error) -> FetchError {
     }
 }
 
-/// Environment variables reqwest reads to pick a proxy.
-#[cfg(not(target_arch = "wasm32"))]
-const PROXY_ENV_VARS: [&str; 6] = [
-    "ALL_PROXY",
-    "all_proxy",
-    "HTTPS_PROXY",
-    "https_proxy",
-    "HTTP_PROXY",
-    "http_proxy",
-];
-
 /// How long the local pre-check of a proxied destination may wait on DNS.
 #[cfg(not(target_arch = "wasm32"))]
 const PROXIED_DESTINATION_LOOKUP_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
-
-/// Hosts of the proxies configured in the user's environment.
-///
-/// Like `TOMBI_SCHEMA_TRUSTED_HOSTS`, these come from the process environment,
-/// never from project files, so the proxy itself may live on a private network.
-#[cfg(not(target_arch = "wasm32"))]
-fn env_proxy_hosts() -> HashSet<String> {
-    proxy_hosts(
-        PROXY_ENV_VARS
-            .iter()
-            .filter_map(|name| std::env::var(name).ok()),
-    )
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn proxy_hosts(values: impl Iterator<Item = String>) -> HashSet<String> {
-    values
-        .map(|value| value.trim().to_string())
-        .filter(|value| !value.is_empty())
-        .filter_map(|value| {
-            // reqwest accepts `host:port` without a scheme and assumes HTTP.
-            let value = if value.contains("://") {
-                value
-            } else {
-                format!("http://{value}")
-            };
-            reqwest::Url::parse(&value)
-                .ok()?
-                .host_str()
-                .map(|host| host.trim_end_matches('.').to_ascii_lowercase())
-        })
-        .collect()
-}
 
 /// When a proxy is configured, the proxy resolves the destination and the
 /// connection-time DNS check only sees the proxy host. Resolve the destination
@@ -249,11 +214,12 @@ async fn check_proxied_destination(
     policy: &SchemaFetchPolicy,
     url: &reqwest::Url,
 ) -> Result<(), FetchError> {
-    let proxy_hosts = env_proxy_hosts();
-    if proxy_hosts.is_empty() {
+    let proxy = SystemProxy::current();
+    check_not_proxy_host(proxy.hosts(), url)?;
+    if !proxy.is_proxied(url) {
+        // Direct connections are covered by `FilteredDnsResolver`.
         return Ok(());
     }
-    check_not_proxy_host(&proxy_hosts, url)?;
     check_local_resolution(policy, url).await
 }
 
@@ -296,7 +262,7 @@ fn check_not_proxy_host(
 ) -> Result<(), FetchError> {
     let is_proxy_host = url
         .host_str()
-        .is_some_and(|host| proxy_hosts.contains(&host.trim_end_matches('.').to_ascii_lowercase()));
+        .is_some_and(|host| proxy_hosts.contains(&normalize_host(host)));
     if is_proxy_host {
         return Err(FetchError::HostNotTrusted);
     }
@@ -315,9 +281,7 @@ impl reqwest::dns::Resolve for FilteredDnsResolver {
     fn resolve(&self, name: reqwest::dns::Name) -> reqwest::dns::Resolving {
         let policy = self.policy.clone();
         let host = name.as_str().to_string();
-        let is_proxy_host = self
-            .proxy_hosts
-            .contains(&host.trim_end_matches('.').to_ascii_lowercase());
+        let is_proxy_host = self.proxy_hosts.contains(&normalize_host(&host));
 
         Box::pin(async move {
             let addresses = tokio::net::lookup_host((host.as_str(), 0))

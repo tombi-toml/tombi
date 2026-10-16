@@ -25,6 +25,8 @@ fn http_timeout_secs() -> u64 {
 mod github_credentials;
 #[cfg(feature = "reqwest")]
 mod reqwest_client;
+#[cfg(all(feature = "reqwest", not(target_arch = "wasm32")))]
+mod system_proxy;
 #[cfg(feature = "reqwest")]
 pub use reqwest_client::ReqwestHttpClient;
 
