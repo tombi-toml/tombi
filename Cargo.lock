@@ -1036,11 +1036,9 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "socket2",
- "system-configuration",
  "tokio",
  "tower-service",
  "tracing",
- "windows-registry",
 ]
 
 [[package]]
@@ -3326,6 +3324,7 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
+ "system-configuration",
  "tempfile",
  "thiserror 2.0.20",
  "tokio",
@@ -3346,6 +3345,7 @@ dependencies = [
  "tombi-uri",
  "tombi-x-keyword",
  "web-sys",
+ "windows-registry",
 ]
 
 [[package]]

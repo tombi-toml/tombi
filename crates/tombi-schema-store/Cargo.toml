@@ -50,13 +50,25 @@ http = { workspace = true, optional = true }
 hyper-util = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["process", "time"] }
 
+[target.'cfg(target_os = "macos")'.dependencies]
+system-configuration = { workspace = true, optional = true }
+
+[target."cfg(windows)".dependencies]
+windows-registry = { workspace = true, optional = true }
+
 [features]
 default = ["native"]
 document-tree = ["dep:tombi-document-tree-syntax"]
 gloo-net = ["dep:gloo-net", "dep:web-sys"]
 gloo-net06 = ["gloo-net"]
 native = ["reqwest", "tombi-future/native"]
-reqwest = ["dep:http", "dep:hyper-util", "dep:reqwest"]
+reqwest = [
+  "dep:http",
+  "dep:hyper-util",
+  "dep:reqwest",
+  "dep:system-configuration",
+  "dep:windows-registry",
+]
 reqwest01 = ["reqwest"]
 wasm = ["gloo-net", "tombi-future/wasm"]
 
