@@ -80,4 +80,32 @@ mod tests {
 
         assert_eq!(keywords, [(0, 1, 6), (2, 2, 6), (5, 2, 9), (7, 2, 6)]);
     }
+
+    #[test]
+    fn region_markers_without_descriptions_have_no_empty_tokens() {
+        let source = "# region\n# endregion\n";
+        let parsed = tombi_parser::parse(source);
+        let mut builder = SemanticTokensBuilder::new(
+            tombi_uri::Uri::from_str("file:///test.toml").unwrap(),
+            parsed.line_index(),
+            tombi_text::EncodingKind::Utf16,
+        );
+        parsed.root().append_semantic_tokens(&mut builder);
+
+        let tokens: Vec<_> = builder
+            .build()
+            .into_iter()
+            .map(|token| (token.token_type, token.length))
+            .collect();
+
+        assert_eq!(
+            tokens,
+            [
+                (TokenType::COMMENT as u32, 2),
+                (TokenType::KEYWORD as u32, 6),
+                (TokenType::COMMENT as u32, 2),
+                (TokenType::KEYWORD as u32, 9),
+            ]
+        );
+    }
 }

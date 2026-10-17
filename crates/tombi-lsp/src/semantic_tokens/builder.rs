@@ -75,13 +75,15 @@ impl<'a> SemanticTokensBuilder<'a> {
             token_modifiers_bitset: 0,
         });
 
-        self.tokens.push(SemanticToken {
-            delta_line: 0,
-            delta_start: directive_len,
-            length: content_len,
-            token_type: TokenType::COMMENT as u32,
-            token_modifiers_bitset: 0,
-        });
+        if content_len > 0 {
+            self.tokens.push(SemanticToken {
+                delta_line: 0,
+                delta_start: directive_len,
+                length: content_len,
+                token_type: TokenType::COMMENT as u32,
+                token_modifiers_bitset: 0,
+            });
+        }
     }
 
     pub fn build(self) -> Vec<SemanticToken> {
