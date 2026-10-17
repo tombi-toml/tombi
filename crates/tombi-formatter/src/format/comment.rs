@@ -1,6 +1,8 @@
 use std::fmt::Write;
 
-use tombi_ast_syntax::{AstNode, DanglingCommentGroupOr, LeadingComment, TrailingComment};
+use tombi_ast_syntax::{
+    AstNode, DanglingCommentGroupOr, LeadingComment, RegionMarker, TrailingComment,
+};
 
 use super::Format;
 
@@ -15,7 +17,15 @@ impl<'t> Format for tombi_ast_syntax::DanglingCommentGroup<'t> {
                 write!(f, "{}", f.line_ending())?;
             }
             f.write_indent()?;
-            format_comment(f, comment.as_ref(), i == 0)?;
+            format_comment(
+                f,
+                comment.as_ref(),
+                if i == 0 {
+                    CommentPosition::First
+                } else {
+                    CommentPosition::Subsequent
+                },
+            )?;
         }
         Ok(())
     }
@@ -100,9 +110,9 @@ impl<'t> Format for Vec<LeadingComment<'t>> {
         for (i, comment) in self.iter().enumerate() {
             f.write_indent()?;
             if i == 0 {
-                format_comment(f, comment.as_ref(), true)?;
+                format_comment(f, comment.as_ref(), CommentPosition::First)?;
             } else {
-                format_comment(f, comment.as_ref(), false)?;
+                format_comment(f, comment.as_ref(), CommentPosition::Subsequent)?;
             }
             write!(f, "{}", f.line_ending())?;
         }
@@ -118,19 +128,46 @@ impl<'t> Format for TrailingComment<'t> {
         }
 
         write!(f, "{}", f.trailing_comment_space())?;
-        format_comment(f, self.as_ref(), true)
+        format_comment(f, self.as_ref(), CommentPosition::Trailing)
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum CommentPosition {
+    First,
+    Subsequent,
+    Trailing,
 }
 
 fn format_comment(
     f: &mut crate::Formatter,
     comment: &tombi_ast_syntax::Comment,
-    strip_leading_spaces: bool,
+    position: CommentPosition,
 ) -> Result<(), std::fmt::Error> {
     let comment_string = comment.to_string();
 
     if f.comment_style() == tombi_config::CommentStyle::Preserve {
         return write!(f, "{comment_string}");
+    }
+
+    if position != CommentPosition::Trailing
+        && let Some(marker) = comment.region_marker()
+    {
+        let keyword = match marker {
+            RegionMarker::Start => "region",
+            RegionMarker::End => "endregion",
+        };
+        let description = comment_string
+            .strip_prefix('#')
+            .unwrap()
+            .trim_start()
+            .strip_prefix(keyword)
+            .unwrap()
+            .trim();
+        if description.is_empty() {
+            return write!(f, "# {keyword}");
+        }
+        return write!(f, "# {keyword} {description}");
     }
 
     {
@@ -180,7 +217,7 @@ fn format_comment(
 
         if c != ' ' && c != '\t' {
             write!(f, "{c}")?;
-        } else if strip_leading_spaces {
+        } else if position != CommentPosition::Subsequent {
             for c in iter.by_ref() {
                 if c != ' ' && c != '\t' {
                     write!(f, "{c}")?;
@@ -306,6 +343,60 @@ mod tests {
             key = "value"  #TRAILING
             #    dangling comment
             "##
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn region_marker_standalone_and_second_comment_line(
+            "# heading\n#region    dependency-groups  \n[dependency-groups]\n#  endregion   dependency-groups  ",
+        ) -> Ok(
+            r#"
+            # heading
+            # region dependency-groups
+            [dependency-groups]
+            # endregion dependency-groups
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn region_marker_without_description(
+            "#region   \n# endregion  ",
+        ) -> Ok(
+            "# region\n# endregion"
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn region_marker_keeps_description_content(
+            "#region  Mixed  Case\tName  \n# endregion\t  Mixed  Case\tName  ",
+        ) -> Ok(
+            "# region Mixed  Case\tName\n# endregion Mixed  Case\tName"
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn region_marker_preserve_style(
+            "#region   Group  \n#  endregion   Group  \nkey = 1",
+            FormatOptions {
+                rules: Some(FormatRules {
+                    comment_style: Some(CommentStyle::Preserve),
+                    ..Default::default()
+                }),
+            }
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn region_marker_unrecognized_and_trailing_use_generic_style(
+            "#regionend   Group  \nkey=1 #region   Group  ",
+        ) -> Ok(
+            "# regionend   Group\nkey = 1  # region   Group"
         )
     }
 
