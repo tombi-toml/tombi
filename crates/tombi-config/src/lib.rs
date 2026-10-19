@@ -184,7 +184,9 @@ impl Config {
             .as_ref()
             .and_then(|options| options.rules.as_ref())
         {
-            base_rules.merge(override_rules)
+            // `FormatRules::merge` keeps the receiver's values, so the override
+            // must be the receiver for it to win over the base rules.
+            override_rules.clone().merge(&base_rules)
         } else {
             base_rules
         };
@@ -203,11 +205,75 @@ impl Config {
             .as_ref()
             .and_then(|options| options.rules.as_ref())
         {
-            base_rules.merge(override_rules)
+            // `LintRules::merge` keeps the receiver's values, so the override
+            // must be the receiver for it to win over the base rules.
+            override_rules.clone().merge(&base_rules)
         } else {
             base_rules
         };
 
         LintOptions { rules: Some(rules) }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn override_format_rules_take_precedence_over_base() {
+        let config = Config {
+            format: Some(FormatOptions {
+                rules: Some(FormatRules {
+                    indent_width: Some(IndentWidth::from(4)),
+                    ..Default::default()
+                }),
+            }),
+            ..Default::default()
+        };
+        let override_format = OverrideFormatOptions {
+            enabled: None,
+            rules: Some(FormatRules {
+                indent_width: Some(IndentWidth::from(6)),
+                ..Default::default()
+            }),
+        };
+
+        let merged = config.merge_format(Some(&override_format));
+
+        assert_eq!(
+            merged.rules.and_then(|rules| rules.indent_width),
+            Some(IndentWidth::from(6))
+        );
+    }
+
+    #[test]
+    fn override_format_rules_keep_unset_base_rules() {
+        let config = Config {
+            format: Some(FormatOptions {
+                rules: Some(FormatRules {
+                    indent_width: Some(IndentWidth::from(4)),
+                    array_comma_space_width: Some(ArrayCommaSpaceWidth::from(2)),
+                    ..Default::default()
+                }),
+            }),
+            ..Default::default()
+        };
+        let override_format = OverrideFormatOptions {
+            enabled: None,
+            rules: Some(FormatRules {
+                indent_width: Some(IndentWidth::from(6)),
+                ..Default::default()
+            }),
+        };
+
+        let merged = config.merge_format(Some(&override_format));
+
+        let rules = merged.rules.unwrap();
+        assert_eq!(rules.indent_width, Some(IndentWidth::from(6)));
+        assert_eq!(
+            rules.array_comma_space_width,
+            Some(ArrayCommaSpaceWidth::from(2))
+        );
     }
 }
