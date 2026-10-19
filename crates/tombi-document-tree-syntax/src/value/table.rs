@@ -228,6 +228,15 @@ impl<'t> Table<'t> {
             }
             (ParentTable, Table | InlineTable { .. }) => {
                 self.kind = other.kind;
+                if let Some(directives) = other.header_comment_directives {
+                    self.header_comment_directives = Some(directives);
+                }
+                if let Some(directives) = other.body_comment_directives {
+                    self.body_comment_directives = Some(directives);
+                }
+                if let Some(directives) = other.group_boundary_comment_directives {
+                    self.group_boundary_comment_directives = Some(directives);
+                }
             }
             (ParentKey, Table | InlineTable { .. }) => {
                 self.kind = other.kind;

@@ -51,6 +51,36 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_explicit_parent_table_keeps_leading_comment_directive(
+                r#"
+                [table.table]
+                boolean = true
+                integer = 2
+
+                # tombi: lint.rules.table-min-keys.disabled = true
+                [table]
+                "#,
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
+        }
+
+        test_lint! {
+            #[test]
+            fn test_explicit_parent_table_does_not_duplicate_inherited_directive(
+                r#"
+                # tombi: lint.rules.table-min-keys.disabled = true
+                [table.table]
+                boolean = true
+
+                # tombi: lint.rules.table-min-keys.disabled = true
+                [table]
+                "#,
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
+        }
+
+        test_lint! {
+            #[test]
             fn test_table_unknown_min_keys(
                 r#"
                 #:tombi schema.strict = false
