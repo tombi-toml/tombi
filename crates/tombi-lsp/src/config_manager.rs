@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use tombi_config::{Config, TomlVersion};
+use tombi_config::Config;
 use tombi_schema_store::{SchemaStore, SchemaUri};
 
 /// Source type for ConfigSchemaStore without a specific config file
@@ -50,7 +50,7 @@ pub struct ConfigManager {
 struct AssociatedSchema {
     schema_uri: SchemaUri,
     file_match: Vec<String>,
-    toml_version: Option<TomlVersion>,
+    options: tombi_schema_store::AssociateSchemaOptions,
 }
 
 impl ConfigManager {
@@ -241,7 +241,7 @@ impl ConfigManager {
         self.associated_schemas.write().await.push(AssociatedSchema {
             schema_uri: schema_uri.clone(),
             file_match: file_match.to_vec(),
-            toml_version: options.toml_version,
+            options: options.clone(),
         });
 
         // Update config_schema_stores
@@ -311,6 +311,7 @@ impl ConfigManager {
         }
 
         let mut config_schema_stores = self.config_schema_stores.write().await;
+        let associated_schemas = self.associated_schemas.read().await;
         for (
             config_path,
             ConfigSchemaStore {
@@ -318,7 +319,10 @@ impl ConfigManager {
             },
         ) in config_schema_stores.iter_mut()
         {
-            updated |= schema_store.refresh_cache(config, Some(config_path)).await?;
+            if schema_store.refresh_cache(config, Some(config_path)).await? {
+                load_associations(schema_store, &associated_schemas).await;
+                updated = true;
+            }
         }
 
         if let Some((
@@ -328,7 +332,10 @@ impl ConfigManager {
             },
         )) = &mut *self.default_config_schema_store.write().await
         {
-            updated |= schema_store.refresh_cache(config, None).await?;
+            if schema_store.refresh_cache(config, None).await? {
+                load_associations(schema_store, &associated_schemas).await;
+                updated = true;
+            }
         }
 
         Ok(updated)
@@ -401,22 +408,21 @@ async fn load_schema_store_with_associations(
 ) -> Result<(), tombi_schema_store::Error> {
     schema_store.load_config(config, config_path).await?;
 
+    load_associations(schema_store, associated_schemas).await;
+
+    Ok(())
+}
+
+async fn load_associations(schema_store: &SchemaStore, associated_schemas: &[AssociatedSchema]) {
     for associated_schema in associated_schemas {
         schema_store
             .associate_schema(
                 associated_schema.schema_uri.clone(),
                 associated_schema.file_match.clone(),
-                &tombi_schema_store::AssociateSchemaOptions {
-                    toml_version: associated_schema.toml_version,
-                    force: false,
-                    title: None,
-                    description: None,
-                },
+                &associated_schema.options,
             )
             .await;
     }
-
-    Ok(())
 }
 
 fn schema_store_options(config: &Config, backend_options: &crate::backend::Options) -> tombi_schema_store::Options {
