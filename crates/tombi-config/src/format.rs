@@ -305,50 +305,50 @@ pub struct FormatRules {
 impl FormatRules {
     pub fn merge(self, override_rules: &Self) -> Self {
         Self {
-            array_bracket_space_width: self
+            array_bracket_space_width: override_rules
                 .array_bracket_space_width
-                .or(override_rules.array_bracket_space_width),
-            array_comma_space_width: self
+                .or(self.array_bracket_space_width),
+            array_comma_space_width: override_rules
                 .array_comma_space_width
-                .or(override_rules.array_comma_space_width),
-            comment_style: self.comment_style.or(override_rules.comment_style),
-            date_time_delimiter: self
+                .or(self.array_comma_space_width),
+            comment_style: override_rules.comment_style.or(self.comment_style),
+            date_time_delimiter: override_rules
                 .date_time_delimiter
-                .or(override_rules.date_time_delimiter),
-            group_blank_lines_limit: self
+                .or(self.date_time_delimiter),
+            group_blank_lines_limit: override_rules
                 .group_blank_lines_limit
-                .or(override_rules.group_blank_lines_limit),
-            indent_style: self.indent_style.or(override_rules.indent_style),
-            indent_sub_tables: self.indent_sub_tables.or(override_rules.indent_sub_tables),
-            indent_table_key_value_pairs: self
+                .or(self.group_blank_lines_limit),
+            indent_style: override_rules.indent_style.or(self.indent_style),
+            indent_sub_tables: override_rules.indent_sub_tables.or(self.indent_sub_tables),
+            indent_table_key_value_pairs: override_rules
                 .indent_table_key_value_pairs
-                .or(override_rules.indent_table_key_value_pairs),
-            indent_width: self.indent_width.or(override_rules.indent_width),
-            inline_table_brace_space_width: self
+                .or(self.indent_table_key_value_pairs),
+            indent_width: override_rules.indent_width.or(self.indent_width),
+            inline_table_brace_space_width: override_rules
                 .inline_table_brace_space_width
-                .or(override_rules.inline_table_brace_space_width),
-            inline_table_comma_space_width: self
+                .or(self.inline_table_brace_space_width),
+            inline_table_comma_space_width: override_rules
                 .inline_table_comma_space_width
-                .or(override_rules.inline_table_comma_space_width),
-            key_value_equals_sign_alignment: self
+                .or(self.inline_table_comma_space_width),
+            key_value_equals_sign_alignment: override_rules
                 .key_value_equals_sign_alignment
-                .or(override_rules.key_value_equals_sign_alignment),
-            key_quote_style: self.key_quote_style.or(override_rules.key_quote_style),
-            string_quote_style: self
+                .or(self.key_value_equals_sign_alignment),
+            key_quote_style: override_rules.key_quote_style.or(self.key_quote_style),
+            string_quote_style: override_rules
                 .string_quote_style
-                .or(override_rules.string_quote_style),
-            trailing_comment_alignment: self
+                .or(self.string_quote_style),
+            trailing_comment_alignment: override_rules
                 .trailing_comment_alignment
-                .or(override_rules.trailing_comment_alignment),
-            key_value_equals_sign_space_width: self
+                .or(self.trailing_comment_alignment),
+            key_value_equals_sign_space_width: override_rules
                 .key_value_equals_sign_space_width
-                .or(override_rules.key_value_equals_sign_space_width),
-            line_ending: self.line_ending.or(override_rules.line_ending),
-            line_width: self.line_width.or(override_rules.line_width),
-            table_blank_lines: self.table_blank_lines.or(override_rules.table_blank_lines),
-            trailing_comment_space_width: self
+                .or(self.key_value_equals_sign_space_width),
+            line_ending: override_rules.line_ending.or(self.line_ending),
+            line_width: override_rules.line_width.or(self.line_width),
+            table_blank_lines: override_rules.table_blank_lines.or(self.table_blank_lines),
+            trailing_comment_space_width: override_rules
                 .trailing_comment_space_width
-                .or(override_rules.trailing_comment_space_width),
+                .or(self.trailing_comment_space_width),
         }
     }
 }

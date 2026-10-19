@@ -184,9 +184,7 @@ impl Config {
             .as_ref()
             .and_then(|options| options.rules.as_ref())
         {
-            // `FormatRules::merge` keeps the receiver's values, so the override
-            // must be the receiver for it to win over the base rules.
-            override_rules.clone().merge(&base_rules)
+            base_rules.merge(override_rules)
         } else {
             base_rules
         };
@@ -205,9 +203,7 @@ impl Config {
             .as_ref()
             .and_then(|options| options.rules.as_ref())
         {
-            // `LintRules::merge` keeps the receiver's values, so the override
-            // must be the receiver for it to win over the base rules.
-            override_rules.clone().merge(&base_rules)
+            base_rules.merge(override_rules)
         } else {
             base_rules
         };
