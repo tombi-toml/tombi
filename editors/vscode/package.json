@@ -208,8 +208,21 @@
         "command": "tombi.selectSchema",
         "title": "Select Schema",
         "category": "Tombi"
+      },
+      {
+        "command": "tombi.associateSchema",
+        "title": "Associate Schema",
+        "category": "Tombi"
       }
     ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "tombi.associateSchema",
+          "when": "false"
+        }
+      ]
+    },
     "configuration": {
       "title": "Tombi",
       "properties": {

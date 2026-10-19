@@ -153,6 +153,15 @@ export class Extension {
         },
       ),
     );
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand(
+        `${EXTENSION_ID}.associateSchema`,
+        async (args: unknown) => {
+          await command.associateSchema(this.client, args);
+          await this.updateStatusBarItem();
+        },
+      ),
+    );
   }
 
   private registerEvents(): void {
