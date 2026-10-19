@@ -2,10 +2,7 @@ use tower_lsp_server::gen_lsp_types::DidChangeConfigurationParams;
 
 use crate::backend::Backend;
 
-pub async fn handle_did_change_configuration(
-    backend: &Backend,
-    params: DidChangeConfigurationParams,
-) {
+pub async fn handle_did_change_configuration(backend: &Backend, params: DidChangeConfigurationParams) {
     log::info!("handle_did_change_configuration");
     log::trace!("{:?}", params);
 

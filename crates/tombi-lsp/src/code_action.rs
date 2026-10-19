@@ -2,8 +2,8 @@ use tombi_document_tree_syntax::{TableKind, dig_accessors};
 use tombi_schema_store::{Accessor, AccessorContext, AccessorKeyKind};
 use tombi_text::IntoLsp;
 use tower_lsp_server::gen_lsp_types::{
-    CodeAction, CodeActionKind, DocumentChange, Edit, OptionalVersionedTextDocumentIdentifier,
-    TextDocumentEdit, TextDocumentIdentifier, TextEdit, WorkspaceEdit,
+    CodeAction, CodeActionKind, DocumentChange, Edit, OptionalVersionedTextDocumentIdentifier, TextDocumentEdit,
+    TextDocumentIdentifier, TextEdit, WorkspaceEdit,
 };
 
 pub enum CodeActionRefactorRewriteName {
@@ -59,40 +59,34 @@ pub fn dot_keys_to_inline_table_code_action(
                 kind: Some(CodeActionKind::RefactorRewrite),
                 edit: Some(WorkspaceEdit {
                     changes: None,
-                    document_changes: Some(vec![DocumentChange::TextDocumentEdit(
-                        TextDocumentEdit {
-                            text_document: OptionalVersionedTextDocumentIdentifier {
-                                text_document_identifier: TextDocumentIdentifier {
-                                    uri: text_document_uri.to_owned().into(),
-                                },
-                                version: None,
+                    document_changes: Some(vec![DocumentChange::TextDocumentEdit(TextDocumentEdit {
+                        text_document: OptionalVersionedTextDocumentIdentifier {
+                            text_document_identifier: TextDocumentIdentifier {
+                                uri: text_document_uri.to_owned().into(),
                             },
-                            edits: vec![
-                                Edit::TextEdit(TextEdit {
-                                    range: tombi_text::Span::new(
-                                        parent_key_context.span.start,
-                                        value.span().start,
-                                    )
-                                    .into_lsp(line_index, encoding),
-                                    new_text: format!(
-                                        "{} = {{ {}{}",
-                                        parent_key,
-                                        key.value(),
-                                        if table.kind() == TableKind::KeyValue {
-                                            " = "
-                                        } else {
-                                            "."
-                                        }
-                                    ),
-                                }),
-                                Edit::TextEdit(TextEdit {
-                                    range: tombi_text::Span::empty(value.symbol_span().end)
-                                        .into_lsp(line_index, encoding),
-                                    new_text: " }".to_string(),
-                                }),
-                            ],
+                            version: None,
                         },
-                    )]),
+                        edits: vec![
+                            Edit::TextEdit(TextEdit {
+                                range: tombi_text::Span::new(parent_key_context.span.start, value.span().start)
+                                    .into_lsp(line_index, encoding),
+                                new_text: format!(
+                                    "{} = {{ {}{}",
+                                    parent_key,
+                                    key.value(),
+                                    if table.kind() == TableKind::KeyValue {
+                                        " = "
+                                    } else {
+                                        "."
+                                    }
+                                ),
+                            }),
+                            Edit::TextEdit(TextEdit {
+                                range: tombi_text::Span::empty(value.symbol_span().end).into_lsp(line_index, encoding),
+                                new_text: " }".to_string(),
+                            }),
+                        ],
+                    })]),
                     change_annotations: None,
                 }),
                 ..Default::default()
@@ -123,8 +117,7 @@ pub fn inline_table_to_dot_keys_code_action(
 
     match value {
         tombi_document_tree_syntax::Value::Table(table)
-            if table.len() == 1
-                && matches!(table.kind(), TableKind::InlineTable { has_comment: false }) =>
+            if table.len() == 1 && matches!(table.kind(), TableKind::InlineTable { has_comment: false }) =>
         {
             let node = get_ast_inline_table_node(root, table)?;
             if node.has_inner_comments() {
@@ -137,34 +130,26 @@ pub fn inline_table_to_dot_keys_code_action(
                 kind: Some(CodeActionKind::RefactorRewrite),
                 edit: Some(WorkspaceEdit {
                     changes: None,
-                    document_changes: Some(vec![DocumentChange::TextDocumentEdit(
-                        TextDocumentEdit {
-                            text_document: OptionalVersionedTextDocumentIdentifier {
-                                text_document_identifier: TextDocumentIdentifier {
-                                    uri: text_document_uri.to_owned().into(),
-                                },
-                                version: None,
+                    document_changes: Some(vec![DocumentChange::TextDocumentEdit(TextDocumentEdit {
+                        text_document: OptionalVersionedTextDocumentIdentifier {
+                            text_document_identifier: TextDocumentIdentifier {
+                                uri: text_document_uri.to_owned().into(),
                             },
-                            edits: vec![
-                                Edit::TextEdit(TextEdit {
-                                    range: tombi_text::Span::new(
-                                        parent_context.span.end,
-                                        key.span().start,
-                                    )
-                                    .into_lsp(line_index, encoding),
-                                    new_text: ".".to_string(),
-                                }),
-                                Edit::TextEdit(TextEdit {
-                                    range: tombi_text::Span::new(
-                                        value.span().end,
-                                        table.symbol_span().end,
-                                    )
-                                    .into_lsp(line_index, encoding),
-                                    new_text: "".to_string(),
-                                }),
-                            ],
+                            version: None,
                         },
-                    )]),
+                        edits: vec![
+                            Edit::TextEdit(TextEdit {
+                                range: tombi_text::Span::new(parent_context.span.end, key.span().start)
+                                    .into_lsp(line_index, encoding),
+                                new_text: ".".to_string(),
+                            }),
+                            Edit::TextEdit(TextEdit {
+                                range: tombi_text::Span::new(value.span().end, table.symbol_span().end)
+                                    .into_lsp(line_index, encoding),
+                                new_text: "".to_string(),
+                            }),
+                        ],
+                    })]),
                     change_annotations: None,
                 }),
                 ..Default::default()

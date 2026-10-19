@@ -7,8 +7,8 @@ use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
     completion::{
         CompletionContent, CompletionEdit, CompletionHint, FindCompletionContents,
-        comment::get_tombi_comment_directive_content_completion_contents,
-        merge_adjacent_schema_completion_items, schema_completion::SchemaCompletion,
+        comment::get_tombi_comment_directive_content_completion_contents, merge_adjacent_schema_completion_items,
+        schema_completion::SchemaCompletion,
     },
 };
 
@@ -35,11 +35,8 @@ impl FindCompletionContents for tombi_document_tree_syntax::String<'_> {
                     StringCommonFormatRules,
                     StringCommonLintRules,
                 >(self.comment_directives(), offset, accessors)
-                && let Some(completions) = get_tombi_comment_directive_content_completion_contents(
-                    comment_directive_context,
-                    schema_uri,
-                )
-                .await
+                && let Some(completions) =
+                    get_tombi_comment_directive_content_completion_contents(comment_directive_context, schema_uri).await
             {
                 return completions;
             }
@@ -63,10 +60,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::String<'_> {
                     .await
                     .into_iter()
                     .filter_map(|mut completion_content| {
-                        if !matches!(
-                            completion_content.kind,
-                            CompletionKind::String | CompletionKind::Enum
-                        ) {
+                        if !matches!(completion_content.kind, CompletionKind::String | CompletionKind::Enum) {
                             return None;
                         }
 
@@ -85,10 +79,8 @@ impl FindCompletionContents for tombi_document_tree_syntax::String<'_> {
                             return None;
                         }
 
-                        completion_content.edit = CompletionEdit::new_string_literal_while_editing(
-                            &completion_content.label,
-                            self.span(),
-                        );
+                        completion_content.edit =
+                            CompletionEdit::new_string_literal_while_editing(&completion_content.label, self.span());
 
                         Some(completion_content)
                     })

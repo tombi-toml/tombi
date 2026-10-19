@@ -22,8 +22,7 @@ impl AppendSemanticTokens for tombi_ast_syntax::Array<'_> {
                     }
                 }
                 DanglingCommentGroupOr::ItemGroup(value_group) => {
-                    for (value_or_key_value, comma) in value_group.value_or_key_values_with_comma()
-                    {
+                    for (value_or_key_value, comma) in value_group.value_or_key_values_with_comma() {
                         match value_or_key_value {
                             tombi_ast_syntax::ValueOrKeyValue::Value(value) => {
                                 value.append_semantic_tokens(builder);

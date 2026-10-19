@@ -45,10 +45,7 @@ pub async fn handle_references(
     let Some(document_source) = backend.document_source(&text_document_uri) else {
         return Ok(None);
     };
-    let converter = tombi_extension::SpanConverter::new(
-        document_source.line_index(),
-        document_source.encoding_kind(),
-    );
+    let converter = tombi_extension::SpanConverter::new(document_source.line_index(), document_source.encoding_kind());
 
     let root = document_source.ast();
     let toml_version = document_source.toml_version;
@@ -57,9 +54,7 @@ pub async fn handle_references(
 
     let offset: tombi_text::Offset = position.into_lsp(line_index, encoding);
 
-    let Some((keys, _)) =
-        get_hover_keys_with_span(&root, document_source.decoded(), offset, toml_version).await
-    else {
+    let Some((keys, _)) = get_hover_keys_with_span(&root, document_source.decoded(), offset, toml_version).await else {
         return Ok(None);
     };
 
@@ -122,12 +117,9 @@ pub async fn handle_references(
                 location_set.extend(declaration_locations);
             }
 
-            if let Some(location) = tombi_extension_cargo::get_current_declaration(
-                document_tree,
-                &accessors,
-                &text_document_uri,
-                converter,
-            ) {
+            if let Some(location) =
+                tombi_extension_cargo::get_current_declaration(document_tree, &accessors, &text_document_uri, converter)
+            {
                 location_set.insert(location);
             }
         } else if config.nagi_sql_extension_enabled()
@@ -142,9 +134,7 @@ pub async fn handle_references(
             ) {
                 location_set.insert(declaration_location);
             }
-        } else if config.pyproject_extension_enabled()
-            && text_document_uri.path().ends_with("pyproject.toml")
-        {
+        } else if config.pyproject_extension_enabled() && text_document_uri.path().ends_with("pyproject.toml") {
             if let Some(declaration_locations) = tombi_extension_pyproject::goto_declaration(
                 &text_document_uri,
                 document_tree,

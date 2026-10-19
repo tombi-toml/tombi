@@ -232,12 +232,7 @@ fn write_table_keys_order(
         XTombiTableKeysOrder::Groups(keys_order) => {
             writeln!(f, "Keys Order:\n")?;
             for key in keys_order.iter() {
-                writeln!(
-                    f,
-                    "  - {}: {}\n",
-                    key.target,
-                    markdown_code(key.order, strike)
-                )?;
+                writeln!(f, "  - {}: {}\n", key.target, markdown_code(key.order, strike))?;
             }
             Ok(())
         }

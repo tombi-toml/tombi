@@ -1,21 +1,14 @@
-use tower_lsp_server::gen_lsp_types::{
-    DidChangeWatchedFilesParams, FileChangeType, TextDocumentIdentifier,
-};
+use tower_lsp_server::gen_lsp_types::{DidChangeWatchedFilesParams, FileChangeType, TextDocumentIdentifier};
 
 use crate::{
     backend::Backend,
-    workspace_config::{
-        WorkspaceConfig, get_workspace_configs, is_workspace_ignored, is_workspace_target,
-    },
+    workspace_config::{WorkspaceConfig, get_workspace_configs, is_workspace_ignored, is_workspace_target},
     workspace_diagnostic::{refresh_diagnostics_after_config_change, upsert_document_source},
 };
 
 use super::diagnostic::push_diagnostics;
 
-pub async fn handle_did_change_watched_files(
-    backend: &Backend,
-    params: DidChangeWatchedFilesParams,
-) {
+pub async fn handle_did_change_watched_files(backend: &Backend, params: DidChangeWatchedFilesParams) {
     log::info!("handle_did_change_watched_files");
     log::trace!("{:?}", params);
 
@@ -37,10 +30,7 @@ pub async fn handle_did_change_watched_files(
 
         if is_json_file(&uri) {
             // Only schemas already loaded by the schema stores are updated.
-            if matches!(
-                change.kind,
-                FileChangeType::Created | FileChangeType::Changed
-            ) {
+            if matches!(change.kind, FileChangeType::Created | FileChangeType::Changed) {
                 match backend
                     .config_manager
                     .update_schema(tombi_schema_store::SchemaUri::from(change.uri))
@@ -58,10 +48,7 @@ pub async fn handle_did_change_watched_files(
             // Config discovery must be redone since a config may have been added or removed.
             backend.config_manager.clear_source_config_paths().await;
             config_changed = true;
-            if matches!(
-                change.kind,
-                FileChangeType::Created | FileChangeType::Changed
-            ) {
+            if matches!(change.kind, FileChangeType::Created | FileChangeType::Changed) {
                 let identifier = TextDocumentIdentifier::new(change.uri.clone());
                 if let Err(err) = crate::handler::handle_update_config(backend, identifier).await {
                     log::warn!("failed to reload config: {err}");
@@ -69,10 +56,7 @@ pub async fn handle_did_change_watched_files(
             }
         }
 
-        if matches!(
-            change.kind,
-            FileChangeType::Created | FileChangeType::Changed
-        ) {
+        if matches!(change.kind, FileChangeType::Created | FileChangeType::Changed) {
             if workspace_configs.is_none() {
                 workspace_configs = Some(get_workspace_configs(backend).await.unwrap_or_default());
             }
@@ -80,23 +64,13 @@ pub async fn handle_did_change_watched_files(
             if is_workspace_ignored(&uri, workspace_configs.as_deref().unwrap_or(&[])) {
                 backend.wait_for_document_open(&uri).await;
                 let mut document_sources = backend.document_sources.write().await;
-                if document_sources
-                    .get(&uri)
-                    .is_none_or(|source| source.version.is_none())
-                {
+                if document_sources.get(&uri).is_none_or(|source| source.version.is_none()) {
                     log::debug!("clear watcher diagnostics for ignored file: {uri}");
                     document_sources.remove(&uri);
-                    backend
-                        .workspace_diagnostics_cache
-                        .write()
-                        .await
-                        .untrack(&uri);
+                    backend.workspace_diagnostics_cache.write().await.untrack(&uri);
 
                     if backend.is_diagnostic_mode_push().await {
-                        backend
-                            .client
-                            .publish_diagnostics(change.uri, Vec::new(), None)
-                            .await;
+                        backend.client.publish_diagnostics(change.uri, Vec::new(), None).await;
                     } else {
                         should_refresh_pull_diagnostics = true;
                     }
@@ -116,32 +90,21 @@ pub async fn handle_did_change_watched_files(
                 }
 
                 if backend.is_diagnostic_mode_push().await {
-                    backend
-                        .client
-                        .publish_diagnostics(change.uri, Vec::new(), None)
-                        .await;
+                    backend.client.publish_diagnostics(change.uri, Vec::new(), None).await;
                 } else {
                     should_refresh_pull_diagnostics = true;
                 }
 
-                backend
-                    .workspace_diagnostics_cache
-                    .write()
-                    .await
-                    .untrack(&uri);
+                backend.workspace_diagnostics_cache.write().await.untrack(&uri);
             }
             FileChangeType::Created => {
                 if upsert_document_source(backend, uri.clone()).await {
                     if workspace_configs.is_none() {
-                        workspace_configs =
-                            Some(get_workspace_configs(backend).await.unwrap_or_default());
+                        workspace_configs = Some(get_workspace_configs(backend).await.unwrap_or_default());
                     }
 
-                    let is_workspace_target = is_workspace_target(
-                        &uri,
-                        workspace_configs.as_deref().unwrap_or(&[]),
-                        home_dir.as_deref(),
-                    );
+                    let is_workspace_target =
+                        is_workspace_target(&uri, workspace_configs.as_deref().unwrap_or(&[]), home_dir.as_deref());
 
                     backend
                         .workspace_diagnostics_cache
@@ -155,22 +118,14 @@ pub async fn handle_did_change_watched_files(
             }
             FileChangeType::Changed => {
                 if upsert_document_source(backend, uri.clone()).await {
-                    backend
-                        .workspace_diagnostics_cache
-                        .write()
-                        .await
-                        .clear(&uri);
+                    backend.workspace_diagnostics_cache.write().await.clear(&uri);
 
                     push_diagnostics(backend, uri).await;
                     should_refresh_pull_diagnostics = true;
                 }
             }
             _ => {
-                log::debug!(
-                    "ignored file change type {:?} for URI: {}",
-                    change.kind,
-                    uri
-                );
+                log::debug!("ignored file change type {:?} for URI: {}", change.kind, uri);
             }
         }
     }

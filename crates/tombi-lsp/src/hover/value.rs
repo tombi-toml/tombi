@@ -31,27 +31,14 @@ impl GetHoverContent for tombi_document_tree_syntax::Value<'_> {
         log::trace!("current_schema = {:?}", current_schema);
 
         async move {
-            if let Some(Ok(current_schema)) = schema_context
-                .get_subschema(accessors, current_schema)
-                .await
-            {
+            if let Some(Ok(current_schema)) = schema_context.get_subschema(accessors, current_schema).await {
                 return self
-                    .get_hover_content(
-                        offset,
-                        keys,
-                        accessors,
-                        Some(&current_schema),
-                        schema_context,
-                    )
+                    .get_hover_content(offset, keys, accessors, Some(&current_schema), schema_context)
                     .await;
             }
 
             let projected_schema = current_schema.and_then(|schema| {
-                crate::schema_resolver::project_schema_for_presentation(
-                    self,
-                    schema,
-                    schema_context,
-                )
+                crate::schema_resolver::project_schema_for_presentation(self, schema, schema_context)
             });
             let current_schema = match &projected_schema {
                 Some(projected_schema) => projected_schema.as_ref(),
@@ -113,18 +100,10 @@ impl GetHoverContent for tombi_document_tree_syntax::Value<'_> {
                     Some(current_schema) => {
                         let mut hover_content = current_schema
                             .schema_view
-                            .get_hover_content(
-                                offset,
-                                keys,
-                                accessors,
-                                Some(current_schema),
-                                schema_context,
-                            )
+                            .get_hover_content(offset, keys, accessors, Some(current_schema), schema_context)
                             .await;
 
-                        if let Some(HoverContent::Value(hover_value_content)) =
-                            hover_content.as_mut()
-                        {
+                        if let Some(HoverContent::Value(hover_value_content)) = hover_content.as_mut() {
                             hover_value_content.span = Some(*span);
                         }
 

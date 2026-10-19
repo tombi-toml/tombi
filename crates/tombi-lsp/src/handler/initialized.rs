@@ -1,7 +1,7 @@
 use serde_json::json;
 use tower_lsp_server::gen_lsp_types::{
-    DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern, InitializedParams,
-    Registration, WatchKind,
+    DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern, InitializedParams, Registration,
+    WatchKind,
 };
 
 use crate::{
@@ -61,9 +61,7 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
     }
 }
 
-async fn register_workspace_toml_watcher(
-    backend: &Backend,
-) -> Result<(), tower_lsp_server::jsonrpc::Error> {
+async fn register_workspace_toml_watcher(backend: &Backend) -> Result<(), tower_lsp_server::jsonrpc::Error> {
     let watcher = FileSystemWatcher {
         glob_pattern: GlobPattern::Pattern("**/*.toml".to_string()),
         kind: Some(WatchKind::Create | WatchKind::Change | WatchKind::Delete),

@@ -5,14 +5,13 @@ use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, SchemaUri, SchemaView};
 
 use super::{
-    CompletionHint, FindCompletionContents, all_of::find_all_of_completion_items,
-    any_of::find_any_of_completion_items, one_of::find_one_of_completion_items, type_hint_value,
+    CompletionHint, FindCompletionContents, all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
+    one_of::find_one_of_completion_items, type_hint_value,
 };
 use crate::{
     comment_directive::get_array_comment_directive_content_with_schema_uri,
     completion::{
-        CompletionContent, CompletionEdit,
-        comment::get_tombi_comment_directive_content_completion_contents,
+        CompletionContent, CompletionEdit, comment::get_tombi_comment_directive_content_completion_contents,
         merge_adjacent_schema_completion_items, schema_completion::SchemaCompletion,
     },
     schema_resolver::resolve_array_item_schema,
@@ -45,19 +44,13 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
             if keys.is_empty()
                 && let Some((comment_directive_context, schema_uri)) =
                     get_array_comment_directive_content_with_schema_uri(self, offset, accessors)
-                && let Some(completions) = get_tombi_comment_directive_content_completion_contents(
-                    comment_directive_context,
-                    schema_uri,
-                )
-                .await
+                && let Some(completions) =
+                    get_tombi_comment_directive_content_completion_contents(comment_directive_context, schema_uri).await
             {
                 return completions;
             }
 
-            if let Some(Ok(current_schema)) = schema_context
-                .get_subschema(accessors, current_schema)
-                .await
-            {
+            if let Some(Ok(current_schema)) = schema_context.get_subschema(accessors, current_schema).await {
                 return self
                     .find_completion_contents(
                         cursor,
@@ -82,23 +75,14 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                             }
                             if value.contains(offset) {
                                 let accessor = Accessor::Index(index);
-                                if let Some(current_schema) = resolve_array_item_schema(
-                                    index,
-                                    array_schema,
-                                    current_schema,
-                                    schema_context,
-                                )
-                                .await
+                                if let Some(current_schema) =
+                                    resolve_array_item_schema(index, array_schema, current_schema, schema_context).await
                                 {
                                     return value
                                         .find_completion_contents(
                                             cursor,
                                             keys,
-                                            &accessors
-                                                .iter()
-                                                .cloned()
-                                                .chain(std::iter::once(accessor))
-                                                .collect_vec(),
+                                            &accessors.iter().cloned().chain(std::iter::once(accessor)).collect_vec(),
                                             Some(&current_schema),
                                             schema_context,
                                             completion_hint,
@@ -159,13 +143,9 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                             }
                         }
 
-                        if let Some(current_schema) = resolve_array_item_schema(
-                            new_item_index,
-                            array_schema,
-                            current_schema,
-                            schema_context,
-                        )
-                        .await
+                        if let Some(current_schema) =
+                            resolve_array_item_schema(new_item_index, array_schema, current_schema, schema_context)
+                                .await
                         {
                             let mut completions = SchemaCompletion
                                 .find_completion_contents(
@@ -207,9 +187,8 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                                             ) {
                                                 None
                                             } else {
-                                                new_item_start_offset.map(|start_offset| {
-                                                    add_leading_comma(start_offset, cursor)
-                                                })
+                                                new_item_start_offset
+                                                    .map(|start_offset| add_leading_comma(start_offset, cursor))
                                             };
 
                                             let add_trailing_comma = if matches!(
@@ -248,8 +227,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                                 completions = completions
                                     .into_iter()
                                     .filter(|completion| {
-                                        !(completion.kind.is_literal()
-                                            && unique_values.contains(&completion.label))
+                                        !(completion.kind.is_literal() && unique_values.contains(&completion.label))
                                     })
                                     .collect_vec();
                             }
@@ -348,10 +326,9 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                         .await
                     }
                     _ => {
-                        let Some(mut projected_schema) = current_schema.for_instance_type(
-                            tombi_schema_store::SchemaType::Array,
-                            schema_context.string_formats(),
-                        ) else {
+                        let Some(mut projected_schema) = current_schema
+                            .for_instance_type(tombi_schema_store::SchemaType::Array, schema_context.string_formats())
+                        else {
                             return Vec::new();
                         };
                         if !matches!(projected_schema.schema_view.as_ref(), SchemaView::Array(_)) {
@@ -384,10 +361,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                             && table.kind() == tombi_document_tree_syntax::TableKind::KeyValue
                             && !matches!(
                                 completion_hint,
-                                Some(
-                                    CompletionHint::DotTrigger { .. }
-                                        | CompletionHint::EqualTrigger { .. }
-                                )
+                                Some(CompletionHint::DotTrigger { .. } | CompletionHint::EqualTrigger { .. })
                             )
                         {
                             let key = &keys.first().unwrap();
@@ -410,22 +384,16 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                                 | CompletionHint::InTableHeader
                                 | CompletionHint::InArray { .. },
                             ) => completion_hint,
-                            Some(CompletionHint::Comma { .. }) | None => {
-                                Some(CompletionHint::InArray {
-                                    add_leading_comma: None,
-                                    add_trailing_comma: None,
-                                })
-                            }
+                            Some(CompletionHint::Comma { .. }) | None => Some(CompletionHint::InArray {
+                                add_leading_comma: None,
+                                add_trailing_comma: None,
+                            }),
                         };
                         return value
                             .find_completion_contents(
                                 cursor,
                                 keys,
-                                &accessors
-                                    .iter()
-                                    .cloned()
-                                    .chain(std::iter::once(accessor))
-                                    .collect_vec(),
+                                &accessors.iter().cloned().chain(std::iter::once(accessor)).collect_vec(),
                                 None,
                                 schema_context,
                                 completion_hint,
@@ -440,17 +408,9 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                     .chain(std::iter::once(Accessor::Index(new_item_index)))
                     .collect_vec();
 
-                if let Some(Ok(current_schema)) = schema_context
-                    .get_subschema(&new_item_accessors, None)
-                    .await
-                {
-                    let new_item_hint = new_item_completion_hint(
-                        self,
-                        new_item_index,
-                        new_item_start_offset,
-                        cursor,
-                        completion_hint,
-                    );
+                if let Some(Ok(current_schema)) = schema_context.get_subschema(&new_item_accessors, None).await {
+                    let new_item_hint =
+                        new_item_completion_hint(self, new_item_index, new_item_start_offset, cursor, completion_hint);
                     return SchemaCompletion
                         .find_completion_contents(
                             cursor,
@@ -471,10 +431,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
 }
 
 /// The comma to add after the previous item, keeping the line breaks and the indent before the cursor.
-fn add_leading_comma(
-    start_offset: tombi_text::Offset,
-    cursor: crate::CursorPosition<'_>,
-) -> AddLeadingComma {
+fn add_leading_comma(start_offset: tombi_text::Offset, cursor: crate::CursorPosition<'_>) -> AddLeadingComma {
     let (line_breaks, indent) = cursor.line_breaks_and_column_from(start_offset);
     AddLeadingComma {
         start_offset,
@@ -510,8 +467,7 @@ fn new_item_completion_hint(
     );
 
     if new_item_index == 0 {
-        let add_trailing_comma =
-            (!array.is_empty() && !has_trailing_comma).then_some(AddTrailingComma);
+        let add_trailing_comma = (!array.is_empty() && !has_trailing_comma).then_some(AddTrailingComma);
         return Some(CompletionHint::InArray {
             add_leading_comma: None,
             add_trailing_comma,
@@ -523,8 +479,7 @@ fn new_item_completion_hint(
     } else {
         new_item_start_offset.map(|start_offset| add_leading_comma(start_offset, cursor))
     };
-    let add_trailing_comma =
-        (!has_trailing_comma && new_item_index != array.len()).then_some(AddTrailingComma);
+    let add_trailing_comma = (!has_trailing_comma && new_item_index != array.len()).then_some(AddTrailingComma);
 
     Some(CompletionHint::InArray {
         add_leading_comma,
@@ -554,11 +509,9 @@ impl FindCompletionContents for ArraySchema {
             match completion_hint {
                 Some(CompletionHint::InTableHeader) => Vec::new(),
                 _ => {
-                    let schema_base_uri =
-                        current_schema.map(|schema| schema.schema_base_uri.as_ref());
+                    let schema_base_uri = current_schema.map(|schema| schema.schema_base_uri.as_ref());
 
-                    let mut completion_items =
-                        type_hint_array(offset, schema_base_uri, completion_hint);
+                    let mut completion_items = type_hint_array(offset, schema_base_uri, completion_hint);
 
                     if let Some(default) = &self.default {
                         let label = default.to_string();

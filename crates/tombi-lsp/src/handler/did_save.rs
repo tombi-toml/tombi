@@ -9,10 +9,7 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
     log::info!("handle_did_save");
     log::trace!("{:?}", params);
 
-    let DidSaveTextDocumentParams {
-        text_document,
-        text,
-    } = params;
+    let DidSaveTextDocumentParams { text_document, text } = params;
 
     let text_document_uri = text_document.uri.into();
 
@@ -35,12 +32,7 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
             .await;
 
         if let Some(document) = document_sources.get_mut(&text_document_uri) {
-            *document = DocumentSource::new(
-                parsed,
-                document.version,
-                toml_version,
-                document.encoding_kind(),
-            );
+            *document = DocumentSource::new(parsed, document.version, toml_version, document.encoding_kind());
         };
     };
 

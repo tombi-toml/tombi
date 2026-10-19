@@ -34,8 +34,7 @@ impl GetHoverContent for tombi_document_tree_syntax::String<'_> {
                     StringCommonLintRules,
                 >(self.comment_directives(), offset, accessors)
                 && let Some(hover_content) =
-                    get_value_comment_directive_hover_content(comment_directive_context, schema_uri)
-                        .await
+                    get_value_comment_directive_hover_content(comment_directive_context, schema_uri).await
             {
                 return Some(hover_content);
             }
@@ -50,18 +49,10 @@ impl GetHoverContent for tombi_document_tree_syntax::String<'_> {
                         }
 
                         let mut hover_content = string_schema
-                            .get_hover_content(
-                                offset,
-                                keys,
-                                accessors,
-                                Some(current_schema),
-                                schema_context,
-                            )
+                            .get_hover_content(offset, keys, accessors, Some(current_schema), schema_context)
                             .await;
 
-                        if let Some(HoverContent::Value(hover_value_content)) =
-                            hover_content.as_mut()
-                        {
+                        if let Some(HoverContent::Value(hover_value_content)) = hover_content.as_mut() {
                             hover_value_content.span = Some(self.span());
                         }
 
@@ -83,18 +74,10 @@ impl GetHoverContent for tombi_document_tree_syntax::String<'_> {
                         if schema_context.has_string_format(StringFormat::DateTime) =>
                     {
                         let mut hover_content = offset_date_time_schema
-                            .get_hover_content(
-                                offset,
-                                keys,
-                                accessors,
-                                Some(current_schema),
-                                schema_context,
-                            )
+                            .get_hover_content(offset, keys, accessors, Some(current_schema), schema_context)
                             .await;
 
-                        if let Some(HoverContent::Value(hover_value_content)) =
-                            hover_content.as_mut()
-                        {
+                        if let Some(HoverContent::Value(hover_value_content)) = hover_content.as_mut() {
                             hover_value_content.span = Some(self.span());
                         }
 
@@ -116,18 +99,10 @@ impl GetHoverContent for tombi_document_tree_syntax::String<'_> {
                         if schema_context.has_string_format(StringFormat::DateTimeLocal) =>
                     {
                         let mut hover_content = local_date_time_schema
-                            .get_hover_content(
-                                offset,
-                                keys,
-                                accessors,
-                                Some(current_schema),
-                                schema_context,
-                            )
+                            .get_hover_content(offset, keys, accessors, Some(current_schema), schema_context)
                             .await;
 
-                        if let Some(HoverContent::Value(hover_value_content)) =
-                            hover_content.as_mut()
-                        {
+                        if let Some(HoverContent::Value(hover_value_content)) = hover_content.as_mut() {
                             hover_value_content.span = Some(self.span());
                         }
 
@@ -149,18 +124,10 @@ impl GetHoverContent for tombi_document_tree_syntax::String<'_> {
                         if schema_context.has_string_format(StringFormat::Date) =>
                     {
                         let mut hover_content = local_date_schema
-                            .get_hover_content(
-                                offset,
-                                keys,
-                                accessors,
-                                Some(current_schema),
-                                schema_context,
-                            )
+                            .get_hover_content(offset, keys, accessors, Some(current_schema), schema_context)
                             .await;
 
-                        if let Some(HoverContent::Value(hover_value_content)) =
-                            hover_content.as_mut()
-                        {
+                        if let Some(HoverContent::Value(hover_value_content)) = hover_content.as_mut() {
                             hover_value_content.span = Some(self.span());
                         }
 
@@ -182,18 +149,10 @@ impl GetHoverContent for tombi_document_tree_syntax::String<'_> {
                         if schema_context.has_string_format(StringFormat::TimeLocal) =>
                     {
                         let mut hover_content = local_time_schema
-                            .get_hover_content(
-                                offset,
-                                keys,
-                                accessors,
-                                Some(current_schema),
-                                schema_context,
-                            )
+                            .get_hover_content(offset, keys, accessors, Some(current_schema), schema_context)
                             .await;
 
-                        if let Some(HoverContent::Value(hover_value_content)) =
-                            hover_content.as_mut()
-                        {
+                        if let Some(HoverContent::Value(hover_value_content)) = hover_content.as_mut() {
                             hover_value_content.span = Some(self.span());
                         }
 
@@ -252,14 +211,11 @@ impl GetHoverContent for tombi_document_tree_syntax::String<'_> {
                         .as_deref()
                         .is_some_and(|schema| !schema.has_type_assertion()) =>
                     {
-                        let (one_of, any_of, all_of, _) =
-                            current_schema.schema_view.adjacent_applicators();
+                        let (one_of, any_of, all_of, _) = current_schema.schema_view.adjacent_applicators();
                         let mut base_hover = None;
 
-                        if let Some(SchemaView::String(projected)) = current_schema
-                            .semantic_schema
-                            .as_deref()
-                            .and_then(|schema| {
+                        if let Some(SchemaView::String(projected)) =
+                            current_schema.semantic_schema.as_deref().and_then(|schema| {
                                 schema.schema_view_for_type(
                                     tombi_schema_store::SchemaType::String,
                                     schema_context.string_formats(),
@@ -267,13 +223,7 @@ impl GetHoverContent for tombi_document_tree_syntax::String<'_> {
                             })
                         {
                             base_hover = projected
-                                .get_hover_content(
-                                    offset,
-                                    keys,
-                                    accessors,
-                                    Some(current_schema),
-                                    schema_context,
-                                )
+                                .get_hover_content(offset, keys, accessors, Some(current_schema), schema_context)
                                 .await;
                         }
 
@@ -329,10 +279,7 @@ impl GetHoverContent for StringSchema {
                     r#enum: build_enum_values(&self.const_value, &self.r#enum, |value| {
                         Some(DisplayValue::String(value.clone()))
                     }),
-                    default: self
-                        .default
-                        .as_ref()
-                        .map(|value| DisplayValue::String(value.clone())),
+                    default: self.default.as_ref().map(|value| DisplayValue::String(value.clone())),
                     examples: self.examples.as_ref().map(|examples| {
                         examples
                             .iter()

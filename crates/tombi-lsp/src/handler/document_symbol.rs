@@ -1,6 +1,4 @@
-use tower_lsp_server::gen_lsp_types::{
-    DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, SymbolKind,
-};
+use tower_lsp_server::gen_lsp_types::{DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, SymbolKind};
 
 use crate::backend::Backend;
 
@@ -20,9 +18,7 @@ pub async fn handle_document_symbol(
     };
 
     let document_tree = document_source.document_tree();
-    let mut cursor = document_source
-        .line_index()
-        .cursor(document_source.encoding_kind());
+    let mut cursor = document_source.line_index().cursor(document_source.encoding_kind());
 
     let symbols = create_symbols(document_tree, &mut cursor);
 
@@ -144,13 +140,7 @@ fn symbols_for_value(
         Table(table) => {
             let mut children = vec![];
             for (key, value) in table.key_values() {
-                symbols_for_value(
-                    key.to_string(),
-                    value,
-                    Some(key.span()),
-                    cursor,
-                    &mut children,
-                );
+                symbols_for_value(key.to_string(), value, Some(key.span()), cursor, &mut children);
             }
 
             symbols.push(DocumentSymbol {

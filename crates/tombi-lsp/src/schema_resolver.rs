@@ -3,8 +3,8 @@ use std::{ops::Deref, sync::Arc};
 use tombi_document_tree_syntax::{DocumentTree, TableKind, Value, ValueImpl, dig_accessors};
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, ArraySchema, CurrentSchema, ReferableSchemaViews, SchemaAccessor, SchemaContext,
-    SchemaItem, SchemaView, TableSchema,
+    Accessor, ArraySchema, CurrentSchema, ReferableSchemaViews, SchemaAccessor, SchemaContext, SchemaItem, SchemaView,
+    TableSchema,
 };
 
 #[derive(Clone, Copy)]
@@ -98,13 +98,11 @@ pub(crate) fn project_schema_for_concrete_value(
 /// A schema with applicators is kept as is so that the composite handler
 /// selects the matching branch; projecting e.g. a `oneOf` of `const`s would
 /// flatten it into an `enum` and drop the per-value title and description.
-pub(crate) fn should_project_schema(
-    schema: &CurrentSchema<'_>,
-    instance_type: tombi_schema_store::SchemaType,
-) -> bool {
-    schema.semantic_schema.as_deref().is_some_and(|semantic| {
-        !semantic.has_applicators() || schema.has_reference_projection_siblings(instance_type)
-    })
+pub(crate) fn should_project_schema(schema: &CurrentSchema<'_>, instance_type: tombi_schema_store::SchemaType) -> bool {
+    schema
+        .semantic_schema
+        .as_deref()
+        .is_some_and(|semantic| !semantic.has_applicators() || schema.has_reference_projection_siblings(instance_type))
 }
 
 /// Projects `schema` onto the type of `value` under [`should_project_schema`].
@@ -137,9 +135,7 @@ pub(crate) async fn resolve_accessors_for_document_or_schema(
     schema_context: &SchemaContext<'_>,
 ) -> (Vec<Accessor>, Option<CurrentSchema<'static>>) {
     for depth in (0..=accessors.len()).rev() {
-        if let Some(current_schema) =
-            resolve_current_schema(document_tree, &accessors[..depth], schema_context).await
-        {
+        if let Some(current_schema) = resolve_current_schema(document_tree, &accessors[..depth], schema_context).await {
             let mut accessors = accessors;
             accessors.truncate(depth);
             return (accessors, Some(current_schema));
@@ -151,10 +147,7 @@ pub(crate) async fn resolve_accessors_for_document_or_schema(
 
 /// A trailing Array index whose value is a leaf is popped so dispatch
 /// happens from the enclosing Array rather than the inner leaf.
-fn align_with_document_tree(
-    document_tree: &DocumentTree<'_>,
-    accessors: Vec<Accessor>,
-) -> Vec<Accessor> {
+fn align_with_document_tree(document_tree: &DocumentTree<'_>, accessors: Vec<Accessor>) -> Vec<Accessor> {
     let mut resolved_accessors = accessors;
     loop {
         if resolved_accessors.is_empty() {
@@ -162,9 +155,7 @@ fn align_with_document_tree(
         }
         match dig_accessors(document_tree, &resolved_accessors) {
             Some((_, value)) => {
-                if matches!(resolved_accessors.last(), Some(Accessor::Index(_)))
-                    && is_leaf_array_element(value)
-                {
+                if matches!(resolved_accessors.last(), Some(Accessor::Index(_))) && is_leaf_array_element(value) {
                     resolved_accessors.pop();
                 }
                 return resolved_accessors;
@@ -200,14 +191,7 @@ async fn resolve_current_schema(
     let document_schema = schema_context.root_schema?;
     let current_schema = document_schema.as_current_schema()?.into_owned();
 
-    resolve_schema_with_accessors(
-        document_tree,
-        current_schema,
-        Vec::new(),
-        accessors,
-        schema_context,
-    )
-    .await
+    resolve_schema_with_accessors(document_tree, current_schema, Vec::new(), accessors, schema_context).await
 }
 
 fn resolve_schema_with_accessors<'a: 'b, 'b>(
@@ -220,15 +204,10 @@ fn resolve_schema_with_accessors<'a: 'b, 'b>(
     async move {
         let Some((accessor, remaining_accessors)) = accessors.split_first() else {
             let projected_schema = if resolved_accessors.is_empty() {
-                project_schema_for_concrete_value(
-                    document_tree.deref(),
-                    &current_schema,
-                    schema_context,
-                )
+                project_schema_for_concrete_value(document_tree.deref(), &current_schema, schema_context)
             } else {
-                dig_accessors(document_tree, &resolved_accessors).and_then(|(_, value)| {
-                    project_schema_for_concrete_value(value, &current_schema, schema_context)
-                })
+                dig_accessors(document_tree, &resolved_accessors)
+                    .and_then(|(_, value)| project_schema_for_concrete_value(value, &current_schema, schema_context))
             };
             return projected_schema.or(Some(current_schema));
         };
@@ -289,13 +268,8 @@ fn resolve_schema_with_accessors<'a: 'b, 'b>(
                 .await
             }
             (Accessor::Index(index), SchemaView::Array(array_schema)) => {
-                let next_schema = resolve_array_item_schema(
-                    *index,
-                    array_schema,
-                    &current_schema,
-                    schema_context,
-                )
-                .await?;
+                let next_schema =
+                    resolve_array_item_schema(*index, array_schema, &current_schema, schema_context).await?;
                 let mut resolved_accessors = resolved_accessors;
                 resolved_accessors.push(accessor.clone());
                 resolve_schema_with_accessors(
@@ -374,13 +348,11 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
             .map(tombi_validator::BranchEvaluationTrace::applicable_count);
 
         let is_selected = |index| {
-            evaluation.as_ref().is_none_or(|evaluation| {
-                evaluation.includes_in_resolution(index, applicable_count.unwrap_or_default())
-            })
+            evaluation
+                .as_ref()
+                .is_none_or(|evaluation| evaluation.includes_in_resolution(index, applicable_count.unwrap_or_default()))
         };
-        let mut remaining_candidates = (0..collected.len())
-            .filter(|index| is_selected(*index))
-            .count();
+        let mut remaining_candidates = (0..collected.len()).filter(|index| is_selected(*index)).count();
         let mut resolved_accessors = Some(resolved_accessors);
         let mut candidates = Vec::with_capacity(remaining_candidates);
         for (index, schema) in collected.into_iter().enumerate() {
@@ -398,14 +370,9 @@ fn resolve_composite_schema_with_accessors<'a: 'b, 'b>(
                     .expect("resolved accessors must remain available while candidates remain")
                     .clone()
             };
-            if let Some(resolved) = resolve_schema_with_accessors(
-                document_tree,
-                schema,
-                candidate_accessors,
-                accessors,
-                schema_context,
-            )
-            .await
+            if let Some(resolved) =
+                resolve_schema_with_accessors(document_tree, schema, candidate_accessors, accessors, schema_context)
+                    .await
             {
                 candidates.push(resolved);
             }
@@ -478,9 +445,6 @@ pub(crate) fn remaining_keys<'a, 't>(
     keys: &'a [tombi_document_tree_syntax::Key<'t>],
     accessors: &[Accessor],
 ) -> &'a [tombi_document_tree_syntax::Key<'t>] {
-    let resolved_key_count = accessors
-        .iter()
-        .filter(|accessor| accessor.as_key().is_some())
-        .count();
+    let resolved_key_count = accessors.iter().filter(|accessor| accessor.as_key().is_some()).count();
     &keys[resolved_key_count.min(keys.len())..]
 }

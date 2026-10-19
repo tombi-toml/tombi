@@ -1,7 +1,6 @@
 use tombi_extension::CompletionTextEdit;
 use tombi_test_lib::{
-    project_root_path, today_local_date, today_local_date_time, today_local_time,
-    today_offset_date_time,
+    project_root_path, today_local_date, today_local_date_time, today_local_time, today_offset_date_time,
 };
 
 mod completion_edit {
@@ -9,10 +8,7 @@ mod completion_edit {
 
     fn apply_text_edit(text: &str, text_edit: &tombi_extension::TextEdit) -> String {
         let mut new_text = text.to_string();
-        new_text.replace_range(
-            std::ops::Range::<usize>::from(text_edit.span),
-            &text_edit.new_text,
-        );
+        new_text.replace_range(std::ops::Range::<usize>::from(text_edit.span), &text_edit.new_text);
         new_text
     }
 

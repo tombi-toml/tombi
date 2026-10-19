@@ -2,9 +2,8 @@ use std::str::FromStr;
 
 use tombi_schema_store::get_tombi_schemastore_content;
 use tower_lsp_server::gen_lsp_types::{
-    ApplyWorkspaceEditParams, ApplyWorkspaceEditRequest, CreateFile, CreateFileOptions,
-    DocumentChange, OptionalVersionedTextDocumentIdentifier, TextDocumentEdit,
-    TextDocumentIdentifier, TextEdit, Uri, WorkspaceEdit,
+    ApplyWorkspaceEditParams, ApplyWorkspaceEditRequest, CreateFile, CreateFileOptions, DocumentChange,
+    OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextDocumentIdentifier, TextEdit, Uri, WorkspaceEdit,
 };
 
 use crate::Backend;
@@ -51,9 +50,7 @@ async fn open_remote_content(
 }
 
 #[inline]
-fn build_remote_document_uri(
-    uri: &tombi_uri::Uri,
-) -> Result<tombi_uri::Uri, tower_lsp_server::jsonrpc::Error> {
+fn build_remote_document_uri(uri: &tombi_uri::Uri) -> Result<tombi_uri::Uri, tower_lsp_server::jsonrpc::Error> {
     tombi_uri::Uri::from_str(&format!("untitled://{}", uri.path())).map_err(|err| {
         tower_lsp_server::jsonrpc::Error::invalid_params(format!(
             "failed to build untitled URL for remote content: {err}"
@@ -61,10 +58,7 @@ fn build_remote_document_uri(
     })
 }
 
-async fn create_empty_file(
-    backend: &Backend,
-    remote_url_path: &Uri,
-) -> Result<(), tower_lsp_server::jsonrpc::Error> {
+async fn create_empty_file(backend: &Backend, remote_url_path: &Uri) -> Result<(), tower_lsp_server::jsonrpc::Error> {
     // First, create the file
     let create_file = CreateFile {
         uri: remote_url_path.clone(),

@@ -17,18 +17,10 @@ pub async fn handle_update_schema(
 
     let TextDocumentIdentifier { uri, .. } = params;
 
-    match backend
-        .config_manager
-        .update_schema(SchemaUri::from(uri))
-        .await
-    {
+    match backend.config_manager.update_schema(SchemaUri::from(uri)).await {
         Ok(is_updated) => {
             if is_updated {
-                backend
-                    .workspace_diagnostics_cache
-                    .write()
-                    .await
-                    .clear_all();
+                backend.workspace_diagnostics_cache.write().await.clear_all();
 
                 // Refresh workspace diagnostics after schema update
                 // Include open files to ensure diagnostics are updated for all files, including those open in the editor

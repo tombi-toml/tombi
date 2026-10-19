@@ -69,9 +69,7 @@ pub mod handler {
     pub use formatting::handle_formatting;
     pub use get_built_in_schema::{GetBuiltInSchemaParams, handle_get_built_in_schema};
     pub use get_status::{GetStatusResponse, handle_get_status};
-    pub use get_toml_version::{
-        GetTomlVersionResponse, TomlVersionSource, handle_get_toml_version,
-    };
+    pub use get_toml_version::{GetTomlVersionResponse, TomlVersionSource, handle_get_toml_version};
     pub use goto_declaration::handle_goto_declaration;
     pub use goto_definition::handle_goto_definition;
     pub use goto_type_definition::handle_goto_type_definition;
@@ -91,8 +89,8 @@ pub mod handler {
 
 pub use backend::Backend;
 pub(crate) use comment_directive::{
-    DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
-    DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
+    DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE, DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION,
+    DOCUMENT_TOMBI_DIRECTIVE_TITLE,
 };
 pub(crate) use cursor_position::CursorPosition;
 pub use hover::HoverContent;
@@ -100,10 +98,7 @@ pub use hover::HoverContent;
 pub fn lsp_service(
     offline: bool,
     cache: tombi_cache::Options,
-) -> (
-    tower_lsp_server::LspService<Backend>,
-    tower_lsp_server::ClientSocket,
-) {
+) -> (tower_lsp_server::LspService<Backend>, tower_lsp_server::ClientSocket) {
     tower_lsp_server::LspService::build(|client| {
         Backend::new(
             client,

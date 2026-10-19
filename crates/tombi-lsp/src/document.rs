@@ -41,17 +41,8 @@ impl DocumentSource {
     }
 
     /// A snapshot of `text`, with the version and the encoding of this one.
-    pub fn with_text(
-        &self,
-        text: impl Into<Box<str>>,
-        toml_version: tombi_config::TomlVersion,
-    ) -> Self {
-        Self::new(
-            ParsedText::parse(text),
-            self.version,
-            toml_version,
-            self.encoding_kind,
-        )
+    pub fn with_text(&self, text: impl Into<Box<str>>, toml_version: tombi_config::TomlVersion) -> Self {
+        Self::new(ParsedText::parse(text), self.version, toml_version, self.encoding_kind)
     }
 
     pub fn set_text(&mut self, text: impl Into<Box<str>>, toml_version: tombi_config::TomlVersion) {

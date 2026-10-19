@@ -5,17 +5,12 @@ use tombi_x_keyword::StringFormat;
 use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
 
 use super::{
-    CompletionContent, CompletionHint, FindCompletionContents,
-    merge_adjacent_schema_completion_items, tombi_json_value_to_completion_enum_item,
-    value::{
-        find_all_of_completion_items, find_any_of_completion_items, find_one_of_completion_items,
-    },
+    CompletionContent, CompletionHint, FindCompletionContents, merge_adjacent_schema_completion_items,
+    tombi_json_value_to_completion_enum_item,
+    value::{find_all_of_completion_items, find_any_of_completion_items, find_one_of_completion_items},
 };
 
-fn set_schema_link_uri(
-    completion_items: &mut [CompletionContent],
-    current_schema: &CurrentSchema<'_>,
-) {
+fn set_schema_link_uri(completion_items: &mut [CompletionContent], current_schema: &CurrentSchema<'_>) {
     let schema_uri = crate::hover::schema_view_link_uri(current_schema);
     for item in completion_items {
         if item.schema_base_uri.as_ref() == Some(current_schema.schema_base_uri.as_ref()) {
@@ -42,9 +37,9 @@ impl FindCompletionContents for InstanceSchemaCompletion {
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
         async move {
-            let Some(mut projected_schema) = current_schema.and_then(|schema| {
-                schema.for_instance_type(self.0, schema_context.string_formats())
-            }) else {
+            let Some(mut projected_schema) =
+                current_schema.and_then(|schema| schema.for_instance_type(self.0, schema_context.string_formats()))
+            else {
                 return Vec::new();
             };
             projected_schema.semantic_schema = None;
@@ -95,10 +90,7 @@ impl FindCompletionContents for SchemaCompletion {
                 && let Some(candidates) = semantic_schema.finite_literal_candidates()
             {
                 let detail = current_schema.schema_view.title().map(ToString::to_string);
-                let documentation = current_schema
-                    .schema_view
-                    .description()
-                    .map(ToString::to_string);
+                let documentation = current_schema.schema_view.description().map(ToString::to_string);
                 let mut completion_items = candidates
                     .iter()
                     .filter_map(|value| {
@@ -322,10 +314,7 @@ impl FindCompletionContents for SchemaCompletion {
             if completion_items.iter().any(needs_documentation) {
                 let documentation = SchemaTooltip::Content(SchemaTooltipContent {
                     title: current_schema.schema_view.title().map(ToString::to_string),
-                    description: current_schema
-                        .schema_view
-                        .description()
-                        .map(ToString::to_string),
+                    description: current_schema.schema_view.description().map(ToString::to_string),
                     value_type: current_schema.schema_view.value_type().await.to_string(),
                     constraints: None,
                     schema: None,

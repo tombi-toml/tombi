@@ -7,9 +7,7 @@ use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext};
 use super::CompositeKind;
 use crate::{HoverContent, hover::display_value::GetEnum};
 
-use super::{
-    GetHoverContent, HoverValueContent, constraints::ValueConstraints, display_value::DisplayValue,
-};
+use super::{GetHoverContent, HoverValueContent, constraints::ValueConstraints, display_value::DisplayValue};
 
 pub fn get_all_of_hover_content<'a: 'b, 'b, T>(
     value: &'a T,
@@ -45,20 +43,11 @@ where
         .await?;
 
         for resolved_schema in &resolved_schemas {
-            let projected_schema = crate::schema_resolver::project_composite_branch_schema(
-                value,
-                resolved_schema,
-                schema_context,
-            );
+            let projected_schema =
+                crate::schema_resolver::project_composite_branch_schema(value, resolved_schema, schema_context);
             let resolved_schema = projected_schema.as_ref().unwrap_or(resolved_schema);
             if let Some(hover_content) = value
-                .get_hover_content(
-                    offset,
-                    keys,
-                    accessors,
-                    Some(resolved_schema),
-                    schema_context,
-                )
+                .get_hover_content(offset, keys, accessors, Some(resolved_schema), schema_context)
                 .await
             {
                 match hover_content {
@@ -74,10 +63,7 @@ where
                                 .get_enum(resolved_schema, schema_context)
                                 .await
                         {
-                            hover_value_content
-                                .constraints
-                                .get_or_insert_default()
-                                .r#enum = Some(enum_values);
+                            hover_value_content.constraints.get_or_insert_default().r#enum = Some(enum_values);
                         }
                         hover_value_contents.push(hover_value_content);
                     }
@@ -105,33 +91,30 @@ where
             })
             .flatten();
 
-        let mut hover_value_content = super::first_most_specific_hover_value_content(
-            hover_value_contents,
-            CompositeKind::All,
-        )
-        .unwrap_or_else(|| HoverValueContent {
-            title: None,
-            description: None,
-            accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-            value_type: value.value_type().into(),
-            constraints: None,
-            schema_document_uri: Some(super::schema_link_uri(
+        let mut hover_value_content =
+            super::first_most_specific_hover_value_content(hover_value_contents, CompositeKind::All).unwrap_or_else(
+                || HoverValueContent {
+                    title: None,
+                    description: None,
+                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                    value_type: value.value_type().into(),
+                    constraints: None,
+                    schema_document_uri: Some(super::schema_link_uri(
+                        current_schema.schema_document_uri.as_ref(),
+                        &current_schema.line_index,
+                        all_of_schema.span,
+                    )),
+                    span: None,
+                    schema_tooltip: None,
+                },
+            );
+        hover_value_content.schema_document_uri.get_or_insert_with(|| {
+            super::schema_link_uri(
                 current_schema.schema_document_uri.as_ref(),
                 &current_schema.line_index,
                 all_of_schema.span,
-            )),
-            span: None,
-            schema_tooltip: None,
+            )
         });
-        hover_value_content
-            .schema_document_uri
-            .get_or_insert_with(|| {
-                super::schema_link_uri(
-                    current_schema.schema_document_uri.as_ref(),
-                    &current_schema.line_index,
-                    all_of_schema.span,
-                )
-            });
 
         if let Some((title, description)) = reference_annotations {
             hover_value_content.title = title;
@@ -167,10 +150,8 @@ where
 
             if !all_of_examples.is_empty() {
                 if let Some(constraints) = hover_value_content.constraints.as_mut() {
-                    constraints.examples = super::merge_optional_vec(
-                        constraints.examples.take(),
-                        Some(all_of_examples),
-                    );
+                    constraints.examples =
+                        super::merge_optional_vec(constraints.examples.take(), Some(all_of_examples));
                 } else {
                     hover_value_content.constraints = Some(ValueConstraints {
                         examples: Some(all_of_examples),
@@ -223,18 +204,17 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 }
             }
 
-            let mut hover_value_content =
-                super::first_most_specific_hover_value_content(contents, CompositeKind::All)
-                    .unwrap_or_else(|| HoverValueContent {
-                        title: self.title.clone(),
-                        description: self.description.clone(),
-                        accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                        value_type,
-                        constraints: None,
-                        schema_document_uri: super::current_schema_link_uri(Some(current_schema)),
-                        span: None,
-                        schema_tooltip: None,
-                    });
+            let mut hover_value_content = super::first_most_specific_hover_value_content(contents, CompositeKind::All)
+                .unwrap_or_else(|| HoverValueContent {
+                    title: self.title.clone(),
+                    description: self.description.clone(),
+                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                    value_type,
+                    constraints: None,
+                    schema_document_uri: super::current_schema_link_uri(Some(current_schema)),
+                    span: None,
+                    schema_tooltip: None,
+                });
 
             if let Some(default) = self
                 .default
@@ -261,10 +241,8 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
 
                 if !all_of_examples.is_empty() {
                     if let Some(constraints) = hover_value_content.constraints.as_mut() {
-                        constraints.examples = super::merge_optional_vec(
-                            constraints.examples.take(),
-                            Some(all_of_examples),
-                        );
+                        constraints.examples =
+                            super::merge_optional_vec(constraints.examples.take(), Some(all_of_examples));
                     } else {
                         hover_value_content.constraints = Some(ValueConstraints {
                             examples: Some(all_of_examples),

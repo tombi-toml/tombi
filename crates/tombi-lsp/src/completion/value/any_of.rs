@@ -94,10 +94,7 @@ where
         if !narrow_branches && keys.is_empty() {
             if let Some(default) = &any_of_schema.default {
                 let default_label = default.to_string();
-                if let Some(completion_item) = completion_items
-                    .iter_mut()
-                    .find(|item| item.label == default_label)
-                {
+                if let Some(completion_item) = completion_items.iter_mut().find(|item| item.label == default_label) {
                     completion_item.priority = CompletionContentPriority::Default;
                 } else if let Some(completion_item) = tombi_json_value_to_completion_default_item(
                     default,
@@ -114,10 +111,7 @@ where
             if let Some(examples) = &any_of_schema.examples {
                 for example in examples {
                     let example_label = example.to_string();
-                    if completion_items
-                        .iter()
-                        .any(|item| item.label == example_label)
-                    {
+                    if completion_items.iter().any(|item| item.label == example_label) {
                         continue;
                     }
 

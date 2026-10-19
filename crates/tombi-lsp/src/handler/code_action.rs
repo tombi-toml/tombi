@@ -17,17 +17,13 @@ pub async fn handle_code_action(
     log::trace!("{:?}", params);
 
     let CodeActionParams {
-        text_document,
-        range,
-        ..
+        text_document, range, ..
     } = params;
 
     let text_document_uri = text_document.uri.into();
 
     let ConfigSchemaStore {
-        config,
-        schema_store,
-        ..
+        config, schema_store, ..
     } = backend
         .config_manager
         .config_schema_store_for_uri(&text_document_uri)
@@ -50,10 +46,7 @@ pub async fn handle_code_action(
     let Some(document_source) = backend.document_source(&text_document_uri) else {
         return Ok(None);
     };
-    let converter = tombi_extension::SpanConverter::new(
-        document_source.line_index(),
-        document_source.encoding_kind(),
-    );
+    let converter = tombi_extension::SpanConverter::new(document_source.line_index(), document_source.encoding_kind());
 
     let toml_version = document_source.toml_version;
     let line_index = document_source.line_index();
@@ -61,13 +54,8 @@ pub async fn handle_code_action(
 
     let offset: tombi_text::Offset = range.start.into_lsp(line_index, encoding);
 
-    let Some((keys, key_contexts)) = get_completion_keys_with_context(
-        &document_source.ast(),
-        document_source.decoded(),
-        offset,
-        toml_version,
-    )
-    .await
+    let Some((keys, key_contexts)) =
+        get_completion_keys_with_context(&document_source.ast(), document_source.decoded(), offset, toml_version).await
     else {
         return Ok(None);
     };
@@ -175,9 +163,7 @@ mod tests {
                     .syntax()
                     .line_index()
                     .offset($pos, EncodingKind::GraphemeCluster);
-                let result =
-                    get_completion_keys_with_context(&root, &decoded, offset, TomlVersion::V1_0_0)
-                        .await;
+                let result = get_completion_keys_with_context(&root, &decoded, offset, TomlVersion::V1_0_0).await;
 
                 assert!(result.is_none());
             }
@@ -194,9 +180,7 @@ mod tests {
                     .syntax()
                     .line_index()
                     .offset($pos, EncodingKind::GraphemeCluster);
-                let result =
-                    get_completion_keys_with_context(&root, &decoded, offset, TomlVersion::V1_0_0)
-                        .await;
+                let result = get_completion_keys_with_context(&root, &decoded, offset, TomlVersion::V1_0_0).await;
 
                 assert!(result.is_some());
                 let ($keys, $contexts) = result.unwrap();

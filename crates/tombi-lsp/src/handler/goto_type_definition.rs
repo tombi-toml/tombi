@@ -7,8 +7,8 @@ use crate::{
     backend::Backend,
     config_manager::ConfigSchemaStore,
     goto_type_definition::{
-        SchemaLocation, TypeDefinition, get_tombi_document_comment_directive_type_definition,
-        get_type_definition, location_key,
+        SchemaLocation, TypeDefinition, get_tombi_document_comment_directive_type_definition, get_type_definition,
+        location_key,
     },
     handler::hover::get_hover_keys_with_span,
 };
@@ -17,8 +17,7 @@ fn type_definition_locations(
     type_definitions: Vec<TypeDefinition>,
     encoding: tombi_text::EncodingKind,
 ) -> Vec<SchemaLocation> {
-    let mut unique_type_definitions: Vec<TypeDefinition> =
-        Vec::with_capacity(type_definitions.len());
+    let mut unique_type_definitions: Vec<TypeDefinition> = Vec::with_capacity(type_definitions.len());
     for type_definition in type_definitions {
         if !unique_type_definitions.iter().any(|existing| {
             location_key(&existing.schema_base_uri, span_of(existing))
@@ -61,9 +60,7 @@ pub async fn handle_goto_type_definition(
     let text_document_uri = text_document.uri.into();
 
     let ConfigSchemaStore {
-        config,
-        schema_store,
-        ..
+        config, schema_store, ..
     } = backend
         .config_manager
         .config_schema_store_for_uri(&text_document_uri)
@@ -94,8 +91,7 @@ pub async fn handle_goto_type_definition(
 
     let offset: tombi_text::Offset = position.into_lsp(line_index, encoding);
 
-    let type_definitions =
-        get_tombi_document_comment_directive_type_definition(&root, offset).await;
+    let type_definitions = get_tombi_document_comment_directive_type_definition(&root, offset).await;
     if !type_definitions.is_empty() {
         return Ok(Some(type_definition_locations(type_definitions, encoding)));
     }
@@ -106,8 +102,7 @@ pub async fn handle_goto_type_definition(
         .ok()
         .flatten();
 
-    let Some((keys, span)) =
-        get_hover_keys_with_span(&root, document_source.decoded(), offset, toml_version).await
+    let Some((keys, span)) = get_hover_keys_with_span(&root, document_source.decoded(), offset, toml_version).await
     else {
         return Ok(Default::default());
     };
@@ -119,12 +114,7 @@ pub async fn handle_goto_type_definition(
     let strict = tombi_validator::comment_directive::get_tombi_document_comment_directive(&root)
         .await
         .and_then(|directive| directive.schema.and_then(|schema| schema.strict));
-    let schema_context = SchemaContext::from_source_schema(
-        toml_version,
-        source_schema.as_ref(),
-        &schema_store,
-        strict,
-    );
+    let schema_context = SchemaContext::from_source_schema(toml_version, source_schema.as_ref(), &schema_store, strict);
 
     let mut type_definitions = get_type_definition(
         document_source.document_tree(),
@@ -134,10 +124,7 @@ pub async fn handle_goto_type_definition(
     )
     .await;
     for type_definition in &mut type_definitions {
-        if let Some(source_schema_uri) = schema_store
-            .source_schema_uri(&type_definition.schema_base_uri)
-            .await
-        {
+        if let Some(source_schema_uri) = schema_store.source_schema_uri(&type_definition.schema_base_uri).await {
             type_definition.schema_base_uri = source_schema_uri;
         }
     }

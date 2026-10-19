@@ -13,8 +13,8 @@ use tombi_test_lib::TestCacheHome;
 use tower_lsp_server::{
     LspService,
     gen_lsp_types::{
-        DidOpenTextDocumentParams, InlayHintParams, Position, Range, TextDocumentIdentifier,
-        TextDocumentItem, Uri, WorkDoneProgressParams,
+        DidOpenTextDocumentParams, InlayHintParams, Position, Range, TextDocumentIdentifier, TextDocumentItem, Uri,
+        WorkDoneProgressParams,
     },
 };
 
@@ -127,8 +127,7 @@ async fn collect_inlay_hints_with_backend(
     source_path: PathBuf,
 ) -> Result<Option<Vec<PositionedInlayHint>>, Box<dyn std::error::Error>> {
     let toml_text = textwrap::dedent(source).trim().to_string();
-    let toml_file_url =
-        Uri::from_file_path(&source_path).expect("failed to convert source file path to URL");
+    let toml_file_url = Uri::from_file_path(&source_path).expect("failed to convert source file path to URL");
 
     let did_open = handle_did_open(
         backend,
@@ -196,11 +195,7 @@ impl PositionedInlayHint {
     }
 }
 
-fn expected_hint(
-    position: tombi_text::Position,
-    label: &str,
-    tooltip: &str,
-) -> PositionedInlayHint {
+fn expected_hint(position: tombi_text::Position, label: &str, tooltip: &str) -> PositionedInlayHint {
     PositionedInlayHint {
         position,
         label: label.to_string(),
@@ -341,8 +336,7 @@ test_inlay_hint!(
 );
 
 #[tokio::test]
-async fn inlay_hint_for_registry_default_features_is_rendered()
--> Result<(), Box<dyn std::error::Error>> {
+async fn inlay_hint_for_registry_default_features_is_rendered() -> Result<(), Box<dyn std::error::Error>> {
     let _cache_home = TestCacheHome::new();
     tombi_test_lib::init_log();
 
@@ -472,11 +466,8 @@ async fn inlay_hint_for_registry_default_features_is_not_rendered_when_disabled_
 }
 
 #[tokio::test]
-async fn cargo_inlay_hint_reloads_when_cargo_lock_changes() -> Result<(), Box<dyn std::error::Error>>
-{
-    let _guard = test_lock()
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
+async fn cargo_inlay_hint_reloads_when_cargo_lock_changes() -> Result<(), Box<dyn std::error::Error>> {
+    let _guard = test_lock().lock().unwrap_or_else(|error| error.into_inner());
     tombi_test_lib::init_log();
 
     let fixture = InlayHintFixture::cargo(
@@ -509,9 +500,7 @@ async fn cargo_inlay_hint_reloads_when_cargo_lock_changes() -> Result<(), Box<dy
 
     let service = new_service();
     let backend = service.inner();
-    let first =
-        collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone())
-            .await?;
+    let first = collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone()).await?;
     pretty_assertions::assert_eq!(
         first,
         Some(vec![expected_hint(
@@ -541,9 +530,7 @@ async fn cargo_inlay_hint_reloads_when_cargo_lock_changes() -> Result<(), Box<dy
     )?;
     bump_modified(&cargo_lock_path)?;
 
-    let second =
-        collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone())
-            .await?;
+    let second = collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone()).await?;
     pretty_assertions::assert_eq!(
         second,
         Some(vec![expected_hint(
@@ -557,11 +544,9 @@ async fn cargo_inlay_hint_reloads_when_cargo_lock_changes() -> Result<(), Box<dy
 }
 
 #[tokio::test]
-async fn cargo_inlay_hint_uses_cached_value_when_reloading_invalid_lockfile()
--> Result<(), Box<dyn std::error::Error>> {
-    let _guard = test_lock()
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
+async fn cargo_inlay_hint_uses_cached_value_when_reloading_invalid_lockfile() -> Result<(), Box<dyn std::error::Error>>
+{
+    let _guard = test_lock().lock().unwrap_or_else(|error| error.into_inner());
     tombi_test_lib::init_log();
 
     let fixture = InlayHintFixture::cargo(
@@ -594,16 +579,12 @@ async fn cargo_inlay_hint_uses_cached_value_when_reloading_invalid_lockfile()
 
     let service = new_service();
     let backend = service.inner();
-    let first =
-        collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone())
-            .await?;
+    let first = collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone()).await?;
 
     fs::write(&cargo_lock_path, "not-a-lockfile = [")?;
     bump_modified(&cargo_lock_path)?;
 
-    let second =
-        collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone())
-            .await?;
+    let second = collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone()).await?;
 
     pretty_assertions::assert_eq!(second, first);
 
@@ -611,11 +592,8 @@ async fn cargo_inlay_hint_uses_cached_value_when_reloading_invalid_lockfile()
 }
 
 #[tokio::test]
-async fn pyproject_inlay_hint_reloads_when_uv_lock_changes()
--> Result<(), Box<dyn std::error::Error>> {
-    let _guard = test_lock()
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
+async fn pyproject_inlay_hint_reloads_when_uv_lock_changes() -> Result<(), Box<dyn std::error::Error>> {
+    let _guard = test_lock().lock().unwrap_or_else(|error| error.into_inner());
     tombi_test_lib::init_log();
 
     let fixture = InlayHintFixture::pyproject(
@@ -638,17 +616,11 @@ async fn pyproject_inlay_hint_reloads_when_uv_lock_changes()
         version = "8.3.3"
         "#,
     )?;
-    let uv_lock_path = fixture
-        .source_path
-        .parent()
-        .expect("expected parent")
-        .join("uv.lock");
+    let uv_lock_path = fixture.source_path.parent().expect("expected parent").join("uv.lock");
 
     let service = new_service();
     let backend = service.inner();
-    let first =
-        collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone())
-            .await?;
+    let first = collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone()).await?;
     pretty_assertions::assert_eq!(
         first,
         Some(vec![expected_hint(
@@ -678,9 +650,7 @@ async fn pyproject_inlay_hint_reloads_when_uv_lock_changes()
     )?;
     bump_modified(&uv_lock_path)?;
 
-    let second =
-        collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone())
-            .await?;
+    let second = collect_inlay_hints_with_backend(backend, &fixture.source, fixture.source_path.clone()).await?;
     pretty_assertions::assert_eq!(
         second,
         Some(vec![expected_hint(

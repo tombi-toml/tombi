@@ -27,12 +27,7 @@ pub async fn handle_get_status(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    let document_source = backend
-        .document_sources
-        .read()
-        .await
-        .get(&text_document_uri)
-        .cloned();
+    let document_source = backend.document_sources.read().await.get(&text_document_uri).cloned();
     let (toml_version, source, schema) = {
         if let Some(document_source) = document_source {
             let (toml_version, source) = backend
@@ -64,15 +59,14 @@ pub async fn handle_get_status(
                 } else {
                     match schema_store.try_get_document_schema(&schema_uri).await {
                         Ok(Some(doc_schema)) => {
-                            let (title, description) =
-                                if let Some(schema_view) = &doc_schema.schema_view {
-                                    (
-                                        schema_view.title().map(|s| s.to_string()),
-                                        schema_view.description().map(|s| s.to_string()),
-                                    )
-                                } else {
-                                    (None, None)
-                                };
+                            let (title, description) = if let Some(schema_view) = &doc_schema.schema_view {
+                                (
+                                    schema_view.title().map(|s| s.to_string()),
+                                    schema_view.description().map(|s| s.to_string()),
+                                )
+                            } else {
+                                (None, None)
+                            };
                             Some(SchemaStatus {
                                 title,
                                 description,

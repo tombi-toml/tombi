@@ -6,9 +6,8 @@ use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, SchemaView};
 use crate::{
     comment_directive::get_array_comment_directive_content_with_schema_uri,
     goto_type_definition::{
-        GetTypeDefinition, TypeDefinition, adjacent_type_definition,
-        all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
-        comment::get_tombi_value_comment_directive_type_definition,
+        GetTypeDefinition, TypeDefinition, adjacent_type_definition, all_of::get_all_of_type_definition,
+        any_of::get_any_of_type_definition, comment::get_tombi_value_comment_directive_type_definition,
         one_of::get_one_of_type_definition, schema_view_type_definition,
     },
     schema_resolver::resolve_array_item_schema,
@@ -32,28 +31,16 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Array<'_> {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
                 get_array_comment_directive_content_with_schema_uri(self, offset, accessors)
-                && let hover_content = get_tombi_value_comment_directive_type_definition(
-                    comment_directive_context,
-                    schema_uri,
-                )
-                .await
+                && let hover_content =
+                    get_tombi_value_comment_directive_type_definition(comment_directive_context, schema_uri).await
                 && !hover_content.is_empty()
             {
                 return hover_content;
             }
 
-            if let Some(Ok(current_schema)) = schema_context
-                .get_subschema(accessors, current_schema)
-                .await
-            {
+            if let Some(Ok(current_schema)) = schema_context.get_subschema(accessors, current_schema).await {
                 return self
-                    .get_type_definition(
-                        cursor,
-                        keys,
-                        accessors,
-                        Some(&current_schema),
-                        schema_context,
-                    )
+                    .get_type_definition(cursor, keys, accessors, Some(&current_schema), schema_context)
                     .await;
             }
 
@@ -67,19 +54,11 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Array<'_> {
                                     | tombi_document_tree_syntax::ArrayKind::ParentArrayOfTable
                             )
                             && self.values().iter().any(|value| {
-                                cursor.is_on_line(
-                                    tombi_document_tree_syntax::ValueImpl::span(value).start,
-                                )
+                                cursor.is_on_line(tombi_document_tree_syntax::ValueImpl::span(value).start)
                             })
                         {
                             return array_schema
-                                .get_type_definition(
-                                    cursor,
-                                    keys,
-                                    accessors,
-                                    Some(current_schema),
-                                    schema_context,
-                                )
+                                .get_type_definition(cursor, keys, accessors, Some(current_schema), schema_context)
                                 .await;
                         }
 
@@ -87,13 +66,8 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Array<'_> {
                             if value.contains(offset) {
                                 let accessor = Accessor::Index(index);
 
-                                if let Some(current_schema) = resolve_array_item_schema(
-                                    index,
-                                    array_schema,
-                                    current_schema,
-                                    schema_context,
-                                )
-                                .await
+                                if let Some(current_schema) =
+                                    resolve_array_item_schema(index, array_schema, current_schema, schema_context).await
                                 {
                                     return value
                                         .get_type_definition(
@@ -130,11 +104,7 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Array<'_> {
                                     .get_type_definition(
                                         cursor,
                                         keys,
-                                        &accessors
-                                            .iter()
-                                            .cloned()
-                                            .chain(std::iter::once(accessor))
-                                            .collect_vec(),
+                                        &accessors.iter().cloned().chain(std::iter::once(accessor)).collect_vec(),
                                         None,
                                         schema_context,
                                     )
@@ -142,13 +112,7 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Array<'_> {
                             }
                         }
                         return array_schema
-                            .get_type_definition(
-                                cursor,
-                                keys,
-                                accessors,
-                                Some(current_schema),
-                                schema_context,
-                            )
+                            .get_type_definition(cursor, keys, accessors, Some(current_schema), schema_context)
                             .await;
                     }
                     SchemaView::OneOf(one_of_schema) => {
@@ -198,11 +162,7 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Array<'_> {
                         .get_type_definition(
                             cursor,
                             keys,
-                            &accessors
-                                .iter()
-                                .cloned()
-                                .chain(std::iter::once(accessor))
-                                .collect_vec(),
+                            &accessors.iter().cloned().chain(std::iter::once(accessor)).collect_vec(),
                             None,
                             schema_context,
                         )

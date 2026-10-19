@@ -1,12 +1,10 @@
 use tombi_config::{JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHEMASTORE_CATALOG_URL};
 use tombi_test_lib::{
-    TestCacheHome, additional_properties_true_test_schema_path,
-    adjacent_applicators_test_schema_path, adjacent_one_of_additional_properties_test_schema_path,
-    adjacent_one_of_hover_test_schema_path, dot_config_project_root_fixture_path,
-    exact_index_string_test_schema_path, issue_1895_rustfmt_like_schema_path,
+    TestCacheHome, additional_properties_true_test_schema_path, adjacent_applicators_test_schema_path,
+    adjacent_one_of_additional_properties_test_schema_path, adjacent_one_of_hover_test_schema_path,
+    dot_config_project_root_fixture_path, exact_index_string_test_schema_path, issue_1895_rustfmt_like_schema_path,
     lsp_consistency_test_schema_path, project_root_path, ref_sibling_annotations_test_schema_path,
-    string_format_test_schema_path, today_local_date, today_local_date_time, today_local_time,
-    today_offset_date_time,
+    string_format_test_schema_path, today_local_date, today_local_date_time, today_local_time, today_offset_date_time,
 };
 
 mod completion_labels {
@@ -1264,8 +1262,7 @@ mod completion_labels {
         use super::*;
 
         fn schema_path() -> std::path::PathBuf {
-            project_root_path()
-                .join("crates/tombi-lsp/tests/fixtures/composite-array-items.schema.json")
+            project_root_path().join("crates/tombi-lsp/tests/fixtures/composite-array-items.schema.json")
         }
 
         test_completion_labels! {
@@ -3314,8 +3311,7 @@ mod completion_labels {
         use super::*;
 
         fn schema_path() -> std::path::PathBuf {
-            project_root_path()
-                .join("crates/tombi-lsp/tests/fixtures/ref-sibling-projection.schema.json")
+            project_root_path().join("crates/tombi-lsp/tests/fixtures/ref-sibling-projection.schema.json")
         }
 
         test_completion_labels! {
@@ -3336,8 +3332,7 @@ mod completion_labels {
         use super::*;
 
         fn schema_path() -> std::path::PathBuf {
-            project_root_path()
-                .join("crates/tombi-lsp/tests/fixtures/one-of-const-description.schema.json")
+            project_root_path().join("crates/tombi-lsp/tests/fixtures/one-of-const-description.schema.json")
         }
 
         test_completion_labels! {

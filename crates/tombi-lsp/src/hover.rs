@@ -14,8 +14,7 @@ use itertools::Itertools;
 
 use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
 use tombi_schema_store::{
-    Accessor, Accessors, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaUri,
-    ValueType, get_schema_name,
+    Accessor, Accessors, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaUri, ValueType, get_schema_name,
 };
 use tombi_text::{FromLsp, IntoLsp};
 
@@ -40,11 +39,7 @@ pub async fn get_hover_content(
                 .get_hover_content(offset, keys, &[], current_schema.as_ref(), schema_context)
                 .await
         }
-        None => {
-            table
-                .get_hover_content(offset, keys, &[], None, schema_context)
-                .await
-        }
+        None => table.get_hover_content(offset, keys, &[], None, schema_context).await,
     }
 }
 
@@ -82,16 +77,11 @@ pub(crate) fn schema_view_link_uri(current_schema: &CurrentSchema<'_>) -> Schema
     )
 }
 
-pub(super) fn current_schema_link_uri(
-    current_schema: Option<&CurrentSchema<'_>>,
-) -> Option<SchemaUri> {
+pub(super) fn current_schema_link_uri(current_schema: Option<&CurrentSchema<'_>>) -> Option<SchemaUri> {
     current_schema.map(schema_view_link_uri)
 }
 
-fn merge_optional_vec<T: PartialEq>(
-    base: Option<Vec<T>>,
-    adjacent: Option<Vec<T>>,
-) -> Option<Vec<T>> {
+fn merge_optional_vec<T: PartialEq>(base: Option<Vec<T>>, adjacent: Option<Vec<T>>) -> Option<Vec<T>> {
     let mut values = base.unwrap_or_default();
     for value in adjacent.unwrap_or_default() {
         if !values.contains(&value) {
@@ -102,10 +92,7 @@ fn merge_optional_vec<T: PartialEq>(
     (!values.is_empty()).then_some(values)
 }
 
-fn merge_constraints(
-    base: Option<ValueConstraints>,
-    adjacent: Option<ValueConstraints>,
-) -> Option<ValueConstraints> {
+fn merge_constraints(base: Option<ValueConstraints>, adjacent: Option<ValueConstraints>) -> Option<ValueConstraints> {
     match (base, adjacent) {
         (Some(mut base), Some(adjacent)) => {
             base.r#enum = merge_optional_vec(base.r#enum, adjacent.r#enum);
@@ -131,9 +118,7 @@ fn merge_constraints(
             base.additional_keys = base.additional_keys.or(adjacent.additional_keys);
             base.pattern_keys |= adjacent.pattern_keys;
             base.keys_order = base.keys_order.or(adjacent.keys_order);
-            base.array_values_order_by = base
-                .array_values_order_by
-                .or(adjacent.array_values_order_by);
+            base.array_values_order_by = base.array_values_order_by.or(adjacent.array_values_order_by);
             Some(base)
         }
         (Some(base), None) => Some(base),
@@ -172,10 +157,7 @@ pub(super) fn first_most_specific_hover_value_content(
     contents: Vec<HoverValueContent>,
     applicator: CompositeKind,
 ) -> Option<HoverValueContent> {
-    let max_depth = contents
-        .iter()
-        .map(|content| content.accessors.as_ref().len())
-        .max()?;
+    let max_depth = contents.iter().map(|content| content.accessors.as_ref().len()).max()?;
     let contents = contents
         .into_iter()
         .filter(|content| content.accessors.as_ref().len() == max_depth)
@@ -188,16 +170,15 @@ pub(super) fn first_most_specific_hover_value_content(
         .iter()
         .map(|content| content.value_type.clone())
         .collect::<tombi_hashmap::IndexSet<_>>();
-    let tooltip_contents = if applicator == CompositeKind::All
-        && contents.iter().any(HoverValueContent::has_tooltip_details)
-    {
-        contents
-            .iter()
-            .filter(|content| content.has_tooltip_details())
-            .collect_vec()
-    } else {
-        contents.iter().collect_vec()
-    };
+    let tooltip_contents =
+        if applicator == CompositeKind::All && contents.iter().any(HoverValueContent::has_tooltip_details) {
+            contents
+                .iter()
+                .filter(|content| content.has_tooltip_details())
+                .collect_vec()
+        } else {
+            contents.iter().collect_vec()
+        };
 
     if tooltip_contents.len() == 1 {
         let mut selected = tooltip_contents[0].clone();
@@ -247,11 +228,10 @@ pub(super) fn inherit_matching_nullable_type(composite: &ValueType, value_type: 
         ValueType::OneOf(types) | ValueType::AnyOf(types) => types,
         _ => return,
     };
-    if types.iter().any(|candidate| {
-        !matches!(candidate, ValueType::Null) && candidate.simplify() == value_type_simplified
-    }) && types
+    if types
         .iter()
-        .any(|candidate| matches!(candidate, ValueType::Null))
+        .any(|candidate| !matches!(candidate, ValueType::Null) && candidate.simplify() == value_type_simplified)
+        && types.iter().any(|candidate| matches!(candidate, ValueType::Null))
     {
         value_type.set_nullable();
     }
@@ -263,29 +243,16 @@ fn merge_hover_content(
     prefer_adjacent_annotations: bool,
 ) -> Option<HoverContent> {
     match (base, adjacent) {
-        (Some(HoverContent::Value(base)), Some(HoverContent::Value(adjacent))) => {
-            Some(HoverContent::Value(merge_hover_value_content(
-                base,
-                adjacent,
-                prefer_adjacent_annotations,
-            )))
-        }
-        (
-            Some(HoverContent::DirectiveContent(base)),
-            Some(HoverContent::DirectiveContent(adjacent)),
-        ) => Some(HoverContent::DirectiveContent(merge_hover_value_content(
-            base,
-            adjacent,
-            prefer_adjacent_annotations,
-        ))),
+        (Some(HoverContent::Value(base)), Some(HoverContent::Value(adjacent))) => Some(HoverContent::Value(
+            merge_hover_value_content(base, adjacent, prefer_adjacent_annotations),
+        )),
+        (Some(HoverContent::DirectiveContent(base)), Some(HoverContent::DirectiveContent(adjacent))) => Some(
+            HoverContent::DirectiveContent(merge_hover_value_content(base, adjacent, prefer_adjacent_annotations)),
+        ),
         (Some(HoverContent::Value(base)), Some(HoverContent::DirectiveContent(adjacent)))
-        | (Some(HoverContent::DirectiveContent(base)), Some(HoverContent::Value(adjacent))) => {
-            Some(HoverContent::Value(merge_hover_value_content(
-                base,
-                adjacent,
-                prefer_adjacent_annotations,
-            )))
-        }
+        | (Some(HoverContent::DirectiveContent(base)), Some(HoverContent::Value(adjacent))) => Some(
+            HoverContent::Value(merge_hover_value_content(base, adjacent, prefer_adjacent_annotations)),
+        ),
         (Some(base), None) => Some(base),
         (None, Some(adjacent)) => Some(adjacent),
         (Some(base), Some(_)) => Some(base),
@@ -294,12 +261,7 @@ fn merge_hover_content(
 }
 
 pub(super) async fn merge_adjacent_hover_content<
-    T: GetHoverContent
-        + Sync
-        + Send
-        + tombi_document_tree_syntax::ValueImpl
-        + tombi_validator::Validate
-        + std::fmt::Debug,
+    T: GetHoverContent + Sync + Send + tombi_document_tree_syntax::ValueImpl + tombi_validator::Validate + std::fmt::Debug,
 >(
     value: &T,
     offset: tombi_text::Offset,
@@ -378,11 +340,7 @@ pub enum HoverContent {
 }
 
 impl FromLsp<HoverContent> for tower_lsp_server::gen_lsp_types::Hover {
-    fn from_lsp(
-        source: HoverContent,
-        line_index: &tombi_text::LineIndex,
-        encoding: tombi_text::EncodingKind,
-    ) -> Self {
+    fn from_lsp(source: HoverContent, line_index: &tombi_text::LineIndex, encoding: tombi_text::EncodingKind) -> Self {
         match source {
             HoverContent::Value(content) => content.into_lsp(line_index, encoding),
             HoverContent::Directive(content) => content.into_lsp(line_index, encoding),
@@ -441,9 +399,10 @@ impl HoverValueContent {
     }
 
     pub(crate) fn schema_tooltip(&self) -> SchemaTooltip {
-        let schema = self.schema_document_uri.as_ref().and_then(|schema_uri| {
-            get_schema_name(schema_uri).map(|name| format!("Schema: [{name}]({schema_uri})"))
-        });
+        let schema = self
+            .schema_document_uri
+            .as_ref()
+            .and_then(|schema_uri| get_schema_name(schema_uri).map(|name| format!("Schema: [{name}]({schema_uri})")));
         let common = SchemaTooltipContent {
             title: self.title.clone(),
             description: self.description.clone(),
@@ -455,11 +414,7 @@ impl HoverValueContent {
             schema,
         };
         match self.schema_tooltip.clone() {
-            Some(tooltip)
-                if common.title.is_some()
-                    || common.description.is_some()
-                    || common.constraints.is_some() =>
-            {
+            Some(tooltip) if common.title.is_some() || common.description.is_some() || common.constraints.is_some() => {
                 tooltip.with_common_content(common)
             }
             Some(tooltip) => tooltip,

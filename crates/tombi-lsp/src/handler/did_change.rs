@@ -1,6 +1,4 @@
-use tower_lsp_server::gen_lsp_types::{
-    DidChangeTextDocumentParams, TextDocumentContentChangeEvent,
-};
+use tower_lsp_server::gen_lsp_types::{DidChangeTextDocumentParams, TextDocumentContentChangeEvent};
 
 use crate::backend::Backend;
 
@@ -42,9 +40,7 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
             return;
         };
 
-        let need_publish_diagnostics = document
-            .version
-            .is_none_or(|version| version < text_document.version);
+        let need_publish_diagnostics = document.version.is_none_or(|version| version < text_document.version);
         let previous_toml_version = document.toml_version;
 
         if let Some(text) = latest_text {
@@ -52,11 +48,7 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
         }
         document.version = Some(text_document.version);
 
-        (
-            need_publish_diagnostics,
-            previous_toml_version,
-            document.clone(),
-        )
+        (need_publish_diagnostics, previous_toml_version, document.clone())
     };
 
     backend

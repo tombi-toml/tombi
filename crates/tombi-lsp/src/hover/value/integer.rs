@@ -33,8 +33,7 @@ impl GetHoverContent for tombi_document_tree_syntax::Integer {
                     IntegerCommonLintRules,
                 >(self.comment_directives(), offset, accessors)
                 && let Some(hover_content) =
-                    get_value_comment_directive_hover_content(comment_directive_context, schema_uri)
-                        .await
+                    get_value_comment_directive_hover_content(comment_directive_context, schema_uri).await
             {
                 return Some(hover_content);
             }
@@ -49,18 +48,10 @@ impl GetHoverContent for tombi_document_tree_syntax::Integer {
                         }
 
                         let mut hover_content = integer_schema
-                            .get_hover_content(
-                                offset,
-                                keys,
-                                accessors,
-                                Some(current_schema),
-                                schema_context,
-                            )
+                            .get_hover_content(offset, keys, accessors, Some(current_schema), schema_context)
                             .await;
 
-                        if let Some(HoverContent::Value(hover_value_content)) =
-                            hover_content.as_mut()
-                        {
+                        if let Some(HoverContent::Value(hover_value_content)) = hover_content.as_mut() {
                             hover_value_content.span = Some(self.span());
                         }
 
@@ -153,12 +144,10 @@ impl GetHoverContent for IntegerSchema {
                         Some(DisplayValue::Integer(*value))
                     }),
                     default: self.default.map(DisplayValue::Integer),
-                    examples: self.examples.as_ref().map(|examples| {
-                        examples
-                            .iter()
-                            .map(|example| DisplayValue::Integer(*example))
-                            .collect()
-                    }),
+                    examples: self
+                        .examples
+                        .as_ref()
+                        .map(|examples| examples.iter().map(|example| DisplayValue::Integer(*example)).collect()),
                     minimum: self.minimum.map(DisplayValue::Integer),
                     maximum: self.maximum.map(DisplayValue::Integer),
                     exclusive_minimum: self.exclusive_minimum.map(DisplayValue::Integer),

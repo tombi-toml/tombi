@@ -3,8 +3,7 @@ mod get_built_in_schema {
     use tower_lsp_server::LspService;
 
     #[tokio::test]
-    async fn returns_embedded_schema_content_for_valid_tombi_uri()
-    -> Result<(), Box<dyn std::error::Error>> {
+    async fn returns_embedded_schema_content_for_valid_tombi_uri() -> Result<(), Box<dyn std::error::Error>> {
         tombi_test_lib::init_log();
 
         let (service, _) = LspService::new(|client| Backend::new(client, &Default::default()));

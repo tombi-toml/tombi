@@ -22,27 +22,14 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Value<'_> {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Vec<TypeDefinition>> {
         async move {
-            if let Some(Ok(current_schema)) = schema_context
-                .get_subschema(accessors, current_schema)
-                .await
-            {
+            if let Some(Ok(current_schema)) = schema_context.get_subschema(accessors, current_schema).await {
                 return self
-                    .get_type_definition(
-                        cursor,
-                        keys,
-                        accessors,
-                        Some(&current_schema),
-                        schema_context,
-                    )
+                    .get_type_definition(cursor, keys, accessors, Some(&current_schema), schema_context)
                     .await;
             }
 
             let projected_schema = current_schema.and_then(|schema| {
-                crate::schema_resolver::project_schema_for_presentation(
-                    self,
-                    schema,
-                    schema_context,
-                )
+                crate::schema_resolver::project_schema_for_presentation(self, schema, schema_context)
             });
             let current_schema = match &projected_schema {
                 Some(projected_schema) => projected_schema.as_ref(),
@@ -52,125 +39,59 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Value<'_> {
             let type_definition = match self {
                 Self::Boolean(boolean) => {
                     boolean
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::Integer(integer) => {
                     integer
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::Float(float) => {
                     float
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::String(string) => {
                     string
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::OffsetDateTime(offset_date_time) => {
                     offset_date_time
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::LocalDateTime(local_date_time) => {
                     local_date_time
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::LocalDate(local_date) => {
                     local_date
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::LocalTime(local_time) => {
                     local_time
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::Array(array) => {
                     array
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::Table(table) => {
                     table
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::Incomplete { .. } => match current_schema {
                     Some(current_schema) => {
                         current_schema
                             .schema_view
-                            .get_type_definition(
-                                cursor,
-                                keys,
-                                accessors,
-                                Some(current_schema),
-                                schema_context,
-                            )
+                            .get_type_definition(cursor, keys, accessors, Some(current_schema), schema_context)
                             .await
                     }
                     None => Vec::new(),
@@ -189,13 +110,7 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Value<'_> {
             {
                 return current_schema
                     .schema_view
-                    .get_type_definition(
-                        cursor,
-                        keys,
-                        accessors,
-                        Some(current_schema),
-                        schema_context,
-                    )
+                    .get_type_definition(cursor, keys, accessors, Some(current_schema), schema_context)
                     .await;
             }
 
@@ -218,153 +133,71 @@ impl GetTypeDefinition for tombi_schema_store::SchemaView {
             match self {
                 Self::Boolean(boolean_schema) => {
                     boolean_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::Integer(integer_schema) => {
                     integer_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::Float(float_schema) => {
                     float_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::String(string_schema) => {
                     string_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::OffsetDateTime(offset_date_time_schema) => {
                     offset_date_time_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::LocalDateTime(local_date_time_schema) => {
                     local_date_time_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::LocalDate(local_date_schema) => {
                     local_date_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::LocalTime(local_time_schema) => {
                     local_time_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::Array(array_schema) => {
                     array_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::Table(table_schema) => {
                     table_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::OneOf(one_of_schema) => {
                     one_of_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::AnyOf(any_of_schema) => {
                     any_of_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::AllOf(all_of_schema) => {
                     all_of_schema
-                        .get_type_definition(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                        )
+                        .get_type_definition(cursor, keys, accessors, current_schema, schema_context)
                         .await
                 }
                 Self::Anything(schema) => current_schema.map_or_else(Vec::new, |current_schema| {
-                    vec![schema_type_definition(
-                        current_schema,
-                        accessors,
-                        schema.span,
-                    )]
+                    vec![schema_type_definition(current_schema, accessors, schema.span)]
                 }),
                 Self::Nothing(_) | Self::Null => Vec::new(),
             }

@@ -1,14 +1,12 @@
 use tombi_text::EncodingKind;
 use tower_lsp_server::gen_lsp_types::{
-    ChangeNotifications, ClientCapabilities, ClientInfo, CodeActionProvider, CompletionOptions,
-    DeclarationProvider, DefinitionProvider, DiagnosticOptions, DiagnosticProvider,
-    DocumentFormattingProvider, DocumentLinkOptions, DocumentSymbolProvider, FileOperationFilter,
-    FileOperationOptions, FileOperationPattern, FileOperationPatternKind,
-    FileOperationRegistrationOptions, FoldingRangeProvider, Full, HoverProvider, InitializeParams,
-    InitializeResult, InlayHintOptions, InlayHintProvider, ReferencesProvider, Save,
-    SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities, ServerCompletionItemOptions,
-    ServerInfo, TextDocumentSync, TextDocumentSyncKind, TextDocumentSyncOptions,
-    TypeDefinitionProvider, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
+    ChangeNotifications, ClientCapabilities, ClientInfo, CodeActionProvider, CompletionOptions, DeclarationProvider,
+    DefinitionProvider, DiagnosticOptions, DiagnosticProvider, DocumentFormattingProvider, DocumentLinkOptions,
+    DocumentSymbolProvider, FileOperationFilter, FileOperationOptions, FileOperationPattern, FileOperationPatternKind,
+    FileOperationRegistrationOptions, FoldingRangeProvider, Full, HoverProvider, InitializeParams, InitializeResult,
+    InlayHintOptions, InlayHintProvider, ReferencesProvider, Save, SemanticTokensLegend, SemanticTokensOptions,
+    ServerCapabilities, ServerCompletionItemOptions, ServerInfo, TextDocumentSync, TextDocumentSyncKind,
+    TextDocumentSyncOptions, TypeDefinitionProvider, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
     WorkspaceOptions,
 };
 

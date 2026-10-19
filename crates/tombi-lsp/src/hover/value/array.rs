@@ -38,24 +38,14 @@ impl GetHoverContent for tombi_document_tree_syntax::Array<'_> {
             if let Some((comment_directive_context, schema_uri)) =
                 get_array_comment_directive_content_with_schema_uri(self, offset, accessors)
                 && let Some(hover_content) =
-                    get_value_comment_directive_hover_content(comment_directive_context, schema_uri)
-                        .await
+                    get_value_comment_directive_hover_content(comment_directive_context, schema_uri).await
             {
                 return Some(hover_content);
             }
 
-            if let Some(Ok(current_schema)) = schema_context
-                .get_subschema(accessors, current_schema)
-                .await
-            {
+            if let Some(Ok(current_schema)) = schema_context.get_subschema(accessors, current_schema).await {
                 return self
-                    .get_hover_content(
-                        offset,
-                        keys,
-                        accessors,
-                        Some(&current_schema),
-                        schema_context,
-                    )
+                    .get_hover_content(offset, keys, accessors, Some(&current_schema), schema_context)
                     .await;
             }
 
@@ -66,13 +56,8 @@ impl GetHoverContent for tombi_document_tree_syntax::Array<'_> {
                             if value.contains(offset) {
                                 let accessor = Accessor::Index(index);
 
-                                if let Some(current_schema) = resolve_array_item_schema(
-                                    index,
-                                    array_schema,
-                                    current_schema,
-                                    schema_context,
-                                )
-                                .await
+                                if let Some(current_schema) =
+                                    resolve_array_item_schema(index, array_schema, current_schema, schema_context).await
                                 {
                                     return match value
                                         .get_hover_content(
@@ -90,15 +75,12 @@ impl GetHoverContent for tombi_document_tree_syntax::Array<'_> {
                                     {
                                         HoverContent::Value(mut hover_value_content) => {
                                             if keys.is_empty()
-                                                && self.kind()
-                                                    == tombi_document_tree_syntax::ArrayKind::ArrayOfTable
-                                                && let Some(constraints) =
-                                                    &mut hover_value_content.constraints
+                                                && self.kind() == tombi_document_tree_syntax::ArrayKind::ArrayOfTable
+                                                && let Some(constraints) = &mut hover_value_content.constraints
                                             {
                                                 constraints.min_items = array_schema.min_items;
                                                 constraints.max_items = array_schema.max_items;
-                                                constraints.unique_items =
-                                                    array_schema.unique_items;
+                                                constraints.unique_items = array_schema.unique_items;
                                             }
 
                                             if hover_value_content.title.is_none()
@@ -107,10 +89,8 @@ impl GetHoverContent for tombi_document_tree_syntax::Array<'_> {
                                                 if let Some(title) = &array_schema.title {
                                                     hover_value_content.title = Some(title.clone());
                                                 }
-                                                if let Some(description) = &array_schema.description
-                                                {
-                                                    hover_value_content.description =
-                                                        Some(description.clone());
+                                                if let Some(description) = &array_schema.description {
+                                                    hover_value_content.description = Some(description.clone());
                                                 }
                                             }
                                             Some(HoverContent::Value(hover_value_content))
@@ -173,11 +153,7 @@ impl GetHoverContent for tombi_document_tree_syntax::Array<'_> {
                                     .get_hover_content(
                                         offset,
                                         keys,
-                                        &accessors
-                                            .iter()
-                                            .cloned()
-                                            .chain(std::iter::once(accessor))
-                                            .collect_vec(),
+                                        &accessors.iter().cloned().chain(std::iter::once(accessor)).collect_vec(),
                                         None,
                                         schema_context,
                                     )
@@ -185,18 +161,10 @@ impl GetHoverContent for tombi_document_tree_syntax::Array<'_> {
                             }
                         }
                         let mut hover_content = array_schema
-                            .get_hover_content(
-                                offset,
-                                keys,
-                                accessors,
-                                Some(current_schema),
-                                schema_context,
-                            )
+                            .get_hover_content(offset, keys, accessors, Some(current_schema), schema_context)
                             .await;
 
-                        if let Some(HoverContent::Value(hover_value_content)) =
-                            hover_content.as_mut()
-                        {
+                        if let Some(HoverContent::Value(hover_value_content)) = hover_content.as_mut() {
                             hover_value_content.span = Some(self.span());
                             if let Some(constraints) = hover_value_content.constraints.as_mut() {
                                 constraints.values_order = schema_context.array_values_order(
@@ -253,11 +221,7 @@ impl GetHoverContent for tombi_document_tree_syntax::Array<'_> {
                                     .get_hover_content(
                                         offset,
                                         keys,
-                                        &accessors
-                                            .iter()
-                                            .cloned()
-                                            .chain(std::iter::once(accessor))
-                                            .collect_vec(),
+                                        &accessors.iter().cloned().chain(std::iter::once(accessor)).collect_vec(),
                                         Some(current_schema),
                                         schema_context,
                                     )
@@ -287,11 +251,7 @@ impl GetHoverContent for tombi_document_tree_syntax::Array<'_> {
                         .get_hover_content(
                             offset,
                             keys,
-                            &accessors
-                                .iter()
-                                .cloned()
-                                .chain(std::iter::once(accessor))
-                                .collect_vec(),
+                            &accessors.iter().cloned().chain(std::iter::once(accessor)).collect_vec(),
                             None,
                             schema_context,
                         )
@@ -317,14 +277,11 @@ impl GetHoverContent for tombi_document_tree_syntax::Array<'_> {
 fn comment_directive_array_values_order(
     array: &tombi_document_tree_syntax::Array<'_>,
 ) -> Option<tombi_schema_store::ArrayOrderOverride> {
-    let comment_directive = get_comment_directive_content::<
-        ArrayCommonFormatRules,
-        ArrayCommonLintRules,
-    >(array.comment_directives()?.cloned())?;
+    let comment_directive = get_comment_directive_content::<ArrayCommonFormatRules, ArrayCommonLintRules>(
+        array.comment_directives()?.cloned(),
+    )?;
 
-    let disabled = comment_directive
-        .array_values_order_disabled()
-        .unwrap_or_default();
+    let disabled = comment_directive.array_values_order_disabled().unwrap_or_default();
     let order = comment_directive.array_values_order().map(Into::into);
 
     (disabled || order.is_some()).then_some(tombi_schema_store::ArrayOrderOverride {

@@ -5,15 +5,14 @@ use tombi_comment_directive::document::TombiDocumentDirectiveContent;
 use tombi_config::{Config, TomlVersion};
 use tombi_text::IntoLsp;
 use tower_lsp_server::gen_lsp_types::{
-    CodeActionParams, CodeActionResponse, CompletionParams, CompletionResponse, DeclarationParams,
-    DeclarationResponse, DefinitionParams, DefinitionResponse, DidChangeConfigurationParams,
-    DidChangeTextDocumentParams, DidChangeWatchedFilesParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentDiagnosticParams,
-    DocumentDiagnosticReport, DocumentLink, DocumentLinkParams, DocumentSymbolParams,
-    DocumentSymbolResponse, FoldingRange, FoldingRangeParams, Hover, HoverParams, InitializeParams,
-    InitializeResult, InitializedParams, InlayHint, InlayHintParams, ReferenceParams,
-    SemanticTokens, SemanticTokensParams, TextDocumentIdentifier, TypeDefinitionParams,
-    TypeDefinitionResponse, WorkspaceDiagnosticParams, WorkspaceDiagnosticReport,
+    CodeActionParams, CodeActionResponse, CompletionParams, CompletionResponse, DeclarationParams, DeclarationResponse,
+    DefinitionParams, DefinitionResponse, DidChangeConfigurationParams, DidChangeTextDocumentParams,
+    DidChangeWatchedFilesParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
+    DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentLink, DocumentLinkParams, DocumentSymbolParams,
+    DocumentSymbolResponse, FoldingRange, FoldingRangeParams, Hover, HoverParams, InitializeParams, InitializeResult,
+    InitializedParams, InlayHint, InlayHintParams, ReferenceParams, SemanticTokens, SemanticTokensParams,
+    TextDocumentIdentifier, TypeDefinitionParams, TypeDefinitionResponse, WorkspaceDiagnosticParams,
+    WorkspaceDiagnosticReport,
 };
 
 use crate::extension::IntoLsp as _;
@@ -23,17 +22,15 @@ use crate::{
     goto_definition::{try_get_goto_declaration_response, try_get_goto_definition_response},
     goto_type_definition::try_get_type_definition_response,
     handler::{
-        AssociateSchemaParams, GetBuiltInSchemaParams, GetStatusResponse, GetTomlVersionResponse,
-        ListSchemasParams, ListSchemasResponse, RefreshCacheParams, TomlVersionSource,
-        handle_associate_schema, handle_code_action, handle_completion, handle_diagnostic,
-        handle_did_change, handle_did_change_configuration, handle_did_change_watched_files,
-        handle_did_close, handle_did_open, handle_did_save, handle_document_link,
-        handle_document_symbol, handle_folding_range, handle_formatting,
-        handle_get_built_in_schema, handle_get_status, handle_get_toml_version,
-        handle_goto_declaration, handle_goto_definition, handle_goto_type_definition, handle_hover,
-        handle_initialize, handle_initialized, handle_inlay_hint, handle_list_schemas,
-        handle_references, handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown,
-        handle_update_config, handle_update_schema, handle_workspace_diagnostic, push_diagnostics,
+        AssociateSchemaParams, GetBuiltInSchemaParams, GetStatusResponse, GetTomlVersionResponse, ListSchemasParams,
+        ListSchemasResponse, RefreshCacheParams, TomlVersionSource, handle_associate_schema, handle_code_action,
+        handle_completion, handle_diagnostic, handle_did_change, handle_did_change_configuration,
+        handle_did_change_watched_files, handle_did_close, handle_did_open, handle_did_save, handle_document_link,
+        handle_document_symbol, handle_folding_range, handle_formatting, handle_get_built_in_schema, handle_get_status,
+        handle_get_toml_version, handle_goto_declaration, handle_goto_definition, handle_goto_type_definition,
+        handle_hover, handle_initialize, handle_initialized, handle_inlay_hint, handle_list_schemas, handle_references,
+        handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown, handle_update_config, handle_update_schema,
+        handle_workspace_diagnostic, push_diagnostics,
     },
     references::try_get_reference_locations,
     workspace_diagnostic::WorkspaceDiagnosticsCache,
@@ -46,11 +43,8 @@ pub struct Backend {
     pub client: tower_lsp_server::Client,
     pub capabilities: Arc<tokio::sync::RwLock<BackendCapabilities>>,
     pub background_tasks: Arc<std::sync::Mutex<Vec<tombi_future::TaskHandle>>>,
-    pub document_sources:
-        Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<tombi_uri::Uri, DocumentSource>>>,
-    opening_documents: Arc<
-        std::sync::Mutex<tombi_hashmap::HashMap<tombi_uri::Uri, tokio::sync::watch::Sender<bool>>>,
-    >,
+    pub document_sources: Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<tombi_uri::Uri, DocumentSource>>>,
+    opening_documents: Arc<std::sync::Mutex<tombi_hashmap::HashMap<tombi_uri::Uri, tokio::sync::watch::Sender<bool>>>>,
     pub config_manager: Arc<ConfigManager>,
     pub workspace_diagnostics_cache: Arc<tokio::sync::RwLock<WorkspaceDiagnosticsCache>>,
 }
@@ -106,15 +100,8 @@ impl Backend {
     /// The snapshot of the document, which shares its text and trees with the stored one.
     ///
     /// `None` if the document is not open, or is being updated.
-    pub(crate) fn document_source(
-        &self,
-        text_document_uri: &tombi_uri::Uri,
-    ) -> Option<DocumentSource> {
-        self.document_sources
-            .try_read()
-            .ok()?
-            .get(text_document_uri)
-            .cloned()
+    pub(crate) fn document_source(&self, text_document_uri: &tombi_uri::Uri) -> Option<DocumentSource> {
+        self.document_sources.try_read().ok()?.get(text_document_uri).cloned()
     }
 
     pub(crate) fn begin_document_open(&self, text_document_uri: tombi_uri::Uri) {
@@ -151,19 +138,13 @@ impl Backend {
     }
 
     pub fn spawn_background_task(&self, task: impl Future<Output = ()> + Send + 'static) {
-        let mut background_tasks = self
-            .background_tasks
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
+        let mut background_tasks = self.background_tasks.lock().unwrap_or_else(|error| error.into_inner());
         background_tasks.retain(|task| !task.is_finished());
         background_tasks.push(tombi_future::spawn(task));
     }
 
     pub fn abort_background_tasks(&self) {
-        let mut background_tasks = self
-            .background_tasks
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
+        let mut background_tasks = self.background_tasks.lock().unwrap_or_else(|error| error.into_inner());
 
         for task in background_tasks.drain(..) {
             task.abort();
@@ -202,13 +183,8 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn config_path(
-        &self,
-        text_document_uri: &tombi_uri::Uri,
-    ) -> Option<std::path::PathBuf> {
-        self.config_manager
-            .get_config_path_for_uri(text_document_uri)
-            .await
+    pub async fn config_path(&self, text_document_uri: &tombi_uri::Uri) -> Option<std::path::PathBuf> {
+        self.config_manager.get_config_path_for_uri(text_document_uri).await
     }
 
     #[inline]
@@ -229,13 +205,8 @@ impl Backend {
         root: &tombi_ast_syntax::Root<'_>,
     ) -> (TomlVersion, TomlVersionSource) {
         let ConfigSchemaStore {
-            config,
-            schema_store,
-            ..
-        } = self
-            .config_manager
-            .config_schema_store_for_uri(text_document_uri)
-            .await;
+            config, schema_store, ..
+        } = self.config_manager.config_schema_store_for_uri(text_document_uri).await;
 
         if let Some(TombiDocumentDirectiveContent {
             toml_version: Some(toml_version),
@@ -254,10 +225,7 @@ impl Backend {
             Err(_) => None,
         };
 
-        if let Some(toml_version) = source_schema
-            .as_ref()
-            .and_then(|schema| schema.toml_version())
-        {
+        if let Some(toml_version) = source_schema.as_ref().and_then(|schema| schema.toml_version()) {
             return (toml_version, TomlVersionSource::Schema);
         }
 
@@ -271,10 +239,7 @@ impl Backend {
             DefaultConfigSource::Default => TomlVersionSource::Default,
         };
 
-        (
-            default_config.toml_version.unwrap_or_default(),
-            toml_version_source,
-        )
+        (default_config.toml_version.unwrap_or_default(), toml_version_source)
     }
 
     #[inline]
@@ -323,10 +288,7 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn refresh_cache(
-        &self,
-        params: RefreshCacheParams,
-    ) -> Result<bool, tower_lsp_server::jsonrpc::Error> {
+    pub async fn refresh_cache(&self, params: RefreshCacheParams) -> Result<bool, tower_lsp_server::jsonrpc::Error> {
         handle_refresh_cache(self, params).await
     }
 
@@ -351,10 +313,7 @@ impl Drop for Backend {
 }
 
 impl tower_lsp_server::LanguageServer for Backend {
-    async fn initialize(
-        &self,
-        params: InitializeParams,
-    ) -> Result<InitializeResult, tower_lsp_server::jsonrpc::Error> {
+    async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult, tower_lsp_server::jsonrpc::Error> {
         handle_initialize(self, params).await
     }
 
@@ -394,12 +353,7 @@ impl tower_lsp_server::LanguageServer for Backend {
         &self,
         params: CompletionParams,
     ) -> Result<Option<CompletionResponse>, tower_lsp_server::jsonrpc::Error> {
-        let text_document_uri = params
-            .text_document_position_params
-            .text_document
-            .uri
-            .clone()
-            .into();
+        let text_document_uri = params.text_document_position_params.text_document.uri.clone().into();
         let Some(document_source) = self.document_source(&text_document_uri) else {
             return Ok(None);
         };
@@ -409,12 +363,7 @@ impl tower_lsp_server::LanguageServer for Backend {
                 CompletionResponse::CompletionItemList(
                     items
                         .into_iter()
-                        .map(|item| {
-                            item.into_lsp_type(
-                                document_source.line_index(),
-                                document_source.encoding_kind(),
-                            )
-                        })
+                        .map(|item| item.into_lsp_type(document_source.line_index(), document_source.encoding_kind()))
                         .collect(),
                 )
             })
@@ -442,27 +391,14 @@ impl tower_lsp_server::LanguageServer for Backend {
         handle_document_link(self, params).await
     }
 
-    async fn hover(
-        &self,
-        params: HoverParams,
-    ) -> Result<Option<Hover>, tower_lsp_server::jsonrpc::Error> {
-        let text_document_uri = params
-            .text_document_position_params
-            .text_document
-            .uri
-            .clone()
-            .into();
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>, tower_lsp_server::jsonrpc::Error> {
+        let text_document_uri = params.text_document_position_params.text_document.uri.clone().into();
         let Some(document_source) = self.document_source(&text_document_uri) else {
             return Ok(None);
         };
 
         handle_hover(self, params).await.map(|response| {
-            response.map(|content| {
-                content.into_lsp(
-                    document_source.line_index(),
-                    document_source.encoding_kind(),
-                )
-            })
+            response.map(|content| content.into_lsp(document_source.line_index(), document_source.encoding_kind()))
         })
     }
 
@@ -493,10 +429,7 @@ impl tower_lsp_server::LanguageServer for Backend {
     async fn formatting(
         &self,
         params: tower_lsp_server::gen_lsp_types::DocumentFormattingParams,
-    ) -> Result<
-        Option<Vec<tower_lsp_server::gen_lsp_types::TextEdit>>,
-        tower_lsp_server::jsonrpc::Error,
-    > {
+    ) -> Result<Option<Vec<tower_lsp_server::gen_lsp_types::TextEdit>>, tower_lsp_server::jsonrpc::Error> {
         handle_formatting(self, params).await
     }
 
@@ -511,8 +444,7 @@ impl tower_lsp_server::LanguageServer for Backend {
         &self,
         params: TypeDefinitionParams,
     ) -> Result<Option<TypeDefinitionResponse>, tower_lsp_server::jsonrpc::Error> {
-        try_get_type_definition_response(self, handle_goto_type_definition(self, params).await?)
-            .await
+        try_get_type_definition_response(self, handle_goto_type_definition(self, params).await?).await
     }
 
     async fn goto_declaration(
@@ -525,10 +457,7 @@ impl tower_lsp_server::LanguageServer for Backend {
     async fn references(
         &self,
         params: ReferenceParams,
-    ) -> Result<
-        Option<Vec<tower_lsp_server::gen_lsp_types::Location>>,
-        tower_lsp_server::jsonrpc::Error,
-    > {
+    ) -> Result<Option<Vec<tower_lsp_server::gen_lsp_types::Location>>, tower_lsp_server::jsonrpc::Error> {
         try_get_reference_locations(self, handle_references(self, params).await?).await
     }
 

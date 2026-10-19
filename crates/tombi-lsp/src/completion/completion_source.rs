@@ -31,13 +31,10 @@ impl<'a, 't> CompletionSource<'a, 't> {
     ) -> Option<Self> {
         let accessors = tombi_document_tree_syntax::get_accessors(document_tree, keys, offset);
         let (mut accessors, mut current_schema) =
-            resolve_accessors_for_document_or_schema(document_tree, accessors, schema_context)
-                .await;
+            resolve_accessors_for_document_or_schema(document_tree, accessors, schema_context).await;
 
-        if matches!(
-            completion_hint,
-            None | Some(CompletionHint::DotTrigger { .. })
-        ) && !keys.is_empty()
+        if matches!(completion_hint, None | Some(CompletionHint::DotTrigger { .. }))
+            && !keys.is_empty()
             && remaining_keys(keys, &accessors).is_empty()
             && matches!(
                 tombi_document_tree_syntax::dig_accessors(document_tree, &accessors),
@@ -46,12 +43,8 @@ impl<'a, 't> CompletionSource<'a, 't> {
             && matches!(accessors.last(), Some(Accessor::Key(_)))
         {
             let parent_accessors = accessors[..accessors.len().saturating_sub(1)].to_vec();
-            (accessors, current_schema) = resolve_accessors_for_document_or_schema(
-                document_tree,
-                parent_accessors,
-                schema_context,
-            )
-            .await;
+            (accessors, current_schema) =
+                resolve_accessors_for_document_or_schema(document_tree, parent_accessors, schema_context).await;
         }
 
         let remaining_keys = remaining_keys(keys, &accessors);

@@ -44,27 +44,21 @@ impl SchemaTooltip {
 
     pub(crate) fn combine(self, other: Self) -> Self {
         match (self, other) {
-            (Self::Content(common), Self::Content(specific)) => {
-                Self::Content(common.merge(specific))
-            }
-            (Self::Composite(composite), other) => {
-                Self::Composite(Box::new(CompositeSchemaTooltip {
-                    contents: composite
-                        .contents
-                        .into_iter()
-                        .map(|content| content.combine(other.clone()))
-                        .collect(),
-                }))
-            }
-            (content, Self::Composite(composite)) => {
-                Self::Composite(Box::new(CompositeSchemaTooltip {
-                    contents: composite
-                        .contents
-                        .into_iter()
-                        .map(|branch| content.clone().combine(branch))
-                        .collect(),
-                }))
-            }
+            (Self::Content(common), Self::Content(specific)) => Self::Content(common.merge(specific)),
+            (Self::Composite(composite), other) => Self::Composite(Box::new(CompositeSchemaTooltip {
+                contents: composite
+                    .contents
+                    .into_iter()
+                    .map(|content| content.combine(other.clone()))
+                    .collect(),
+            })),
+            (content, Self::Composite(composite)) => Self::Composite(Box::new(CompositeSchemaTooltip {
+                contents: composite
+                    .contents
+                    .into_iter()
+                    .map(|branch| content.clone().combine(branch))
+                    .collect(),
+            })),
             (Self::Markdown(mut left), Self::Markdown(right)) => {
                 if !left.is_empty() && !left.ends_with("\n\n") {
                     left.push_str("\n\n");
@@ -72,12 +66,8 @@ impl SchemaTooltip {
                 left.push_str(&right);
                 Self::Markdown(left)
             }
-            (Self::Content(content), Self::Markdown(markdown)) => {
-                Self::Content(content).with_markdown(markdown)
-            }
-            (Self::Markdown(markdown), Self::Content(content)) => {
-                Self::Content(content).with_markdown(markdown)
-            }
+            (Self::Content(content), Self::Markdown(markdown)) => Self::Content(content).with_markdown(markdown),
+            (Self::Markdown(markdown), Self::Content(content)) => Self::Content(content).with_markdown(markdown),
         }
     }
 
@@ -190,11 +180,9 @@ impl SchemaTooltipContent {
 
 fn merge_text(primary: Option<String>, secondary: Option<String>) -> Option<String> {
     match (primary, secondary) {
-        (Some(primary), Some(secondary)) if primary != secondary => Some(format!(
-            "{}\n\n{}",
-            primary.trim_end(),
-            secondary.trim_start()
-        )),
+        (Some(primary), Some(secondary)) if primary != secondary => {
+            Some(format!("{}\n\n{}", primary.trim_end(), secondary.trim_start()))
+        }
         (Some(primary), _) => Some(primary),
         (None, secondary) => secondary,
     }

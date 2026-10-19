@@ -1,14 +1,12 @@
-use tombi_ast_syntax::{
-    SchemaDocumentCommentDirective, TombiDocumentCommentDirective, TombiValueCommentDirective,
-};
+use tombi_ast_syntax::{SchemaDocumentCommentDirective, TombiDocumentCommentDirective, TombiValueCommentDirective};
 use tombi_comment_directive::{
     TombiCommentDirectiveImpl,
     value::{
-        ArrayCommonFormatRules, ArrayCommonLintRules, ArrayOfTableCommonFormatRules,
-        ArrayOfTableCommonLintRules, InlineTableCommonFormatRules, InlineTableCommonLintRules,
-        TombiGroupBoundaryDirectiveContent, TombiKeyArrayOfTableDirectiveContent,
-        TombiKeyTableDirectiveContent, TombiRootTableDirectiveContent, TombiTableDirectiveContent,
-        TombiValueDirectiveContent, WithKeyFormatRules, WithKeyLintRules, WithKeyTableLintRules,
+        ArrayCommonFormatRules, ArrayCommonLintRules, ArrayOfTableCommonFormatRules, ArrayOfTableCommonLintRules,
+        InlineTableCommonFormatRules, InlineTableCommonLintRules, TombiGroupBoundaryDirectiveContent,
+        TombiKeyArrayOfTableDirectiveContent, TombiKeyTableDirectiveContent, TombiRootTableDirectiveContent,
+        TombiTableDirectiveContent, TombiValueDirectiveContent, WithKeyFormatRules, WithKeyLintRules,
+        WithKeyTableLintRules,
     },
 };
 use tombi_document_tree_syntax::{ArrayKind, TableKind};
@@ -50,9 +48,7 @@ pub trait GetCommentDirectiveContext<T> {
     fn get_context(&self, offset: tombi_text::Offset) -> Option<CommentDirectiveContext<T>>;
 }
 
-impl GetCommentDirectiveContext<Result<tombi_uri::SchemaUri, String>>
-    for SchemaDocumentCommentDirective
-{
+impl GetCommentDirectiveContext<Result<tombi_uri::SchemaUri, String>> for SchemaDocumentCommentDirective {
     fn get_context(
         &self,
         offset: tombi_text::Offset,
@@ -133,23 +129,19 @@ impl GetCommentDirectiveContext<String> for Vec<TombiDocumentCommentDirective> {
 }
 
 pub fn get_key_value_comment_directive_content_and_schema_uri<'a, FormatRules, LintRules>(
-    comment_directives: Option<
-        impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
-    >,
+    comment_directives: Option<impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a>,
     offset: tombi_text::Offset,
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)>
 where
     TombiValueDirectiveContent<FormatRules, LintRules>: TombiCommentDirectiveImpl,
-    TombiValueDirectiveContent<WithKeyFormatRules<FormatRules>, WithKeyLintRules<LintRules>>:
-        TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<WithKeyFormatRules<FormatRules>, WithKeyLintRules<LintRules>>: TombiCommentDirectiveImpl,
 {
     let comment_directives = comment_directives?;
 
     for comment_directive in comment_directives {
         if let Some(comment_directive_context) = comment_directive.get_context(offset) {
-            let schema_uri = if let Some(tombi_schema_store::Accessor::Index(_)) = accessors.last()
-            {
+            let schema_uri = if let Some(tombi_schema_store::Accessor::Index(_)) = accessors.last() {
                 TombiValueDirectiveContent::<FormatRules, LintRules>::comment_directive_schema_url()
             } else {
                 TombiValueDirectiveContent::<
@@ -164,9 +156,7 @@ where
 }
 
 pub fn get_key_table_value_comment_directive_content_and_schema_uri<'a, FormatRules, LintRules>(
-    comment_directives: Option<
-        impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a,
-    >,
+    comment_directives: Option<impl Iterator<Item = &'a tombi_ast_syntax::TombiValueCommentDirective> + 'a>,
     offset: tombi_text::Offset,
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)>
@@ -179,8 +169,7 @@ where
 
     for comment_directive in comment_directives {
         if let Some(comment_directive_context) = comment_directive.get_context(offset) {
-            let schema_uri = if let Some(tombi_schema_store::Accessor::Index(_)) = accessors.last()
-            {
+            let schema_uri = if let Some(tombi_schema_store::Accessor::Index(_)) = accessors.last() {
                 TombiValueDirectiveContent::<FormatRules, LintRules>::comment_directive_schema_url()
             } else {
                 TombiValueDirectiveContent::<
@@ -254,11 +243,10 @@ pub fn get_table_comment_directive_content_with_schema_uri(
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)> {
     match table.kind() {
         TableKind::InlineTable { .. } => {
-            if let Some((comment_directive, schema_uri)) =
-                get_key_value_comment_directive_content_and_schema_uri::<
-                    InlineTableCommonFormatRules,
-                    InlineTableCommonLintRules,
-                >(table.comment_directives(), offset, accessors)
+            if let Some((comment_directive, schema_uri)) = get_key_value_comment_directive_content_and_schema_uri::<
+                InlineTableCommonFormatRules,
+                InlineTableCommonLintRules,
+            >(table.comment_directives(), offset, accessors)
             {
                 return Some((comment_directive, schema_uri));
             }
@@ -308,8 +296,7 @@ pub fn get_table_comment_directive_content_with_schema_uri(
             if let Some(comment_directives) = table.comment_directives() {
                 for comment_directive in comment_directives {
                     if let Some(comment_directive_context) = comment_directive.get_context(offset) {
-                        let schema_uri =
-                            TombiRootTableDirectiveContent::comment_directive_schema_url();
+                        let schema_uri = TombiRootTableDirectiveContent::comment_directive_schema_url();
                         return Some((comment_directive_context, schema_uri));
                     }
                 }

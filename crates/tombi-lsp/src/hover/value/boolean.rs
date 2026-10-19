@@ -33,8 +33,7 @@ impl GetHoverContent for tombi_document_tree_syntax::Boolean {
                     BooleanCommonLintRules,
                 >(self.comment_directives(), offset, accessors)
                 && let Some(hover_content) =
-                    get_value_comment_directive_hover_content(comment_directive_context, schema_uri)
-                        .await
+                    get_value_comment_directive_hover_content(comment_directive_context, schema_uri).await
             {
                 return Some(hover_content);
             }
@@ -49,18 +48,10 @@ impl GetHoverContent for tombi_document_tree_syntax::Boolean {
                         }
 
                         let mut hover_content = boolean_schema
-                            .get_hover_content(
-                                offset,
-                                keys,
-                                accessors,
-                                Some(current_schema),
-                                schema_context,
-                            )
+                            .get_hover_content(offset, keys, accessors, Some(current_schema), schema_context)
                             .await;
 
-                        if let Some(HoverContent::Value(hover_value_content)) =
-                            hover_content.as_mut()
-                        {
+                        if let Some(HoverContent::Value(hover_value_content)) = hover_content.as_mut() {
                             hover_value_content.span = Some(self.span());
                         }
 
@@ -153,12 +144,10 @@ impl GetHoverContent for BooleanSchema {
                         Some(DisplayValue::Boolean(*value))
                     }),
                     default: self.default.map(DisplayValue::Boolean),
-                    examples: self.examples.as_ref().map(|examples| {
-                        examples
-                            .iter()
-                            .map(|example| DisplayValue::Boolean(*example))
-                            .collect()
-                    }),
+                    examples: self
+                        .examples
+                        .as_ref()
+                        .map(|examples| examples.iter().map(|example| DisplayValue::Boolean(*example)).collect()),
                     ..Default::default()
                 }),
                 schema_document_uri: super::super::current_schema_link_uri(current_schema),

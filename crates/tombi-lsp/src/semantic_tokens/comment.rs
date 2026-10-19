@@ -70,11 +70,7 @@ mod tests {
                 } else {
                     token.delta_start
                 };
-                (token.token_type == TokenType::KEYWORD as u32).then_some((
-                    line,
-                    column,
-                    token.length,
-                ))
+                (token.token_type == TokenType::KEYWORD as u32).then_some((line, column, token.length))
             })
             .collect();
 
