@@ -1,5 +1,5 @@
 use serde_json::json;
-use tower_lsp::lsp_types::{
+use tower_lsp_server::gen_lsp_types::{
     DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern, InitializedParams,
     Registration, WatchKind,
 };
@@ -63,14 +63,19 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
 
 async fn register_workspace_toml_watcher(
     backend: &Backend,
-) -> Result<(), tower_lsp::jsonrpc::Error> {
+) -> Result<(), tower_lsp_server::jsonrpc::Error> {
     let watcher = FileSystemWatcher {
-        glob_pattern: GlobPattern::String("**/*.toml".to_string()),
+        glob_pattern: GlobPattern::Pattern("**/*.toml".to_string()),
         kind: Some(WatchKind::Create | WatchKind::Change | WatchKind::Delete),
+    };
+    // Local JSON Schema files changed outside the editor.
+    let schema_watcher = FileSystemWatcher {
+        glob_pattern: GlobPattern::Pattern("**/*.json".to_string()),
+        kind: Some(WatchKind::Create | WatchKind::Change),
     };
 
     let options = DidChangeWatchedFilesRegistrationOptions {
-        watchers: vec![watcher],
+        watchers: vec![watcher, schema_watcher],
     };
 
     let registration = Registration {

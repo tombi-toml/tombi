@@ -40,6 +40,8 @@ mod numeric_bounds_test_schema;
 mod other_schema;
 #[path = "integration/prefix_items_test_schema.rs"]
 mod prefix_items_test_schema;
+#[path = "integration/pyproject_schema.rs"]
+mod pyproject_schema;
 #[path = "integration/recursive_anchor_ref_test_schema.rs"]
 mod recursive_anchor_ref_test_schema;
 #[path = "integration/recursive_defs_any_of_test_schema.rs"]

@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::{
+use tower_lsp_server::gen_lsp_types::{
     DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, SymbolKind,
 };
 
@@ -7,7 +7,7 @@ use crate::backend::Backend;
 pub async fn handle_document_symbol(
     backend: &Backend,
     params: DocumentSymbolParams,
-) -> Result<Option<DocumentSymbolResponse>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<DocumentSymbolResponse>, tower_lsp_server::jsonrpc::Error> {
     log::info!("handle_document_symbol");
     log::trace!("{:?}", params);
 
@@ -26,7 +26,7 @@ pub async fn handle_document_symbol(
 
     let symbols = create_symbols(document_tree, &mut cursor);
 
-    Ok(Some(DocumentSymbolResponse::Nested(symbols)))
+    Ok(Some(DocumentSymbolResponse::DocumentSymbolList(symbols)))
 }
 
 fn create_symbols(
@@ -73,7 +73,7 @@ fn symbols_for_value(
         Boolean { .. } => {
             symbols.push(DocumentSymbol {
                 name,
-                kind: SymbolKind::BOOLEAN,
+                kind: SymbolKind::Boolean,
                 range,
                 selection_range,
                 children: None,
@@ -85,7 +85,7 @@ fn symbols_for_value(
         Integer { .. } | Float { .. } => {
             symbols.push(DocumentSymbol {
                 name,
-                kind: SymbolKind::NUMBER,
+                kind: SymbolKind::Number,
                 range,
                 selection_range,
                 children: None,
@@ -97,7 +97,7 @@ fn symbols_for_value(
         String { .. } => {
             symbols.push(DocumentSymbol {
                 name,
-                kind: SymbolKind::STRING,
+                kind: SymbolKind::String,
                 range,
                 selection_range,
                 children: None,
@@ -109,7 +109,7 @@ fn symbols_for_value(
         OffsetDateTime { .. } | LocalDateTime { .. } | LocalDate { .. } | LocalTime { .. } => {
             symbols.push(DocumentSymbol {
                 name,
-                kind: SymbolKind::STRING,
+                kind: SymbolKind::String,
                 range,
                 selection_range,
                 children: None,
@@ -132,7 +132,7 @@ fn symbols_for_value(
 
             symbols.push(DocumentSymbol {
                 name,
-                kind: SymbolKind::ARRAY,
+                kind: SymbolKind::Array,
                 range,
                 selection_range,
                 children: Some(children),
@@ -155,7 +155,7 @@ fn symbols_for_value(
 
             symbols.push(DocumentSymbol {
                 name,
-                kind: SymbolKind::OBJECT,
+                kind: SymbolKind::Object,
                 range,
                 selection_range,
                 children: Some(children),

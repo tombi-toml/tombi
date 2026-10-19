@@ -41,7 +41,7 @@ pub(crate) async fn fetch_crates_io_crate(
     crate_name: &str,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<CratesIoCrateResponse>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<CratesIoCrateResponse>, tower_lsp_server::jsonrpc::Error> {
     let url = format!("https://crates.io/api/v1/crates/{crate_name}");
     Ok(fetch_cached_remote_json::<CratesIoCrateResponse>(&url, offline, cache_options).await)
 }

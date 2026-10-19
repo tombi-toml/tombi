@@ -17,7 +17,7 @@ pub async fn references(
     toml_version: TomlVersion,
     converter: SpanConverter<'_, '_>,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
-) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp_server::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(None);
     }
@@ -82,7 +82,7 @@ pub(crate) fn project_name_reference_locations(
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     converter: SpanConverter<'_, '_>,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     debug_assert!(is_project_name_accessors(accessors));
 
     let Some((_, Value::String(project_name))) = dig_accessors(document_tree, accessors) else {

@@ -1,6 +1,6 @@
 mod get_built_in_schema {
     use tombi_lsp::{Backend, handler::GetBuiltInSchemaParams};
-    use tower_lsp::LspService;
+    use tower_lsp_server::LspService;
 
     #[tokio::test]
     async fn returns_embedded_schema_content_for_valid_tombi_uri()

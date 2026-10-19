@@ -871,9 +871,97 @@ mod goto_type_definition_tests {
                 SchemaPath(fixture_path().join("schema.json")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
             ) -> Ok(fixture_path().join("schema.json"));
+        );
+    }
+
+    mod one_of_const_description_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/one-of-const-description.schema.json")
+        }
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn inline_one_of_value(
+                r#"
+                inline = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((4, 4), (4, 12)).into()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn all_of_ref_one_of_value(
+                r#"
+                wrapped = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((11, 4), (11, 13)).into()),
+            ) -> Ok(schema_path());
+        );
+    }
+
+    mod ref_sibling_projection_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/ref-sibling-projection.schema.json")
+        }
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn plain_ref_value(
+                r#"
+                plain_ref = "a█bc"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((4, 4), (4, 15)).into()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn constrained_ref_value(
+                r#"
+                constrained_ref = "a█bc"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((7, 4), (7, 21)).into()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn typed_ref_value(
+                r#"
+                typed_ref = "a█bc"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((11, 4), (11, 15)).into()),
+            ) -> Ok(schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn typed_one_of_ref_value(
+                r#"
+                typed_one_of_ref = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+                ExpectedRange(((15, 4), (15, 22)).into()),
+            ) -> Ok(schema_path());
         );
     }
 
@@ -888,10 +976,10 @@ mod goto_type_definition_tests {
                 use itertools::Itertools;
                 use tombi_lsp::handler::{handle_did_open, handle_goto_type_definition};
                 use tombi_lsp::Backend;
-                use tower_lsp::{
-                    lsp_types::{
+                use tower_lsp_server::{
+                    gen_lsp_types::{
                         DidOpenTextDocumentParams, PartialResultParams, TextDocumentIdentifier,
-                        TextDocumentItem, TextDocumentPositionParams, Url, WorkDoneProgressParams,
+                        TextDocumentItem, TextDocumentPositionParams, Uri, WorkDoneProgressParams,
                     },
                     LspService,
                 };
@@ -1042,7 +1130,7 @@ mod goto_type_definition_tests {
                 let line_index =
                 tombi_text::LineIndex::new(toml_text.as_str());
 
-                let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
+                let Ok(toml_file_url) = Uri::from_file_path(temp_file.path()) else {
                     return Err("failed to convert temporary file path to URL".into());
                 };
 
@@ -1079,7 +1167,7 @@ mod goto_type_definition_tests {
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
                             uri: toml_file_url.clone(),
-                            language_id: "toml".to_string(),
+                            language_id: "toml".to_string().into(),
                             version: 0,
                             text: toml_text.clone(),
                         },
@@ -1087,7 +1175,7 @@ mod goto_type_definition_tests {
                 )
                 .await;
 
-                let params = tower_lsp::lsp_types::request::GotoTypeDefinitionParams {
+                let params = tower_lsp_server::gen_lsp_types::TypeDefinitionParams {
                     text_document_position_params: TextDocumentPositionParams {
                         text_document: TextDocumentIdentifier { uri: toml_file_url },
                         position: tombi_text::Offset::of(&toml_text[..index]).into_lsp(&line_index, tombi_text::EncodingKind::Utf16),

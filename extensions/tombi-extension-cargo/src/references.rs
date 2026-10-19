@@ -17,7 +17,7 @@ pub async fn references(
     toml_version: TomlVersion,
     converter: tombi_extension::SpanConverter<'_, '_>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp_server::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
@@ -85,7 +85,7 @@ pub(crate) async fn package_name_reference_locations(
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     converter: tombi_extension::SpanConverter<'_, '_>,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     debug_assert!(matches_accessors!(accessors, ["package", "name"]));
 
     let Some((_, Value::String(package_name))) = dig_accessors(document_tree, accessors) else {
@@ -130,7 +130,7 @@ pub(crate) async fn package_name_reference_locations(
                 );
             }
 
-            Ok::<_, tower_lsp::jsonrpc::Error>(locations)
+            Ok::<_, tower_lsp_server::jsonrpc::Error>(locations)
         },
     )
     .await

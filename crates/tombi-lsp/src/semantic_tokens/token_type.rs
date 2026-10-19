@@ -1,20 +1,12 @@
-use tower_lsp::lsp_types::SemanticTokenType;
-
 macro_rules! token_types {
     (
         standard {
-            $($standard:ident),*$(,)?
+            $(($standard:ident, $standard_string:literal)),*$(,)?
         }
         custom {
             $(($custom:ident, $string:literal)),*$(,)?
         }
     ) => {
-        pub mod token_type {
-            use super::SemanticTokenType;
-
-            $(pub(crate) const $custom: SemanticTokenType = SemanticTokenType::new($string);)*
-        }
-
         #[allow(clippy::upper_case_acronyms)]
         #[allow(non_camel_case_types)]
         #[derive(Debug)]
@@ -23,20 +15,21 @@ macro_rules! token_types {
             $($custom),*
         }
 
-        pub const SUPPORTED_TOKEN_TYPES: &[SemanticTokenType] = &[
-            $(SemanticTokenType::$standard,)*
-            $(self::token_type::$custom),*
+        /// Semantic token type names advertised in the server's legend.
+        pub const SUPPORTED_TOKEN_TYPES: &[&str] = &[
+            $($standard_string,)*
+            $($string),*
         ];
     }
 }
 
 token_types! {
     standard {
-        STRING,
-        NUMBER,
-        OPERATOR,
-        COMMENT,
-        KEYWORD,
+        (STRING, "string"),
+        (NUMBER, "number"),
+        (OPERATOR, "operator"),
+        (COMMENT, "comment"),
+        (KEYWORD, "keyword"),
     }
     custom {
         (TABLE, "table"),

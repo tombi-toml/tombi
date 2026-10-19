@@ -838,6 +838,7 @@ fn tombi_json_value_to_completion_enum_item(
     detail: Option<String>,
     documentation: Option<String>,
     schema_base_uri: Option<&SchemaUri>,
+    deprecated: Option<bool>,
     completion_hint: Option<CompletionHint>,
 ) -> Option<CompletionContent> {
     if !matches!(
@@ -855,7 +856,7 @@ fn tombi_json_value_to_completion_enum_item(
         documentation,
         edit,
         schema_base_uri,
-        None,
+        deprecated,
     ))
 }
 

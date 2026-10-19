@@ -182,7 +182,7 @@ pub(crate) fn include_group_locations(
     accessors: &[tombi_schema_store::Accessor],
     pyproject_toml_path: &std::path::Path,
     converter: tombi_extension::SpanConverter<'_, '_>,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     let Some(tombi_schema_store::Accessor::Key(group_name)) = accessors.get(1) else {
         return Ok(Vec::new());
     };

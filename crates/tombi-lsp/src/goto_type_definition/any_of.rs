@@ -63,7 +63,7 @@ where
             if !(branch.is_applicable() || applicable_count == 0 && is_property_key) {
                 continue;
             }
-            let projected_schema = crate::schema_resolver::project_schema_for_concrete_value(
+            let projected_schema = crate::schema_resolver::project_composite_branch_schema(
                 value,
                 resolved_schema,
                 schema_context,

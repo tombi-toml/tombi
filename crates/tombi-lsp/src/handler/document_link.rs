@@ -1,6 +1,6 @@
 use tombi_ast_syntax::SchemaDocumentCommentDirective;
 use tombi_extension::get_tombi_github_uri;
-use tower_lsp::lsp_types::{DocumentLink, DocumentLinkParams};
+use tower_lsp_server::gen_lsp_types::{DocumentLink, DocumentLinkParams};
 
 use crate::extension::IntoLsp as _;
 use crate::{Backend, config_manager::ConfigSchemaStore};
@@ -8,7 +8,7 @@ use crate::{Backend, config_manager::ConfigSchemaStore};
 pub async fn handle_document_link(
     backend: &Backend,
     params: DocumentLinkParams,
-) -> Result<Option<Vec<DocumentLink>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<DocumentLink>>, tower_lsp_server::jsonrpc::Error> {
     log::trace!("{:?}", params);
 
     let DocumentLinkParams { text_document, .. } = params;

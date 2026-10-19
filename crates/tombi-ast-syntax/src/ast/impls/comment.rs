@@ -3,7 +3,25 @@ use crate::{
     comment_directive::TombiValueCommentDirective,
 };
 
+/// A `# region` / `# endregion` marker, as used by editors for custom folding.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RegionMarker {
+    Start,
+    End,
+}
+
 impl<'t> Comment<'t> {
+    /// Recognizes `# region [description]` and `# endregion [description]`.
+    pub fn region_marker(&self) -> Option<RegionMarker> {
+        let body = self.syntax().text().strip_prefix('#')?.trim_start();
+
+        match body.split_whitespace().next()? {
+            "region" => Some(RegionMarker::Start),
+            "endregion" => Some(RegionMarker::End),
+            _ => None,
+        }
+    }
+
     /// Returns the schema directive in the document header.
     ///
     /// ```toml

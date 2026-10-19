@@ -1,6 +1,6 @@
-use tower_lsp::lsp_types::{
-    DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticReportResult,
-    FullDocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport,
+use tower_lsp_server::gen_lsp_types::{
+    DocumentDiagnosticParams, DocumentDiagnosticReport, FullDocumentDiagnosticReport,
+    RelatedFullDocumentDiagnosticReport,
 };
 
 use crate::{backend::Backend, diagnostic::get_diagnostics_result};
@@ -9,13 +9,13 @@ use crate::{backend::Backend, diagnostic::get_diagnostics_result};
 pub async fn handle_diagnostic(
     backend: &Backend,
     params: DocumentDiagnosticParams,
-) -> Result<DocumentDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
+) -> Result<DocumentDiagnosticReport, tower_lsp_server::jsonrpc::Error> {
     let DocumentDiagnosticParams { text_document, .. } = params;
 
     let text_document_uri = text_document.uri.into();
 
     Ok({
-        DocumentDiagnosticReportResult::Report(DocumentDiagnosticReport::Full(
+        DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(
             RelatedFullDocumentDiagnosticReport {
                 full_document_diagnostic_report: FullDocumentDiagnosticReport {
                     items: get_diagnostics_result(backend, &text_document_uri)
@@ -26,7 +26,7 @@ pub async fn handle_diagnostic(
                 },
                 ..Default::default()
             },
-        ))
+        )
     })
 }
 

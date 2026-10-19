@@ -41,6 +41,16 @@ impl SchemaDocumentResources {
         } = document;
         let (root_dialect, root_validation_vocabulary_disabled) =
             root_schema_context(&root, schema_document_uri, schema_store).await;
+        // The first document to claim an `$id` owns it. A later document is identified by its
+        // own retrieval URI instead, so its `$ref`s resolve within that physical document.
+        let ignore_root_id = root
+            .as_object()
+            .and_then(|object| object.get("$id"))
+            .and_then(tombi_json::ValueNode::as_str)
+            .and_then(|id| resolve_schema_resource_uri(schema_document_uri, id))
+            .is_some_and(|id| {
+                schema_store.is_schema_resource_owned_by_other_document(&id, schema_document_uri)
+            });
         let mut resources = tombi_hashmap::HashMap::default();
         let root_schema_resource_uri = collect_schema_resources_from_value(
             &root,
@@ -49,6 +59,7 @@ impl SchemaDocumentResources {
             root_dialect,
             root_validation_vocabulary_disabled,
             true,
+            ignore_root_id,
             "#",
             &mut resources,
         )?
@@ -238,6 +249,7 @@ fn collect_schema_resources_from_value(
     inherited_dialect: Option<JsonSchemaDialect>,
     inherited_validation_vocabulary_disabled: bool,
     is_document_root: bool,
+    ignore_root_id: bool,
     location: &str,
     resources: &mut tombi_hashmap::HashMap<SchemaUri, SchemaResource>,
 ) -> Result<Option<SchemaUri>, crate::Error> {
@@ -261,10 +273,14 @@ fn collect_schema_resources_from_value(
         return Ok(None);
     };
 
-    let declared_schema_resource_uri = object
-        .get("$id")
-        .and_then(tombi_json::ValueNode::as_str)
-        .and_then(|id| resolve_schema_resource_uri(enclosing_schema_base_uri, id));
+    let declared_schema_resource_uri = (!(is_document_root && ignore_root_id))
+        .then(|| {
+            object
+                .get("$id")
+                .and_then(tombi_json::ValueNode::as_str)
+                .and_then(|id| resolve_schema_resource_uri(enclosing_schema_base_uri, id))
+        })
+        .flatten();
     let dialect = (is_document_root || declared_schema_resource_uri.is_some())
         .then(|| {
             object
@@ -319,6 +335,7 @@ fn collect_schema_resources_from_value(
                             dialect,
                             validation_vocabulary_disabled,
                             false,
+                            false,
                             &json_pointer_join(
                                 location,
                                 key.value.as_str(),
@@ -344,6 +361,7 @@ fn collect_schema_resources_from_value(
                             dialect,
                             validation_vocabulary_disabled,
                             false,
+                            false,
                             &json_pointer_join(
                                 location,
                                 key.value.as_str(),
@@ -363,6 +381,7 @@ fn collect_schema_resources_from_value(
                             schema_base_uri,
                             dialect,
                             validation_vocabulary_disabled,
+                            false,
                             false,
                             &json_pointer_join(
                                 location,
@@ -384,6 +403,7 @@ fn collect_schema_resources_from_value(
                             dialect,
                             validation_vocabulary_disabled,
                             false,
+                            false,
                             &json_pointer_join(
                                 location,
                                 key.value.as_str(),
@@ -399,6 +419,7 @@ fn collect_schema_resources_from_value(
                         schema_base_uri,
                         dialect,
                         validation_vocabulary_disabled,
+                        false,
                         false,
                         &json_pointer_join(location, key.value.as_str(), None),
                         resources,
@@ -422,6 +443,7 @@ fn collect_schema_resources_from_value(
                     schema_base_uri,
                     dialect,
                     validation_vocabulary_disabled,
+                    false,
                     false,
                     &json_pointer_join(location, key.value.as_str(), None),
                     resources,

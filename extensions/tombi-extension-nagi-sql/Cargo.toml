@@ -17,12 +17,12 @@ tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-text = { workspace = true, features = ["lsp"] }
 tombi-uri.workspace = true
-tower-lsp.workspace = true
+tower-lsp-server.workspace = true
 
 [features]
 default = ["native"]
-native = ["tower-lsp/runtime-tokio"]
-wasm = ["tower-lsp/runtime-agnostic"]
+native = ["tower-lsp-server/runtime-tokio"]
+wasm = ["tower-lsp-server/runtime-agnostic"]
 
 [lints]
 workspace = true

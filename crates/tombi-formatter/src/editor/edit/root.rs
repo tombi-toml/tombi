@@ -27,25 +27,27 @@ impl<'t> crate::editor::Edit for tombi_ast_syntax::Root<'t> {
             // Detect document comment directives.
             // If dangling comments exist, directives should already be there.
             // Otherwise, check first item's leading comments and move them to the top.
-            let document_comment_directives = if self.dangling_comment_groups().next().is_some() {
+            let mut dangling_groups = self.dangling_comment_groups().peekable();
+            let document_comment_directives = if dangling_groups.peek().is_some() {
                 DocumentCommentDirectives::from_comments(
-                    self.dangling_comment_groups()
+                    dangling_groups
                         .flat_map(|comment_group| comment_group.into_comments().map(Into::into)),
                     source_path,
                 )
             } else {
+                let comments = self.first_item_leading_comments().collect_vec();
                 DocumentCommentDirectives::from_comments(
-                    self.first_item_leading_comments().map(Into::into),
+                    comments.iter().copied().map(Into::into),
                     source_path,
                 )
                 .inspect(|_| {
-                    let comments = self
-                        .first_item_leading_comments()
+                    let text = comments
+                        .iter()
                         .map(|comment| comment.syntax().text().to_string())
                         .join("\n");
-                    if !comments.is_empty() {
-                        changes.push(crate::editor::Change::append_top(format!("{comments}\n\n")));
-                        for comment in self.first_item_leading_comments() {
+                    if !text.is_empty() {
+                        changes.push(crate::editor::Change::append_top(format!("{text}\n\n")));
+                        for comment in &comments {
                             changes.push(crate::editor::Change::remove_token(comment.syntax()));
                         }
                     }

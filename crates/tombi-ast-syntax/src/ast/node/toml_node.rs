@@ -32,6 +32,12 @@ pub enum TomlNode<'t> {
     Invalid(tombi_text::Span),
 }
 
+/// A TOML node or comment in source order.
+pub enum TomlElement<'t> {
+    Node(TomlNode<'t>),
+    Comment(crate::Comment<'t>),
+}
+
 /// Commas adjacent to the syntax item at a cursor offset.
 ///
 /// This includes commas recovered inside invalid syntax while the user is

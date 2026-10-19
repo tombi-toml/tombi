@@ -20,7 +20,7 @@ pub async fn hover(
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<HoverMetadata>, tower_lsp_server::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(None);
     }
@@ -224,7 +224,7 @@ async fn fetch_pypi_metadata(
     package_name: &str,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<HoverMetadata>, tower_lsp_server::jsonrpc::Error> {
     let Some(response) = fetch_pypi_project(package_name, offline, cache_options).await? else {
         return Ok(None);
     };

@@ -120,7 +120,7 @@ pub(crate) fn goto_definition_for_member_pyproject_toml(
     toml_version: TomlVersion,
     converter: SpanConverter<'_, '_>,
     jump_to_package: bool,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     if matches_accessors!(accessors, ["tool", "uv", "sources", _])
         || matches_accessors!(accessors, ["tool", "uv", "sources", _, "workspace"])
     {
@@ -146,7 +146,7 @@ pub(crate) fn goto_definition_for_workspace_pyproject_toml(
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     encoding: EncodingKind,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     if matches_accessors!(accessors, ["tool", "uv", "workspace", "members"])
         || matches_accessors!(accessors, ["tool", "uv", "workspace", "members", _])
     {
@@ -170,7 +170,7 @@ pub(crate) fn goto_workspace_member(
     toml_version: TomlVersion,
     converter: SpanConverter<'_, '_>,
     jump_to_package: bool,
-) -> Result<Option<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     debug_assert!(
         matches_accessors!(accessors, ["tool", "uv", "sources", _])
             || matches_accessors!(accessors, ["tool", "uv", "sources", _, "workspace"])
@@ -233,7 +233,7 @@ pub(crate) fn goto_member_pyprojects(
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     encoding: EncodingKind,
-) -> Result<Vec<PackageLocation>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<PackageLocation>, tower_lsp_server::jsonrpc::Error> {
     let member_patterns = extract_member_patterns(workspace_document_tree, accessors);
     if member_patterns.is_empty() {
         return Ok(Vec::new());

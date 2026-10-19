@@ -173,23 +173,25 @@ impl<T: SetDiagnostics> SetDiagnostics for Vec<T> {
 }
 
 #[cfg(feature = "lsp")]
-impl tombi_text::FromLsp<Diagnostic> for tower_lsp::lsp_types::Diagnostic {
+impl tombi_text::FromLsp<Diagnostic> for tower_lsp_server::gen_lsp_types::Diagnostic {
     fn from_lsp(
         source: Diagnostic,
         line_index: &tombi_text::LineIndex,
         encoding: tombi_text::EncodingKind,
-    ) -> tower_lsp::lsp_types::Diagnostic {
+    ) -> tower_lsp_server::gen_lsp_types::Diagnostic {
         use tombi_text::IntoLsp;
 
-        tower_lsp::lsp_types::Diagnostic {
+        tower_lsp_server::gen_lsp_types::Diagnostic {
             range: source.span.into_lsp(line_index, encoding),
             severity: Some(match source.level() {
-                level::Level::WARNING => tower_lsp::lsp_types::DiagnosticSeverity::WARNING,
-                level::Level::ERROR => tower_lsp::lsp_types::DiagnosticSeverity::ERROR,
+                level::Level::WARNING => {
+                    tower_lsp_server::gen_lsp_types::DiagnosticSeverity::Warning
+                }
+                level::Level::ERROR => tower_lsp_server::gen_lsp_types::DiagnosticSeverity::Error,
             }),
-            message: source.message().to_string(),
+            message: source.message().to_string().into(),
             source: Some("Tombi".to_owned()),
-            code: Some(tower_lsp::lsp_types::NumberOrString::String(source.code)),
+            code: Some(tower_lsp_server::gen_lsp_types::Code::String(source.code)),
             ..Default::default()
         }
     }

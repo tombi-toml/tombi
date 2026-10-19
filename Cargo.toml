@@ -45,6 +45,10 @@ flate2 = "1.0.35"
 futures = "0.3.31"
 glob = "0.3.2"
 gloo-net = { version = "0.6.0", default-features = false, features = ["http"] }
+http = "1.5.0"
+hyper-util = { version = "0.1.20", default-features = false, features = [
+  "client-proxy",
+] }
 ignore = "0.4.33"
 itertools = "0.14.0"
 js-sys = "0.3.77"
@@ -82,6 +86,7 @@ serde_tombi_macros = { path = "rust/serde_tombi_macros" }
 sha2 = "0.11.0"
 similar = { version = "2.7.0" }
 syn = { version = "2.0.110", features = ["extra-traits", "full"] }
+system-configuration = "0.7.0"
 tar = { version = "0.4.46" }
 tempfile = { version = "3.15.0" }
 textwrap = { version = "0.16.2" }
@@ -136,7 +141,9 @@ tombi-validator = { path = "crates/tombi-validator" }
 tombi-version-sort = { path = "crates/tombi-version-sort" }
 tombi-x-keyword = { path = "crates/tombi-x-keyword" }
 tower = { version = "0.5.2", default-features = false, features = ["util"] }
-tower-lsp = { version = "0.20.0", default-features = false }
+tower-lsp-server = { version = "=0.24.0-rc.1", default-features = false, features = [
+  "url-url",
+] }
 typed-builder = "0.21.0"
 ungrammar.version = "1.16.1"
 unicode-segmentation = "1.12.0"
@@ -146,9 +153,10 @@ wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4.50"
 wasm-streams = "0.4.2"
 web-sys = "0.3.77"
+windows-registry = "0.6.1"
 xshell.version = "0.2.7"
 zed_extension_api = "0.7.0"
-zip = { version = "2.3.0", default-features = false }
+zip = { version = "9.0.4", default-features = false }
 
 [workspace.lints.clippy]
 collapsible_match = "warn"

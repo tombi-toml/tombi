@@ -89,7 +89,7 @@ pub async fn inlay_hint(
     visible_span: tombi_text::Span,
     toml_version: TomlVersion,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
-) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<InlayHint>>, tower_lsp_server::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(None);
     }
@@ -118,7 +118,7 @@ fn inlay_hint_impl(
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     visible_span: tombi_text::Span,
     uv_lock_cache: Option<UvLockInlayCacheData>,
-) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<InlayHint>>, tower_lsp_server::jsonrpc::Error> {
     let current_package = current_package(document_tree);
 
     let visible_dependency_hints = collect_dependency_hints(document_tree)

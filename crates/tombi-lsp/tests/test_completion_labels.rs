@@ -38,7 +38,11 @@ mod completion_labels {
             ),
             tombi_lsp::backend::Options {
                 offline: Some(true),
-                no_cache: Some(false),
+                cache: tombi_cache::Options {
+                    no_cache: Some(false),
+                    ..Default::default()
+                },
+                ..Default::default()
             },
         ) -> Ok([
             {
@@ -504,6 +508,8 @@ mod completion_labels {
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
                 "catalog",
+                "format",
+                "lint",
             ]);
         }
 
@@ -2568,7 +2574,11 @@ mod completion_labels {
                 SchemaPath(cargo_schema_path()),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: None,
+                    cache: tombi_cache::Options {
+                        no_cache: None,
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 PreselectedLabels(&["\"0.3.0-pre.2\""]),
                 CachedResponse::new(
@@ -3290,9 +3300,175 @@ mod completion_labels {
                 SchemaPath(fixture_path().join("schema.json")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
             ) -> Ok(["true", "false"]);
+        }
+    }
+
+    mod ref_sibling_projection_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/ref-sibling-projection.schema.json")
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn typed_one_of_ref_without_input(
+                r#"
+                typed_one_of_ref = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+    }
+
+    mod one_of_const_description_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/one-of-const-description.schema.json")
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn inline_one_of_without_input(
+                r#"
+                inline = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn inline_one_of_inside_quotes(
+                r#"
+                inline = "█"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_ref_one_of_without_input(
+                r#"
+                wrapped = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_ref_one_of_inside_quotes(
+                r#"
+                wrapped = "█"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn ref_one_of_inside_quotes(
+                r#"
+                referenced = "█"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn any_of_without_input(
+                r#"
+                any_of = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn one_of_value_without_description_falls_back(
+                r#"
+                partial = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Property description." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn integer_one_of_without_input(
+                r#"
+                number = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "1", "documentation": "One: a single tomato." },
+                { "label": "2", "documentation": "Two: a pair of tomatoes." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn array_item_ref_one_of_without_input(
+                r#"
+                array = [█]
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn nested_all_of_ref_one_of_without_input(
+                r#"
+                [table]
+                color = █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([
+                { "label": "\"red\"", "documentation": "Red: like a ripe tomato." },
+                { "label": "\"green\"", "documentation": "Green: like an unripe tomato." },
+            ]);
         }
     }
 
@@ -3407,11 +3583,11 @@ mod completion_labels {
                 use itertools::Itertools;
                 use tombi_lsp::Backend;
                 use std::io::Write;
-                use tower_lsp::{
-                    lsp_types::{
+                use tower_lsp_server::{
+                    gen_lsp_types::{
                         CompletionParams, DidOpenTextDocumentParams,
                         PartialResultParams, TextDocumentIdentifier, TextDocumentItem,
-                        TextDocumentPositionParams, Url, WorkDoneProgressParams,
+                        TextDocumentPositionParams, Uri, WorkDoneProgressParams,
                     },
                     LspService,
                 };
@@ -3616,7 +3792,7 @@ mod completion_labels {
                     tombi_text::LineIndex::new(toml_text.as_str());
 
                 let source_path = args.source_file_path.as_deref().unwrap_or(temp_file.path());
-                let toml_file_url = Url::from_file_path(source_path)
+                let toml_file_url = Uri::from_file_path(source_path)
                     .map_err(|_| "failed to convert file path to URL")?;
 
                 if !schema_items.is_empty() {
@@ -3652,7 +3828,7 @@ mod completion_labels {
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
                             uri: toml_file_url.clone(),
-                            language_id: "toml".to_string(),
+                            language_id: "toml".to_string().into(),
                             version: 0,
                             text: toml_text.clone(),
                         },
@@ -3663,7 +3839,7 @@ mod completion_labels {
                 let Ok(Some(completions)) = tombi_lsp::handler::handle_completion(
                     &backend,
                     CompletionParams {
-                        text_document_position: TextDocumentPositionParams {
+                        text_document_position_params: TextDocumentPositionParams {
                             text_document: TextDocumentIdentifier { uri: toml_file_url },
                             position: tombi_text::Offset::of(&toml_text[..index]).into_lsp(&line_index, tombi_text::EncodingKind::Utf16),
                         },
@@ -3733,10 +3909,10 @@ mod completion_labels {
                     };
 
                     let documentation = match &item.documentation {
-                        Some(tower_lsp::lsp_types::Documentation::String(value)) => {
+                        Some(tower_lsp_server::gen_lsp_types::Documentation::String(value)) => {
                             Some(value.clone())
                         }
-                        Some(tower_lsp::lsp_types::Documentation::MarkupContent(content)) => {
+                        Some(tower_lsp_server::gen_lsp_types::Documentation::MarkupContent(content)) => {
                             Some(content.value.clone())
                         }
                         None => None,

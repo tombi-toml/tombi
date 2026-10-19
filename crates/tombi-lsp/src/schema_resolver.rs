@@ -92,6 +92,45 @@ pub(crate) fn project_schema_for_concrete_value(
     )
 }
 
+/// Whether a concrete value is presented through the projection of `schema`
+/// onto `instance_type` (used by hover and goto type definition).
+///
+/// A schema with applicators is kept as is so that the composite handler
+/// selects the matching branch; projecting e.g. a `oneOf` of `const`s would
+/// flatten it into an `enum` and drop the per-value title and description.
+pub(crate) fn should_project_schema(
+    schema: &CurrentSchema<'_>,
+    instance_type: tombi_schema_store::SchemaType,
+) -> bool {
+    schema.semantic_schema.as_deref().is_some_and(|semantic| {
+        !semantic.has_applicators() || schema.has_reference_projection_siblings(instance_type)
+    })
+}
+
+/// Projects `schema` onto the type of `value` under [`should_project_schema`].
+///
+/// The outer `None` means the schema is used as is; `Some(None)` means the
+/// projection applies but the schema does not accept the value's type.
+pub(crate) fn project_schema_for_presentation(
+    value: &impl ValueImpl,
+    schema: &CurrentSchema<'_>,
+    schema_context: &SchemaContext<'_>,
+) -> Option<Option<CurrentSchema<'static>>> {
+    let instance_type = tombi_schema_store::SchemaType::from_value_type(value.value_type())?;
+    should_project_schema(schema, instance_type)
+        .then(|| schema.for_instance_type(instance_type, schema_context.string_formats()))
+}
+
+/// Same as [`project_schema_for_presentation`] for a composite branch, which
+/// keeps the branch as is when it does not accept the value's type.
+pub(crate) fn project_composite_branch_schema(
+    value: &impl ValueImpl,
+    schema: &CurrentSchema<'_>,
+    schema_context: &SchemaContext<'_>,
+) -> Option<CurrentSchema<'static>> {
+    project_schema_for_presentation(value, schema, schema_context).flatten()
+}
+
 pub(crate) async fn resolve_accessors_for_document_or_schema(
     document_tree: &DocumentTree<'_>,
     accessors: Vec<Accessor>,

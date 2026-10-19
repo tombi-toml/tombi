@@ -10,11 +10,11 @@ use std::{
 
 use tombi_extension::InlayHint;
 use tombi_test_lib::TestCacheHome;
-use tower_lsp::{
+use tower_lsp_server::{
     LspService,
-    lsp_types::{
+    gen_lsp_types::{
         DidOpenTextDocumentParams, InlayHintParams, Position, Range, TextDocumentIdentifier,
-        TextDocumentItem, Url, WorkDoneProgressParams,
+        TextDocumentItem, Uri, WorkDoneProgressParams,
     },
 };
 
@@ -101,7 +101,11 @@ fn new_service() -> LspService<Backend> {
             client,
             &tombi_lsp::backend::Options {
                 offline: Some(true),
-                no_cache: Some(false),
+                cache: tombi_cache::Options {
+                    no_cache: Some(false),
+                    ..Default::default()
+                },
+                ..Default::default()
             },
         )
     });
@@ -124,14 +128,14 @@ async fn collect_inlay_hints_with_backend(
 ) -> Result<Option<Vec<PositionedInlayHint>>, Box<dyn std::error::Error>> {
     let toml_text = textwrap::dedent(source).trim().to_string();
     let toml_file_url =
-        Url::from_file_path(&source_path).expect("failed to convert source file path to URL");
+        Uri::from_file_path(&source_path).expect("failed to convert source file path to URL");
 
     let did_open = handle_did_open(
         backend,
         DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: toml_file_url.clone(),
-                language_id: "toml".to_string(),
+                language_id: "toml".to_string().into(),
                 version: 0,
                 text: toml_text.clone(),
             },
@@ -200,7 +204,7 @@ fn expected_hint(
     PositionedInlayHint {
         position,
         label: label.to_string(),
-        kind: Some(tombi_extension::InlayHintKind::TYPE),
+        kind: Some(tombi_extension::InlayHintKind::Type),
         tooltip: Some(tooltip.to_string()),
         padding_left: Some(true),
         padding_right: Some(false),

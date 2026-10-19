@@ -32,6 +32,7 @@ macro_rules! test_lint {
                 pub config: Option<tombi_config::Config>,
                 pub schema_path: Option<std::path::PathBuf>,
                 pub source_path: Option<std::path::PathBuf>,
+                pub trusted_hosts: Option<Vec<String>>,
             }
 
             #[allow(unused)]
@@ -81,6 +82,16 @@ macro_rules! test_lint {
                 }
             }
 
+            /// Add hosts allowed to resolve to non-public addresses.
+            #[allow(unused)]
+            pub struct TrustedHosts(pub Vec<String>);
+
+            impl ApplyTestArg for TrustedHosts {
+                fn apply(self, args: &mut TestArgs) {
+                    args.trusted_hosts.get_or_insert_default().extend(self.0);
+                }
+            }
+
             #[allow(unused_mut)]
             let mut args = TestArgs::default();
             $(
@@ -95,6 +106,12 @@ macro_rules! test_lint {
                         .as_ref()
                         .and_then(|config| config.schema.as_ref())
                         .and_then(|schema| schema.strict()),
+                    lint: args
+                        .config
+                        .as_ref()
+                        .and_then(|config| config.schema.as_ref())
+                        .and_then(|schema| schema.lint.clone()),
+                    trusted_hosts: args.trusted_hosts.clone(),
                     ..Default::default()
                 },
             );
@@ -155,6 +172,7 @@ macro_rules! test_lint {
                 pub config: Option<tombi_config::Config>,
                 pub schema_path: Option<std::path::PathBuf>,
                 pub source_path: Option<std::path::PathBuf>,
+                pub trusted_hosts: Option<Vec<String>>,
             }
 
             #[allow(unused)]
@@ -204,6 +222,16 @@ macro_rules! test_lint {
                 }
             }
 
+            /// Add hosts allowed to resolve to non-public addresses.
+            #[allow(unused)]
+            pub struct TrustedHosts(pub Vec<String>);
+
+            impl ApplyTestArg for TrustedHosts {
+                fn apply(self, args: &mut TestArgs) {
+                    args.trusted_hosts.get_or_insert_default().extend(self.0);
+                }
+            }
+
             #[allow(unused_mut)]
             let mut args = TestArgs::default();
             $(
@@ -218,6 +246,12 @@ macro_rules! test_lint {
                         .as_ref()
                         .and_then(|config| config.schema.as_ref())
                         .and_then(|schema| schema.strict()),
+                    lint: args
+                        .config
+                        .as_ref()
+                        .and_then(|config| config.schema.as_ref())
+                        .and_then(|schema| schema.lint.clone()),
+                    trusted_hosts: args.trusted_hosts.clone(),
                     ..Default::default()
                 },
             );
@@ -283,6 +317,7 @@ macro_rules! test_lint {
                 pub config: Option<tombi_config::Config>,
                 pub schema_path: Option<std::path::PathBuf>,
                 pub source_path: Option<std::path::PathBuf>,
+                pub trusted_hosts: Option<Vec<String>>,
             }
 
             #[allow(unused)]
@@ -332,6 +367,16 @@ macro_rules! test_lint {
                 }
             }
 
+            /// Add hosts allowed to resolve to non-public addresses.
+            #[allow(unused)]
+            pub struct TrustedHosts(pub Vec<String>);
+
+            impl ApplyTestArg for TrustedHosts {
+                fn apply(self, args: &mut TestArgs) {
+                    args.trusted_hosts.get_or_insert_default().extend(self.0);
+                }
+            }
+
             #[allow(unused_mut)]
             let mut args = TestArgs::default();
             $(
@@ -339,7 +384,22 @@ macro_rules! test_lint {
             )*
 
             // Initialize schema store
-            let schema_store = tombi_schema_store::SchemaStore::new();
+            let schema_store = tombi_schema_store::SchemaStore::new_with_options(
+                tombi_schema_store::Options {
+                    strict: args
+                        .config
+                        .as_ref()
+                        .and_then(|config| config.schema.as_ref())
+                        .and_then(|schema| schema.strict()),
+                    lint: args
+                        .config
+                        .as_ref()
+                        .and_then(|config| config.schema.as_ref())
+                        .and_then(|schema| schema.lint.clone()),
+                    trusted_hosts: args.trusted_hosts.clone(),
+                    ..Default::default()
+                },
+            );
 
             if let Some(config) = &args.config {
                 schema_store.load_config(config, None).await.unwrap();

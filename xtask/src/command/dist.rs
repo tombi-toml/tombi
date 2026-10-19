@@ -6,7 +6,7 @@ use std::{
 
 use flate2::{Compression, write::GzEncoder};
 use tar::Builder as TarBuilder;
-use time::OffsetDateTime;
+use time::{OffsetDateTime, PrimitiveDateTime};
 use xshell::Shell;
 use zip::{DateTime, ZipWriter, write::FileOptions};
 
@@ -253,15 +253,13 @@ fn tar_gz(src_path: &Path, root_dir: &str, dest_path: &Path) -> anyhow::Result<(
 fn zip(src_path: &Path, symbols_path: Option<&PathBuf>, dest_path: &Path) -> anyhow::Result<()> {
     let file = File::create(dest_path)?;
     let mut writer = ZipWriter::new(BufWriter::new(file));
+    let modified = OffsetDateTime::from(std::fs::metadata(src_path)?.modified()?);
+    let modified =
+        DateTime::try_from(PrimitiveDateTime::new(modified.date(), modified.time())).unwrap();
     writer.start_file(
         src_path.file_name().unwrap().to_str().unwrap(),
         FileOptions::<()>::default()
-            .last_modified_time(
-                DateTime::try_from(OffsetDateTime::from(
-                    std::fs::metadata(src_path)?.modified()?,
-                ))
-                .unwrap(),
-            )
+            .last_modified_time(modified)
             .unix_permissions(0o755)
             .compression_method(zip::CompressionMethod::Deflated)
             .compression_level(Some(9)),
@@ -272,12 +270,7 @@ fn zip(src_path: &Path, symbols_path: Option<&PathBuf>, dest_path: &Path) -> any
         writer.start_file(
             symbols_path.file_name().unwrap().to_str().unwrap(),
             FileOptions::<()>::default()
-                .last_modified_time(
-                    DateTime::try_from(OffsetDateTime::from(
-                        std::fs::metadata(src_path)?.modified()?,
-                    ))
-                    .unwrap(),
-                )
+                .last_modified_time(modified)
                 .compression_method(zip::CompressionMethod::Deflated)
                 .compression_level(Some(9)),
         )?;

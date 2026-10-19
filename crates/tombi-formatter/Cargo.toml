@@ -21,7 +21,7 @@ tombi-future.workspace = true
 tombi-hashmap.workspace = true
 tombi-parser.workspace = true
 tombi-regex.workspace = true
-tombi-schema-store = { workspace = true, features = ["ast-syntax"] }
+tombi-schema-store.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true
 tombi-validator.workspace = true

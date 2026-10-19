@@ -12,7 +12,7 @@ use itertools::Itertools;
 use tombi_schema_store::{
     Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaUri,
 };
-use tower_lsp::lsp_types::GotoDefinitionResponse;
+use tower_lsp_server::gen_lsp_types::{Definition, TypeDefinitionResponse};
 
 use crate::{Backend, remote_file::open_remote_file};
 
@@ -89,7 +89,7 @@ pub async fn get_type_definition(
 pub async fn try_get_type_definition_response(
     backend: &Backend,
     locations: Option<Vec<SchemaLocation>>,
-) -> Result<Option<GotoDefinitionResponse>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<TypeDefinitionResponse>, tower_lsp_server::jsonrpc::Error> {
     let Some(locations) = locations else {
         return Ok(None);
     };
@@ -107,7 +107,7 @@ pub async fn try_get_type_definition_response(
             if let Some(remote_uri) = uri_set.get(&location.uri) {
                 location.uri = remote_uri.clone();
             }
-            tower_lsp::lsp_types::Location::new(
+            tower_lsp_server::gen_lsp_types::Location::new(
                 location.uri.into(),
                 tombi_text::convert_range_to_lsp(location.range),
             )
@@ -116,10 +116,12 @@ pub async fn try_get_type_definition_response(
 
     match locations.len() {
         0 => Ok(None),
-        1 => Ok(Some(GotoDefinitionResponse::Scalar(
-            locations.into_iter().next().unwrap(),
+        1 => Ok(Some(TypeDefinitionResponse::Definition(
+            Definition::Location(locations.into_iter().next().unwrap()),
         ))),
-        _ => Ok(Some(GotoDefinitionResponse::Array(locations))),
+        _ => Ok(Some(TypeDefinitionResponse::Definition(
+            Definition::LocationList(locations),
+        ))),
     }
 }
 

@@ -576,7 +576,11 @@ mod refactor_rewrite {
                 Select(CodeActionRefactorRewriteName::UpdateDependencyToLatestVersion),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(false),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(false),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 UseCacheResponses(vec![CachedResponseSpec::new(
                     "https://crates.io/api/v1/crates/serde",
@@ -605,7 +609,11 @@ mod refactor_rewrite {
                 project_root_path().join("crates/subcrate/Cargo.toml"),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(false),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(false),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 UseCacheResponses(vec![CachedResponseSpec::new(
                     "https://crates.io/api/v1/crates/serde",
@@ -641,7 +649,11 @@ mod refactor_rewrite {
                 project_root_path().join("pyproject.toml"),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(false),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(false),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 UseCacheResponses(vec![CachedResponseSpec::new(
                     "https://pypi.org/pypi/requests/json",
@@ -670,7 +682,11 @@ mod refactor_rewrite {
                 project_root_path().join("pyproject.toml"),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(false),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(false),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 UseCacheResponses(vec![CachedResponseSpec::new(
                     "https://pypi.org/pypi/requests/json",
@@ -702,7 +718,11 @@ mod refactor_rewrite {
                 project_root_path().join("pyproject.toml"),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(false),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(false),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 UseCacheResponses(vec![CachedResponseSpec::new(
                     "https://pypi.org/pypi/requests/json",
@@ -747,9 +767,9 @@ mod refactor_rewrite {
                 use tombi_lsp::handler::handle_code_action;
                 use tombi_lsp::handler::handle_did_open;
                 use tombi_text::IntoLsp;
-                use tower_lsp::LspService;
-                use tower_lsp::lsp_types::{CodeActionParams, TextDocumentIdentifier, Url};
-                use tower_lsp::lsp_types::{DidOpenTextDocumentParams, TextDocumentItem};
+                use tower_lsp_server::LspService;
+                use tower_lsp_server::gen_lsp_types::{CodeActionParams, TextDocumentIdentifier, Uri};
+                use tower_lsp_server::gen_lsp_types::{DidOpenTextDocumentParams, TextDocumentItem};
 
                 tombi_test_lib::init_log();
 
@@ -829,9 +849,9 @@ mod refactor_rewrite {
                 let toml_file_url = args
                     .toml_file_path
                     .as_ref()
-                    .map(|path| Url::from_file_path(path).expect("failed to convert file path to URL"))
+                    .map(|path| Uri::from_file_path(path).expect("failed to convert file path to URL"))
                     .unwrap_or_else(|| {
-                        Url::from_file_path(temp_file.path())
+                        Uri::from_file_path(temp_file.path())
                             .expect("failed to convert temp file path to URL")
                     });
 
@@ -840,7 +860,7 @@ mod refactor_rewrite {
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
                             uri: toml_file_url.clone(),
-                            language_id: "toml".to_string(),
+                            language_id: "toml".to_string().into(),
                             version: 0,
                             text: toml_text.clone(),
                         },
@@ -871,7 +891,7 @@ mod refactor_rewrite {
                             return Err("no code action selection provided via Select(..)".into());
                         };
                         let Some(action) = actions.into_iter().find_map(|a| match a {
-                            tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca)
+                            tower_lsp_server::gen_lsp_types::CodeActionResponse::CodeAction(ca)
                                 if ca.title == *selected =>
                             {
                                 Some(ca)
@@ -890,19 +910,25 @@ mod refactor_rewrite {
 
                         let mut new_text = toml_text.clone();
 
-                        if let Some(tower_lsp::lsp_types::DocumentChanges::Edits(edits)) =
-                            edit.document_changes
-                        {
-                            let mut all_edits: Vec<_> =
-                                edits.into_iter().flat_map(|e| e.edits).collect();
+                        if let Some(document_changes) = edit.document_changes {
+                            let mut all_edits: Vec<_> = document_changes
+                                .into_iter()
+                                .filter_map(|change| match change {
+                                    tower_lsp_server::gen_lsp_types::DocumentChange::TextDocumentEdit(
+                                        edit,
+                                    ) => Some(edit.edits),
+                                    _ => None,
+                                })
+                                .flatten()
+                                .collect();
                             // Sort by range.start in descending order to apply edits from the end of the text.
                             all_edits.sort_by(|a, b| {
                                 let a = match a {
-                                    tower_lsp::lsp_types::OneOf::Left(e) => &e.range.start,
+                                    tower_lsp_server::gen_lsp_types::Edit::TextEdit(e) => &e.range.start,
                                     _ => return std::cmp::Ordering::Equal,
                                 };
                                 let b = match b {
-                                    tower_lsp::lsp_types::OneOf::Left(e) => &e.range.start,
+                                    tower_lsp_server::gen_lsp_types::Edit::TextEdit(e) => &e.range.start,
                                     _ => return std::cmp::Ordering::Equal,
                                 };
                                 b.line.cmp(&a.line).then(b.character.cmp(&a.character))
@@ -916,7 +942,7 @@ mod refactor_rewrite {
                             }
                             let mut text = new_text.clone();
                             for text_edit in all_edits {
-                                if let tower_lsp::lsp_types::OneOf::Left(edit) = text_edit {
+                                if let tower_lsp_server::gen_lsp_types::Edit::TextEdit(edit) = text_edit {
                                     let start_line = edit.range.start.line as usize;
                                     let start_char = edit.range.start.character as usize;
                                     let end_line = edit.range.end.line as usize;
@@ -952,7 +978,7 @@ mod refactor_rewrite {
                             return Err("no code action selection provided via Select(..)".into());
                         };
                         let None = actions.iter().find_map(|a| match a {
-                            tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca)
+                            tower_lsp_server::gen_lsp_types::CodeActionResponse::CodeAction(ca)
                                 if ca.title == *selected =>
                             {
                                 Some(ca)
@@ -965,7 +991,7 @@ mod refactor_rewrite {
                                 actions
                                     .iter()
                                     .filter_map(|a| match a {
-                                        tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca) =>
+                                        tower_lsp_server::gen_lsp_types::CodeActionResponse::CodeAction(ca) =>
                                             Some(ca.title.clone()),
                                         _ => None,
                                     })

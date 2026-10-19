@@ -151,7 +151,7 @@ pub async fn code_action(
     features: Option<&tombi_config::CargoExtensionFeatures>,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp_server::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
@@ -214,7 +214,7 @@ async fn code_actions_for_workspace_cargo_toml(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Result<Vec<CodeActionOrCommand>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<CodeActionOrCommand>, tower_lsp_server::jsonrpc::Error> {
     let mut code_actions = Vec::new();
 
     let code_action_features = features
@@ -271,7 +271,7 @@ async fn code_actions_for_crate_cargo_toml(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Result<Vec<CodeActionOrCommand>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<CodeActionOrCommand>, tower_lsp_server::jsonrpc::Error> {
     let mut code_actions = Vec::new();
 
     let code_action_features = features
@@ -404,7 +404,7 @@ async fn update_dependency_to_latest_version_code_action(
     accessors: &[Accessor],
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<CodeAction>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<CodeAction>, tower_lsp_server::jsonrpc::Error> {
     let dependency_accessors = if is_any_dependency_accessor(accessors) {
         accessors
     } else if matches!(accessors.last(), Some(Accessor::Key(key)) if key == "version")

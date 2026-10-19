@@ -9,7 +9,7 @@ use crate::Backend;
 pub async fn handle_list_schemas(
     backend: &Backend,
     _params: ListSchemasParams,
-) -> Result<ListSchemasResponse, tower_lsp::jsonrpc::Error> {
+) -> Result<ListSchemasResponse, tower_lsp_server::jsonrpc::Error> {
     log::info!("handle_list_schemas");
 
     let schemas = backend.config_manager.list_schemas().await;

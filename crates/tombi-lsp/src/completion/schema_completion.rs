@@ -1,5 +1,5 @@
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, CurrentSchema, SchemaView};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaView, SemanticAnnotations};
 use tombi_x_keyword::StringFormat;
 
 use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
@@ -91,10 +91,8 @@ impl FindCompletionContents for SchemaCompletion {
                 .and_then(|format| format.parse::<StringFormat>().ok())
                 .is_some_and(|format| format.toml_date_time_type().is_some());
             if !has_toml_datetime_format
-                && let Some(candidates) = current_schema
-                    .semantic_schema
-                    .as_deref()
-                    .and_then(|schema| schema.finite_literal_candidates())
+                && let Some(semantic_schema) = current_schema.semantic_schema.as_deref()
+                && let Some(candidates) = semantic_schema.finite_literal_candidates()
             {
                 let detail = current_schema.schema_view.title().map(ToString::to_string);
                 let documentation = current_schema
@@ -104,12 +102,26 @@ impl FindCompletionContents for SchemaCompletion {
                 let mut completion_items = candidates
                     .iter()
                     .filter_map(|value| {
+                        let annotations = semantic_schema.literal_annotations(value);
+                        // Same fallback as hover: the value's own title/description,
+                        // or the enclosing schema's when the value has neither.
+                        let (detail, documentation) = match annotations {
+                            Some(annotations) if annotations.has_title_or_description() => (
+                                annotations.title.as_ref().map(|title| title.value.clone()),
+                                annotations
+                                    .description
+                                    .as_ref()
+                                    .map(|description| description.value.clone()),
+                            ),
+                            _ => (detail.clone(), documentation.clone()),
+                        };
                         tombi_json_value_to_completion_enum_item(
                             value,
                             offset,
-                            detail.clone(),
-                            documentation.clone(),
+                            detail,
+                            documentation,
                             Some(current_schema.schema_base_uri.as_ref()),
+                            annotations.and_then(SemanticAnnotations::deprecated),
                             completion_hint,
                         )
                     })

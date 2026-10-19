@@ -99,14 +99,17 @@ pub use hover::HoverContent;
 
 pub fn lsp_service(
     offline: bool,
-    no_cache: bool,
-) -> (tower_lsp::LspService<Backend>, tower_lsp::ClientSocket) {
-    tower_lsp::LspService::build(|client| {
+    cache: tombi_cache::Options,
+) -> (
+    tower_lsp_server::LspService<Backend>,
+    tower_lsp_server::ClientSocket,
+) {
+    tower_lsp_server::LspService::build(|client| {
         Backend::new(
             client,
             &crate::backend::Options {
                 offline: offline.then_some(true),
-                no_cache: no_cache.then_some(true),
+                cache,
             },
         )
     })

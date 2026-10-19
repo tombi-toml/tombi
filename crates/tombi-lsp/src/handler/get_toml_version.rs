@@ -1,12 +1,12 @@
 use tombi_config::TomlVersion;
-use tower_lsp::lsp_types::TextDocumentIdentifier;
+use tower_lsp_server::gen_lsp_types::TextDocumentIdentifier;
 
 use crate::backend::Backend;
 
 pub async fn handle_get_toml_version(
     backend: &Backend,
     params: TextDocumentIdentifier,
-) -> Result<GetTomlVersionResponse, tower_lsp::jsonrpc::Error> {
+) -> Result<GetTomlVersionResponse, tower_lsp_server::jsonrpc::Error> {
     log::info!("handle_get_toml_version");
     log::trace!("{:?}", params);
 

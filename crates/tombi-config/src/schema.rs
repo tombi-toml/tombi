@@ -27,6 +27,12 @@ pub struct SchemaOverviewOptions {
 
     /// # Schema catalog options
     pub catalog: Option<SchemaCatalog>,
+
+    /// # Schema format options
+    pub format: Option<SchemaOverviewFormatOptions>,
+
+    /// # Schema lint options
+    pub lint: Option<SchemaOverviewLintOptions>,
 }
 
 impl SchemaOverviewOptions {
@@ -35,6 +41,8 @@ impl SchemaOverviewOptions {
             enabled: None,
             strict: None,
             catalog: None,
+            format: None,
+            lint: None,
         }
     }
 
@@ -53,6 +61,57 @@ impl SchemaOverviewOptions {
 
     pub fn strict(&self) -> Option<BoolDefaultTrue> {
         self.strict
+    }
+}
+
+/// # Global schema format options
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaOverviewFormatOptions {
+    /// # Global schema format rules
+    ///
+    /// Used when neither a matching `[[schemas]]` entry nor a comment directive
+    /// specifies the same rule.
+    pub rules: Option<SchemaFormatRules>,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaOverviewLintOptions {
+    pub rules: Option<SchemaOverviewLintRules>,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct SchemaOverviewLintRules {
+    pub deprecated: Option<SchemaDeprecatedSeverity>,
+}
+
+/// Severity supported by the global schema deprecation rule.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SchemaDeprecatedSeverity {
+    Warn,
+    Error,
+}
+
+impl From<SchemaDeprecatedSeverity> for SeverityLevelDefaultWarn {
+    fn from(level: SchemaDeprecatedSeverity) -> Self {
+        match level {
+            SchemaDeprecatedSeverity::Warn => tombi_severity_level::SeverityLevel::Warn.into(),
+            SchemaDeprecatedSeverity::Error => tombi_severity_level::SeverityLevel::Error.into(),
+        }
     }
 }
 
@@ -567,5 +626,45 @@ mod tests {
 
         let expected: Vec<SchemaCatalogPath> = vec![];
         pretty_assertions::assert_eq!(schema.catalog_paths(), Some(expected));
+    }
+
+    #[test]
+    fn schema_overview_format_rules_deserialize() {
+        let options = serde_json::from_value::<SchemaOverviewOptions>(serde_json::json!({
+            "format": { "rules": {
+                "array-values-order": { "enabled": false },
+                "table-keys-order": { "enabled": false }
+            } }
+        }))
+        .unwrap();
+
+        let rules = options.format.unwrap().rules.unwrap();
+        assert_eq!(
+            rules.array_values_order.unwrap().enabled.map(|e| e.value()),
+            Some(false)
+        );
+        assert_eq!(
+            rules.table_keys_order.unwrap().enabled.map(|e| e.value()),
+            Some(false)
+        );
+    }
+
+    #[test]
+    fn schema_deprecated_severity_accepts_warn_and_error_only() {
+        for severity in ["warn", "error"] {
+            assert!(
+                serde_json::from_value::<SchemaOverviewOptions>(serde_json::json!({
+                    "lint": { "rules": { "deprecated": severity } }
+                }))
+                .is_ok()
+            );
+        }
+
+        assert!(
+            serde_json::from_value::<SchemaOverviewOptions>(serde_json::json!({
+                "lint": { "rules": { "deprecated": "off" } }
+            }))
+            .is_err()
+        );
     }
 }

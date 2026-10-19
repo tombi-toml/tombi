@@ -1,11 +1,11 @@
-use tower_lsp::lsp_types::TextDocumentIdentifier;
+use tower_lsp_server::gen_lsp_types::TextDocumentIdentifier;
 
 use crate::backend::Backend;
 
 pub async fn handle_update_config(
     backend: &Backend,
     params: TextDocumentIdentifier,
-) -> Result<bool, tower_lsp::jsonrpc::Error> {
+) -> Result<bool, tower_lsp_server::jsonrpc::Error> {
     log::info!("handle_update_config");
     log::trace!("{:?}", params);
 

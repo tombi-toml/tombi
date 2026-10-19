@@ -153,7 +153,7 @@ pub async fn inlay_hint(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<InlayHint>>, tower_lsp_server::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
@@ -250,7 +250,7 @@ fn inlay_hint_impl(
     mut local_cargo_toml_cache: LocalCargoTomlCache,
     toml_version: TomlVersion,
     features: Option<&tombi_config::CargoExtensionFeatures>,
-) -> Result<Option<Vec<InlayHint>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<InlayHint>>, tower_lsp_server::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
@@ -1372,7 +1372,7 @@ async fn registry_default_features_inlay_hints(
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Vec<InlayHint>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<InlayHint>, tower_lsp_server::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(Vec::new());
     }
@@ -1448,7 +1448,7 @@ async fn collect_registry_default_features_inlay_hints(
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
     hints: &mut Vec<InlayHint>,
-) -> Result<(), tower_lsp::jsonrpc::Error> {
+) -> Result<(), tower_lsp_server::jsonrpc::Error> {
     let Some((_, Value::Table(dependencies))) = dig_keys(document_tree, dependency_keys) else {
         return Ok(());
     };
@@ -1495,7 +1495,7 @@ async fn registry_dependency_default_features_hint(
     toml_version: TomlVersion,
     offline: bool,
     cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<DefaultFeaturesHint>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<DefaultFeaturesHint>, tower_lsp_server::jsonrpc::Error> {
     let Value::Table(table) = dependency_value else {
         return Ok(None);
     };

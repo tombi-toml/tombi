@@ -1,8 +1,8 @@
 use itertools::{Either, Itertools};
 use tombi_glob::{MatchResult, matches_file_patterns};
 use tombi_text::IntoLsp;
-use tower_lsp::lsp_types::{
-    DocumentFormattingParams, PublishDiagnosticsParams, TextEdit, notification::PublishDiagnostics,
+use tower_lsp_server::gen_lsp_types::{
+    DocumentFormattingParams, PublishDiagnosticsNotification, PublishDiagnosticsParams, TextEdit,
 };
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -11,7 +11,7 @@ use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 pub async fn handle_formatting(
     backend: &Backend,
     params: DocumentFormattingParams,
-) -> Result<Option<Vec<TextEdit>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<TextEdit>>, tower_lsp_server::jsonrpc::Error> {
     log::trace!("{:?}", params);
 
     let DocumentFormattingParams {
@@ -108,7 +108,7 @@ pub async fn handle_formatting(
                 log::debug!("no change");
                 backend
                     .client
-                    .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {
+                    .send_notification::<PublishDiagnosticsNotification>(PublishDiagnosticsParams {
                         uri: text_document_uri.into(),
                         diagnostics: Vec::new(),
                         version,
@@ -120,7 +120,7 @@ pub async fn handle_formatting(
             log::error!("failed to format");
             backend
                 .client
-                .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {
+                .send_notification::<PublishDiagnosticsNotification>(PublishDiagnosticsParams {
                     uri: text_document_uri.into(),
                     diagnostics: diagnostics
                         .into_iter()
@@ -198,7 +198,7 @@ fn compute_text_edits(
 mod tests {
     use super::*;
     use tombi_text::{EncodingKind, LineIndex};
-    use tower_lsp::lsp_types::{Position, Range};
+    use tower_lsp_server::gen_lsp_types::{Position, Range};
 
     #[test]
     fn test_compute_text_edits_no_changes() {

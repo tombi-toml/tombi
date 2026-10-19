@@ -9,6 +9,7 @@ impl<'t> crate::KeyValue<'t> {
     pub fn item_span_with_comma(&self, offset: tombi_text::Offset) -> Option<tombi_text::Span> {
         for syntax_node in self.syntax().ancestors() {
             if let Some(group) = crate::KeyValueWithCommaGroup::cast(syntax_node) {
+                let mut containing_span = None;
                 for (item, comma) in group.key_values_with_comma() {
                     if item.syntax() == self.syntax() {
                         let start = item
@@ -23,14 +24,16 @@ impl<'t> crate::KeyValue<'t> {
                         let span = tombi_text::Span::new(start, end);
                         return Some(comma.map_or(span, |comma| span + comma.span()));
                     }
+
+                    if containing_span.is_none() {
+                        let span = comma.map_or(item.span(), |comma| item.span() + comma.span());
+                        if span.contains_inclusive(offset) {
+                            containing_span = Some(span);
+                        }
+                    }
                 }
 
-                if let Some(span) = span_containing_offset(
-                    group
-                        .key_values_with_comma()
-                        .map(|(item, comma)| (item.span(), comma.map(|comma| comma.span()))),
-                    offset,
-                ) {
+                if let Some(span) = containing_span {
                     return Some(span);
                 }
             } else if let Some(group) = crate::ValueWithCommaGroup::cast(syntax_node)

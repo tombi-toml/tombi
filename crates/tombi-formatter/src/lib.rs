@@ -44,6 +44,7 @@ macro_rules! test_format {
                 pub config_text: Option<String>,
                 pub schema_path: Option<std::path::PathBuf>,
                 pub source_path: Option<std::path::PathBuf>,
+                pub trusted_hosts: Option<Vec<String>>,
             }
 
             #[allow(unused)]
@@ -93,6 +94,16 @@ macro_rules! test_format {
                 }
             }
 
+            /// Add hosts allowed to resolve to non-public addresses.
+            #[allow(unused)]
+            pub struct TrustedHosts(pub Vec<String>);
+
+            impl ApplyTestArg for TrustedHosts {
+                fn apply(self, args: &mut TestArgs) {
+                    args.trusted_hosts.get_or_insert_default().extend(self.0);
+                }
+            }
+
             #[allow(unused_mut)]
             let mut args = TestArgs::default();
             $(
@@ -100,14 +111,26 @@ macro_rules! test_format {
             )*
 
             // Initialize schema store
-            let schema_store = SchemaStore::new();
+            let test_config: Option<tombi_config::Config> = match &args.config_text {
+                Some(config_text) => Some(
+                    serde_tombi::from_str_async(config_text)
+                        .await
+                        .expect("failed to parse formatter test config text"),
+                ),
+                None => None,
+            };
+            let schema_config = test_config.as_ref().and_then(|config| config.schema.as_ref());
+            let schema_store = SchemaStore::new_with_options(tombi_schema_store::Options {
+                strict: schema_config.and_then(|schema| schema.strict()),
+                format: schema_config.and_then(|schema| schema.format.clone()),
+                lint: schema_config.and_then(|schema| schema.lint.clone()),
+                trusted_hosts: args.trusted_hosts.clone(),
+                ..Default::default()
+            });
 
-            if let Some(config_text) = &args.config_text {
-                let config: tombi_config::Config = serde_tombi::from_str_async(config_text)
-                    .await
-                    .expect("failed to parse formatter test config text");
+            if let Some(test_config) = &test_config {
                 schema_store
-                    .load_config(&config, None)
+                    .load_config(test_config, None)
                     .await
                     .expect("failed to load formatter test config");
             } else if let Some(schema_path) = &args.schema_path {
@@ -186,6 +209,7 @@ macro_rules! test_format {
                 pub config_text: Option<String>,
                 pub schema_path: Option<std::path::PathBuf>,
                 pub source_path: Option<std::path::PathBuf>,
+                pub trusted_hosts: Option<Vec<String>>,
             }
 
             #[allow(unused)]
@@ -235,6 +259,16 @@ macro_rules! test_format {
                 }
             }
 
+            /// Add hosts allowed to resolve to non-public addresses.
+            #[allow(unused)]
+            pub struct TrustedHosts(pub Vec<String>);
+
+            impl ApplyTestArg for TrustedHosts {
+                fn apply(self, config: &mut TestArgs) {
+                    config.trusted_hosts.get_or_insert_default().extend(self.0);
+                }
+            }
+
             #[allow(unused_mut)]
             let mut config = TestArgs::default();
             $(
@@ -242,14 +276,26 @@ macro_rules! test_format {
             )*
 
             // Initialize schema store
-            let schema_store = SchemaStore::new();
+            let test_config: Option<tombi_config::Config> = match &config.config_text {
+                Some(config_text) => Some(
+                    serde_tombi::from_str_async(config_text)
+                        .await
+                        .expect("failed to parse formatter test config text"),
+                ),
+                None => None,
+            };
+            let schema_config = test_config.as_ref().and_then(|config| config.schema.as_ref());
+            let schema_store = SchemaStore::new_with_options(tombi_schema_store::Options {
+                strict: schema_config.and_then(|schema| schema.strict()),
+                format: schema_config.and_then(|schema| schema.format.clone()),
+                lint: schema_config.and_then(|schema| schema.lint.clone()),
+                trusted_hosts: config.trusted_hosts.clone(),
+                ..Default::default()
+            });
 
-            if let Some(config_text) = &config.config_text {
-                let config_value: tombi_config::Config = serde_tombi::from_str_async(config_text)
-                    .await
-                    .expect("failed to parse formatter test config text");
+            if let Some(test_config) = &test_config {
                 schema_store
-                    .load_config(&config_value, None)
+                    .load_config(test_config, None)
                     .await
                     .expect("failed to load formatter test config");
             } else if let Some(schema_path) = config.schema_path {

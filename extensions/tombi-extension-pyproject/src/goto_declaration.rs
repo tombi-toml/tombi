@@ -17,7 +17,7 @@ pub async fn goto_declaration(
     toml_version: TomlVersion,
     converter: SpanConverter<'_, '_>,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
-) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp_server::jsonrpc::Error> {
     // Check if current file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(Default::default());
@@ -72,7 +72,7 @@ fn goto_declaration_for_dependency_package(
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     converter: SpanConverter<'_, '_>,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     let Some((_, Value::String(dep_str))) = dig_accessors(document_tree, accessors) else {
         return Ok(Vec::new());
     };
@@ -107,7 +107,7 @@ fn dependency_source_declaration_locations(
     package_name: &str,
     toml_version: TomlVersion,
     converter: SpanConverter<'_, '_>,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     let Some((_, Value::Table(sources))) = dig_keys(document_tree, &["tool", "uv", "sources"])
     else {
         return Ok(Vec::new());

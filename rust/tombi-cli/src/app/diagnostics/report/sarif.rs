@@ -39,14 +39,14 @@ pub(in crate::app::diagnostics) struct SarifFormat;
 
 impl ReportFormat for SarifFormat {
     /// Columns count UTF-16 code units, as declared by `columnKind: utf16CodeUnits`.
-    type Range = tower_lsp::lsp_types::Range;
+    type Range = tower_lsp_server::gen_lsp_types::Range;
 
     const ENCODING: EncodingKind = EncodingKind::Utf16;
 
     fn convert_range(range: tombi_text::Range) -> Self::Range {
-        tower_lsp::lsp_types::Range::new(
-            tower_lsp::lsp_types::Position::new(range.start.line, range.start.column),
-            tower_lsp::lsp_types::Position::new(range.end.line, range.end.column),
+        tower_lsp_server::gen_lsp_types::Range::new(
+            tower_lsp_server::gen_lsp_types::Position::new(range.start.line, range.start.column),
+            tower_lsp_server::gen_lsp_types::Position::new(range.end.line, range.end.column),
         )
     }
 
@@ -54,7 +54,7 @@ impl ReportFormat for SarifFormat {
     ///
     /// Columns count UTF-16 code units, as declared by `columnKind`.
     /// Artifact URIs are relative to `%SRCROOT%`, the project root.
-    fn render(report: &Report<tower_lsp::lsp_types::Range>) -> String {
+    fn render(report: &Report<tower_lsp_server::gen_lsp_types::Range>) -> String {
         let rules = report
             .findings
             .iter()

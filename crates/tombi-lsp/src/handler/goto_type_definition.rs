@@ -1,7 +1,7 @@
 use itertools::Either;
 use tombi_schema_store::SchemaContext;
 use tombi_text::IntoLsp;
-use tower_lsp::lsp_types::request::GotoTypeDefinitionParams;
+use tower_lsp_server::gen_lsp_types::TypeDefinitionParams;
 
 use crate::{
     backend::Backend,
@@ -45,13 +45,13 @@ fn span_of(type_definition: &TypeDefinition) -> Option<tombi_text::Span> {
 
 pub async fn handle_goto_type_definition(
     backend: &Backend,
-    params: GotoTypeDefinitionParams,
-) -> Result<Option<Vec<SchemaLocation>>, tower_lsp::jsonrpc::Error> {
+    params: TypeDefinitionParams,
+) -> Result<Option<Vec<SchemaLocation>>, tower_lsp_server::jsonrpc::Error> {
     log::trace!("{:?}", params);
 
-    let GotoTypeDefinitionParams {
+    let TypeDefinitionParams {
         text_document_position_params:
-            tower_lsp::lsp_types::TextDocumentPositionParams {
+            tower_lsp_server::gen_lsp_types::TextDocumentPositionParams {
                 text_document,
                 position,
                 ..

@@ -29,7 +29,7 @@ pub async fn goto_definition(
     toml_version: TomlVersion,
     converter: SpanConverter<'_, '_>,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
-) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::Location>>, tower_lsp_server::jsonrpc::Error> {
     // Check if current file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(Default::default());
@@ -289,7 +289,7 @@ fn goto_definition_for_dependency_package(
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     converter: SpanConverter<'_, '_>,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     // Get the dependency string from the current position
     let Some((_, Value::String(dep_str))) = dig_accessors(document_tree, accessors) else {
         return Ok(Vec::new());
@@ -407,7 +407,7 @@ fn goto_definition_for_include_group(
     accessors: &[Accessor],
     pyproject_toml_path: &std::path::Path,
     converter: SpanConverter<'_, '_>,
-) -> Result<Vec<tombi_extension::Location>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::Location>, tower_lsp_server::jsonrpc::Error> {
     let Some((_, Value::String(include_group))) = dig_accessors(document_tree, accessors) else {
         return Ok(Vec::new());
     };

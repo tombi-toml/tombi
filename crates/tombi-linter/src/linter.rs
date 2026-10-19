@@ -135,7 +135,8 @@ impl<'a> Linter<'a> {
                     .map(|source_schema| &source_schema.sub_schema_link_map),
                 deprecated_lint_level: source_schema
                     .as_ref()
-                    .and_then(|source_schema| source_schema.deprecated_lint_level),
+                    .and_then(|source_schema| source_schema.deprecated_lint_level)
+                    .or_else(|| self.schema_store.deprecated_lint_level()),
                 schema_format_rules: source_schema
                     .as_ref()
                     .map(|source_schema| &source_schema.schema_format_rules),

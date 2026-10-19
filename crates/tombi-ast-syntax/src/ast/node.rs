@@ -20,6 +20,6 @@ pub use dangling_comment_group_or::DanglingCommentGroupOr;
 pub use key_value_group::KeyValueGroup;
 pub use key_value_with_comma_group::KeyValueWithCommaGroup;
 pub use table_or_array_of_table::TableOrArrayOfTable;
-pub use toml_node::{AdjacentCommas, TomlNode};
+pub use toml_node::{AdjacentCommas, TomlElement, TomlNode};
 pub use value_or_key_value::ValueOrKeyValue;
 pub use value_with_comma_group::ValueWithCommaGroup;

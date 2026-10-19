@@ -1,13 +1,13 @@
 use itertools::Itertools;
-use tombi_ast_syntax::{AstNode, DanglingCommentGroupOr};
-use tower_lsp::lsp_types::{FoldingRange, FoldingRangeKind, FoldingRangeParams};
+use tombi_ast_syntax::{AstNode, AstToken, DanglingCommentGroupOr, TomlElement};
+use tower_lsp_server::gen_lsp_types::{FoldingRange, FoldingRangeKind, FoldingRangeParams};
 
 use crate::backend::Backend;
 
 pub async fn handle_folding_range(
     backend: &Backend,
     params: FoldingRangeParams,
-) -> Result<Option<Vec<FoldingRange>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<FoldingRange>>, tower_lsp_server::jsonrpc::Error> {
     log::info!("handle_folding_range");
     log::trace!("{:?}", params);
 
@@ -21,20 +21,32 @@ pub async fn handle_folding_range(
     let mut cursor = document_source
         .line_index()
         .cursor(document_source.encoding_kind());
-    let folding_ranges = create_folding_spans(&document_source.ast())
-        .into_iter()
-        .map(|FoldingSpan { span, kind }| {
-            let range = cursor.lsp_range(span);
-            FoldingRange {
-                start_line: range.start.line,
-                start_character: Some(range.start.character),
-                end_line: range.end.line,
-                end_character: Some(range.end.character),
-                kind: Some(kind),
-                collapsed_text: None,
-            }
-        })
-        .collect_vec();
+    let folding_ranges = resolve_region_overlaps(
+        create_folding_spans(&document_source.ast(), document_source.text())
+            .into_iter()
+            .map(
+                |FoldingSpan {
+                     span,
+                     kind,
+                     is_region_marker,
+                 }| {
+                    let range = cursor.lsp_range(span);
+                    (
+                        FoldingRange {
+                            start_line: range.start.line,
+                            start_character: Some(range.start.character),
+                            end_line: range.end.line,
+                            end_character: Some(range.end.character),
+                            kind: Some(kind),
+                            collapsed_text: None,
+                        },
+                        is_region_marker,
+                    )
+                },
+            )
+            .collect_vec(),
+        document_source.text(),
+    );
 
     if !folding_ranges.is_empty() {
         Ok(Some(folding_ranges))
@@ -47,12 +59,150 @@ pub async fn handle_folding_range(
 struct FoldingSpan {
     span: tombi_text::Span,
     kind: FoldingRangeKind,
+    /// Whether the span comes from a `# region` / `# endregion` pair.
+    is_region_marker: bool,
 }
 
-fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>) -> Vec<FoldingSpan> {
-    let mut spans: Vec<FoldingSpan> = vec![];
+/// Editors discard folding ranges that partially overlap another one, so a
+/// range that crosses a `# region` boundary would hide the whole region.
+/// The marker pair is the user's explicit intent, so other ranges are made to
+/// stay on one side of its marker lines:
+/// - a comment range is split at the marker lines, and
+/// - any other range crossing a boundary is shortened to end before it.
+///
+/// Trailing blank lines are not kept in the shortened ranges, and ranges left
+/// with a single line are dropped. Unpaired markers are not considered.
+fn resolve_region_overlaps(ranges: Vec<(FoldingRange, bool)>, text: &str) -> Vec<FoldingRange> {
+    let regions = ranges
+        .iter()
+        .filter(|(_, is_region_marker)| *is_region_marker)
+        .map(|(range, _)| (range.start_line, range.end_line))
+        .collect_vec();
+    if regions.is_empty() {
+        return ranges.into_iter().map(|(range, _)| range).collect();
+    }
 
-    for node in root.nodes() {
+    let lines = text.lines().collect_vec();
+    let is_blank = |line: u32| {
+        lines
+            .get(line as usize)
+            .is_none_or(|line| line.trim().is_empty())
+    };
+    // Last non-blank line in `start..=end`, searching backwards from `end`.
+    let trim_end = |start: u32, mut end: u32| {
+        while end > start && is_blank(end) {
+            end -= 1;
+        }
+        end
+    };
+    let marker_lines = regions
+        .iter()
+        .flat_map(|&(start, end)| [start, end])
+        .sorted()
+        .dedup()
+        .collect_vec();
+
+    let mut resolved = vec![];
+    for (range, is_region_marker) in ranges {
+        if is_region_marker {
+            resolved.push(range);
+        } else if range.kind == Some(FoldingRangeKind::Comment) {
+            let cuts = marker_lines
+                .iter()
+                .copied()
+                .filter(|line| (range.start_line..=range.end_line).contains(line))
+                .collect_vec();
+            if cuts.is_empty() {
+                resolved.push(range);
+                continue;
+            }
+
+            let mut segment_start = range.start_line;
+            for cut in cuts.into_iter().chain([range.end_line + 1]) {
+                if cut > segment_start {
+                    let mut start = segment_start;
+                    while start < cut - 1 && is_blank(start) {
+                        start += 1;
+                    }
+                    let end = trim_end(start, cut - 1);
+                    if start < end {
+                        resolved.push(FoldingRange {
+                            start_line: start,
+                            start_character: None,
+                            end_line: end,
+                            end_character: None,
+                            ..range.clone()
+                        });
+                    }
+                }
+                segment_start = cut + 1;
+            }
+        } else {
+            let mut end_line = range.end_line;
+            // Shortening for one region can make the range cross another one.
+            loop {
+                let previous = end_line;
+                for &(start, end) in &regions {
+                    if range.start_line < start && start <= end_line && end_line < end {
+                        // Starts before the region and ends inside it.
+                        end_line = trim_end(range.start_line, start - 1);
+                    } else if start < range.start_line && range.start_line <= end && end < end_line
+                    {
+                        // Starts inside the region and ends after it.
+                        end_line = trim_end(range.start_line, end - 1);
+                    }
+                }
+                if end_line == previous {
+                    break;
+                }
+            }
+
+            if end_line == range.end_line {
+                resolved.push(range);
+            } else if end_line > range.start_line {
+                resolved.push(FoldingRange {
+                    end_line,
+                    end_character: None,
+                    ..range
+                });
+            }
+        }
+    }
+
+    resolved
+}
+
+fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<FoldingSpan> {
+    let mut spans = vec![];
+    let mut region_starts = vec![];
+
+    for element in root.elements() {
+        let node = match element {
+            TomlElement::Comment(comment) => {
+                let span = comment.syntax().span();
+                let start = usize::from(span.start);
+                let line_start = text[..start].rfind('\n').map_or(0, |index| index + 1);
+                if text[line_start..start].trim().is_empty() {
+                    match comment.region_marker() {
+                        Some(tombi_ast_syntax::RegionMarker::Start) => {
+                            region_starts.push(span.start);
+                        }
+                        Some(tombi_ast_syntax::RegionMarker::End) => {
+                            if let Some(start) = region_starts.pop() {
+                                spans.push(FoldingSpan {
+                                    span: tombi_text::Span::new(start, span.end),
+                                    kind: FoldingRangeKind::Region,
+                                    is_region_marker: true,
+                                });
+                            }
+                        }
+                        None => {}
+                    }
+                }
+                continue;
+            }
+            TomlElement::Node(node) => node,
+        };
         if let tombi_ast_syntax::TomlNode::KeyValue(key_value) = node {
             for folding_span in [key_value
                 .leading_comments()
@@ -393,6 +543,7 @@ trait GetRegionFoldingSpan {
         self.get_folding_span().map(|span| FoldingSpan {
             span,
             kind: FoldingRangeKind::Region,
+            is_region_marker: false,
         })
     }
 }
@@ -405,6 +556,7 @@ trait GetCommentFoldingSpan {
         self.get_folding_span().map(|span| FoldingSpan {
             span,
             kind: FoldingRangeKind::Comment,
+            is_region_marker: false,
         })
     }
 }

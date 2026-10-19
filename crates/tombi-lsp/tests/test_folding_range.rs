@@ -392,22 +392,308 @@ mod folding_range_tests {
         ];
     );
 
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_markers(
+            r#"
+            # region Application
+            key1 = 1
+            # endregion
+
+            # region Logging
+            key2 = 2
+            # endregion
+            "#,
+        ) -> [
+            0..2,
+            4..6,
+        ];
+        regions: [
+            0..2,
+            4..6,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn nested_region_markers(
+            r#"
+            #region Outer
+            key1 = 1
+            # region Inner
+            key2 = 2
+            # endregion Inner
+            key3 = 3
+            #endregion Outer
+            "#,
+        ) -> [
+            0..6,
+            2..4,
+        ];
+        regions: [
+            0..6,
+            2..4,
+        ];
+    );
+
+    test_folding_range!(
+            #[tokio::test]
+            async fn unmatched_region_markers(
+                r#"
+            # endregion
+            key1 = 1
+            # region
+            key2 = 2
+            # regional note
+            "#,
+            ) -> [
+                0..0,
+                2..2,
+                4..4,
+            ];
+            regions: [
+    ,
+            ];
+        );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_marker_followed_by_blank_line(
+            r#"
+            [tool.ruff]
+            line-length = 100
+
+            # region
+
+            [tool.pytest]
+            addopts = ["-v"]
+
+            [tool.uv.workspace]
+            members = [
+              "python/tombi",
+              "python/tombi-lib",
+            ]
+
+            # endregion
+            "#,
+        ) -> [
+            0..1,
+            3..14,
+            5..6,
+            6..6,
+            8..14,
+            9..12,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_marker_across_sections(
+            r#"
+            #:tombi toml-version = "v1.0.0"
+
+            # region
+
+            [dependency-groups]
+            dev = [
+              "maturin>=1.5,<2.0",
+              { include-group = "stub" },
+            ]
+            stub = [
+              "pytest-stub>=1.1.0",
+            ]
+
+            [tool.pytest]
+            addopts = ["-v"]
+
+            [tool.uv.workspace]
+            members = [
+              "python/tombi",
+            ]
+
+            # endregion
+            "#,
+        ) -> [
+            2..21,
+            4..11,
+            5..8,
+            7..7,
+            9..11,
+            13..14,
+            14..14,
+            16..21,
+            17..19,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_marker_ends_inside_table(
+            r#"
+            # region
+            [a]
+            x = 1
+            # endregion
+            y = 2
+            "#,
+        ) -> [
+            0..3,
+            1..2,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_marker_across_array_of_tables(
+            r#"
+            [[a]]
+            x = 1
+
+            # region
+            [[a]]
+            x = 2
+
+            [[a]]
+            x = 3
+            # endregion
+
+            [b]
+            y = 1
+            "#,
+        ) -> [
+            0..1,
+            3..9,
+            4..5,
+            7..9,
+            11..12,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_marker_between_comments(
+            r#"
+            # note 1
+            # note 2
+            # region
+            # note 3
+            # note 4
+            key = 1
+            # endregion
+            "#,
+        ) -> [
+            0..1,
+            2..6,
+            3..4,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn region_marker_inside_table(
+            r#"
+            [a]
+            # region
+            x = 1
+            y = 2
+            # endregion
+            z = 3
+            "#,
+        ) -> [
+            0..5,
+            1..4,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn unclosed_nested_region_marker(
+            r#"
+            # region Outer
+            key1 = 1
+            # region Inner
+            key2 = 2
+            # endregion
+            "#,
+        ) -> [
+            0..0,
+            2..4,
+        ];
+        regions: [
+            2..4,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn unclosed_region_marker_keeps_table_range(
+            r#"
+            [a]
+            x = 1
+            # region
+            "#,
+        ) -> [
+            0..2,
+            2..2,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn comment_range_is_split_at_region_markers(
+            r#"
+            # note 1
+            # note 2
+            # region
+            # note 3
+            # note 4
+            # endregion
+            # note 5
+            # note 6
+            key = 1
+            "#,
+        ) -> [
+            0..1,
+            2..5,
+            3..4,
+            6..7,
+        ];
+        regions: [
+            2..5,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn trailing_comment_is_not_region_marker(
+            r#"
+            a = 1 # region
+            b = 2
+            # endregion
+            c = 3
+            "#,
+        ) -> [
+            2..2,
+        ];
+        regions: [];
+    );
+
     #[macro_export]
     macro_rules! test_folding_range {
-        (#[tokio::test] async fn $name:ident($source:expr $(,)?) -> [$($expected:expr),* $(,)?];) => {
+        (#[tokio::test] async fn $name:ident($source:expr $(,)?) -> [$($expected:expr),* $(,)?]; $(regions: [$($region:expr),* $(,)?];)?) => {
             #[tokio::test]
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
                 use tombi_test_lib::tombi_schema_path;
                 use tombi_lsp::handler::{handle_did_open, handle_folding_range};
                 use tombi_lsp::Backend;
-                use tower_lsp::{
-                    lsp_types::{
+                use tower_lsp_server::{
+                    gen_lsp_types::{
                         DidOpenTextDocumentParams,
                         FoldingRangeParams,
                         PartialResultParams,
                         TextDocumentIdentifier,
                         TextDocumentItem,
-                        Url,
+                        Uri,
                         WorkDoneProgressParams,
                     },
                     LspService,
@@ -419,7 +705,7 @@ mod folding_range_tests {
                 });
                 let backend = service.inner();
 
-                let toml_file_url = Url::from_file_path(tombi_schema_path())
+                let toml_file_url = Uri::from_file_path(tombi_schema_path())
                     .expect("failed to convert file path to URL");
                 let toml_text = textwrap::dedent($source).trim().to_string();
 
@@ -428,7 +714,7 @@ mod folding_range_tests {
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
                             uri: toml_file_url.clone(),
-                            language_id: "toml".to_string(),
+                            language_id: "toml".to_string().into(),
                             version: 0,
                             text: toml_text.clone(),
                         },
@@ -446,14 +732,28 @@ mod folding_range_tests {
                     .expect("folding range request failed");
 
                 let expected: Vec<std::ops::Range<u32>> = vec![$($expected),*];
-                let actual: Vec<std::ops::Range<u32>> = result
+                let ranges = result
                     .unwrap_or_default()
                     .into_iter()
                     .sorted_by_key(|r| (r.start_line, r.start_character))
+                    .collect_vec();
+                let actual: Vec<std::ops::Range<u32>> = ranges
+                    .iter()
                     .map(|r| r.start_line..r.end_line)
                     .collect();
 
                 pretty_assertions::assert_eq!(actual, expected);
+
+                $(
+                    let expected_regions: Vec<std::ops::Range<u32>> = vec![$($region),*];
+                    let actual_regions: Vec<std::ops::Range<u32>> = ranges
+                        .iter()
+                        .filter(|r| r.kind == Some(tower_lsp_server::gen_lsp_types::FoldingRangeKind::Region))
+                        .map(|r| r.start_line..r.end_line)
+                        .collect();
+
+                    pretty_assertions::assert_eq!(actual_regions, expected_regions);
+                )?
 
                 Ok(())
             }

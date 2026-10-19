@@ -4,6 +4,7 @@ mod array;
 mod array_of_table;
 #[path = "impls/comment.rs"]
 mod comment;
+pub use comment::RegionMarker;
 #[path = "impls/inline_table.rs"]
 mod inline_table;
 #[path = "impls/key.rs"]

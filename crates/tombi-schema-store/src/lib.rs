@@ -6,13 +6,13 @@ mod keyword_support;
 pub mod macros;
 mod options;
 mod schema;
+mod schema_fetch_policy;
 mod store;
 mod value_type;
 mod x_taplo;
 
 pub use error::{Error, SCHEMA_RESOLUTION_DIAGNOSTIC_CODE};
 pub use http_client::*;
-#[cfg(feature = "ast-syntax")]
 use itertools::Either;
 use itertools::Itertools;
 pub use json_schema_dialect::JsonSchemaDialect;
@@ -260,7 +260,6 @@ pub fn build_accessor_contexts(
         .collect_vec()
 }
 
-#[cfg(feature = "ast-syntax")]
 pub async fn lint_source_schema_from_ast(
     root: &tombi_ast_syntax::Root<'_>,
     source_uri_or_path: Option<Either<&tombi_uri::Uri, &std::path::Path>>,

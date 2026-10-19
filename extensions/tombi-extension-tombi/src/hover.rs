@@ -8,6 +8,6 @@ pub async fn hover(
     _offset: tombi_text::Offset,
     _toml_version: TomlVersion,
     _offline: bool,
-) -> Result<Option<HoverMetadata>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<HoverMetadata>, tower_lsp_server::jsonrpc::Error> {
     Ok(None)
 }

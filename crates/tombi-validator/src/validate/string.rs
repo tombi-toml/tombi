@@ -8,7 +8,6 @@ use tombi_regex::Regex;
 use tombi_schema_store::SchemaView;
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_x_keyword::StringFormat;
-use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
     comment_directive::{
@@ -475,7 +474,7 @@ pub(crate) fn validate_raw_string<'a>(
         );
     }
 
-    let length = UnicodeSegmentation::graphemes(value, true).count();
+    let length = value.chars().count();
 
     if let Some(max_length) = &string_schema.max_length
         && length > *max_length

@@ -69,6 +69,12 @@ pub enum Error {
         reason: String,
     },
 
+    #[error(
+        "schema host is not trusted: {schema_uri}; it resolves to a non-public address, \
+         add the host to TOMBI_SCHEMA_TRUSTED_HOSTS"
+    )]
+    SchemaHostNotTrusted { schema_uri: SchemaUri },
+
     #[error("unsupported source uri: {source_uri}")]
     UnsupportedSourceUri { source_uri: tombi_uri::Uri },
 
@@ -109,9 +115,6 @@ pub enum Error {
     DuplicateSchemaResourceInDocument(Box<DuplicateSchemaResourceInDocument>),
 
     #[error(transparent)]
-    DuplicateSchemaResourceAcrossDocuments(Box<DuplicateSchemaResourceAcrossDocuments>),
-
-    #[error(transparent)]
     CacheError(#[from] tombi_cache::Error),
 }
 
@@ -127,21 +130,23 @@ pub struct DuplicateSchemaResourceInDocument {
     pub second_location: String,
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
-#[error(
-    "duplicate $id `{schema_uri}`: already defined in {existing_document} at `{existing_location}`, also claimed by {conflicting_document} at `{conflicting_location}`",
-    existing_document = format_schema_document(existing_schema_document_uri),
-    conflicting_document = format_schema_document(conflicting_schema_document_uri)
-)]
-pub struct DuplicateSchemaResourceAcrossDocuments {
-    pub schema_uri: SchemaUri,
-    pub existing_schema_document_uri: SchemaUri,
-    pub existing_location: String,
-    pub conflicting_schema_document_uri: SchemaUri,
-    pub conflicting_location: String,
-}
-
 impl Error {
+    /// Convert a failed schema fetch (or policy refusal) for `schema_uri`.
+    pub(crate) fn from_schema_fetch_error(
+        schema_uri: &SchemaUri,
+        error: crate::FetchError,
+    ) -> Self {
+        match error {
+            crate::FetchError::HostNotTrusted => Self::SchemaHostNotTrusted {
+                schema_uri: schema_uri.clone(),
+            },
+            error => Self::SchemaFetchFailed {
+                schema_uri: schema_uri.clone(),
+                reason: error.to_string(),
+            },
+        }
+    }
+
     #[inline]
     pub fn to_warning_diagnostic(&self, span: tombi_text::Span) -> tombi_diagnostic::Diagnostic {
         tombi_diagnostic::Diagnostic::new_warning(

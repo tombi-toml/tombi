@@ -23,6 +23,7 @@ pub use comment_directive::{
 };
 pub use generated::*;
 pub(crate) use header_index::{HeaderIndex, header_info};
+pub use impls::RegionMarker;
 use itertools::Itertools;
 pub use literal_value::LiteralValue;
 pub use node::*;

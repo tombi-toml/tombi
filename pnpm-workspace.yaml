@@ -23,10 +23,12 @@ overrides:
   nitropack: 2.13.4
   postcss: 8.5.23
   qs: 6.16.0
-  seroval: 1.5.3
+  seroval: 1.6.8
+  source-map-js: 1.2.2
   tar: 7.5.21
   tmp: 0.2.7
   undici: 7.29.1
+  vue: 3.5.42
   "vitest>vite": ^7.3.5
   ws: 8.21.0
 minimumReleaseAge: 7200

@@ -1201,10 +1201,10 @@ macro_rules! test_document_link {
             use itertools::Itertools;
             use tombi_lsp::handler::{handle_did_open, handle_document_link};
             use tombi_lsp::Backend;
-            use tower_lsp::{
-                lsp_types::{
+            use tower_lsp_server::{
+                gen_lsp_types::{
                     DidOpenTextDocumentParams, DocumentLinkParams, PartialResultParams,
-                    TextDocumentIdentifier, TextDocumentItem, Url, WorkDoneProgressParams,
+                    TextDocumentIdentifier, TextDocumentItem, Uri, WorkDoneProgressParams,
                 },
                 LspService,
             };
@@ -1404,7 +1404,7 @@ macro_rules! test_document_link {
                 }
             }
 
-            let toml_file_url = Url::from_file_path(source_path)
+            let toml_file_url = Uri::from_file_path(source_path)
                 .expect("failed to convert source file path to URL");
 
             let toml_text = textwrap::dedent($source).trim().to_string();
@@ -1414,7 +1414,7 @@ macro_rules! test_document_link {
                 DidOpenTextDocumentParams {
                     text_document: TextDocumentItem {
                         uri: toml_file_url.clone(),
-                        language_id: "toml".to_string(),
+                        language_id: "toml".to_string().into(),
                         version: 0,
                         text: toml_text.clone(),
                     },
@@ -1471,18 +1471,18 @@ macro_rules! _document_link {
         range: $start_line:literal : $start_char:literal .. $end_line:literal : $end_char:literal,
         tooltip: $tooltip:expr $(,)?
     }) => {
-        tower_lsp::lsp_types::DocumentLink {
-            range: tower_lsp::lsp_types::Range {
-                start: tower_lsp::lsp_types::Position {
+        tower_lsp_server::gen_lsp_types::DocumentLink {
+            range: tower_lsp_server::gen_lsp_types::Range {
+                start: tower_lsp_server::gen_lsp_types::Position {
                     line: $start_line,
                     character: $start_char,
                 },
-                end: tower_lsp::lsp_types::Position {
+                end: tower_lsp_server::gen_lsp_types::Position {
                     line: $end_line,
                     character: $end_char,
                 },
             },
-            target: Url::from_file_path($path).ok(),
+            target: Uri::from_file_path($path).ok(),
             tooltip: Some($tooltip.to_string()),
             data: None,
         }
@@ -1492,18 +1492,18 @@ macro_rules! _document_link {
         range: $start_line:literal : $start_char:literal .. $end_line:literal : $end_char:literal,
         tooltip: $tooltip:expr $(,)?
     }) => {
-        tower_lsp::lsp_types::DocumentLink {
-            range: tower_lsp::lsp_types::Range {
-                start: tower_lsp::lsp_types::Position {
+        tower_lsp_server::gen_lsp_types::DocumentLink {
+            range: tower_lsp_server::gen_lsp_types::Range {
+                start: tower_lsp_server::gen_lsp_types::Position {
                     line: $start_line,
                     character: $start_char,
                 },
-                end: tower_lsp::lsp_types::Position {
+                end: tower_lsp_server::gen_lsp_types::Position {
                     line: $end_line,
                     character: $end_char,
                 },
             },
-            target: Url::parse($url).ok(),
+            target: Uri::parse($url).ok(),
             tooltip: Some($tooltip.to_string()),
             data: None,
         }

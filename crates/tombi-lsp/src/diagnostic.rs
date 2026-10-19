@@ -6,7 +6,7 @@ use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 
 #[derive(Debug, Clone)]
 pub struct DiagnosticsResult {
-    pub diagnostics: Vec<tower_lsp::lsp_types::Diagnostic>,
+    pub diagnostics: Vec<tower_lsp_server::gen_lsp_types::Diagnostic>,
     pub version: Option<i32>,
 }
 

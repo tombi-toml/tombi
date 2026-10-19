@@ -1,3 +1,4 @@
+pub mod cache;
 pub mod completion;
 pub mod format;
 pub mod lint;
@@ -5,6 +6,9 @@ pub mod lsp;
 
 #[derive(clap::Subcommand)]
 pub enum TomlCommand {
+    /// Manage the JSON catalog and schema cache
+    Cache(cache::Args),
+
     #[command(alias = "fmt")]
     Format(format::Args),
 

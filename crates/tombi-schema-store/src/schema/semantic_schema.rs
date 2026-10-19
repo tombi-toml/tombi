@@ -641,6 +641,55 @@ impl SemanticSchema {
         Some(candidates)
     }
 
+    /// Returns the annotations of the innermost `oneOf` / `anyOf` branch that
+    /// accepts `value`, i.e. the per-value documentation such as
+    /// `oneOf: [{ "const": "red", "description": "..." }]`.
+    ///
+    /// `allOf` and `$ref` are traversed transparently, so the annotations of a
+    /// referenced enum definition itself are not treated as per-value ones.
+    pub fn literal_annotations(&self, value: &Value) -> Option<&SemanticAnnotations> {
+        match self {
+            Self::Boolean(_) => None,
+            Self::Object(object) => literal_branch_annotations(
+                object
+                    .applicators
+                    .one_of
+                    .iter()
+                    .chain(&object.applicators.any_of),
+                value,
+            )
+            .or_else(|| {
+                object
+                    .applicators
+                    .all_of
+                    .iter()
+                    .find_map(|schema| schema.literal_annotations(value))
+            }),
+            Self::Composite(composite) => match composite.kind {
+                SemanticCompositeKind::OneOf | SemanticCompositeKind::AnyOf => {
+                    literal_branch_annotations(composite.schemas.iter(), value)
+                }
+                SemanticCompositeKind::AllOf | SemanticCompositeKind::Reference => composite
+                    .schemas
+                    .iter()
+                    .find_map(|schema| schema.literal_annotations(value)),
+            },
+        }
+    }
+
+    fn own_annotations(&self) -> Option<&SemanticAnnotations> {
+        match self {
+            Self::Object(object) => {
+                Some(&object.annotations).filter(|annotations| annotations.describes_value())
+            }
+            // `$ref` siblings take precedence over the referenced schema.
+            Self::Composite(composite) if composite.kind == SemanticCompositeKind::Reference => {
+                composite.schemas.iter().find_map(Self::own_annotations)
+            }
+            Self::Boolean(_) | Self::Composite(_) => None,
+        }
+    }
+
     pub fn accepts_literal(&self, value: &Value) -> bool {
         match self {
             Self::Boolean(schema) => schema.value,
@@ -691,6 +740,19 @@ impl SemanticSchema {
             },
         }
     }
+}
+
+fn literal_branch_annotations<'a>(
+    branches: impl Iterator<Item = &'a SemanticSchema>,
+    value: &Value,
+) -> Option<&'a SemanticAnnotations> {
+    branches
+        .filter(|branch| branch.accepts_literal(value))
+        .find_map(|branch| {
+            branch
+                .literal_annotations(value)
+                .or_else(|| branch.own_annotations())
+        })
 }
 
 impl SemanticCompositeSchema {
@@ -1244,6 +1306,18 @@ impl SemanticAnnotations {
                 .unwrap_or_default(),
             deprecation: Deprecation::new(object),
         }
+    }
+
+    pub fn has_title_or_description(&self) -> bool {
+        self.title.is_some() || self.description.is_some()
+    }
+
+    pub fn deprecated(&self) -> Option<bool> {
+        self.deprecation.as_ref().map(|_| true)
+    }
+
+    fn describes_value(&self) -> bool {
+        self.has_title_or_description() || self.deprecation.is_some()
     }
 }
 

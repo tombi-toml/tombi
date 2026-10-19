@@ -82,10 +82,12 @@ fn prefix_len_by(
 }
 
 #[cfg(feature = "lsp")]
-impl TryFrom<&tower_lsp::lsp_types::PositionEncodingKind> for EncodingKind {
+impl TryFrom<&tower_lsp_server::gen_lsp_types::PositionEncodingKind> for EncodingKind {
     type Error = ();
-    fn try_from(kind: &tower_lsp::lsp_types::PositionEncodingKind) -> Result<Self, Self::Error> {
-        use tower_lsp::lsp_types::PositionEncodingKind;
+    fn try_from(
+        kind: &tower_lsp_server::gen_lsp_types::PositionEncodingKind,
+    ) -> Result<Self, Self::Error> {
+        use tower_lsp_server::gen_lsp_types::PositionEncodingKind;
 
         match kind {
             kind if *kind == PositionEncodingKind::UTF8 => Ok(EncodingKind::Utf8),
@@ -97,9 +99,9 @@ impl TryFrom<&tower_lsp::lsp_types::PositionEncodingKind> for EncodingKind {
 }
 
 #[cfg(feature = "lsp")]
-impl From<EncodingKind> for tower_lsp::lsp_types::PositionEncodingKind {
+impl From<EncodingKind> for tower_lsp_server::gen_lsp_types::PositionEncodingKind {
     fn from(encoding: EncodingKind) -> Self {
-        use tower_lsp::lsp_types::PositionEncodingKind;
+        use tower_lsp_server::gen_lsp_types::PositionEncodingKind;
 
         match encoding {
             EncodingKind::Utf8 => PositionEncodingKind::UTF8,

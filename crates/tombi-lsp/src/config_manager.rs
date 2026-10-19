@@ -99,6 +99,11 @@ impl ConfigManager {
         }
     }
 
+    /// Forget which config each source file uses, so config discovery runs again.
+    pub async fn clear_source_config_paths(&self) {
+        self.source_config_paths.write().await.clear();
+    }
+
     /// Get config for a URI
     pub async fn config_schema_store_for_uri(
         &self,
@@ -179,21 +184,25 @@ impl ConfigManager {
         config: Config,
         config_path: &Path,
     ) -> Result<(), tombi_schema_store::Error> {
-        let schema_options = schema_store_options(&config, &self.backend_options);
-
+        // Hold the write lock while loading so concurrent reloads of the same config apply in order.
         let mut config_schema_stores = self.config_schema_stores.write().await;
-        let config_schema_store = config_schema_stores
-            .entry(config_path.to_owned())
-            .or_insert(ConfigSchemaStore::new(
-                config.clone(),
-                Some(config_path.to_owned()),
-                SchemaStore::new_with_options(schema_options),
-            ));
-        config_schema_store
-            .schema_store
-            .reload_config(&config, Some(config_path))
-            .await?;
-        config_schema_store.config = config;
+
+        // `SchemaStore` options are fixed at construction, so a config change builds a new store.
+        let associated_schemas = self.associated_schemas.read().await;
+        let schema_options = schema_store_options(&config, &self.backend_options);
+        let schema_store = SchemaStore::new_with_options(schema_options);
+        load_schema_store_with_associations(
+            &schema_store,
+            &config,
+            Some(config_path),
+            &associated_schemas,
+        )
+        .await?;
+
+        config_schema_stores.insert(
+            config_path.to_owned(),
+            ConfigSchemaStore::new(config, Some(config_path.to_owned()), schema_store),
+        );
         Ok(())
     }
 
@@ -323,6 +332,32 @@ impl ConfigManager {
 
     pub async fn refresh_cache(&self) -> Result<bool, tombi_schema_store::Error> {
         let mut updated = false;
+
+        // Re-read config files from disk so that changes made outside the editor are applied.
+        // Collect the keys so the read lock is released before `update_config_with_path` takes the write lock.
+        let config_paths: Vec<PathBuf> = self
+            .config_schema_stores
+            .read()
+            .await
+            .keys()
+            .cloned()
+            .collect();
+        for config_path in config_paths {
+            match serde_tombi::config::try_from_path(&config_path) {
+                Ok(Some(config)) => {
+                    self.update_config_with_path(config, &config_path).await?;
+                    updated = true;
+                }
+                Ok(None) => {}
+                Err(err) => {
+                    log::warn!(
+                        "failed to reload config for {config_path}: {err}",
+                        config_path = config_path.display()
+                    );
+                }
+            }
+        }
+
         let mut config_schema_stores = self.config_schema_stores.write().await;
         for (
             config_path,
@@ -453,10 +488,16 @@ fn schema_store_options(
     tombi_schema_store::Options {
         offline: backend_options.offline,
         strict: config.schema.as_ref().and_then(|schema| schema.strict()),
-        cache: Some(tombi_cache::Options {
-            no_cache: backend_options.no_cache,
-            ..Default::default()
-        }),
+        format: config
+            .schema
+            .as_ref()
+            .and_then(|schema| schema.format.clone()),
+        lint: config
+            .schema
+            .as_ref()
+            .and_then(|schema| schema.lint.clone()),
+        cache: Some(backend_options.cache.clone()),
+        trusted_hosts: None,
     }
 }
 

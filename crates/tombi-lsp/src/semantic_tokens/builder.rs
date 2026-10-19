@@ -1,5 +1,5 @@
 use tombi_ast_syntax::AstToken;
-use tower_lsp::lsp_types::SemanticToken;
+use tower_lsp_server::gen_lsp_types::SemanticToken;
 
 use super::token_type::TokenType;
 
@@ -75,13 +75,15 @@ impl<'a> SemanticTokensBuilder<'a> {
             token_modifiers_bitset: 0,
         });
 
-        self.tokens.push(SemanticToken {
-            delta_line: 0,
-            delta_start: directive_len,
-            length: content_len,
-            token_type: TokenType::COMMENT as u32,
-            token_modifiers_bitset: 0,
-        });
+        if content_len > 0 {
+            self.tokens.push(SemanticToken {
+                delta_line: 0,
+                delta_start: directive_len,
+                length: content_len,
+                token_type: TokenType::COMMENT as u32,
+                token_modifiers_bitset: 0,
+            });
+        }
     }
 
     pub fn build(self) -> Vec<SemanticToken> {

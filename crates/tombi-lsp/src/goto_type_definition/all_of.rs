@@ -41,7 +41,7 @@ where
         };
 
         for resolved_schema in &resolved_schemas {
-            let projected_schema = crate::schema_resolver::project_schema_for_concrete_value(
+            let projected_schema = crate::schema_resolver::project_composite_branch_schema(
                 value,
                 resolved_schema,
                 schema_context,

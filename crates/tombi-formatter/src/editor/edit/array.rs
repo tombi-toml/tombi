@@ -38,24 +38,28 @@ impl<'t> crate::editor::Edit for tombi_ast_syntax::Array<'t> {
 
             let mut changes = vec![];
             let mut value_nodes_iter = array_node.values().iter().enumerate();
-            let total_values = self.values().count();
-            let has_last_comma = !self.has_last_value_trailing_comma();
+            let value_groups = self
+                .value_with_comma_groups()
+                .filter_map(DanglingCommentGroupOr::into_item_group)
+                .map(|group| group.values_with_comma().collect_vec())
+                .collect_vec();
+            let total_values: usize = value_groups.iter().map(Vec::len).sum();
+            let last_value_has_comma = value_groups
+                .iter()
+                .rev()
+                .find_map(|group| group.last())
+                .is_some_and(|(_, comma)| comma.is_some());
             let mut value_index = 0usize;
 
-            for group in self.value_with_comma_groups() {
-                let DanglingCommentGroupOr::ItemGroup(value_group) = group else {
-                    continue;
-                };
-
-                for ((value, comma), (index, value_node)) in value_group
-                    .values_with_comma()
-                    .zip(value_nodes_iter.by_ref())
+            for values_with_comma in &value_groups {
+                for ((value, comma), (index, value_node)) in
+                    values_with_comma.iter().zip(value_nodes_iter.by_ref())
                 {
                     let is_last_value = value_index + 1 == total_values;
                     changes.extend(array_comma_trailing_comment(
-                        &value,
+                        value,
                         comma.as_ref(),
-                        !has_last_comma || !is_last_value,
+                        last_value_has_comma || !is_last_value,
                     ));
                     changes.extend(
                         value
@@ -96,12 +100,7 @@ impl<'t> crate::editor::Edit for tombi_ast_syntax::Array<'t> {
                 }
             });
             let mut nodes_iter = array_node.values().iter().enumerate();
-            for group in self.value_with_comma_groups() {
-                let DanglingCommentGroupOr::ItemGroup(value_group) = group else {
-                    continue;
-                };
-
-                let values_with_comma = value_group.values_with_comma().collect_vec();
+            for values_with_comma in value_groups {
                 let nodes = nodes_iter
                     .by_ref()
                     .take(values_with_comma.len())

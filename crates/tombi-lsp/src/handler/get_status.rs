@@ -4,14 +4,14 @@ use itertools::Either;
 use tombi_config::TomlVersion;
 use tombi_glob::{MatchResult, matches_file_patterns};
 use tombi_uri::SchemaUri;
-use tower_lsp::lsp_types::TextDocumentIdentifier;
+use tower_lsp_server::gen_lsp_types::TextDocumentIdentifier;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore, handler::TomlVersionSource};
 
 pub async fn handle_get_status(
     backend: &Backend,
     params: TextDocumentIdentifier,
-) -> Result<GetStatusResponse, tower_lsp::jsonrpc::Error> {
+) -> Result<GetStatusResponse, tower_lsp_server::jsonrpc::Error> {
     log::info!("handle_get_status");
     log::trace!("{:?}", params);
 

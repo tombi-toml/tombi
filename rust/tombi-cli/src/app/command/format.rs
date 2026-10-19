@@ -203,10 +203,10 @@ where
         tombi_schema_store::SchemaStore::new_with_options(tombi_schema_store::Options {
             offline: args.common.offline.then_some(true),
             strict: schema_options.and_then(|schema_options| schema_options.strict()),
-            cache: Some(tombi_cache::Options {
-                no_cache: args.common.no_cache.then_some(true),
-                ..Default::default()
-            }),
+            format: schema_options.and_then(|schema_options| schema_options.format.clone()),
+            lint: schema_options.and_then(|schema_options| schema_options.lint.clone()),
+            cache: Some(args.common.cache_options()),
+            trusted_hosts: None,
         });
 
     let runtime = super::runtime(FileInputType::from(args.files.as_ref()) == FileInputType::Stdin)
@@ -439,13 +439,8 @@ async fn format_file(
                 }
                 if check {
                     Err(crate::error::NotFormattedError::from(file.source()).into_error())
-                } else if let Err(err) = file.reset().await {
-                    Err(crate::Error::FileWriteFailed {
-                        path: source_path.to_owned(),
-                        source: err,
-                    })
                 } else {
-                    match file.write_all(formatted.as_bytes()).await {
+                    match file.write_formatted(formatted.as_bytes()).await {
                         Ok(_) => Ok(true),
                         Err(err) => Err(crate::Error::FileWriteFailed {
                             path: source_path.to_owned(),
@@ -567,16 +562,6 @@ impl FormatFile {
         }
     }
 
-    async fn reset(&mut self) -> std::io::Result<()> {
-        match self {
-            Self::Stdin { .. } => Ok(()),
-            Self::File { file, .. } => {
-                file.seek(std::io::SeekFrom::Start(0)).await?;
-                file.set_len(0).await
-            }
-        }
-    }
-
     async fn read_to_string(&mut self, buf: &mut String) -> std::io::Result<usize> {
         match self {
             Self::Stdin { stdin, .. } => stdin.read_to_string(buf).await,
@@ -584,10 +569,19 @@ impl FormatFile {
         }
     }
 
-    async fn write_all(&mut self, buf: &[u8]) -> std::io::Result<()> {
+    /// Overwrites the file from the start and truncates it only after the write succeeded,
+    /// so a failed write does not leave the file empty.
+    async fn write_formatted(&mut self, buf: &[u8]) -> std::io::Result<()> {
         match self {
             Self::Stdin { .. } => tokio::io::stdout().write_all(buf).await,
-            Self::File { file, .. } => file.write_all(buf).await,
+            Self::File { file, .. } => {
+                file.seek(std::io::SeekFrom::Start(0)).await?;
+                file.write_all(buf).await?;
+                // tokio's `write_all` may return before the background write finishes,
+                // so confirm it with `flush` before truncating.
+                file.flush().await?;
+                file.set_len(buf.len() as u64).await
+            }
         }
     }
 }

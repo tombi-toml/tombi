@@ -9,9 +9,8 @@ mod offset_date_time;
 mod string;
 mod table;
 
-use tombi_document_tree_syntax::ValueImpl;
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, CurrentSchema, SchemaType, SchemaView};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaView};
 
 use crate::HoverContent;
 
@@ -47,28 +46,16 @@ impl GetHoverContent for tombi_document_tree_syntax::Value<'_> {
                     .await;
             }
 
-            let instance_type = SchemaType::from_value_type(self.value_type());
             let projected_schema = current_schema.and_then(|schema| {
-                crate::schema_resolver::project_schema_for_concrete_value(
+                crate::schema_resolver::project_schema_for_presentation(
                     self,
                     schema,
                     schema_context,
                 )
             });
-            let current_schema = match current_schema {
-                Some(schema)
-                    if schema.semantic_schema.is_some()
-                        && instance_type.is_some_and(|instance_type| {
-                            !schema
-                                .semantic_schema
-                                .as_deref()
-                                .is_some_and(|semantic| semantic.has_applicators())
-                                || schema.has_reference_projection_siblings(instance_type)
-                        }) =>
-                {
-                    projected_schema.as_ref()
-                }
-                schema => schema,
+            let current_schema = match &projected_schema {
+                Some(projected_schema) => projected_schema.as_ref(),
+                None => current_schema,
             };
 
             match self {

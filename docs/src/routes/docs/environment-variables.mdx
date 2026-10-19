@@ -42,7 +42,9 @@ When set, Tombi will bypass the cache and fetch the latest schemas from remote s
 
 Set the cache expiration time (Time To Live) in seconds for JSON Catalog/Schemas.
 
-When set, Tombi will use this value as the cache expiration time instead of the default 24 hours. Cached schemas older than this duration will be automatically refreshed from remote sources.
+When set, Tombi uses this value as the cache expiration time instead of the default 24 hours. Cached schemas older than this duration are refreshed from remote sources.
+
+The `--cache-ttl <SECONDS>` option for `tombi format`, `tombi lint`, and `tombi lsp` overrides this environment variable. Values must be non-negative integers. The CLI rejects an invalid environment variable value.
 
 - Type: `Integer` (seconds)
 - Default: `86400` (24 hours)
@@ -55,3 +57,14 @@ This environment variable controls how long Tombi will wait for HTTP requests to
 
 - Type: `Integer` (seconds)
 - Default: `5`
+
+## TOMBI_SCHEMA_TRUSTED_HOSTS
+
+Allow schema and catalog requests to connect to non-public addresses returned for these exact host names or IP addresses.
+
+Set a comma-separated list such as `schema.internal,10.20.30.40`. Entries are exact hosts; wildcards are not supported. A trusted host grants access to its non-public addresses over any HTTP or HTTPS port, so add only hosts you trust. Public destinations remain available without this setting.
+
+Native HTTP requests reject credentials in URLs, reject private or special-use destination addresses, and recheck every redirect. Proxies configured through `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` are honored, and the proxy host itself may have a private address. If these variables are not set, the operating-system proxy settings are used (macOS System Configuration, Windows registry); PAC files and automatic proxy discovery are not supported. When a request goes through a proxy, the proxy resolves the destination, so Tombi first resolves it locally and refuses it if it points to a non-public address; a destination that only the proxy can resolve, or that resolves differently for the proxy, cannot be checked, so the proxy is the egress control point. Schema URLs that point at the proxy host itself are refused. The browser/WASM build can reject unsafe URL literals and redirects, but the browser controls DNS and socket routing.
+
+- Type: comma-separated host names or IP addresses
+- Default: unset

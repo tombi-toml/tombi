@@ -93,7 +93,11 @@ mod hover_keys_value {
             UseTestCacheHome,
             tombi_lsp::backend::Options {
                 offline: Some(true),
-                no_cache: Some(false),
+                cache: tombi_cache::Options {
+                    no_cache: Some(false),
+                    ..Default::default()
+                },
+                ..Default::default()
             },
             SchemaItemArg(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
                 toml_version: None,
@@ -591,7 +595,11 @@ mod hover_keys_value {
                 UseTestCacheHome,
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(false),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(false),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 SchemaPath(cargo_schema_path()),
                     CachedRemoteJson {
@@ -631,7 +639,11 @@ mod hover_keys_value {
                 UseTestCacheHome,
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(false),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(false),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 SchemaPath(cargo_schema_path()),
                 CachedRemoteJson {
@@ -671,7 +683,11 @@ mod hover_keys_value {
                 UseTestCacheHome,
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(false),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(false),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 SchemaPath(cargo_schema_path()),
                 CachedRemoteJson {
@@ -820,7 +836,11 @@ mod hover_keys_value {
                 SourcePath(tombi_test_lib::project_root_path().join("Cargo.toml")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: None,
+                    cache: tombi_cache::Options {
+                        no_cache: None,
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 SchemaPath(cargo_schema_path()),
             ) -> Ok({
@@ -840,7 +860,11 @@ mod hover_keys_value {
                 UseTestCacheHome,
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(false),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(false),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 SchemaPath(cargo_schema_path()),
                 CachedRemoteJson {
@@ -874,7 +898,11 @@ mod hover_keys_value {
                 UseTestCacheHome,
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(false),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(false),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 SchemaPath(cargo_schema_path()),
                 CachedRemoteJson {
@@ -1714,8 +1742,8 @@ mod hover_keys_value {
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok({
                 "Keys": "tool.uv.sources.my-package1.workspace",
-                "Value": "Boolean",
-                "Description": Some("When set to `false`, the package will be fetched from the remote index, rather than\nincluded as a workspace package."),
+                "Value": "Boolean | String",
+                "Hover Contains": ["When set to `false`, the package will be fetched from the remote index"],
             });
         );
 
@@ -1757,7 +1785,11 @@ mod hover_keys_value {
                 SourcePath(tombi_test_lib::project_root_path().join("pyproject.toml")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: None,
+                    cache: tombi_cache::Options {
+                        no_cache: None,
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok({
@@ -1798,11 +1830,11 @@ mod hover_keys_value {
 
             use tombi_lsp::{Backend, HoverContent, backend::Options, handler::handle_did_open};
             use tombi_text::IntoLsp;
-            use tower_lsp::{
+            use tower_lsp_server::{
                 LspService,
-                lsp_types::{
+                gen_lsp_types::{
                     DidOpenTextDocumentParams, TextDocumentIdentifier, TextDocumentItem,
-                    TextDocumentPositionParams, Url, WorkDoneProgressParams,
+                    TextDocumentPositionParams, Uri, WorkDoneProgressParams,
                 },
             };
 
@@ -1844,7 +1876,11 @@ mod hover_keys_value {
                     client,
                     &Options {
                         offline: Some(true),
-                        no_cache: Some(false),
+                        cache: tombi_cache::Options {
+                            no_cache: Some(false),
+                            ..Default::default()
+                        },
+                        ..Default::default()
                     },
                 )
             });
@@ -1890,7 +1926,7 @@ mod hover_keys_value {
             }
 
             let line_index = tombi_text::LineIndex::new(toml_text.as_str());
-            let toml_file_url = Url::from_file_path(&source_path)
+            let toml_file_url = Uri::from_file_path(&source_path)
                 .map_err(|_| "failed to convert source file path to URL")?;
 
             handle_did_open(
@@ -1898,7 +1934,7 @@ mod hover_keys_value {
                 DidOpenTextDocumentParams {
                     text_document: TextDocumentItem {
                         uri: toml_file_url.clone(),
-                        language_id: "toml".to_string(),
+                        language_id: "toml".to_string().into(),
                         version: 0,
                         text: toml_text.clone(),
                     },
@@ -1908,7 +1944,7 @@ mod hover_keys_value {
 
             let hover_content = tombi_lsp::handler::handle_hover(
                 backend,
-                tower_lsp::lsp_types::HoverParams {
+                tower_lsp_server::gen_lsp_types::HoverParams {
                     text_document_position_params: TextDocumentPositionParams {
                         text_document: TextDocumentIdentifier { uri: toml_file_url },
                         position: tombi_text::Offset::of(&toml_text[..index])
@@ -2480,12 +2516,148 @@ mod hover_keys_value {
                 SchemaPath(fixture_path().join("schema.json")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
             ) -> Ok({
                 "Keys": "tool.tombi.strict",
                 "Value": "Boolean",
                 "Description": Some("Enable strict validation.")
+            });
+        );
+    }
+
+    mod one_of_const_description_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/one-of-const-description.schema.json")
+        }
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn inline_one_of_value_description(
+                r#"
+                inline = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "inline",
+                "Value": "String?",
+                "Description": Some("Red: like a ripe tomato.")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn all_of_ref_one_of_value_description(
+                r#"
+                wrapped = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "wrapped",
+                "Value": "String?",
+                "Description": Some("Red: like a ripe tomato.")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn nested_all_of_ref_one_of_value_description(
+                r#"
+                [table]
+                color = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "table.color",
+                "Value": "String?",
+                "Description": Some("Red: like a ripe tomato.")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn one_of_value_title_and_description(
+                r#"
+                titled = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "titled",
+                "Value": "String?",
+                "Title": Some("Red"),
+                "Description": Some("Red: like a ripe tomato.")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn one_of_value_without_description_falls_back(
+                r#"
+                partial = "gr█een"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "partial",
+                "Value": "String?",
+                "Description": Some("Property description.")
+            });
+        );
+    }
+
+    mod ref_sibling_projection_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/ref-sibling-projection.schema.json")
+        }
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn constrained_ref_value(
+                r#"
+                constrained_ref = "a█bc"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "constrained_ref",
+                "Value": "String?",
+                "Description": Some("Text description.")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn typed_ref_value(
+                r#"
+                typed_ref = "a█bc"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "typed_ref",
+                "Value": "String?",
+                "Description": Some("Scalar description.")
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn typed_one_of_ref_value(
+                r#"
+                typed_one_of_ref = "r█ed"
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok({
+                "Keys": "typed_one_of_ref",
+                "Value": "String?",
+                "Description": Some("Red: like a ripe tomato.")
             });
         );
     }
@@ -2516,9 +2688,9 @@ mod hover_keys_value {
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
                 use tombi_lsp::Backend;
                 use std::io::Write;
-                use tower_lsp::{
-                    lsp_types::{
-                        TextDocumentIdentifier, Url, WorkDoneProgressParams, DidOpenTextDocumentParams,
+                use tower_lsp_server::{
+                    gen_lsp_types::{
+                        TextDocumentIdentifier, Uri, WorkDoneProgressParams, DidOpenTextDocumentParams,
                         TextDocumentItem,
                     },
                     LspService,
@@ -2705,7 +2877,7 @@ mod hover_keys_value {
 
                 let source_path = args.source_file_path.as_deref().unwrap_or(temp_file.path());
 
-                let Ok(toml_file_url) = Url::from_file_path(source_path) else {
+                let Ok(toml_file_url) = Uri::from_file_path(source_path) else {
                     return Err("failed to convert file path to URL".into());
                 };
 
@@ -2742,7 +2914,7 @@ mod hover_keys_value {
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
                             uri: toml_file_url.clone(),
-                            language_id: "toml".to_string(),
+                            language_id: "toml".to_string().into(),
                             version: 0,
                             text: toml_text.clone(),
                         },
@@ -2752,8 +2924,8 @@ mod hover_keys_value {
 
                 let Ok(Some(tombi_lsp::HoverContent::Value(hover_content) | tombi_lsp::HoverContent::DirectiveContent(hover_content))) = tombi_lsp::handler::handle_hover(
                     &backend,
-                    tower_lsp::lsp_types::HoverParams {
-                        text_document_position_params: tower_lsp::lsp_types::TextDocumentPositionParams {
+                    tower_lsp_server::gen_lsp_types::HoverParams {
+                        text_document_position_params: tower_lsp_server::gen_lsp_types::TextDocumentPositionParams {
                             text_document: TextDocumentIdentifier {
                                 uri: toml_file_url,
                             },

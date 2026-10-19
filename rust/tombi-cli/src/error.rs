@@ -9,6 +9,8 @@ use tombi_diagnostic::{
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error(transparent)]
+    Cache(#[from] tombi_cache::Error),
+    #[error(transparent)]
     NotFormatted(#[from] NotFormattedError),
 
     #[error(transparent)]

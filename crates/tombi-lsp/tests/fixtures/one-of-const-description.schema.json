@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "inline": {
+      "description": "Property description.",
+      "oneOf": [
+        { "const": "red", "description": "Red: like a ripe tomato." },
+        { "const": "green", "description": "Green: like an unripe tomato." }
+      ]
+    },
+    "wrapped": {
+      "description": "Property description.",
+      "allOf": [{ "$ref": "#/definitions/Color" }]
+    },
+    "referenced": {
+      "$ref": "#/definitions/Color"
+    },
+    "any_of": {
+      "description": "Property description.",
+      "anyOf": [
+        { "const": "red", "description": "Red: like a ripe tomato." },
+        { "const": "green", "description": "Green: like an unripe tomato." }
+      ]
+    },
+    "titled": {
+      "description": "Property description.",
+      "oneOf": [
+        { "const": "red", "title": "Red", "description": "Red: like a ripe tomato." },
+        { "const": "green", "title": "Green", "description": "Green: like an unripe tomato." }
+      ]
+    },
+    "partial": {
+      "description": "Property description.",
+      "oneOf": [
+        { "const": "red", "description": "Red: like a ripe tomato." },
+        { "const": "green" }
+      ]
+    },
+    "number": {
+      "description": "Property description.",
+      "oneOf": [
+        { "const": 1, "description": "One: a single tomato." },
+        { "const": 2, "description": "Two: a pair of tomatoes." }
+      ]
+    },
+    "array": {
+      "description": "Property description.",
+      "type": "array",
+      "items": { "$ref": "#/definitions/Color" }
+    },
+    "table": {
+      "description": "Property description.",
+      "type": "object",
+      "properties": {
+        "color": {
+          "description": "Nested property description.",
+          "allOf": [{ "$ref": "#/definitions/Color" }]
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Color": {
+      "description": "Enum description.",
+      "oneOf": [
+        { "const": "red", "description": "Red: like a ripe tomato." },
+        { "const": "green", "description": "Green: like an unripe tomato." }
+      ]
+    }
+  }
+}

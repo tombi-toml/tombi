@@ -300,7 +300,11 @@ mod diagnostic {
                 ConfigPath(fixture_path().join("tombi.toml")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
             ) -> Ok([
                 Diagnostic {
@@ -322,7 +326,11 @@ mod diagnostic {
                 SourcePath(fixture_path().join("input.toml")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
             ) -> Ok([
                 Diagnostic {
@@ -343,7 +351,11 @@ mod diagnostic {
                 SourcePath(fixture_path().join("input.toml")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
             ) -> Ok([
                 Diagnostic {
@@ -365,7 +377,11 @@ mod diagnostic {
                 SourcePath(fixture_path().join("input.toml")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
             ) -> Ok([
                 Diagnostic {
@@ -377,7 +393,7 @@ mod diagnostic {
 
         test_diagnostic_file!(
             #[tokio::test]
-            async fn rejects_canonical_resource_id_owned_by_another_source(
+            async fn allows_canonical_resource_id_shared_with_another_source(
                 r#"
                 #:schema ./cross-source-duplicate-schema.json
 
@@ -386,14 +402,13 @@ mod diagnostic {
                 SourcePath(fixture_path().join("input.toml")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
-            ) -> Ok([
-                Diagnostic {
-                    message: "duplicate $id `https://example.com/cross-source-duplicate`: already defined in cross-source-duplicate-schema.json at `#/$defs/local`, also claimed by cross-source-duplicate-target.json at `#`",
-                    range: ((2, 0), (2, 12)),
-                }
-            ]);
+            ) -> Ok([]);
         );
 
         test_diagnostic_file!(
@@ -407,7 +422,11 @@ mod diagnostic {
                 SourcePath(fixture_path().join("input.toml")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
             ) -> Ok([
                 Diagnostic {
@@ -428,7 +447,11 @@ mod diagnostic {
                 SourcePath(fixture_path().join("input.toml")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
             ) -> Ok([
                 Diagnostic {
@@ -452,7 +475,11 @@ mod diagnostic {
                 SourcePath(fixture_path().join("input.toml")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
             ) -> Ok([]);
         );
@@ -469,7 +496,11 @@ mod diagnostic {
                 SourcePath(fixture_path().join("input.toml")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
             ) -> Ok([
                 Diagnostic {
@@ -490,7 +521,11 @@ mod diagnostic {
                 SourcePath(fixture_path().join("input.toml")),
                 tombi_lsp::backend::Options {
                     offline: Some(true),
-                    no_cache: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(true),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 },
             ) -> Ok([]);
         );
@@ -518,10 +553,10 @@ macro_rules! test_diagnostic {
         #[tokio::test]
         async fn $name() -> Result<(), Box<dyn std::error::Error>> {
         use tombi_lsp::Backend;
-        use tower_lsp::{
-            lsp_types::{
+        use tower_lsp_server::{
+            gen_lsp_types::{
                 DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentDiagnosticParams,
-                TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Url,
+                TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Uri,
                 VersionedTextDocumentIdentifier, WorkDoneProgressParams,
             },
             LspService,
@@ -682,7 +717,7 @@ macro_rules! test_diagnostic {
                 return Err("failed to write to temporary file".into());
             };
 
-            let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
+            let Ok(toml_file_url) = Uri::from_file_path(temp_file.path()) else {
                 return Err("failed to convert temporary file path to URL".into());
             };
 
@@ -693,7 +728,7 @@ macro_rules! test_diagnostic {
                 .expect("SourcePath or SourceText must be provided");
             let toml_text = std::fs::read_to_string(source_path)
                 .map_err(|e| format!("Failed to read source file {}: {}", source_path.display(), e))?;
-            let toml_file_url = Url::from_file_path(source_path)
+            let toml_file_url = Uri::from_file_path(source_path)
                 .map_err(|_| format!("Failed to convert path to URL: {}", source_path.display()))?;
             (toml_text, toml_file_url)
         };
@@ -703,7 +738,7 @@ macro_rules! test_diagnostic {
             DidOpenTextDocumentParams {
                 text_document: TextDocumentItem {
                     uri: toml_file_url.clone(),
-                    language_id: "toml".to_string(),
+                    language_id: "toml".to_string().into(),
                     version: 0,
                     text: toml_text.clone(),
                 },
@@ -728,18 +763,11 @@ macro_rules! test_diagnostic {
         .expect("Failed to get diagnostics");
 
         let diagnostics = match diagnostic_result {
-            tower_lsp::lsp_types::DocumentDiagnosticReportResult::Report(report) => {
-                match report {
-                    tower_lsp::lsp_types::DocumentDiagnosticReport::Full(full) => {
-                        full.full_document_diagnostic_report.items
-                    }
-                    tower_lsp::lsp_types::DocumentDiagnosticReport::Unchanged(_) => {
-                        Vec::new()
-                    }
-                }
+            tower_lsp_server::gen_lsp_types::DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(full) => {
+                full.full_document_diagnostic_report.items
             }
-            tower_lsp::lsp_types::DocumentDiagnosticReportResult::Partial(_) => {
-                panic!("Unexpected partial diagnostic result")
+            tower_lsp_server::gen_lsp_types::DocumentDiagnosticReport::RelatedUnchangedDocumentDiagnosticReport(_) => {
+                Vec::new()
             }
         };
 
@@ -766,13 +794,17 @@ macro_rules! test_diagnostic {
 
         // Verify each diagnostic
         for (i, (actual, expected)) in diagnostics.iter().zip(expected.iter()).enumerate() {
+            let tower_lsp_server::gen_lsp_types::Message::String(actual_message) = &actual.message
+            else {
+                panic!("Diagnostic #{i}: unexpected markup message");
+            };
             assert_eq!(
-                actual.message,
+                actual_message,
                 expected.message,
                 "Diagnostic #{}: Expected message '{}', but got '{}'",
                 i,
                 expected.message,
-                actual.message
+                actual_message
             );
 
             let expected_start = (expected.range.0.0, expected.range.0.1);
@@ -824,9 +856,9 @@ macro_rules! test_diagnostic_file {
         #[tokio::test]
         async fn $name() -> Result<(), Box<dyn std::error::Error>> {
         use tombi_lsp::Backend;
-        use tower_lsp::{
-            lsp_types::{
-                Url, DidOpenTextDocumentParams,
+        use tower_lsp_server::{
+            gen_lsp_types::{
+                Uri, DidOpenTextDocumentParams,
                 TextDocumentItem, DocumentDiagnosticParams,
                 TextDocumentIdentifier, WorkDoneProgressParams,
             },
@@ -983,7 +1015,7 @@ macro_rules! test_diagnostic_file {
             std::fs::read_to_string(source_path)
                 .map_err(|e| format!("Failed to read source file {}: {}", source_path.display(), e))?
         };
-        let toml_file_url = Url::from_file_path(source_path)
+        let toml_file_url = Uri::from_file_path(source_path)
             .map_err(|_| format!("Failed to convert path to URL: {}", source_path.display()))?;
 
         handle_did_open(
@@ -991,7 +1023,7 @@ macro_rules! test_diagnostic_file {
             DidOpenTextDocumentParams {
                 text_document: TextDocumentItem {
                     uri: toml_file_url.clone(),
-                    language_id: "toml".to_string(),
+                    language_id: "toml".to_string().into(),
                     version: 0,
                     text: toml_text.clone(),
                 },
@@ -1002,16 +1034,20 @@ macro_rules! test_diagnostic_file {
         for (version, text) in config.source_changes {
             tombi_lsp::handler::handle_did_change(
                 backend,
-                tower_lsp::lsp_types::DidChangeTextDocumentParams {
-                    text_document: tower_lsp::lsp_types::VersionedTextDocumentIdentifier {
-                        uri: toml_file_url.clone(),
+                tower_lsp_server::gen_lsp_types::DidChangeTextDocumentParams {
+                    text_document: tower_lsp_server::gen_lsp_types::VersionedTextDocumentIdentifier {
+                        text_document_identifier: TextDocumentIdentifier {
+                            uri: toml_file_url.clone(),
+                        },
                         version,
                     },
-                    content_changes: vec![tower_lsp::lsp_types::TextDocumentContentChangeEvent {
-                        range: None,
-                        range_length: None,
-                        text,
-                    }],
+                    content_changes: vec![
+                        tower_lsp_server::gen_lsp_types::TextDocumentContentChangeEvent::TextDocumentContentChangeWholeDocument(
+                            tower_lsp_server::gen_lsp_types::TextDocumentContentChangeWholeDocument {
+                                text,
+                            },
+                        ),
+                    ],
                 },
             )
             .await;
@@ -1034,18 +1070,11 @@ macro_rules! test_diagnostic_file {
         .expect("Failed to get diagnostics");
 
         let diagnostics = match diagnostic_result {
-            tower_lsp::lsp_types::DocumentDiagnosticReportResult::Report(report) => {
-                match report {
-                    tower_lsp::lsp_types::DocumentDiagnosticReport::Full(full) => {
-                        full.full_document_diagnostic_report.items
-                    }
-                    tower_lsp::lsp_types::DocumentDiagnosticReport::Unchanged(_) => {
-                        Vec::new()
-                    }
-                }
+            tower_lsp_server::gen_lsp_types::DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(full) => {
+                full.full_document_diagnostic_report.items
             }
-            tower_lsp::lsp_types::DocumentDiagnosticReportResult::Partial(_) => {
-                panic!("Unexpected partial diagnostic result")
+            tower_lsp_server::gen_lsp_types::DocumentDiagnosticReport::RelatedUnchangedDocumentDiagnosticReport(_) => {
+                Vec::new()
             }
         };
 
@@ -1072,13 +1101,17 @@ macro_rules! test_diagnostic_file {
 
         // Verify each diagnostic
         for (i, (actual, expected)) in diagnostics.iter().zip(expected.iter()).enumerate() {
+            let tower_lsp_server::gen_lsp_types::Message::String(actual_message) = &actual.message
+            else {
+                panic!("Diagnostic #{i}: unexpected markup message");
+            };
             assert_eq!(
-                actual.message,
+                actual_message,
                 expected.message,
                 "Diagnostic #{}: Expected message '{}', but got '{}'",
                 i,
                 expected.message,
-                actual.message
+                actual_message
             );
 
             let expected_start = (expected.range.0.0, expected.range.0.1);

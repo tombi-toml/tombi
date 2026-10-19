@@ -43,6 +43,7 @@ impl FileProblem {
             }
             // Listed explicitly, so that a new variant has to be classified.
             crate::Error::TombiGlob(_)
+            | crate::Error::Cache(_)
             | crate::Error::Io(_)
             | crate::Error::StdinParseFailed
             | crate::Error::FileParseFailed(_) => None,

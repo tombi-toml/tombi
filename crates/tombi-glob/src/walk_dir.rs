@@ -21,6 +21,16 @@ fn is_vcs_metadata_dir(path: &Path) -> bool {
     })
 }
 
+/// Returns `true` if any parent directory of `path` is a VCS metadata directory
+/// (e.g. `.git`), meaning the path lives inside VCS internals.
+///
+/// The final component is not checked, so a `.git` file (as used by worktrees
+/// and submodules) is not treated as being inside a metadata directory.
+pub fn is_in_vcs_metadata_dir(path: &Path) -> bool {
+    path.parent()
+        .is_some_and(|parent| parent.ancestors().any(is_vcs_metadata_dir))
+}
+
 /// WalkDir-like structure for parallel async directory walking
 pub struct WalkDir {
     root: PathBuf,
@@ -611,6 +621,28 @@ mod tests {
         test_walkdir_excludes_vcs_metadata_dirs_when_ignoring_ignore_files,
         false
     );
+    macro_rules! test_is_in_vcs_metadata_dir {
+        ($name:ident, $path:expr, $expected:literal) => {
+            #[test]
+            fn $name() {
+                assert_eq!(is_in_vcs_metadata_dir(Path::new($path)), $expected);
+            }
+        };
+    }
+
+    test_is_in_vcs_metadata_dir!(vcs_dir_git_file, "/ws/.git/.gitstatus.NRH2rp", true);
+    test_is_in_vcs_metadata_dir!(
+        vcs_dir_git_nested,
+        "/ws/.git/refs/codex/turn-diffs/a.json",
+        true
+    );
+    test_is_in_vcs_metadata_dir!(vcs_dir_jj, "/ws/.jj/repo/config.toml", true);
+    test_is_in_vcs_metadata_dir!(vcs_dir_relative, ".hg/hgrc.toml", true);
+    test_is_in_vcs_metadata_dir!(vcs_dir_regular_file, "/ws/pyproject.toml", false);
+    test_is_in_vcs_metadata_dir!(vcs_dir_similar_name, "/ws/.github/workflows/a.toml", false);
+    test_is_in_vcs_metadata_dir!(vcs_dir_gitfile_itself, "/ws/.git", false);
+    test_is_in_vcs_metadata_dir!(vcs_dir_hidden_other, "/ws/.claude/settings.toml", false);
+
     test_single_path_ignore!(test_single_path_respects_gitignore_when_enabled, true, true);
     test_single_path_ignore!(
         test_single_path_ignores_gitignore_when_disabled,

@@ -8,7 +8,7 @@ use crate::Backend;
 pub async fn handle_get_built_in_schema(
     _backend: &Backend,
     params: GetBuiltInSchemaParams,
-) -> Result<Option<String>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<String>, tower_lsp_server::jsonrpc::Error> {
     log::debug!("handle_get_built_in_schema");
     log::trace!("{:?}", params);
 
