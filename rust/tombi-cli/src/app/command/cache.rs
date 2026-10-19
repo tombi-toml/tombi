@@ -1,3 +1,4 @@
+/// Manage the cache
 #[derive(clap::Args)]
 pub struct Args {
     #[command(subcommand)]

@@ -6,9 +6,6 @@ pub mod lsp;
 
 #[derive(clap::Subcommand)]
 pub enum TomlCommand {
-    /// Manage the JSON catalog and schema cache
-    Cache(cache::Args),
-
     #[command(alias = "fmt")]
     Format(format::Args),
 
@@ -17,6 +14,8 @@ pub enum TomlCommand {
 
     #[command(alias = "serve")]
     Lsp(lsp::Args),
+
+    Cache(cache::Args),
 
     Completion(completion::Args),
 }
