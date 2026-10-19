@@ -331,11 +331,10 @@ impl ConfigManager {
                 config, schema_store, ..
             },
         )) = &mut *self.default_config_schema_store.write().await
+            && schema_store.refresh_cache(config, None).await?
         {
-            if schema_store.refresh_cache(config, None).await? {
-                load_associations(schema_store, &associated_schemas).await;
-                updated = true;
-            }
+            load_associations(schema_store, &associated_schemas).await;
+            updated = true;
         }
 
         Ok(updated)
