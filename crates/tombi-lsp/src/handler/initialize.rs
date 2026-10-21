@@ -42,6 +42,12 @@ pub async fn handle_initialize(
         .and_then(|workspace| workspace.diagnostics.as_ref())
         .and_then(|diagnostic| diagnostic.refresh_support)
         .unwrap_or_default();
+    backend_capabilities.multiline_token_support = client_capabilities
+        .text_document
+        .as_ref()
+        .and_then(|text_document| text_document.semantic_tokens.as_ref())
+        .and_then(|semantic_tokens| semantic_tokens.multiline_token_support)
+        .unwrap_or_default();
     if let Some(text_document_capabilities) = client_capabilities.text_document.as_ref()
         && let Some(diagnostic_capabilities) = text_document_capabilities.diagnostic.as_ref()
         && diagnostic_capabilities.dynamic_registration == Some(true)

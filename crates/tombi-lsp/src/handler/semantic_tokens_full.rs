@@ -21,7 +21,9 @@ pub async fn handle_semantic_tokens_full(
     let line_index = document_source.line_index();
     let encoding = document_source.encoding_kind();
 
-    let mut tokens_builder = SemanticTokensBuilder::new(text_document_uri, line_index, encoding);
+    let multiline_token_support = backend.capabilities.read().await.multiline_token_support;
+
+    let mut tokens_builder = SemanticTokensBuilder::new(text_document_uri, line_index, encoding, multiline_token_support);
 
     document_source.ast().append_semantic_tokens(&mut tokens_builder);
 

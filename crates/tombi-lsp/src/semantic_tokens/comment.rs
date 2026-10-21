@@ -55,6 +55,7 @@ mod tests {
             tombi_uri::Uri::from_str("file:///test.toml").unwrap(),
             parsed.line_index(),
             tombi_text::EncodingKind::Utf16,
+            false,
         );
         parsed.root().append_semantic_tokens(&mut builder);
 
@@ -85,6 +86,7 @@ mod tests {
             tombi_uri::Uri::from_str("file:///test.toml").unwrap(),
             parsed.line_index(),
             tombi_text::EncodingKind::Utf16,
+            false,
         );
         parsed.root().append_semantic_tokens(&mut builder);
 

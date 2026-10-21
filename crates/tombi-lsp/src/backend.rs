@@ -54,6 +54,8 @@ pub struct BackendCapabilities {
     pub encoding_kind: EncodingKind,
     pub diagnostic_mode: DiagnosticMode,
     pub workspace_diagnostic_refresh_support: bool,
+    /// `textDocument.semanticTokens.multilineTokenSupport` of the client.
+    pub multiline_token_support: bool,
 }
 
 /// Diagnostic Type
@@ -88,6 +90,7 @@ impl Backend {
                 encoding_kind: EncodingKind::default(),
                 diagnostic_mode: DiagnosticMode::Push,
                 workspace_diagnostic_refresh_support: false,
+                multiline_token_support: false,
             })),
             background_tasks: Default::default(),
             document_sources: Default::default(),
