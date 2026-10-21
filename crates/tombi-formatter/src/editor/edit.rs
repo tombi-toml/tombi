@@ -130,7 +130,9 @@ fn edit_recursive<'a: 'b, 'b, 'd>(
 
         if let Some(current_schema) = current_schema.as_ref() {
             match current_schema.schema_view.as_ref() {
-                SchemaView::Table(table_schema) => {
+                SchemaView::Table(table_schema)
+                    if matches!(accessors.as_ref().last(), Some(Accessor::Key(_))) =>
+                {
                     let Some(Accessor::Key(key_text)) = accessors.as_ref().last() else {
                         unreachable!("last accessor is not a key");
                     };

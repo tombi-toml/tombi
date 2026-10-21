@@ -446,6 +446,22 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_tool_unknown_array_of_tables(
+                r#"
+                [[tool.foo]]
+                bar = 1
+                "#,
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [[tool.foo]]
+                bar = 1
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_tool_table_keys_order_disabled_is_true(
                 r#"
                 [project]
