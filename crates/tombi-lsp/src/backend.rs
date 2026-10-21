@@ -16,6 +16,7 @@ use tower_lsp_server::gen_lsp_types::{
 };
 
 use crate::extension::IntoLsp as _;
+use crate::initialization_options::SemanticTokensSettings;
 use crate::{
     config_manager::{ConfigManager, ConfigSchemaStore, DefaultConfigSource},
     document::DocumentSource,
@@ -56,6 +57,8 @@ pub struct BackendCapabilities {
     pub workspace_diagnostic_refresh_support: bool,
     /// `textDocument.semanticTokens.multilineTokenSupport` of the client.
     pub multiline_token_support: bool,
+    /// `semanticTokens` of the `initializationOptions` sent by the client.
+    pub semantic_tokens_settings: SemanticTokensSettings,
 }
 
 /// Diagnostic Type
@@ -91,6 +94,7 @@ impl Backend {
                 diagnostic_mode: DiagnosticMode::Push,
                 workspace_diagnostic_refresh_support: false,
                 multiline_token_support: false,
+                semantic_tokens_settings: SemanticTokensSettings::default(),
             })),
             background_tasks: Default::default(),
             document_sources: Default::default(),

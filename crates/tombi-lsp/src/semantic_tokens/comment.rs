@@ -37,7 +37,7 @@ fn append_comment_tokens(
             ),
         );
     } else {
-        builder.add_token(TokenType::COMMENT, comment.syntax().span());
+        builder.add_comment_token(comment.syntax().span());
     }
 }
 
@@ -56,6 +56,7 @@ mod tests {
             parsed.line_index(),
             tombi_text::EncodingKind::Utf16,
             false,
+            Default::default(),
         );
         parsed.root().append_semantic_tokens(&mut builder);
 
@@ -87,6 +88,7 @@ mod tests {
             parsed.line_index(),
             tombi_text::EncodingKind::Utf16,
             false,
+            Default::default(),
         );
         parsed.root().append_semantic_tokens(&mut builder);
 

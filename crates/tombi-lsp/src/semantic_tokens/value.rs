@@ -9,10 +9,10 @@ impl AppendSemanticTokens for tombi_ast_syntax::Value<'_> {
         }
 
         match self {
-            Self::BasicString(n) => builder.add_token(TokenType::STRING, n.token().unwrap().span()),
-            Self::LiteralString(n) => builder.add_token(TokenType::STRING, n.token().unwrap().span()),
-            Self::MultiLineBasicString(n) => builder.add_token(TokenType::STRING, n.token().unwrap().span()),
-            Self::MultiLineLiteralString(n) => builder.add_token(TokenType::STRING, n.token().unwrap().span()),
+            Self::BasicString(n) => builder.add_string_token(n.token().unwrap().span()),
+            Self::LiteralString(n) => builder.add_string_token(n.token().unwrap().span()),
+            Self::MultiLineBasicString(n) => builder.add_string_token(n.token().unwrap().span()),
+            Self::MultiLineLiteralString(n) => builder.add_string_token(n.token().unwrap().span()),
             Self::IntegerBin(n) => builder.add_token(TokenType::NUMBER, n.token().unwrap().span()),
             Self::IntegerOct(n) => builder.add_token(TokenType::NUMBER, n.token().unwrap().span()),
             Self::IntegerDec(n) => builder.add_token(TokenType::NUMBER, n.token().unwrap().span()),

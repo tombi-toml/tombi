@@ -10,6 +10,7 @@ pub mod extension;
 mod goto_definition;
 mod goto_type_definition;
 mod hover;
+mod initialization_options;
 mod location;
 mod references;
 mod remote_file;
