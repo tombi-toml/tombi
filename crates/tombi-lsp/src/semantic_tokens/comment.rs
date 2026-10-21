@@ -1,6 +1,6 @@
 use tombi_ast_syntax::{AstToken, RegionMarker};
 
-use crate::semantic_tokens::{AppendSemanticTokens, SemanticTokensBuilder, TokenType};
+use crate::semantic_tokens::{AppendSemanticTokens, SemanticTokensBuilder};
 
 impl AppendSemanticTokens for tombi_ast_syntax::Comment<'_> {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
@@ -46,6 +46,7 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
+    use crate::semantic_tokens::TokenType;
 
     #[test]
     fn region_markers_are_keywords() {
