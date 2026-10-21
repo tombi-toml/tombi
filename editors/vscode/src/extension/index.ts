@@ -160,6 +160,20 @@ export class Extension {
       vscode.window.onDidChangeActiveTextEditor(async () => {
         await this.updateStatusBarItem();
       }),
+      vscode.workspace.onDidChangeConfiguration(async (event) => {
+        if (!event.affectsConfiguration(`${EXTENSION_ID}.semanticTokens`)) {
+          return;
+        }
+        // NOTE: `initializationOptions` is only sent when the language server starts.
+        const restart = "Restart";
+        const selected = await vscode.window.showInformationMessage(
+          "Restart the Tombi language server to apply the semantic tokens settings.",
+          restart,
+        );
+        if (selected === restart) {
+          await command.restartLanguageServer(this.client);
+        }
+      }),
       vscode.workspace.onDidSaveTextDocument(async (document) => {
         await this.onDidSaveTextDocument(document);
         await this.updateStatusBarItem();

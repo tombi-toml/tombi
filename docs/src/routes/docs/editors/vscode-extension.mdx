@@ -46,6 +46,32 @@ You can enable verbose logging in the VSCode settings file.
 }
 ```
 
+## Semantic Tokens for Strings and Comments
+
+Tombi sends semantic tokens for strings and comments by default. Semantic tokens take priority over TextMate grammars and other extensions' highlighting, so highlighting injected into strings by another extension (e.g. shell syntax in a string) can be hidden. You can stop Tombi from sending them in the VSCode settings file.
+
+```json
+{
+  "tombi.semanticTokens.strings.enable": false,
+  "tombi.semanticTokens.comments.enable": false
+}
+```
+
+Both settings default to `true`. Restart the language server (`Tombi: Restart Language Server`) after changing them.
+
+When comments are disabled, Tombi directives (`#:tombi ...`, `# tombi: ...`) and `# region` / `# endregion` markers keep their keyword highlighting.
+
+Other editors can pass the same options as `initializationOptions` of the `initialize` request:
+
+```json
+{
+  "semanticTokens": {
+    "strings": { "enable": true },
+    "comments": { "enable": true }
+  }
+}
+```
+
 ## JSON Schema Association
 As with [Taplo](https://taplo.tamasfe.dev/configuration/developing-schemas.html#visual-studio-code-extensions), extensions can associate their own schemas using `tomlValidation`.
 

@@ -244,6 +244,18 @@
             }
           },
           "additionalProperties": false
+        },
+        "tombi.semanticTokens.strings.enable": {
+          "description": "Send semantic tokens for string values. Set to `false` to let TextMate grammars and other extensions highlight the inside of strings. Requires restarting the language server.",
+          "type": "boolean",
+          "scope": "window",
+          "default": true
+        },
+        "tombi.semanticTokens.comments.enable": {
+          "description": "Send semantic tokens for ordinary comments. Set to `false` to let TextMate grammars and other extensions highlight comments. Tombi directive and region keywords are always highlighted. Requires restarting the language server.",
+          "type": "boolean",
+          "scope": "window",
+          "default": true
         }
       }
     },
