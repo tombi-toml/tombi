@@ -30,7 +30,12 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         .text_document_toml_version(&text_document_uri, &parsed.root())
         .await;
     let encoding_kind = backend.capabilities.read().await.encoding_kind;
-    let document_source = DocumentSource::new(parsed, Some(text_document.version), toml_version, encoding_kind);
+    let document_source = DocumentSource::new(
+        parsed,
+        Some(text_document.version),
+        toml_version,
+        encoding_kind,
+    );
     // The stored snapshot is replaced by the next edit, so this one is kept for the extensions.
     let document_source_for_extensions = document_source.clone();
 

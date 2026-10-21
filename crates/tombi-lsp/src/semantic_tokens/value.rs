@@ -19,10 +19,18 @@ impl AppendSemanticTokens for tombi_ast_syntax::Value<'_> {
             Self::IntegerHex(n) => builder.add_token(TokenType::NUMBER, n.token().unwrap().span()),
             Self::Float(n) => builder.add_token(TokenType::NUMBER, n.token().unwrap().span()),
             Self::Boolean(n) => builder.add_token(TokenType::BOOLEAN, n.token().unwrap().span()),
-            Self::OffsetDateTime(n) => builder.add_token(TokenType::OFFSET_DATE_TIME, n.token().unwrap().span()),
-            Self::LocalDateTime(n) => builder.add_token(TokenType::LOCAL_DATE_TIME, n.token().unwrap().span()),
-            Self::LocalDate(n) => builder.add_token(TokenType::LOCAL_DATE, n.token().unwrap().span()),
-            Self::LocalTime(n) => builder.add_token(TokenType::LOCAL_TIME, n.token().unwrap().span()),
+            Self::OffsetDateTime(n) => {
+                builder.add_token(TokenType::OFFSET_DATE_TIME, n.token().unwrap().span())
+            }
+            Self::LocalDateTime(n) => {
+                builder.add_token(TokenType::LOCAL_DATE_TIME, n.token().unwrap().span())
+            }
+            Self::LocalDate(n) => {
+                builder.add_token(TokenType::LOCAL_DATE, n.token().unwrap().span())
+            }
+            Self::LocalTime(n) => {
+                builder.add_token(TokenType::LOCAL_TIME, n.token().unwrap().span())
+            }
             Self::Array(array) => array.append_semantic_tokens(builder),
             Self::InlineTable(inline_table) => inline_table.append_semantic_tokens(builder),
         }

@@ -30,7 +30,9 @@ pub async fn handle_completion(
     let text_document_uri = text_document.uri.into();
 
     let ConfigSchemaStore {
-        config, schema_store, ..
+        config,
+        schema_store,
+        ..
     } = backend
         .config_manager
         .config_schema_store_for_uri(&text_document_uri)
@@ -89,7 +91,13 @@ pub async fn handle_completion(
     let (keys, completion_hint) = match &comment_context {
         Some(CommentContext::DocumentDirective(comment)) => {
             if let Some(comment_completion_contents) =
-                get_document_comment_directive_completion_contents(&root, comment, offset, &text_document_uri).await
+                get_document_comment_directive_completion_contents(
+                    &root,
+                    comment,
+                    offset,
+                    &text_document_uri,
+                )
+                .await
             {
                 return Ok(Some(comment_completion_contents));
             }
@@ -116,9 +124,10 @@ pub async fn handle_completion(
                 return Ok(Some(Vec::new()));
             };
 
-            let strict = tombi_validator::comment_directive::get_tombi_document_comment_directive(&root)
-                .await
-                .and_then(|directive| directive.schema.and_then(|schema| schema.strict));
+            let strict =
+                tombi_validator::comment_directive::get_tombi_document_comment_directive(&root)
+                    .await
+                    .and_then(|directive| directive.schema.and_then(|schema| schema.strict));
             let schema_context = tombi_schema_store::SchemaContext::from_source_schema(
                 toml_version,
                 source_schema.as_ref(),
@@ -232,8 +241,12 @@ fn get_keys_and_completion_hint<'t>(
     offset: tombi_text::Offset,
     toml_version: tombi_config::TomlVersion,
     comment_context: Option<&CommentContext<tombi_ast_syntax::Comment<'_>>>,
-) -> Option<(Vec<tombi_document_tree_syntax::Key<'t>>, Option<CompletionHint>)> {
-    let Some((keys, completion_hint)) = extract_keys_and_hint(root, decoded, offset, toml_version, comment_context)
+) -> Option<(
+    Vec<tombi_document_tree_syntax::Key<'t>>,
+    Option<CompletionHint>,
+)> {
+    let Some((keys, completion_hint)) =
+        extract_keys_and_hint(root, decoded, offset, toml_version, comment_context)
     else {
         log::trace!("keys and completion_hint not found");
         return None;

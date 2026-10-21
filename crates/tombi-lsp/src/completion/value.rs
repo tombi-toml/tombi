@@ -27,13 +27,14 @@ pub use one_of::find_one_of_completion_items;
 use string::type_hint_string;
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, AnythingSchema, ArraySchema, BooleanSchema, CurrentSchema, FloatSchema, IntegerSchema, LocalDateSchema,
-    LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema, SchemaDefinitions, SchemaStore, SchemaUri, SchemaView,
-    StringSchema, TableSchema,
+    Accessor, AnythingSchema, ArraySchema, BooleanSchema, CurrentSchema, FloatSchema,
+    IntegerSchema, LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema,
+    SchemaDefinitions, SchemaStore, SchemaUri, SchemaView, StringSchema, TableSchema,
 };
 
 use super::{
-    CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents, schema_completion::SchemaCompletion,
+    CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
+    schema_completion::SchemaCompletion,
 };
 
 impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
@@ -54,7 +55,10 @@ impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
         log::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
-            if let Some(Ok(current_schema)) = schema_context.get_subschema(accessors, current_schema).await {
+            if let Some(Ok(current_schema)) = schema_context
+                .get_subschema(accessors, current_schema)
+                .await
+            {
                 return self
                     .find_completion_contents(
                         cursor,
@@ -71,8 +75,9 @@ impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
                 tombi_document_tree_syntax::ValueImpl::value_type(self),
             );
             let projected_schema = current_schema.and_then(|schema| {
-                instance_type
-                    .and_then(|instance_type| schema.for_instance_type(instance_type, schema_context.string_formats()))
+                instance_type.and_then(|instance_type| {
+                    schema.for_instance_type(instance_type, schema_context.string_formats())
+                })
             });
             let current_schema = match current_schema {
                 Some(schema) if schema.semantic_schema.is_some() && instance_type.is_some() => {
@@ -219,7 +224,9 @@ impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
                         let last_key = keys.last();
 
                         match (&last_key, completion_hint) {
-                            (Some(last_key), Some(CompletionHint::EqualTrigger { span, .. })) if span.end < offset => {
+                            (Some(last_key), Some(CompletionHint::EqualTrigger { span, .. }))
+                                if span.end < offset =>
+                            {
                                 vec![CompletionContent::new_type_hint_key(
                                     last_key.value(),
                                     last_key.span(),
@@ -262,10 +269,14 @@ pub fn type_hint_value(
 
     if let Some(key) = key {
         let need_key_hint = match completion_hint {
-            Some(CompletionHint::DotTrigger { span, .. } | CompletionHint::EqualTrigger { span, .. }) => {
-                span.end == offset || span.end <= key.span().start
-            }
-            Some(CompletionHint::InTableHeader | CompletionHint::InArray { .. } | CompletionHint::Comma { .. })
+            Some(
+                CompletionHint::DotTrigger { span, .. } | CompletionHint::EqualTrigger { span, .. },
+            ) => span.end == offset || span.end <= key.span().start,
+            Some(
+                CompletionHint::InTableHeader
+                | CompletionHint::InArray { .. }
+                | CompletionHint::Comma { .. },
+            )
             | None => true,
         };
         if need_key_hint {
@@ -309,7 +320,9 @@ impl CompletionCandidate for SchemaView {
                 | Self::LocalTime(LocalTimeSchema { title, .. })
                 | Self::Array(ArraySchema { title, .. })
                 | Self::Table(TableSchema { title, .. })
-                | Self::Anything(AnythingSchema { title, .. }) => title.as_deref().map(ToString::to_string),
+                | Self::Anything(AnythingSchema { title, .. }) => {
+                    title.as_deref().map(ToString::to_string)
+                }
                 Self::OneOf(one_of) => {
                     one_of
                         .title(
@@ -373,7 +386,9 @@ impl CompletionCandidate for SchemaView {
                 | Self::LocalTime(LocalTimeSchema { description, .. })
                 | Self::Array(ArraySchema { description, .. })
                 | Self::Table(TableSchema { description, .. })
-                | Self::Anything(AnythingSchema { description, .. }) => description.as_deref().map(ToString::to_string),
+                | Self::Anything(AnythingSchema { description, .. }) => {
+                    description.as_deref().map(ToString::to_string)
+                }
                 Self::OneOf(one_of) => {
                     one_of
                         .description(

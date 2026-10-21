@@ -1,11 +1,17 @@
-use tombi_test_lib::{cargo_feature_navigation_fixture_path, dot_config_project_root_fixture_path, project_root_path};
+use tombi_test_lib::{
+    cargo_feature_navigation_fixture_path, dot_config_project_root_fixture_path, project_root_path,
+};
 
 fn cargo_document_link_all_enabled_config_path() -> std::path::PathBuf {
-    project_root_path().join("crates/tombi-lsp/tests/fixtures/extensions/cargo-document-link-all-enabled/tombi.toml")
+    project_root_path().join(
+        "crates/tombi-lsp/tests/fixtures/extensions/cargo-document-link-all-enabled/tombi.toml",
+    )
 }
 
 fn tombi_document_link_all_enabled_config_path() -> std::path::PathBuf {
-    project_root_path().join("crates/tombi-lsp/tests/fixtures/extensions/tombi-document-link-all-enabled/tombi.toml")
+    project_root_path().join(
+        "crates/tombi-lsp/tests/fixtures/extensions/tombi-document-link-all-enabled/tombi.toml",
+    )
 }
 
 mod document_link_tests {

@@ -78,9 +78,11 @@ pub async fn get_diagnostics_result(
 
     // Get lint options with override support
     let text_document_path = text_document_uri.to_file_path().ok();
-    let Some(lint_options) =
-        tombi_glob::get_lint_options(&config, text_document_path.as_deref(), config_path.as_deref())
-    else {
+    let Some(lint_options) = tombi_glob::get_lint_options(
+        &config,
+        text_document_path.as_deref(),
+        config_path.as_deref(),
+    ) else {
         log::debug!("linting disabled for {:?} by override", text_document_path);
         return None;
     };
@@ -102,7 +104,10 @@ pub async fn get_diagnostics_result(
             .collect_vec(),
     };
 
-    let diagnostics_result = DiagnosticsResult { diagnostics, version };
+    let diagnostics_result = DiagnosticsResult {
+        diagnostics,
+        version,
+    };
 
     {
         let mut workspace_diagnostics_cache = backend.workspace_diagnostics_cache.write().await;
@@ -111,7 +116,8 @@ pub async fn get_diagnostics_result(
                 .get(text_document_uri)
                 .and_then(|document_source| document_source.version);
             if current_version == diagnostics_result.version {
-                workspace_diagnostics_cache.set(text_document_uri.clone(), diagnostics_result.clone());
+                workspace_diagnostics_cache
+                    .set(text_document_uri.clone(), diagnostics_result.clone());
             }
         }
     }

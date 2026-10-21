@@ -44,7 +44,10 @@ pub async fn handle_goto_declaration(
     let Some(document_source) = backend.document_source(&text_document_uri) else {
         return Ok(None);
     };
-    let converter = tombi_extension::SpanConverter::new(document_source.line_index(), document_source.encoding_kind());
+    let converter = tombi_extension::SpanConverter::new(
+        document_source.line_index(),
+        document_source.encoding_kind(),
+    );
 
     let root = document_source.ast();
     let toml_version = document_source.toml_version;
@@ -53,7 +56,9 @@ pub async fn handle_goto_declaration(
 
     let offset: tombi_text::Offset = position.into_lsp(line_index, encoding);
 
-    let Some((keys, _)) = get_hover_keys_with_span(&root, document_source.decoded(), offset, toml_version).await else {
+    let Some((keys, _)) =
+        get_hover_keys_with_span(&root, document_source.decoded(), offset, toml_version).await
+    else {
         return Ok(None);
     };
 

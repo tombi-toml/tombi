@@ -15,16 +15,18 @@ pub async fn handle_diagnostic(
     let text_document_uri = text_document.uri.into();
 
     Ok({
-        DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(RelatedFullDocumentDiagnosticReport {
-            full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                items: get_diagnostics_result(backend, &text_document_uri)
-                    .await
-                    .map(|result| result.diagnostics)
-                    .unwrap_or_default(),
+        DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(
+            RelatedFullDocumentDiagnosticReport {
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    items: get_diagnostics_result(backend, &text_document_uri)
+                        .await
+                        .map(|result| result.diagnostics)
+                        .unwrap_or_default(),
+                    ..Default::default()
+                },
                 ..Default::default()
             },
-            ..Default::default()
-        })
+        )
     })
 }
 
@@ -45,19 +47,25 @@ pub async fn push_diagnostics(backend: &Backend, text_document_uri: tombi_uri::U
     }
 
     let params = PushDiagnosticsParams {
-        text_document: TextDocumentIdentifier { uri: text_document_uri },
+        text_document: TextDocumentIdentifier {
+            uri: text_document_uri,
+        },
     };
 
     log::info!("push_diagnostics");
     log::trace!("{:?}", params);
 
-    let Some(diagnostics_result) = get_diagnostics_result(backend, &params.text_document.uri).await else {
+    let Some(diagnostics_result) = get_diagnostics_result(backend, &params.text_document.uri).await
+    else {
         return;
     };
 
     log::trace!("{:?}", diagnostics_result);
 
-    let crate::diagnostic::DiagnosticsResult { diagnostics, version } = diagnostics_result;
+    let crate::diagnostic::DiagnosticsResult {
+        diagnostics,
+        version,
+    } = diagnostics_result;
 
     backend
         .client

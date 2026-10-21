@@ -54,21 +54,30 @@ where
         )
         .await;
         let applicable_count = evaluation.applicable_count();
-        let is_property_key = keys
-            .first()
-            .is_some_and(|key| tombi_document_tree_syntax::ValueImpl::span(key).contains_inclusive(offset));
+        let is_property_key = keys.first().is_some_and(|key| {
+            tombi_document_tree_syntax::ValueImpl::span(key).contains_inclusive(offset)
+        });
         let mut result = Vec::new();
 
         for (resolved_schema, branch) in resolved_schemas.iter().zip(&evaluation.branches) {
             if !(branch.is_applicable() || applicable_count == 0 && is_property_key) {
                 continue;
             }
-            let projected_schema =
-                crate::schema_resolver::project_composite_branch_schema(value, resolved_schema, schema_context);
+            let projected_schema = crate::schema_resolver::project_composite_branch_schema(
+                value,
+                resolved_schema,
+                schema_context,
+            );
             let navigation_schema = projected_schema.as_ref().unwrap_or(resolved_schema);
 
             let type_definitions = value
-                .get_type_definition(cursor, keys, accessors, Some(navigation_schema), schema_context)
+                .get_type_definition(
+                    cursor,
+                    keys,
+                    accessors,
+                    Some(navigation_schema),
+                    schema_context,
+                )
                 .await;
             result.extend(type_definitions);
         }

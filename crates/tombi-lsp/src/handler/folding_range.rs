@@ -18,7 +18,9 @@ pub async fn handle_folding_range(
         return Ok(None);
     };
 
-    let mut cursor = document_source.line_index().cursor(document_source.encoding_kind());
+    let mut cursor = document_source
+        .line_index()
+        .cursor(document_source.encoding_kind());
     let folding_ranges = resolve_region_overlaps(
         create_folding_spans(&document_source.ast(), document_source.text())
             .into_iter()
@@ -81,7 +83,11 @@ fn resolve_region_overlaps(ranges: Vec<(FoldingRange, bool)>, text: &str) -> Vec
     }
 
     let lines = text.lines().collect_vec();
-    let is_blank = |line: u32| lines.get(line as usize).is_none_or(|line| line.trim().is_empty());
+    let is_blank = |line: u32| {
+        lines
+            .get(line as usize)
+            .is_none_or(|line| line.trim().is_empty())
+    };
     // Last non-blank line in `start..=end`, searching backwards from `end`.
     let trim_end = |start: u32, mut end: u32| {
         while end > start && is_blank(end) {
@@ -140,7 +146,8 @@ fn resolve_region_overlaps(ranges: Vec<(FoldingRange, bool)>, text: &str) -> Vec
                     if range.start_line < start && start <= end_line && end_line < end {
                         // Starts before the region and ends inside it.
                         end_line = trim_end(range.start_line, start - 1);
-                    } else if start < range.start_line && range.start_line <= end && end < end_line {
+                    } else if start < range.start_line && range.start_line <= end && end < end_line
+                    {
                         // Starts inside the region and ends after it.
                         end_line = trim_end(range.start_line, end - 1);
                     }
@@ -197,15 +204,21 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<Fo
             TomlElement::Node(node) => node,
         };
         if let tombi_ast_syntax::TomlNode::KeyValue(key_value) = node {
-            for folding_span in [key_value.leading_comments().collect_vec().get_comment_folding_span()]
-                .into_iter()
-                .flatten()
+            for folding_span in [key_value
+                .leading_comments()
+                .collect_vec()
+                .get_comment_folding_span()]
+            .into_iter()
+            .flatten()
             {
                 spans.push(folding_span);
             }
         } else if let tombi_ast_syntax::TomlNode::Table(table) = node {
             for folding_span in itertools::chain!(
-                table.header_leading_comments().collect_vec().get_comment_folding_span(),
+                table
+                    .header_leading_comments()
+                    .collect_vec()
+                    .get_comment_folding_span(),
                 table.get_region_folding_span(),
                 table
                     .dangling_comment_groups()
@@ -220,7 +233,12 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<Fo
                 table
                     .key_value_groups()
                     .filter_map(DanglingCommentGroupOr::into_dangling_comment_group)
-                    .flat_map(|comment_group| comment_group.into_comments().collect_vec().get_comment_folding_span()),
+                    .flat_map(|comment_group| {
+                        comment_group
+                            .into_comments()
+                            .collect_vec()
+                            .get_comment_folding_span()
+                    }),
             );
         } else if let tombi_ast_syntax::TomlNode::ArrayOfTable(array_of_table) = node {
             for folding_span in itertools::chain!(
@@ -242,54 +260,80 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<Fo
                 array_of_table
                     .key_value_groups()
                     .filter_map(DanglingCommentGroupOr::into_dangling_comment_group)
-                    .flat_map(|comment_group| comment_group.into_comments().collect_vec().get_comment_folding_span()),
+                    .flat_map(|comment_group| {
+                        comment_group
+                            .into_comments()
+                            .collect_vec()
+                            .get_comment_folding_span()
+                    }),
             );
         } else if let tombi_ast_syntax::TomlNode::Boolean(boolean) = node {
-            for folding_span in [boolean.leading_comments().collect_vec().get_comment_folding_span()]
-                .into_iter()
-                .flatten()
+            for folding_span in [boolean
+                .leading_comments()
+                .collect_vec()
+                .get_comment_folding_span()]
+            .into_iter()
+            .flatten()
             {
                 spans.push(folding_span);
             }
         } else if let tombi_ast_syntax::TomlNode::IntegerBin(integer_bin) = node {
-            for folding_span in [integer_bin.leading_comments().collect_vec().get_comment_folding_span()]
-                .into_iter()
-                .flatten()
+            for folding_span in [integer_bin
+                .leading_comments()
+                .collect_vec()
+                .get_comment_folding_span()]
+            .into_iter()
+            .flatten()
             {
                 spans.push(folding_span);
             }
         } else if let tombi_ast_syntax::TomlNode::IntegerOct(integer_oct) = node {
-            for folding_span in [integer_oct.leading_comments().collect_vec().get_comment_folding_span()]
-                .into_iter()
-                .flatten()
+            for folding_span in [integer_oct
+                .leading_comments()
+                .collect_vec()
+                .get_comment_folding_span()]
+            .into_iter()
+            .flatten()
             {
                 spans.push(folding_span);
             }
         } else if let tombi_ast_syntax::TomlNode::IntegerDec(integer_dec) = node {
-            for folding_span in [integer_dec.leading_comments().collect_vec().get_comment_folding_span()]
-                .into_iter()
-                .flatten()
+            for folding_span in [integer_dec
+                .leading_comments()
+                .collect_vec()
+                .get_comment_folding_span()]
+            .into_iter()
+            .flatten()
             {
                 spans.push(folding_span);
             }
         } else if let tombi_ast_syntax::TomlNode::IntegerHex(integer_hex) = node {
-            for folding_span in [integer_hex.leading_comments().collect_vec().get_comment_folding_span()]
-                .into_iter()
-                .flatten()
+            for folding_span in [integer_hex
+                .leading_comments()
+                .collect_vec()
+                .get_comment_folding_span()]
+            .into_iter()
+            .flatten()
             {
                 spans.push(folding_span);
             }
         } else if let tombi_ast_syntax::TomlNode::Float(float) = node {
-            for folding_span in [float.leading_comments().collect_vec().get_comment_folding_span()]
-                .into_iter()
-                .flatten()
+            for folding_span in [float
+                .leading_comments()
+                .collect_vec()
+                .get_comment_folding_span()]
+            .into_iter()
+            .flatten()
             {
                 spans.push(folding_span);
             }
         } else if let tombi_ast_syntax::TomlNode::BasicString(basic_string) = node {
-            for folding_span in [basic_string.leading_comments().collect_vec().get_comment_folding_span()]
-                .into_iter()
-                .flatten()
+            for folding_span in [basic_string
+                .leading_comments()
+                .collect_vec()
+                .get_comment_folding_span()]
+            .into_iter()
+            .flatten()
             {
                 spans.push(folding_span);
             }
@@ -303,7 +347,9 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<Fo
             {
                 spans.push(folding_span);
             }
-        } else if let tombi_ast_syntax::TomlNode::MultiLineBasicString(multi_line_basic_string) = node {
+        } else if let tombi_ast_syntax::TomlNode::MultiLineBasicString(multi_line_basic_string) =
+            node
+        {
             for folding_span in [
                 multi_line_basic_string
                     .leading_comments()
@@ -316,7 +362,10 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<Fo
             {
                 spans.push(folding_span);
             }
-        } else if let tombi_ast_syntax::TomlNode::MultiLineLiteralString(multi_line_literal_string) = node {
+        } else if let tombi_ast_syntax::TomlNode::MultiLineLiteralString(
+            multi_line_literal_string,
+        ) = node
+        {
             for folding_span in [
                 multi_line_literal_string
                     .leading_comments()
@@ -350,22 +399,31 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<Fo
                 spans.push(folding_span);
             }
         } else if let tombi_ast_syntax::TomlNode::LocalDate(local_date) = node {
-            for folding_span in [local_date.leading_comments().collect_vec().get_comment_folding_span()]
-                .into_iter()
-                .flatten()
+            for folding_span in [local_date
+                .leading_comments()
+                .collect_vec()
+                .get_comment_folding_span()]
+            .into_iter()
+            .flatten()
             {
                 spans.push(folding_span);
             }
         } else if let tombi_ast_syntax::TomlNode::LocalTime(local_time) = node {
-            for folding_span in [local_time.leading_comments().collect_vec().get_comment_folding_span()]
-                .into_iter()
-                .flatten()
+            for folding_span in [local_time
+                .leading_comments()
+                .collect_vec()
+                .get_comment_folding_span()]
+            .into_iter()
+            .flatten()
             {
                 spans.push(folding_span);
             }
         } else if let tombi_ast_syntax::TomlNode::Array(array) = node {
             for folding_span in itertools::chain!(
-                array.leading_comments().collect_vec().get_comment_folding_span(),
+                array
+                    .leading_comments()
+                    .collect_vec()
+                    .get_comment_folding_span(),
                 array
                     .dangling_comment_groups()
                     .map(|comment_group| comment_group.into_comments().collect_vec())
@@ -379,8 +437,10 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<Fo
             for group in array.value_with_comma_groups() {
                 match group {
                     DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
-                        if let Some(folding_span) =
-                            comment_group.into_comments().collect_vec().get_comment_folding_span()
+                        if let Some(folding_span) = comment_group
+                            .into_comments()
+                            .collect_vec()
+                            .get_comment_folding_span()
                         {
                             spans.push(folding_span);
                         }
@@ -391,8 +451,10 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<Fo
                                 continue;
                             };
 
-                            if let Some(folding_span) =
-                                comma.leading_comments().collect_vec().get_comment_folding_span()
+                            if let Some(folding_span) = comma
+                                .leading_comments()
+                                .collect_vec()
+                                .get_comment_folding_span()
                             {
                                 spans.push(folding_span);
                             }
@@ -402,7 +464,10 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<Fo
             }
         } else if let tombi_ast_syntax::TomlNode::InlineTable(inline_table) = node {
             for folding_span in [
-                inline_table.leading_comments().collect_vec().get_comment_folding_span(),
+                inline_table
+                    .leading_comments()
+                    .collect_vec()
+                    .get_comment_folding_span(),
                 inline_table
                     .dangling_comment_groups()
                     .map(|comment_group| comment_group.into_comments().collect_vec())
@@ -419,8 +484,10 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<Fo
             for group in inline_table.key_value_with_comma_groups() {
                 match group {
                     DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
-                        if let Some(folding_span) =
-                            comment_group.into_comments().collect_vec().get_comment_folding_span()
+                        if let Some(folding_span) = comment_group
+                            .into_comments()
+                            .collect_vec()
+                            .get_comment_folding_span()
                         {
                             spans.push(folding_span);
                         }
@@ -431,8 +498,10 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<Fo
                                 continue;
                             };
 
-                            if let Some(folding_span) =
-                                comma.leading_comments().collect_vec().get_comment_folding_span()
+                            if let Some(folding_span) = comma
+                                .leading_comments()
+                                .collect_vec()
+                                .get_comment_folding_span()
                             {
                                 spans.push(folding_span);
                             }
@@ -453,7 +522,12 @@ fn create_folding_spans(root: &tombi_ast_syntax::Root<'_>, text: &str) -> Vec<Fo
             spans.extend(
                 root.key_value_groups()
                     .filter_map(DanglingCommentGroupOr::into_dangling_comment_group)
-                    .flat_map(|comment_group| comment_group.into_comments().collect_vec().get_comment_folding_span()),
+                    .flat_map(|comment_group| {
+                        comment_group
+                            .into_comments()
+                            .collect_vec()
+                            .get_comment_folding_span()
+                    }),
             );
         }
     }
@@ -583,7 +657,12 @@ impl GetCommentFoldingSpan for Vec<tombi_ast_syntax::DanglingComment<'_>> {
 impl GetCommentFoldingSpan for Vec<Vec<tombi_ast_syntax::DanglingComment<'_>>> {
     fn get_folding_span(&self) -> Option<tombi_text::Span> {
         let first = self.iter().find(|group| !group.is_empty())?.iter().next()?;
-        let last = self.iter().rev().find(|group| !group.is_empty())?.iter().next_back()?;
+        let last = self
+            .iter()
+            .rev()
+            .find(|group| !group.is_empty())?
+            .iter()
+            .next_back()?;
 
         // A comment ends at the end of its line, so the comments are on one line only if they are the same.
         if first.syntax().span() == last.syntax().span() {
@@ -604,12 +683,15 @@ mod tests {
     fn last_sub_tables(source: &str) -> Vec<(String, Option<String>)> {
         let parsed = tombi_parser::parse(source);
         let root = parsed.try_root().ok().unwrap();
-        let header = |item: &TableOrArrayOfTable<'_>| item.header().unwrap().syntax().text().to_string();
+        let header =
+            |item: &TableOrArrayOfTable<'_>| item.header().unwrap().syntax().text().to_string();
         root.table_or_array_of_tables()
             .map(|item| {
                 let last = match &item {
                     TableOrArrayOfTable::Table(table) => table.last_sub_table(),
-                    TableOrArrayOfTable::ArrayOfTable(array_of_table) => array_of_table.last_sub_table(),
+                    TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
+                        array_of_table.last_sub_table()
+                    }
                 };
                 (header(&item), last.as_ref().map(header))
             })

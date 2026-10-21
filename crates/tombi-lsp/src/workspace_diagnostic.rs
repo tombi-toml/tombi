@@ -69,7 +69,12 @@ pub async fn refresh_diagnostics_after_config_change(backend: &Backend) {
 }
 
 pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_uri::Uri> {
-    if let Some(targets) = backend.workspace_diagnostics_cache.read().await.workspace_targets() {
+    if let Some(targets) = backend
+        .workspace_diagnostics_cache
+        .read()
+        .await
+        .workspace_targets()
+    {
         return targets;
     }
 
@@ -101,7 +106,10 @@ pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tomb
 
         let files_options = workspace_config.config.files.clone().unwrap_or_default();
 
-        for matched_path in search_pattern_matched_paths(workspace_config.workspace_folder_path, files_options).await {
+        for matched_path in
+            search_pattern_matched_paths(workspace_config.workspace_folder_path, files_options)
+                .await
+        {
             let tombi_glob::FileSearchEntry::Found(path) = matched_path else {
                 continue;
             };
@@ -140,10 +148,15 @@ async fn publish_workspace_diagnostics(
 
     log::trace!("{:?}", diagnostics_result);
 
-    let DiagnosticsResult { diagnostics, version } = diagnostics_result;
+    let DiagnosticsResult {
+        diagnostics,
+        version,
+    } = diagnostics_result;
 
     if !options.include_open_files && version.is_some() {
-        log::debug!("skip publishing workspace diagnostics because version is some: {text_document_uri}");
+        log::debug!(
+            "skip publishing workspace diagnostics because version is some: {text_document_uri}"
+        );
         return;
     }
 
@@ -163,7 +176,10 @@ pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_
     };
 
     let Ok(content) = tombi_fs::read_to_string_async(&text_document_path).await else {
-        log::warn!("failed to read file for diagnostics: {:?}", text_document_path);
+        log::warn!(
+            "failed to read file for diagnostics: {:?}",
+            text_document_path
+        );
         return false;
     };
 

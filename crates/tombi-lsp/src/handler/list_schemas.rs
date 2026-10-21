@@ -25,7 +25,9 @@ pub async fn handle_list_schemas(
         })
         .collect();
 
-    Ok(ListSchemasResponse { schemas: schema_infos })
+    Ok(ListSchemasResponse {
+        schemas: schema_infos,
+    })
 }
 
 #[derive(Debug, serde::Deserialize)]

@@ -1,4 +1,6 @@
-use tombi_test_lib::{cargo_feature_navigation_fixture_path, dot_config_project_root_fixture_path, project_root_path};
+use tombi_test_lib::{
+    cargo_feature_navigation_fixture_path, dot_config_project_root_fixture_path, project_root_path,
+};
 
 mod goto_definition_tests {
     use super::*;
@@ -1374,8 +1376,9 @@ mod goto_definition_tests {
         use tower_lsp_server::{
             LspService,
             gen_lsp_types::{
-                DefinitionParams, DidOpenTextDocumentParams, PartialResultParams, TextDocumentIdentifier,
-                TextDocumentItem, TextDocumentPositionParams, Uri, WorkDoneProgressParams,
+                DefinitionParams, DidOpenTextDocumentParams, PartialResultParams,
+                TextDocumentIdentifier, TextDocumentItem, TextDocumentPositionParams, Uri,
+                WorkDoneProgressParams,
             },
         };
 
@@ -1387,7 +1390,12 @@ mod goto_definition_tests {
 
         if let Some(schema_file_path) = args.schema_file_path.as_ref() {
             let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
-                .unwrap_or_else(|_| panic!("failed to convert schema path to URL: {}", schema_file_path.display()));
+                .unwrap_or_else(|_| {
+                    panic!(
+                        "failed to convert schema path to URL: {}",
+                        schema_file_path.display()
+                    )
+                });
 
             schema_items.push(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
                 toml_version: None,
@@ -1403,7 +1411,12 @@ mod goto_definition_tests {
 
         for subschema in &args.subschemas {
             let subschema_uri = tombi_schema_store::SchemaUri::from_file_path(&subschema.path)
-                .unwrap_or_else(|_| panic!("failed to convert subschema path to URL: {}", subschema.path.display()));
+                .unwrap_or_else(|_| {
+                    panic!(
+                        "failed to convert subschema path to URL: {}",
+                        subschema.path.display()
+                    )
+                });
 
             schema_items.push(tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
                 path: subschema_uri.to_string(),
@@ -1423,7 +1436,10 @@ mod goto_definition_tests {
             .ok_or("SourcePath must be provided for goto_definition tests")?;
 
         if !schema_items.is_empty() {
-            let config_schema_store = backend.config_manager.config_schema_store_for_file(source_path).await;
+            let config_schema_store = backend
+                .config_manager
+                .config_schema_store_for_file(source_path)
+                .await;
 
             let mut test_config = config_schema_store.config;
             let mut existing_schemas = test_config.schemas.take().unwrap_or_default();
@@ -1435,13 +1451,19 @@ mod goto_definition_tests {
                     .config_manager
                     .update_config_with_path(test_config, &config_path)
                     .await
-                    .map_err(|e| format!("failed to update config {}: {}", config_path.display(), e))?;
+                    .map_err(|e| {
+                        format!("failed to update config {}: {}", config_path.display(), e)
+                    })?;
             } else {
-                backend.config_manager.update_editor_config(test_config).await;
+                backend
+                    .config_manager
+                    .update_editor_config(test_config)
+                    .await;
             }
         }
 
-        let toml_file_url = Uri::from_file_path(source_path).expect("failed to convert source file path to URL");
+        let toml_file_url =
+            Uri::from_file_path(source_path).expect("failed to convert source file path to URL");
 
         let mut toml_text = textwrap::dedent(source).trim().to_string();
         let Some(index) = toml_text.as_str().find("█") else {
@@ -1483,7 +1505,10 @@ mod goto_definition_tests {
             ExpectedGotoDefinition::Paths(expected_paths) => match result {
                 Some(definition_links) => {
                     pretty_assertions::assert_eq!(
-                        definition_links.into_iter().map(|link| link.uri.to_uri()).collect_vec(),
+                        definition_links
+                            .into_iter()
+                            .map(|link| link.uri.to_uri())
+                            .collect_vec(),
                         expected_paths,
                     );
                 }

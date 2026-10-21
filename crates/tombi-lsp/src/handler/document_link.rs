@@ -36,7 +36,10 @@ pub async fn handle_document_link(
     let Some(document_source) = backend.document_source(&text_document_uri) else {
         return Ok(None);
     };
-    let converter = tombi_extension::SpanConverter::new(document_source.line_index(), document_source.encoding_kind());
+    let converter = tombi_extension::SpanConverter::new(
+        document_source.line_index(),
+        document_source.encoding_kind(),
+    );
 
     let root = document_source.ast();
     let toml_version = document_source.toml_version;

@@ -9,24 +9,29 @@ use std::{
 use tombi_test_lib::{
     TestCacheHome, adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
     cargo_feature_navigation_fixture_path, cargo_schema_path, exact_index_string_test_schema_path,
-    issue_1895_rustfmt_like_schema_path, lsp_consistency_test_schema_path, one_of_hover_discriminator_test_schema_path,
-    pyproject_schema_path, ref_sibling_annotations_test_schema_path, string_format_test_schema_path, tombi_schema_path,
+    issue_1895_rustfmt_like_schema_path, lsp_consistency_test_schema_path,
+    one_of_hover_discriminator_test_schema_path, pyproject_schema_path,
+    ref_sibling_annotations_test_schema_path, string_format_test_schema_path, tombi_schema_path,
 };
 
 fn nested_table_keys_order_schema_path() -> PathBuf {
-    tombi_test_lib::project_root_path().join("crates/tombi-lsp/tests/fixtures/nested-table-keys-order.schema.json")
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/nested-table-keys-order.schema.json")
 }
 
 fn array_values_order_schema_path() -> PathBuf {
-    tombi_test_lib::project_root_path().join("crates/tombi-lsp/tests/fixtures/array-values-order.schema.json")
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/array-values-order.schema.json")
 }
 
 fn array_values_order_one_of_schema_path() -> PathBuf {
-    tombi_test_lib::project_root_path().join("crates/tombi-lsp/tests/fixtures/array-values-order-one-of.schema.json")
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/array-values-order-one-of.schema.json")
 }
 
 fn any_of_table_property_enum_schema_path() -> PathBuf {
-    tombi_test_lib::project_root_path().join("crates/tombi-lsp/tests/fixtures/any-of-table-property-enum.schema.json")
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/any-of-table-property-enum.schema.json")
 }
 
 fn exact_index_hover_test_schema_path() -> PathBuf {
@@ -39,10 +44,14 @@ fn exact_index_array_values_order_schema_path() -> PathBuf {
 }
 
 fn history_hover_null_default_schema_path() -> PathBuf {
-    tombi_test_lib::project_root_path().join("crates/tombi-lsp/tests/fixtures/history-hover-null-default.schema.json")
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-lsp/tests/fixtures/history-hover-null-default.schema.json")
 }
 
-fn cargo_feature_usage_hover_description(project_root: &Path, locations: &[(PathBuf, u32)]) -> String {
+fn cargo_feature_usage_hover_description(
+    project_root: &Path,
+    locations: &[(PathBuf, u32)],
+) -> String {
     let mut lines = vec!["Feature references in this project:".to_string()];
 
     for (path, line) in locations {
@@ -1815,7 +1824,8 @@ mod hover_keys_value {
         );
 
         #[tokio::test]
-        async fn pyproject_build_system_requires_hover_metadata() -> Result<(), Box<dyn std::error::Error>> {
+        async fn pyproject_build_system_requires_hover_metadata()
+        -> Result<(), Box<dyn std::error::Error>> {
             use std::io::Write;
 
             use tombi_lsp::{Backend, HoverContent, backend::Options, handler::handle_did_open};
@@ -1823,8 +1833,8 @@ mod hover_keys_value {
             use tower_lsp_server::{
                 LspService,
                 gen_lsp_types::{
-                    DidOpenTextDocumentParams, TextDocumentIdentifier, TextDocumentItem, TextDocumentPositionParams,
-                    Uri, WorkDoneProgressParams,
+                    DidOpenTextDocumentParams, TextDocumentIdentifier, TextDocumentItem,
+                    TextDocumentPositionParams, Uri, WorkDoneProgressParams,
                 },
             };
 
@@ -1849,11 +1859,15 @@ mod hover_keys_value {
                 ]
             "#;
             let mut toml_text = textwrap::dedent(source).trim().to_string();
-            let index = toml_text.find("█").ok_or("failed to find hover position marker")?;
+            let index = toml_text
+                .find("█")
+                .ok_or("failed to find hover position marker")?;
             toml_text.remove(index);
 
             let source_path = tombi_test_lib::project_root_path().join("pyproject.toml");
-            let temp_dir = source_path.parent().ok_or("failed to get source parent directory")?;
+            let temp_dir = source_path
+                .parent()
+                .ok_or("failed to get source parent directory")?;
             let temp_file = tempfile::NamedTempFile::with_suffix_in(".toml", temp_dir)?;
             temp_file.as_file().write_all(toml_text.as_bytes())?;
 
@@ -1874,7 +1888,10 @@ mod hover_keys_value {
 
             let schema_uri = tombi_schema_store::SchemaUri::from_file_path(pyproject_schema_path())
                 .map_err(|_| "failed to convert schema path to URI")?;
-            let config_schema_store = backend.config_manager.config_schema_store_for_file(&source_path).await;
+            let config_schema_store = backend
+                .config_manager
+                .config_schema_store_for_file(&source_path)
+                .await;
             let mut test_config = config_schema_store.config;
             let mut existing_schemas = test_config.schemas.take().unwrap_or_default();
             existing_schemas.push(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
@@ -1894,14 +1911,23 @@ mod hover_keys_value {
                     .config_manager
                     .update_config_with_path(test_config, &config_path)
                     .await
-                    .map_err(|error| format!("failed to update config {}: {}", config_path.display(), error))?;
+                    .map_err(|error| {
+                        format!(
+                            "failed to update config {}: {}",
+                            config_path.display(),
+                            error
+                        )
+                    })?;
             } else {
-                backend.config_manager.update_editor_config(test_config).await;
+                backend
+                    .config_manager
+                    .update_editor_config(test_config)
+                    .await;
             }
 
             let line_index = tombi_text::LineIndex::new(toml_text.as_str());
-            let toml_file_url =
-                Uri::from_file_path(&source_path).map_err(|_| "failed to convert source file path to URL")?;
+            let toml_file_url = Uri::from_file_path(&source_path)
+                .map_err(|_| "failed to convert source file path to URL")?;
 
             handle_did_open(
                 backend,
@@ -1929,13 +1955,17 @@ mod hover_keys_value {
             )
             .await?;
 
-            let Some(HoverContent::Value(hover_content) | HoverContent::DirectiveContent(hover_content)) =
-                hover_content
+            let Some(
+                HoverContent::Value(hover_content) | HoverContent::DirectiveContent(hover_content),
+            ) = hover_content
             else {
                 return Err("failed to handle hover content".into());
             };
 
-            pretty_assertions::assert_eq!(hover_content.accessors.to_string(), "build-system.requires[0]");
+            pretty_assertions::assert_eq!(
+                hover_content.accessors.to_string(),
+                "build-system.requires[0]"
+            );
             pretty_assertions::assert_eq!(hover_content.value_type.to_string(), "String");
             pretty_assertions::assert_eq!(hover_content.title.as_deref(), Some("maturin"));
             pretty_assertions::assert_eq!(
@@ -2471,7 +2501,8 @@ mod hover_keys_value {
         use super::*;
 
         fn fixture_path() -> std::path::PathBuf {
-            tombi_test_lib::project_root_path().join("crates/tombi-lsp/tests/fixtures/issue-2164-compound-schema")
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-2164-compound-schema")
         }
 
         test_hover_keys_value!(

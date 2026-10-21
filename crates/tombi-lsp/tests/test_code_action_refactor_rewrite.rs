@@ -22,7 +22,9 @@ struct TestCacheHome {
 
 impl TestCacheHome {
     fn new() -> Self {
-        let guard = test_lock().lock().unwrap_or_else(|error| error.into_inner());
+        let guard = test_lock()
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
         let temp_dir = tempfile::tempdir().unwrap();
         let previous_tombi = std::env::var_os("TOMBI_CACHE_HOME");
         let previous_xdg = std::env::var_os("XDG_CACHE_HOME");

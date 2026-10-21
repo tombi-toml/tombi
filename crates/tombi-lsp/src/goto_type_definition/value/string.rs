@@ -6,8 +6,9 @@ use tombi_x_keyword::StringFormat;
 use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
     goto_type_definition::{
-        GetTypeDefinition, TypeDefinition, adjacent_type_definition, all_of::get_all_of_type_definition,
-        any_of::get_any_of_type_definition, comment::get_tombi_value_comment_directive_type_definition,
+        GetTypeDefinition, TypeDefinition, adjacent_type_definition,
+        all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
+        comment::get_tombi_value_comment_directive_type_definition,
         one_of::get_one_of_type_definition, prefer_type_definitions, schema_view_type_definition,
     },
 };
@@ -33,8 +34,11 @@ impl GetTypeDefinition for tombi_document_tree_syntax::String<'_> {
                     StringCommonFormatRules,
                     StringCommonLintRules,
                 >(self.comment_directives(), offset, accessors)
-                && let hover_content =
-                    get_tombi_value_comment_directive_type_definition(comment_directive_context, schema_uri).await
+                && let hover_content = get_tombi_value_comment_directive_type_definition(
+                    comment_directive_context,
+                    schema_uri,
+                )
+                .await
                 && !hover_content.is_empty()
             {
                 return hover_content;
@@ -44,7 +48,13 @@ impl GetTypeDefinition for tombi_document_tree_syntax::String<'_> {
                 match current_schema.schema_view.as_ref() {
                     SchemaView::String(string_schema) => {
                         let base_type_definition = string_schema
-                            .get_type_definition(cursor, keys, accessors, Some(current_schema), schema_context)
+                            .get_type_definition(
+                                cursor,
+                                keys,
+                                accessors,
+                                Some(current_schema),
+                                schema_context,
+                            )
                             .await;
 
                         prefer_type_definitions(
@@ -67,7 +77,13 @@ impl GetTypeDefinition for tombi_document_tree_syntax::String<'_> {
                         if schema_context.has_string_format(StringFormat::DateTime) =>
                     {
                         let base_type_definition = offset_date_time_schema
-                            .get_type_definition(cursor, keys, accessors, Some(current_schema), schema_context)
+                            .get_type_definition(
+                                cursor,
+                                keys,
+                                accessors,
+                                Some(current_schema),
+                                schema_context,
+                            )
                             .await;
 
                         prefer_type_definitions(
@@ -90,7 +106,13 @@ impl GetTypeDefinition for tombi_document_tree_syntax::String<'_> {
                         if schema_context.has_string_format(StringFormat::DateTimeLocal) =>
                     {
                         let base_type_definition = local_date_time_schema
-                            .get_type_definition(cursor, keys, accessors, Some(current_schema), schema_context)
+                            .get_type_definition(
+                                cursor,
+                                keys,
+                                accessors,
+                                Some(current_schema),
+                                schema_context,
+                            )
                             .await;
 
                         prefer_type_definitions(
@@ -113,7 +135,13 @@ impl GetTypeDefinition for tombi_document_tree_syntax::String<'_> {
                         if schema_context.has_string_format(StringFormat::Date) =>
                     {
                         let base_type_definition = local_date_schema
-                            .get_type_definition(cursor, keys, accessors, Some(current_schema), schema_context)
+                            .get_type_definition(
+                                cursor,
+                                keys,
+                                accessors,
+                                Some(current_schema),
+                                schema_context,
+                            )
                             .await;
 
                         prefer_type_definitions(
@@ -136,7 +164,13 @@ impl GetTypeDefinition for tombi_document_tree_syntax::String<'_> {
                         if schema_context.has_string_format(StringFormat::TimeLocal) =>
                     {
                         let base_type_definition = local_time_schema
-                            .get_type_definition(cursor, keys, accessors, Some(current_schema), schema_context)
+                            .get_type_definition(
+                                cursor,
+                                keys,
+                                accessors,
+                                Some(current_schema),
+                                schema_context,
+                            )
                             .await;
 
                         prefer_type_definitions(
@@ -196,7 +230,8 @@ impl GetTypeDefinition for tombi_document_tree_syntax::String<'_> {
                         .as_deref()
                         .is_some_and(|schema| !schema.has_type_assertion()) =>
                     {
-                        let (one_of, any_of, all_of, _) = current_schema.schema_view.adjacent_applicators();
+                        let (one_of, any_of, all_of, _) =
+                            current_schema.schema_view.adjacent_applicators();
 
                         adjacent_type_definition(
                             self,

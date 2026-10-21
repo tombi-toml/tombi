@@ -5,8 +5,9 @@ use tombi_schema_store::SchemaView;
 use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
     goto_type_definition::{
-        GetTypeDefinition, TypeDefinition, adjacent_type_definition, all_of::get_all_of_type_definition,
-        any_of::get_any_of_type_definition, comment::get_tombi_value_comment_directive_type_definition,
+        GetTypeDefinition, TypeDefinition, adjacent_type_definition,
+        all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
+        comment::get_tombi_value_comment_directive_type_definition,
         one_of::get_one_of_type_definition, prefer_type_definitions, schema_view_type_definition,
     },
 };
@@ -32,8 +33,11 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Integer {
                     IntegerCommonFormatRules,
                     IntegerCommonLintRules,
                 >(self.comment_directives(), offset, accessors)
-                && let hover_content =
-                    get_tombi_value_comment_directive_type_definition(comment_directive_context, schema_uri).await
+                && let hover_content = get_tombi_value_comment_directive_type_definition(
+                    comment_directive_context,
+                    schema_uri,
+                )
+                .await
                 && !hover_content.is_empty()
             {
                 return hover_content;
@@ -49,7 +53,13 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Integer {
                         }
 
                         let base_type_definition = integer_schema
-                            .get_type_definition(cursor, keys, accessors, Some(current_schema), schema_context)
+                            .get_type_definition(
+                                cursor,
+                                keys,
+                                accessors,
+                                Some(current_schema),
+                                schema_context,
+                            )
                             .await;
 
                         prefer_type_definitions(

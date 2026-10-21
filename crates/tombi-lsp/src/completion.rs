@@ -12,11 +12,14 @@ use tombi_ast_syntax::{AstNode, AstToken};
 use tombi_config::TomlVersion;
 use tombi_document_tree_syntax::{IntoDocumentTreeAndErrors, TryIntoDocumentTree};
 use tombi_extension::CompletionContentPriority;
-use tombi_extension::{CommaHint, CommentContext, CompletionContent, CompletionEdit, CompletionHint, CompletionKind};
+use tombi_extension::{
+    CommaHint, CommentContext, CompletionContent, CompletionEdit, CompletionHint, CompletionKind,
+};
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, AccessorKeyKind, AllOfSchema, AnyOfSchema, CompositeSchema, CurrentSchema, KeyContext, OneOfSchema,
-    SchemaDefinitions, SchemaStore, SchemaUri, SchemaView, get_schema_name,
+    Accessor, AccessorKeyKind, AllOfSchema, AnyOfSchema, CompositeSchema, CurrentSchema,
+    KeyContext, OneOfSchema, SchemaDefinitions, SchemaStore, SchemaUri, SchemaView,
+    get_schema_name,
 };
 
 use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
@@ -78,10 +81,14 @@ pub fn extract_keys_and_hint<'t>(
     offset: tombi_text::Offset,
     toml_version: TomlVersion,
     comment_context: Option<&CommentContext<tombi_ast_syntax::Comment<'_>>>,
-) -> Option<(Vec<tombi_document_tree_syntax::Key<'t>>, Option<CompletionHint>)> {
+) -> Option<(
+    Vec<tombi_document_tree_syntax::Key<'t>>,
+    Option<CompletionHint>,
+)> {
     let mut keys: Vec<tombi_document_tree_syntax::Key<'t>> = vec![];
     let mut completion_hint = None;
-    let is_tombi_value_comment_directive = matches!(comment_context, Some(CommentContext::ValueDirective(_)));
+    let is_tombi_value_comment_directive =
+        matches!(comment_context, Some(CommentContext::ValueDirective(_)));
 
     let cursor = crate::CursorPosition::new(offset, root.syntax().line_index());
 
@@ -126,7 +133,8 @@ pub fn extract_keys_and_hint<'t>(
                 let bracket_end_span = table.bracket_end().map(|bracket| bracket.span());
                 if !is_tombi_value_comment_directive
                     && (offset < bracket_start_span.start
-                        || bracket_end_span.is_some_and(|end| end.end <= offset && cursor.is_on_line(end.end)))
+                        || bracket_end_span
+                            .is_some_and(|end| end.end <= offset && cursor.is_on_line(end.end)))
                 {
                     return None;
                 } else {
@@ -138,10 +146,13 @@ pub fn extract_keys_and_hint<'t>(
             }
             tombi_ast_syntax::TomlNode::ArrayOfTable(array_of_table) => {
                 let double_bracket_start_span = array_of_table.double_bracket_start()?.span();
-                let double_bracket_end_span = array_of_table.double_bracket_end().map(|bracket| bracket.span());
+                let double_bracket_end_span = array_of_table
+                    .double_bracket_end()
+                    .map(|bracket| bracket.span());
                 if !is_tombi_value_comment_directive
                     && (offset < double_bracket_start_span.start
-                        || double_bracket_end_span.is_some_and(|end| end.end <= offset && cursor.is_on_line(end.end)))
+                        || double_bracket_end_span
+                            .is_some_and(|end| end.end <= offset && cursor.is_on_line(end.end)))
                 {
                     return None;
                 } else {
@@ -175,7 +186,9 @@ pub fn extract_keys_and_hint<'t>(
                 .keys()
                 .take_while(|key| key.token().unwrap().span().start <= offset)
             {
-                let document_tree_key = key.into_document_tree_and_errors(toml_version, decoded).tree;
+                let document_tree_key = key
+                    .into_document_tree_and_errors(toml_version, decoded)
+                    .tree;
                 if let Some(document_tree_key) = document_tree_key {
                     new_keys.push(document_tree_key);
                 }
@@ -207,7 +220,9 @@ pub async fn find_completion_contents(
 ) -> Vec<CompletionContent> {
     let offset = cursor.offset();
     let completion_items =
-        match CompletionSource::new(document_tree, offset, keys, schema_context, completion_hint).await {
+        match CompletionSource::new(document_tree, offset, keys, schema_context, completion_hint)
+            .await
+        {
             Some(CompletionSource::Root {
                 remaining_keys,
                 accessors,
@@ -230,7 +245,9 @@ pub async fn find_completion_contents(
                 accessors,
                 current_schema,
             }) => {
-                if let Some((_, value)) = tombi_document_tree_syntax::dig_accessors(document_tree, &accessors) {
+                if let Some((_, value)) =
+                    tombi_document_tree_syntax::dig_accessors(document_tree, &accessors)
+                {
                     value
                         .find_completion_contents(
                             cursor,
@@ -303,7 +320,8 @@ pub(super) fn dedup_composite_completion_contents(
     for (mut item, tooltip) in completion_items {
         match deduped_items.entry(completion_content_key(&item)) {
             tombi_hashmap::map::Entry::Occupied(mut entry) => {
-                let (existing, tooltips): &mut (CompletionContent, Vec<SchemaTooltip>) = entry.get_mut();
+                let (existing, tooltips): &mut (CompletionContent, Vec<SchemaTooltip>) =
+                    entry.get_mut();
                 merge_completion_content(existing, item);
                 if let Some(tooltip) = tooltip {
                     tooltips.push(tooltip);
@@ -502,11 +520,9 @@ pub(super) async fn merge_adjacent_schema_completion_items(
     });
 
     let mut completion_items = adjacent_completion_items;
-    completion_items.extend(
-        base_completion_items
-            .into_iter()
-            .filter(|completion_item| !has_concrete_adjacent_values || !is_generic_literal_type_hint(completion_item)),
-    );
+    completion_items.extend(base_completion_items.into_iter().filter(|completion_item| {
+        !has_concrete_adjacent_values || !is_generic_literal_type_hint(completion_item)
+    }));
     dedup_composite_completion_contents(
         completion_items
             .into_iter()
@@ -630,7 +646,10 @@ fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
             return candidates.into_iter().next();
         }
 
-        composite_schema.title().as_deref().map(|title| title.into())
+        composite_schema
+            .title()
+            .as_deref()
+            .map(|title| title.into())
     }
     .boxed()
 }

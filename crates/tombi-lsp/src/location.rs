@@ -24,7 +24,10 @@ pub async fn into_lsp_locations(
             // The extension converted the range with the text it was built from,
             // even if the file is open with unsaved changes.
             Some(range) => tower_lsp_server::gen_lsp_types::Range::new(
-                tower_lsp_server::gen_lsp_types::Position::new(range.start.line, range.start.column),
+                tower_lsp_server::gen_lsp_types::Position::new(
+                    range.start.line,
+                    range.start.column,
+                ),
                 tower_lsp_server::gen_lsp_types::Position::new(range.end.line, range.end.column),
             ),
             // A file that is not parsed is opened at its start.

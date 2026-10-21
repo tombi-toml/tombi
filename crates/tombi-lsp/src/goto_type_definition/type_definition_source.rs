@@ -29,14 +29,26 @@ impl<'a, 't> TypeDefinitionSource<'a, 't> {
     ) -> Option<Self> {
         let accessors = tombi_document_tree_syntax::get_accessors(document_tree, keys, offset);
         let (mut accessors, mut current_schema) =
-            resolve_accessors_for_document_or_schema(document_tree, accessors, schema_context).await;
+            resolve_accessors_for_document_or_schema(document_tree, accessors, schema_context)
+                .await;
 
-        if remaining_keys(keys, &accessors).is_empty() && matches!(accessors.last(), Some(Accessor::Index(_))) {
+        if remaining_keys(keys, &accessors).is_empty()
+            && matches!(accessors.last(), Some(Accessor::Index(_)))
+        {
             let parent_accessors = accessors[..accessors.len().saturating_sub(1)].to_vec();
             let (resolved_parent_accessors, resolved_parent_schema) =
-                resolve_accessors_for_document_or_schema(document_tree, parent_accessors, schema_context).await;
+                resolve_accessors_for_document_or_schema(
+                    document_tree,
+                    parent_accessors,
+                    schema_context,
+                )
+                .await;
             if resolved_parent_accessors.is_empty()
-                || tombi_document_tree_syntax::dig_accessors(document_tree, &resolved_parent_accessors).is_some()
+                || tombi_document_tree_syntax::dig_accessors(
+                    document_tree,
+                    &resolved_parent_accessors,
+                )
+                .is_some()
                 || resolved_parent_schema.is_some()
             {
                 accessors = resolved_parent_accessors;
@@ -50,9 +62,18 @@ impl<'a, 't> TypeDefinitionSource<'a, 't> {
         {
             let parent_accessors = accessors[..accessors.len().saturating_sub(1)].to_vec();
             let (resolved_parent_accessors, resolved_parent_schema) =
-                resolve_accessors_for_document_or_schema(document_tree, parent_accessors, schema_context).await;
+                resolve_accessors_for_document_or_schema(
+                    document_tree,
+                    parent_accessors,
+                    schema_context,
+                )
+                .await;
             if resolved_parent_accessors.is_empty()
-                || tombi_document_tree_syntax::dig_accessors(document_tree, &resolved_parent_accessors).is_some()
+                || tombi_document_tree_syntax::dig_accessors(
+                    document_tree,
+                    &resolved_parent_accessors,
+                )
+                .is_some()
                 || resolved_parent_schema.is_some()
             {
                 accessors = resolved_parent_accessors;

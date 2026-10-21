@@ -1,7 +1,8 @@
 use itertools::Itertools;
 use tombi_ast_syntax::AstNode as _;
 use tombi_comment_directive::{
-    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl, document::TombiDocumentDirectiveContent,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
+    document::TombiDocumentDirectiveContent,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
@@ -49,7 +50,9 @@ pub async fn get_tombi_value_comment_directive_type_definition(
     let root = parsed.root();
     let decoded = root.decode_strings(toml_version);
 
-    let Some((keys, range)) = get_hover_keys_with_span(&root, &decoded, offset_in_content, toml_version).await else {
+    let Some((keys, range)) =
+        get_hover_keys_with_span(&root, &decoded, offset_in_content, toml_version).await
+    else {
         return Vec::new();
     };
 
@@ -59,7 +62,9 @@ pub async fn get_tombi_value_comment_directive_type_definition(
 
     // The positions are in the content of the directive, which is parsed as a separate document.
     let line_index = parsed.line_index();
-    let document_tree = root.into_document_tree_and_errors(toml_version, &decoded).tree;
+    let document_tree = root
+        .into_document_tree_and_errors(toml_version, &decoded)
+        .tree;
 
     let schema_store = tombi_comment_directive_store::schema_store().await;
     let source_schema = tombi_schema_store::SourceSchema::new(

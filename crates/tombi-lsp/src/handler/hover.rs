@@ -29,7 +29,9 @@ pub async fn handle_hover(
     let text_document_uri = text_document.uri.into();
 
     let ConfigSchemaStore {
-        config, schema_store, ..
+        config,
+        schema_store,
+        ..
     } = backend
         .config_manager
         .config_schema_store_for_uri(&text_document_uri)
@@ -52,12 +54,18 @@ pub async fn handle_hover(
     let Some(document_source) = backend.document_source(&text_document_uri) else {
         return Ok(None);
     };
-    let converter = tombi_extension::SpanConverter::new(document_source.line_index(), document_source.encoding_kind());
+    let converter = tombi_extension::SpanConverter::new(
+        document_source.line_index(),
+        document_source.encoding_kind(),
+    );
     let (root, document_tree, toml_version, offset): (_, _, _, tombi_text::Offset) = (
         document_source.ast(),
         document_source.document_tree(),
         document_source.toml_version,
-        position.into_lsp(document_source.line_index(), document_source.encoding_kind()),
+        position.into_lsp(
+            document_source.line_index(),
+            document_source.encoding_kind(),
+        ),
     );
 
     let source_schema = schema_store
@@ -68,11 +76,14 @@ pub async fn handle_hover(
 
     let source_path = text_document_uri.to_file_path().ok();
     // Check if offset is in a #:tombi comment directive
-    if let Some(content) = get_document_comment_directive_hover_content(&root, offset, source_path.as_deref()).await {
+    if let Some(content) =
+        get_document_comment_directive_hover_content(&root, offset, source_path.as_deref()).await
+    {
         return Ok(Some(content));
     }
 
-    let Some((keys, span)) = get_hover_keys_with_span(&root, document_source.decoded(), offset, toml_version).await
+    let Some((keys, span)) =
+        get_hover_keys_with_span(&root, document_source.decoded(), offset, toml_version).await
     else {
         log::debug!("failed to get hover keys with span");
         return Ok(None);
@@ -86,7 +97,12 @@ pub async fn handle_hover(
     let strict = tombi_validator::comment_directive::get_tombi_document_comment_directive(&root)
         .await
         .and_then(|directive| directive.schema.and_then(|schema| schema.strict));
-    let schema_context = SchemaContext::from_source_schema(toml_version, source_schema.as_ref(), &schema_store, strict);
+    let schema_context = SchemaContext::from_source_schema(
+        toml_version,
+        source_schema.as_ref(),
+        &schema_store,
+        strict,
+    );
 
     let mut hover_content = get_hover_content(document_tree, offset, &keys, &schema_context).await;
 
@@ -196,7 +212,10 @@ pub async fn handle_hover(
     Ok(hover_content)
 }
 
-fn apply_hover_metadata(hover_value_content: &mut crate::hover::HoverValueContent, metadata: HoverMetadata) {
+fn apply_hover_metadata(
+    hover_value_content: &mut crate::hover::HoverValueContent,
+    metadata: HoverMetadata,
+) {
     apply_hover_text_change(&mut hover_value_content.title, metadata.title);
     apply_hover_text_change(&mut hover_value_content.description, metadata.description);
 }
@@ -221,7 +240,10 @@ pub async fn get_hover_keys_with_span<'t>(
     decoded: &'t tombi_ast_syntax::DecodedTextResolver,
     offset: tombi_text::Offset,
     toml_version: tombi_config::TomlVersion,
-) -> Option<(Vec<tombi_document_tree_syntax::Key<'t>>, Option<tombi_text::Span>)> {
+) -> Option<(
+    Vec<tombi_document_tree_syntax::Key<'t>>,
+    Option<tombi_text::Span>,
+)> {
     let mut keys_vec = vec![];
     let mut hover_span = None;
 
@@ -254,9 +276,13 @@ pub async fn get_hover_keys_with_span<'t>(
                             }
                         }
                         DanglingCommentGroupOr::ItemGroup(value_group) => {
-                            for (value_or_key_value, comma) in value_group.value_or_key_values_with_comma() {
+                            for (value_or_key_value, comma) in
+                                value_group.value_or_key_values_with_comma()
+                            {
                                 if hover_span.is_none() {
-                                    let Some(span) = array_value_hover_span(&value_or_key_value, comma.as_ref()) else {
+                                    let Some(span) =
+                                        array_value_hover_span(&value_or_key_value, comma.as_ref())
+                                    else {
                                         continue;
                                     };
                                     if span.contains_inclusive(offset) {
@@ -283,7 +309,10 @@ pub async fn get_hover_keys_with_span<'t>(
             if hover_span.is_none() && on_leading_comment || on_brace_start_trailing_comment {
                 hover_span = Some(inline_table.syntax().span());
             } else if hover_span.is_none() && on_trailing_comment {
-                hover_span = Some(key_value_parent_or_self_span(root, inline_table.syntax().span()));
+                hover_span = Some(key_value_parent_or_self_span(
+                    root,
+                    inline_table.syntax().span(),
+                ));
             } else {
                 for groups in inline_table.key_value_with_comma_groups() {
                     match groups {
@@ -299,8 +328,10 @@ pub async fn get_hover_keys_with_span<'t>(
                         DanglingCommentGroupOr::ItemGroup(key_value_group) => {
                             for (key_value, comma) in key_value_group.key_values_with_comma() {
                                 if hover_span.is_none() {
-                                    let Some(span) = inline_table_key_value_hover_span(&key_value, comma.as_ref())
-                                    else {
+                                    let Some(span) = inline_table_key_value_hover_span(
+                                        &key_value,
+                                        comma.as_ref(),
+                                    ) else {
                                         continue;
                                     };
                                     if span.contains_inclusive(offset) {
@@ -384,11 +415,13 @@ pub async fn get_hover_keys_with_span<'t>(
                     || array_of_table
                         .header_trailing_comment()
                         .is_some_and(|comment| comment.syntax().span().contains_inclusive(offset))
-                    || array_of_table.dangling_comment_groups().any(|comment_group| {
-                        comment_group
-                            .comments()
-                            .any(|comment| comment.syntax().span().contains_inclusive(offset))
-                    }))
+                    || array_of_table
+                        .dangling_comment_groups()
+                        .any(|comment_group| {
+                            comment_group
+                                .comments()
+                                .any(|comment| comment.syntax().span().contains_inclusive(offset))
+                        }))
             {
                 let mut span = array_of_table.syntax().span();
                 if let Some(last_sub_table) = array_of_table.last_sub_table() {
@@ -448,7 +481,9 @@ pub async fn get_hover_keys_with_span<'t>(
                 .keys()
                 .take_while(|key| key.token().unwrap().span().start <= offset)
             {
-                let document_tree_key = key.into_document_tree_and_errors(toml_version, decoded).tree;
+                let document_tree_key = key
+                    .into_document_tree_and_errors(toml_version, decoded)
+                    .tree;
                 if let Some(document_tree_key) = document_tree_key {
                     new_keys.push(document_tree_key);
                 }
@@ -457,7 +492,9 @@ pub async fn get_hover_keys_with_span<'t>(
         } else {
             let mut new_keys = Vec::with_capacity(keys.keys().count());
             for key in keys.keys() {
-                let document_tree_key = key.into_document_tree_and_errors(toml_version, decoded).tree;
+                let document_tree_key = key
+                    .into_document_tree_and_errors(toml_version, decoded)
+                    .tree;
                 if let Some(document_tree_key) = document_tree_key {
                     new_keys.push(document_tree_key);
                 }
@@ -472,7 +509,10 @@ pub async fn get_hover_keys_with_span<'t>(
         keys_vec.push(keys);
     }
 
-    Some((keys_vec.into_iter().rev().flatten().collect_vec(), hover_span))
+    Some((
+        keys_vec.into_iter().rev().flatten().collect_vec(),
+        hover_span,
+    ))
 }
 
 fn key_value_parent_or_self_span(
@@ -494,7 +534,9 @@ fn array_value_hover_span(
         .map(|comment| comment.syntax().span().start)
         .or_else(|| match value_or_key_value {
             tombi_ast_syntax::ValueOrKeyValue::Value(value) => Some(value.token_span().start),
-            tombi_ast_syntax::ValueOrKeyValue::KeyValue(key_value) => key_value.keys().map(|keys| keys.span().start),
+            tombi_ast_syntax::ValueOrKeyValue::KeyValue(key_value) => {
+                key_value.keys().map(|keys| keys.span().start)
+            }
         })?;
     let end = match value_or_key_value {
         tombi_ast_syntax::ValueOrKeyValue::Value(value) => value.span().end,
@@ -568,9 +610,10 @@ mod tests {
                 let root = parsed.root();
                 let decoded = root.decode_strings(TomlVersion::V1_0_0);
 
-                let (_, hover_span) = get_hover_keys_with_span(&root, &decoded, offset, TomlVersion::V1_0_0)
-                    .await
-                    .ok_or("failed to get hover keys with span")?;
+                let (_, hover_span) =
+                    get_hover_keys_with_span(&root, &decoded, offset, TomlVersion::V1_0_0)
+                        .await
+                        .ok_or("failed to get hover keys with span")?;
 
                 pretty_assertions::assert_eq!(
                     hover_span.map(|span| {

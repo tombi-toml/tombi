@@ -9,7 +9,9 @@ use std::ops::Deref;
 
 pub use comment::get_tombi_document_comment_directive_type_definition;
 use itertools::Itertools;
-use tombi_schema_store::{Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaUri};
+use tombi_schema_store::{
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaUri,
+};
 use tower_lsp_server::gen_lsp_types::{Definition, TypeDefinitionResponse};
 
 use crate::{Backend, remote_file::open_remote_file};
@@ -23,7 +25,8 @@ pub async fn get_type_definition(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Vec<TypeDefinition> {
     let offset = cursor.offset();
-    let Some(source) = TypeDefinitionSource::new(document_tree, offset, keys, schema_context).await else {
+    let Some(source) = TypeDefinitionSource::new(document_tree, offset, keys, schema_context).await
+    else {
         return Vec::new();
     };
 
@@ -49,7 +52,9 @@ pub async fn get_type_definition(
             accessors,
             current_schema,
         } => {
-            let Some((_, value)) = tombi_document_tree_syntax::dig_accessors(document_tree, &accessors) else {
+            let Some((_, value)) =
+                tombi_document_tree_syntax::dig_accessors(document_tree, &accessors)
+            else {
                 return Vec::new();
             };
             value
@@ -111,12 +116,12 @@ pub async fn try_get_type_definition_response(
 
     match locations.len() {
         0 => Ok(None),
-        1 => Ok(Some(TypeDefinitionResponse::Definition(Definition::Location(
-            locations.into_iter().next().unwrap(),
-        )))),
-        _ => Ok(Some(TypeDefinitionResponse::Definition(Definition::LocationList(
-            locations,
-        )))),
+        1 => Ok(Some(TypeDefinitionResponse::Definition(
+            Definition::Location(locations.into_iter().next().unwrap()),
+        ))),
+        _ => Ok(Some(TypeDefinitionResponse::Definition(
+            Definition::LocationList(locations),
+        ))),
     }
 }
 
@@ -153,7 +158,10 @@ pub(crate) fn location_key(
 }
 
 /// The fragment of a schema URI that opens the JSON Schema file at the line of `span`.
-pub(crate) fn schema_line_fragment(line_index: &tombi_text::OwnedLineIndex, span: tombi_text::Span) -> String {
+pub(crate) fn schema_line_fragment(
+    line_index: &tombi_text::OwnedLineIndex,
+    span: tombi_text::Span,
+) -> String {
     format!("L{}", line_index.as_line_index().line(span.start) + 1)
 }
 
@@ -276,7 +284,10 @@ pub(super) fn schema_type_definition(
     span: tombi_text::Span,
 ) -> TypeDefinition {
     let mut schema_base_uri = current_schema.schema_base_uri.as_ref().clone();
-    schema_base_uri.set_fragment(Some(&schema_line_fragment(&current_schema.line_index, span)));
+    schema_base_uri.set_fragment(Some(&schema_line_fragment(
+        &current_schema.line_index,
+        span,
+    )));
 
     TypeDefinition {
         schema_base_uri,
@@ -292,7 +303,10 @@ pub(super) fn schema_view_type_definition(
     span: tombi_text::Span,
 ) -> TypeDefinition {
     let mut schema_base_uri = current_schema.schema_base_uri.as_ref().clone();
-    schema_base_uri.set_fragment(Some(&schema_line_fragment(&current_schema.line_index, span)));
+    schema_base_uri.set_fragment(Some(&schema_line_fragment(
+        &current_schema.line_index,
+        span,
+    )));
 
     TypeDefinition {
         schema_base_uri,

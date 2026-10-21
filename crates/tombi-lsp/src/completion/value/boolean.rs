@@ -6,7 +6,8 @@ use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
     completion::{
         CompletionContent, CompletionEdit, CompletionHint, FindCompletionContents,
-        comment::get_tombi_comment_directive_content_completion_contents, merge_adjacent_schema_completion_items,
+        comment::get_tombi_comment_directive_content_completion_contents,
+        merge_adjacent_schema_completion_items,
     },
 };
 
@@ -34,8 +35,11 @@ impl FindCompletionContents for tombi_document_tree_syntax::Boolean {
                     BooleanCommonFormatRules,
                     BooleanCommonLintRules,
                 >(self.comment_directives(), offset, accessors)
-                && let Some(completions) =
-                    get_tombi_comment_directive_content_completion_contents(comment_directive_context, schema_uri).await
+                && let Some(completions) = get_tombi_comment_directive_content_completion_contents(
+                    comment_directive_context,
+                    schema_uri,
+                )
+                .await
             {
                 return completions;
             }

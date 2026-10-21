@@ -1,15 +1,16 @@
 use itertools::Itertools;
 use tombi_ast_syntax::AstNode as _;
 use tombi_comment_directive::{
-    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl, document::TombiDocumentDirectiveContent,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
+    document::TombiDocumentDirectiveContent,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
 use tombi_uri::SchemaUri;
 
 use crate::{
-    DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE, DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION,
-    DOCUMENT_TOMBI_DIRECTIVE_TITLE,
+    DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
+    DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
     comment_directive::{
         CommentDirectiveContext, GetCommentDirectiveContext, VALUE_TOMBI_DIRECTIVE_DESCRIPTION,
         VALUE_TOMBI_DIRECTIVE_TITLE,
@@ -38,7 +39,8 @@ pub async fn get_document_comment_directive_hover_content(
             CommentDirectiveContext::Content { content_span, .. } => {
                 return Some(HoverContent::Directive(HoverDirectiveContent {
                     title: "Schema URL".to_string(),
-                    description: "The URL/Path of the schema that applies to this document.".to_string(),
+                    description: "The URL/Path of the schema that applies to this document."
+                        .to_string(),
                     span: content_span,
                 }));
             }
@@ -84,13 +86,21 @@ pub async fn get_value_comment_directive_hover_content(
             content_span,
             offset_in_content,
         } => {
-            get_comment_directive_toml_content_hover_content(content, content_span, offset_in_content, schema_uri).await
+            get_comment_directive_toml_content_hover_content(
+                content,
+                content_span,
+                offset_in_content,
+                schema_uri,
+            )
+            .await
         }
-        CommentDirectiveContext::Directive { directive_span } => Some(HoverContent::Directive(HoverDirectiveContent {
-            title: VALUE_TOMBI_DIRECTIVE_TITLE.to_string(),
-            description: VALUE_TOMBI_DIRECTIVE_DESCRIPTION.to_string(),
-            span: directive_span,
-        })),
+        CommentDirectiveContext::Directive { directive_span } => {
+            Some(HoverContent::Directive(HoverDirectiveContent {
+                title: VALUE_TOMBI_DIRECTIVE_TITLE.to_string(),
+                description: VALUE_TOMBI_DIRECTIVE_DESCRIPTION.to_string(),
+                span: directive_span,
+            }))
+        }
     }
 }
 
@@ -132,7 +142,9 @@ async fn get_comment_directive_toml_content_hover_content(
         );
 
         if let Some(hover_content) = get_hover_content(
-            &directive_ast.into_document_tree_and_errors(toml_version, &decoded).tree,
+            &directive_ast
+                .into_document_tree_and_errors(toml_version, &decoded)
+                .tree,
             offset_in_content,
             &keys,
             &schema_context,
@@ -145,7 +157,9 @@ async fn get_comment_directive_toml_content_hover_content(
                     hover_value_content.span = adjusted_span;
                     Some(HoverContent::DirectiveContent(hover_value_content))
                 }
-                HoverContent::Directive(hover_content) => Some(HoverContent::Directive(hover_content)),
+                HoverContent::Directive(hover_content) => {
+                    Some(HoverContent::Directive(hover_content))
+                }
             };
         }
     }

@@ -56,12 +56,16 @@ impl std::hash::Hash for DisplayValue {
 }
 
 impl DisplayValue {
-    pub fn try_new_offset_date_time(local_date_time: &str) -> Result<Self, tombi_date_time::parse::Error> {
+    pub fn try_new_offset_date_time(
+        local_date_time: &str,
+    ) -> Result<Self, tombi_date_time::parse::Error> {
         tombi_date_time::LocalDateTime::from_str(local_date_time)?;
         Ok(DisplayValue::OffsetDateTime(local_date_time.to_string()))
     }
 
-    pub fn try_new_local_date_time(local_date_time: &str) -> Result<Self, tombi_date_time::parse::Error> {
+    pub fn try_new_local_date_time(
+        local_date_time: &str,
+    ) -> Result<Self, tombi_date_time::parse::Error> {
         tombi_date_time::LocalDateTime::from_str(local_date_time)?;
         Ok(DisplayValue::LocalDateTime(local_date_time.to_string()))
     }
@@ -247,7 +251,11 @@ impl GetEnum for SchemaView {
                     }
 
                     if let Some(r#enum) = &schema.r#enum {
-                        enum_values.extend(r#enum.iter().map(|v| DisplayValue::OffsetDateTime(v.clone())));
+                        enum_values.extend(
+                            r#enum
+                                .iter()
+                                .map(|v| DisplayValue::OffsetDateTime(v.clone())),
+                        );
                     }
 
                     if !enum_values.is_empty() {
@@ -264,7 +272,11 @@ impl GetEnum for SchemaView {
                     }
 
                     if let Some(r#enum) = &schema.r#enum {
-                        enum_values.extend(r#enum.iter().map(|v| DisplayValue::LocalDateTime(v.clone())));
+                        enum_values.extend(
+                            r#enum
+                                .iter()
+                                .map(|v| DisplayValue::LocalDateTime(v.clone())),
+                        );
                     }
 
                     if !enum_values.is_empty() {
@@ -281,7 +293,8 @@ impl GetEnum for SchemaView {
                     }
 
                     if let Some(r#enum) = &schema.r#enum {
-                        enum_values.extend(r#enum.iter().map(|v| DisplayValue::LocalDate(v.clone())));
+                        enum_values
+                            .extend(r#enum.iter().map(|v| DisplayValue::LocalDate(v.clone())));
                     }
 
                     if !enum_values.is_empty() {
@@ -298,7 +311,8 @@ impl GetEnum for SchemaView {
                     }
 
                     if let Some(r#enum) = &schema.r#enum {
-                        enum_values.extend(r#enum.iter().map(|v| DisplayValue::LocalTime(v.clone())));
+                        enum_values
+                            .extend(r#enum.iter().map(|v| DisplayValue::LocalTime(v.clone())));
                     }
 
                     if !enum_values.is_empty() {
@@ -314,7 +328,9 @@ impl GetEnum for SchemaView {
                 | SchemaView::Null => None,
                 SchemaView::OneOf(OneOfSchema { .. })
                 | SchemaView::AnyOf(AnyOfSchema { .. })
-                | SchemaView::AllOf(AllOfSchema { .. }) => get_enum_from_schemas(current_schema, schema_context).await,
+                | SchemaView::AllOf(AllOfSchema { .. }) => {
+                    get_enum_from_schemas(current_schema, schema_context).await
+                }
             }
         }
         .boxed()
@@ -346,7 +362,11 @@ fn get_enum_from_schemas<'a: 'b, 'b>(
         .await?;
 
         for resolved in &resolved_schemas {
-            if let Some(values) = resolved.schema_view.get_enum(resolved, schema_context).await {
+            if let Some(values) = resolved
+                .schema_view
+                .get_enum(resolved, schema_context)
+                .await
+            {
                 enum_values.extend(values);
             }
         }

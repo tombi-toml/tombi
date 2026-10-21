@@ -13,16 +13,26 @@ impl WorkspaceDiagnosticsCache {
             .map(|tracked_targets| tracked_targets.iter().cloned().collect())
     }
 
-    pub fn set_workspace_targets(&mut self, workspace_targets: tombi_hashmap::HashSet<tombi_uri::Uri>) {
+    pub fn set_workspace_targets(
+        &mut self,
+        workspace_targets: tombi_hashmap::HashSet<tombi_uri::Uri>,
+    ) {
         self.workspace_targets = Some(workspace_targets);
     }
 
     pub fn get(&self, text_document_uri: &tombi_uri::Uri) -> Option<&DiagnosticsResult> {
-        self.cache.get(text_document_uri).and_then(|result| result.as_ref())
+        self.cache
+            .get(text_document_uri)
+            .and_then(|result| result.as_ref())
     }
 
-    pub fn set(&mut self, text_document_uri: tombi_uri::Uri, diagnostics_result: DiagnosticsResult) {
-        self.cache.insert(text_document_uri, Some(diagnostics_result));
+    pub fn set(
+        &mut self,
+        text_document_uri: tombi_uri::Uri,
+        diagnostics_result: DiagnosticsResult,
+    ) {
+        self.cache
+            .insert(text_document_uri, Some(diagnostics_result));
     }
 
     pub fn track(&mut self, text_document_uri: tombi_uri::Uri, is_workspace_target: bool) {
@@ -47,7 +57,11 @@ impl WorkspaceDiagnosticsCache {
         if let Some(tracked_targets) = self.workspace_targets.as_mut()
             && tracked_targets.contains(text_document_uri)
         {
-            if let Some(diagnostics_result) = self.cache.get_mut(text_document_uri).and_then(|result| result.as_mut()) {
+            if let Some(diagnostics_result) = self
+                .cache
+                .get_mut(text_document_uri)
+                .and_then(|result| result.as_mut())
+            {
                 diagnostics_result.version = None;
             }
         } else {
