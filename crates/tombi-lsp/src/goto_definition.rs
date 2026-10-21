@@ -1,4 +1,6 @@
-use tower_lsp_server::gen_lsp_types::{Declaration, DeclarationResponse, Definition, DefinitionResponse};
+use tower_lsp_server::gen_lsp_types::{
+    Declaration, DeclarationResponse, Definition, DefinitionResponse,
+};
 
 use crate::{Backend, location::into_lsp_locations};
 
@@ -18,7 +20,9 @@ pub async fn try_get_goto_declaration_response(
     Ok(try_get_definition(backend, locations)
         .await?
         .map(|definition| match definition {
-            Definition::Location(location) => DeclarationResponse::Declaration(Declaration::Location(location)),
+            Definition::Location(location) => {
+                DeclarationResponse::Declaration(Declaration::Location(location))
+            }
             Definition::LocationList(locations) => {
                 DeclarationResponse::Declaration(Declaration::LocationList(locations))
             }
@@ -37,7 +41,9 @@ async fn try_get_definition(
 
     match locations.len() {
         0 => Ok(None),
-        1 => Ok(Some(Definition::Location(locations.into_iter().next().unwrap()))),
+        1 => Ok(Some(Definition::Location(
+            locations.into_iter().next().unwrap(),
+        ))),
         _ => Ok(Some(Definition::LocationList(locations))),
     }
 }

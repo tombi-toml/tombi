@@ -30,7 +30,10 @@ pub async fn handle_get_toml_version(
         (TomlVersion::default(), TomlVersionSource::Default)
     };
 
-    Ok(GetTomlVersionResponse { toml_version, source })
+    Ok(GetTomlVersionResponse {
+        toml_version,
+        source,
+    })
 }
 
 #[derive(Debug, serde::Serialize)]

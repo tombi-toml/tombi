@@ -1,4 +1,6 @@
-use tombi_comment_directive::value::{OffsetDateTimeCommonFormatRules, OffsetDateTimeCommonLintRules};
+use tombi_comment_directive::value::{
+    OffsetDateTimeCommonFormatRules, OffsetDateTimeCommonLintRules,
+};
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, OffsetDateTimeSchema, SchemaUri};
@@ -8,7 +10,8 @@ use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
     completion::{
         CompletionContent, CompletionEdit, CompletionHint, FindCompletionContents,
-        comment::get_tombi_comment_directive_content_completion_contents, merge_adjacent_schema_completion_items,
+        comment::get_tombi_comment_directive_content_completion_contents,
+        merge_adjacent_schema_completion_items,
     },
 };
 
@@ -36,8 +39,11 @@ impl FindCompletionContents for tombi_document_tree_syntax::OffsetDateTime {
                     OffsetDateTimeCommonFormatRules,
                     OffsetDateTimeCommonLintRules,
                 >(self.comment_directives(), offset, accessors)
-                && let Some(completions) =
-                    get_tombi_comment_directive_content_completion_contents(comment_directive_context, schema_uri).await
+                && let Some(completions) = get_tombi_comment_directive_content_completion_contents(
+                    comment_directive_context,
+                    schema_uri,
+                )
+                .await
             {
                 return completions;
             }
@@ -158,7 +164,11 @@ impl FindCompletionContents for OffsetDateTimeSchema {
             }
 
             if completion_items.is_empty() {
-                completion_items.extend(type_hint_offset_date_time(offset, schema_base_uri, completion_hint));
+                completion_items.extend(type_hint_offset_date_time(
+                    offset,
+                    schema_base_uri,
+                    completion_hint,
+                ));
 
                 if schema_context.has_string_format(StringFormat::DateTime) {
                     completion_items.extend(super::string::type_hint_string(

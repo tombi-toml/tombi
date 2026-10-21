@@ -277,11 +277,14 @@ impl GetHoverContent for tombi_document_tree_syntax::Array<'_> {
 fn comment_directive_array_values_order(
     array: &tombi_document_tree_syntax::Array<'_>,
 ) -> Option<tombi_schema_store::ArrayOrderOverride> {
-    let comment_directive = get_comment_directive_content::<ArrayCommonFormatRules, ArrayCommonLintRules>(
-        array.comment_directives()?.cloned(),
-    )?;
+    let comment_directive = get_comment_directive_content::<
+        ArrayCommonFormatRules,
+        ArrayCommonLintRules,
+    >(array.comment_directives()?.cloned())?;
 
-    let disabled = comment_directive.array_values_order_disabled().unwrap_or_default();
+    let disabled = comment_directive
+        .array_values_order_disabled()
+        .unwrap_or_default();
     let order = comment_directive.array_values_order().map(Into::into);
 
     (disabled || order.is_some()).then_some(tombi_schema_store::ArrayOrderOverride {

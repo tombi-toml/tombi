@@ -5,8 +5,8 @@ use std::{
 
 use tower_lsp_server::gen_lsp_types::{
     FullDocumentDiagnosticReport, UnchangedDocumentDiagnosticReport, WorkspaceDiagnosticParams,
-    WorkspaceDiagnosticReport, WorkspaceDocumentDiagnosticReport, WorkspaceFullDocumentDiagnosticReport,
-    WorkspaceUnchangedDocumentDiagnosticReport,
+    WorkspaceDiagnosticReport, WorkspaceDocumentDiagnosticReport,
+    WorkspaceFullDocumentDiagnosticReport, WorkspaceUnchangedDocumentDiagnosticReport,
 };
 
 use crate::{
@@ -34,15 +34,22 @@ pub async fn handle_workspace_diagnostic(
     log::info!("handle_workspace_diagnostic");
     log::trace!("previous_result_ids: {previous_result_ids:?}");
 
-    let target_set = targets.iter().cloned().collect::<tombi_hashmap::HashSet<_>>();
+    let target_set = targets
+        .iter()
+        .cloned()
+        .collect::<tombi_hashmap::HashSet<_>>();
     let mut items = Vec::new();
 
     for text_document_uri in targets {
-        let Some(diagnostics_result) = get_diagnostics_result(backend, &text_document_uri).await else {
+        let Some(diagnostics_result) = get_diagnostics_result(backend, &text_document_uri).await
+        else {
             continue;
         };
 
-        let DiagnosticsResult { diagnostics, version } = diagnostics_result;
+        let DiagnosticsResult {
+            diagnostics,
+            version,
+        } = diagnostics_result;
         let result_id = workspace_diagnostic_result_id(version, &diagnostics);
 
         if previous_result_ids
@@ -54,7 +61,9 @@ pub async fn handle_workspace_diagnostic(
                     WorkspaceUnchangedDocumentDiagnosticReport {
                         uri: text_document_uri.into(),
                         version,
-                        unchanged_document_diagnostic_report: UnchangedDocumentDiagnosticReport { result_id },
+                        unchanged_document_diagnostic_report: UnchangedDocumentDiagnosticReport {
+                            result_id,
+                        },
                     },
                 ),
             );
@@ -102,6 +111,8 @@ pub fn workspace_diagnostic_result_id(
 ) -> String {
     let mut hasher = DefaultHasher::new();
     version.hash(&mut hasher);
-    serde_json::to_string(diagnostics).unwrap_or_default().hash(&mut hasher);
+    serde_json::to_string(diagnostics)
+        .unwrap_or_default()
+        .hash(&mut hasher);
     format!("{:x}", hasher.finish())
 }

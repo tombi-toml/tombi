@@ -149,6 +149,10 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
       - [extensions."tombi-toml/cargo".lsp.hover](#extensions-tombi-toml-cargo-lsp-hover)
       - [extensions."tombi-toml/cargo".lsp.inlay-hint](#extensions-tombi-toml-cargo-lsp-inlay-hint)
       - [extensions."tombi-toml/cargo".lsp.references](#extensions-tombi-toml-cargo-lsp-references)
+  - [extensions."tombi-toml/pixi"](#extensions-tombi-toml-pixi)
+    - [extensions."tombi-toml/pixi".lsp](#extensions-tombi-toml-pixi-lsp)
+      - [extensions."tombi-toml/pixi".lsp.completion](#extensions-tombi-toml-pixi-lsp-completion)
+      - [extensions."tombi-toml/pixi".lsp.hover](#extensions-tombi-toml-pixi-lsp-hover)
   - [extensions."tombi-toml/pyproject"](#extensions-tombi-toml-pyproject)
     - [extensions."tombi-toml/pyproject".lsp](#extensions-tombi-toml-pyproject-lsp)
       - [extensions."tombi-toml/pyproject".lsp.code-action](#extensions-tombi-toml-pyproject-lsp-code-action)
@@ -1107,6 +1111,7 @@ If an extension or feature is omitted, it is enabled by default.
 
 Available extension IDs:
 - `tombi-toml/cargo`: Cargo-specific completion, navigation, document links, code actions, hover, and inlay hints for `Cargo.toml`
+- `tombi-toml/pixi`: `pixi.toml`-specific conda dependency version completion and hover
 - `tombi-toml/pyproject`: `pyproject.toml`-specific completion, navigation, document links, code actions, hover, and inlay hints
 - `tombi-toml/tombi`: Tombi's own config-oriented path completion, navigation, document links, and hover
 
@@ -1586,6 +1591,96 @@ See [Cargo Extension > Inlay Hints](/docs/extensions/tombi-extension-cargo#inlay
 ### extensions."tombi-toml/cargo".lsp.inlay-hint.workspace-value.enabled
 
 Enable or disable workspace-value inlay hints for Cargo workspace inheritance.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pixi"
+
+Configure the experimental `pixi.toml` extension.
+
+See [Pixi Extension](/docs/extensions/tombi-extension-pixi) for the supported `pixi.toml` editor features.
+
+- Type: `Table`
+
+### extensions."tombi-toml/pixi".enabled
+
+Enable or disable the entire `pixi.toml` extension.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pixi".lsp
+
+Configure `pixi.toml` extension language-server features such as completion and hover.
+
+See [Pixi Extension](/docs/extensions/tombi-extension-pixi) for feature details.
+
+- Type: `Table`
+
+### extensions."tombi-toml/pixi".lsp.enabled
+
+Enable or disable all `pixi.toml` extension language-server features.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pixi".lsp.completion
+
+Configure `pixi.toml`-specific completion features.
+
+See [Pixi Extension > Completion](/docs/extensions/tombi-extension-pixi#completion).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pixi".lsp.completion.enabled
+
+Enable or disable all `pixi.toml` completion features provided by the extension.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pixi".lsp.completion.dependency-version
+
+Configure version completion for conda dependencies in `pixi.toml`.
+
+See [Pixi Extension > Completion](/docs/extensions/tombi-extension-pixi#completion).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pixi".lsp.completion.dependency-version.enabled
+
+Enable or disable version completion for conda dependencies in `pixi.toml`.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pixi".lsp.hover
+
+Configure `pixi.toml`-specific hover features.
+
+See [Pixi Extension > Hover](/docs/extensions/tombi-extension-pixi#hover).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pixi".lsp.hover.enabled
+
+Enable or disable all `pixi.toml` hover features provided by the extension.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/pixi".lsp.hover.dependency-detail
+
+Configure the latest version hover for conda dependencies in `pixi.toml`.
+
+See [Pixi Extension > Hover](/docs/extensions/tombi-extension-pixi#hover).
+
+- Type: `Table`
+
+### extensions."tombi-toml/pixi".lsp.hover.dependency-detail.enabled
+
+Enable or disable the latest version hover for conda dependencies in `pixi.toml`.
 
 - Type: `Boolean`
 - Default: `true`

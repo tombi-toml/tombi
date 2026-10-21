@@ -2,7 +2,8 @@ mod goto_type_definition_tests {
     use super::*;
     use tombi_test_lib::{
         adjacent_applicators_test_schema_path, adjacent_one_of_hover_test_schema_path,
-        exact_index_string_test_schema_path, issue_1895_rustfmt_like_schema_path, lsp_consistency_test_schema_path,
+        exact_index_string_test_schema_path, issue_1895_rustfmt_like_schema_path,
+        lsp_consistency_test_schema_path,
     };
 
     struct ExpectedRange(tombi_text::Range);
@@ -855,7 +856,8 @@ mod goto_type_definition_tests {
         use super::*;
 
         fn fixture_path() -> std::path::PathBuf {
-            tombi_test_lib::project_root_path().join("crates/tombi-lsp/tests/fixtures/issue-2164-compound-schema")
+            tombi_test_lib::project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-2164-compound-schema")
         }
 
         test_goto_type_definition!(

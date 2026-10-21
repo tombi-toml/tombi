@@ -14,7 +14,10 @@ pub(crate) struct CursorPosition<'a> {
 }
 
 impl<'a> CursorPosition<'a> {
-    pub(crate) fn new(offset: tombi_text::Offset, line_index: &'a tombi_text::LineIndex<'a>) -> Self {
+    pub(crate) fn new(
+        offset: tombi_text::Offset,
+        line_index: &'a tombi_text::LineIndex<'a>,
+    ) -> Self {
         let line = line_index.line(offset);
         Self {
             offset,

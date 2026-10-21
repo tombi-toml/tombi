@@ -1,0 +1,53 @@
+[package]
+name = "tombi-extension-pixi"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description = "Tombi extension for pixi.toml conda package management"
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+itertools.workspace = true
+log.workspace = true
+rattler_conda_types.workspace = true
+tombi-cache.workspace = true
+tombi-config.workspace = true
+tombi-document-tree-syntax.workspace = true
+tombi-extension.workspace = true
+tombi-schema-store.workspace = true
+tombi-text = { workspace = true, features = ["lsp"] }
+tombi-uri.workspace = true
+tower-lsp-server.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+anyhow = { workspace = true, optional = true }
+async-trait = { workspace = true, optional = true }
+futures = { workspace = true, optional = true }
+http = { workspace = true, optional = true }
+rattler_repodata_gateway = { workspace = true, optional = true }
+reqwest-middleware = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
+tombi-test-lib = { workspace = true, features = ["pixi-channel"] }
+
+[features]
+default = ["native"]
+native = [
+  "dep:anyhow",
+  "dep:async-trait",
+  "dep:futures",
+  "dep:http",
+  "dep:rattler_repodata_gateway",
+  "dep:reqwest-middleware",
+  "tombi-schema-store/native",
+  "tower-lsp-server/runtime-tokio",
+]
+wasm = [
+  "tombi-schema-store/wasm",
+  "tower-lsp-server/runtime-agnostic",
+]
+
+[lints]
+workspace = true

@@ -1,0 +1,6 @@
+# Pixi tests serve repodata from a local channel; only use the embedded schema catalog.
+[schema]
+catalog = { paths = ["tombi://www.schemastore.org/api/json/catalog.json"] }
+
+[extensions]
+"tombi-toml/pixi" = { enabled = false }

@@ -41,12 +41,21 @@ where
         };
 
         for resolved_schema in &resolved_schemas {
-            let projected_schema =
-                crate::schema_resolver::project_composite_branch_schema(value, resolved_schema, schema_context);
+            let projected_schema = crate::schema_resolver::project_composite_branch_schema(
+                value,
+                resolved_schema,
+                schema_context,
+            );
             let navigation_schema = projected_schema.as_ref().unwrap_or(resolved_schema);
 
             let type_definitions = value
-                .get_type_definition(cursor, keys, accessors, Some(navigation_schema), schema_context)
+                .get_type_definition(
+                    cursor,
+                    keys,
+                    accessors,
+                    Some(navigation_schema),
+                    schema_context,
+                )
                 .await;
             result.extend(type_definitions);
         }

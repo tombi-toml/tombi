@@ -61,8 +61,9 @@ async fn run_references_test(
     use tower_lsp_server::{
         LspService,
         gen_lsp_types::{
-            DidOpenTextDocumentParams, PartialResultParams, ReferenceContext, ReferenceParams, TextDocumentIdentifier,
-            TextDocumentItem, TextDocumentPositionParams, Uri, WorkDoneProgressParams,
+            DidOpenTextDocumentParams, PartialResultParams, ReferenceContext, ReferenceParams,
+            TextDocumentIdentifier, TextDocumentItem, TextDocumentPositionParams, Uri,
+            WorkDoneProgressParams,
         },
     };
 
@@ -76,13 +77,27 @@ async fn run_references_test(
         .ok_or("SourcePath must be provided for references tests")?;
 
     if let Some(config_file_path) = args.config_file_path.as_ref() {
-        let config_content = std::fs::read_to_string(config_file_path)
-            .map_err(|e| format!("failed to read config file {}: {}", config_file_path.display(), e))?;
+        let config_content = std::fs::read_to_string(config_file_path).map_err(|e| {
+            format!(
+                "failed to read config file {}: {}",
+                config_file_path.display(),
+                e
+            )
+        })?;
         let config: tombi_config::Config = serde_tombi::from_str_async(&config_content)
             .await
-            .map_err(|e| format!("failed to parse config file {}: {}", config_file_path.display(), e))?;
+            .map_err(|e| {
+                format!(
+                    "failed to parse config file {}: {}",
+                    config_file_path.display(),
+                    e
+                )
+            })?;
 
-        let config_schema_store = backend.config_manager.config_schema_store_for_file(source_path).await;
+        let config_schema_store = backend
+            .config_manager
+            .config_schema_store_for_file(source_path)
+            .await;
 
         if let Some(config_path) = config_schema_store.config_path {
             backend
@@ -95,7 +110,8 @@ async fn run_references_test(
         }
     }
 
-    let toml_file_url = Uri::from_file_path(source_path).expect("failed to convert source file path to URL");
+    let toml_file_url =
+        Uri::from_file_path(source_path).expect("failed to convert source file path to URL");
 
     let mut toml_text = textwrap::dedent(source).trim().to_string();
     let Some(index) = toml_text.as_str().find("█") else {
@@ -147,7 +163,10 @@ async fn run_references_test(
             }
             None => {
                 if !expected_paths.is_empty() {
-                    panic!("No references were returned, but expected paths: {:?}", expected_paths);
+                    panic!(
+                        "No references were returned, but expected paths: {:?}",
+                        expected_paths
+                    );
                 }
             }
         },

@@ -139,6 +139,18 @@ impl Config {
             .and_then(Extensions::nagi_sql_features)
     }
 
+    pub fn pixi_extension_enabled(&self) -> bool {
+        self.extensions
+            .as_ref()
+            .map(|extensions| extensions.pixi_enabled())
+            .unwrap_or_default()
+            .value()
+    }
+
+    pub fn pixi_extension_features(&self) -> Option<&PixiExtensionFeatures> {
+        self.extensions.as_ref().and_then(Extensions::pixi_features)
+    }
+
     pub fn pyproject_extension_enabled(&self) -> bool {
         self.extensions
             .as_ref()

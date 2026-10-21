@@ -1,6 +1,7 @@
 use tombi_ast_syntax::{AstNode, AstToken, SchemaDocumentCommentDirective};
 use tombi_comment_directive::{
-    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl, document::TombiDocumentDirectiveContent,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
+    document::TombiDocumentDirectiveContent,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree_syntax::IntoDocumentTreeAndErrors;
@@ -8,8 +9,8 @@ use tombi_extension::get_file_path_completions;
 use tombi_uri::{SchemaUri, Uri};
 
 use crate::{
-    DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE, DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION,
-    DOCUMENT_TOMBI_DIRECTIVE_TITLE,
+    DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
+    DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
     comment_directive::{CommentDirectiveContext, GetCommentDirectiveContext},
     completion::{extract_keys_and_hint, find_completion_contents},
 };
@@ -24,7 +25,9 @@ pub async fn get_document_comment_directive_completion_contents(
 ) -> Option<Vec<CompletionContent>> {
     let comment_text = comment.syntax().text();
     if let Some(colon_pos) = comment_text.find(':')
-        && comment_text[1..colon_pos].chars().all(|c| c.is_whitespace())
+        && comment_text[1..colon_pos]
+            .chars()
+            .all(|c| c.is_whitespace())
     {
         let comment_span = comment.syntax().span();
         let directive_len = comment_text[colon_pos + 1..]
@@ -49,13 +52,15 @@ pub async fn get_document_comment_directive_completion_contents(
         // Check if this is a schema directive and provide file path completion
         if let Some(source_path) = text_document_uri.to_file_path().ok().as_deref()
             && let Some(schema_directive) = comment.get_document_schema_directive(Some(source_path))
-            && let Some((schema_text, schema_span)) = get_schema_text_and_span(comment, &schema_directive)
+            && let Some((schema_text, schema_span)) =
+                get_schema_text_and_span(comment, &schema_directive)
         {
             // Check if offset is in the schema value part
             if schema_span.contains_inclusive(offset)
                 && let Some(base_dir) = source_path.parent()
             {
-                let completions = get_file_path_completions(base_dir, schema_text, schema_span, Some(&["json"]));
+                let completions =
+                    get_file_path_completions(base_dir, schema_text, schema_span, Some(&["json"]));
                 if !completions.is_empty() {
                     return Some(completions);
                 }
@@ -89,7 +94,10 @@ fn document_comment_directive_completion_contents(
     let source_path = text_document_uri.to_file_path().ok();
 
     // Add schema directive completion if not already present
-    if root.schema_document_comment_directive(source_path.as_deref()).is_none() {
+    if root
+        .schema_document_comment_directive(source_path.as_deref())
+        .is_none()
+    {
         completion_contents.push(CompletionContent::new_comment_directive(
             "schema",
             DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
@@ -125,14 +133,17 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
     let root = parsed.root();
     let decoded = root.decode_strings(toml_version);
 
-    let Some((keys, completion_hint)) = extract_keys_and_hint(&root, &decoded, offset_in_content, toml_version, None)
+    let Some((keys, completion_hint)) =
+        extract_keys_and_hint(&root, &decoded, offset_in_content, toml_version, None)
     else {
         return Some(Vec::new());
     };
 
     // The positions are in the content of the directive, which is parsed as a separate document.
     let line_index = parsed.line_index();
-    let document_tree = root.into_document_tree_and_errors(toml_version, &decoded).tree;
+    let document_tree = root
+        .into_document_tree_and_errors(toml_version, &decoded)
+        .tree;
 
     let schema_store = tombi_comment_directive_store::schema_store().await;
     let document_schema = comment_directive_document_schema(schema_store, schema_uri).await;
@@ -145,8 +156,12 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
         Default::default(),
         Default::default(),
     );
-    let schema_context =
-        tombi_schema_store::SchemaContext::from_source_schema(toml_version, Some(&source_schema), schema_store, None);
+    let schema_context = tombi_schema_store::SchemaContext::from_source_schema(
+        toml_version,
+        Some(&source_schema),
+        schema_store,
+        None,
+    );
 
     Some(
         find_completion_contents(

@@ -12,5 +12,13 @@ env_logger.workspace = true
 tempfile.workspace = true
 tombi-uri.workspace = true
 
+rattler_conda_types = { workspace = true, optional = true }
+rattler_digest = { workspace = true, optional = true }
+rmp-serde = { workspace = true, optional = true }
+zstd = { workspace = true, optional = true }
+
+[features]
+pixi-channel = ["dep:rattler_conda_types", "dep:rattler_digest", "dep:rmp-serde", "dep:zstd"]
+
 [lints]
 workspace = true

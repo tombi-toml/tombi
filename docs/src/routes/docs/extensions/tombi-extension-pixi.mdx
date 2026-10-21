@@ -1,0 +1,51 @@
+import { Warning } from "~/components/Highlight";
+
+# Pixi Extension
+
+Tombi provides conda package version information for [pixi](https://pixi.sh) projects through `pixi.toml`.
+
+<Warning>
+This extension is experimental. It only reads [sharded repodata](https://github.com/conda/ceps/blob/main/cep-0016.md) and never falls back to the full `repodata.json`.
+Channels that do not publish sharded repodata, as well as local (`file://` or path) channels, are skipped.
+</Warning>
+
+## Supported Features
+
+### Completion
+
+The extension completes versions for conda dependencies, with the newest version first.
+
+```toml
+[workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64"]
+
+[dependencies]
+python = "█" # <- "3.14.0", "3.13.9", ...
+
+[feature.test.dependencies]
+pytest = { version = "█" } # <- version suggestions
+```
+
+### Hover
+
+Hovering a conda dependency name or version shows the latest available version.
+
+```toml
+[dependencies]
+python = ">=3.12" # <- Latest Version: `3.14.0`
+```
+
+## Package lookup
+
+Versions are looked up in the channels and platforms that the dependency resolves against:
+- `channels` and `platforms` come from `[workspace]` (or the legacy `[project]`), plus `[feature.<name>]` when the dependency belongs to a feature
+- a dependency under `[target.<platform>]` is looked up for that platform only
+- an inline `channel` (`pkg = { version = "*", channel = "bioconda" }`) restricts the lookup to that channel
+- `noarch` packages are always included
+
+Supported dependency tables are `dependencies`, `host-dependencies`, and `build-dependencies`, including their `[target.*]` and `[feature.*]` variants, as well as `[package.run-dependencies]`, `[package.host-dependencies]`, and `[package.build-dependencies]`.
+`[pypi-dependencies]` are not handled by this extension.
+
+Fetched shards are cached in Tombi's cache directory.
+In offline mode, only previously cached shards are used.

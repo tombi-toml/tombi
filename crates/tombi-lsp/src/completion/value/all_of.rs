@@ -4,8 +4,8 @@ use tombi_schema_store::{Accessor, CurrentSchema};
 
 use crate::completion::{
     CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
-    dedup_composite_completion_contents, take_completion_schema_tooltip, tombi_json_value_to_completion_default_item,
-    tombi_json_value_to_completion_example_item,
+    dedup_composite_completion_contents, take_completion_schema_tooltip,
+    tombi_json_value_to_completion_default_item, tombi_json_value_to_completion_example_item,
 };
 
 pub fn find_all_of_completion_items<'a: 'b, 'b, T>(
@@ -103,7 +103,10 @@ where
             && let Some(default) = &all_of_schema.default
         {
             let default_label = default.to_string();
-            if let Some(completion_item) = completion_items.iter_mut().find(|item| item.label == default_label) {
+            if let Some(completion_item) = completion_items
+                .iter_mut()
+                .find(|item| item.label == default_label)
+            {
                 completion_item.priority = CompletionContentPriority::Default;
             } else if let Some(completion_item) = tombi_json_value_to_completion_default_item(
                 default,
@@ -122,7 +125,10 @@ where
         {
             for example in examples {
                 let example_label = example.to_string();
-                if completion_items.iter().any(|item| item.label == example_label) {
+                if completion_items
+                    .iter()
+                    .any(|item| item.label == example_label)
+                {
                     continue;
                 }
 

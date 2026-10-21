@@ -2,6 +2,7 @@ use crate::{BoolDefaultFalse, BoolDefaultTrue};
 
 pub const CARGO_EXTENSION_NAME: &str = "tombi-toml/cargo";
 pub const NAGI_SQL_EXTENSION_NAME: &str = "tombi-toml/nagi-sql";
+pub const PIXI_EXTENSION_NAME: &str = "tombi-toml/pixi";
 pub const PYPROJECT_EXTENSION_NAME: &str = "tombi-toml/pyproject";
 pub const TOMBI_EXTENSION_NAME: &str = "tombi-toml/tombi";
 
@@ -103,11 +104,13 @@ macro_rules! toggle_features {
 
 mod cargo;
 mod nagi_sql;
+mod pixi;
 mod pyproject;
 mod tombi;
 
 pub use cargo::*;
 pub use nagi_sql::*;
+pub use pixi::*;
 pub use pyproject::*;
 pub use tombi::*;
 
@@ -138,6 +141,12 @@ pub struct Extensions {
     ///
     /// Configure hidden built-in support for `nagi.toml`.
     pub nagi_sql: Option<NagiSqlExtensionFeatures>,
+
+    #[cfg_attr(feature = "serde", serde(rename = "tombi-toml/pixi"))]
+    /// # Pixi Extension
+    ///
+    /// Configure built-in support for `pixi.toml`.
+    pub pixi: Option<PixiExtensionFeatures>,
 
     #[cfg_attr(feature = "serde", serde(rename = "tombi-toml/pyproject"))]
     /// # Pyproject Extension
@@ -173,6 +182,17 @@ impl Extensions {
 
     pub fn nagi_sql_features(&self) -> Option<&NagiSqlExtensionFeatures> {
         self.nagi_sql.as_ref()
+    }
+
+    pub fn pixi_enabled(&self) -> BoolDefaultTrue {
+        self.pixi
+            .as_ref()
+            .map(|pixi| pixi.enabled())
+            .unwrap_or_default()
+    }
+
+    pub fn pixi_features(&self) -> Option<&PixiExtensionFeatures> {
+        self.pixi.as_ref()
     }
 
     pub fn pyproject_enabled(&self) -> BoolDefaultTrue {

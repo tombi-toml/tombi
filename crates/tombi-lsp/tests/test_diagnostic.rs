@@ -33,7 +33,8 @@ mod diagnostic {
         use tombi_test_lib::project_root_path;
 
         fn fixture_path() -> PathBuf {
-            project_root_path().join("crates/tombi-lsp/tests/fixtures/issue-2173-lsp-diagnostic-disabled")
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-2173-lsp-diagnostic-disabled")
         }
 
         test_diagnostic_file!(
@@ -124,7 +125,8 @@ mod diagnostic {
         use std::path::PathBuf;
 
         fn fixture_path() -> PathBuf {
-            project_root_path().join("crates/tombi-lsp/tests/fixtures/issue-1566-pyproject-license-files")
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-1566-pyproject-license-files")
         }
 
         test_diagnostic_file!(
@@ -145,7 +147,8 @@ mod diagnostic {
         use std::path::PathBuf;
 
         fn fixture_path() -> PathBuf {
-            project_root_path().join("crates/tombi-lsp/tests/fixtures/issue-1581-pyproject-format-rules")
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-1581-pyproject-format-rules")
         }
 
         test_diagnostic_file!(
@@ -166,7 +169,8 @@ mod diagnostic {
         use std::path::PathBuf;
 
         fn fixture_path() -> PathBuf {
-            project_root_path().join("crates/tombi-lsp/tests/fixtures/issue-1580-conditional-all-of")
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-1580-conditional-all-of")
         }
 
         test_diagnostic_file!(
@@ -196,7 +200,8 @@ mod diagnostic {
         use std::path::PathBuf;
 
         fn fixture_path() -> PathBuf {
-            project_root_path().join("crates/tombi-lsp/tests/fixtures/issue-1719-all-of-unevaluated-properties")
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-1719-all-of-unevaluated-properties")
         }
 
         test_diagnostic_file!(
@@ -237,7 +242,8 @@ mod diagnostic {
         use std::path::PathBuf;
 
         fn fixture_path() -> PathBuf {
-            project_root_path().join("crates/tombi-lsp/tests/fixtures/issue-1953-stale-pull-diagnostics")
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-1953-stale-pull-diagnostics")
         }
 
         fn valid_text() -> String {

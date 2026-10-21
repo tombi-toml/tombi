@@ -71,10 +71,15 @@ pub async fn handle_formatting(
 
     // Get format options with override support
     let text_document_path = text_document_uri.to_file_path().ok();
-    let Some(format_options) =
-        tombi_glob::get_format_options(&config, text_document_path.as_deref(), config_path.as_deref())
-    else {
-        log::debug!("formatting disabled for {:?} by override", text_document_path);
+    let Some(format_options) = tombi_glob::get_format_options(
+        &config,
+        text_document_path.as_deref(),
+        config_path.as_deref(),
+    ) else {
+        log::debug!(
+            "formatting disabled for {:?} by override",
+            text_document_path
+        );
         return Ok(None);
     };
 
@@ -164,8 +169,14 @@ fn compute_text_edits(
         .min(new_suffix.len());
 
     let change_start = common_prefix_bytes;
-    let old_change_end = old_text.len().saturating_sub(common_suffix_bytes).max(change_start);
-    let new_change_end = new_text.len().saturating_sub(common_suffix_bytes).max(change_start);
+    let old_change_end = old_text
+        .len()
+        .saturating_sub(common_suffix_bytes)
+        .max(change_start);
+    let new_change_end = new_text
+        .len()
+        .saturating_sub(common_suffix_bytes)
+        .max(change_start);
 
     if change_start == old_change_end && change_start == new_change_end {
         return Vec::new();

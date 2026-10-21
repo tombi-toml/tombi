@@ -1,6 +1,7 @@
 use tombi_extension::CompletionTextEdit;
 use tombi_test_lib::{
-    project_root_path, today_local_date, today_local_date_time, today_local_time, today_offset_date_time,
+    project_root_path, today_local_date, today_local_date_time, today_local_time,
+    today_offset_date_time,
 };
 
 mod completion_edit {
@@ -8,7 +9,10 @@ mod completion_edit {
 
     fn apply_text_edit(text: &str, text_edit: &tombi_extension::TextEdit) -> String {
         let mut new_text = text.to_string();
-        new_text.replace_range(std::ops::Range::<usize>::from(text_edit.span), &text_edit.new_text);
+        new_text.replace_range(
+            std::ops::Range::<usize>::from(text_edit.span),
+            &text_edit.new_text,
+        );
         new_text
     }
 
@@ -606,6 +610,97 @@ mod completion_edit {
                 [target.'cfg(unix)'.build-dependencies]
                 serde.workspace = true
                 "#
+            );
+        }
+    }
+
+    mod pixi_extension {
+        use tombi_test_lib::PixiTestChannel;
+
+        use super::*;
+
+        fn pixi_toml_path() -> std::path::PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/extensions/pixi-default/pixi.toml")
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pixi_dependency_version_string(
+                &PixiTestChannel::sharded().pixi_toml(r#"
+                [workspace]
+                channels = ["{{CHANNEL}}"]
+                platforms = ["linux-64"]
+
+                [dependencies]
+                tombi-pixi-test = "█"
+                "#),
+                Select("\"1.10.0\""),
+                SourcePath(pixi_toml_path()),
+                UseTestCacheHome,
+            ) -> Ok(
+                &PixiTestChannel::sharded().pixi_toml(r#"
+                [workspace]
+                channels = ["{{CHANNEL}}"]
+                platforms = ["linux-64"]
+
+                [dependencies]
+                tombi-pixi-test = "1.10.0"
+                "#)
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pixi_dependency_table_version_string(
+                &PixiTestChannel::sharded().pixi_toml(r#"
+                [workspace]
+                channels = ["{{CHANNEL}}"]
+                platforms = ["linux-64"]
+
+                [dependencies]
+                tombi-pixi-test = { version = "█" }
+                "#),
+                Select("\"2.0.0\""),
+                SourcePath(pixi_toml_path()),
+                UseTestCacheHome,
+            ) -> Ok(
+                &PixiTestChannel::sharded().pixi_toml(r#"
+                [workspace]
+                channels = ["{{CHANNEL}}"]
+                platforms = ["linux-64"]
+
+                [dependencies]
+                tombi-pixi-test = { version = "2.0.0" }
+                "#)
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pixi_dependency_version_after_equal(
+                &PixiTestChannel::sharded().pixi_toml(r#"
+                [workspace]
+                channels = ["{{CHANNEL}}"]
+                platforms = ["linux-64"]
+
+                [dependencies]
+                tombi-pixi-test= █
+                python = "*"
+                "#),
+                Select("\"2.0.0\""),
+                SourcePath(pixi_toml_path()),
+                UseTestCacheHome,
+            ) -> Ok(
+                &PixiTestChannel::sharded().pixi_toml(r#"
+                [workspace]
+                channels = ["{{CHANNEL}}"]
+                platforms = ["linux-64"]
+
+                [dependencies]
+                tombi-pixi-test  = "2.0.0"
+                python = "*"
+                "#)
             );
         }
     }
@@ -1274,6 +1369,7 @@ mod completion_edit {
                     select: Option<String>,
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
+                    use_test_cache_home: bool,
                     backend_options: tombi_lsp::backend::Options,
                 }
 
@@ -1309,6 +1405,15 @@ mod completion_edit {
                     }
                 }
 
+                #[allow(unused)]
+                struct UseTestCacheHome;
+
+                impl ApplyTestArg for UseTestCacheHome {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.use_test_cache_home = true;
+                    }
+                }
+
                 impl ApplyTestArg for tombi_lsp::backend::Options {
                     fn apply(self, args: &mut TestArgs) {
                         args.backend_options = self;
@@ -1318,6 +1423,10 @@ mod completion_edit {
                 #[allow(unused_mut)]
                 let mut args = TestArgs::default();
                 $(ApplyTestArg::apply($arg, &mut args);)*
+
+                let _cache_home = args
+                    .use_test_cache_home
+                    .then(tombi_test_lib::TestCacheHome::new);
 
                 let (service, _) = LspService::new(|client| {
                     Backend::new(client, &args.backend_options)

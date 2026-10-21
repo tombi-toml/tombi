@@ -221,6 +221,11 @@
         "path": "/docs/extensions/tombi-extension-cargo"
       },
       {
+        "title": "Pixi Extension",
+        "description": "pixi.toml conda dependency version hover and completion.",
+        "path": "/docs/extensions/tombi-extension-pixi"
+      },
+      {
         "title": "Pyproject Extension",
         "description": "Python pyproject.toml specific features and validations.",
         "path": "/docs/extensions/tombi-extension-pyproject"

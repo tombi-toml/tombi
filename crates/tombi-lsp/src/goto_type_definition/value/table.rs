@@ -6,9 +6,10 @@ use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, SchemaView, Ta
 use crate::{
     comment_directive::get_table_comment_directive_content_with_schema_uri,
     goto_type_definition::{
-        GetTypeDefinition, TypeDefinition, all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
-        comment::get_tombi_value_comment_directive_type_definition, one_of::get_one_of_type_definition,
-        schema_line_fragment, schema_view_type_definition,
+        GetTypeDefinition, TypeDefinition, all_of::get_all_of_type_definition,
+        any_of::get_any_of_type_definition,
+        comment::get_tombi_value_comment_directive_type_definition,
+        one_of::get_one_of_type_definition, schema_line_fragment, schema_view_type_definition,
     },
     schema_resolver::resolve_table_unevaluated_property_schema,
 };

@@ -1,9 +1,13 @@
 mod cache;
 mod date_time;
 mod path;
+#[cfg(feature = "pixi-channel")]
+mod pixi_channel;
 pub use cache::*;
 pub use date_time::*;
 pub use path::*;
+#[cfg(feature = "pixi-channel")]
+pub use pixi_channel::*;
 
 #[macro_export]
 macro_rules! toml_text_assert_eq {

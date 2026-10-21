@@ -1,4 +1,6 @@
-use tombi_comment_directive::value::{OffsetDateTimeCommonFormatRules, OffsetDateTimeCommonLintRules};
+use tombi_comment_directive::value::{
+    OffsetDateTimeCommonFormatRules, OffsetDateTimeCommonLintRules,
+};
 use tombi_schema_store::{Accessor, CurrentSchema, OffsetDateTimeSchema, SchemaView};
 use tombi_x_keyword::StringFormat;
 
@@ -34,7 +36,8 @@ impl GetHoverContent for tombi_document_tree_syntax::OffsetDateTime {
                     OffsetDateTimeCommonLintRules,
                 >(self.comment_directives(), offset, accessors)
                 && let Some(hover_content) =
-                    get_value_comment_directive_hover_content(comment_directive_context, schema_uri).await
+                    get_value_comment_directive_hover_content(comment_directive_context, schema_uri)
+                        .await
             {
                 return Some(hover_content);
             }
@@ -43,10 +46,18 @@ impl GetHoverContent for tombi_document_tree_syntax::OffsetDateTime {
                 match current_schema.schema_view.as_ref() {
                     SchemaView::OffsetDateTime(offset_date_time_schema) => {
                         let mut hover_content = offset_date_time_schema
-                            .get_hover_content(offset, keys, accessors, Some(current_schema), schema_context)
+                            .get_hover_content(
+                                offset,
+                                keys,
+                                accessors,
+                                Some(current_schema),
+                                schema_context,
+                            )
                             .await;
 
-                        if let Some(HoverContent::Value(hover_value_content)) = hover_content.as_mut() {
+                        if let Some(HoverContent::Value(hover_value_content)) =
+                            hover_content.as_mut()
+                        {
                             hover_value_content.span = Some(self.span());
                         }
 
@@ -156,7 +167,9 @@ impl GetHoverContent for OffsetDateTimeSchema {
                     examples: self.examples.as_ref().map(|examples| {
                         examples
                             .iter()
-                            .filter_map(|example| DisplayValue::try_new_offset_date_time(example).ok())
+                            .filter_map(|example| {
+                                DisplayValue::try_new_offset_date_time(example).ok()
+                            })
                             .collect()
                     }),
                     format: if has_string_format {

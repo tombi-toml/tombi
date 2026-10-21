@@ -170,6 +170,16 @@ lint = {
     },
   }
 }
+"tombi-toml/pixi" = {
+  lsp = {
+    completion = {
+      dependency-version.enabled = true,
+    },
+    hover = {
+      dependency-detail.enabled = true,
+    },
+  }
+}
 "tombi-toml/pyproject" = {
   lsp = {
     code-action = {

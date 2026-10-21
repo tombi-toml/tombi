@@ -1747,6 +1747,18 @@
             }
           ]
         },
+        "tombi-toml/pixi": {
+          "title": "Pixi Extension",
+          "description": "Configure built-in support for `pixi.toml`.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PixiExtensionFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "tombi-toml/pyproject": {
           "title": "Pyproject Extension",
           "description": "Configure built-in support for `pyproject.toml`.",
@@ -2409,6 +2421,134 @@
         "dependency": {
           "title": "Dependency references feature",
           "description": "Whether references list dependency-related usages.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "PixiExtensionFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/PixiExtensionFeatureTree"
+        }
+      ]
+    },
+    "PixiExtensionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "lsp": {
+          "title": "Pixi LSP feature options",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PixiLspFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "PixiLspFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/PixiLspFeatureTree"
+        }
+      ]
+    },
+    "PixiLspFeatureTree": {
+      "type": "object",
+      "properties": {
+        "completion": {
+          "title": "Completion feature options",
+          "description": "Configure pixi completion features.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PixiCompletionFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hover": {
+          "title": "Hover feature options",
+          "description": "Configure pixi hover features.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PixiHoverFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "PixiCompletionFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/PixiCompletionFeatureTree"
+        }
+      ]
+    },
+    "PixiCompletionFeatureTree": {
+      "type": "object",
+      "properties": {
+        "dependency-version": {
+          "title": "Dependency version completion feature",
+          "description": "Whether completion suggests conda package versions from sharded repodata.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ToggleFeatureDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "PixiHoverFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/PixiHoverFeatureTree"
+        }
+      ],
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "PixiHoverFeatureTree": {
+      "type": "object",
+      "properties": {
+        "dependency-detail": {
+          "title": "Dependency detail hover feature",
+          "description": "Whether hover shows the latest conda package version from sharded repodata.",
           "anyOf": [
             {
               "$ref": "#/definitions/ToggleFeatureDefaultTrue"

@@ -35,7 +35,11 @@ impl WorkspaceConfig {
             return false;
         }
 
-        matches_file_patterns(text_document_path, self.config_path.as_deref(), &self.config) == MatchResult::Matched
+        matches_file_patterns(
+            text_document_path,
+            self.config_path.as_deref(),
+            &self.config,
+        ) == MatchResult::Matched
     }
 
     #[inline]
@@ -49,18 +53,21 @@ impl WorkspaceConfig {
 }
 
 pub async fn get_workspace_configs(backend: &Backend) -> Option<Vec<WorkspaceConfig>> {
-    let workspace_folder_paths = backend
-        .client
-        .workspace_folders()
-        .await
-        .ok()
-        .flatten()
-        .map(|workspace_folders| {
-            workspace_folders
-                .into_iter()
-                .filter_map(|workspace| tombi_uri::Uri::to_file_path(&workspace.uri.into()).ok())
-                .collect_vec()
-        });
+    let workspace_folder_paths =
+        backend
+            .client
+            .workspace_folders()
+            .await
+            .ok()
+            .flatten()
+            .map(|workspace_folders| {
+                workspace_folders
+                    .into_iter()
+                    .filter_map(|workspace| {
+                        tombi_uri::Uri::to_file_path(&workspace.uri.into()).ok()
+                    })
+                    .collect_vec()
+            });
 
     log::debug!("workspace_folder_paths: {:?}", workspace_folder_paths);
 
@@ -69,7 +76,9 @@ pub async fn get_workspace_configs(backend: &Backend) -> Option<Vec<WorkspaceCon
     let mut configs = Vec::with_capacity(workspace_folder_paths.len());
 
     for workspace_folder_path in workspace_folder_paths {
-        if let Ok((config, config_path)) = serde_tombi::config::load_with_path(Some(workspace_folder_path.clone())) {
+        if let Ok((config, config_path)) =
+            serde_tombi::config::load_with_path(Some(workspace_folder_path.clone()))
+        {
             configs.push(WorkspaceConfig {
                 workspace_folder_path,
                 config,
@@ -128,7 +137,10 @@ pub fn is_workspace_target(
         .any(|workspace_config| workspace_config.is_workspace_target(&text_document_path, home_dir))
 }
 
-pub fn is_workspace_ignored(text_document_uri: &tombi_uri::Uri, workspace_configs: &[WorkspaceConfig]) -> bool {
+pub fn is_workspace_ignored(
+    text_document_uri: &tombi_uri::Uri,
+    workspace_configs: &[WorkspaceConfig],
+) -> bool {
     let Ok(text_document_path) = tombi_uri::Uri::to_file_path(text_document_uri) else {
         return false;
     };

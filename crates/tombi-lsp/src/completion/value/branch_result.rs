@@ -57,16 +57,25 @@ where
     T: FindCompletionContents + tombi_validator::Validate + Sync + Send + std::fmt::Debug,
 {
     let offset = cursor.offset();
-    let first_key =
-        (keys.len() == 1 && !keys[0].value().is_empty()).then(|| SchemaAccessor::Key(keys[0].value().to_owned()));
-    let evaluation =
-        tombi_validator::evaluate_applicator(applicator, value, accessors, resolved_schemas, schema_context).await;
+    let first_key = (keys.len() == 1 && !keys[0].value().is_empty())
+        .then(|| SchemaAccessor::Key(keys[0].value().to_owned()));
+    let evaluation = tombi_validator::evaluate_applicator(
+        applicator,
+        value,
+        accessors,
+        resolved_schemas,
+        schema_context,
+    )
+    .await;
 
     let mut branch_results = Vec::new();
-    for (resolved_schema, branch_applicability) in resolved_schemas.iter().zip(&evaluation.branches) {
+    for (resolved_schema, branch_applicability) in resolved_schemas.iter().zip(&evaluation.branches)
+    {
         let branch_has_key = if let Some(first_key) = &first_key {
             match resolved_schema.schema_view.as_ref() {
-                SchemaView::Table(table_schema) => table_schema.properties.read().await.contains_key(first_key),
+                SchemaView::Table(table_schema) => {
+                    table_schema.properties.read().await.contains_key(first_key)
+                }
                 _ => false,
             }
         } else {
@@ -131,5 +140,8 @@ where
         }
     }
 
-    (dedup_composite_completion_contents(completion_items), narrow_branches)
+    (
+        dedup_composite_completion_contents(completion_items),
+        narrow_branches,
+    )
 }
