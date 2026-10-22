@@ -78,21 +78,21 @@ function forwardServerLogs(
  * `initializationOptions` of the language server.
  *
  * The shape is the contract with the language server:
- * `{ semanticTokens: { strings: { enable }, comments: { enable } } }`.
+ * `{ semanticTokens: { strings: { enabled }, comments: { enabled } } }`.
  */
 function initializationOptions() {
   const configuration = vscode.workspace.getConfiguration("tombi");
   return {
     semanticTokens: {
       strings: {
-        enable: configuration.get<boolean>(
-          "semanticTokens.strings.enable",
+        enabled: configuration.get<boolean>(
+          "semanticTokens.strings.enabled",
           true,
         ),
       },
       comments: {
-        enable: configuration.get<boolean>(
-          "semanticTokens.comments.enable",
+        enabled: configuration.get<boolean>(
+          "semanticTokens.comments.enabled",
           true,
         ),
       },

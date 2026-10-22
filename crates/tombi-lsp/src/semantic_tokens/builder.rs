@@ -74,14 +74,14 @@ impl<'a> SemanticTokensBuilder<'a> {
 
     /// Adds a string value token, unless the client disabled string tokens.
     pub fn add_string_token(&mut self, span: tombi_text::Span) {
-        if self.settings.strings.enable {
+        if self.settings.strings.enabled {
             self.add_token(TokenType::STRING, span);
         }
     }
 
     /// Adds an ordinary comment token, unless the client disabled comment tokens.
     pub fn add_comment_token(&mut self, span: tombi_text::Span) {
-        if self.settings.comments.enable {
+        if self.settings.comments.enabled {
             self.add_token(TokenType::COMMENT, span);
         }
     }
@@ -107,7 +107,7 @@ impl<'a> SemanticTokensBuilder<'a> {
     ) {
         let comment_span = self.cursor.range(comment.as_ref().syntax().span());
         let directive_span = self.cursor.range(directive_span);
-        if !self.settings.comments.enable {
+        if !self.settings.comments.enabled {
             // Only the directive keyword is kept; the rest of the comment is left uncolored.
             let (delta_line, delta_start) =
                 delta_line_and_start(self.last_start, directive_span.start);
@@ -234,8 +234,8 @@ mod tests {
 
     fn settings(strings: bool, comments: bool) -> SemanticTokensSettings {
         let mut settings = SemanticTokensSettings::default();
-        settings.strings.enable = strings;
-        settings.comments.enable = comments;
+        settings.strings.enabled = strings;
+        settings.comments.enabled = comments;
         settings
     }
 

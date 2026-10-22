@@ -8,8 +8,8 @@ use serde::{Deserialize, Deserializer, de::DeserializeOwned};
 /// ```json
 /// {
 ///   "semanticTokens": {
-///     "strings": { "enable": true },
-///     "comments": { "enable": true }
+///     "strings": { "enabled": true },
+///     "comments": { "enabled": true }
 ///   }
 /// }
 /// ```
@@ -43,13 +43,13 @@ pub struct SemanticTokensSettings {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct TokenKindSettings {
-    #[serde(deserialize_with = "lenient_enable")]
-    pub enable: bool,
+    #[serde(deserialize_with = "lenient_enabled")]
+    pub enabled: bool,
 }
 
 impl Default for TokenKindSettings {
     fn default() -> Self {
-        Self { enable: true }
+        Self { enabled: true }
     }
 }
 
@@ -76,14 +76,14 @@ where
     )
 }
 
-fn lenient_enable<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error> {
+fn lenient_enabled<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error> {
     Ok(
         match Option::<serde_json::Value>::deserialize(deserializer)? {
             None | Some(serde_json::Value::Null) => true,
-            Some(serde_json::Value::Bool(enable)) => enable,
+            Some(serde_json::Value::Bool(enabled)) => enabled,
             Some(value) => {
                 log::warn!(
-                    "invalid `enable` in initializationOptions (expected a boolean): {value}"
+                    "invalid `enabled` in initializationOptions (expected a boolean): {value}"
                 );
                 true
             }
@@ -99,7 +99,7 @@ mod tests {
 
     fn enables(value: Option<serde_json::Value>) -> (bool, bool) {
         let settings = InitializationOptions::from_value(value).semantic_tokens;
-        (settings.strings.enable, settings.comments.enable)
+        (settings.strings.enabled, settings.comments.enabled)
     }
 
     #[test]
@@ -110,7 +110,7 @@ mod tests {
         assert_eq!(enables(Some(json!({"semanticTokens": null}))), (true, true));
         assert_eq!(
             enables(Some(
-                json!({"semanticTokens": {"strings": null, "comments": {"enable": null}}})
+                json!({"semanticTokens": {"strings": null, "comments": {"enabled": null}}})
             )),
             (true, true)
         );
@@ -124,19 +124,19 @@ mod tests {
     fn partial_and_full_specification() {
         assert_eq!(
             enables(Some(
-                json!({"semanticTokens": {"strings": {"enable": false}}})
+                json!({"semanticTokens": {"strings": {"enabled": false}}})
             )),
             (false, true)
         );
         assert_eq!(
             enables(Some(
-                json!({"semanticTokens": {"comments": {"enable": false}}})
+                json!({"semanticTokens": {"comments": {"enabled": false}}})
             )),
             (true, false)
         );
         assert_eq!(
             enables(Some(
-                json!({"semanticTokens": {"strings": {"enable": false}, "comments": {"enable": false}}})
+                json!({"semanticTokens": {"strings": {"enabled": false}, "comments": {"enabled": false}}})
             )),
             (false, false)
         );
@@ -153,7 +153,7 @@ mod tests {
         // A valid sibling is kept.
         assert_eq!(
             enables(Some(
-                json!({"semanticTokens": {"strings": {"enable": "yes"}, "comments": {"enable": false}}})
+                json!({"semanticTokens": {"strings": {"enabled": "yes"}, "comments": {"enabled": false}}})
             )),
             (true, false)
         );

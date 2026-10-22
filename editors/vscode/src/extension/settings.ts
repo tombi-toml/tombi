@@ -3,7 +3,7 @@ export interface Settings {
   args?: string[];
   env?: Record<string, string>;
   semanticTokens?: {
-    strings?: { enable?: boolean };
-    comments?: { enable?: boolean };
+    strings?: { enabled?: boolean };
+    comments?: { enabled?: boolean };
   };
 }

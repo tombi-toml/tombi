@@ -49,42 +49,42 @@ describe("clientOptions initializationOptions", () => {
   it("sends every semantic token by default", () => {
     expect(initializationOptions()).toEqual({
       semanticTokens: {
-        strings: { enable: true },
-        comments: { enable: true },
+        strings: { enabled: true },
+        comments: { enabled: true },
       },
     });
   });
 
   it("passes disabled settings", () => {
     settings.values = {
-      "semanticTokens.strings.enable": false,
-      "semanticTokens.comments.enable": false,
+      "semanticTokens.strings.enabled": false,
+      "semanticTokens.comments.enabled": false,
     };
     expect(initializationOptions()).toEqual({
       semanticTokens: {
-        strings: { enable: false },
-        comments: { enable: false },
+        strings: { enabled: false },
+        comments: { enabled: false },
       },
     });
   });
 
   it("passes partially specified settings", () => {
-    settings.values = { "semanticTokens.strings.enable": false };
+    settings.values = { "semanticTokens.strings.enabled": false };
     expect(initializationOptions()).toEqual({
       semanticTokens: {
-        strings: { enable: false },
-        comments: { enable: true },
+        strings: { enabled: false },
+        comments: { enabled: true },
       },
     });
   });
 
   it("reads the settings again on every call", () => {
     expect(initializationOptions()).toMatchObject({
-      semanticTokens: { strings: { enable: true } },
+      semanticTokens: { strings: { enabled: true } },
     });
-    settings.values = { "semanticTokens.strings.enable": false };
+    settings.values = { "semanticTokens.strings.enabled": false };
     expect(initializationOptions()).toMatchObject({
-      semanticTokens: { strings: { enable: false } },
+      semanticTokens: { strings: { enabled: false } },
     });
   });
 });
