@@ -1,8 +1,8 @@
 mod all_of;
 mod any_of;
 mod comment;
-mod constraints;
-mod display_value;
+pub(crate) mod constraints;
+pub(crate) mod display_value;
 mod one_of;
 mod value;
 

@@ -1041,16 +1041,20 @@ impl FindCompletionContents for TableSchema {
                                 completion_hint,
                             )
                             .await,
-                        schema_candidate
-                            .documentation(
-                                &current_schema.schema_base_uri,
-                                &current_schema.definitions,
-                                current_schema.strict,
-                                schema_context.store,
-                                &current_schema.dynamic_scope,
-                                completion_hint,
-                            )
-                            .await,
+                        super::with_inherited_default(
+                            schema_candidate
+                                .documentation(
+                                    &current_schema.schema_base_uri,
+                                    &current_schema.definitions,
+                                    current_schema.strict,
+                                    schema_context.store,
+                                    &current_schema.dynamic_scope,
+                                    completion_hint,
+                                )
+                                .await,
+                            &current_schema.schema_view,
+                            &schema_candidate,
+                        ),
                         self.required.as_ref(),
                         Some(current_schema.schema_base_uri.as_ref()),
                         current_schema.schema_view.deprecation().await.map(|_| true),
@@ -1445,16 +1449,20 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                         completion_hint,
                     )
                     .await,
-                schema_candidate
-                    .documentation(
-                        &current_schema.schema_base_uri,
-                        &current_schema.definitions,
-                        current_schema.strict,
-                        schema_context.store,
-                        &current_schema.dynamic_scope,
-                        completion_hint,
-                    )
-                    .await,
+                super::with_inherited_default(
+                    schema_candidate
+                        .documentation(
+                            &current_schema.schema_base_uri,
+                            &current_schema.definitions,
+                            current_schema.strict,
+                            schema_context.store,
+                            &current_schema.dynamic_scope,
+                            completion_hint,
+                        )
+                        .await,
+                    &current_schema.schema_view,
+                    &schema_candidate,
+                ),
                 table_schema.required.as_ref(),
                 Some(&current_schema.schema_base_uri),
                 current_schema.schema_view.deprecation().await.map(|_| true),

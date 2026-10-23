@@ -126,6 +126,19 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_toml_version_key_documentation_includes_default(
+                "toml-█",
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                {
+                    "label": "toml-version",
+                    "documentation": "Default: `\"v1.0.0\"`",
+                },
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn schema_comment_directive(
                 "#:█",
                 SchemaPath(tombi_schema_path()),

@@ -708,7 +708,9 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
                     title,
                     description,
                     value_type: current_schema.schema_view.value_type().await.to_string(),
-                    constraints: None,
+                    constraints: value::default_and_enum_constraints(
+                        current_schema.schema_view.as_ref(),
+                    ),
                     schema: None,
                 }));
             }

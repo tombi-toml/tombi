@@ -327,7 +327,9 @@ impl FindCompletionContents for SchemaCompletion {
                         .description()
                         .map(ToString::to_string),
                     value_type: current_schema.schema_view.value_type().await.to_string(),
-                    constraints: None,
+                    constraints: super::value::default_and_enum_constraints(
+                        current_schema.schema_view.as_ref(),
+                    ),
                     schema: None,
                 })
                 .to_string();
