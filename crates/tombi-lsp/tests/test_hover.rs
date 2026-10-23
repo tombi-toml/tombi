@@ -2394,8 +2394,8 @@ mod hover_keys_value {
                 "Disabled Values Order": Some("oneOf:ascending,descending"),
                 "Hover Contains": [
                     "Values Order: ~~`oneOf`~~",
-                    "  - ~~`ascending`~~",
-                    "  - ~~`descending`~~",
+                    "- ~~`ascending`~~",
+                    "- ~~`descending`~~",
                 ]
             });
         );
