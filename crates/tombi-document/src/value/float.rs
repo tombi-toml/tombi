@@ -45,7 +45,10 @@ impl<'de> serde::Deserialize<'de> for Float {
 
 #[cfg(test)]
 mod test {
+    use serde_json::json;
+
     use super::*;
+    use crate::test_deserialize;
 
     impl Float {
         fn try_new(value: &str) -> Result<Self, Box<dyn std::error::Error>> {
@@ -89,5 +92,16 @@ mod test {
     fn m_nan() {
         let float = crate::value::Float::try_new("-nan").unwrap();
         assert!(float.value().is_nan());
+    }
+
+    test_deserialize! {
+        #[test]
+        fn zero_with_upper_case_exponent(
+            r#"
+            zero = 0E2
+            zero-plus = +0E2
+            zero-minus = -0E2
+            "#
+        ) -> Ok(json!({"zero": 0.0, "zero-plus": 0.0, "zero-minus": -0.0}))
     }
 }
