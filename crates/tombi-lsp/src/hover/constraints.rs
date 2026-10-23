@@ -81,7 +81,7 @@ impl std::fmt::Display for ValueConstraints {
         if let Some(r#enum) = &self.r#enum {
             write!(f, "Enum Values:\n\n")?;
             for value in r#enum {
-                write!(f, "- `{value}`\n\n")?;
+                writeln!(f, "- `{value}`")?;
             }
             writeln!(f)?;
         }
@@ -255,7 +255,7 @@ mod tests {
     use tombi_schema_store::{ResolvedFormatOrder, XTombiArrayValuesOrder, XTombiTableKeysOrder};
     use tombi_x_keyword::{ArrayValuesOrder, TableKeysOrder};
 
-    use super::ValueConstraints;
+    use super::{DisplayValue, ValueConstraints};
 
     #[test]
     fn renders_disabled_sort_orders_with_strikethrough() {
@@ -278,6 +278,33 @@ mod tests {
                 Values Order: ~~`descending`~~
 
                 Keys Order: ~~`ascending`~~
+                "#
+            )
+            .trim()
+        );
+    }
+
+    #[test]
+    fn renders_enum_values_as_a_tight_list() {
+        let constraints = ValueConstraints {
+            r#enum: Some(vec![
+                DisplayValue::String("function".to_string()),
+                DisplayValue::String("class".to_string()),
+            ]),
+            default: Some(DisplayValue::String("function".to_string())),
+            ..Default::default()
+        };
+
+        assert_eq!(
+            constraints.to_string().trim(),
+            textwrap::dedent(
+                r#"
+                Enum Values:
+
+                - `"function"`
+                - `"class"`
+
+                Default: `"function"`
                 "#
             )
             .trim()
