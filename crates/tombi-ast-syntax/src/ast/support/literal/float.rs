@@ -27,7 +27,7 @@ pub fn try_from_float(value: &str) -> Result<f64, self::ParseError> {
     let int_slice = if value.contains('.') {
         value.split('.').next().unwrap()
     } else {
-        value.split('e').next().unwrap()
+        value.split(['e', 'E']).next().unwrap()
     };
 
     let int_number = if int_slice.starts_with("+") || int_slice.starts_with("-") {
