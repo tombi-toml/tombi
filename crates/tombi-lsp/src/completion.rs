@@ -22,7 +22,7 @@ use tombi_schema_store::{
     get_schema_name,
 };
 
-use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
+use crate::schema_tooltip::SchemaTooltip;
 
 pub fn get_comment_context<'t>(
     root: &tombi_ast_syntax::Root<'t>,
@@ -535,26 +535,7 @@ pub(super) async fn merge_adjacent_schema_completion_items(
 }
 
 pub trait CompletionCandidate {
-    fn title<'a: 'b, 'b>(
-        &'a self,
-        schema_base_uri: &'a SchemaUri,
-        definitions: &'a SchemaDefinitions,
-        strict: Option<tombi_schema_type::BoolDefaultTrue>,
-        schema_store: &'a SchemaStore,
-        parent_dynamic_scope: &'a [SchemaUri],
-        completion_hint: Option<CompletionHint>,
-    ) -> tombi_future::BoxFuture<'b, Option<String>>;
-
-    fn description<'a: 'b, 'b>(
-        &'a self,
-        schema_base_uri: &'a SchemaUri,
-        definitions: &'a SchemaDefinitions,
-        strict: Option<tombi_schema_type::BoolDefaultTrue>,
-        schema_store: &'a SchemaStore,
-        parent_dynamic_scope: &'a [SchemaUri],
-        completion_hint: Option<CompletionHint>,
-    ) -> tombi_future::BoxFuture<'b, Option<String>>;
-
+    /// LSP `detail`: the JSON Schema `title`.
     async fn detail(
         &self,
         schema_base_uri: &SchemaUri,
@@ -563,18 +544,10 @@ pub trait CompletionCandidate {
         schema_store: &SchemaStore,
         parent_dynamic_scope: &[SchemaUri],
         completion_hint: Option<CompletionHint>,
-    ) -> Option<String> {
-        self.title(
-            schema_base_uri,
-            definitions,
-            strict,
-            schema_store,
-            parent_dynamic_scope,
-            completion_hint,
-        )
-        .await
-    }
+    ) -> Option<String>;
 
+    /// LSP `documentation`: description, value type and enum / default, one block per schema
+    /// source joined by `---`.
     async fn documentation(
         &self,
         schema_base_uri: &SchemaUri,
@@ -583,20 +556,10 @@ pub trait CompletionCandidate {
         schema_store: &SchemaStore,
         parent_dynamic_scope: &[SchemaUri],
         completion_hint: Option<CompletionHint>,
-    ) -> Option<String> {
-        self.description(
-            schema_base_uri,
-            definitions,
-            strict,
-            schema_store,
-            parent_dynamic_scope,
-            completion_hint,
-        )
-        .await
-    }
+    ) -> Option<String>;
 }
 
-fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
+pub(super) fn composite_detail<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
     composite_schema: &'a T,
     schema_base_uri: &'a SchemaUri,
     definitions: &'a SchemaDefinitions,
@@ -626,7 +589,7 @@ fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
                     continue;
                 }
 
-                if let Some(candidate) = CompletionCandidate::title(
+                if let Some(candidate) = CompletionCandidate::detail(
                     current_schema.schema_view.as_ref(),
                     &current_schema.schema_base_uri,
                     &current_schema.definitions,
@@ -654,7 +617,7 @@ fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
     .boxed()
 }
 
-fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
+pub(super) fn composite_documentation<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
     composite_schema: &'a T,
     schema_base_uri: &'a SchemaUri,
     definitions: &'a SchemaDefinitions,
@@ -684,7 +647,7 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
                     continue;
                 }
 
-                let title = CompletionCandidate::title(
+                if let Some(documentation) = CompletionCandidate::documentation(
                     current_schema.schema_view.as_ref(),
                     &current_schema.schema_base_uri,
                     &current_schema.definitions,
@@ -693,26 +656,10 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
                     &current_schema.dynamic_scope,
                     completion_hint,
                 )
-                .await;
-                let description = CompletionCandidate::description(
-                    current_schema.schema_view.as_ref(),
-                    &current_schema.schema_base_uri,
-                    &current_schema.definitions,
-                    current_schema.strict,
-                    schema_store,
-                    &current_schema.dynamic_scope,
-                    completion_hint,
-                )
-                .await;
-                contents.push(SchemaTooltip::Content(SchemaTooltipContent {
-                    title,
-                    description,
-                    value_type: current_schema.schema_view.value_type().await.to_string(),
-                    constraints: value::default_and_enum_constraints(
-                        current_schema.schema_view.as_ref(),
-                    ),
-                    schema: None,
-                }));
+                .await
+                {
+                    contents.push(SchemaTooltip::Markdown(documentation));
+                }
             }
         }
 
@@ -727,56 +674,6 @@ fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
     }
     .boxed()
 }
-
-macro_rules! impl_composite_completion_candidate {
-    ($ty:path) => {
-        impl CompletionCandidate for $ty {
-            fn title<'a: 'b, 'b>(
-                &'a self,
-                schema_base_uri: &'a SchemaUri,
-                definitions: &'a SchemaDefinitions,
-                strict: Option<tombi_schema_type::BoolDefaultTrue>,
-                schema_store: &'a SchemaStore,
-                parent_dynamic_scope: &'a [SchemaUri],
-                completion_hint: Option<CompletionHint>,
-            ) -> tombi_future::BoxFuture<'b, Option<String>> {
-                composite_title(
-                    self,
-                    schema_base_uri,
-                    definitions,
-                    strict,
-                    schema_store,
-                    parent_dynamic_scope,
-                    completion_hint,
-                )
-            }
-
-            fn description<'a: 'b, 'b>(
-                &'a self,
-                schema_base_uri: &'a SchemaUri,
-                definitions: &'a SchemaDefinitions,
-                strict: Option<tombi_schema_type::BoolDefaultTrue>,
-                schema_store: &'a SchemaStore,
-                parent_dynamic_scope: &'a [SchemaUri],
-                completion_hint: Option<CompletionHint>,
-            ) -> tombi_future::BoxFuture<'b, Option<String>> {
-                composite_description(
-                    self,
-                    schema_base_uri,
-                    definitions,
-                    strict,
-                    schema_store,
-                    parent_dynamic_scope,
-                    completion_hint,
-                )
-            }
-        }
-    };
-}
-
-impl_composite_completion_candidate!(tombi_schema_store::OneOfSchema);
-impl_composite_completion_candidate!(tombi_schema_store::AnyOfSchema);
-impl_composite_completion_candidate!(tombi_schema_store::AllOfSchema);
 
 fn tombi_json_value_to_completion_default_item(
     value: &tombi_json::Value,

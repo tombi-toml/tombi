@@ -3,7 +3,7 @@ use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema};
 
 use crate::completion::{
-    CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
+    CompletionContent, CompletionHint, FindCompletionContents,
     tombi_json_value_to_completion_default_item, tombi_json_value_to_completion_example_item,
 };
 
@@ -58,27 +58,27 @@ where
         )
         .await;
 
-        let detail = any_of_schema
-            .detail(
-                &current_schema.schema_base_uri,
-                &current_schema.definitions,
-                current_schema.strict,
-                schema_context.store,
-                &current_schema.dynamic_scope,
-                completion_hint,
-            )
-            .await;
+        let detail = crate::completion::composite_detail(
+            any_of_schema,
+            &current_schema.schema_base_uri,
+            &current_schema.definitions,
+            current_schema.strict,
+            schema_context.store,
+            &current_schema.dynamic_scope,
+            completion_hint,
+        )
+        .await;
 
-        let documentation = any_of_schema
-            .documentation(
-                &current_schema.schema_base_uri,
-                &current_schema.definitions,
-                current_schema.strict,
-                schema_context.store,
-                &current_schema.dynamic_scope,
-                completion_hint,
-            )
-            .await;
+        let documentation = crate::completion::composite_documentation(
+            any_of_schema,
+            &current_schema.schema_base_uri,
+            &current_schema.definitions,
+            current_schema.strict,
+            schema_context.store,
+            &current_schema.dynamic_scope,
+            completion_hint,
+        )
+        .await;
 
         if keys.is_empty() {
             for completion_item in completion_items.iter_mut() {

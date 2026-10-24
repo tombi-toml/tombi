@@ -2,8 +2,6 @@ use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaView, SemanticAnnotations};
 use tombi_x_keyword::StringFormat;
 
-use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
-
 use super::{
     CompletionContent, CompletionHint, FindCompletionContents,
     merge_adjacent_schema_completion_items, tombi_json_value_to_completion_enum_item,
@@ -320,18 +318,14 @@ impl FindCompletionContents for SchemaCompletion {
             };
 
             if completion_items.iter().any(needs_documentation) {
-                let documentation = SchemaTooltip::Content(SchemaTooltipContent {
-                    title: current_schema.schema_view.title().map(ToString::to_string),
-                    description: current_schema
+                let documentation = super::value::schema_tooltip_content(
+                    current_schema.schema_view.as_ref(),
+                    current_schema
                         .schema_view
                         .description()
                         .map(ToString::to_string),
-                    value_type: current_schema.schema_view.value_type().await.to_string(),
-                    constraints: super::value::default_and_enum_constraints(
-                        current_schema.schema_view.as_ref(),
-                    ),
-                    schema: None,
-                })
+                )
+                .await
                 .to_string();
 
                 for item in &mut completion_items {

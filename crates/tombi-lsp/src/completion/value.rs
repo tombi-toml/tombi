@@ -17,6 +17,7 @@ use crate::hover::{
     constraints::{ValueConstraints, build_enum_values},
     display_value::DisplayValue,
 };
+use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
 pub use all_of::find_all_of_completion_items;
 pub use any_of::find_any_of_completion_items;
 use array::type_hint_array;
@@ -39,7 +40,7 @@ use tombi_schema_store::{
 
 use super::{
     CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
-    schema_completion::SchemaCompletion,
+    composite_detail, composite_documentation, schema_completion::SchemaCompletion,
 };
 
 impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
@@ -304,136 +305,54 @@ pub fn type_hint_value(
 }
 
 impl CompletionCandidate for SchemaView {
-    fn title<'a: 'b, 'b>(
-        &'a self,
-        schema_base_uri: &'a SchemaUri,
-        definitions: &'a SchemaDefinitions,
+    async fn detail(
+        &self,
+        schema_base_uri: &SchemaUri,
+        definitions: &SchemaDefinitions,
         strict: Option<tombi_schema_type::BoolDefaultTrue>,
-        schema_store: &'a SchemaStore,
-        parent_dynamic_scope: &'a [SchemaUri],
+        schema_store: &SchemaStore,
+        parent_dynamic_scope: &[SchemaUri],
         completion_hint: Option<CompletionHint>,
-    ) -> tombi_future::BoxFuture<'b, Option<String>> {
-        async move {
-            match self {
-                Self::Boolean(BooleanSchema { title, .. })
-                | Self::Integer(IntegerSchema { title, .. })
-                | Self::Float(FloatSchema { title, .. })
-                | Self::String(StringSchema { title, .. })
-                | Self::OffsetDateTime(OffsetDateTimeSchema { title, .. })
-                | Self::LocalDateTime(LocalDateTimeSchema { title, .. })
-                | Self::LocalDate(LocalDateSchema { title, .. })
-                | Self::LocalTime(LocalTimeSchema { title, .. })
-                | Self::Array(ArraySchema { title, .. })
-                | Self::Table(TableSchema { title, .. })
-                | Self::Anything(AnythingSchema { title, .. }) => {
-                    title.as_deref().map(ToString::to_string)
-                }
-                Self::OneOf(one_of) => {
-                    one_of
-                        .title(
-                            schema_base_uri,
-                            definitions,
-                            strict,
-                            schema_store,
-                            parent_dynamic_scope,
-                            completion_hint,
-                        )
-                        .await
-                }
-                Self::AnyOf(any_of) => {
-                    any_of
-                        .title(
-                            schema_base_uri,
-                            definitions,
-                            strict,
-                            schema_store,
-                            parent_dynamic_scope,
-                            completion_hint,
-                        )
-                        .await
-                }
-                Self::AllOf(all_of) => {
-                    all_of
-                        .title(
-                            schema_base_uri,
-                            definitions,
-                            strict,
-                            schema_store,
-                            parent_dynamic_scope,
-                            completion_hint,
-                        )
-                        .await
-                }
-                Self::Nothing(_) | Self::Null => None,
+    ) -> Option<String> {
+        match self {
+            Self::OneOf(schema) => {
+                composite_detail(
+                    schema,
+                    schema_base_uri,
+                    definitions,
+                    strict,
+                    schema_store,
+                    parent_dynamic_scope,
+                    completion_hint,
+                )
+                .await
             }
-        }
-        .boxed()
-    }
-
-    fn description<'a: 'b, 'b>(
-        &'a self,
-        schema_base_uri: &'a SchemaUri,
-        definitions: &'a SchemaDefinitions,
-        strict: Option<tombi_schema_type::BoolDefaultTrue>,
-        schema_store: &'a SchemaStore,
-        parent_dynamic_scope: &'a [SchemaUri],
-        completion_hint: Option<CompletionHint>,
-    ) -> tombi_future::BoxFuture<'b, Option<String>> {
-        async move {
-            match self {
-                Self::Boolean(BooleanSchema { description, .. })
-                | Self::Integer(IntegerSchema { description, .. })
-                | Self::Float(FloatSchema { description, .. })
-                | Self::String(StringSchema { description, .. })
-                | Self::OffsetDateTime(OffsetDateTimeSchema { description, .. })
-                | Self::LocalDateTime(LocalDateTimeSchema { description, .. })
-                | Self::LocalDate(LocalDateSchema { description, .. })
-                | Self::LocalTime(LocalTimeSchema { description, .. })
-                | Self::Array(ArraySchema { description, .. })
-                | Self::Table(TableSchema { description, .. })
-                | Self::Anything(AnythingSchema { description, .. }) => {
-                    description.as_deref().map(ToString::to_string)
-                }
-                Self::OneOf(one_of) => {
-                    one_of
-                        .description(
-                            schema_base_uri,
-                            definitions,
-                            strict,
-                            schema_store,
-                            parent_dynamic_scope,
-                            completion_hint,
-                        )
-                        .await
-                }
-                Self::AnyOf(any_of) => {
-                    any_of
-                        .description(
-                            schema_base_uri,
-                            definitions,
-                            strict,
-                            schema_store,
-                            parent_dynamic_scope,
-                            completion_hint,
-                        )
-                        .await
-                }
-                Self::AllOf(all_of) => {
-                    all_of
-                        .description(
-                            schema_base_uri,
-                            definitions,
-                            strict,
-                            schema_store,
-                            parent_dynamic_scope,
-                            completion_hint,
-                        )
-                        .await
-                }
-                Self::Nothing(_) | Self::Null => None,
+            Self::AnyOf(schema) => {
+                composite_detail(
+                    schema,
+                    schema_base_uri,
+                    definitions,
+                    strict,
+                    schema_store,
+                    parent_dynamic_scope,
+                    completion_hint,
+                )
+                .await
             }
+            Self::AllOf(schema) => {
+                composite_detail(
+                    schema,
+                    schema_base_uri,
+                    definitions,
+                    strict,
+                    schema_store,
+                    parent_dynamic_scope,
+                    completion_hint,
+                )
+                .await
+            }
+            _ => title_and_description(self).and_then(|(title, _)| title.map(ToString::to_string)),
         }
-        .boxed()
     }
 
     async fn documentation(
@@ -445,29 +364,110 @@ impl CompletionCandidate for SchemaView {
         parent_dynamic_scope: &[SchemaUri],
         completion_hint: Option<CompletionHint>,
     ) -> Option<String> {
-        let description = CompletionCandidate::description(
-            self,
-            schema_base_uri,
-            definitions,
-            strict,
-            schema_store,
-            parent_dynamic_scope,
-            completion_hint,
-        )
-        .await;
-        match (description, default_and_enum_constraints(self)) {
-            (Some(description), Some(constraints)) => {
-                Some(format!("{}\n\n{constraints}", description.trim_end()))
+        match self {
+            Self::OneOf(schema) => {
+                composite_documentation(
+                    schema,
+                    schema_base_uri,
+                    definitions,
+                    strict,
+                    schema_store,
+                    parent_dynamic_scope,
+                    completion_hint,
+                )
+                .await
             }
-            (description, constraints) => description.or(constraints),
+            Self::AnyOf(schema) => {
+                composite_documentation(
+                    schema,
+                    schema_base_uri,
+                    definitions,
+                    strict,
+                    schema_store,
+                    parent_dynamic_scope,
+                    completion_hint,
+                )
+                .await
+            }
+            Self::AllOf(schema) => {
+                composite_documentation(
+                    schema,
+                    schema_base_uri,
+                    definitions,
+                    strict,
+                    schema_store,
+                    parent_dynamic_scope,
+                    completion_hint,
+                )
+                .await
+            }
+            _ => {
+                let (_, description) = title_and_description(self)?;
+                Some(
+                    schema_tooltip_content(self, description.map(ToString::to_string))
+                        .await
+                        .to_string(),
+                )
+            }
         }
     }
 }
 
-/// Markdown for the `enum` / `default` constraints only, rendered like hover.
-pub(super) fn default_and_enum_constraints(schema_view: &SchemaView) -> Option<String> {
+/// The JSON Schema `title` / `description` of a non-composite schema.
+fn title_and_description(schema_view: &SchemaView) -> Option<(Option<&str>, Option<&str>)> {
+    match schema_view {
+        SchemaView::Boolean(BooleanSchema {
+            title, description, ..
+        })
+        | SchemaView::Integer(IntegerSchema {
+            title, description, ..
+        })
+        | SchemaView::Float(FloatSchema {
+            title, description, ..
+        })
+        | SchemaView::String(StringSchema {
+            title, description, ..
+        })
+        | SchemaView::OffsetDateTime(OffsetDateTimeSchema {
+            title, description, ..
+        })
+        | SchemaView::LocalDateTime(LocalDateTimeSchema {
+            title, description, ..
+        })
+        | SchemaView::LocalDate(LocalDateSchema {
+            title, description, ..
+        })
+        | SchemaView::LocalTime(LocalTimeSchema {
+            title, description, ..
+        })
+        | SchemaView::Array(ArraySchema {
+            title, description, ..
+        })
+        | SchemaView::Table(TableSchema {
+            title, description, ..
+        })
+        | SchemaView::Anything(AnythingSchema {
+            title, description, ..
+        }) => Some((title.as_deref(), description.as_deref())),
+        _ => None,
+    }
+}
+
+/// Hover-style tooltip content for a schema.
+///
+/// `schema` is left empty: completion items link their schema via `schema_base_uri`.
+pub(super) async fn schema_tooltip_content(
+    schema_view: &SchemaView,
+    description: Option<String>,
+) -> SchemaTooltip {
     let (r#enum, default) = default_and_enum(schema_view);
-    constraints_markdown(r#enum, default)
+    SchemaTooltip::Content(SchemaTooltipContent {
+        title: None,
+        description,
+        value_type: schema_view.value_type().await.to_string(),
+        constraints: constraints_markdown(r#enum, default),
+        schema: None,
+    })
 }
 
 /// Like hover, a composite schema's `default` applies to its branches that define none.
