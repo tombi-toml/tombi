@@ -450,6 +450,47 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_double_bracket_array_of_tables_dot(
+                "[[schemas.█]]",
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "format",
+                "lint",
+                "overrides",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_single_bracket_array_of_tables_dot(
+                "[schemas.█]",
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "format",
+                "lint",
+                "overrides",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_single_bracket_array_of_tables_dot_with_existing_header(
+                r#"
+                [schemas.█]
+
+                [[schemas]]
+                path = \"a\"
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "format",
+                "lint",
+                "overrides",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_empty_double_bracket(
                 "[[█]]",
                 SchemaPath(tombi_schema_path()),

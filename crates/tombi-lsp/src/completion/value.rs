@@ -223,6 +223,46 @@ impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
                         )
                         .await
                 }
+                Self::Table(table)
+                    if matches!(completion_hint, Some(CompletionHint::InTableHeader))
+                        && keys.is_empty()
+                        && current_schema.is_none()
+                        && let Some(unprojected_schema) = unprojected_schema
+                        && let Some(array_schema) = unprojected_schema
+                            .for_instance_type(
+                                tombi_schema_store::SchemaType::Array,
+                                schema_context.string_formats(),
+                            )
+                            .and_then(|schema| match schema.schema_view.as_ref() {
+                                SchemaView::Array(array_schema) => Some(array_schema.clone()),
+                                _ => None,
+                            })
+                        && let Some(item_schema) =
+                            crate::schema_resolver::resolve_array_item_schema(
+                                0,
+                                &array_schema,
+                                unprojected_schema,
+                                schema_context,
+                            )
+                            .await =>
+                {
+                    // `[array.█]` is parsed as `[array]`, but its schema is an array of tables.
+                    // The header refers to an element of the array, so complete with the item schema.
+                    table
+                        .find_completion_contents(
+                            cursor,
+                            keys,
+                            &accessors
+                                .iter()
+                                .cloned()
+                                .chain(std::iter::once(Accessor::Index(0)))
+                                .collect::<Vec<_>>(),
+                            Some(&item_schema),
+                            schema_context,
+                            completion_hint,
+                        )
+                        .await
+                }
                 Self::Table(table) => {
                     table
                         .find_completion_contents(
