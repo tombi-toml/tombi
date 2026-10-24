@@ -1485,7 +1485,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                     {
                         return None;
                     }
-                    // `[array.sub]` is valid only after `[[array]]` has been declared.
+                    // `[array.sub]` is valid only after `[[array]]` has been declared above it.
                     if matches!(
                         completion_hint,
                         Some(CompletionHint::InTableHeader {
@@ -1495,6 +1495,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                         table.get(key_name),
                         Some(tombi_document_tree_syntax::Value::Array(array))
                             if array.kind() == tombi_document_tree_syntax::ArrayKind::ArrayOfTable
+                                && array.values().iter().any(|value| value.span().start < offset)
                     ) {
                         continue;
                     }
