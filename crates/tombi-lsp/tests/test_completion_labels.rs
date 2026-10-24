@@ -358,9 +358,7 @@ mod completion_labels {
                 "format",
                 "lint",
                 "lsp",
-                "overrides",
                 "schema",
-                "schemas",
             ]);
         }
 
@@ -375,9 +373,7 @@ mod completion_labels {
                 "format",
                 "lint",
                 "lsp",
-                "overrides",
                 "schema",
-                "schemas",
             ]);
         }
 
@@ -396,9 +392,7 @@ mod completion_labels {
                 "format",
                 "lint",
                 "lsp",
-                "overrides",
                 "schema",
-                "schemas",
             ]);
         }
 
@@ -419,9 +413,7 @@ mod completion_labels {
                 "format",
                 "lint",
                 "lsp",
-                "overrides",
                 "schema",
-                "schemas",
             ]);
         }
 
@@ -442,9 +434,25 @@ mod completion_labels {
                 "format",
                 "lint",
                 "lsp",
-                "overrides",
                 "schema",
-                "schemas",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_single_bracket_array_of_tables_dot_after_declared_nested_array(
+                r#"
+                [[schemas]]
+
+                [[schemas.overrides]]
+
+                [schemas.█]
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "format",
+                "lint",
+                "overrides",
             ]);
         }
 
@@ -468,7 +476,6 @@ mod completion_labels {
             ) -> Ok([
                 "format",
                 "lint",
-                "overrides",
             ]);
         }
 
@@ -485,7 +492,6 @@ mod completion_labels {
             ) -> Ok([
                 "format",
                 "lint",
-                "overrides",
             ]);
         }
 
@@ -1234,8 +1240,6 @@ mod completion_labels {
                 "additional_table",
                 "additional_table_or_string",
                 "all_of_string_table",
-                "array_of_tables",
-                "array_of_tables_or_integer",
                 "parent",
                 "pattern_string",
                 "pattern_table",
@@ -1276,12 +1280,24 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
-            async fn single_bracket_with_prefix_includes_array_of_tables_key(
+            async fn single_bracket_with_prefix_excludes_undeclared_array_of_tables_key(
                 "[array█]",
                 SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_nested_after_declared_array_of_tables(
+                r#"
+                [[parent.child_array_of_tables]]
+
+                [parent.█]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
-                "array_of_tables",
-                "array_of_tables_or_integer",
+                "child_array_of_tables",
+                "child_table",
             ]);
         }
 
@@ -1308,7 +1324,6 @@ mod completion_labels {
                 "#,
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
-                "child_array_of_tables",
                 "child_table",
             ]);
         }
@@ -1330,7 +1345,6 @@ mod completion_labels {
                 "[parent.█]",
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
-                "child_array_of_tables",
                 "child_table",
             ]);
         }
@@ -1485,7 +1499,6 @@ mod completion_labels {
                 "additional_table_or_string",
                 "all_of_string_table",
                 "array_of_tables",
-                "array_of_tables_or_integer",
                 "parent",
                 "pattern_string",
                 "pattern_table",
@@ -2572,12 +2585,9 @@ mod completion_labels {
                 SchemaPath(cargo_schema_path()),
             ) -> Ok([
                 "badges",
-                "bench",
-                "bin",
                 "build-dependencies",
                 "dependencies",
                 "dev-dependencies",
-                "example",
                 "features",
                 "lib",
                 "lints",
@@ -2585,7 +2595,6 @@ mod completion_labels {
                 "patch",
                 "profile",
                 "target",
-                "test",
                 "workspace",
             ]);
         }

@@ -407,7 +407,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                             Some(
                                 CompletionHint::DotTrigger { .. }
                                 | CompletionHint::EqualTrigger { .. }
-                                | CompletionHint::InTableHeader
+                                | CompletionHint::InTableHeader { .. }
                                 | CompletionHint::InArray { .. },
                             ) => completion_hint,
                             Some(CompletionHint::Comma { .. }) | None => {
@@ -552,7 +552,7 @@ impl FindCompletionContents for ArraySchema {
 
         async move {
             match completion_hint {
-                Some(CompletionHint::InTableHeader) => Vec::new(),
+                Some(CompletionHint::InTableHeader { .. }) => Vec::new(),
                 _ => {
                     let schema_base_uri =
                         current_schema.map(|schema| schema.schema_base_uri.as_ref());

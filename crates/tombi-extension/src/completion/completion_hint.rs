@@ -1,6 +1,8 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CompletionHint {
-    InTableHeader,
+    InTableHeader {
+        is_array_of_table: bool,
+    },
     InArray {
         add_leading_comma: Option<AddLeadingComma>,
         add_trailing_comma: Option<AddTrailingComma>,

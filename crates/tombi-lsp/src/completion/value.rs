@@ -188,7 +188,10 @@ impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
                 }
                 Self::Array(array)
                     if array.kind() == tombi_document_tree_syntax::ArrayKind::ArrayOfTable
-                        && matches!(completion_hint, Some(CompletionHint::InTableHeader))
+                        && matches!(
+                            completion_hint,
+                            Some(CompletionHint::InTableHeader { .. })
+                        )
                         && keys.is_empty()
                         && current_schema.is_none()
                         && unprojected_schema.is_some() =>
@@ -224,7 +227,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
                         .await
                 }
                 Self::Table(table)
-                    if matches!(completion_hint, Some(CompletionHint::InTableHeader))
+                    if matches!(completion_hint, Some(CompletionHint::InTableHeader { .. }))
                         && keys.is_empty()
                         && current_schema.is_none()
                         && let Some(unprojected_schema) = unprojected_schema
@@ -341,7 +344,7 @@ pub fn type_hint_value(
                 CompletionHint::DotTrigger { span, .. } | CompletionHint::EqualTrigger { span, .. },
             ) => span.end == offset || span.end <= key.span().start,
             Some(
-                CompletionHint::InTableHeader
+                CompletionHint::InTableHeader { .. }
                 | CompletionHint::InArray { .. }
                 | CompletionHint::Comma { .. },
             )

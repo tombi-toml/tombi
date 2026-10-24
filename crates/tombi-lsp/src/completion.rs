@@ -139,7 +139,9 @@ pub fn extract_keys_and_hint<'t>(
                     return None;
                 } else {
                     if table.contains_header(offset) {
-                        completion_hint = Some(CompletionHint::InTableHeader);
+                        completion_hint = Some(CompletionHint::InTableHeader {
+                            is_array_of_table: false,
+                        });
                     }
                     table.header()
                 }
@@ -157,7 +159,9 @@ pub fn extract_keys_and_hint<'t>(
                     return None;
                 } else {
                     if array_of_table.contains_header(offset) {
-                        completion_hint = Some(CompletionHint::InTableHeader);
+                        completion_hint = Some(CompletionHint::InTableHeader {
+                            is_array_of_table: true,
+                        });
                     }
                     array_of_table.header()
                 }
@@ -224,7 +228,7 @@ pub async fn find_completion_contents(
 
     // The cursor is at the end of a complete table header key such as `[[project█]]`.
     // Children must be joined with a dot, so completing them here would glue them to the key.
-    if matches!(completion_hint, Some(CompletionHint::InTableHeader))
+    if matches!(completion_hint, Some(CompletionHint::InTableHeader { .. }))
         && keys.last().is_some_and(|key| offset <= key.span().end)
         && let Some(
             CompletionSource::Root { remaining_keys, .. }

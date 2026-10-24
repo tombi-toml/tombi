@@ -55,7 +55,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                 if !matches!(
                     self.kind(),
                     tombi_document_tree_syntax::TableKind::InlineTable { .. }
-                ) && completion_hint != Some(CompletionHint::InTableHeader)
+                ) && !matches!(completion_hint, Some(CompletionHint::InTableHeader { .. }))
                 {
                     // Skip if the cursor is the end space of key value like:
                     //
@@ -114,7 +114,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                     ) => span.end <= key.span().start,
                                     Some(
                                         CompletionHint::InArray { .. }
-                                        | CompletionHint::InTableHeader
+                                        | CompletionHint::InTableHeader { .. }
                                         | CompletionHint::Comma { .. },
                                     ) => false,
                                     None => true,
@@ -736,8 +736,10 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                     .map(ToString::to_string)
                                     .collect_vec();
                                 // A header can only declare a table or an array of tables.
-                                let mut accepts_header_key =
-                                    !matches!(completion_hint, Some(CompletionHint::InTableHeader));
+                                let mut accepts_header_key = !matches!(
+                                    completion_hint,
+                                    Some(CompletionHint::InTableHeader { .. })
+                                );
                                 if !accepts_header_key {
                                     for pattern in &patterns {
                                         if let Ok(Some(pattern_schema)) = table_schema
@@ -783,13 +785,15 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                         Some(&current_schema.dynamic_scope),
                                     )
                                     .await
-                                && (!matches!(completion_hint, Some(CompletionHint::InTableHeader))
-                                    || count_table_or_array_schema(
-                                        &additional_schema,
-                                        schema_context.store,
-                                    )
-                                    .await
-                                        > 0)
+                                && (!matches!(
+                                    completion_hint,
+                                    Some(CompletionHint::InTableHeader { .. })
+                                ) || count_table_or_array_schema(
+                                    &additional_schema,
+                                    schema_context.store,
+                                )
+                                .await
+                                    > 0)
                             {
                                 completion_contents.push(CompletionContent::new_additional_key(
                                     table_schema.additional_key_label.as_deref(),
@@ -813,13 +817,15 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                         schema_context,
                                     )
                                     .await
-                                && (!matches!(completion_hint, Some(CompletionHint::InTableHeader))
-                                    || count_table_or_array_schema(
-                                        &unevaluated_schema,
-                                        schema_context.store,
-                                    )
-                                    .await
-                                        > 0)
+                                && (!matches!(
+                                    completion_hint,
+                                    Some(CompletionHint::InTableHeader { .. })
+                                ) || count_table_or_array_schema(
+                                    &unevaluated_schema,
+                                    schema_context.store,
+                                )
+                                .await
+                                    > 0)
                             {
                                 completion_contents.push(CompletionContent::new_additional_key(
                                     table_schema.additional_key_label.as_deref(),
@@ -1087,7 +1093,7 @@ impl FindCompletionContents for TableSchema {
 
                 let singleton_value_label = key_singleton_literal_label(&schema_candidates);
                 for schema_candidate in schema_candidates {
-                    if let Some(CompletionHint::InTableHeader) = completion_hint
+                    if let Some(CompletionHint::InTableHeader { .. }) = completion_hint
                         && count_table_or_array_schema(&current_schema, schema_context.store).await
                             == 0
                     {
@@ -1134,7 +1140,7 @@ impl FindCompletionContents for TableSchema {
                 }
             }
 
-            if !matches!(completion_hint, Some(CompletionHint::InTableHeader)) {
+            if !matches!(completion_hint, Some(CompletionHint::InTableHeader { .. })) {
                 completion_items.push(CompletionContent::new_type_hint_inline_table(
                     offset,
                     Some(current_schema.schema_base_uri.as_ref()),
@@ -1248,7 +1254,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                         return type_hint_value(Some(key), offset, None, completion_hint);
                     }
                 }
-                Some(CompletionHint::InTableHeader) => {
+                Some(CompletionHint::InTableHeader { .. }) => {
                     if let Some(current_schema) = current_schema
                         && count_table_or_array_schema(current_schema, schema_context.store).await
                             == 0
@@ -1465,7 +1471,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                 | SchemaView::LocalTime(_) => {
                     // A header cannot declare a primitive, but another candidate
                     // of the same key (e.g. `anyOf: [table, boolean]`) may still be valid.
-                    if matches!(completion_hint, Some(CompletionHint::InTableHeader)) {
+                    if matches!(completion_hint, Some(CompletionHint::InTableHeader { .. })) {
                         continue;
                     }
                     if table.contains_key(key_name) {
@@ -1473,15 +1479,28 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                     }
                 }
                 SchemaView::Array(_) => {
-                    if matches!(completion_hint, Some(CompletionHint::InTableHeader))
+                    if matches!(completion_hint, Some(CompletionHint::InTableHeader { .. }))
                         && count_table_or_array_schema(current_schema, schema_context.store).await
                             == 0
                     {
                         return None;
                     }
+                    // `[array.sub]` is valid only after `[[array]]` has been declared.
+                    if matches!(
+                        completion_hint,
+                        Some(CompletionHint::InTableHeader {
+                            is_array_of_table: false
+                        })
+                    ) && !matches!(
+                        table.get(key_name),
+                        Some(tombi_document_tree_syntax::Value::Array(array))
+                            if array.kind() == tombi_document_tree_syntax::ArrayKind::ArrayOfTable
+                    ) {
+                        continue;
+                    }
                 }
                 SchemaView::Table(table_schema) => {
-                    if matches!(completion_hint, Some(CompletionHint::InTableHeader))
+                    if matches!(completion_hint, Some(CompletionHint::InTableHeader { .. }))
                         && count_table_or_array_schema(current_schema, schema_context.store).await
                             == 0
                     {
