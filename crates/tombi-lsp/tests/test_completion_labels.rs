@@ -1355,6 +1355,7 @@ mod completion_labels {
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
                 "child_array_of_tables",
+                "child_nested",
                 "child_table",
             ]);
         }
@@ -1394,6 +1395,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
+                "child_nested",
                 "child_table",
             ]);
         }
@@ -1405,6 +1407,7 @@ mod completion_labels {
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
                 "child_array_of_tables",
+                "child_nested",
                 "child_table",
             ]);
         }
@@ -1415,6 +1418,7 @@ mod completion_labels {
                 "[parent.█]",
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
+                "child_nested",
                 "child_table",
             ]);
         }
@@ -1430,6 +1434,7 @@ mod completion_labels {
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
                 "child_array_of_tables",
+                "child_nested",
                 "child_table",
             ]);
         }
@@ -1579,6 +1584,134 @@ mod completion_labels {
                 "table_value",
                 "unevaluated_string",
                 "unevaluated_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn deep_double_bracket_without_declaration(
+                "[[parent.child_nested.middle_array.█]]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn deep_single_bracket_without_declaration(
+                "[parent.child_nested.middle_array.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn deep_double_bracket_after_declared_array(
+                r#"
+                [[parent.child_nested.middle_array]]
+
+                [[parent.child_nested.middle_array.█]]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "leaf_array",
+                "leaf_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn deep_single_bracket_after_declared_array(
+                r#"
+                [[parent.child_nested.middle_array]]
+
+                [parent.child_nested.middle_array.█]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "leaf_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn deep_single_bracket_after_declared_nested_array(
+                r#"
+                [[parent.child_nested.middle_array]]
+                [[parent.child_nested.middle_array.leaf_array]]
+
+                [parent.child_nested.middle_array.█]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "leaf_array",
+                "leaf_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn deep_single_bracket_nested_array_in_other_element(
+                r#"
+                [[parent.child_nested.middle_array]]
+                [[parent.child_nested.middle_array.leaf_array]]
+
+                [[parent.child_nested.middle_array]]
+                [parent.child_nested.middle_array.█]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "leaf_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn deep_single_bracket_nested_array_before_cursor_element_only(
+                r#"
+                [[parent.child_nested.middle_array]]
+
+                [parent.child_nested.middle_array.█]
+
+                [[parent.child_nested.middle_array.leaf_array]]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "leaf_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn deep_double_bracket_second_level_without_declaration(
+                "[[parent.child_nested.middle_array.leaf_array.█]]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn deep_double_bracket_second_level_without_inner_declaration(
+                r#"
+                [[parent.child_nested.middle_array]]
+
+                [[parent.child_nested.middle_array.leaf_array.█]]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn deep_double_bracket_second_level_after_declared_array(
+                r#"
+                [[parent.child_nested.middle_array]]
+                [[parent.child_nested.middle_array.leaf_array]]
+
+                [[parent.child_nested.middle_array.leaf_array.█]]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "leaf_deep",
             ]);
         }
     }

@@ -110,6 +110,39 @@
           "items": {
             "type": "integer"
           }
+        },
+        "child_nested": {
+          "type": "object",
+          "properties": {
+            "middle_array": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "leaf_table": {
+                    "type": "object"
+                  },
+                  "leaf_array": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "leaf_deep": {
+                          "type": "object"
+                        },
+                        "leaf_name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "leaf_name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
