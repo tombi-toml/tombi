@@ -223,7 +223,10 @@ impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
                         )
                         .await
                 }
-                Self::Table(table)
+                Self::Table(table) => {
+                    // `[array.█]` is parsed as `[array]`, but its schema is an array of tables.
+                    // The header refers to an element of the array, so complete with the item schema.
+                    let mut item_schema = None;
                     if matches!(completion_hint, Some(CompletionHint::InTableHeader))
                         && keys.is_empty()
                         && current_schema.is_none()
@@ -237,43 +240,46 @@ impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
                                 SchemaView::Array(array_schema) => Some(array_schema.clone()),
                                 _ => None,
                             })
-                        && let Some(item_schema) =
-                            crate::schema_resolver::resolve_array_item_schema(
-                                0,
-                                &array_schema,
-                                unprojected_schema,
-                                schema_context,
-                            )
-                            .await =>
-                {
-                    // `[array.█]` is parsed as `[array]`, but its schema is an array of tables.
-                    // The header refers to an element of the array, so complete with the item schema.
-                    table
-                        .find_completion_contents(
-                            cursor,
-                            keys,
-                            &accessors
-                                .iter()
-                                .cloned()
-                                .chain(std::iter::once(Accessor::Index(0)))
-                                .collect::<Vec<_>>(),
-                            Some(&item_schema),
+                    {
+                        item_schema = crate::schema_resolver::resolve_array_item_schema(
+                            0,
+                            &array_schema,
+                            unprojected_schema,
                             schema_context,
-                            completion_hint,
                         )
-                        .await
-                }
-                Self::Table(table) => {
-                    table
-                        .find_completion_contents(
-                            cursor,
-                            keys,
-                            accessors,
-                            current_schema,
-                            schema_context,
-                            completion_hint,
-                        )
-                        .await
+                        .await;
+                    }
+
+                    match item_schema {
+                        Some(item_schema) => {
+                            table
+                                .find_completion_contents(
+                                    cursor,
+                                    keys,
+                                    &accessors
+                                        .iter()
+                                        .cloned()
+                                        .chain(std::iter::once(Accessor::Index(0)))
+                                        .collect::<Vec<_>>(),
+                                    Some(&item_schema),
+                                    schema_context,
+                                    completion_hint,
+                                )
+                                .await
+                        }
+                        None => {
+                            table
+                                .find_completion_contents(
+                                    cursor,
+                                    keys,
+                                    accessors,
+                                    current_schema,
+                                    schema_context,
+                                    completion_hint,
+                                )
+                                .await
+                        }
+                    }
                 }
                 Self::Incomplete { .. } => match current_schema {
                     Some(current_schema) => {
