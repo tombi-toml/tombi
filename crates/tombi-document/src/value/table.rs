@@ -453,4 +453,45 @@ mod test {
             ("conflicting table", ((2, 0), (2, 7)))
         ])
     }
+
+    test_deserialize! {
+        #[test]
+        fn dotted_key_into_header_table(
+            r#"
+            [a.b]
+            z = 9
+
+            [a]
+            b.t = 1
+            "#
+        ) -> Err([
+            ("conflicting table", ((4, 2), (4, 7)))
+        ])
+    }
+
+    test_deserialize! {
+        #[test]
+        fn dotted_keys_into_header_table(
+            r#"
+            [a.b]
+
+            [a]
+            b.c.d = 1
+            "#
+        ) -> Err([
+            ("conflicting table", ((3, 2), (3, 9)))
+        ])
+    }
+
+    test_deserialize! {
+        #[test]
+        fn dotted_keys_through_implicit_table(
+            r#"
+            [a.b.c]
+
+            [a]
+            b.x.y = 1
+            "#
+        ) -> Ok(json!({"a": {"b": {"c": {}, "x": {"y": 1}}}}))
+    }
 }
