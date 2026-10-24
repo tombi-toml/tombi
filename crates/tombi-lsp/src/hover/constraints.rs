@@ -1,4 +1,9 @@
-use tombi_schema_store::{ResolvedFormatOrder, XTombiArrayValuesOrder, XTombiTableKeysOrder};
+use tombi_schema_store::{
+    AllOfSchema, AnyOfSchema, ArraySchema, BooleanSchema, FloatSchema, IntegerSchema,
+    LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema, OneOfSchema,
+    ResolvedFormatOrder, SchemaView, StringSchema, TableSchema, XTombiArrayValuesOrder,
+    XTombiTableKeysOrder,
+};
 use tombi_x_keyword::{ArrayValuesOrderBy, ArrayValuesOrderGroup, StringFormat};
 
 use super::display_value::DisplayValue;
@@ -37,6 +42,105 @@ where
         None
     } else {
         Some(enum_values)
+    }
+}
+
+/// The `enum` / `default` constraints of a schema, shared by hover and completion.
+pub(crate) trait EnumAndDefault {
+    fn enum_and_default(&self) -> ValueConstraints;
+}
+
+macro_rules! impl_enum_and_default {
+    ($schema:ty, $enum_value:expr, $default_value:expr) => {
+        impl EnumAndDefault for $schema {
+            fn enum_and_default(&self) -> ValueConstraints {
+                ValueConstraints {
+                    r#enum: build_enum_values(&self.const_value, &self.r#enum, $enum_value),
+                    default: self.default.as_ref().and_then($default_value),
+                    ..Default::default()
+                }
+            }
+        }
+    };
+}
+
+impl_enum_and_default!(
+    BooleanSchema,
+    |value| Some(DisplayValue::Boolean(*value)),
+    |value| Some(DisplayValue::Boolean(*value))
+);
+impl_enum_and_default!(
+    IntegerSchema,
+    |value| Some(DisplayValue::Integer(*value)),
+    |value| Some(DisplayValue::Integer(*value))
+);
+impl_enum_and_default!(
+    FloatSchema,
+    |value| Some(DisplayValue::Float(*value)),
+    |value| Some(DisplayValue::Float(*value))
+);
+impl_enum_and_default!(
+    StringSchema,
+    |value| Some(DisplayValue::String(value.clone())),
+    |value| Some(DisplayValue::String(value.clone()))
+);
+impl_enum_and_default!(
+    OffsetDateTimeSchema,
+    |value| DisplayValue::try_new_offset_date_time(value).ok(),
+    |value| DisplayValue::try_new_offset_date_time(value).ok()
+);
+impl_enum_and_default!(
+    LocalDateTimeSchema,
+    |value| DisplayValue::try_new_local_date_time(value).ok(),
+    |value| DisplayValue::try_new_local_date_time(value).ok()
+);
+impl_enum_and_default!(
+    LocalDateSchema,
+    |value| DisplayValue::try_new_local_date(value).ok(),
+    |value| DisplayValue::try_new_local_date(value).ok()
+);
+impl_enum_and_default!(
+    LocalTimeSchema,
+    |value| DisplayValue::try_new_local_time(value).ok(),
+    |value| DisplayValue::try_new_local_time(value).ok()
+);
+impl_enum_and_default!(
+    ArraySchema,
+    |value| DisplayValue::try_from(value).ok(),
+    |value| DisplayValue::try_from(value).ok()
+);
+impl_enum_and_default!(
+    TableSchema,
+    |value| DisplayValue::try_from(value).ok(),
+    |value| DisplayValue::try_from(value).ok()
+);
+
+impl EnumAndDefault for SchemaView {
+    /// Composite schemas only carry a `default`; their branches carry the `enum`.
+    fn enum_and_default(&self) -> ValueConstraints {
+        match self {
+            SchemaView::Boolean(schema) => schema.enum_and_default(),
+            SchemaView::Integer(schema) => schema.enum_and_default(),
+            SchemaView::Float(schema) => schema.enum_and_default(),
+            SchemaView::String(schema) => schema.enum_and_default(),
+            SchemaView::OffsetDateTime(schema) => schema.enum_and_default(),
+            SchemaView::LocalDateTime(schema) => schema.enum_and_default(),
+            SchemaView::LocalDate(schema) => schema.enum_and_default(),
+            SchemaView::LocalTime(schema) => schema.enum_and_default(),
+            SchemaView::Array(schema) => schema.enum_and_default(),
+            SchemaView::Table(schema) => schema.enum_and_default(),
+            SchemaView::OneOf(OneOfSchema { default, .. })
+            | SchemaView::AnyOf(AnyOfSchema { default, .. })
+            | SchemaView::AllOf(AllOfSchema { default, .. }) => ValueConstraints {
+                default: default
+                    .as_ref()
+                    .and_then(|value| DisplayValue::try_from(value).ok()),
+                ..Default::default()
+            },
+            SchemaView::Anything(_) | SchemaView::Nothing(_) | SchemaView::Null => {
+                ValueConstraints::default()
+            }
+        }
     }
 }
 

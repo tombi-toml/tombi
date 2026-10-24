@@ -13,7 +13,7 @@ use crate::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
         comment::get_value_comment_directive_hover_content,
-        constraints::{ValueConstraints, build_enum_values},
+        constraints::{EnumAndDefault, ValueConstraints},
         display_value::DisplayValue,
         one_of::get_one_of_hover_content,
     },
@@ -310,13 +310,6 @@ impl GetHoverContent for ArraySchema {
                 accessors: Accessors::from(accessors.to_vec()),
                 value_type: ValueType::Array,
                 constraints: Some(ValueConstraints {
-                    r#enum: build_enum_values(&self.const_value, &self.r#enum, |value| {
-                        DisplayValue::try_from(value).ok()
-                    }),
-                    default: self
-                        .default
-                        .as_ref()
-                        .and_then(|default| DisplayValue::try_from(default).ok()),
                     examples: self.examples.as_ref().map(|examples| {
                         examples
                             .iter()
@@ -327,7 +320,7 @@ impl GetHoverContent for ArraySchema {
                     max_items: self.max_items,
                     unique_items: self.unique_items,
                     values_order: self.values_order.clone().map(Into::into),
-                    ..Default::default()
+                    ..self.enum_and_default()
                 }),
                 schema_document_uri: super::super::current_schema_link_uri(current_schema),
                 span: None,

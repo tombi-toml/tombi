@@ -15,7 +15,7 @@ use itertools::Itertools;
 use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
 use tombi_schema_store::{
     Accessor, Accessors, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaUri,
-    ValueType, get_schema_name,
+    SchemaView, ValueType, get_schema_name,
 };
 use tombi_text::{FromLsp, IntoLsp};
 
@@ -235,6 +235,15 @@ pub(super) fn first_most_specific_hover_value_content(
     }
     selected.schema_tooltip = SchemaTooltip::composite(tooltips);
     Some(selected)
+}
+
+/// The value type of a property: its schema's type, nullable when the key is optional.
+pub(crate) async fn property_value_type(schema_view: &SchemaView, required: bool) -> ValueType {
+    let mut value_type = schema_view.value_type().await;
+    if !required {
+        value_type.set_nullable();
+    }
+    value_type
 }
 
 pub(super) fn inherit_matching_nullable_type(composite: &ValueType, value_type: &mut ValueType) {

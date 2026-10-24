@@ -10,7 +10,7 @@ use crate::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
         comment::get_value_comment_directive_hover_content,
-        constraints::{ValueConstraints, build_enum_values},
+        constraints::{EnumAndDefault, ValueConstraints},
         display_value::DisplayValue,
         merge_adjacent_hover_content,
         one_of::get_one_of_hover_content,
@@ -326,13 +326,6 @@ impl GetHoverContent for StringSchema {
                 accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
                 value_type: tombi_schema_store::ValueType::String,
                 constraints: Some(ValueConstraints {
-                    r#enum: build_enum_values(&self.const_value, &self.r#enum, |value| {
-                        Some(DisplayValue::String(value.clone()))
-                    }),
-                    default: self
-                        .default
-                        .as_ref()
-                        .map(|value| DisplayValue::String(value.clone())),
                     examples: self.examples.as_ref().map(|examples| {
                         examples
                             .iter()
@@ -343,7 +336,7 @@ impl GetHoverContent for StringSchema {
                     max_length: self.max_length,
                     format: self.format,
                     pattern: self.pattern.clone(),
-                    ..Default::default()
+                    ..self.enum_and_default()
                 }),
                 schema_document_uri: super::super::current_schema_link_uri(current_schema),
                 span: None,

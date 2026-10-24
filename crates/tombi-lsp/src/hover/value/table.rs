@@ -15,7 +15,7 @@ use crate::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
         comment::get_value_comment_directive_hover_content,
-        constraints::{ValueConstraints, build_enum_values},
+        constraints::{EnumAndDefault, ValueConstraints},
         display_value::DisplayValue,
         one_of::get_one_of_hover_content,
     },
@@ -115,11 +115,11 @@ impl GetHoverContent for tombi_document_tree_syntax::Table<'_> {
                                                 SchemaView::Anything(_)
                                             )
                                         {
-                                            let mut value_type =
-                                                current_schema.schema_view.value_type().await;
-                                            if !required {
-                                                value_type.set_nullable();
-                                            }
+                                            let value_type = super::super::property_value_type(
+                                                &current_schema.schema_view,
+                                                required,
+                                            )
+                                            .await;
 
                                             return Some(HoverContent::Value(HoverValueContent {
                                                 title: current_schema
@@ -746,13 +746,6 @@ impl GetHoverContent for TableSchema {
                 accessors: Accessors::from(accessors.to_vec()),
                 value_type: ValueType::Table,
                 constraints: Some(ValueConstraints {
-                    r#enum: build_enum_values(&self.const_value, &self.r#enum, |value| {
-                        DisplayValue::try_from(value).ok()
-                    }),
-                    default: self
-                        .default
-                        .as_ref()
-                        .and_then(|default| DisplayValue::try_from(default).ok()),
                     examples: self.examples.as_ref().map(|examples| {
                         examples
                             .iter()
@@ -768,7 +761,7 @@ impl GetHoverContent for TableSchema {
                     pattern_keys: self.pattern_properties.is_some(),
                     keys_order: self.keys_order.clone().map(Into::into),
                     array_values_order_by: self.array_values_order_by.clone(),
-                    ..Default::default()
+                    ..self.enum_and_default()
                 }),
                 schema_document_uri: super::super::current_schema_link_uri(current_schema),
                 span: None,

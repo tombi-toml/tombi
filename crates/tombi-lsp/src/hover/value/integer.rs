@@ -9,7 +9,7 @@ use crate::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
         comment::get_value_comment_directive_hover_content,
-        constraints::{ValueConstraints, build_enum_values},
+        constraints::{EnumAndDefault, ValueConstraints},
         display_value::DisplayValue,
         merge_adjacent_hover_content,
         one_of::get_one_of_hover_content,
@@ -149,10 +149,6 @@ impl GetHoverContent for IntegerSchema {
                 accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
                 value_type: tombi_schema_store::ValueType::Integer,
                 constraints: Some(ValueConstraints {
-                    r#enum: build_enum_values(&self.const_value, &self.r#enum, |value| {
-                        Some(DisplayValue::Integer(*value))
-                    }),
-                    default: self.default.map(DisplayValue::Integer),
                     examples: self.examples.as_ref().map(|examples| {
                         examples
                             .iter()
@@ -164,7 +160,7 @@ impl GetHoverContent for IntegerSchema {
                     exclusive_minimum: self.exclusive_minimum.map(DisplayValue::Integer),
                     exclusive_maximum: self.exclusive_maximum.map(DisplayValue::Integer),
                     multiple_of: self.multiple_of.map(DisplayValue::Integer),
-                    ..Default::default()
+                    ..self.enum_and_default()
                 }),
                 schema_document_uri: super::super::current_schema_link_uri(current_schema),
                 span: None,

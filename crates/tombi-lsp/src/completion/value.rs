@@ -13,10 +13,7 @@ mod one_of;
 mod string;
 mod table;
 
-use crate::hover::{
-    constraints::{ValueConstraints, build_enum_values},
-    display_value::DisplayValue,
-};
+use crate::hover::constraints::{EnumAndDefault, ValueConstraints};
 use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
 pub use all_of::find_all_of_completion_items;
 pub use any_of::find_any_of_completion_items;
@@ -32,10 +29,9 @@ pub use one_of::find_one_of_completion_items;
 use string::type_hint_string;
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, AnythingSchema, ArraySchema, BooleanSchema, CurrentSchema,
-    FloatSchema, IntegerSchema, LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema,
-    OffsetDateTimeSchema, OneOfSchema, SchemaDefinitions, SchemaStore, SchemaUri, SchemaView,
-    StringSchema, TableSchema,
+    Accessor, AnythingSchema, ArraySchema, BooleanSchema, CurrentSchema, FloatSchema,
+    IntegerSchema, LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema,
+    SchemaDefinitions, SchemaStore, SchemaUri, SchemaView, StringSchema, TableSchema,
 };
 
 use super::{
@@ -460,12 +456,11 @@ pub(super) async fn schema_tooltip_content(
     schema_view: &SchemaView,
     description: Option<String>,
 ) -> SchemaTooltip {
-    let (r#enum, default) = default_and_enum(schema_view);
     SchemaTooltip::Content(SchemaTooltipContent {
         title: None,
         description,
         value_type: schema_view.value_type().await.to_string(),
-        constraints: constraints_markdown(r#enum, default),
+        constraints: constraints_markdown(schema_view.enum_and_default()),
         schema: None,
     })
 }
@@ -485,122 +480,27 @@ pub(super) async fn key_documentation(
     let Some((_, description)) = title_and_description(candidate) else {
         return documentation;
     };
-    let (r#enum, mut default) = default_and_enum(candidate);
+    let mut constraints = candidate.enum_and_default();
     if matches!(
         parent,
         SchemaView::OneOf(_) | SchemaView::AnyOf(_) | SchemaView::AllOf(_)
     ) {
-        default = default.or(default_and_enum(parent).1);
+        constraints.default = constraints.default.or(parent.enum_and_default().default);
     }
-    let mut value_type = parent.value_type().await;
-    if !required_keys.is_some_and(|keys| keys.iter().any(|key| key == key_name)) {
-        value_type.set_nullable();
-    }
+    let required = required_keys.is_some_and(|keys| keys.iter().any(|key| key == key_name));
+    let value_type = crate::hover::property_value_type(parent, required).await;
     Some(
         SchemaTooltip::Content(SchemaTooltipContent {
             title: None,
             description: description.map(ToString::to_string),
             value_type: value_type.to_string(),
-            constraints: constraints_markdown(r#enum, default),
+            constraints: constraints_markdown(constraints),
             schema: None,
         })
         .to_string(),
     )
 }
 
-fn constraints_markdown(
-    r#enum: Option<Vec<DisplayValue>>,
-    default: Option<DisplayValue>,
-) -> Option<String> {
-    let constraints = ValueConstraints {
-        r#enum,
-        default,
-        ..Default::default()
-    };
+fn constraints_markdown(constraints: ValueConstraints) -> Option<String> {
     (constraints != ValueConstraints::default()).then(|| constraints.to_string())
-}
-
-fn default_and_enum(schema_view: &SchemaView) -> (Option<Vec<DisplayValue>>, Option<DisplayValue>) {
-    let try_from_json = |value: &tombi_json::Value| DisplayValue::try_from(value).ok();
-    let try_from_object = |value: &tombi_json::Object| DisplayValue::try_from(value).ok();
-
-    match schema_view {
-        SchemaView::Boolean(schema) => (
-            build_enum_values(&schema.const_value, &schema.r#enum, |value| {
-                Some(DisplayValue::Boolean(*value))
-            }),
-            schema.default.map(DisplayValue::Boolean),
-        ),
-        SchemaView::Integer(schema) => (
-            build_enum_values(&schema.const_value, &schema.r#enum, |value| {
-                Some(DisplayValue::Integer(*value))
-            }),
-            schema.default.map(DisplayValue::Integer),
-        ),
-        SchemaView::Float(schema) => (
-            build_enum_values(&schema.const_value, &schema.r#enum, |value| {
-                Some(DisplayValue::Float(*value))
-            }),
-            schema.default.map(DisplayValue::Float),
-        ),
-        SchemaView::String(schema) => (
-            build_enum_values(&schema.const_value, &schema.r#enum, |value| {
-                Some(DisplayValue::String(value.clone()))
-            }),
-            schema
-                .default
-                .as_ref()
-                .map(|value| DisplayValue::String(value.clone())),
-        ),
-        SchemaView::OffsetDateTime(schema) => (
-            build_enum_values(&schema.const_value, &schema.r#enum, |value| {
-                DisplayValue::try_new_offset_date_time(value).ok()
-            }),
-            schema
-                .default
-                .as_ref()
-                .and_then(|value| DisplayValue::try_new_offset_date_time(value).ok()),
-        ),
-        SchemaView::LocalDateTime(schema) => (
-            build_enum_values(&schema.const_value, &schema.r#enum, |value| {
-                DisplayValue::try_new_local_date_time(value).ok()
-            }),
-            schema
-                .default
-                .as_ref()
-                .and_then(|value| DisplayValue::try_new_local_date_time(value).ok()),
-        ),
-        SchemaView::LocalDate(schema) => (
-            build_enum_values(&schema.const_value, &schema.r#enum, |value| {
-                DisplayValue::try_new_local_date(value).ok()
-            }),
-            schema
-                .default
-                .as_ref()
-                .and_then(|value| DisplayValue::try_new_local_date(value).ok()),
-        ),
-        SchemaView::LocalTime(schema) => (
-            build_enum_values(&schema.const_value, &schema.r#enum, |value| {
-                DisplayValue::try_new_local_time(value).ok()
-            }),
-            schema
-                .default
-                .as_ref()
-                .and_then(|value| DisplayValue::try_new_local_time(value).ok()),
-        ),
-        SchemaView::Array(schema) => (
-            build_enum_values(&schema.const_value, &schema.r#enum, try_from_json),
-            schema.default.as_ref().and_then(try_from_json),
-        ),
-        SchemaView::Table(schema) => (
-            build_enum_values(&schema.const_value, &schema.r#enum, try_from_object),
-            schema.default.as_ref().and_then(try_from_object),
-        ),
-        SchemaView::OneOf(OneOfSchema { default, .. })
-        | SchemaView::AnyOf(AnyOfSchema { default, .. })
-        | SchemaView::AllOf(AllOfSchema { default, .. }) => {
-            (None, default.as_ref().and_then(try_from_json))
-        }
-        SchemaView::Anything(_) | SchemaView::Nothing(_) | SchemaView::Null => (None, None),
-    }
 }
