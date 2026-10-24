@@ -41,6 +41,8 @@ jobs:
             .github/actions/relevant-changes/**
             .github/actions/set-version/**
             .github/scripts/install-cross.sh
+            .node-version
+            package.json
             Cargo.toml
             Cargo.lock
             rust-toolchain.toml
@@ -224,8 +226,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          # Node 24 includes a compatible npm for trusted publishing.
-          node-version: 24
+          node-version-file: ".node-version"
           registry-url: "https://registry.npmjs.org"
 
       - name: Install WASM target

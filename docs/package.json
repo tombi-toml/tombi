@@ -34,7 +34,7 @@
     "vinxi": "0.5.11"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": ">=26.12.1"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
