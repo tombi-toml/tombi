@@ -59,9 +59,9 @@ impl HeaderIndex {
         // (or unconvertible) first key starts a new run.
         let mut run_first_key: Option<u32> = None;
         let mut run_headers: HashSet<u32> = HashSet::new();
-        // The same, restricted to `[[...]]` headers, which `[table]` headers never interrupt.
-        let mut aot_run_first_key: Option<u32> = None;
-        let mut aot_run_counts: HashMap<u32, usize> = HashMap::new();
+        // The number of `[[...]]` headers seen for each key path. Unlike the run above, an array of
+        // tables stays one for the rest of the document, whatever headers come in between.
+        let mut aot_counts: HashMap<u32, usize> = HashMap::new();
         // Headers whose sub tables are still being collected, from outermost to innermost, as
         // `(node id, key path id, key count)`.
         let mut open_headers: Vec<(u32, u32, usize)> = vec![];
@@ -116,13 +116,10 @@ impl HeaderIndex {
             let first = path_ids.first().copied();
 
             let same_run = first.is_some() && first == run_first_key;
-            let same_aot_run = first.is_some() && first == aot_run_first_key;
 
             let mut array_of_tables_counts = vec![0; key_count];
-            if same_aot_run {
-                for (count, path_id) in array_of_tables_counts.iter_mut().zip(&path_ids) {
-                    *count = aot_run_counts.get(path_id).copied().unwrap_or_default();
-                }
+            for (count, path_id) in array_of_tables_counts.iter_mut().zip(&path_ids) {
+                *count = aot_counts.get(path_id).copied().unwrap_or_default();
             }
             let parent_header_count = if same_run {
                 // Only the strictly shorter key paths are parents.
@@ -164,19 +161,8 @@ impl HeaderIndex {
                 run_headers.insert(path_ids[key_count - 1]);
             }
 
-            if is_array_of_table {
-                if let Some(first) = first {
-                    if !same_aot_run {
-                        aot_run_first_key = Some(first);
-                        aot_run_counts.clear();
-                    }
-                    if is_complete {
-                        *aot_run_counts.entry(path_ids[key_count - 1]).or_default() += 1;
-                    }
-                } else {
-                    aot_run_first_key = None;
-                    aot_run_counts.clear();
-                }
+            if is_array_of_table && is_complete {
+                *aot_counts.entry(path_ids[key_count - 1]).or_default() += 1;
             }
 
             if is_complete {
