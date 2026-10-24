@@ -320,7 +320,6 @@ impl FindCompletionContents for SchemaCompletion {
             if completion_items.iter().any(needs_documentation) {
                 let documentation = super::value::schema_tooltip_content(
                     current_schema.schema_view.as_ref(),
-                    current_schema.schema_view.title().map(ToString::to_string),
                     current_schema
                         .schema_view
                         .description()

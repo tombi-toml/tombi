@@ -404,7 +404,7 @@ impl CompletionCandidate for SchemaView {
             _ => {
                 let (_, description) = title_and_description(self)?;
                 Some(
-                    schema_tooltip_content(self, None, description.map(ToString::to_string))
+                    schema_tooltip_content(self, description.map(ToString::to_string))
                         .await
                         .to_string(),
                 )
@@ -458,12 +458,11 @@ fn title_and_description(schema_view: &SchemaView) -> Option<(Option<&str>, Opti
 /// `schema` is left empty: completion items link their schema via `schema_base_uri`.
 pub(super) async fn schema_tooltip_content(
     schema_view: &SchemaView,
-    title: Option<String>,
     description: Option<String>,
 ) -> SchemaTooltip {
     let (r#enum, default) = default_and_enum(schema_view);
     SchemaTooltip::Content(SchemaTooltipContent {
-        title,
+        title: None,
         description,
         value_type: schema_view.value_type().await.to_string(),
         constraints: constraints_markdown(r#enum, default),
