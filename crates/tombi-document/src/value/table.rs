@@ -453,4 +453,36 @@ mod test {
             ("conflicting table", ((2, 0), (2, 7)))
         ])
     }
+
+    test_deserialize! {
+        #[test]
+        fn array_of_table_sub_table_after_another_array_of_tables(
+            r#"
+            [[a]]
+            x = 1
+
+            [[b]]
+            z = 0
+
+            [a.c]
+            y = 2
+            "#
+        ) -> Ok(
+            json!({
+                "a": [
+                    {
+                        "x": 1,
+                        "c": {
+                            "y": 2
+                        }
+                    }
+                ],
+                "b": [
+                    {
+                        "z": 0
+                    }
+                ]
+            })
+        )
+    }
 }
