@@ -259,3 +259,9 @@ pub fn union_best_match_one_of_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("union-best-match-one-of-test.schema.json")
 }
+
+pub fn table_header_completion_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("table-header-completion-test.schema.json")
+}

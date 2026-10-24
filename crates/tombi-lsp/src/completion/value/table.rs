@@ -735,34 +735,101 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                     .keys()
                                     .map(ToString::to_string)
                                     .collect_vec();
-                                completion_contents.push(CompletionContent::new_pattern_key(
-                                    table_schema.additional_key_label.as_deref(),
-                                    patterns.as_ref(),
-                                    offset,
-                                    Some(current_schema.schema_base_uri.as_ref()),
-                                    completion_hint,
-                                ))
+                                // A header can only declare a table or an array of tables.
+                                let mut accepts_header_key =
+                                    !matches!(completion_hint, Some(CompletionHint::InTableHeader));
+                                if !accepts_header_key {
+                                    for pattern in &patterns {
+                                        if let Ok(Some(pattern_schema)) = table_schema
+                                            .resolve_pattern_property_schema(
+                                                pattern,
+                                                current_schema.schema_base_uri.clone(),
+                                                current_schema.definitions.clone(),
+                                                current_schema.strict,
+                                                schema_context.store,
+                                                Some(&current_schema.dynamic_scope),
+                                            )
+                                            .await
+                                            && count_table_or_array_schema(
+                                                &pattern_schema,
+                                                schema_context.store,
+                                            )
+                                            .await
+                                                > 0
+                                        {
+                                            accepts_header_key = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if accepts_header_key {
+                                    completion_contents.push(CompletionContent::new_pattern_key(
+                                        table_schema.additional_key_label.as_deref(),
+                                        patterns.as_ref(),
+                                        offset,
+                                        Some(current_schema.schema_base_uri.as_ref()),
+                                        completion_hint,
+                                    ))
+                                }
                             } else if let Some((_, additional_property_schema)) =
                                 &table_schema.additional_property_schema
-                                && let Ok(Some(CurrentSchema {
-                                    schema_view,
-                                    schema_base_uri,
-                                    ..
-                                })) = tombi_schema_store::resolve_schema_item_in_scope(
-                                    additional_property_schema,
-                                    current_schema.schema_base_uri.clone(),
-                                    current_schema.definitions.clone(),
-                                    current_schema.strict,
-                                    schema_context.store,
-                                    Some(&current_schema.dynamic_scope),
-                                )
-                                .await
+                                && let Ok(Some(additional_schema)) =
+                                    tombi_schema_store::resolve_schema_item_in_scope(
+                                        additional_property_schema,
+                                        current_schema.schema_base_uri.clone(),
+                                        current_schema.definitions.clone(),
+                                        current_schema.strict,
+                                        schema_context.store,
+                                        Some(&current_schema.dynamic_scope),
+                                    )
+                                    .await
+                                && (!matches!(completion_hint, Some(CompletionHint::InTableHeader))
+                                    || count_table_or_array_schema(
+                                        &additional_schema,
+                                        schema_context.store,
+                                    )
+                                    .await
+                                        > 0)
                             {
                                 completion_contents.push(CompletionContent::new_additional_key(
                                     table_schema.additional_key_label.as_deref(),
                                     offset,
-                                    Some(schema_base_uri.as_ref()),
-                                    schema_view.deprecation().await.map(|_| true),
+                                    Some(additional_schema.schema_base_uri.as_ref()),
+                                    additional_schema
+                                        .schema_view
+                                        .deprecation()
+                                        .await
+                                        .map(|_| true),
+                                    completion_hint,
+                                ));
+                            }
+
+                            if table_schema.pattern_properties.is_none()
+                                && table_schema.additional_property_schema.is_none()
+                                && let Some(unevaluated_schema) =
+                                    resolve_table_unevaluated_property_schema(
+                                        table_schema,
+                                        current_schema,
+                                        schema_context,
+                                    )
+                                    .await
+                                && (!matches!(completion_hint, Some(CompletionHint::InTableHeader))
+                                    || count_table_or_array_schema(
+                                        &unevaluated_schema,
+                                        schema_context.store,
+                                    )
+                                    .await
+                                        > 0)
+                            {
+                                completion_contents.push(CompletionContent::new_additional_key(
+                                    table_schema.additional_key_label.as_deref(),
+                                    offset,
+                                    Some(unevaluated_schema.schema_base_uri.as_ref()),
+                                    unevaluated_schema
+                                        .schema_view
+                                        .deprecation()
+                                        .await
+                                        .map(|_| true),
                                     completion_hint,
                                 ));
                             }
@@ -1067,11 +1134,13 @@ impl FindCompletionContents for TableSchema {
                 }
             }
 
-            completion_items.push(CompletionContent::new_type_hint_inline_table(
-                offset,
-                Some(current_schema.schema_base_uri.as_ref()),
-                completion_hint,
-            ));
+            if !matches!(completion_hint, Some(CompletionHint::InTableHeader)) {
+                completion_items.push(CompletionContent::new_type_hint_inline_table(
+                    offset,
+                    Some(current_schema.schema_base_uri.as_ref()),
+                    completion_hint,
+                ));
+            }
 
             completion_items
         }
@@ -1394,9 +1463,12 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                 | SchemaView::LocalDateTime(_)
                 | SchemaView::LocalDate(_)
                 | SchemaView::LocalTime(_) => {
-                    if matches!(completion_hint, Some(CompletionHint::InTableHeader))
-                        || table.contains_key(key_name)
-                    {
+                    // A header cannot declare a primitive, but another candidate
+                    // of the same key (e.g. `anyOf: [table, boolean]`) may still be valid.
+                    if matches!(completion_hint, Some(CompletionHint::InTableHeader)) {
+                        continue;
+                    }
+                    if table.contains_key(key_name) {
                         return None;
                     }
                 }

@@ -81,6 +81,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
                     schema.for_instance_type(instance_type, schema_context.string_formats())
                 })
             });
+            let unprojected_schema = current_schema;
             let current_schema = match current_schema {
                 Some(schema) if schema.semantic_schema.is_some() && instance_type.is_some() => {
                     projected_schema.as_ref()
@@ -184,6 +185,31 @@ impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
                             completion_hint,
                         )
                         .await
+                }
+                Self::Array(array)
+                    if array.kind() == tombi_document_tree_syntax::ArrayKind::ArrayOfTable
+                        && matches!(completion_hint, Some(CompletionHint::InTableHeader))
+                        && keys.is_empty()
+                        && current_schema.is_none()
+                        && unprojected_schema.is_some() =>
+                {
+                    // `[[table.█]]` is parsed as `[[table]]`, but the schema of `table` is not an array.
+                    // The cursor is in the key of the table, so complete with the element table.
+                    match array.values().iter().find(|value| value.contains(offset)) {
+                        Some(value) => {
+                            value
+                                .find_completion_contents(
+                                    cursor,
+                                    keys,
+                                    accessors,
+                                    unprojected_schema,
+                                    schema_context,
+                                    completion_hint,
+                                )
+                                .await
+                        }
+                        None => Vec::new(),
+                    }
                 }
                 Self::Array(array) => {
                     array

@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "array_of_tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "somekey": {
+            "type": "object",
+            "properties": {
+              "foo": {
+                "type": "integer"
+              }
+            }
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "array_of_integers": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "integer_value": {
+      "type": "integer"
+    },
+    "string_value": {
+      "type": "string"
+    },
+    "boolean_value": {
+      "type": "boolean"
+    },
+    "table_value": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "table_or_array_of_tables": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      ]
+    },
+    "table_or_boolean": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "table_or_integer": {
+      "oneOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "array_of_tables_or_integer": {
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "parent": {
+      "type": "object",
+      "properties": {
+        "child_table": {
+          "type": "object"
+        },
+        "child_array_of_tables": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "child_integer": {
+          "type": "integer"
+        },
+        "child_array_of_integers": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "additional_string": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "additional_table": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "additional_table_or_string": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "pattern_string": {
+      "type": "object",
+      "patternProperties": {
+        "^x-": {
+          "type": "string"
+        }
+      }
+    },
+    "pattern_table": {
+      "type": "object",
+      "patternProperties": {
+        "^x-": {
+          "type": "object"
+        }
+      }
+    },
+    "all_of_string_table": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "inner": {
+              "type": "object"
+            }
+          }
+        }
+      ]
+    },
+    "unevaluated_string": {
+      "type": "object",
+      "unevaluatedProperties": {
+        "type": "string"
+      }
+    },
+    "unevaluated_table": {
+      "type": "object",
+      "unevaluatedProperties": {
+        "type": "object"
+      }
+    },
+    "property_names": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "a",
+          "b"
+        ]
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}

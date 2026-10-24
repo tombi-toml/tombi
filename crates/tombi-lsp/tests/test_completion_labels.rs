@@ -5,8 +5,8 @@ use tombi_test_lib::{
     adjacent_one_of_hover_test_schema_path, dot_config_project_root_fixture_path,
     exact_index_string_test_schema_path, issue_1895_rustfmt_like_schema_path,
     lsp_consistency_test_schema_path, project_root_path, ref_sibling_annotations_test_schema_path,
-    string_format_test_schema_path, today_local_date, today_local_date_time, today_local_time,
-    today_offset_date_time,
+    string_format_test_schema_path, table_header_completion_test_schema_path, today_local_date,
+    today_local_date_time, today_local_time, today_offset_date_time,
 };
 
 mod completion_labels {
@@ -1180,6 +1180,285 @@ mod completion_labels {
         }
     }
 
+    mod table_header_completion_schema {
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_excludes_primitive_keys(
+                "[█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "additional_string",
+                "additional_table",
+                "additional_table_or_string",
+                "all_of_string_table",
+                "array_of_tables",
+                "array_of_tables_or_integer",
+                "parent",
+                "pattern_string",
+                "pattern_table",
+                "property_names",
+                "table_or_array_of_tables",
+                "table_or_boolean",
+                "table_or_integer",
+                "table_value",
+                "unevaluated_string",
+                "unevaluated_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn double_bracket_excludes_primitive_keys(
+                "[[█]]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "additional_string",
+                "additional_table",
+                "additional_table_or_string",
+                "all_of_string_table",
+                "array_of_tables",
+                "array_of_tables_or_integer",
+                "parent",
+                "pattern_string",
+                "pattern_table",
+                "property_names",
+                "table_or_array_of_tables",
+                "table_or_boolean",
+                "table_or_integer",
+                "table_value",
+                "unevaluated_string",
+                "unevaluated_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_with_prefix_includes_array_of_tables_key(
+                "[array█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "array_of_tables",
+                "array_of_tables_or_integer",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn double_bracket_with_prefix_includes_table_key(
+                "[[table█]]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "table_or_array_of_tables",
+                "table_or_boolean",
+                "table_or_integer",
+                "table_value",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_nested_excludes_primitive_keys(
+                r#"
+                [parent]
+
+                [parent.█]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "child_array_of_tables",
+                "child_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn double_bracket_nested_without_parent_header(
+                "[[parent.█]]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "child_array_of_tables",
+                "child_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_nested_without_parent_header(
+                "[parent.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "child_array_of_tables",
+                "child_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn double_bracket_nested_excludes_primitive_keys(
+                r#"
+                [parent]
+
+                [[parent.█]]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "child_array_of_tables",
+                "child_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_sub_table_of_existing_array_of_tables(
+                r#"
+                [[array_of_tables]]
+
+                [array_of_tables.█]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "somekey",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_additional_string(
+                "[additional_string.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_additional_string_double(
+                "[[additional_string.█]]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_additional_table(
+                "[additional_table.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "$key",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_additional_table_or_string(
+                "[additional_table_or_string.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "$key",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_pattern_string(
+                "[pattern_string.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_pattern_table(
+                "[pattern_table.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "$key",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_all_of_string_table(
+                "[all_of_string_table.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "inner",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn table_body_unevaluated_string_key(
+                r#"
+                [unevaluated_string]
+                █
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "$key",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_unevaluated_table(
+                "[unevaluated_table.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "$key",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_unevaluated_string(
+                "[unevaluated_string.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_property_names_with_string_values(
+                "[property_names.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn single_bracket_after_existing_array_of_tables(
+                r#"
+                [[array_of_tables]]
+
+                [█]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "additional_string",
+                "additional_table",
+                "additional_table_or_string",
+                "all_of_string_table",
+                "array_of_tables",
+                "array_of_tables_or_integer",
+                "parent",
+                "pattern_string",
+                "pattern_table",
+                "property_names",
+                "table_or_array_of_tables",
+                "table_or_boolean",
+                "table_or_integer",
+                "table_value",
+                "unevaluated_string",
+                "unevaluated_table",
+            ]);
+        }
+    }
+
     mod adjacent_applicators_schema {
         use super::*;
 
@@ -1628,6 +1907,106 @@ mod completion_labels {
         use tombi_test_lib::pyproject_schema_path;
 
         use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_double_bracket_project_dot(
+                "[[project.█]]",
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                "authors",
+                "entry-points",
+                "gui-scripts",
+                "license",
+                "maintainers",
+                "optional-dependencies",
+                "readme",
+                "scripts",
+                "urls",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_double_bracket_additional_key_of_string_table(
+                "[[project.entry-points.aaa.█]]",
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_single_bracket_additional_key_of_string_table(
+                "[project.entry-points.aaa.█]",
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_single_bracket_additional_key_of_table(
+                "[project.entry-points.█]",
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                "$entry_point_group_name",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_single_bracket_complete_key_suggests_dot(
+                "[project█]",
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_double_bracket_complete_key_suggests_dot(
+                "[[project█]]",
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_unclosed_single_bracket_complete_key_suggests_dot(
+                "[project█",
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_unclosed_double_bracket_complete_key_suggests_dot(
+                "[[project█",
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_double_bracket_complete_key_before_next_header_suggests_dot(
+                r#"
+                [[project█]]
+
+                [dependency-groups]
+                "#,
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+            ]);
+        }
 
         test_completion_labels! {
             #[tokio::test]

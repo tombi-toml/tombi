@@ -219,17 +219,57 @@ pub async fn find_completion_contents(
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
     let offset = cursor.offset();
-    let completion_items =
-        match CompletionSource::new(document_tree, offset, keys, schema_context, completion_hint)
-            .await
-        {
-            Some(CompletionSource::Root {
-                remaining_keys,
-                accessors,
-                current_schema,
-            }) => {
-                document_tree
-                    .deref()
+    let completion_source =
+        CompletionSource::new(document_tree, offset, keys, schema_context, completion_hint).await;
+
+    // The cursor is at the end of a complete table header key such as `[[project█]]`.
+    // Children must be joined with a dot, so completing them here would glue them to the key.
+    if matches!(completion_hint, Some(CompletionHint::InTableHeader))
+        && keys.last().is_some_and(|key| offset <= key.span().end)
+        && let Some(
+            CompletionSource::Root { remaining_keys, .. }
+            | CompletionSource::Value { remaining_keys, .. }
+            | CompletionSource::Schema { remaining_keys, .. },
+        ) = &completion_source
+        && remaining_keys.is_empty()
+    {
+        return CompletionContent::new_magic_triggers(
+            keys.last().map_or("", |key| key.value()),
+            offset,
+            None,
+        )
+        .into_iter()
+        .filter(|content| content.label == ".")
+        .collect();
+    }
+
+    let completion_items = match completion_source {
+        Some(CompletionSource::Root {
+            remaining_keys,
+            accessors,
+            current_schema,
+        }) => {
+            document_tree
+                .deref()
+                .find_completion_contents(
+                    cursor,
+                    remaining_keys,
+                    &accessors,
+                    current_schema.as_ref(),
+                    schema_context,
+                    completion_hint,
+                )
+                .await
+        }
+        Some(CompletionSource::Value {
+            remaining_keys,
+            accessors,
+            current_schema,
+        }) => {
+            if let Some((_, value)) =
+                tombi_document_tree_syntax::dig_accessors(document_tree, &accessors)
+            {
+                value
                     .find_completion_contents(
                         cursor,
                         remaining_keys,
@@ -239,47 +279,28 @@ pub async fn find_completion_contents(
                         completion_hint,
                     )
                     .await
+            } else {
+                Vec::new()
             }
-            Some(CompletionSource::Value {
-                remaining_keys,
-                accessors,
-                current_schema,
-            }) => {
-                if let Some((_, value)) =
-                    tombi_document_tree_syntax::dig_accessors(document_tree, &accessors)
-                {
-                    value
-                        .find_completion_contents(
-                            cursor,
-                            remaining_keys,
-                            &accessors,
-                            current_schema.as_ref(),
-                            schema_context,
-                            completion_hint,
-                        )
-                        .await
-                } else {
-                    Vec::new()
-                }
-            }
-            Some(CompletionSource::Schema {
-                remaining_keys,
-                accessors,
-                current_schema,
-            }) => {
-                schema_completion::SchemaCompletion
-                    .find_completion_contents(
-                        cursor,
-                        remaining_keys,
-                        &accessors,
-                        Some(&current_schema),
-                        schema_context,
-                        completion_hint,
-                    )
-                    .await
-            }
-            None => Vec::new(),
-        };
+        }
+        Some(CompletionSource::Schema {
+            remaining_keys,
+            accessors,
+            current_schema,
+        }) => {
+            schema_completion::SchemaCompletion
+                .find_completion_contents(
+                    cursor,
+                    remaining_keys,
+                    &accessors,
+                    Some(&current_schema),
+                    schema_context,
+                    completion_hint,
+                )
+                .await
+        }
+        None => Vec::new(),
+    };
     dedup_completion_contents(completion_items)
 }
 
