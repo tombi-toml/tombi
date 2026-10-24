@@ -159,6 +159,44 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                             }
                         }
 
+                        // `[array.█]` refers to the last `[[array]]` element above the cursor,
+                        // so complete with that element to see what it already declares.
+                        if self.kind() == ArrayKind::ArrayOfTable
+                            && matches!(
+                                completion_hint,
+                                Some(CompletionHint::InTableHeader {
+                                    is_array_of_table: false
+                                })
+                            )
+                            && keys.is_empty()
+                            && let Some(index) = self
+                                .values()
+                                .iter()
+                                .rposition(|value| value.span().start < offset)
+                            && let Some(item_schema) = resolve_array_item_schema(
+                                index,
+                                array_schema,
+                                current_schema,
+                                schema_context,
+                            )
+                            .await
+                        {
+                            return self.values()[index]
+                                .find_completion_contents(
+                                    cursor,
+                                    keys,
+                                    &accessors
+                                        .iter()
+                                        .cloned()
+                                        .chain(std::iter::once(Accessor::Index(index)))
+                                        .collect_vec(),
+                                    Some(&item_schema),
+                                    schema_context,
+                                    completion_hint,
+                                )
+                                .await;
+                        }
+
                         if let Some(current_schema) = resolve_array_item_schema(
                             new_item_index,
                             array_schema,
