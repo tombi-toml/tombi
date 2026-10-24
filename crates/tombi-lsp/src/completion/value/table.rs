@@ -1041,7 +1041,9 @@ impl FindCompletionContents for TableSchema {
                                 completion_hint,
                             )
                             .await,
-                        super::with_inherited_default(
+                        super::key_documentation(
+                            &current_schema.schema_view,
+                            &schema_candidate,
                             schema_candidate
                                 .documentation(
                                     &current_schema.schema_base_uri,
@@ -1052,9 +1054,10 @@ impl FindCompletionContents for TableSchema {
                                     completion_hint,
                                 )
                                 .await,
-                            &current_schema.schema_view,
-                            &schema_candidate,
-                        ),
+                            label,
+                            self.required.as_ref(),
+                        )
+                        .await,
                         self.required.as_ref(),
                         Some(current_schema.schema_base_uri.as_ref()),
                         current_schema.schema_view.deprecation().await.map(|_| true),
@@ -1449,7 +1452,9 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                         completion_hint,
                     )
                     .await,
-                super::with_inherited_default(
+                super::key_documentation(
+                    &current_schema.schema_view,
+                    &schema_candidate,
                     schema_candidate
                         .documentation(
                             &current_schema.schema_base_uri,
@@ -1460,9 +1465,10 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                             completion_hint,
                         )
                         .await,
-                    &current_schema.schema_view,
-                    &schema_candidate,
-                ),
+                    key_name,
+                    table_schema.required.as_ref(),
+                )
+                .await,
                 table_schema.required.as_ref(),
                 Some(&current_schema.schema_base_uri),
                 current_schema.schema_view.deprecation().await.map(|_| true),

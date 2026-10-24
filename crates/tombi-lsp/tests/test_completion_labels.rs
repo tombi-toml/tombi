@@ -1325,11 +1325,11 @@ mod completion_labels {
             ) -> Ok([
                 {
                     "label": "value",
-                    "documentation": "first anyOf value\n\nValue: `String`\n\nSchema: [composite-array-items.schema.json](file://",
+                    "documentation": "first anyOf value\n\nValue: `String?`\n\nSchema: [composite-array-items.schema.json](file://",
                 },
                 {
                     "label": "value",
-                    "documentation": ")\n\n---\n\nsecond anyOf value\n\nValue: `String`\n\nSchema: [composite-array-items.schema.json](file://",
+                    "documentation": ")\n\n---\n\nsecond anyOf value\n\nValue: `String?`\n\nSchema: [composite-array-items.schema.json](file://",
                 },
             ]);
         }
@@ -2122,6 +2122,22 @@ mod completion_labels {
                 "target",
                 "test",
                 "workspace",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_package_license_value_type_matches_hover(
+                r#"
+                [package]
+                licen█
+                "#,
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                {
+                    "label": "license",
+                    "documentation": "Value: `(String | Table)?`",
+                },
             ]);
         }
 

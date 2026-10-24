@@ -470,26 +470,42 @@ pub(super) async fn schema_tooltip_content(
     })
 }
 
-/// Like hover, a composite schema's `default` applies to its branches that define none.
-pub(super) fn with_inherited_default(
-    documentation: Option<String>,
+/// Documentation for a key candidate resolved out of the property schema `parent`.
+///
+/// Like hover, `Value:` is the property's type (not the candidate's), marked nullable
+/// when the key is optional, and a composite `parent`'s `default` applies to a candidate
+/// that defines none.
+pub(super) async fn key_documentation(
     parent: &SchemaView,
     candidate: &SchemaView,
+    documentation: Option<String>,
+    key_name: &str,
+    required_keys: Option<&Vec<String>>,
 ) -> Option<String> {
-    if !matches!(
-        parent,
-        SchemaView::OneOf(_) | SchemaView::AnyOf(_) | SchemaView::AllOf(_)
-    ) || default_and_enum(candidate).1.is_some()
-    {
-        return documentation;
-    }
-    let Some(constraints) = constraints_markdown(None, default_and_enum(parent).1) else {
+    let Some((_, description)) = title_and_description(candidate) else {
         return documentation;
     };
-    match documentation {
-        Some(documentation) => Some(format!("{}\n\n{constraints}", documentation.trim_end())),
-        None => Some(constraints),
+    let (r#enum, mut default) = default_and_enum(candidate);
+    if matches!(
+        parent,
+        SchemaView::OneOf(_) | SchemaView::AnyOf(_) | SchemaView::AllOf(_)
+    ) {
+        default = default.or(default_and_enum(parent).1);
     }
+    let mut value_type = parent.value_type().await;
+    if !required_keys.is_some_and(|keys| keys.iter().any(|key| key == key_name)) {
+        value_type.set_nullable();
+    }
+    Some(
+        SchemaTooltip::Content(SchemaTooltipContent {
+            title: None,
+            description: description.map(ToString::to_string),
+            value_type: value_type.to_string(),
+            constraints: constraints_markdown(r#enum, default),
+            schema: None,
+        })
+        .to_string(),
+    )
 }
 
 fn constraints_markdown(
