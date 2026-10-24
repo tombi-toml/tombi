@@ -1354,9 +1354,12 @@ mod completion_labels {
                 "#,
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
+                "child_additional_arrays",
                 "child_array_of_tables",
+                "child_edge",
                 "child_nested",
                 "child_table",
+                "child_union",
             ]);
         }
 
@@ -1395,8 +1398,11 @@ mod completion_labels {
                 "#,
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
+                "child_additional_arrays",
+                "child_edge",
                 "child_nested",
                 "child_table",
+                "child_union",
             ]);
         }
 
@@ -1406,9 +1412,12 @@ mod completion_labels {
                 "[[parent.█]]",
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
+                "child_additional_arrays",
                 "child_array_of_tables",
+                "child_edge",
                 "child_nested",
                 "child_table",
+                "child_union",
             ]);
         }
 
@@ -1418,8 +1427,11 @@ mod completion_labels {
                 "[parent.█]",
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
+                "child_additional_arrays",
+                "child_edge",
                 "child_nested",
                 "child_table",
+                "child_union",
             ]);
         }
 
@@ -1433,9 +1445,12 @@ mod completion_labels {
                 "#,
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
+                "child_additional_arrays",
                 "child_array_of_tables",
+                "child_edge",
                 "child_nested",
                 "child_table",
+                "child_union",
             ]);
         }
 
@@ -1712,6 +1727,213 @@ mod completion_labels {
                 SchemaPath(table_header_completion_test_schema_path()),
             ) -> Ok([
                 "leaf_deep",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn union_table_or_array_single_bracket_undeclared(
+                "[parent.child_union.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "child_a",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn union_table_or_array_double_bracket_declared(
+                r#"
+                [[parent.child_union]]
+
+                [[parent.child_union.█]]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "child_b",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn additional_array_of_tables_single_bracket(
+                "[parent.child_additional_arrays.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn additional_array_of_tables_double_bracket(
+                "[[parent.child_additional_arrays.█]]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "$key",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn additional_array_of_tables_single_bracket_declared(
+                r#"
+                [[parent.child_additional_arrays.foo]]
+
+                [parent.child_additional_arrays.foo.█]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "inner",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn edge_single_bracket_undeclared_arrays_excluded(
+                "[parent.child_edge.█]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "plain_table",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn edge_ref_array_single_bracket_declared(
+                r#"
+                [[parent.child_edge.ref_array]]
+                
+                [parent.child_edge.█]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "plain_table",
+                "ref_array",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn edge_ref_array_double_bracket_alone(
+                "[[parent.child_edge.ref_array.█]]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn edge_ref_array_double_bracket_declared(
+                r#"
+                [[parent.child_edge.ref_array]]
+                
+                [[parent.child_edge.ref_array.█]]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "inner",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn edge_ref_array_single_bracket_declared_element(
+                r#"
+                [[parent.child_edge.ref_array]]
+                
+                [parent.child_edge.ref_array.█]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "inner",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn edge_items_object_or_string_double_bracket_alone(
+                "[[parent.child_edge.items_object_or_string.█]]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn edge_items_object_or_string_double_bracket_declared(
+                r#"
+                [[parent.child_edge.items_object_or_string]]
+                
+                [[parent.child_edge.items_object_or_string.█]]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "inner",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn edge_spaced_single_bracket_declared(
+                r#"
+                [[ parent.child_edge.ref_array ]]
+                
+                [ parent.child_edge.ref_array.█ ]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "inner",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn edge_spaced_single_bracket_alone(
+                "[ parent.child_edge.ref_array.█ ]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn edge_quoted_key_single_bracket_alone(
+                r#"[parent."child_edge".ref_array.█]"#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn edge_quoted_key_single_bracket_declared(
+                r#"
+                [[parent."child_edge".ref_array]]
+                
+                [parent."child_edge".ref_array.█]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "inner",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn union_table_or_array_double_bracket_undeclared(
+                "[[parent.child_union.█]]",
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "child_a",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn union_table_or_array_single_bracket_declared(
+                r#"
+                [[parent.child_union]]
+                
+                [parent.child_union.█]
+                "#,
+                SchemaPath(table_header_completion_test_schema_path()),
+            ) -> Ok([
+                "child_b",
             ]);
         }
     }

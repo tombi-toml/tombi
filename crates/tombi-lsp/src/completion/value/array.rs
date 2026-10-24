@@ -91,7 +91,31 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                                         })
                                     )
                                 {
-                                    return Vec::new();
+                                    // With a table branch (e.g. `table | array of tables`), `[[array]]`
+                                    // is not declared above, so `array` is an implicit table.
+                                    let Some(mut table_schema) = current_schema.for_instance_type(
+                                        tombi_schema_store::SchemaType::Object,
+                                        schema_context.string_formats(),
+                                    ) else {
+                                        return Vec::new();
+                                    };
+                                    if !matches!(
+                                        table_schema.schema_view.as_ref(),
+                                        SchemaView::Table(_)
+                                    ) {
+                                        return Vec::new();
+                                    }
+                                    table_schema.semantic_schema = None;
+                                    return value
+                                        .find_completion_contents(
+                                            cursor,
+                                            keys,
+                                            accessors,
+                                            Some(&table_schema),
+                                            schema_context,
+                                            completion_hint,
+                                        )
+                                        .await;
                                 }
                                 let accessor = Accessor::Index(index);
                                 if let Some(current_schema) = resolve_array_item_schema(
@@ -189,14 +213,65 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                             else {
                                 return Vec::new();
                             };
-                            let Some(item_schema) = resolve_array_item_schema(
+                            // An array branch projected out of a union must be resolved without
+                            // its union (semantic) schema, as the `_` arm below does.
+                            let mut array_current_schema = current_schema.clone();
+                            if current_schema.semantic_schema.is_some()
+                                && let Some(projected) = current_schema.for_instance_type(
+                                    tombi_schema_store::SchemaType::Array,
+                                    schema_context.string_formats(),
+                                )
+                            {
+                                array_current_schema = projected;
+                                array_current_schema.semantic_schema = None;
+                            }
+                            let mut item_schema = resolve_array_item_schema(
                                 index,
                                 array_schema,
-                                current_schema,
+                                &array_current_schema,
                                 schema_context,
                             )
-                            .await
-                            else {
+                            .await;
+                            if item_schema.is_none() {
+                                // The array schema may only carry its items inside a union branch.
+                                let branches = [
+                                    array_schema.any_of.as_deref().map(|any_of| &any_of.schemas),
+                                    array_schema.one_of.as_deref().map(|one_of| &one_of.schemas),
+                                ];
+                                'branches: for schemas in branches.into_iter().flatten() {
+                                    let Some(resolved_schemas) =
+                                        tombi_schema_store::resolve_and_collect_schemas_in_scope(
+                                            schemas,
+                                            current_schema.schema_base_uri.clone(),
+                                            current_schema.definitions.clone(),
+                                            current_schema.strict,
+                                            schema_context.store,
+                                            &schema_context.schema_visits,
+                                            accessors,
+                                            Some(&current_schema.dynamic_scope),
+                                        )
+                                        .await
+                                    else {
+                                        continue;
+                                    };
+                                    for branch_schema in resolved_schemas {
+                                        if let SchemaView::Array(branch_array) =
+                                            branch_schema.schema_view.as_ref()
+                                            && let Some(schema) = resolve_array_item_schema(
+                                                index,
+                                                branch_array,
+                                                &branch_schema,
+                                                schema_context,
+                                            )
+                                            .await
+                                        {
+                                            item_schema = Some(schema);
+                                            break 'branches;
+                                        }
+                                    }
+                                }
+                            }
+                            let Some(item_schema) = item_schema else {
                                 return Vec::new();
                             };
                             return self.values()[index]

@@ -143,6 +143,75 @@
               }
             }
           }
+        },
+        "child_union": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "child_a": {
+                  "type": "object"
+                },
+                "child_str": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "child_b": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "child_additional_arrays": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "inner": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "child_edge": {
+          "type": "object",
+          "properties": {
+            "plain_table": {
+              "type": "object"
+            },
+            "ref_array": {
+              "$ref": "#/$defs/ref_item_array"
+            },
+            "items_object_or_string": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "inner": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -224,6 +293,19 @@
       },
       "additionalProperties": {
         "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "ref_item_array": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "inner": {
+            "type": "object"
+          }
+        }
       }
     }
   }
