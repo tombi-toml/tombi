@@ -247,6 +247,32 @@ pub async fn find_completion_contents(
         .collect();
     }
 
+    // `[[array.█]]` is parsed as `[[array]]`. When that element is the first one,
+    // `[[array]]` has not been declared above, so no key can follow the dot.
+    if matches!(
+        completion_hint,
+        Some(CompletionHint::InTableHeader {
+            is_array_of_table: true
+        })
+    ) && let Some(CompletionSource::Value { accessors, .. }) = &completion_source
+        && matches!(accessors.last(), Some(Accessor::Index(0)))
+        && let (_, Some(array_schema)) =
+            crate::schema_resolver::resolve_accessors_for_document_or_schema(
+                document_tree,
+                accessors[..accessors.len() - 1].to_vec(),
+                schema_context,
+            )
+            .await
+        && array_schema
+            .for_instance_type(
+                tombi_schema_store::SchemaType::Array,
+                schema_context.string_formats(),
+            )
+            .is_some_and(|schema| matches!(schema.schema_view.as_ref(), SchemaView::Array(_)))
+    {
+        return Vec::new();
+    }
+
     let completion_items = match completion_source {
         Some(CompletionSource::Root {
             remaining_keys,

@@ -81,6 +81,18 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                                 new_item_start_offset = Some(value.span().end);
                             }
                             if value.contains(offset) {
+                                // `[[array.█]]` is valid only after `[[array]]` has been declared above it.
+                                if self.kind() == ArrayKind::ArrayOfTable
+                                    && index == 0
+                                    && matches!(
+                                        completion_hint,
+                                        Some(CompletionHint::InTableHeader {
+                                            is_array_of_table: true
+                                        })
+                                    )
+                                {
+                                    return Vec::new();
+                                }
                                 let accessor = Accessor::Index(index);
                                 if let Some(current_schema) = resolve_array_item_schema(
                                     index,
@@ -169,18 +181,24 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                                 })
                             )
                             && keys.is_empty()
-                            && let Some(index) = self
+                        {
+                            let Some(index) = self
                                 .values()
                                 .iter()
                                 .rposition(|value| value.span().start < offset)
-                            && let Some(item_schema) = resolve_array_item_schema(
+                            else {
+                                return Vec::new();
+                            };
+                            let Some(item_schema) = resolve_array_item_schema(
                                 index,
                                 array_schema,
                                 current_schema,
                                 schema_context,
                             )
                             .await
-                        {
+                            else {
+                                return Vec::new();
+                            };
                             return self.values()[index]
                                 .find_completion_contents(
                                     cursor,

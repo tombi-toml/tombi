@@ -492,8 +492,12 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
-            async fn tombi_double_bracket_array_of_tables_dot(
-                "[[schemas.█]]",
+            async fn tombi_double_bracket_array_of_tables_dot_after_declared_array(
+                r#"
+                [[schemas]]
+
+                [[schemas.█]]
+                "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
                 "format",
@@ -504,13 +508,36 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
-            async fn tombi_single_bracket_array_of_tables_dot(
-                "[schemas.█]",
+            async fn tombi_double_bracket_array_of_tables_dot_after_other_element(
+                r#"
+                [[schemas]]
+                [[schemas.overrides]]
+
+                [[schemas]]
+                [[schemas.█]]
+                "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
                 "format",
                 "lint",
+                "overrides",
             ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_double_bracket_array_of_tables_dot(
+                "[[schemas.█]]",
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_single_bracket_array_of_tables_dot(
+                "[schemas.█]",
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([]);
         }
 
         test_completion_labels! {
@@ -523,10 +550,7 @@ mod completion_labels {
                 path = \"a\"
                 "#,
                 SchemaPath(tombi_schema_path()),
-            ) -> Ok([
-                "format",
-                "lint",
-            ]);
+            ) -> Ok([]);
         }
 
         test_completion_labels! {
