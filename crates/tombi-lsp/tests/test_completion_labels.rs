@@ -119,7 +119,7 @@ mod completion_labels {
             ) -> Ok([
                 {
                     "label": "[]",
-                    "documentation": "#### File patterns to exclude\n\nThe file match pattern to exclude from formatting and linting.\nSupports glob pattern.\n\nValue: `Array`\n\nSchema:",
+                    "documentation": "The file match pattern to exclude from formatting and linting.\nSupports glob pattern.\n\nValue: `Array`\n\nSchema:",
                 },
             ]);
         }
