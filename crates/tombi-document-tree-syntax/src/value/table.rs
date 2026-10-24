@@ -222,10 +222,11 @@ impl<'t> Table<'t> {
                 }
             }
             (Table | InlineTable { .. } | KeyValue, Table | InlineTable { .. })
-            | (InlineTable { .. }, ParentTable | ParentKey | KeyValue) => {
+            | (InlineTable { .. }, ParentTable | ParentKey | KeyValue)
+            | (ParentTable, InlineTable { .. }) => {
                 is_conflict = true;
             }
-            (ParentTable, Table | InlineTable { .. }) => {
+            (ParentTable, Table) => {
                 self.kind = other.kind;
                 if let Some(directives) = other.header_comment_directives {
                     self.header_comment_directives = Some(directives);

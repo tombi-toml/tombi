@@ -494,4 +494,18 @@ mod test {
             "#
         ) -> Ok(json!({"a": {"b": {"c": {}, "x": {"y": 1}}}}))
     }
+
+    test_deserialize! {
+        #[test]
+        fn inline_table_over_implicit_table(
+            r#"
+            [a.b.c]
+
+            [a]
+            b = { x = 1 }
+            "#
+        ) -> Err([
+            ("conflicting table", ((3, 4), (3, 13)))
+        ])
+    }
 }
