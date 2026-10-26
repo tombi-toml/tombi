@@ -107,7 +107,7 @@ pub async fn handle_get_status(
         ) {
             MatchResult::IncludeNotMatched => Some(IgnoreReason::IncludeFilePatternNotMatched),
             MatchResult::ExcludeMatched => Some(IgnoreReason::ExcludeFilePatternMatched),
-            MatchResult::Ignored => Some(IgnoreReason::IgnoreFile),
+            MatchResult::Ignored => Some(IgnoreReason::IgnoreFileMatched),
             MatchResult::Matched => None,
         };
     }
@@ -146,9 +146,9 @@ pub struct SchemaStatus {
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "kebab-case")]
+#[allow(clippy::enum_variant_names)]
 pub enum IgnoreReason {
     IncludeFilePatternNotMatched,
     ExcludeFilePatternMatched,
-    #[serde(rename = "ignore-file-matched")]
-    IgnoreFile,
+    IgnoreFileMatched,
 }
