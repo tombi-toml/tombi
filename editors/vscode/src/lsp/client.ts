@@ -7,7 +7,7 @@ export type TomlVersionSource = "comment" | "schema" | "config" | "default";
 export type IgnoreReason =
   | "include-file-pattern-not-matched"
   | "exclude-file-pattern-matched"
-  | "ignored-by-ignore-file";
+  | "ignore-file-matched";
 
 export type SchemaStatus = {
   title?: string;

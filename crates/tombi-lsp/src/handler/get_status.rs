@@ -107,7 +107,7 @@ pub async fn handle_get_status(
         ) {
             MatchResult::IncludeNotMatched => Some(IgnoreReason::IncludeFilePatternNotMatched),
             MatchResult::ExcludeMatched => Some(IgnoreReason::ExcludeFilePatternMatched),
-            MatchResult::Ignored => Some(IgnoreReason::IgnoredByIgnoreFile),
+            MatchResult::Ignored => Some(IgnoreReason::IgnoreFile),
             MatchResult::Matched => None,
         };
     }
@@ -149,5 +149,6 @@ pub struct SchemaStatus {
 pub enum IgnoreReason {
     IncludeFilePatternNotMatched,
     ExcludeFilePatternMatched,
-    IgnoredByIgnoreFile,
+    #[serde(rename = "ignore-file-matched")]
+    IgnoreFile,
 }
