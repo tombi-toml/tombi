@@ -305,13 +305,17 @@ input.push(
     },
   }),
 );
-const explicitlyOpenedIgnoredDiagnostics = await waitForMessage(
-  (message) =>
-    message.method === "textDocument/publishDiagnostics" &&
-    message.params?.uri === watchedIgnoredUri &&
-    message.params?.version === 1,
+input.push(
+  encode({
+    jsonrpc: "2.0",
+    id: 11,
+    method: "textDocument/diagnostic",
+    params: { textDocument: { uri: watchedIgnoredUri } },
+  }),
 );
-assert.ok(explicitlyOpenedIgnoredDiagnostics.params?.diagnostics?.length > 0);
+const explicitlyOpenedIgnoredResponse = await waitForResponse(11);
+assert.equal(explicitlyOpenedIgnoredResponse?.error, undefined);
+assert.deepEqual(explicitlyOpenedIgnoredResponse?.result?.items, []);
 
 const concurrentOpenUri =
   "file:///workspace/module/.terraform/concurrent-open.toml";
@@ -346,12 +350,6 @@ input.push(
     },
   }),
 );
-await waitForMessage(
-  (message) =>
-    message.method === "textDocument/publishDiagnostics" &&
-    message.params?.uri === concurrentOpenUri &&
-    message.params?.version === 1,
-);
 const messagesBeforeWatcherResume = new Set(messages);
 deferWorkspaceFoldersResponse = false;
 input.push(
@@ -361,14 +359,27 @@ input.push(
     result: [{ name: "workspace", uri: "file:///workspace" }],
   }),
 );
-const concurrentWatcherDiagnostics = await waitForMessage(
-  (message) =>
-    !messagesBeforeWatcherResume.has(message) &&
-    message.method === "textDocument/publishDiagnostics" &&
-    message.params?.uri === concurrentOpenUri,
+input.push(
+  encode({
+    jsonrpc: "2.0",
+    id: 12,
+    method: "textDocument/diagnostic",
+    params: { textDocument: { uri: concurrentOpenUri } },
+  }),
 );
-assert.equal(concurrentWatcherDiagnostics.params?.version, 1);
-assert.ok(concurrentWatcherDiagnostics.params?.diagnostics?.length > 0);
+const concurrentWatcherResponse = await waitForResponse(12);
+assert.equal(concurrentWatcherResponse?.error, undefined);
+assert.deepEqual(concurrentWatcherResponse?.result?.items, []);
+assert.equal(
+  messages.some(
+    (message) =>
+      !messagesBeforeWatcherResume.has(message) &&
+      message.method === "textDocument/publishDiagnostics" &&
+      message.params?.uri === concurrentOpenUri &&
+      message.params?.diagnostics?.length > 0,
+  ),
+  false,
+);
 
 for (const textDocument of [
   {
