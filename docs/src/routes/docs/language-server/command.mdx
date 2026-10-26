@@ -23,7 +23,10 @@ interface GetStatusResponse {
   tomlVersion: string;
   source: "comment" | "schema" | "config" | "default";
   configPath?: string;
-  ignore?: "include-file-pattern-not-matched" | "exclude-file-pattern-matched";
+  ignore?:
+    | "include-file-pattern-not-matched"
+    | "exclude-file-pattern-matched"
+    | "ignored-by-ignore-file";
   schema?: {
     title?: string;
     description?: string;

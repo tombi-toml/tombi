@@ -45,7 +45,13 @@ pub async fn handle_formatting(
     log::info!("handle_formatting");
 
     if let Ok(text_document_path) = text_document_uri.to_file_path() {
-        match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
+        let workspace_folder_paths = crate::workspace_config::workspace_folder_paths(backend).await;
+        match matches_file_patterns(
+            &text_document_path,
+            config_path.as_deref(),
+            &config,
+            &workspace_folder_paths,
+        ) {
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
                 log::info!("skip {text_document_path:?} because it is not in config.files.include");
@@ -53,6 +59,10 @@ pub async fn handle_formatting(
             }
             MatchResult::ExcludeMatched => {
                 log::info!("skip {text_document_path:?} because it is in config.files.exclude");
+                return Ok(None);
+            }
+            MatchResult::Ignored => {
+                log::info!("skip {text_document_path:?} because it is ignored by ignore files");
                 return Ok(None);
             }
         }

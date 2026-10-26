@@ -56,7 +56,13 @@ pub async fn get_diagnostics_result(
     }
 
     if let Ok(text_document_path) = tombi_uri::Uri::to_file_path(text_document_uri) {
-        match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
+        let workspace_folder_paths = crate::workspace_config::workspace_folder_paths(backend).await;
+        match matches_file_patterns(
+            &text_document_path,
+            config_path.as_deref(),
+            &config,
+            &workspace_folder_paths,
+        ) {
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
                 log::info!("skip {text_document_path:?} because it is not in config.files.include");
@@ -64,6 +70,10 @@ pub async fn get_diagnostics_result(
             }
             MatchResult::ExcludeMatched => {
                 log::info!("skip {text_document_path:?} because it is in config.files.exclude");
+                return None;
+            }
+            MatchResult::Ignored => {
+                log::info!("skip {text_document_path:?} because it is ignored by ignore files");
                 return None;
             }
         }

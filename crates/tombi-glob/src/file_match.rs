@@ -1,19 +1,23 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use fast_glob::glob_match;
 use tombi_config::{Config, config_base_dir};
+
+use crate::is_path_ignored;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum MatchResult {
     Matched,
     IncludeNotMatched,
     ExcludeMatched,
+    Ignored,
 }
 
 pub fn matches_file_patterns(
     text_document_path: &Path,
     config_path: Option<&Path>,
     config: &Config,
+    ignore_roots: &[PathBuf],
 ) -> MatchResult {
     let text_document_absolute_path = match text_document_path.canonicalize() {
         Ok(path) => path,
@@ -48,7 +52,24 @@ pub fn matches_file_patterns(
         }
     }
 
+    if files.respect_ignore_files.value()
+        && is_ignored_in_every_root(ignore_roots, text_document_path)
+    {
+        return MatchResult::Ignored;
+    }
+
     MatchResult::Matched
+}
+
+/// Whether `path` is excluded by ignore files in every root containing it.
+/// A path outside all roots is never ignored.
+fn is_ignored_in_every_root(roots: &[PathBuf], path: &Path) -> bool {
+    let mut containing_roots = roots
+        .iter()
+        .filter(|root| path.starts_with(root))
+        .peekable();
+
+    containing_roots.peek().is_some() && containing_roots.all(|root| is_path_ignored(root, path))
 }
 
 /// Determine the path to use for pattern matching
@@ -73,4 +94,62 @@ fn relative_document_text_path<'a>(
         }
     }
     text_document_absolute_path.to_string_lossy()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use tempfile::tempdir;
+    use tombi_config::FilesOptions;
+
+    use super::*;
+
+    macro_rules! test_matches_file_patterns_ignore {
+        ($name:ident, respect_ignore_files = $respect_ignore_files:literal, in_root = $in_root:literal, $expected:expr) => {
+            #[test]
+            fn $name() {
+                let tempdir = tempdir().unwrap();
+                let root = tempdir.path().canonicalize().unwrap();
+                fs::write(root.join(".ignore"), ".*\n").unwrap();
+                let path = root.join(".test.toml");
+                fs::write(&path, "[]\n").unwrap();
+
+                let mut config = Config::default();
+                config.files = Some(FilesOptions {
+                    respect_ignore_files: $respect_ignore_files.into(),
+                    ..Default::default()
+                });
+                let ignore_roots = if $in_root {
+                    vec![root.clone()]
+                } else {
+                    vec![root.join("other")]
+                };
+
+                assert_eq!(
+                    matches_file_patterns(&path, None, &config, &ignore_roots),
+                    $expected
+                );
+            }
+        };
+    }
+
+    test_matches_file_patterns_ignore!(
+        ignored_by_ignore_file,
+        respect_ignore_files = true,
+        in_root = true,
+        MatchResult::Ignored
+    );
+    test_matches_file_patterns_ignore!(
+        ignore_files_not_respected,
+        respect_ignore_files = false,
+        in_root = true,
+        MatchResult::Matched
+    );
+    test_matches_file_patterns_ignore!(
+        path_outside_ignore_roots,
+        respect_ignore_files = true,
+        in_root = false,
+        MatchResult::Matched
+    );
 }

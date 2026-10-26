@@ -98,9 +98,16 @@ pub async fn handle_get_status(
 
     let mut ignore = None;
     if let Ok(text_document_path) = text_document_uri.to_file_path() {
-        ignore = match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
+        let workspace_folder_paths = crate::workspace_config::workspace_folder_paths(backend).await;
+        ignore = match matches_file_patterns(
+            &text_document_path,
+            config_path.as_deref(),
+            &config,
+            &workspace_folder_paths,
+        ) {
             MatchResult::IncludeNotMatched => Some(IgnoreReason::IncludeFilePatternNotMatched),
             MatchResult::ExcludeMatched => Some(IgnoreReason::ExcludeFilePatternMatched),
+            MatchResult::Ignored => Some(IgnoreReason::IgnoredByIgnoreFile),
             MatchResult::Matched => None,
         };
     }
@@ -142,4 +149,5 @@ pub struct SchemaStatus {
 pub enum IgnoreReason {
     IncludeFilePatternNotMatched,
     ExcludeFilePatternMatched,
+    IgnoredByIgnoreFile,
 }

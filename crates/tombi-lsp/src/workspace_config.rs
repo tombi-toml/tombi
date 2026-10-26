@@ -39,6 +39,7 @@ impl WorkspaceConfig {
             text_document_path,
             self.config_path.as_deref(),
             &self.config,
+            std::slice::from_ref(&self.workspace_folder_path),
         ) == MatchResult::Matched
     }
 
@@ -52,7 +53,7 @@ impl WorkspaceConfig {
     }
 }
 
-pub async fn get_workspace_configs(backend: &Backend) -> Option<Vec<WorkspaceConfig>> {
+async fn get_workspace_folder_paths(backend: &Backend) -> Option<Vec<PathBuf>> {
     let workspace_folder_paths =
         backend
             .client
@@ -71,7 +72,17 @@ pub async fn get_workspace_configs(backend: &Backend) -> Option<Vec<WorkspaceCon
 
     log::debug!("workspace_folder_paths: {:?}", workspace_folder_paths);
 
-    let workspace_folder_paths = workspace_folder_paths?;
+    workspace_folder_paths
+}
+
+pub async fn workspace_folder_paths(backend: &Backend) -> Vec<PathBuf> {
+    get_workspace_folder_paths(backend)
+        .await
+        .unwrap_or_default()
+}
+
+pub async fn get_workspace_configs(backend: &Backend) -> Option<Vec<WorkspaceConfig>> {
+    let workspace_folder_paths = get_workspace_folder_paths(backend).await?;
 
     let mut configs = Vec::with_capacity(workspace_folder_paths.len());
 
