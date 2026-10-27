@@ -82,21 +82,23 @@ async fn authentication_failure_does_not_use_stale_cache() {
 #[tokio::test(flavor = "current_thread")]
 async fn policy_denial_does_not_use_cached_schema() {
     let _cache_home = TestCacheHome::new();
-    let uri = SchemaUri::from_str("http://127.0.0.1/cache/blocked.json").unwrap();
+    let uri = SchemaUri::from_str("https://example.com/cache/blocked.json").unwrap();
     let cache_path = tombi_cache::get_cache_file_path(&uri).await.unwrap();
     tombi_cache::save_to_cache(Some(&cache_path), SCHEMA)
         .await
         .unwrap();
-    let client = Arc::new(ControlledHttpClient::new(Ok(Bytes::from_static(SCHEMA))));
+    let client = Arc::new(ControlledHttpClient::new(Err(FetchError::PolicyDenied {
+        reason: "denied".into(),
+    })));
     let result = store(client.clone(), Duration::ZERO)
         .fetch_schema_document(&uri)
         .await;
 
     assert!(matches!(
         result,
-        Err(tombi_schema_store::Error::SchemaHostNotTrusted { schema_uri }) if schema_uri == uri
+        Err(tombi_schema_store::Error::SchemaFetchFailed { .. })
     ));
-    assert_eq!(client.calls.load(Ordering::Relaxed), 0);
+    assert_eq!(client.calls.load(Ordering::Relaxed), 1);
 }
 
 #[rstest]

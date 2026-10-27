@@ -1,7 +1,4 @@
-use std::{
-    net::{IpAddr, Ipv4Addr, Ipv6Addr},
-    str::FromStr,
-};
+use std::{net::IpAddr, str::FromStr};
 
 /// Why the policy refused a schema or catalog access.
 ///
@@ -26,13 +23,13 @@ impl PolicyError {
 
 /// Security policy for schema and catalog retrieval.
 ///
-/// Trust is loaded from the user's process environment. Project configuration
-/// cannot add network grants.
+/// Destination-address filtering is disabled: any host or IP address is accepted.
+/// URL scheme (`http`/`https`) and credential checks are still enforced.
+/// `trusted_hosts` is still parsed for compatibility but has no effect.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct SchemaFetchPolicy {
     /// Normalized with `normalize_host`.
     trusted_hosts: Vec<String>,
-    configuration_error: Option<String>,
 }
 
 impl SchemaFetchPolicy {
@@ -40,9 +37,9 @@ impl SchemaFetchPolicy {
     /// supplied by the embedding application through [`crate::Options`].
     ///
     /// Options entries are added to, not substituted for, the environment.
+    /// Because address filtering is disabled, invalid entries are logged and skipped.
     pub(crate) fn from_options(options: &crate::Options) -> Self {
         let mut policy = Self::default();
-        let mut configuration_errors = Vec::new();
 
         let mut hosts: Vec<String> = Vec::new();
         if let Some(value) = std::env::var_os("TOMBI_SCHEMA_TRUSTED_HOSTS") {
@@ -59,20 +56,17 @@ impl SchemaFetchPolicy {
         for entry in &hosts {
             match parse_trusted_host(entry) {
                 Ok(host) => policy.trusted_hosts.push(normalize_host(&host)),
-                Err(reason) => configuration_errors.push(reason),
+                Err(reason) => log::warn!("invalid schema trust configuration: {reason}"),
             }
-        }
-
-        if !configuration_errors.is_empty() {
-            let reason = configuration_errors.join("; ");
-            log::warn!("invalid schema trust configuration: {reason}");
-            policy.configuration_error = Some(reason);
         }
 
         policy
     }
 
     /// Reject unsupported or credential-bearing URLs before cache lookup.
+    ///
+    /// Address filtering is disabled: any host, private or public, is accepted.
+    /// Scheme and credential checks are retained.
     pub(crate) fn check_http_url(&self, url: &tombi_uri::Uri) -> Result<(), PolicyError> {
         self.check_configuration()?;
 
@@ -99,7 +93,9 @@ impl SchemaFetchPolicy {
     }
 
     /// Validate the concrete DNS answers that reqwest will connect to.
-    /// Mixed public/private answers are rejected as a whole.
+    ///
+    /// Address filtering is disabled, so any non-empty set of answers is accepted.
+    /// Private and mixed public/private answers are included.
     #[cfg(any(test, all(feature = "reqwest", not(target_arch = "wasm32"))))]
     pub(crate) fn check_resolved_addresses(
         &self,
@@ -128,12 +124,9 @@ impl SchemaFetchPolicy {
         }
     }
 
+    /// Configuration is always considered valid.
+    /// Retained so the policy call graph and its callers stay unchanged.
     fn check_configuration(&self) -> Result<(), PolicyError> {
-        if let Some(reason) = &self.configuration_error {
-            return Err(PolicyError::new(format!(
-                "invalid user schema trust configuration: {reason}"
-            )));
-        }
         Ok(())
     }
 }
@@ -177,158 +170,75 @@ fn normalize_host(host: &str) -> String {
     host.trim_end_matches('.').to_ascii_lowercase()
 }
 
-fn is_globally_reachable(address: IpAddr) -> bool {
-    match address {
-        IpAddr::V4(address) => is_globally_reachable_v4(address),
-        IpAddr::V6(address) => is_globally_reachable_v6(address),
-    }
-}
-
-fn is_globally_reachable_v4(address: Ipv4Addr) -> bool {
-    const BLOCKED: &[(Ipv4Addr, u8)] = &[
-        (Ipv4Addr::new(0, 0, 0, 0), 8),
-        (Ipv4Addr::new(10, 0, 0, 0), 8),
-        (Ipv4Addr::new(100, 64, 0, 0), 10),
-        (Ipv4Addr::new(127, 0, 0, 0), 8),
-        (Ipv4Addr::new(169, 254, 0, 0), 16),
-        (Ipv4Addr::new(172, 16, 0, 0), 12),
-        (Ipv4Addr::new(192, 0, 0, 0), 24),
-        (Ipv4Addr::new(192, 0, 2, 0), 24),
-        (Ipv4Addr::new(192, 88, 99, 0), 24),
-        (Ipv4Addr::new(192, 168, 0, 0), 16),
-        (Ipv4Addr::new(198, 18, 0, 0), 15),
-        (Ipv4Addr::new(198, 51, 100, 0), 24),
-        (Ipv4Addr::new(203, 0, 113, 0), 24),
-        (Ipv4Addr::new(224, 0, 0, 0), 4),
-        (Ipv4Addr::new(240, 0, 0, 0), 4),
-    ];
-
-    !BLOCKED
-        .iter()
-        .any(|(network, prefix)| ipv4_in_network(address, *network, *prefix))
-}
-
-fn is_globally_reachable_v6(address: Ipv6Addr) -> bool {
-    const BLOCKED: &[(Ipv6Addr, u8)] = &[
-        (Ipv6Addr::new(0x2001, 0, 0, 0, 0, 0, 0, 0), 23),
-        (Ipv6Addr::new(0x2001, 0x10, 0, 0, 0, 0, 0, 0), 28),
-        (Ipv6Addr::new(0x2001, 0x20, 0, 0, 0, 0, 0, 0), 28),
-        (Ipv6Addr::new(0x2001, 0xdb8, 0, 0, 0, 0, 0, 0), 32),
-        (Ipv6Addr::new(0x2002, 0, 0, 0, 0, 0, 0, 0), 16),
-        (Ipv6Addr::new(0x3fff, 0, 0, 0, 0, 0, 0, 0), 20),
-    ];
-    let segments = address.segments();
-    let is_global_unicast = segments[0] & 0xe000 == 0x2000;
-
-    is_global_unicast
-        && !BLOCKED
-            .iter()
-            .any(|(network, prefix)| ipv6_in_network(address, *network, *prefix))
-}
-
-fn ipv4_in_network(address: Ipv4Addr, network: Ipv4Addr, prefix: u8) -> bool {
-    let mask = if prefix == 0 {
-        0
-    } else {
-        u32::MAX << (32 - prefix)
-    };
-    u32::from(address) & mask == u32::from(network) & mask
-}
-
-fn ipv6_in_network(address: Ipv6Addr, network: Ipv6Addr, prefix: u8) -> bool {
-    let address = u128::from(address);
-    let network = u128::from(network);
-    let mask = if prefix == 0 {
-        0
-    } else {
-        u128::MAX << (128 - prefix)
-    };
-    address & mask == network & mask
+/// Whether an address is allowed as a schema destination.
+///
+/// Address filtering is disabled, so every address is accepted.
+/// The parameter is retained so the policy call graph stays intact.
+fn is_globally_reachable(_address: IpAddr) -> bool {
+    true
 }
 
 #[cfg(test)]
 mod tests {
     use std::{net::IpAddr, str::FromStr};
 
-    use rstest::rstest;
+    use super::SchemaFetchPolicy;
 
-    use super::{SchemaFetchPolicy, is_globally_reachable};
+    #[test]
+    fn private_ip_literals_are_accepted() {
+        let policy = SchemaFetchPolicy::default();
+        for host in ["10.1.2.3", "127.0.0.1"] {
+            let uri = tombi_uri::Uri::from_str(&format!("http://{host}/schema.json")).unwrap();
 
-    #[rstest]
-    #[case("8.8.8.8", true)]
-    #[case("1.1.1.1", true)]
-    #[case("0.0.0.0", false)]
-    #[case("10.0.0.1", false)]
-    #[case("100.64.0.1", false)]
-    #[case("127.0.0.1", false)]
-    #[case("169.254.169.254", false)]
-    #[case("172.16.0.1", false)]
-    #[case("192.0.2.1", false)]
-    #[case("192.168.1.1", false)]
-    #[case("198.18.0.1", false)]
-    #[case("198.51.100.1", false)]
-    #[case("203.0.113.1", false)]
-    #[case("224.0.0.1", false)]
-    #[case("240.0.0.1", false)]
-    #[case("2606:4700:4700::1111", true)]
-    #[case("::", false)]
-    #[case("::1", false)]
-    #[case("fc00::1", false)]
-    #[case("fe80::1", false)]
-    #[case("2001:db8::1", false)]
-    #[case("2002:0808:0808::1", false)]
-    #[case("3fff::1", false)]
-    fn address_reachability(#[case] address: &str, #[case] expected: bool) {
-        assert_eq!(
-            is_globally_reachable(IpAddr::from_str(address).unwrap()),
-            expected
-        );
+            assert!(
+                policy.check_http_url(&uri).is_ok(),
+                "{host} should be accepted"
+            );
+        }
     }
 
     #[test]
-    fn mixed_dns_answers_are_denied() {
+    fn benchmark_and_mixed_dns_answers_are_accepted() {
         let policy = SchemaFetchPolicy::default();
-        let addresses = [
+
+        let benchmark = IpAddr::from_str("198.18.0.1").unwrap();
+        assert!(
+            policy
+                .check_resolved_addresses("schema.example", &[benchmark])
+                .is_ok()
+        );
+
+        let mixed = [
             IpAddr::from_str("8.8.8.8").unwrap(),
             IpAddr::from_str("127.0.0.1").unwrap(),
         ];
-
         assert!(
             policy
-                .check_resolved_addresses("schema.example", &addresses)
-                .is_err()
-        );
-    }
-
-    #[test]
-    fn a_later_dns_answer_is_checked_again_for_rebinding() {
-        let policy = SchemaFetchPolicy::default();
-        let public = [IpAddr::from_str("8.8.8.8").unwrap()];
-        let rebound = [IpAddr::from_str("127.0.0.1").unwrap()];
-
-        assert!(
-            policy
-                .check_resolved_addresses("schema.example", &public)
+                .check_resolved_addresses("schema.example", &mixed)
                 .is_ok()
         );
-        assert!(
-            policy
-                .check_resolved_addresses("schema.example", &rebound)
-                .is_err()
-        );
     }
 
     #[test]
-    fn http_urls_reject_credentials_and_local_literals() {
+    fn unsupported_scheme_is_rejected() {
         let policy = SchemaFetchPolicy::default();
-        let local = tombi_uri::Uri::from_str("http://127.0.0.1/schema.json").unwrap();
-        let credentials =
-            tombi_uri::Uri::from_str("https://user:pass@example.com/schema.json").unwrap();
-        let public = tombi_uri::Uri::from_str("https://example.com/schema.json").unwrap();
+        let uri = tombi_uri::Uri::from_str("file:///tmp/schema.json").unwrap();
 
-        assert!(policy.check_http_url(&local).is_err());
-        assert!(policy.check_http_url(&credentials).is_err());
-        assert!(policy.check_http_url(&public).is_ok());
+        assert!(matches!(
+            policy.check_http_url(&uri),
+            Err(super::PolicyError::Denied { .. })
+        ));
+    }
+
+    #[test]
+    fn url_credentials_are_rejected() {
+        let policy = SchemaFetchPolicy::default();
+        let uri = tombi_uri::Uri::from_str("https://user:pass@example.com/schema.json").unwrap();
+
+        assert!(matches!(
+            policy.check_http_url(&uri),
+            Err(super::PolicyError::Denied { .. })
+        ));
     }
 
     #[test]
@@ -336,59 +246,5 @@ mod tests {
         assert!(super::parse_trusted_host("user@schema.example").is_err());
         assert!(super::parse_trusted_host("schema.example:443").is_err());
         assert_eq!(super::parse_trusted_host("[fd00::1]").unwrap(), "fd00::1");
-    }
-
-    #[test]
-    fn trust_configuration_is_user_scoped() {
-        let policy = SchemaFetchPolicy {
-            trusted_hosts: vec!["schema.internal".to_string()],
-            configuration_error: None,
-        };
-        let private = IpAddr::from_str("10.1.2.3").unwrap();
-
-        assert!(
-            policy
-                .check_resolved_addresses("schema.internal", &[private])
-                .is_ok()
-        );
-        assert!(
-            policy
-                .check_resolved_addresses("other.internal", &[private])
-                .is_err()
-        );
-    }
-
-    #[test]
-    fn options_extend_the_trusted_hosts() {
-        let private = IpAddr::from_str("10.1.2.3").unwrap();
-
-        let policy = SchemaFetchPolicy::from_options(&crate::Options {
-            trusted_hosts: Some(vec!["schema.internal".to_string()]),
-            ..Default::default()
-        });
-
-        assert!(
-            policy
-                .check_resolved_addresses("schema.internal", &[private])
-                .is_ok()
-        );
-        assert!(matches!(
-            policy.check_resolved_addresses("other.internal", &[private]),
-            Err(super::PolicyError::HostNotTrusted)
-        ));
-    }
-
-    #[test]
-    fn invalid_option_entries_refuse_every_access() {
-        let policy = SchemaFetchPolicy::from_options(&crate::Options {
-            trusted_hosts: Some(vec!["user@schema.example".to_string()]),
-            ..Default::default()
-        });
-        let public = tombi_uri::Uri::from_str("https://example.com/schema.json").unwrap();
-
-        assert!(matches!(
-            policy.check_http_url(&public),
-            Err(super::PolicyError::Denied { .. })
-        ));
     }
 }

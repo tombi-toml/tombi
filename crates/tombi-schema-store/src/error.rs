@@ -69,6 +69,8 @@ pub enum Error {
         reason: String,
     },
 
+    /// This variant is never produced, because address filtering is disabled.
+    /// Kept for API compatibility.
     #[error(
         "schema host is not trusted: {schema_uri}; it resolves to a non-public address, \
          add the host to TOMBI_SCHEMA_TRUSTED_HOSTS"

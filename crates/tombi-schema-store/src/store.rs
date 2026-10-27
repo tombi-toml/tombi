@@ -273,8 +273,8 @@ impl SchemaStore {
     /// Create a store with the given options.
     /// Note that the new_with_options() does not automatically load schemas from Config etc.
     ///
-    /// `options.trusted_hosts` extends `TOMBI_SCHEMA_TRUSTED_HOSTS`. Invalid
-    /// entries are not reported here: every schema access is refused instead.
+    /// Schema destination-address filtering is disabled.
+    /// `options.trusted_hosts` and `TOMBI_SCHEMA_TRUSTED_HOSTS` are parsed but have no effect.
     pub fn new_with_options(options: crate::Options) -> Self {
         let fetch_policy = Arc::new(SchemaFetchPolicy::from_options(&options));
         let http_client = Arc::new(DefaultHttpClient::with_policy(fetch_policy.clone()));
@@ -2019,19 +2019,14 @@ mod tests {
         fs,
         path::{Path, PathBuf},
         str::FromStr,
-        sync::Arc,
         time::Duration,
     };
 
     use super::{
-        SchemaStore, get_cache_file_path, load_catalog_from_cache_ignoring_ttl,
-        load_json_schema_from_cache_ignoring_ttl, matches_schema_patterns, save_to_cache,
+        SchemaStore, load_catalog_from_cache_ignoring_ttl,
+        load_json_schema_from_cache_ignoring_ttl, matches_schema_patterns,
     };
-    use crate::{
-        CatalogUri, SchemaView, http_client::ReqwestHttpClient,
-        schema_fetch_policy::SchemaFetchPolicy,
-    };
-    use tombi_test_lib::TestCacheHome;
+    use crate::{CatalogUri, SchemaView};
     use tombi_uri::SchemaUri;
 
     fn temp_cache_path(test_name: &str) -> PathBuf {
@@ -2040,38 +2035,6 @@ mod tests {
             .unwrap()
             .as_nanos();
         std::env::temp_dir().join(format!("tombi-schema-store-{test_name}-{unique}.json"))
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    #[tokio::test(flavor = "current_thread")]
-    async fn private_dns_denial_does_not_use_a_stale_schema_cache() {
-        let _cache_home = TestCacheHome::new();
-        let schema_uri = SchemaUri::from_str("http://localhost/security/schema.json").unwrap();
-        let cache_path = get_cache_file_path(&schema_uri).await.unwrap();
-        save_to_cache(Some(&cache_path), br#"{"type":"object"}"#)
-            .await
-            .unwrap();
-
-        let fetch_policy = Arc::new(SchemaFetchPolicy::default());
-        let http_client = Arc::new(ReqwestHttpClient::with_policy(fetch_policy.clone()));
-        let schema_store = SchemaStore::new_with_policy_and_http_client(
-            crate::Options {
-                cache: Some(tombi_cache::Options {
-                    no_cache: Some(false),
-                    cache_ttl: Some(Duration::ZERO),
-                }),
-                ..Default::default()
-            },
-            http_client,
-            fetch_policy,
-        );
-
-        assert!(
-            schema_store
-                .fetch_schema_document(&schema_uri)
-                .await
-                .is_err()
-        );
     }
 
     fn bump_modified(path: &Path) {

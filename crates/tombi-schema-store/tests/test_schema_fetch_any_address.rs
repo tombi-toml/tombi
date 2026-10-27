@@ -13,12 +13,12 @@ use std::{
 };
 
 use rstest::rstest;
-use tombi_schema_store::{Error, Options, SchemaStore, SchemaUri};
+use tombi_schema_store::{Options, SchemaStore, SchemaUri};
 use tombi_test_lib::TestCacheHome;
 
 #[rstest]
 #[tokio::test(flavor = "current_thread")]
-async fn schema_fetch_does_not_connect_to_loopback_addresses() {
+async fn schema_fetch_reaches_loopback_addresses() {
     let _cache_home = TestCacheHome::new();
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let address = listener.local_addr().unwrap();
@@ -42,7 +42,6 @@ async fn schema_fetch_does_not_connect_to_loopback_addresses() {
                     )
                     .unwrap();
                     stream.write_all(body).unwrap();
-                    return;
                 }
                 Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
                     if server_stop.load(Ordering::Relaxed) {
@@ -71,10 +70,8 @@ async fn schema_fetch_does_not_connect_to_loopback_addresses() {
     stop_server.store(true, Ordering::Relaxed);
     server.join().unwrap();
 
-    assert!(
-        results
-            .iter()
-            .all(|result| matches!(result, Err(Error::SchemaHostNotTrusted { .. })))
-    );
-    assert!(!request_received.load(Ordering::Relaxed));
+    for result in results {
+        assert!(result.unwrap().is_some());
+    }
+    assert!(request_received.load(Ordering::Relaxed));
 }

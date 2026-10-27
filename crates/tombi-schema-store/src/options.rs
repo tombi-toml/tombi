@@ -8,10 +8,10 @@ pub struct Options {
     pub format: Option<tombi_config::SchemaOverviewFormatOptions>,
     pub offline: Option<bool>,
     pub cache: Option<tombi_cache::Options>,
-    /// Host names or IP addresses allowed to resolve to non-public addresses.
+    /// Host names or IP addresses that would be allowed to resolve to non-public addresses.
     ///
-    /// Added to `TOMBI_SCHEMA_TRUSTED_HOSTS`. This is for the embedding
-    /// application; project configuration cannot set it.
+    /// Address filtering is disabled, so this field is parsed for compatibility.
+    /// It has no effect on policy decisions and is kept as public API for embedders.
     pub trusted_hosts: Option<Vec<String>>,
 }
 

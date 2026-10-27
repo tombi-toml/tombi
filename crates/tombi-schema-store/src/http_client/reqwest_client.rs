@@ -200,72 +200,13 @@ fn fetch_error_from_reqwest(error: reqwest::Error) -> FetchError {
     }
 }
 
-/// How long the local pre-check of a proxied destination may wait on DNS.
-#[cfg(not(target_arch = "wasm32"))]
-const PROXIED_DESTINATION_LOOKUP_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
-
-/// When a proxy is configured, the proxy resolves the destination and the
-/// connection-time DNS check only sees the proxy host. Resolve the destination
-/// locally first so names known to point at private addresses are still
-/// refused. A failed lookup is not a denial: the destination may only be
-/// resolvable by the proxy.
+/// Proxied destinations are not pre-checked, because address filtering is disabled.
+/// The proxy itself handles resolution and routing.
 #[cfg(not(target_arch = "wasm32"))]
 async fn check_proxied_destination(
-    policy: &SchemaFetchPolicy,
-    url: &reqwest::Url,
+    _policy: &SchemaFetchPolicy,
+    _url: &reqwest::Url,
 ) -> Result<(), FetchError> {
-    let proxy = SystemProxy::current();
-    check_not_proxy_host(proxy.hosts(), url)?;
-    if !proxy.is_proxied(url) {
-        // Direct connections are covered by `FilteredDnsResolver`.
-        return Ok(());
-    }
-    check_local_resolution(policy, url).await
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-async fn check_local_resolution(
-    policy: &SchemaFetchPolicy,
-    url: &reqwest::Url,
-) -> Result<(), FetchError> {
-    let Some(host) = url.domain() else {
-        // IP literals were already checked by `check_http_url`.
-        return Ok(());
-    };
-
-    let lookup = tokio::time::timeout(
-        PROXIED_DESTINATION_LOOKUP_TIMEOUT,
-        tokio::net::lookup_host((host, 0)),
-    )
-    .await;
-    let Ok(Ok(addresses)) = lookup else {
-        log::debug!("{host} is not resolvable locally, leaving resolution to the proxy");
-        return Ok(());
-    };
-    let resolved_ips = addresses.map(|address| address.ip()).collect::<Vec<_>>();
-    if resolved_ips.is_empty() {
-        return Ok(());
-    }
-
-    policy
-        .check_resolved_addresses(host, &resolved_ips)
-        .map_err(FetchError::from)
-}
-
-/// The resolver lets proxy hosts resolve to non-public addresses so the proxy
-/// itself stays reachable. A schema URL must not reuse that exemption to reach
-/// the proxy's own address on arbitrary ports.
-#[cfg(not(target_arch = "wasm32"))]
-fn check_not_proxy_host(
-    proxy_hosts: &HashSet<String>,
-    url: &reqwest::Url,
-) -> Result<(), FetchError> {
-    let is_proxy_host = url
-        .host_str()
-        .is_some_and(|host| proxy_hosts.contains(&normalize_host(host)));
-    if is_proxy_host {
-        return Err(FetchError::HostNotTrusted);
-    }
     Ok(())
 }
 

@@ -139,14 +139,6 @@ impl SystemProxy {
         &self.hosts
     }
 
-    /// Whether a request to `url` is sent through a proxy (honoring `NO_PROXY`).
-    pub(super) fn is_proxied(&self, url: &reqwest::Url) -> bool {
-        url.as_str()
-            .parse::<http::Uri>()
-            .ok()
-            .is_some_and(|uri| self.matcher.intercept(&uri).is_some())
-    }
-
     /// reqwest proxies equivalent to this configuration. The client must be
     /// built with `no_proxy()` so reqwest does not read its own copy.
     pub(super) fn reqwest_proxies(&self) -> Vec<reqwest::Proxy> {
@@ -278,24 +270,6 @@ mod tests {
         let proxy = SystemProxy::new(&resolved("http://a.example:1", "http://b.example:2", ""));
 
         assert_eq!(**proxy.hosts(), host_set(&["a.example", "b.example"]));
-    }
-
-    #[rstest]
-    #[case::proxied("https://schema.example/a.json", "", true)]
-    #[case::no_proxy_exact("https://schema.example/a.json", "schema.example", false)]
-    #[case::no_proxy_suffix("https://schema.example/a.json", ".example", false)]
-    #[case::other_host("https://other.test/a.json", "schema.example", true)]
-    fn no_proxy_is_honored(#[case] url: &str, #[case] no_proxy: &str, #[case] proxied: bool) {
-        let proxy = SystemProxy::new(&resolved(
-            "http://proxy.corp.example:3128",
-            "http://proxy.corp.example:3128",
-            no_proxy,
-        ));
-
-        assert_eq!(
-            proxy.is_proxied(&reqwest::Url::parse(url).unwrap()),
-            proxied
-        );
     }
 
     #[rstest]
