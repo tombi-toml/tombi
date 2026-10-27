@@ -32,6 +32,8 @@ impl PolicyError {
 pub(crate) struct SchemaFetchPolicy {
     /// Normalized with `normalize_host`.
     trusted_hosts: Vec<String>,
+    /// Set by a bare `*` entry; grants every address class.
+    pub(crate) trust_all: bool,
     configuration_error: Option<String>,
 }
 
@@ -40,6 +42,8 @@ impl SchemaFetchPolicy {
     /// supplied by the embedding application through [`crate::Options`].
     ///
     /// Options entries are added to, not substituted for, the environment.
+    /// A bare `*` entry trusts every address; other `*`-containing entries are invalid.
+    /// Invalid entries poison the whole configuration.
     pub(crate) fn from_options(options: &crate::Options) -> Self {
         let mut policy = Self::default();
         let mut configuration_errors = Vec::new();
@@ -57,6 +61,10 @@ impl SchemaFetchPolicy {
         }
         hosts.extend(options.trusted_hosts.iter().flatten().cloned());
         for entry in &hosts {
+            if entry == "*" {
+                policy.trust_all = true;
+                continue;
+            }
             match parse_trusted_host(entry) {
                 Ok(host) => policy.trusted_hosts.push(normalize_host(&host)),
                 Err(reason) => configuration_errors.push(reason),
@@ -122,6 +130,9 @@ impl SchemaFetchPolicy {
     }
 
     fn address_is_allowed(&self, host: &str, address: IpAddr) -> bool {
+        if self.trust_all {
+            return true;
+        }
         is_globally_reachable(address) || {
             let host = normalize_host(host);
             self.trusted_hosts.contains(&host)
@@ -139,6 +150,10 @@ impl SchemaFetchPolicy {
 }
 
 fn parse_trusted_host(entry: &str) -> Result<String, String> {
+    if entry.contains('*') {
+        return Err(format!("only a bare `*` is valid; `{entry}` is not"));
+    }
+
     let bracketed_ipv6 = entry.starts_with('[') && entry.ends_with(']');
     if entry.contains('@')
         || entry.contains('/')
@@ -342,6 +357,7 @@ mod tests {
     fn trust_configuration_is_user_scoped() {
         let policy = SchemaFetchPolicy {
             trusted_hosts: vec!["schema.internal".to_string()],
+            trust_all: false,
             configuration_error: None,
         };
         let private = IpAddr::from_str("10.1.2.3").unwrap();
@@ -390,5 +406,64 @@ mod tests {
             policy.check_http_url(&public),
             Err(super::PolicyError::Denied { .. })
         ));
+    }
+
+    fn star_policy(trusted_hosts: &[&str]) -> SchemaFetchPolicy {
+        SchemaFetchPolicy::from_options(&crate::Options {
+            trusted_hosts: Some(trusted_hosts.iter().map(|host| host.to_string()).collect()),
+            ..Default::default()
+        })
+    }
+
+    #[test]
+    fn bare_star_accepts_any_address() {
+        let policy = star_policy(&["*"]);
+        let private = tombi_uri::Uri::from_str("http://10.1.2.3/").unwrap();
+        let loopback = tombi_uri::Uri::from_str("http://127.0.0.1/").unwrap();
+        let benchmark = [IpAddr::from_str("198.18.0.1").unwrap()];
+        let mixed = [
+            IpAddr::from_str("127.0.0.1").unwrap(),
+            IpAddr::from_str("8.8.8.8").unwrap(),
+        ];
+
+        assert!(policy.check_http_url(&private).is_ok());
+        assert!(policy.check_http_url(&loopback).is_ok());
+        let benchmark_ok = policy.check_resolved_addresses("schema.example", &benchmark);
+        assert!(benchmark_ok.is_ok());
+        let mixed_ok = policy.check_resolved_addresses("schema.example", &mixed);
+        assert!(mixed_ok.is_ok());
+    }
+
+    #[test]
+    fn bare_star_keeps_scheme_and_credential_checks() {
+        let policy = star_policy(&["*"]);
+        let file = tombi_uri::Uri::from_str("file:///tmp/x.json").unwrap();
+        let credentials = tombi_uri::Uri::from_str("https://user:pass@example.com/").unwrap();
+
+        assert!(policy.check_http_url(&file).is_err());
+        assert!(policy.check_http_url(&credentials).is_err());
+    }
+
+    #[test]
+    fn default_policy_still_denies_private_targets() {
+        let policy = SchemaFetchPolicy::default();
+        let private = tombi_uri::Uri::from_str("http://10.1.2.3/").unwrap();
+
+        assert!(policy.check_http_url(&private).is_err());
+    }
+
+    #[test]
+    fn bare_star_does_not_bypass_invalid_entries() {
+        let policy = star_policy(&["*", "user@schema.example"]);
+        let public = tombi_uri::Uri::from_str("https://example.com/schema.json").unwrap();
+        let result = policy.check_http_url(&public);
+        let denied = matches!(result, Err(super::PolicyError::Denied { .. }));
+        assert!(denied);
+    }
+
+    #[test]
+    fn non_bare_wildcards_are_rejected() {
+        assert!(super::parse_trusted_host("*.example.com").is_err());
+        assert!(super::parse_trusted_host("a*").is_err());
     }
 }

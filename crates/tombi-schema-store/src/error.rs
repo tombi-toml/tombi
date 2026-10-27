@@ -71,7 +71,7 @@ pub enum Error {
 
     #[error(
         "schema host is not trusted: {schema_uri}; it resolves to a non-public address, \
-         add the host to TOMBI_SCHEMA_TRUSTED_HOSTS"
+         add the host to TOMBI_SCHEMA_TRUSTED_HOSTS or set it to * to trust every address"
     )]
     SchemaHostNotTrusted { schema_uri: SchemaUri },
 

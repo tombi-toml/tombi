@@ -209,11 +209,15 @@ const PROXIED_DESTINATION_LOOKUP_TIMEOUT: std::time::Duration = std::time::Durat
 /// locally first so names known to point at private addresses are still
 /// refused. A failed lookup is not a denial: the destination may only be
 /// resolvable by the proxy.
+/// A bare `*` entry skips this check.
 #[cfg(not(target_arch = "wasm32"))]
 async fn check_proxied_destination(
     policy: &SchemaFetchPolicy,
     url: &reqwest::Url,
 ) -> Result<(), FetchError> {
+    if policy.trust_all {
+        return Ok(());
+    }
     let proxy = SystemProxy::current();
     check_not_proxy_host(proxy.hosts(), url)?;
     if !proxy.is_proxied(url) {

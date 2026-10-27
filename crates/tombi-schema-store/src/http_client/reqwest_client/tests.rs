@@ -181,6 +181,27 @@ async fn only_configured_proxy_hosts_may_resolve_to_private_addresses(
     assert_eq!(result.is_ok(), allowed);
 }
 
+#[tokio::test(flavor = "current_thread")]
+async fn trust_all_policy_lets_the_resolver_pass_loopback() {
+    use reqwest::dns::Resolve;
+    use std::str::FromStr;
+
+    let resolver = super::FilteredDnsResolver {
+        policy: Arc::new(crate::schema_fetch_policy::SchemaFetchPolicy::from_options(
+            &crate::Options {
+                trusted_hosts: Some(vec!["*".to_string()]),
+                ..Default::default()
+            },
+        )),
+        proxy_hosts: Arc::new(std::collections::HashSet::new()),
+    };
+    let result = resolver
+        .resolve(reqwest::dns::Name::from_str("localhost").unwrap())
+        .await;
+
+    assert!(result.is_ok());
+}
+
 #[rstest]
 #[case::same_name("http://proxy.corp.example/schema.json", false)]
 #[case::case_and_trailing_dot("http://Proxy.Corp.Example./schema.json", false)]
