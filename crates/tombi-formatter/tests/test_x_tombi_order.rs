@@ -567,6 +567,38 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_cargo_package_include_keeps_pattern_order(
+                r#"
+                [package]
+                include = ["src/**", "!src/generated/**"]
+                "#,
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [package]
+                include = ["src/**", "!src/generated/**"]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_cargo_package_exclude_keeps_pattern_order(
+                r#"
+                [package]
+                exclude = ["src/**", "!src/generated/**"]
+                "#,
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [package]
+                exclude = ["src/**", "!src/generated/**"]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_cargo_package(
                 r#"
                 [package]
