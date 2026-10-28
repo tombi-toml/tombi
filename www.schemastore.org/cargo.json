@@ -1620,7 +1620,6 @@
           }
         }
       },
-      "x-tombi-array-values-order": "version-sort",
       "x-taplo": {
         "links": {
           "key": "https://doc.rust-lang.org/cargo/reference/manifest.html#the-exclude-and-include-fields"
@@ -1650,7 +1649,6 @@
           }
         }
       },
-      "x-tombi-array-values-order": "version-sort",
       "x-taplo": {
         "links": {
           "key": "https://doc.rust-lang.org/cargo/reference/manifest.html#the-exclude-and-include-fields"
