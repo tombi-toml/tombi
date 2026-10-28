@@ -57,7 +57,7 @@ If you want to keep automatic sorting only for specific keys after disabling it 
 use [`schemas[*].overrides[*]`](/docs/configuration#schemas-overrides) to re-enable sorting for those targets.
 
 For example, the following configuration disables sorting for `Cargo.toml` as a whole,
-but keeps schema-based key sorting only under `[dependencies]`, `[dev-dependencies]`, and `[build-dependencies]`.
+but keeps sorting only under `[dependencies]`, `[dev-dependencies]`, and `[build-dependencies]`.
 
 ```toml
 [[schemas]]
@@ -69,7 +69,7 @@ format.rules.table-keys-order.enabled = false
 [[schemas.overrides]]
 targets = ["dependencies", "dev-dependencies", "build-dependencies"]
 format.rules = {
-  table-keys-order = "schema"
+  table-keys-order = "ascending"
 }
 ```
 
