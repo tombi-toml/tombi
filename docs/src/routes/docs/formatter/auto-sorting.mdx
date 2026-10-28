@@ -3,7 +3,11 @@ import { Tip, Warning } from "~/components/Highlight";
 # Auto Sorting
 
 One of Tombi's most distinctive features is automatic sorting.
-It can automatically sort content including comments, using its [own unique treatment of comments](/docs/formatter/treatment-of-comments).
+
+[toml-sort](https://github.com/pappasam/toml-sort) and [Taplo](https://github.com/tamasfe/taplo) specify one sorting method and apply it consistently across a document.
+Tombi is designed differently: shared schema information specifies the sorting method for each item, so those fine-grained sorting policies are shared with everyone who uses the schema.
+
+Also, it can automatically sort content including comments, using its [own unique treatment of comments](/docs/formatter/treatment-of-comments).
 
 ## How to Specify Auto Sorting Methods
 
