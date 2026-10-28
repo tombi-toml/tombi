@@ -80,17 +80,45 @@ Tombi does not perform automatic sorting unless a sorting method is specified.
 Sorting methods are available in the following order of priority:
 
 - [Comment Directives](/docs/formatter/auto-sorting#comment-directives)
+- [Configuration](/docs/formatter/auto-sorting#configuration)
 - [JSON Schema](/docs/formatter/auto-sorting#json-schema)
 
 ### Comment Directives
 
 You can specify auto sorting methods using [comment directives](/docs/comment-directive/tombi-value-directive#format-rules).
-This has higher priority than [JSON Schema](/docs/json-schema#formatting) specifications.
+This has higher priority than [Configuration](/docs/formatter/auto-sorting#configuration) and [JSON Schema](/docs/json-schema#formatting) specifications.
 
 <Warning>
-This is intended for projects that are not large enough to warrant creating a JSON Schema,
-or as a temporary workaround for errors in JSON Schemas registered in the Schema Store.
+Since the same can be done in `tombi.toml` with [Configuration](/docs/formatter/auto-sorting#configuration),
+use comment directives for temporary overrides, such as working around errors in JSON Schemas registered in the Schema Store,
+or for local adjustments in files that have no schema.
 </Warning>
+
+### Configuration
+
+You can specify auto sorting methods in `tombi.toml` using [`schemas[*].overrides[*]`](/docs/configuration#schemas-overrides).
+This has lower priority than [Comment Directives](/docs/formatter/auto-sorting#comment-directives) and higher priority than [JSON Schema](/docs/formatter/auto-sorting#json-schema) specifications.
+
+This is the recommended way to set a stable rule for the whole project.
+You do not need to edit the JSON Schema or add `x-tombi-*` keys to it.
+
+For example, the following configuration sorts the root table keys of `example.toml` in ascending order and the `items` array values in descending order.
+
+```toml
+[[schemas]]
+path = "https://example.com/schema.json"
+include = ["example.toml"]
+
+[[schemas.overrides]]
+targets = [""]
+format.rules.table-keys-order = "ascending"
+
+[[schemas.overrides]]
+targets = ["items"]
+format.rules.array-values-order = "descending"
+```
+
+See [`schemas[*].overrides[*].format.rules`](/docs/configuration#schemas-overrides-format-rules) for the available targets and values.
 
 ### JSON Schema
 This is probably the method you'll benefit from the most.
