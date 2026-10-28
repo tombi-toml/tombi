@@ -24,7 +24,7 @@ overrides:
   nanoid: 3.3.18
   nitropack: 2.13.4
   postcss: 8.5.23
-  qs: 6.16.0
+  qs: 6.16.1
   seroval: 1.6.8
   serialize-javascript: 7.1.3
   source-map-js: 1.2.2
@@ -38,7 +38,6 @@ overrides:
 minimumReleaseAge: 7200
 minimumReleaseAgeExclude:
   - fast-uri@3.1.9
-  - qs@6.16.0
   - serialize-javascript@7.1.3
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false

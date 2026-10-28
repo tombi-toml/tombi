@@ -10,3 +10,8 @@ reason = "braces: no fixed version released yet"
 id = "GHSA-86w9-cpqp-85rv"
 ignoreUntil = 2026-11-10
 reason = "node-forge: no fixed version released yet"
+
+[[IgnoredVulns]]
+id = "GHSA-gcqx-w48m-w2h4"
+ignoreUntil = 2026-11-10
+reason = "deepmerge: node-resolve merges only static defaults; no fixed version released yet"
