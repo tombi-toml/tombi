@@ -5,6 +5,66 @@ import { Tip, Warning } from "~/components/Highlight";
 One of Tombi's most distinctive features is automatic sorting.
 It can automatically sort content including comments, using its [own unique treatment of comments](/docs/formatter/treatment-of-comments).
 
+## How to Specify Auto Sorting Methods
+
+Tombi does not perform automatic sorting unless a sorting method is specified.
+
+Sorting methods are available in the following order of priority:
+
+- [Comment Directives](/docs/formatter/auto-sorting#comment-directives)
+- [Configuration](/docs/formatter/auto-sorting#configuration)
+- [JSON Schema](/docs/formatter/auto-sorting#json-schema)
+
+### Comment Directives
+
+You can specify auto sorting methods using [comment directives](/docs/comment-directive/tombi-value-directive#format-rules).
+This has higher priority than [Configuration](/docs/formatter/auto-sorting#configuration) and [JSON Schema](/docs/json-schema#formatting) specifications.
+
+<Warning>
+For files that have a schema assigned, the same can also be specified in `tombi.toml` with [Configuration](/docs/formatter/auto-sorting#configuration).
+Use comment directives for temporary overrides, such as working around errors in JSON Schemas registered in the Schema Store,
+or for local adjustments in files that have no schema.
+</Warning>
+
+### Configuration
+
+You can specify auto sorting methods in `tombi.toml` using [`schemas[*].overrides[*]`](/docs/configuration#schemas-overrides).
+This has lower priority than [Comment Directives](/docs/formatter/auto-sorting#comment-directives) and higher priority than [JSON Schema](/docs/formatter/auto-sorting#json-schema) specifications.
+
+This is the recommended way to set a stable rule for the whole project.
+You do not need to edit the JSON Schema or add `x-tombi-*` keys to it.
+
+For example, the following configuration sorts the root table keys of `example.toml` in ascending order and the `items` array values in descending order.
+
+```toml
+[[schemas]]
+path = "https://example.com/schema.json"
+include = ["example.toml"]
+
+[[schemas.overrides]]
+targets = [""]
+format.rules.table-keys-order = "ascending"
+
+[[schemas.overrides]]
+targets = ["items"]
+format.rules.array-values-order = "descending"
+```
+
+See [`schemas[*].overrides[*].format.rules`](/docs/configuration#schemas-overrides-format-rules) for the available targets and values.
+
+### JSON Schema
+This is probably the method you'll benefit from the most.
+
+When schemas automatically retrieved from the [JSON Schema Store](https://www.schemastore.org) contain the following keys, automatic sorting is performed according to that schema:
+
+- [x-tombi-table-keys-order](/docs/json-schema#x-tombi-table-keys-order)
+- [x-tombi-array-values-order](/docs/json-schema#x-tombi-array-values-order)
+- [x-tombi-array-values-order-by](/docs/json-schema#x-tombi-array-values-order-by)
+
+Files like `Cargo.toml` and `pyproject.toml` registered in the JSON Schema Store have these keys specified.
+
+Additionally, you can specify JSON Schema files using [configuration files](/docs/configuration) or [comment directives](/docs/comment-directive/tombi-value-directive#format-rules), allowing you to apply schemas from sources other than the JSON Schema Store.
+
 ## How to Stop Auto Sorting
 Auto sorting is defined for each JSON Schema file, and can be disabled for all schemas at once or for each schema in the [configuration file](/docs/configuration).
 
@@ -72,63 +132,3 @@ format.rules = {
   table-keys-order = "ascending"
 }
 ```
-
-## How to Specify Auto Sorting Methods
-
-Tombi does not perform automatic sorting unless a sorting method is specified.
-
-Sorting methods are available in the following order of priority:
-
-- [Comment Directives](/docs/formatter/auto-sorting#comment-directives)
-- [Configuration](/docs/formatter/auto-sorting#configuration)
-- [JSON Schema](/docs/formatter/auto-sorting#json-schema)
-
-### Comment Directives
-
-You can specify auto sorting methods using [comment directives](/docs/comment-directive/tombi-value-directive#format-rules).
-This has higher priority than [Configuration](/docs/formatter/auto-sorting#configuration) and [JSON Schema](/docs/json-schema#formatting) specifications.
-
-<Warning>
-For files that have a schema assigned, the same can also be specified in `tombi.toml` with [Configuration](/docs/formatter/auto-sorting#configuration).
-Use comment directives for temporary overrides, such as working around errors in JSON Schemas registered in the Schema Store,
-or for local adjustments in files that have no schema.
-</Warning>
-
-### Configuration
-
-You can specify auto sorting methods in `tombi.toml` using [`schemas[*].overrides[*]`](/docs/configuration#schemas-overrides).
-This has lower priority than [Comment Directives](/docs/formatter/auto-sorting#comment-directives) and higher priority than [JSON Schema](/docs/formatter/auto-sorting#json-schema) specifications.
-
-This is the recommended way to set a stable rule for the whole project.
-You do not need to edit the JSON Schema or add `x-tombi-*` keys to it.
-
-For example, the following configuration sorts the root table keys of `example.toml` in ascending order and the `items` array values in descending order.
-
-```toml
-[[schemas]]
-path = "https://example.com/schema.json"
-include = ["example.toml"]
-
-[[schemas.overrides]]
-targets = [""]
-format.rules.table-keys-order = "ascending"
-
-[[schemas.overrides]]
-targets = ["items"]
-format.rules.array-values-order = "descending"
-```
-
-See [`schemas[*].overrides[*].format.rules`](/docs/configuration#schemas-overrides-format-rules) for the available targets and values.
-
-### JSON Schema
-This is probably the method you'll benefit from the most.
-
-When schemas automatically retrieved from the [JSON Schema Store](https://www.schemastore.org) contain the following keys, automatic sorting is performed according to that schema:
-
-- [x-tombi-table-keys-order](/docs/json-schema#x-tombi-table-keys-order)
-- [x-tombi-array-values-order](/docs/json-schema#x-tombi-array-values-order)
-- [x-tombi-array-values-order-by](/docs/json-schema#x-tombi-array-values-order-by)
-
-Files like `Cargo.toml` and `pyproject.toml` registered in the JSON Schema Store have these keys specified.
-
-Additionally, you can specify JSON Schema files using [configuration files](/docs/configuration) or [comment directives](/docs/comment-directive/tombi-value-directive#format-rules), allowing you to apply schemas from sources other than the JSON Schema Store.
