@@ -288,4 +288,11 @@ mod test {
             }
         )
     }
+
+    test_parser! {
+        #[test]
+        fn array_maybe_hang_2386("key = [}]") -> Err([
+            SyntaxError(ExpectedValue, 0:7..0:8),
+        ])
+    }
 }

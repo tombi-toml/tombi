@@ -132,9 +132,13 @@ fn parse_invalid_value(p: &mut Parser<'_>, n: usize) {
 
     let start_span = p.current_span();
     let mut end_span = start_span;
-    while !p.at_ts(TS_COMMEMT_OR_LINE_END) && !p.at_ts(GROUP_END) {
+    while !p.at_ts(TS_COMMEMT_OR_LINE_END) {
         end_span = p.current_span();
         p.bump_any();
+
+        if p.at_ts(GROUP_END) {
+            break;
+        }
     }
     p.error(crate::Error::new(ExpectedValue, start_span + end_span));
 
