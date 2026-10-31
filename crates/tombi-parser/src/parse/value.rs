@@ -6,7 +6,7 @@ use crate::support::{leading_comments, peek_leading_comments, trailing_comment};
 use crate::{
     ErrorKind::*,
     parser::{MAX_RECURSION_DEPTH, Parser},
-    token_set::TS_COMMEMT_OR_LINE_END,
+    token_set::{GROUP_END, TS_COMMEMT_OR_LINE_END},
 };
 
 impl Parse for tombi_ast_syntax::Value<'_> {
@@ -135,6 +135,10 @@ fn parse_invalid_value(p: &mut Parser<'_>, n: usize) {
     while !p.at_ts(TS_COMMEMT_OR_LINE_END) {
         end_span = p.current_span();
         p.bump_any();
+
+        if p.at_ts(GROUP_END) {
+            break;
+        }
     }
     p.error(crate::Error::new(ExpectedValue, start_span + end_span));
 

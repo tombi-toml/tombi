@@ -959,4 +959,36 @@ mod test {
             }
         )
     }
+
+    test_parser! {
+        #[test]
+        fn inline_table_missing_kv("key = {a=2,,b=3}") -> Err([
+            SyntaxError(ExpectedKey, 0:11..0:12),
+            SyntaxError(ExpectedEqual, 0:11..0:12),
+            SyntaxError(ExpectedValue, 0:11..0:15),
+        ])
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_missing_value("key = {a=}") -> Err([
+            SyntaxError(ExpectedValue, 0:9..0:10),
+        ])
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_maybe_hang_2386_1("key = {]}") -> Err([
+            SyntaxError(ExpectedKey, 0:7..0:8),
+            SyntaxError(ExpectedEqual, 0:7..0:8),
+            SyntaxError(ExpectedValue, 0:7..0:8),
+        ])
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_maybe_hang_2386_2("key = {k=]}") -> Err([
+            SyntaxError(ExpectedValue, 0:9..0:10),
+        ])
+    }
 }

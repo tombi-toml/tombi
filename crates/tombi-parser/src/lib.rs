@@ -260,7 +260,7 @@ macro_rules! test_parser {
                     $line1:literal:$column1:literal..$line2:literal:$column2:literal
                 )
             ),*$(,)*
-        ]
+        ] $({ $($expected:tt)* })?
     )} => {
         #[test]
         fn $name() {
@@ -283,6 +283,16 @@ macro_rules! test_parser {
                     .collect::<Vec<_>>(),
                 vec![$(($error_kind, tombi_text::Range::from((($line1, $column1), ($line2, $column2))))),*]
             );
+
+            $(
+                use tombi_ast_syntax::AstNode as _;
+                let expected = $crate::syntax_tree!($($expected)*);
+                let actual = $crate::syntax_node_to_patterns(p.root().syntax());
+                pretty_assertions::assert_eq!(
+                    $crate::format_tree(&actual, 0),
+                    $crate::format_tree(&expected, 0),
+                );
+            )?
         }
     };
 
