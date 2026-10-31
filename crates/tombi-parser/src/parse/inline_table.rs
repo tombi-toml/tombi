@@ -959,4 +959,20 @@ mod test {
             }
         )
     }
+
+    test_parser! {
+        #[test]
+        fn inline_table_missing_kv("key = {a=2,,b=3}") -> Err([
+            SyntaxError(ExpectedKey, 0:11..0:12),
+            SyntaxError(ExpectedEqual, 0:11..0:12),
+            SyntaxError(ExpectedValue, 0:11..0:15),
+        ])
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_missing_value("key = {a=}") -> Err([
+            SyntaxError(ExpectedValue, 0:9..0:10),
+        ])
+    }
 }

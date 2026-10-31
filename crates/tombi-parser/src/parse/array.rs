@@ -247,4 +247,45 @@ mod test {
             SyntaxError(ForbiddenKeysLastPeriod, 0:11..0:12),
         ])
     }
+
+    test_parser! {
+        #[test]
+        fn array_missing_value("key = [1,,2]") -> Err(
+            [
+                SyntaxError(ExpectedValue, 0:9..0:11),
+            ]
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        ARRAY: {
+                            BRACKET_START: "[",
+                            VALUE_WITH_COMMA_GROUP: {
+                                INTEGER_DEC: {
+                                    INTEGER_DEC: "1"
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                },
+                            },
+                            VALUE_WITH_COMMA_GROUP: {
+                                INVALID_TOKEN: {
+                                    COMMA: ",",
+                                    INTEGER_DEC: "2"
+                                }
+                            },
+                            BRACKET_END: "]"
+                        }
+                    }
+                }
+            }
+        )
+    }
 }
