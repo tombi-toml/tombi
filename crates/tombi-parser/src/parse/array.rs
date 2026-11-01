@@ -250,11 +250,8 @@ mod test {
 
     test_parser! {
         #[test]
-        fn array_missing_value("key = [1,,2]") -> Err(
-            [
-                SyntaxError(ExpectedValue, 0:9..0:11),
-            ]
-            {
+        fn array_missing_value("key = [1,,2]") -> Err({
+            ast: {
                 KEY_VALUE_GROUP: {
                     KEY_VALUE: {
                         KEYS: {
@@ -285,36 +282,42 @@ mod test {
                         }
                     }
                 }
-            }
-        )
+            },
+            errors: [
+                SyntaxError(ExpectedValue, 0:9..0:11),
+            ]
+        })
     }
 
     test_parser! {
         #[test]
-        fn array_maybe_hang_2386("key = [}]") -> Err([
-            SyntaxError(ExpectedValue, 0:7..0:8),
-        ] {
-            KEY_VALUE_GROUP: {
-                KEY_VALUE: {
-                    KEYS: {
-                        BARE_KEY: {
-                            BARE_KEY: "key"
-                        }
-                    },
-                    WHITESPACE: " ",
-                    EQUAL: "=",
-                    WHITESPACE: " ",
-                    ARRAY: {
-                        BRACKET_START: "[",
-                        VALUE_WITH_COMMA_GROUP: {
-                            INVALID_TOKEN: {
-                                BRACE_END: "}"
+        fn array_maybe_hang_2386("key = [}]") -> Err({
+            ast: {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
                             }
                         },
-                        BRACKET_END: "]"
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        ARRAY: {
+                            BRACKET_START: "[",
+                            VALUE_WITH_COMMA_GROUP: {
+                                INVALID_TOKEN: {
+                                    BRACE_END: "}"
+                                }
+                            },
+                            BRACKET_END: "]"
+                        }
                     }
                 }
-            }
+            },
+            errors: [
+                SyntaxError(ExpectedValue, 0:7..0:8),
+            ]
         })
     }
 }

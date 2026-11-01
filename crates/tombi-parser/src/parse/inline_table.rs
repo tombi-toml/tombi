@@ -962,91 +962,97 @@ mod test {
 
     test_parser! {
         #[test]
-        fn inline_table_missing_kv("key = {a=2,,b=3}") -> Err([
-            SyntaxError(ExpectedKey, 0:11..0:12),
-            SyntaxError(ExpectedEqual, 0:11..0:12),
-            SyntaxError(ExpectedValue, 0:11..0:15),
-        ] {
-            KEY_VALUE_GROUP: {
-                KEY_VALUE: {
-                    KEYS: {
-                        BARE_KEY: {
-                            BARE_KEY: "key"
-                        }
-                    },
-                    WHITESPACE: " ",
-                    EQUAL: "=",
-                    WHITESPACE: " ",
-                    INLINE_TABLE: {
-                        BRACE_START: "{",
-                        KEY_VALUE_WITH_COMMA_GROUP: {
-                            KEY_VALUE: {
-                                KEYS: {
-                                    BARE_KEY: {
-                                        BARE_KEY: "a"
+        fn inline_table_missing_kv("key = {a=2,,b=3}") -> Err({
+            ast: {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "a"
+                                        }
+                                    },
+                                    EQUAL: "=",
+                                    INTEGER_DEC: {
+                                        INTEGER_DEC: "2"
                                     }
                                 },
-                                EQUAL: "=",
-                                INTEGER_DEC: {
-                                    INTEGER_DEC: "2"
+                                COMMA: {
+                                    COMMA: ","
                                 }
                             },
-                            COMMA: {
-                                COMMA: ","
-                            }
-                        },
-                        KEY_VALUE_WITH_COMMA_GROUP: {
-                            KEY_VALUE: {
-                                INVALID_TOKEN: {
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
                                     INVALID_TOKEN: {
+                                        INVALID_TOKEN: {
+                                        }
+                                    },
+                                    INVALID_TOKEN: {
+                                        COMMA: ",",
+                                        BARE_KEY: "b",
+                                        EQUAL: "=",
+                                        INTEGER_DEC: "3"
                                     }
-                                },
-                                INVALID_TOKEN: {
-                                    COMMA: ",",
-                                    BARE_KEY: "b",
-                                    EQUAL: "=",
-                                    INTEGER_DEC: "3"
                                 }
-                            }
-                        },
-                        BRACE_END: "}"
+                            },
+                            BRACE_END: "}"
+                        }
                     }
                 }
-            }
+            },
+            errors: [
+                SyntaxError(ExpectedKey, 0:11..0:12),
+                SyntaxError(ExpectedEqual, 0:11..0:12),
+                SyntaxError(ExpectedValue, 0:11..0:15),
+            ]
         })
     }
 
     test_parser! {
         #[test]
-        fn inline_table_missing_value("key = {a=}") -> Err([
-            SyntaxError(ExpectedValue, 0:9..0:10),
-        ] {
-            KEY_VALUE_GROUP: {
-                KEY_VALUE: {
-                    KEYS: {
-                        BARE_KEY: {
-                            BARE_KEY: "key"
-                        }
-                    },
-                    WHITESPACE: " ",
-                    EQUAL: "=",
-                    WHITESPACE: " ",
-                    INLINE_TABLE: {
-                        BRACE_START: "{",
-                        KEY_VALUE_WITH_COMMA_GROUP: {
-                            KEY_VALUE: {
-                                KEYS: {
-                                    BARE_KEY: {
-                                        BARE_KEY: "a"
-                                    }
-                                },
-                                EQUAL: "="
+        fn inline_table_missing_value("key = {a=}") -> Err({
+            ast: {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
                             }
                         },
-                        BRACE_END: "}"
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "a"
+                                        }
+                                    },
+                                    EQUAL: "="
+                                }
+                            },
+                            BRACE_END: "}"
+                        }
                     }
                 }
-            }
+            },
+            errors: [
+                SyntaxError(ExpectedValue, 0:9..0:10),
+            ]
         })
     }
 
