@@ -966,14 +966,88 @@ mod test {
             SyntaxError(ExpectedKey, 0:11..0:12),
             SyntaxError(ExpectedEqual, 0:11..0:12),
             SyntaxError(ExpectedValue, 0:11..0:15),
-        ])
+        ] {
+            KEY_VALUE_GROUP: {
+                KEY_VALUE: {
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "key"
+                        }
+                    },
+                    WHITESPACE: " ",
+                    EQUAL: "=",
+                    WHITESPACE: " ",
+                    INLINE_TABLE: {
+                        BRACE_START: "{",
+                        KEY_VALUE_WITH_COMMA_GROUP: {
+                            KEY_VALUE: {
+                                KEYS: {
+                                    BARE_KEY: {
+                                        BARE_KEY: "a"
+                                    }
+                                },
+                                EQUAL: "=",
+                                INTEGER_DEC: {
+                                    INTEGER_DEC: "2"
+                                }
+                            },
+                            COMMA: {
+                                COMMA: ","
+                            }
+                        },
+                        KEY_VALUE_WITH_COMMA_GROUP: {
+                            KEY_VALUE: {
+                                INVALID_TOKEN: {
+                                    INVALID_TOKEN: {
+                                    }
+                                },
+                                INVALID_TOKEN: {
+                                    COMMA: ",",
+                                    BARE_KEY: "b",
+                                    EQUAL: "=",
+                                    INTEGER_DEC: "3"
+                                }
+                            }
+                        },
+                        BRACE_END: "}"
+                    }
+                }
+            }
+        })
     }
 
     test_parser! {
         #[test]
         fn inline_table_missing_value("key = {a=}") -> Err([
             SyntaxError(ExpectedValue, 0:9..0:10),
-        ])
+        ] {
+            KEY_VALUE_GROUP: {
+                KEY_VALUE: {
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "key"
+                        }
+                    },
+                    WHITESPACE: " ",
+                    EQUAL: "=",
+                    WHITESPACE: " ",
+                    INLINE_TABLE: {
+                        BRACE_START: "{",
+                        KEY_VALUE_WITH_COMMA_GROUP: {
+                            KEY_VALUE: {
+                                KEYS: {
+                                    BARE_KEY: {
+                                        BARE_KEY: "a"
+                                    }
+                                },
+                                EQUAL: "="
+                            }
+                        },
+                        BRACE_END: "}"
+                    }
+                }
+            }
+        })
     }
 
     test_parser! {
