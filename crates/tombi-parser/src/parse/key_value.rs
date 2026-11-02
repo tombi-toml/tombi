@@ -25,10 +25,8 @@ impl Parse for tombi_ast_syntax::KeyValue<'_> {
         } else if p.at(COMMENT) {
             p.invalid_token();
             p.error(crate::Error::new(ExpectedValue, p.previous_span()));
-        } else if !p.at(T!['}']) {
-            tombi_ast_syntax::Value::parse(p);
         } else {
-            p.error(crate::Error::new(ExpectedValue, p.current_span()));
+            tombi_ast_syntax::Value::parse(p);
         }
 
         trailing_comment(p);
