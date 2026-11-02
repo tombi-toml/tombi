@@ -6,7 +6,7 @@ use crate::support::{leading_comments, peek_leading_comments, trailing_comment};
 use crate::{
     ErrorKind::*,
     parser::{MAX_RECURSION_DEPTH, Parser},
-    token_set::{GROUP_END, TS_COMMEMT_OR_LINE_END},
+    token_set::TS_COMMEMT_OR_LINE_END,
 };
 
 impl Parse for tombi_ast_syntax::Value<'_> {
@@ -132,7 +132,8 @@ fn parse_invalid_value(p: &mut Parser<'_>, n: usize) {
 
     let start_span = p.current_span();
     let mut end_span = start_span;
-    while !p.at_ts(TS_COMMEMT_OR_LINE_END) && !p.at_ts(GROUP_END) {
+    // Stop at the closer of the enclosing array/inline table so it can close itself.
+    while !p.at_ts(TS_COMMEMT_OR_LINE_END) && !p.at_closer() {
         end_span = p.current_span();
         p.bump_any();
     }
@@ -187,6 +188,24 @@ mod test {
             let has_errors = !parsed.errors.is_empty();
             drop(parsed);
             has_errors
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn deeply_nested_incomplete_values_terminate(
+            format!("key = {}}}{}\nb = 1", "{a=[".repeat(100), "]}".repeat(50))
+        ) -> Assert(|parsed| {
+            !parsed.errors.is_empty()
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn deeply_nested_incomplete_values_beyond_limit_terminate(
+            format!("key = {}}}{}\nb = 1", "[{a=".repeat(300), "}]".repeat(100))
+        ) -> Assert(|parsed| {
+            !parsed.errors.is_empty()
         })
     }
 }

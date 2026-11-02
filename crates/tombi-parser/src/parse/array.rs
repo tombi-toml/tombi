@@ -20,6 +20,8 @@ impl Parse for tombi_ast_syntax::Array<'_> {
 
         trailing_comment(p);
 
+        p.push_closer(T![']']);
+
         loop {
             while p.eat(LINE_BREAK) {}
 
@@ -30,16 +32,10 @@ impl Parse for tombi_ast_syntax::Array<'_> {
                 break;
             }
 
-            let before = p.pos();
             tombi_ast_syntax::ValueWithCommaGroup::parse(p);
-            if p.pos() == before {
-                // A stray `}` that no value can consume. The value parser has already
-                // reported it, so consume it here to keep the loop progressing.
-                let m = p.start();
-                p.bump_any();
-                m.complete(p, INVALID_TOKEN);
-            }
         }
+
+        p.pop_closer();
 
         if !p.eat(T![']']) {
             p.error(crate::Error::new(ExpectedBracketEnd, p.current_span()));
@@ -324,10 +320,8 @@ mod test {
                             WHITESPACE: " ",
                             VALUE_WITH_COMMA_GROUP: {
                                 INVALID_TOKEN: {
+                                    BRACE_END: "}"
                                 }
-                            },
-                            INVALID_TOKEN: {
-                                BRACE_END: "}"
                             },
                             BRACKET_END: "]"
                         }
@@ -337,6 +331,13 @@ mod test {
             errors: [
                 SyntaxError(ExpectedValue, 0:10..0:11),
             ]
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn array_stops_invalid_value_at_bracket_end("a = [=]\nb = 1") -> Assert(|parsed| {
+            parsed.errors.len() == 1 && parsed.errors[0].kind() == ExpectedValue
         })
     }
 }
