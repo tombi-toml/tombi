@@ -30,7 +30,15 @@ impl Parse for tombi_ast_syntax::InlineTable<'_> {
                 break;
             }
 
+            let before = p.pos();
             tombi_ast_syntax::KeyValueWithCommaGroup::parse(p);
+            if p.pos() == before {
+                // A stray token (e.g. `]`) that no key/value can consume. It has already
+                // been reported, so consume it here to keep the loop progressing.
+                let m = p.start();
+                p.bump_any();
+                m.complete(p, INVALID_TOKEN);
+            }
         }
 
         if !p.eat(T!['}']) {
@@ -958,5 +966,122 @@ mod test {
                 }
             }
         )
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_missing_kv("key = {a=2,,b=3}") -> Err({
+            ast: {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "a"
+                                        }
+                                    },
+                                    EQUAL: "=",
+                                    INTEGER_DEC: {
+                                        INTEGER_DEC: "2"
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                }
+                            },
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    INVALID_TOKEN: {
+                                        INVALID_TOKEN: {
+                                        }
+                                    },
+                                    INVALID_TOKEN: {
+                                        COMMA: ",",
+                                        BARE_KEY: "b",
+                                        EQUAL: "=",
+                                        INTEGER_DEC: "3"
+                                    }
+                                }
+                            },
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            },
+            errors: [
+                SyntaxError(ExpectedKey, 0:11..0:12),
+                SyntaxError(ExpectedEqual, 0:11..0:12),
+                SyntaxError(ExpectedValue, 0:11..0:15),
+            ]
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_missing_value("key = {a=}") -> Err({
+            ast: {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "a"
+                                        }
+                                    },
+                                    EQUAL: "=",
+                                    INVALID_TOKEN: {
+                                    },
+                                }
+                            },
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            },
+            errors: [
+                SyntaxError(ExpectedValue, 0:9..0:10),
+            ]
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_maybe_hang_2386_1("key = {]}") -> Err([
+            SyntaxError(ExpectedKey, 0:7..0:8),
+            SyntaxError(ExpectedEqual, 0:7..0:8),
+            SyntaxError(ExpectedValue, 0:7..0:8),
+        ])
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_maybe_hang_2386_2("key = {k=]}") -> Err([
+            SyntaxError(ExpectedValue, 0:9..0:10),
+            SyntaxError(ExpectedKey, 0:9..0:10),
+            SyntaxError(ExpectedEqual, 0:9..0:10),
+            SyntaxError(ExpectedValue, 0:9..0:10),
+        ])
     }
 }

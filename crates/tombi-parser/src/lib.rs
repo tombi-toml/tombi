@@ -286,6 +286,49 @@ macro_rules! test_parser {
         }
     };
 
+    {#[test] fn $name:ident($source:expr) -> Err({
+        ast: { $($expected:tt)* },
+        errors: [
+            $(
+                SyntaxError(
+                    $error_kind:ident,
+                    $line1:literal:$column1:literal..$line2:literal:$column2:literal
+                )
+            ),*$(,)*
+        ] $(,)?
+    })} => {
+        #[test]
+        fn $name() {
+            tombi_test_lib::init_log();
+
+            let source = textwrap::dedent($source);
+            let source = source.trim();
+            let p = $crate::parse(source);
+
+            log::debug!("root: {:#?}", p.root());
+
+            let line_index = p.line_index();
+            pretty_assertions::assert_eq!(
+                p.errors
+                    .iter()
+                    .map(|error| (
+                        error.kind(),
+                        line_index.range(error.span(), tombi_text::EncodingKind::GraphemeCluster)
+                    ))
+                    .collect::<Vec<_>>(),
+                vec![$(($error_kind, tombi_text::Range::from((($line1, $column1), ($line2, $column2))))),*]
+            );
+
+            use tombi_ast_syntax::AstNode as _;
+            let expected = $crate::syntax_tree!($($expected)*);
+            let actual = $crate::syntax_node_to_patterns(p.root().syntax());
+            pretty_assertions::assert_eq!(
+                $crate::format_tree(&actual, 0),
+                $crate::format_tree(&expected, 0),
+            );
+        }
+    };
+
     {#[test] fn $name:ident($source:expr) -> Assert(|$parsed:ident| $assertion:block)} => {
         #[test]
         fn $name() {

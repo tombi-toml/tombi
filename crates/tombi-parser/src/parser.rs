@@ -63,6 +63,12 @@ impl<'t> Parser<'t> {
         self.nth(0)
     }
 
+    /// Position of the current token, used by loops to detect lack of progress.
+    #[inline]
+    pub(crate) fn pos(&self) -> usize {
+        self.pos
+    }
+
     #[inline]
     pub(crate) fn current_span(&self) -> tombi_text::Span {
         self.input_tokens[self.pos].span()
