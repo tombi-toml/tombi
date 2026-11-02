@@ -18,6 +18,7 @@ pub(crate) struct Parser<'t> {
     input_tokens: &'t [tombi_lexer::Token],
     pos: usize,
     depth: usize,
+    closers: Vec<SyntaxKind>,
     synthetic_tokens: Vec<tombi_lexer::Token>,
     pub(crate) events: Vec<Event>,
     errors: Vec<crate::Error>,
@@ -30,6 +31,7 @@ impl<'t> Parser<'t> {
             input_tokens,
             pos: 0, // Start from the beginning to preserve leading trivia
             depth: 0,
+            closers: Vec::new(),
             synthetic_tokens: Vec::new(),
             events: Vec::with_capacity(input_tokens.len().saturating_mul(2)),
             errors: Vec::new(),
@@ -54,19 +56,35 @@ impl<'t> Parser<'t> {
         self.depth -= 1;
     }
 
+    /// Register the closing token of the array/inline table being parsed.
+    ///
+    /// Recovery code that skips invalid tokens stops at the innermost registered
+    /// closer, so the enclosing container can close on it. Pair with
+    /// [`Self::pop_closer`].
+    #[inline]
+    pub(crate) fn push_closer(&mut self, kind: SyntaxKind) {
+        self.closers.push(kind);
+    }
+
+    #[inline]
+    pub(crate) fn pop_closer(&mut self) {
+        self.closers.pop();
+    }
+
+    /// Whether the current token closes the innermost array/inline table.
+    #[inline]
+    pub(crate) fn at_closer(&self) -> bool {
+        self.closers.last().is_some_and(|kind| self.at(*kind))
+    }
+
     pub(crate) fn finish(self) -> (Vec<Event>, Vec<tombi_lexer::Token>, Vec<crate::Error>) {
+        debug_assert!(self.closers.is_empty(), "unbalanced closers");
         (self.events, self.synthetic_tokens, self.errors)
     }
 
     #[inline]
     pub(crate) fn current(&self) -> SyntaxKind {
         self.nth(0)
-    }
-
-    /// Position of the current token, used by loops to detect lack of progress.
-    #[inline]
-    pub(crate) fn pos(&self) -> usize {
-        self.pos
     }
 
     #[inline]

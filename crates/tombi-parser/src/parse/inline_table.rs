@@ -20,6 +20,8 @@ impl Parse for tombi_ast_syntax::InlineTable<'_> {
 
         trailing_comment(p);
 
+        p.push_closer(T!['}']);
+
         loop {
             while p.eat(LINE_BREAK) {}
 
@@ -30,16 +32,10 @@ impl Parse for tombi_ast_syntax::InlineTable<'_> {
                 break;
             }
 
-            let before = p.pos();
             tombi_ast_syntax::KeyValueWithCommaGroup::parse(p);
-            if p.pos() == before {
-                // A stray token (e.g. `]`) that no key/value can consume. It has already
-                // been reported, so consume it here to keep the loop progressing.
-                let m = p.start();
-                p.bump_any();
-                m.complete(p, INVALID_TOKEN);
-            }
         }
+
+        p.pop_closer();
 
         if !p.eat(T!['}']) {
             p.error(crate::Error::new(ExpectedBraceEnd, p.current_span()));
@@ -1078,9 +1074,6 @@ mod test {
     test_parser! {
         #[test]
         fn inline_table_maybe_hang_2386_2("key = {k=]}") -> Err([
-            SyntaxError(ExpectedValue, 0:9..0:10),
-            SyntaxError(ExpectedKey, 0:9..0:10),
-            SyntaxError(ExpectedEqual, 0:9..0:10),
             SyntaxError(ExpectedValue, 0:9..0:10),
         ])
     }
