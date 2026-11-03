@@ -82,6 +82,10 @@ pub fn validate(
     toml_version: tombi_config::TomlVersion,
     rules: CargoLintRules,
 ) -> Vec<tombi_diagnostic::Diagnostic> {
+    if rules == CargoLintRules::off() {
+        return Vec::new();
+    }
+
     let Some(manifest_path) = manifest_path else {
         return Vec::new();
     };
@@ -89,7 +93,11 @@ pub fn validate(
         return Vec::new();
     };
 
-    let references = collect_path_references(document_tree, rules);
+    // Disabled rules must not trigger filesystem checks or workspace manifest discovery.
+    let references = collect_path_references(document_tree, rules)
+        .into_iter()
+        .filter(|reference| reference.severity != SeverityLevel::Off)
+        .collect::<Vec<_>>();
 
     let workspace_references = references
         .iter()
