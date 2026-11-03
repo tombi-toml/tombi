@@ -147,6 +147,29 @@ impl<'a> Linter<'a> {
                 Vec::new()
             };
 
+            let is_tombi_config = self.source_uri_or_path.is_some_and(|source| match source {
+                Either::Left(uri) => uri
+                    .path_segments()
+                    .and_then(|mut segments| segments.next_back())
+                    .is_some_and(|name| matches!(name, "tombi.toml" | ".tombi.toml")),
+                Either::Right(path) => path
+                    .file_name()
+                    .is_some_and(|name| name == "tombi.toml" || name == ".tombi.toml"),
+            });
+            let tombi_diagnostics = if is_tombi_config {
+                let source_path = self.source_uri_or_path.and_then(|source| match source {
+                    Either::Left(uri) => uri.to_file_path().ok(),
+                    Either::Right(path) => Some(path.to_path_buf()),
+                });
+                tombi_extension_tombi::validate_tombi(
+                    &document_tree,
+                    source_path.as_deref(),
+                    &self.extensions_options.tombi,
+                )
+            } else {
+                Vec::new()
+            };
+
             let schema_context = tombi_schema_store::SchemaContext {
                 toml_version: self.toml_version,
                 root_schema: source_schema
@@ -186,6 +209,7 @@ impl<'a> Linter<'a> {
             }
 
             self.diagnostics.extend(pyproject_diagnostics);
+            self.diagnostics.extend(tombi_diagnostics);
         }
 
         if self.diagnostics.is_empty() {

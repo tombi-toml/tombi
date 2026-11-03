@@ -4,6 +4,7 @@ use tombi_severity_level::SeverityLevelDefaultWarn;
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct ExtensionsLintOptions {
     pub pyproject: crate::PyprojectLintFeatureTree,
+    pub tombi: crate::TombiLintFeatureTree,
 }
 
 /// # Linter options
