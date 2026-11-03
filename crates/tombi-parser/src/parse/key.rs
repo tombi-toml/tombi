@@ -25,7 +25,10 @@ pub fn eat_keys(p: &mut Parser<'_>) -> bool {
             }
 
             if !p.at_ts(TS_KEY_FIRST) {
-                p.error(crate::Error::new(ForbiddenKeysLastPeriod, p.current_span()));
+                p.error(crate::Error::new(
+                    ForbiddenKeyTrailingPeriod,
+                    p.current_span(),
+                ));
                 break;
             }
         }

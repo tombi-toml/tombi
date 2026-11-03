@@ -5,67 +5,67 @@ pub enum Error {
     DuplicateKey { key: String, span: tombi_text::Span },
 
     #[error("conflicting table")]
-    ConflictTable {
+    TableConflict {
         range1: tombi_text::Span,
         range2: tombi_text::Span,
     },
 
     #[error("conflicting array")]
-    ConflictArray {
+    ArrayConflict {
         range1: tombi_text::Span,
         range2: tombi_text::Span,
     },
 
     #[error("invalid integer: {error}")]
-    ParseIntError {
+    InvalidInteger {
         error: std::num::ParseIntError,
         span: tombi_text::Span,
     },
 
     #[error("invalid float: {error}")]
-    ParseFloatError {
+    InvalidFloat {
         error: crate::support::float::ParseError,
         span: tombi_text::Span,
     },
 
     #[error("invalid string: {error}")]
-    ParseStringError {
+    InvalidString {
         error: tombi_toml_text::ParseError,
         span: tombi_text::Span,
     },
 
     #[error("invalid offset date time: {error}")]
-    ParseOffsetDateTimeError {
+    InvalidOffsetDateTime {
         error: crate::support::chrono::ParseError,
         span: tombi_text::Span,
     },
 
     #[error("invalid local date time: {error}")]
-    ParseLocalDateTimeError {
+    InvalidLocalDateTime {
         error: crate::support::chrono::ParseError,
         span: tombi_text::Span,
     },
 
     #[error("invalid local date: {error}")]
-    ParseLocalDateError {
+    InvalidLocalDate {
         error: crate::support::chrono::ParseError,
         span: tombi_text::Span,
     },
 
     #[error("invalid local time: {error}")]
-    ParseLocalTimeError {
+    InvalidLocalTime {
         error: crate::support::chrono::ParseError,
         span: tombi_text::Span,
     },
 
     #[error("invalid date-time: {error}")]
-    ParseDateTimeError {
+    InvalidDateTime {
         error: tombi_date_time::parse::Error,
         span: tombi_text::Span,
     },
 
     #[error("invalid comment: {error}")]
-    ParseCommentError {
+    InvalidCommentSyntax {
         error: crate::support::comment::ParseError,
         span: tombi_text::Span,
     },
@@ -82,37 +82,37 @@ impl Error {
 
     pub fn code(&self) -> &'static str {
         match self {
-            Self::DuplicateKey { .. } => "duplicate-key",
-            Self::ConflictTable { .. } => "conflict-table",
-            Self::ConflictArray { .. } => "conflict-array",
-            Self::ParseIntError { .. } => "parse-int-error",
-            Self::ParseFloatError { .. } => "parse-float-error",
-            Self::ParseStringError { .. } => "parse-string-error",
-            Self::ParseOffsetDateTimeError { .. } => "parse-offset-date-time-error",
-            Self::ParseLocalDateTimeError { .. } => "parse-local-date-time-error",
-            Self::ParseLocalDateError { .. } => "parse-local-date-error",
-            Self::ParseLocalTimeError { .. } => "parse-local-time-error",
-            Self::ParseDateTimeError { .. } => "parse-date-time-error",
-            Self::ParseCommentError { .. } => "parse-comment-error",
-            Self::IncompleteNode { .. } => "incomplete-node",
+            Self::DuplicateKey { .. } => "toml/duplicate-key",
+            Self::TableConflict { .. } => "toml/table-conflict",
+            Self::ArrayConflict { .. } => "toml/array-conflict",
+            Self::InvalidInteger { .. } => "toml/invalid-integer",
+            Self::InvalidFloat { .. } => "toml/invalid-float",
+            Self::InvalidString { .. } => "toml/invalid-string",
+            Self::InvalidOffsetDateTime { .. } => "toml/invalid-offset-date-time",
+            Self::InvalidLocalDateTime { .. } => "toml/invalid-local-date-time",
+            Self::InvalidLocalDate { .. } => "toml/invalid-local-date",
+            Self::InvalidLocalTime { .. } => "toml/invalid-local-time",
+            Self::InvalidDateTime { .. } => "toml/invalid-date-time",
+            Self::InvalidCommentSyntax { .. } => "comment/invalid-syntax",
+            Self::IncompleteNode { .. } => "toml/incomplete-node",
         }
     }
 
     pub fn span(&self) -> tombi_text::Span {
         match self {
             Self::DuplicateKey { span, .. } => *span,
-            Self::ConflictTable { range2, .. } => *range2,
-            Self::ConflictArray { range2, .. } => *range2,
-            Self::ParseIntError { span, .. } => *span,
-            Self::ParseFloatError { span, .. } => *span,
-            Self::ParseStringError { span, .. } => *span,
-            Self::ParseOffsetDateTimeError { span, .. } => *span,
-            Self::ParseLocalDateTimeError { span, .. } => *span,
-            Self::ParseLocalDateError { span, .. } => *span,
-            Self::ParseLocalTimeError { span, .. } => *span,
-            Self::ParseCommentError { span, .. } => *span,
+            Self::TableConflict { range2, .. } => *range2,
+            Self::ArrayConflict { range2, .. } => *range2,
+            Self::InvalidInteger { span, .. } => *span,
+            Self::InvalidFloat { span, .. } => *span,
+            Self::InvalidString { span, .. } => *span,
+            Self::InvalidOffsetDateTime { span, .. } => *span,
+            Self::InvalidLocalDateTime { span, .. } => *span,
+            Self::InvalidLocalDate { span, .. } => *span,
+            Self::InvalidLocalTime { span, .. } => *span,
+            Self::InvalidCommentSyntax { span, .. } => *span,
             Self::IncompleteNode { span } => *span,
-            Self::ParseDateTimeError { span, .. } => *span,
+            Self::InvalidDateTime { span, .. } => *span,
         }
     }
 }
@@ -121,7 +121,7 @@ impl Error {
 impl tombi_diagnostic::SetDiagnostics for Error {
     fn set_diagnostics(self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
         match self {
-            Self::ConflictArray { range1, range2 } => {
+            Self::ArrayConflict { range1, range2 } => {
                 let diagnostic1 =
                     tombi_diagnostic::Diagnostic::new_error(self.to_message(), self.code(), range1);
                 if !diagnostics.contains(&diagnostic1) {

@@ -248,7 +248,7 @@ mod test {
         #[test]
         fn array_only_key_dot("key = [key.]") -> Err([
             SyntaxError(ExpectedValue, 0:7..0:10),
-            SyntaxError(ForbiddenKeysLastPeriod, 0:11..0:12),
+            SyntaxError(ForbiddenKeyTrailingPeriod, 0:11..0:12),
         ])
     }
 

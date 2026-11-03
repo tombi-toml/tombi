@@ -53,7 +53,7 @@ pub(crate) fn try_new_offset_date_time(
     };
 
     let Ok(datetime_str) = make_datetime_str(token.text(), toml_version) else {
-        return Err(crate::Error::ParseOffsetDateTimeError {
+        return Err(crate::Error::InvalidOffsetDateTime {
             error: ParseError::OptionalSeconds,
             span: token.span(),
         });
@@ -61,7 +61,7 @@ pub(crate) fn try_new_offset_date_time(
 
     match tombi_date_time::OffsetDateTime::from_str(&datetime_str) {
         Ok(value) => Ok(value),
-        Err(error) => Err(crate::Error::ParseDateTimeError {
+        Err(error) => Err(crate::Error::InvalidDateTime {
             error,
             span: token.span(),
         }),
@@ -77,7 +77,7 @@ pub(crate) fn try_new_local_date_time(
     };
 
     let Ok(datetime_str) = make_datetime_str(token.text(), toml_version) else {
-        return Err(crate::Error::ParseLocalDateTimeError {
+        return Err(crate::Error::InvalidLocalDateTime {
             error: ParseError::OptionalSeconds,
             span: token.span(),
         });
@@ -85,7 +85,7 @@ pub(crate) fn try_new_local_date_time(
 
     match tombi_date_time::LocalDateTime::from_str(&datetime_str) {
         Ok(value) => Ok(value),
-        Err(error) => Err(crate::Error::ParseDateTimeError {
+        Err(error) => Err(crate::Error::InvalidDateTime {
             error,
             span: token.span(),
         }),
@@ -102,7 +102,7 @@ pub(crate) fn try_new_local_date(
 
     match tombi_date_time::LocalDate::from_str(token.text()) {
         Ok(value) => Ok(value),
-        Err(error) => Err(crate::Error::ParseDateTimeError {
+        Err(error) => Err(crate::Error::InvalidDateTime {
             error,
             span: token.span(),
         }),
@@ -126,14 +126,14 @@ pub(crate) fn try_new_local_time(
         tombi_date_time::LocalTime::from_str(text)
     } else {
         if toml_version == TomlVersion::V1_0_0 {
-            return Err(crate::Error::ParseLocalTimeError {
+            return Err(crate::Error::InvalidLocalTime {
                 error: ParseError::OptionalSeconds,
                 span: token.span(),
             });
         }
         tombi_date_time::LocalTime::from_str(text)
     }
-    .map_err(|error| crate::Error::ParseDateTimeError {
+    .map_err(|error| crate::Error::InvalidDateTime {
         error,
         span: token.span(),
     })

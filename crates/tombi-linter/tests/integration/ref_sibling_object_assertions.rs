@@ -36,7 +36,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "table-strict-additional-keys", level: Level::WARNING },
+        { code: "jsonschema/table-strict-additional-keys", level: Level::WARNING },
     ])
 }
 
@@ -50,8 +50,8 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "type-mismatch", level: Level::ERROR },
-        { code: "table-strict-additional-keys", level: Level::WARNING },
+        { code: "jsonschema/type-mismatch", level: Level::ERROR },
+        { code: "jsonschema/table-strict-additional-keys", level: Level::WARNING },
     ])
 }
 
@@ -67,8 +67,8 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "type-mismatch", level: Level::ERROR },
-        { code: "table-strict-additional-keys", level: Level::WARNING },
+        { code: "jsonschema/type-mismatch", level: Level::ERROR },
+        { code: "jsonschema/table-strict-additional-keys", level: Level::WARNING },
     ])
 }
 
@@ -81,7 +81,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "type-mismatch", level: Level::ERROR },
+        { code: "jsonschema/type-mismatch", level: Level::ERROR },
     ])
 }
 
@@ -94,7 +94,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "table-key-required", level: Level::ERROR },
+        { code: "jsonschema/table-key-required", level: Level::ERROR },
     ])
 }
 
@@ -118,7 +118,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "key-not-allowed", level: Level::ERROR },
+        { code: "jsonschema/key-not-allowed", level: Level::ERROR },
     ])
 }
 
@@ -142,7 +142,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unevaluated-property-not-allowed", level: Level::ERROR },
+        { code: "jsonschema/unevaluated-property-not-allowed", level: Level::ERROR },
     ])
 }
 
@@ -155,7 +155,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "key-not-allowed", level: Level::ERROR },
+        { code: "jsonschema/key-not-allowed", level: Level::ERROR },
     ])
 }
 
@@ -168,7 +168,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "key-not-allowed", level: Level::ERROR },
+        { code: "jsonschema/key-not-allowed", level: Level::ERROR },
     ])
 }
 
@@ -181,6 +181,6 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "key-not-allowed", level: Level::ERROR },
+        { code: "jsonschema/key-not-allowed", level: Level::ERROR },
     ])
 }

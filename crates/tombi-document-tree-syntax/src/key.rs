@@ -124,7 +124,7 @@ impl<'t> IntoDocumentTreeWithContext<'t, Option<Key<'t>>> for tombi_ast_syntax::
             Ok(value) => (value, Vec::new()),
             Err(error) => (
                 crate::DocumentText::new_raw(syntax, context.decoded_text),
-                vec![crate::Error::ParseStringError {
+                vec![crate::Error::InvalidString {
                     error,
                     span: self.span(),
                 }],

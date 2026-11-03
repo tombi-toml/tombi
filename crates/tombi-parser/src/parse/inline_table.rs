@@ -328,7 +328,7 @@ mod test {
         #[test]
         fn inline_table_only_key_dot("key = { key = 1. }") -> Err([
             SyntaxError(ExpectedValue, 0:14..0:15),
-            SyntaxError(ForbiddenKeysLastPeriod, 0:17..0:18),
+            SyntaxError(ForbiddenKeyTrailingPeriod, 0:17..0:18),
         ])
     }
 

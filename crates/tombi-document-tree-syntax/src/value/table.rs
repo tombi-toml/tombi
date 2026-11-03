@@ -246,7 +246,7 @@ impl<'t> Table<'t> {
         }
 
         if is_conflict {
-            errors.push(crate::Error::ConflictTable {
+            errors.push(crate::Error::TableConflict {
                 range1: self.symbol_span,
                 range2: other.symbol_span,
             });
@@ -302,7 +302,7 @@ impl<'t> Table<'t> {
         if self.kind == TableKind::Table
             && matches!(other.kind, TableKind::KeyValue | TableKind::ParentKey)
         {
-            return Err(vec![crate::Error::ConflictTable {
+            return Err(vec![crate::Error::TableConflict {
                 range1: self.symbol_span,
                 range2: other.symbol_span,
             }]);

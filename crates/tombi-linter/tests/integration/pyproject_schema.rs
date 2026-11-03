@@ -23,7 +23,7 @@ version = "1.0"
 readme = "/README.md"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -47,7 +47,7 @@ version = "1.0"
 readme = { file = "/README.md", content-type = "text/markdown" }
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -59,7 +59,7 @@ version = "1.0"
 readme = { file = "README.md" }
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "table-key-required", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/table-key-required", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -83,7 +83,7 @@ version = "1.0"
 readme = { text = "Example" }
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "table-key-required", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/table-key-required", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -132,7 +132,7 @@ version = "1.0"
 authors = [{name = "Person, Example"}]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -144,7 +144,7 @@ version = "1.0"
 maintainers = [{name = "Person, Example"}]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -170,7 +170,7 @@ version = "1.0"
 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" = "https://example.com"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-max-length", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-max-length", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -196,7 +196,7 @@ version = "1.0"
 "ááááááááááááááááa" = "https://example.com"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-max-length", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-max-length", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -222,7 +222,7 @@ version = "1.0"
 "tool=bad" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -235,7 +235,7 @@ version = "1.0"
 "[tool" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -248,7 +248,7 @@ version = "1.0"
 " tool" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -261,7 +261,7 @@ version = "1.0"
 "tool " = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -287,7 +287,7 @@ version = "1.0"
 "tool=bad" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -300,7 +300,7 @@ version = "1.0"
 "[tool" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -313,7 +313,7 @@ version = "1.0"
 " tool" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -326,7 +326,7 @@ version = "1.0"
 "tool " = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -352,7 +352,7 @@ version = "1.0"
 "tool=bad" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -365,7 +365,7 @@ version = "1.0"
 "[tool" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -378,7 +378,7 @@ version = "1.0"
 " tool" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -391,7 +391,7 @@ version = "1.0"
 "tool " = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -415,7 +415,7 @@ version = "1.0"
 import-namespaces = []
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "array-min-values", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/array-min-values", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -452,7 +452,7 @@ version = "1.0"
 "" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "key-empty", level: Level::WARNING }])
+    ) -> Diagnostics([{ code: "toml/key-empty", level: Level::WARNING }])
 }
 
 test_lint! {
@@ -465,7 +465,7 @@ version = "1.0"
 "" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "key-empty", level: Level::WARNING }])
+    ) -> Diagnostics([{ code: "toml/key-empty", level: Level::WARNING }])
 }
 
 test_lint! {
@@ -478,7 +478,7 @@ version = "1.0"
 "" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "key-empty", level: Level::WARNING }])
+    ) -> Diagnostics([{ code: "toml/key-empty", level: Level::WARNING }])
 }
 
 test_lint! {
@@ -694,7 +694,7 @@ description = "Example"
 dynamic = ["description"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -707,7 +707,7 @@ readme = "README.md"
 dynamic = ["readme"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -720,7 +720,7 @@ requires-python = ">=3.8"
 dynamic = ["requires-python"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -733,7 +733,7 @@ license = "MIT"
 dynamic = ["license"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -745,7 +745,7 @@ version = "1.0"
 dynamic = ["version"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }, { code: "one-of-multiple-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }, { code: "jsonschema/one-of-multiple-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -767,7 +767,7 @@ name = "aéz"
 version = "1.0"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }, { code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }, { code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -778,7 +778,7 @@ name = "١"
 version = "1.0"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }, { code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }, { code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -822,7 +822,7 @@ name = "example"
 version = "1.invalid"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -832,7 +832,7 @@ test_lint! {
 dev = [{}]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "table-key-required", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/table-key-required", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -843,7 +843,7 @@ dev = [{include-group="test", other=true}]
 test=[]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "key-not-allowed", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/key-not-allowed", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -934,7 +934,7 @@ version = "1.0"
 "bad!" = ["pytest"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "key-pattern", level: Level::ERROR }, { code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/key-pattern", level: Level::ERROR }, { code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -947,7 +947,7 @@ version = "1.0"
 dev = 42
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "type-mismatch", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/type-mismatch", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -984,7 +984,7 @@ version = "1.0"
 import-namespaces=[""]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1020,7 +1020,7 @@ version = "1.0"
 import-names=["1abc"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }, { code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }, { code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1032,7 +1032,7 @@ version = "1.0"
 import-names=["pkg..module"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }, { code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }, { code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1044,7 +1044,7 @@ version = "1.0"
 import-names=["pkg-name"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }, { code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }, { code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1104,7 +1104,7 @@ version = "1.0"
 license-files=["/LICENSE"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1116,7 +1116,7 @@ version = "1.0"
 license-files=["../LICENSE"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1128,7 +1128,7 @@ version = "1.0"
 license-files=["licenses/../LICENSE"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1140,7 +1140,7 @@ version = "1.0"
 license-files=["licenses\\LICENSE"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }, { code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }, { code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1152,7 +1152,7 @@ version = "1.0"
 license-files=["LICEN{CS}E"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1164,7 +1164,7 @@ version = "1.0"
 license-files=["LICENSE[CS"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1176,7 +1176,7 @@ version = "1.0"
 license-files=["LICENSE[]"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1188,7 +1188,7 @@ version = "1.0"
 license-files=["LICENSE[!a]"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1200,7 +1200,7 @@ version = "1.0"
 license-files=["LICENSE[a/b]"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1212,7 +1212,7 @@ version = "1.0"
 license={file="/LICENSE"}
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1224,7 +1224,7 @@ version = "1.0"
 license={file="../LICENSE"}
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "deprecated", level: Level::WARNING }])
+    ) -> Diagnostics([{ code: "jsonschema/deprecated", level: Level::WARNING }])
 }
 
 test_lint! {
@@ -1235,7 +1235,7 @@ requires=[]
 backend-path=["/backend"]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "not-schema-match", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/not-schema-match", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1324,7 +1324,7 @@ version = "1.0"
 example="example::main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1337,7 +1337,7 @@ version = "1.0"
 example=":main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1350,7 +1350,7 @@ version = "1.0"
 example="example:"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1363,7 +1363,7 @@ version = "1.0"
 example="1example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1376,7 +1376,7 @@ version = "1.0"
 example="pkg::main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1389,7 +1389,7 @@ version = "1.0"
 example="pkg::main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1422,7 +1422,7 @@ requires=[]
 build-backend="pkg::main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1433,7 +1433,7 @@ requires=[]
 build-backend="pkg:main [extra]"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1468,7 +1468,7 @@ version = "1.0"
 license-files = [""]
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-min-length", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-min-length", level: Level::ERROR }])
 }
 
 test_lint! {
@@ -1491,5 +1491,5 @@ name = "example"
 version = "\uFEFF1.0\uFEFF"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "string-pattern", level: Level::ERROR }])
+    ) -> Diagnostics([{ code: "jsonschema/string-pattern", level: Level::ERROR }])
 }

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::{CatalogUri, SchemaUri};
 
-pub const SCHEMA_RESOLUTION_DIAGNOSTIC_CODE: &str = "schema-resolution";
+pub const SCHEMA_RESOLUTION_DIAGNOSTIC_CODE: &str = "jsonschema/schema-resolution";
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {

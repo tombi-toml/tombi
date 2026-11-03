@@ -78,7 +78,7 @@ mod test {
             key2 = 2
             "#
         ) -> Err([
-            SyntaxError(ForbiddenKeysLastPeriod, 0:5..0:6),
+            SyntaxError(ForbiddenKeyTrailingPeriod, 0:5..0:6),
         ])
     }
 
