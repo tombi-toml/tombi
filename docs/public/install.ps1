@@ -23,7 +23,7 @@ $ErrorActionPreference = "Stop"
 $ChecksumWasSpecified = $PSBoundParameters.ContainsKey("Checksum")
 $InstallDirWasSpecified = $PSBoundParameters.ContainsKey("InstallDir")
 
-$LatestStableVersion = "1.9.8"
+$LatestStableVersion = "1.9.9"
 $ReleaseBaseUrl = "https://github.com/tombi-toml/tombi/releases/download"
 $ExecutableName = "tombi.exe"
 
