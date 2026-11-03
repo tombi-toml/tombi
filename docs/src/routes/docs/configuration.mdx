@@ -140,6 +140,14 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
     - [overrides[\*].lint.rules](#overrides-lint-rules)
 - [extensions](#extensions)
   - [extensions."tombi-toml/cargo"](#extensions-tombi-toml-cargo)
+    - [extensions."tombi-toml/cargo".lint](#extensions-tombi-toml-cargo-lint)
+      - [extensions."tombi-toml/cargo".lint.rules](#extensions-tombi-toml-cargo-lint-rules)
+      - [extensions."tombi-toml/cargo".lint.rules.missing-build-script](#extensions-tombi-toml-cargo-lint-rules-missing-build-script)
+      - [extensions."tombi-toml/cargo".lint.rules.missing-license-file](#extensions-tombi-toml-cargo-lint-rules-missing-license-file)
+      - [extensions."tombi-toml/cargo".lint.rules.missing-path-dependency](#extensions-tombi-toml-cargo-lint-rules-missing-path-dependency)
+      - [extensions."tombi-toml/cargo".lint.rules.missing-readme](#extensions-tombi-toml-cargo-lint-rules-missing-readme)
+      - [extensions."tombi-toml/cargo".lint.rules.missing-target-path](#extensions-tombi-toml-cargo-lint-rules-missing-target-path)
+      - [extensions."tombi-toml/cargo".lint.rules.missing-workspace](#extensions-tombi-toml-cargo-lint-rules-missing-workspace)
     - [extensions."tombi-toml/cargo".lsp](#extensions-tombi-toml-cargo-lsp)
       - [extensions."tombi-toml/cargo".lsp.code-action](#extensions-tombi-toml-cargo-lsp-code-action)
       - [extensions."tombi-toml/cargo".lsp.completion](#extensions-tombi-toml-cargo-lsp-completion)
@@ -1128,6 +1136,75 @@ Enable or disable the entire Cargo extension.
 
 - Type: `Boolean`
 - Default: `true`
+
+### extensions."tombi-toml/cargo".lint
+
+Configure diagnostics produced for paths declared in `Cargo.toml`.
+
+- Type: `Table`
+
+### extensions."tombi-toml/cargo".lint.enabled
+
+Enable or disable all Cargo extension lint rules.
+
+- Type: `Boolean`
+- Default: `true`
+
+### extensions."tombi-toml/cargo".lint.rules
+
+Set the severity of individual Cargo extension diagnostics. Each rule defaults to `"error"`. Available values are `"off"`, `"warn"`, and `"error"`.
+
+```toml
+[extensions."tombi-toml/cargo".lint.rules]
+missing-build-script = "error"
+missing-license-file = "error"
+missing-path-dependency = "error"
+missing-readme = "error"
+missing-target-path = "error"
+missing-workspace = "error"
+```
+
+### extensions."tombi-toml/cargo".lint.rules.missing-build-script
+
+Report an explicitly configured build script path that does not exist. `build = true` checks `build.rs`; `build = false` is ignored.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/cargo".lint.rules.missing-license-file
+
+Report an explicitly configured package or workspace license file path that does not exist.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/cargo".lint.rules.missing-path-dependency
+
+Report path dependencies whose directory does not contain a `Cargo.toml` file.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/cargo".lint.rules.missing-readme
+
+Report an explicitly configured package or workspace README path that does not exist. `readme = true` checks `README.md`.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/cargo".lint.rules.missing-target-path
+
+Report missing explicit `path` values in `[lib]`, `[[bin]]`, `[[example]]`, `[[test]]`, and `[[bench]]` targets. Inferred Cargo target paths are not checked.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/cargo".lint.rules.missing-workspace
+
+Report `workspace = true` inheritance when its matching `[workspace.package]` field, `[workspace.dependencies]` entry, or `[workspace.lints]` table cannot be found.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
 
 ### extensions."tombi-toml/cargo".lsp
 

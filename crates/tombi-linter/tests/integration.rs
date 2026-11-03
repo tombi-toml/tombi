@@ -6,6 +6,8 @@ mod adjacent_applicators_test_schema;
 mod anchor_dynamic_ref_test_schema;
 #[path = "integration/array_const_enum_test_schema.rs"]
 mod array_const_enum_test_schema;
+#[path = "integration/cargo_lint.rs"]
+mod cargo_lint;
 #[path = "integration/cargo_schema.rs"]
 mod cargo_schema;
 #[path = "integration/contains_test_schema.rs"]
@@ -58,6 +60,8 @@ mod schema_resolution_error;
 mod string_format_test_schema;
 #[path = "integration/table_const_enum_test_schema.rs"]
 mod table_const_enum_test_schema;
+#[path = "integration/tombi_lint.rs"]
+mod tombi_lint;
 #[path = "integration/tombi_schema.rs"]
 mod tombi_schema;
 #[path = "integration/tuple_items_test_schema.rs"]

@@ -640,7 +640,7 @@
         }
       },
       "additionalProperties": false,
-      "x-tombi-table-keys-order": "version-sort"
+      "x-tombi-table-keys-order": "ascending"
     },
     "SeverityLevelDefaultWarn": {
       "default": "warn",
@@ -1806,6 +1806,17 @@
     "CargoExtensionFeatureTree": {
       "type": "object",
       "properties": {
+        "lint": {
+          "title": "Cargo lint options",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CargoLintFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "lsp": {
           "title": "Cargo LSP feature options",
           "anyOf": [
@@ -1814,6 +1825,96 @@
             },
             {
               "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "CargoLintFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/CargoLintFeatureTree"
+        }
+      ]
+    },
+    "CargoLintFeatureTree": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Cargo lint rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CargoLintRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "CargoLintRules": {
+      "description": "Severity levels for diagnostics produced by the Cargo extension.",
+      "type": "object",
+      "properties": {
+        "missing-build-script": {
+          "description": "Report an explicitly configured build script path that does not exist.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "missing-license-file": {
+          "description": "Report an explicitly configured package or workspace license file path that does not exist.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "missing-path-dependency": {
+          "description": "Report a path dependency whose directory does not contain Cargo.toml.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "missing-readme": {
+          "description": "Report an explicitly configured package or workspace README path that does not exist.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "missing-target-path": {
+          "description": "Report an explicitly configured target source path that does not exist.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "missing-workspace": {
+          "description": "Report a Cargo `workspace = true` reference without a matching workspace definition.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
             }
           ]
         }
@@ -2567,7 +2668,7 @@
         }
       },
       "additionalProperties": false,
-      "x-tombi-table-keys-order": "version-sort"
+      "x-tombi-table-keys-order": "ascending"
     },
     "PyprojectLspFeatures": {
       "anyOf": [

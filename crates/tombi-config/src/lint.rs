@@ -3,6 +3,7 @@ use tombi_severity_level::SeverityLevelDefaultWarn;
 /// # Extension lint options
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct ExtensionsLintOptions {
+    pub cargo: crate::CargoLintFeatureTree,
     pub pyproject: crate::PyprojectLintFeatureTree,
     pub tombi: crate::TombiLintFeatureTree,
 }
@@ -29,7 +30,7 @@ impl LintOptions {
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::VersionSort)))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LintRules {
     /// # Key empty

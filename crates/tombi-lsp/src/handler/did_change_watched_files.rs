@@ -7,7 +7,10 @@ use crate::{
     workspace_config::{
         WorkspaceConfig, get_workspace_configs, is_workspace_ignored, is_workspace_target,
     },
-    workspace_diagnostic::{refresh_diagnostics_after_config_change, upsert_document_source},
+    workspace_diagnostic::{
+        refresh_cargo_diagnostics_after_file_changes, refresh_diagnostics_after_config_change,
+        upsert_document_source,
+    },
 };
 
 use super::diagnostic::push_diagnostics;
@@ -22,6 +25,7 @@ pub async fn handle_did_change_watched_files(
     let mut should_refresh_pull_diagnostics = false;
     let mut config_changed = false;
     let mut schema_changed = false;
+    let mut cargo_reference_changes = Vec::new();
     let home_dir = tombi_fs::home_dir();
     let mut workspace_configs: Option<Vec<WorkspaceConfig>> = None;
 
@@ -50,6 +54,9 @@ pub async fn handle_did_change_watched_files(
                     Err(err) => log::warn!("failed to update schema {uri}: {err}"),
                 }
             }
+            if let Ok(path) = uri.to_file_path() {
+                cargo_reference_changes.push(path);
+            }
             continue;
         }
 
@@ -67,6 +74,17 @@ pub async fn handle_did_change_watched_files(
                     log::warn!("failed to reload config: {err}");
                 }
             }
+        }
+
+        if !is_toml_file(&uri) {
+            if let Ok(path) = uri.to_file_path() {
+                cargo_reference_changes.push(path);
+            }
+            continue;
+        }
+
+        if let Ok(path) = uri.to_file_path() {
+            cargo_reference_changes.push(path);
         }
 
         if matches!(
@@ -177,10 +195,15 @@ pub async fn handle_did_change_watched_files(
 
     if config_changed || schema_changed {
         refresh_diagnostics_after_config_change(backend).await;
-    }
-
-    if should_refresh_pull_diagnostics {
-        backend.refresh_pull_diagnostics().await;
+    } else {
+        let cargo_diagnostics_refreshed = if cargo_reference_changes.is_empty() {
+            false
+        } else {
+            refresh_cargo_diagnostics_after_file_changes(backend, &cargo_reference_changes).await
+        };
+        if should_refresh_pull_diagnostics || cargo_diagnostics_refreshed {
+            backend.refresh_pull_diagnostics().await;
+        }
     }
 }
 
@@ -202,6 +225,12 @@ fn is_json_file(uri: &tombi_uri::Uri) -> bool {
     uri.to_file_path()
         .ok()
         .is_some_and(|path| path.extension().is_some_and(|ext| ext == "json"))
+}
+
+fn is_toml_file(uri: &tombi_uri::Uri) -> bool {
+    uri.to_file_path()
+        .ok()
+        .is_some_and(|path| path.extension().is_some_and(|ext| ext == "toml"))
 }
 
 #[cfg(test)]

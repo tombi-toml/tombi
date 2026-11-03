@@ -1,0 +1,96 @@
+use tombi_diagnostic::Level;
+use tombi_linter::test_lint;
+
+const MISSING_PATHS: &str = r#"[[schemas]]
+path = "missing-schema-for-tombi-lint-test.json"
+include = ["*.toml"]
+
+[schema.catalog]
+paths = ["missing-catalog-for-tombi-lint-test.json"]
+"#;
+
+fn tombi_path() -> std::path::PathBuf {
+    tombi_test_lib::project_root_path().join("tombi.toml")
+}
+
+fn span_of(source: &str, value: &str) -> tombi_text::Span {
+    let value = format!("\"{value}\"");
+    let start = source.find(&value).unwrap();
+    tombi_text::Span::new(
+        tombi_text::Offset::new(start.try_into().unwrap()),
+        tombi_text::Offset::new((start + value.len()).try_into().unwrap()),
+    )
+}
+
+fn config(
+    missing_schema_path: tombi_config::SeverityLevel,
+    missing_catalog_path: tombi_config::SeverityLevel,
+) -> tombi_config::Config {
+    let mut config = tombi_config::Config::default();
+    config.extensions = Some(tombi_config::Extensions {
+        cargo: None,
+        nagi_sql: None,
+        pyproject: None,
+        tombi: Some(tombi_config::TombiExtensionFeatures::Features(
+            tombi_config::TombiExtensionFeatureTree {
+                lint: Some(tombi_config::TombiLintFeatures::Features(
+                    tombi_config::TombiLintFeatureTree {
+                        rules: Some(tombi_config::TombiLintRules {
+                            missing_schema_path,
+                            missing_catalog_path,
+                        }),
+                    },
+                )),
+                lsp: None,
+            },
+        )),
+    });
+    config
+}
+
+test_lint! {
+    #[test]
+    fn missing_schema_and_catalog_paths_are_reported(
+        MISSING_PATHS,
+        SourcePath(tombi_path()),
+    ) -> Diagnostics([{
+        code: "tombi/missing-schema-path",
+        level: Level::ERROR,
+        span: span_of(MISSING_PATHS, "missing-schema-for-tombi-lint-test.json")
+    }, {
+        code: "tombi/missing-catalog-path",
+        level: Level::ERROR,
+        span: span_of(MISSING_PATHS, "missing-catalog-for-tombi-lint-test.json")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn path_diagnostic_severity_can_be_configured(
+        MISSING_PATHS,
+        SourcePath(tombi_path()),
+        Config(config(tombi_config::SeverityLevel::Warn, tombi_config::SeverityLevel::Off)),
+    ) -> Diagnostics([{
+        code: "tombi/missing-schema-path",
+        level: Level::WARNING,
+        span: span_of(MISSING_PATHS, "missing-schema-for-tombi-lint-test.json")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn existing_and_remote_paths_are_ignored(
+        r#"[[schemas]]
+path = "Cargo.toml"
+include = ["*.toml"]
+
+[[schemas]]
+path = "https://example.com/schema.json"
+include = ["*.toml"]
+
+[schema.catalog]
+paths = ["Cargo.toml", "https://example.com/catalog.json"]
+"#,
+        SourcePath(tombi_path()),
+    ) -> Ok(_)
+}
