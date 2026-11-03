@@ -46,3 +46,4 @@ out/
 
 # kiro
 .kiro/
+.audit
