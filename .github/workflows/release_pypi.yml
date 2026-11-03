@@ -99,7 +99,9 @@ jobs:
         with:
           working-directory: ${{ matrix.package.directory }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist
+          # NOTE: The i686 manylinux2014 image is CentOS 7 based and its yum repositories
+          #       (vault.centos.org) are EOL/unreliable, so x86 is cross-compiled with zig instead.
+          args: ${{ matrix.platform.target == 'x86' && '--release --out dist --zig' || '--release --out dist' }}
           sccache: "true"
           # NOTE: We manually specify a more recent manylinux platform tag for aarch64:
           #         - zenoh-link-quic indirectly depends on ring 0.17 through rustls-webpki.
@@ -107,7 +109,7 @@ jobs:
           #         - When setting the manylinux tag to 'auto', messense/maturin-action@v1 uses manylinux2014 to compile for for aarch64
           #         - the GCC included in the manylinux2014 docker image doesn't provide __ARM_ARCH
           #       See: https://github.com/briansmith/ring/issues/1728
-          manylinux: ${{ matrix.platform.target == 'aarch64' && 'manylinux_2_28' || 'auto' }}
+          manylinux: ${{ matrix.platform.target == 'aarch64' && 'manylinux_2_28' || matrix.platform.target == 'x86' && '2014' || 'auto' }}
       - name: Upload wheels
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -204,9 +206,9 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runner: macos-14
+          - runner: macos-15
             target: x86_64
-          - runner: macos-14
+          - runner: macos-15
             target: aarch64
         package:
           - name: tombi

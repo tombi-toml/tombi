@@ -81,10 +81,10 @@ jobs:
           - os: ubuntu-24.04
             target: aarch64-unknown-linux-musl
             vscode_target: linux-arm64-musl
-          - os: macos-14
+          - os: macos-15
             target: x86_64-apple-darwin
             vscode_target: darwin-x64
-          - os: macos-14
+          - os: macos-15
             target: aarch64-apple-darwin
             vscode_target: darwin-arm64
           - os: ubuntu-24.04
