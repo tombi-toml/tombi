@@ -60,6 +60,8 @@ mod schema_resolution_error;
 mod string_format_test_schema;
 #[path = "integration/table_const_enum_test_schema.rs"]
 mod table_const_enum_test_schema;
+#[path = "integration/tombi_lint.rs"]
+mod tombi_lint;
 #[path = "integration/tombi_schema.rs"]
 mod tombi_schema;
 #[path = "integration/tuple_items_test_schema.rs"]

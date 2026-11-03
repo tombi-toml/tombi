@@ -3117,6 +3117,17 @@
     "TombiExtensionFeatureTree": {
       "type": "object",
       "properties": {
+        "lint": {
+          "title": "Tombi lint options",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TombiLintFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "lsp": {
           "title": "Tombi LSP feature options",
           "anyOf": [
@@ -3125,6 +3136,60 @@
             },
             {
               "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "TombiLintFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/TombiLintFeatureTree"
+        }
+      ]
+    },
+    "TombiLintFeatureTree": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Tombi lint rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TombiLintRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "TombiLintRules": {
+      "description": "Severity levels for diagnostics produced by the Tombi extension.",
+      "type": "object",
+      "properties": {
+        "missing-catalog-path": {
+          "description": "Report a local schema catalog path that does not point to a file.",
+          "default": "warn",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "missing-schema-path": {
+          "description": "Report a local schema path that does not point to a file.",
+          "default": "warn",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
             }
           ]
         }

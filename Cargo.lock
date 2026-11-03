@@ -3010,8 +3010,10 @@ name = "tombi-extension-tombi"
 version = "0.0.0-dev"
 dependencies = [
  "tombi-config",
+ "tombi-diagnostic",
  "tombi-document-tree-syntax",
  "tombi-extension",
+ "tombi-fs",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",
@@ -3213,6 +3215,7 @@ dependencies = [
  "tombi-document-tree-syntax",
  "tombi-extension-cargo",
  "tombi-extension-pyproject",
+ "tombi-extension-tombi",
  "tombi-future",
  "tombi-hashmap",
  "tombi-parser",

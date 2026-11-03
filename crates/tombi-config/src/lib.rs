@@ -164,8 +164,17 @@ impl Config {
             .and_then(|features| features.lint())
             .map(|lint| lint.feature_tree())
             .unwrap_or_default();
+        let tombi = self
+            .tombi_extension_features()
+            .and_then(|features| features.lint())
+            .map(|lint| lint.feature_tree())
+            .unwrap_or_default();
 
-        ExtensionsLintOptions { cargo, pyproject }
+        ExtensionsLintOptions {
+            cargo,
+            pyproject,
+            tombi,
+        }
     }
 
     pub fn pyproject_inlay_hint_enabled(&self) -> bool {

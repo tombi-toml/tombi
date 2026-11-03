@@ -168,6 +168,10 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
       - [extensions."tombi-toml/pyproject".lsp.inlay-hint](#extensions-tombi-toml-pyproject-lsp-inlay-hint)
       - [extensions."tombi-toml/pyproject".lsp.references](#extensions-tombi-toml-pyproject-lsp-references)
   - [extensions."tombi-toml/tombi"](#extensions-tombi-toml-tombi)
+    - [extensions."tombi-toml/tombi".lint](#extensions-tombi-toml-tombi-lint)
+      - [extensions."tombi-toml/tombi".lint.rules](#extensions-tombi-toml-tombi-lint-rules)
+        - [extensions."tombi-toml/tombi".lint.rules.missing-catalog-path](#extensions-tombi-toml-tombi-lint-rules-missing-catalog-path)
+        - [extensions."tombi-toml/tombi".lint.rules.missing-schema-path](#extensions-tombi-toml-tombi-lint-rules-missing-schema-path)
     - [extensions."tombi-toml/tombi".lsp](#extensions-tombi-toml-tombi-lsp)
       - [extensions."tombi-toml/tombi".lsp.completion](#extensions-tombi-toml-tombi-lsp-completion)
       - [extensions."tombi-toml/tombi".lsp.goto-definition](#extensions-tombi-toml-tombi-lsp-goto-definition)
@@ -2133,6 +2137,38 @@ Enable or disable the entire Tombi configuration extension.
 
 - Type: `Boolean`
 - Default: `true`
+
+### extensions."tombi-toml/tombi".lint
+
+Configure diagnostics produced for local schema and schema catalog paths in Tombi configuration files.
+
+- Type: `Table`
+
+### extensions."tombi-toml/tombi".lint.rules
+
+Set the severity for individual Tombi configuration diagnostics. Each rule defaults to `"warn"` when omitted. Available values are `"off"`, `"warn"`, and `"error"`.
+
+```toml
+[extensions."tombi-toml/tombi".lint.rules]
+missing-catalog-path = "warn"
+missing-schema-path = "warn"
+```
+
+- Type: `Table`
+
+### extensions."tombi-toml/tombi".lint.rules.missing-catalog-path
+
+Set the severity for local schema catalog paths that do not point to a file.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
+
+### extensions."tombi-toml/tombi".lint.rules.missing-schema-path
+
+Set the severity for local schema paths that do not point to a file.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
 
 ### extensions."tombi-toml/tombi".lsp
 

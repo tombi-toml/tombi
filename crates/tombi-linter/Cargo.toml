@@ -17,6 +17,7 @@ tombi-diagnostic.workspace = true
 tombi-document-tree-syntax.workspace = true
 tombi-extension-cargo.workspace = true
 tombi-extension-pyproject.workspace = true
+tombi-extension-tombi.workspace = true
 tombi-future.workspace = true
 tombi-hashmap.workspace = true
 tombi-parser.workspace = true
