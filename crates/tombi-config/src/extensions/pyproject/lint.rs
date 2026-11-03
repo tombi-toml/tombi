@@ -29,14 +29,10 @@ pub struct PyprojectLintFeatureTree {
 }
 
 impl PyprojectLintFeatureTree {
-    pub fn off() -> Self {
+    pub fn disabled() -> Self {
         Self {
             rules: Some(PyprojectLintRules::off()),
         }
-    }
-
-    pub fn severity(&self, code: &str) -> SeverityLevel {
-        self.rules.unwrap_or_default().severity(code)
     }
 }
 
@@ -63,7 +59,9 @@ impl PyprojectLintFeatures {
 
     pub fn feature_tree(&self) -> PyprojectLintFeatureTree {
         match self {
-            Self::Enabled(enabled) if !enabled.enabled.value() => PyprojectLintFeatureTree::off(),
+            Self::Enabled(enabled) if !enabled.enabled.value() => {
+                PyprojectLintFeatureTree::disabled()
+            }
             Self::Enabled(_) => PyprojectLintFeatureTree::default(),
             Self::Features(features) => *features,
         }
@@ -81,35 +79,35 @@ impl PyprojectLintFeatures {
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", serde(default))]
 pub struct PyprojectLintRules {
+    /// Diagnose names declared as both exclusive and shared imports.
+    pub ambiguous_import_name: SeverityLevel,
+    /// Diagnose duplicate Python import names.
+    pub duplicate_import_name: SeverityLevel,
     /// Diagnose invalid PEP 508 dependency specifiers.
     pub invalid_dependency_specifier: SeverityLevel,
-    /// Diagnose classifiers not listed in the Trove classifier specification.
-    pub unknown_classifier: SeverityLevel,
     /// Diagnose invalid author and maintainer email display names.
     pub invalid_email_display_name: SeverityLevel,
     /// Diagnose invalid Python entry point targets.
     pub invalid_entry_point_target: SeverityLevel,
     /// Diagnose invalid Python import names.
     pub invalid_import_name: SeverityLevel,
-    /// Diagnose duplicate Python import names.
-    pub duplicate_import_name: SeverityLevel,
-    /// Diagnose names declared as both exclusive and shared imports.
-    pub ambiguous_import_name: SeverityLevel,
     /// Diagnose import names whose parent is not declared.
     pub missing_import_name_parent: SeverityLevel,
+    /// Diagnose classifiers not listed in the Trove classifier specification.
+    pub unknown_classifier: SeverityLevel,
 }
 
 impl Default for PyprojectLintRules {
     fn default() -> Self {
         Self {
+            ambiguous_import_name: SeverityLevel::Error,
+            duplicate_import_name: SeverityLevel::Warn,
             invalid_dependency_specifier: SeverityLevel::Error,
-            unknown_classifier: SeverityLevel::Warn,
             invalid_email_display_name: SeverityLevel::Error,
             invalid_entry_point_target: SeverityLevel::Error,
             invalid_import_name: SeverityLevel::Error,
-            duplicate_import_name: SeverityLevel::Warn,
-            ambiguous_import_name: SeverityLevel::Error,
             missing_import_name_parent: SeverityLevel::Warn,
+            unknown_classifier: SeverityLevel::Warn,
         }
     }
 }
@@ -117,28 +115,14 @@ impl Default for PyprojectLintRules {
 impl PyprojectLintRules {
     pub fn off() -> Self {
         Self {
+            ambiguous_import_name: SeverityLevel::Off,
+            duplicate_import_name: SeverityLevel::Off,
             invalid_dependency_specifier: SeverityLevel::Off,
-            unknown_classifier: SeverityLevel::Off,
             invalid_email_display_name: SeverityLevel::Off,
             invalid_entry_point_target: SeverityLevel::Off,
             invalid_import_name: SeverityLevel::Off,
-            duplicate_import_name: SeverityLevel::Off,
-            ambiguous_import_name: SeverityLevel::Off,
             missing_import_name_parent: SeverityLevel::Off,
-        }
-    }
-
-    pub fn severity(&self, code: &str) -> SeverityLevel {
-        match code {
-            "pyproject/invalid-dependency-specifier" => self.invalid_dependency_specifier,
-            "pyproject/unknown-classifier" => self.unknown_classifier,
-            "pyproject/invalid-email-display-name" => self.invalid_email_display_name,
-            "pyproject/invalid-entry-point-target" => self.invalid_entry_point_target,
-            "pyproject/invalid-import-name" => self.invalid_import_name,
-            "pyproject/duplicate-import-name" => self.duplicate_import_name,
-            "pyproject/ambiguous-import-name" => self.ambiguous_import_name,
-            "pyproject/missing-import-name-parent" => self.missing_import_name_parent,
-            _ => SeverityLevel::Off,
+            unknown_classifier: SeverityLevel::Off,
         }
     }
 }

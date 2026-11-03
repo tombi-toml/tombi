@@ -2493,8 +2493,8 @@
       "description": "Severity levels for diagnostics produced by the pyproject extension.",
       "type": "object",
       "properties": {
-        "invalid-dependency-specifier": {
-          "description": "Diagnose invalid PEP 508 dependency specifiers.",
+        "ambiguous-import-name": {
+          "description": "Diagnose names declared as both exclusive and shared imports.",
           "default": "error",
           "allOf": [
             {
@@ -2502,9 +2502,18 @@
             }
           ]
         },
-        "unknown-classifier": {
-          "description": "Diagnose classifiers not listed in the Trove classifier specification.",
+        "duplicate-import-name": {
+          "description": "Diagnose duplicate Python import names.",
           "default": "warn",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "invalid-dependency-specifier": {
+          "description": "Diagnose invalid PEP 508 dependency specifiers.",
+          "default": "error",
           "allOf": [
             {
               "$ref": "#/definitions/SeverityLevel"
@@ -2538,8 +2547,8 @@
             }
           ]
         },
-        "duplicate-import-name": {
-          "description": "Diagnose duplicate Python import names.",
+        "missing-import-name-parent": {
+          "description": "Diagnose import names whose parent is not declared.",
           "default": "warn",
           "allOf": [
             {
@@ -2547,17 +2556,8 @@
             }
           ]
         },
-        "ambiguous-import-name": {
-          "description": "Diagnose names declared as both exclusive and shared imports.",
-          "default": "error",
-          "allOf": [
-            {
-              "$ref": "#/definitions/SeverityLevel"
-            }
-          ]
-        },
-        "missing-import-name-parent": {
-          "description": "Diagnose import names whose parent is not declared.",
+        "unknown-classifier": {
+          "description": "Diagnose classifiers not listed in the Trove classifier specification.",
           "default": "warn",
           "allOf": [
             {
