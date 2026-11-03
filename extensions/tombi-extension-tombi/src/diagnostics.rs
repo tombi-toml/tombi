@@ -15,27 +15,27 @@ pub fn validate(
         return diagnostics;
     }
 
-    if rules.missing_schema_path != tombi_config::SeverityLevel::Off {
-        if let Some(Value::Array(schemas)) = document_tree.get("schemas") {
-            for schema in schemas.values() {
-                let Value::Table(schema) = schema else {
-                    continue;
-                };
-                let Some(Value::String(path)) = schema.get("path") else {
-                    continue;
-                };
-                let Some(path_to_check) = local_schema_path(path.value(), source_path) else {
-                    continue;
-                };
-                if !tombi_fs::is_file(&path_to_check) {
-                    push_diagnostic(
-                        format!("schema path `{}` does not point to a file", path.value()),
-                        "tombi/missing-schema-path",
-                        rules.missing_schema_path,
-                        path.span(),
-                        &mut diagnostics,
-                    );
-                }
+    if rules.missing_schema_path != tombi_config::SeverityLevel::Off
+        && let Some(Value::Array(schemas)) = document_tree.get("schemas")
+    {
+        for schema in schemas.values() {
+            let Value::Table(schema) = schema else {
+                continue;
+            };
+            let Some(Value::String(path)) = schema.get("path") else {
+                continue;
+            };
+            let Some(path_to_check) = local_schema_path(path.value(), source_path) else {
+                continue;
+            };
+            if !tombi_fs::is_file(&path_to_check) {
+                push_diagnostic(
+                    format!("schema path `{}` does not point to a file", path.value()),
+                    "tombi/missing-schema-path",
+                    rules.missing_schema_path,
+                    path.span(),
+                    &mut diagnostics,
+                );
             }
         }
     }
@@ -104,7 +104,7 @@ fn relative_path(value: &str, source_path: Option<&Path>) -> Option<PathBuf> {
         Some(path.to_path_buf())
     } else {
         source_path
-            .and_then(Path::parent)
+            .and_then(tombi_config::config_base_dir)
             .map(|parent| parent.join(path))
     }
 }
