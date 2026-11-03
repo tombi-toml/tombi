@@ -193,7 +193,7 @@ fn into_string_and_errors<'t, T: AstNode<'t>>(
             comment_directives,
         )),
         Err(error) => {
-            errors.push(crate::Error::ParseStringError { error, span });
+            errors.push(crate::Error::InvalidString { error, span });
 
             crate::Value::Incomplete { span }
         }

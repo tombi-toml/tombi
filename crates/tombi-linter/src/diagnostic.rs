@@ -26,13 +26,17 @@ pub struct Diagnostic {
 impl Diagnostic {
     pub fn code(&self) -> &'static str {
         match self.kind {
-            DiagnosticKind::DottedKeysOutOfOrder => "dotted-keys-out-of-order",
-            DiagnosticKind::TablesOutOfOrder => "tables-out-of-order",
-            DiagnosticKind::ForbiddenKeyValueTrailingComma => "forbidden-key-value-trailing-comma",
-            DiagnosticKind::InlineTableMustSingleLine => "inline-table-must-single-line",
-            DiagnosticKind::ForbiddenInlineTableLastComma => "forbidden-inline-table-last-comma",
-            DiagnosticKind::MissingArrayComma => "missing-array-comma",
-            DiagnosticKind::MissingInlineTableComma => "missing-inline-table-comma",
+            DiagnosticKind::DottedKeysOutOfOrder => "toml/dotted-keys-out-of-order",
+            DiagnosticKind::TablesOutOfOrder => "toml/tables-out-of-order",
+            DiagnosticKind::ForbiddenKeyValueTrailingComma => {
+                "toml/forbidden-key-value-trailing-comma"
+            }
+            DiagnosticKind::InlineTableMustSingleLine => "toml/inline-table-must-single-line",
+            DiagnosticKind::ForbiddenInlineTableLastComma => {
+                "toml/forbidden-inline-table-last-comma"
+            }
+            DiagnosticKind::MissingArrayComma => "toml/missing-array-comma",
+            DiagnosticKind::MissingInlineTableComma => "toml/missing-inline-table-comma",
         }
     }
 }

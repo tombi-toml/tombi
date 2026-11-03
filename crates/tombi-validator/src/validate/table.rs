@@ -1354,7 +1354,7 @@ async fn convert_deprecated_diagnostics_span(
 ) {
     if current_schema.schema_view.deprecation().await.is_some() {
         for diagnostic in schema_diagnostics.iter_mut() {
-            if diagnostic.code() == "deprecated" && diagnostic.span() == value.span() {
+            if diagnostic.code() == "jsonschema/deprecated" && diagnostic.span() == value.span() {
                 let span = key.span() + value.span();
                 *diagnostic = if diagnostic.is_error() {
                     tombi_diagnostic::Diagnostic::new_error(

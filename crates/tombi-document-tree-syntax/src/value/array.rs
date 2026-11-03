@@ -118,7 +118,7 @@ impl<'t> Array<'t> {
                 self.extend(other.values);
             }
             (Array, _) | (_, Array) => {
-                errors.push(crate::Error::ConflictArray {
+                errors.push(crate::Error::ArrayConflict {
                     range1: self.symbol_span,
                     range2: other.symbol_span,
                 });

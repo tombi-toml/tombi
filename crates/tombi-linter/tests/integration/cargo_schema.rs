@@ -655,7 +655,7 @@ test_lint! {
         "value = 1\n",
         Config(global_deprecated_schema_config(tombi_config::SchemaDeprecatedSeverity::Error)),
     ) -> Diagnostics([{
-        code: "deprecated",
+        code: "jsonschema/deprecated",
         level: tombi_diagnostic::Level::ERROR,
     }])
 }
@@ -677,7 +677,7 @@ test_lint! {
             config
         }),
     ) -> Diagnostics([{
-        code: "deprecated",
+        code: "jsonschema/deprecated",
         level: tombi_diagnostic::Level::ERROR,
     }])
 }
@@ -688,7 +688,7 @@ test_lint! {
         "value = 1\n",
         Config(deprecated_schema_config(None)),
     ) -> Diagnostics([{
-        code: "deprecated",
+        code: "jsonschema/deprecated",
         level: tombi_diagnostic::Level::WARNING,
     }])
 }
@@ -707,7 +707,7 @@ test_lint! {
         "value = 1\n",
         Config(deprecated_schema_config(Some(SeverityLevel::Warn))),
     ) -> Diagnostics([{
-        code: "deprecated",
+        code: "jsonschema/deprecated",
         level: tombi_diagnostic::Level::WARNING,
     }])
 }
@@ -718,7 +718,7 @@ test_lint! {
         "value = 1\n",
         Config(deprecated_schema_config(Some(SeverityLevel::Error))),
     ) -> Diagnostics([{
-        code: "deprecated",
+        code: "jsonschema/deprecated",
         level: tombi_diagnostic::Level::ERROR,
     }])
 }
@@ -729,7 +729,7 @@ test_lint! {
         "[tool.example]\nvalue = 1\n",
         Config(deprecated_sub_schema_config(Some(SeverityLevel::Error))),
     ) -> Diagnostics([{
-        code: "deprecated",
+        code: "jsonschema/deprecated",
         level: tombi_diagnostic::Level::ERROR,
     }])
 }
@@ -767,7 +767,7 @@ test_lint! {
         "value = 1\n",
         Config(deprecated_override_config(SeverityLevel::Error)),
     ) -> Diagnostics([{
-        code: "deprecated",
+        code: "jsonschema/deprecated",
         level: tombi_diagnostic::Level::ERROR,
     }])
 }
@@ -779,7 +779,7 @@ test_lint! {
         Config(deprecated_root_lint_for_subschema_config(SeverityLevel::Error)),
         SourcePath(project_root_path().join("pyproject.toml")),
     ) -> Diagnostics([{
-        code: "deprecated",
+        code: "jsonschema/deprecated",
         level: tombi_diagnostic::Level::ERROR,
     }])
 }
@@ -790,7 +790,7 @@ test_lint! {
         "tuple = [{ value = 1 }, { value = 2 }]\n",
         Config(deprecated_exact_index_override_config()),
     ) -> Diagnostics([{
-        code: "deprecated",
+        code: "jsonschema/deprecated",
         level: tombi_diagnostic::Level::WARNING,
     }])
 }
@@ -818,7 +818,7 @@ test_lint! {
         "tuple = [{ value = 1 }, { value = 2 }]\n",
         Config(deprecated_exact_index_precedence_config()),
     ) -> Diagnostics([{
-        code: "deprecated",
+        code: "jsonschema/deprecated",
         level: tombi_diagnostic::Level::ERROR,
     }])
 }
@@ -829,7 +829,7 @@ test_lint! {
         "legacy = 1\n",
         Config(deprecated_schema_config(None)),
     ) -> Diagnostics([{
-        code: "deprecated",
+        code: "jsonschema/deprecated",
         level: tombi_diagnostic::Level::WARNING,
     }])
 }
@@ -872,7 +872,7 @@ test_lint! {
         "any_of_value = \"x\" # tombi: lint.rules.deprecated.disabled = true\n",
         Config(deprecated_schema_config(None)),
     ) -> Diagnostics([{
-        code: "unused-noqa",
+        code: "comment/unused-noqa",
         level: tombi_diagnostic::Level::WARNING,
     }])
 }
@@ -915,7 +915,7 @@ test_lint! {
         "all_of_non_deprecated_value = 1 # tombi: lint.rules.deprecated.disabled = true\n",
         Config(deprecated_schema_config(None)),
     ) -> Diagnostics([{
-        code: "unused-noqa",
+        code: "comment/unused-noqa",
         level: tombi_diagnostic::Level::WARNING,
     }])
 }

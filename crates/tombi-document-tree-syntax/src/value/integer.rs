@@ -84,7 +84,7 @@ impl<'t> IntoDocumentTreeWithContext<'t, crate::Value<'t>> for tombi_ast_syntax:
                 errors,
             },
             Err(error) => {
-                errors.push(crate::Error::ParseIntError { error, span });
+                errors.push(crate::Error::InvalidInteger { error, span });
 
                 DocumentTreeAndErrors {
                     tree: crate::Value::Incomplete { span },
@@ -123,7 +123,7 @@ impl<'t> IntoDocumentTreeWithContext<'t, crate::Value<'t>> for tombi_ast_syntax:
                 errors,
             },
             Err(error) => {
-                errors.push(crate::Error::ParseIntError { error, span });
+                errors.push(crate::Error::InvalidInteger { error, span });
 
                 DocumentTreeAndErrors {
                     tree: crate::Value::Incomplete { span },
@@ -162,7 +162,7 @@ impl<'t> IntoDocumentTreeWithContext<'t, crate::Value<'t>> for tombi_ast_syntax:
                 errors,
             },
             Err(error) => {
-                errors.push(crate::Error::ParseIntError { error, span });
+                errors.push(crate::Error::InvalidInteger { error, span });
 
                 DocumentTreeAndErrors {
                     tree: crate::Value::Incomplete { span },
@@ -201,7 +201,7 @@ impl<'t> IntoDocumentTreeWithContext<'t, crate::Value<'t>> for tombi_ast_syntax:
                 errors,
             },
             Err(error) => {
-                errors.push(crate::Error::ParseIntError { error, span });
+                errors.push(crate::Error::InvalidInteger { error, span });
 
                 DocumentTreeAndErrors {
                     tree: crate::Value::Incomplete { span },

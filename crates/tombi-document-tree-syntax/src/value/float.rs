@@ -74,7 +74,7 @@ impl<'t> IntoDocumentTreeWithContext<'t, crate::Value<'t>> for tombi_ast_syntax:
                 errors,
             },
             Err(error) => {
-                errors.push(crate::Error::ParseFloatError { error, span });
+                errors.push(crate::Error::InvalidFloat { error, span });
 
                 DocumentTreeAndErrors {
                     tree: crate::Value::Incomplete { span },

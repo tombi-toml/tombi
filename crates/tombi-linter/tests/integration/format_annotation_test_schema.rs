@@ -71,6 +71,6 @@ test_lint! {
         "#,
         SchemaPath(format_assertion_vocab_test_schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }

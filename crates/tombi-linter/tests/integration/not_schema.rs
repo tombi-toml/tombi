@@ -15,7 +15,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "schema-resolution", level: Level::WARNING }
+        { code: "jsonschema/schema-resolution", level: Level::WARNING }
     ])
 }
 

@@ -167,7 +167,7 @@ pub enum DiagnosticKind {
     OneOfNoMatch { total_count: usize },
 
     #[error("the schema matches no values")]
-    Nothing,
+    AlwaysFails,
 
     #[error("\"not\" schema is matched")]
     NotSchemaMatch,
@@ -188,53 +188,61 @@ pub struct Diagnostic {
 impl DiagnosticKind {
     pub fn code(&self) -> &'static str {
         match *self {
-            DiagnosticKind::UnusedNoqa { .. } => "unused-noqa",
+            DiagnosticKind::UnusedNoqa { .. } => "comment/unused-noqa",
             DiagnosticKind::Deprecated { .. }
             | DiagnosticKind::DeprecatedWithMessage { .. }
             | DiagnosticKind::DeprecatedValue { .. }
-            | DiagnosticKind::DeprecatedValueWithMessage { .. } => "deprecated",
-            DiagnosticKind::TableStrictAdditionalKeys { .. } => "table-strict-additional-keys",
-            DiagnosticKind::KeyNotAllowed { .. } => "key-not-allowed",
+            | DiagnosticKind::DeprecatedValueWithMessage { .. } => "jsonschema/deprecated",
+            DiagnosticKind::TableStrictAdditionalKeys { .. } => {
+                "jsonschema/table-strict-additional-keys"
+            }
+            DiagnosticKind::KeyNotAllowed { .. } => "jsonschema/key-not-allowed",
             DiagnosticKind::UnevaluatedPropertyNotAllowed { .. } => {
-                "unevaluated-property-not-allowed"
+                "jsonschema/unevaluated-property-not-allowed"
             }
-            DiagnosticKind::KeyPattern { .. } => "key-pattern",
-            DiagnosticKind::TypeMismatch { .. } => "type-mismatch",
-            DiagnosticKind::Const { .. } => "const",
-            DiagnosticKind::Enum { .. } => "enum",
-            DiagnosticKind::IntegerMaximum { .. } => "integer-maximum",
-            DiagnosticKind::IntegerMinimum { .. } => "integer-minimum",
-            DiagnosticKind::IntegerExclusiveMaximum { .. } => "integer-exclusive-maximum",
-            DiagnosticKind::IntegerExclusiveMinimum { .. } => "integer-exclusive-minimum",
-            DiagnosticKind::IntegerMultipleOf { .. } => "integer-multiple-of",
-            DiagnosticKind::FloatMaximum { .. } => "float-maximum",
-            DiagnosticKind::FloatMinimum { .. } => "float-minimum",
-            DiagnosticKind::FloatExclusiveMaximum { .. } => "float-exclusive-maximum",
-            DiagnosticKind::FloatExclusiveMinimum { .. } => "float-exclusive-minimum",
-            DiagnosticKind::FloatMultipleOf { .. } => "float-multiple-of",
-            DiagnosticKind::StringMaxLength { .. } => "string-max-length",
-            DiagnosticKind::StringMinLength { .. } => "string-min-length",
-            DiagnosticKind::StringFormat { .. } => "string-format",
-            DiagnosticKind::StringPattern { .. } => "string-pattern",
-            DiagnosticKind::ArrayMaxValues { .. } => "array-max-values",
-            DiagnosticKind::ArrayMinValues { .. } => "array-min-values",
-            DiagnosticKind::ArrayContains => "array-contains",
-            DiagnosticKind::ArrayMinContains { .. } => "array-min-contains",
-            DiagnosticKind::ArrayMaxContains { .. } => "array-max-contains",
-            DiagnosticKind::ArrayUniqueValues => "array-unique-values",
-            DiagnosticKind::ArrayAdditionalItems { .. } => "array-additional-items",
+            DiagnosticKind::KeyPattern { .. } => "jsonschema/key-pattern",
+            DiagnosticKind::TypeMismatch { .. } => "jsonschema/type-mismatch",
+            DiagnosticKind::Const { .. } => "jsonschema/const",
+            DiagnosticKind::Enum { .. } => "jsonschema/enum",
+            DiagnosticKind::IntegerMaximum { .. } => "jsonschema/integer-maximum",
+            DiagnosticKind::IntegerMinimum { .. } => "jsonschema/integer-minimum",
+            DiagnosticKind::IntegerExclusiveMaximum { .. } => {
+                "jsonschema/integer-exclusive-maximum"
+            }
+            DiagnosticKind::IntegerExclusiveMinimum { .. } => {
+                "jsonschema/integer-exclusive-minimum"
+            }
+            DiagnosticKind::IntegerMultipleOf { .. } => "jsonschema/integer-multiple-of",
+            DiagnosticKind::FloatMaximum { .. } => "jsonschema/float-maximum",
+            DiagnosticKind::FloatMinimum { .. } => "jsonschema/float-minimum",
+            DiagnosticKind::FloatExclusiveMaximum { .. } => "jsonschema/float-exclusive-maximum",
+            DiagnosticKind::FloatExclusiveMinimum { .. } => "jsonschema/float-exclusive-minimum",
+            DiagnosticKind::FloatMultipleOf { .. } => "jsonschema/float-multiple-of",
+            DiagnosticKind::StringMaxLength { .. } => "jsonschema/string-max-length",
+            DiagnosticKind::StringMinLength { .. } => "jsonschema/string-min-length",
+            DiagnosticKind::StringFormat { .. } => "jsonschema/string-format",
+            DiagnosticKind::StringPattern { .. } => "jsonschema/string-pattern",
+            DiagnosticKind::ArrayMaxValues { .. } => "jsonschema/array-max-values",
+            DiagnosticKind::ArrayMinValues { .. } => "jsonschema/array-min-values",
+            DiagnosticKind::ArrayContains => "jsonschema/array-contains",
+            DiagnosticKind::ArrayMinContains { .. } => "jsonschema/array-min-contains",
+            DiagnosticKind::ArrayMaxContains { .. } => "jsonschema/array-max-contains",
+            DiagnosticKind::ArrayUniqueValues => "jsonschema/array-unique-values",
+            DiagnosticKind::ArrayAdditionalItems { .. } => "jsonschema/array-additional-items",
             DiagnosticKind::ArrayUnevaluatedItemNotAllowed { .. } => {
-                "array-unevaluated-item-not-allowed"
+                "jsonschema/array-unevaluated-item-not-allowed"
             }
-            DiagnosticKind::TableMaxKeys { .. } => "table-max-keys",
-            DiagnosticKind::TableMinKeys { .. } => "table-min-keys",
-            DiagnosticKind::TableKeyRequired { .. } => "table-key-required",
-            DiagnosticKind::OneOfMultipleMatch { .. } => "one-of-multiple-match",
-            DiagnosticKind::OneOfNoMatch { .. } => "one-of-no-match",
-            DiagnosticKind::Nothing => "nothing",
-            DiagnosticKind::NotSchemaMatch => "not-schema-match",
-            DiagnosticKind::KeyEmpty => "key-empty",
-            DiagnosticKind::TableDependencyRequired { .. } => "table-dependency-required",
+            DiagnosticKind::TableMaxKeys { .. } => "jsonschema/table-max-keys",
+            DiagnosticKind::TableMinKeys { .. } => "jsonschema/table-min-keys",
+            DiagnosticKind::TableKeyRequired { .. } => "jsonschema/table-key-required",
+            DiagnosticKind::OneOfMultipleMatch { .. } => "jsonschema/one-of-multiple-match",
+            DiagnosticKind::OneOfNoMatch { .. } => "jsonschema/one-of-no-match",
+            DiagnosticKind::AlwaysFails => "jsonschema/always-fails",
+            DiagnosticKind::NotSchemaMatch => "jsonschema/not-schema-match",
+            DiagnosticKind::KeyEmpty => "toml/key-empty",
+            DiagnosticKind::TableDependencyRequired { .. } => {
+                "jsonschema/table-dependency-required"
+            }
         }
     }
 }

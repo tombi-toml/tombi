@@ -369,7 +369,7 @@ where
 {
     let mut diagnostics = vec![];
     crate::Diagnostic {
-        kind: Box::new(crate::DiagnosticKind::Nothing),
+        kind: Box::new(crate::DiagnosticKind::AlwaysFails),
         span: value.span(),
     }
     .push_diagnostic_with_level(SeverityLevelDefaultError::default(), &mut diagnostics);
@@ -449,14 +449,14 @@ pub(crate) fn merge_branch_diagnostics(
     if !branch_diagnostics
         .iter()
         .flatten()
-        .any(|diagnostic| diagnostic.code() == "unused-noqa")
+        .any(|diagnostic| diagnostic.code() == "comment/unused-noqa")
     {
         return branch_diagnostics.into_iter().flatten().collect();
     }
 
     let mut merged: Vec<tombi_diagnostic::Diagnostic> = Vec::new();
     for diagnostic in branch_diagnostics.iter().flatten() {
-        let keep = diagnostic.code() != "unused-noqa"
+        let keep = diagnostic.code() != "comment/unused-noqa"
             || (branch_diagnostics.iter().all(|others| {
                 others
                     .iter()
@@ -642,7 +642,7 @@ pub(crate) fn filter_table_strict_additional_diagnostics(
 ) -> Result<crate::Valid, crate::Invalid> {
     error
         .diagnostics
-        .retain(|diagnostic| diagnostic.code() != "table-strict-additional-keys");
+        .retain(|diagnostic| diagnostic.code() != "jsonschema/table-strict-additional-keys");
 
     if error.diagnostics.is_empty() && !error.assertion_failed {
         Ok(error.local_evaluated_locations)
@@ -952,7 +952,7 @@ mod tests {
             match_evidence: Default::default(),
             diagnostics: vec![tombi_diagnostic::Diagnostic::new_warning(
                 "warn",
-                "warn-code",
+                "jsonschema/warn-code",
                 tombi_text::Span::default(),
             )],
             local_evaluated_locations: crate::Valid::default(),
@@ -968,7 +968,7 @@ mod tests {
             match_evidence: Default::default(),
             diagnostics: vec![tombi_diagnostic::Diagnostic::new_error(
                 "lint error",
-                "lint-code",
+                "jsonschema/lint-code",
                 tombi_text::Span::default(),
             )],
             local_evaluated_locations: crate::Valid::default(),
@@ -992,12 +992,12 @@ mod tests {
             diagnostics: vec![
                 tombi_diagnostic::Diagnostic::new_warning(
                     "strict additional",
-                    "table-strict-additional-keys",
+                    "jsonschema/table-strict-additional-keys",
                     tombi_text::Span::default(),
                 ),
                 tombi_diagnostic::Diagnostic::new_warning(
                     "other warning",
-                    "deprecated",
+                    "jsonschema/deprecated",
                     tombi_text::Span::default(),
                 ),
             ],
@@ -1006,7 +1006,7 @@ mod tests {
 
         let err = result.expect_err("non-strict diagnostics should remain");
         assert_eq!(err.diagnostics.len(), 1);
-        assert_eq!(err.diagnostics[0].code(), "deprecated");
+        assert_eq!(err.diagnostics[0].code(), "jsonschema/deprecated");
     }
 
     #[test]
@@ -1016,7 +1016,7 @@ mod tests {
             match_evidence: Default::default(),
             diagnostics: vec![tombi_diagnostic::Diagnostic::new_warning(
                 "strict additional",
-                "table-strict-additional-keys",
+                "jsonschema/table-strict-additional-keys",
                 tombi_text::Span::default(),
             )],
             local_evaluated_locations: crate::Valid::default(),
@@ -1060,7 +1060,7 @@ mod tests {
             Ok(evaluated_locations),
             vec![tombi_diagnostic::Diagnostic::new_warning(
                 "lint warning",
-                "lint-warning",
+                "jsonschema/lint-warning",
                 tombi_text::Span::default(),
             )],
         )

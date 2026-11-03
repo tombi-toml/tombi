@@ -17,10 +17,10 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Err([
-        tombi_validator::DiagnosticKind::Nothing,
-        tombi_validator::DiagnosticKind::Nothing,
-        tombi_validator::DiagnosticKind::Nothing,
-        tombi_validator::DiagnosticKind::Nothing,
+        tombi_validator::DiagnosticKind::AlwaysFails,
+        tombi_validator::DiagnosticKind::AlwaysFails,
+        tombi_validator::DiagnosticKind::AlwaysFails,
+        tombi_validator::DiagnosticKind::AlwaysFails,
     ])
 }
 

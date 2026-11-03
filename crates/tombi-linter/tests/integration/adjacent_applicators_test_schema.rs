@@ -448,7 +448,7 @@ test_lint! {
         null_only = "not null"
         "#,
         SchemaPath(schema_path()),
-    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+    ) -> Err([tombi_validator::DiagnosticKind::AlwaysFails])
 }
 
 test_lint! {
@@ -458,7 +458,7 @@ test_lint! {
         null_only = []
         "#,
         SchemaPath(schema_path()),
-    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+    ) -> Err([tombi_validator::DiagnosticKind::AlwaysFails])
 }
 
 test_lint! {
@@ -469,7 +469,7 @@ test_lint! {
         value = true
         "#,
         SchemaPath(schema_path()),
-    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+    ) -> Err([tombi_validator::DiagnosticKind::AlwaysFails])
 }
 
 test_lint! {
@@ -479,7 +479,7 @@ test_lint! {
         const_null_only = "not null"
         "#,
         SchemaPath(schema_path()),
-    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+    ) -> Err([tombi_validator::DiagnosticKind::AlwaysFails])
 }
 
 test_lint! {
@@ -489,7 +489,7 @@ test_lint! {
         enum_null_only = "not null"
         "#,
         SchemaPath(schema_path()),
-    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+    ) -> Err([tombi_validator::DiagnosticKind::AlwaysFails])
 }
 
 test_lint! {
@@ -513,7 +513,7 @@ test_lint! {
         value = "anything"
         "#,
         SchemaPath(schema_path()),
-    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+    ) -> Err([tombi_validator::DiagnosticKind::AlwaysFails])
 }
 
 test_lint! {
@@ -524,7 +524,7 @@ test_lint! {
         value = "anything"
         "#,
         SchemaPath(schema_path()),
-    ) -> Err([tombi_validator::DiagnosticKind::Nothing])
+    ) -> Err([tombi_validator::DiagnosticKind::AlwaysFails])
 }
 
 test_lint! {
@@ -545,7 +545,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -557,7 +557,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -569,7 +569,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -581,7 +581,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -593,7 +593,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -605,7 +605,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -617,7 +617,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -642,7 +642,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -654,7 +654,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -666,7 +666,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -678,7 +678,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -690,7 +690,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -702,7 +702,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -714,7 +714,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -726,7 +726,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
@@ -739,7 +739,7 @@ test_lint! {
         "#,
         SchemaPath(schema_path()),
     ) -> Diagnostics([
-        { code: "unused-noqa", level: tombi_diagnostic::Level::WARNING }
+        { code: "comment/unused-noqa", level: tombi_diagnostic::Level::WARNING }
     ])
 }
 
