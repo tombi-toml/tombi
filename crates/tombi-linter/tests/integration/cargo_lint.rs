@@ -238,6 +238,32 @@ readme = "README.md"
 
 test_lint! {
     #[test]
+    fn path_dependency_must_be_a_directory_even_if_it_is_named_cargo_toml(
+        r#"[dependencies]
+local = { path = "crates/tombi-linter/Cargo.toml" }
+"#,
+        SourcePath(cargo_path()),
+    ) -> Diagnostics([{
+        code: "cargo/missing-path-dependency",
+        level: Level::ERROR,
+        span: span_of(r#"[dependencies]
+local = { path = "crates/tombi-linter/Cargo.toml" }
+"#, "crates/tombi-linter/Cargo.toml")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn path_dependency_directory_with_manifest_is_accepted(
+        r#"[dependencies]
+local = { path = "crates/tombi-linter" }
+"#,
+        SourcePath(cargo_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
     fn missing_path_dependency_severity_can_be_downgraded(
         r#"[dependencies]
 local = { path = "missing-local" }

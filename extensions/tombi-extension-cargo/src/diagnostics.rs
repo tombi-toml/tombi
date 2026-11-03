@@ -89,6 +89,138 @@ pub fn validate(
         return Vec::new();
     };
 
+    let references = collect_path_references(document_tree, rules);
+
+    let workspace_references = references
+        .iter()
+        .filter(|reference| reference.kind.workspace_definition().is_some())
+        .collect::<Vec<_>>();
+    let missing_workspace_definitions = if workspace_references.is_empty() {
+        HashSet::new()
+    } else if document_tree.contains_key("workspace") {
+        missing_workspace_definitions(document_tree, &workspace_references)
+    } else {
+        crate::find_workspace_cargo_toml(
+            manifest_path,
+            crate::get_workspace_cargo_toml_path(document_tree),
+            toml_version,
+            |_, workspace_document_tree, _| {
+                missing_workspace_definitions(workspace_document_tree, &workspace_references)
+            },
+        )
+        .unwrap_or_else(|| {
+            workspace_references
+                .iter()
+                .filter_map(|reference| {
+                    reference
+                        .kind
+                        .workspace_definition()
+                        .map(|kind| (kind, reference.value.to_owned()))
+                })
+                .collect()
+        })
+    };
+
+    references
+        .into_iter()
+        .filter_map(|reference| {
+            let exists = if matches!(reference.kind, DiagnosticKind::PathDependency) {
+                let dependency_directory = Path::new(reference.value);
+                let dependency_directory = if dependency_directory.is_absolute() {
+                    dependency_directory.to_path_buf()
+                } else {
+                    manifest_dir.join(dependency_directory)
+                };
+                tombi_fs::is_file(&dependency_directory.join("Cargo.toml"))
+            } else if let Some(kind) = reference.kind.workspace_definition() {
+                !missing_workspace_definitions.contains(&(kind, reference.value.to_owned()))
+            } else {
+                tombi_fs::is_file(&manifest_dir.join(reference.value))
+            };
+            if exists {
+                return None;
+            }
+            let rule = reference.kind.rule();
+            let message = reference.kind.message(reference.value);
+            Some(match reference.severity {
+                SeverityLevel::Error => {
+                    tombi_diagnostic::Diagnostic::new_error(message, rule, reference.span)
+                }
+                SeverityLevel::Warn => {
+                    tombi_diagnostic::Diagnostic::new_warning(message, rule, reference.span)
+                }
+                SeverityLevel::Off => return None,
+            })
+        })
+        .collect()
+}
+
+pub fn references_path(
+    document_tree: &DocumentTree<'_>,
+    manifest_path: &Path,
+    changed_path: &Path,
+) -> bool {
+    let Some(manifest_dir) = manifest_path.parent() else {
+        return false;
+    };
+    let changed_path = tombi_fs::normalize(changed_path);
+    let references = collect_path_references(document_tree, CargoLintRules::default());
+
+    if !document_tree.contains_key("workspace")
+        && references
+            .iter()
+            .any(|reference| reference.kind.workspace_definition().is_some())
+        && changed_path
+            .file_name()
+            .is_some_and(|name| name == "Cargo.toml")
+    {
+        if let Some(workspace_path) = crate::get_workspace_cargo_toml_path(document_tree) {
+            let workspace_path = Path::new(workspace_path);
+            let workspace_path = if workspace_path.is_absolute() {
+                workspace_path.to_path_buf()
+            } else {
+                manifest_dir.join(workspace_path)
+            };
+            let workspace_manifest = if workspace_path
+                .file_name()
+                .is_some_and(|name| name == "Cargo.toml")
+            {
+                workspace_path
+            } else {
+                workspace_path.join("Cargo.toml")
+            };
+            if tombi_fs::normalize(&workspace_manifest) == changed_path {
+                return true;
+            }
+        } else if changed_path
+            .parent()
+            .is_some_and(|changed_dir| manifest_dir.starts_with(changed_dir))
+        {
+            return true;
+        }
+    }
+
+    references.iter().any(|reference| {
+        let path = if matches!(reference.kind, DiagnosticKind::PathDependency) {
+            Path::new(reference.value).join("Cargo.toml")
+        } else if reference.kind.workspace_definition().is_some() {
+            return false;
+        } else {
+            Path::new(reference.value).to_path_buf()
+        };
+        let path = if path.is_absolute() {
+            path
+        } else {
+            manifest_dir.join(path)
+        };
+        tombi_fs::normalize(&path) == changed_path
+    })
+}
+
+fn collect_path_references<'a>(
+    document_tree: &'a DocumentTree<'a>,
+    rules: CargoLintRules,
+) -> Vec<PathReference<'a>> {
     let mut references = Vec::new();
     collect_file_field(
         document_tree,
@@ -98,7 +230,6 @@ pub fn validate(
         rules.missing_readme,
         &mut references,
     );
-
     collect_workspace_package_fields(document_tree, rules.missing_workspace, &mut references);
     collect_workspace_lints(document_tree, rules.missing_workspace, &mut references);
     collect_file_field(
@@ -214,68 +345,7 @@ pub fn validate(
             }
         }
     }
-
-    let workspace_references = references
-        .iter()
-        .filter(|reference| reference.kind.workspace_definition().is_some())
-        .collect::<Vec<_>>();
-    let missing_workspace_definitions = if workspace_references.is_empty() {
-        HashSet::new()
-    } else if document_tree.contains_key("workspace") {
-        missing_workspace_definitions(document_tree, &workspace_references)
-    } else {
-        crate::find_workspace_cargo_toml(
-            manifest_path,
-            crate::get_workspace_cargo_toml_path(document_tree),
-            toml_version,
-            |_, workspace_document_tree, _| {
-                missing_workspace_definitions(workspace_document_tree, &workspace_references)
-            },
-        )
-        .unwrap_or_else(|| {
-            workspace_references
-                .iter()
-                .filter_map(|reference| {
-                    reference
-                        .kind
-                        .workspace_definition()
-                        .map(|kind| (kind, reference.value.to_owned()))
-                })
-                .collect()
-        })
-    };
-
     references
-        .into_iter()
-        .filter_map(|reference| {
-            let exists = if matches!(reference.kind, DiagnosticKind::PathDependency) {
-                tombi_extension_manifest::resolve_manifest_path(
-                    manifest_path,
-                    Path::new(reference.value),
-                    "Cargo.toml",
-                )
-                .is_some()
-            } else if let Some(kind) = reference.kind.workspace_definition() {
-                !missing_workspace_definitions.contains(&(kind, reference.value.to_owned()))
-            } else {
-                tombi_fs::is_file(&manifest_dir.join(reference.value))
-            };
-            if exists {
-                return None;
-            }
-            let rule = reference.kind.rule();
-            let message = reference.kind.message(reference.value);
-            Some(match reference.severity {
-                SeverityLevel::Error => {
-                    tombi_diagnostic::Diagnostic::new_error(message, rule, reference.span)
-                }
-                SeverityLevel::Warn => {
-                    tombi_diagnostic::Diagnostic::new_warning(message, rule, reference.span)
-                }
-                SeverityLevel::Off => return None,
-            })
-        })
-        .collect()
 }
 
 fn missing_workspace_definitions(

@@ -216,7 +216,10 @@ impl<'a> Linter<'a> {
     fn source_path(&self) -> Option<std::path::PathBuf> {
         self.source_uri_or_path.and_then(|source| match source {
             Either::Left(uri) => uri.to_file_path().ok(),
-            Either::Right(path) => Some(path.to_path_buf()),
+            Either::Right(path) if path.is_absolute() => Some(path.to_path_buf()),
+            Either::Right(path) => std::env::current_dir()
+                .ok()
+                .map(|current_dir| current_dir.join(path)),
         })
     }
 
