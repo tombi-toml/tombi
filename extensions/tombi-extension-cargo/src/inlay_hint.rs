@@ -2333,6 +2333,7 @@ mod tests {
         let uri = tombi_uri::Uri::from_file_path(&cargo_toml_path).expect("expected uri");
         let features = tombi_config::CargoExtensionFeatures::Features(
             tombi_config::CargoExtensionFeatureTree {
+                lint: None,
                 lsp: Some(tombi_config::CargoLspFeatures::Features(
                     tombi_config::CargoLspFeatureTree {
                         inlay_hint: Some(tombi_config::CargoInlayHintFeatures::Features(
@@ -2413,6 +2414,7 @@ mod tests {
         let uri = tombi_uri::Uri::from_file_path(&cargo_toml_path).expect("expected uri");
         let features = tombi_config::CargoExtensionFeatures::Features(
             tombi_config::CargoExtensionFeatureTree {
+                lint: None,
                 lsp: Some(tombi_config::CargoLspFeatures::Features(
                     tombi_config::CargoLspFeatureTree {
                         inlay_hint: Some(tombi_config::CargoInlayHintFeatures::Features(

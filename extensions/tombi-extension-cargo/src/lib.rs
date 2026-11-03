@@ -4,6 +4,7 @@ mod cargo_toml;
 mod code_action;
 mod completion;
 mod crates_io;
+mod diagnostics;
 mod did_open;
 mod document_link;
 mod feature_navigation;
@@ -16,6 +17,7 @@ mod workspace;
 
 pub use code_action::{CodeActionRefactorRewriteName, code_action};
 pub use completion::completion;
+pub use diagnostics::{references_path, validate as validate_cargo};
 pub use did_open::did_open;
 pub use document_link::{DocumentLinkToolTip, document_link};
 pub use goto_declaration::get_current_declaration;

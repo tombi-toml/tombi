@@ -55,31 +55,27 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
         }
     });
 
-    log::info!("registering workspace TOML watchers...");
-    if let Err(error) = register_workspace_toml_watcher(backend).await {
-        log::warn!("failed to register TOML file watchers: {error}");
+    log::info!("registering workspace file watchers...");
+    if let Err(error) = register_workspace_file_watcher(backend).await {
+        log::warn!("failed to register workspace file watchers: {error}");
     }
 }
 
-async fn register_workspace_toml_watcher(
+async fn register_workspace_file_watcher(
     backend: &Backend,
 ) -> Result<(), tower_lsp_server::jsonrpc::Error> {
-    let watcher = FileSystemWatcher {
-        glob_pattern: GlobPattern::Pattern("**/*.toml".to_string()),
-        kind: Some(WatchKind::Create | WatchKind::Change | WatchKind::Delete),
-    };
-    // Local JSON Schema files changed outside the editor.
-    let schema_watcher = FileSystemWatcher {
-        glob_pattern: GlobPattern::Pattern("**/*.json".to_string()),
-        kind: Some(WatchKind::Create | WatchKind::Change),
-    };
-
     let options = DidChangeWatchedFilesRegistrationOptions {
-        watchers: vec![watcher, schema_watcher],
+        watchers: ["**/*.toml", "**/*.json"]
+            .into_iter()
+            .map(|pattern| FileSystemWatcher {
+                glob_pattern: GlobPattern::Pattern(pattern.to_string()),
+                kind: Some(WatchKind::Create | WatchKind::Change | WatchKind::Delete),
+            })
+            .collect(),
     };
 
     let registration = Registration {
-        id: "workspace-diagnostics.toml-watcher".to_string(),
+        id: "workspace-diagnostics.file-watcher".to_string(),
         method: "workspace/didChangeWatchedFiles".to_string(),
         register_options: Some(json!(options)),
     };

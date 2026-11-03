@@ -1266,6 +1266,7 @@ mod tests {
 
     fn disabled_path_link_features() -> tombi_config::CargoExtensionFeatures {
         tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
+            lint: None,
             lsp: Some(tombi_config::CargoLspFeatures::Features(
                 tombi_config::CargoLspFeatureTree {
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
@@ -1289,6 +1290,7 @@ mod tests {
 
     fn disabled_cargo_toml_link_features() -> tombi_config::CargoExtensionFeatures {
         tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
+            lint: None,
             lsp: Some(tombi_config::CargoLspFeatures::Features(
                 tombi_config::CargoLspFeatureTree {
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
@@ -1314,6 +1316,7 @@ mod tests {
 
     fn disabled_workspace_link_features() -> tombi_config::CargoExtensionFeatures {
         tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
+            lint: None,
             lsp: Some(tombi_config::CargoLspFeatures::Features(
                 tombi_config::CargoLspFeatureTree {
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
@@ -1500,6 +1503,7 @@ version = "0.1.0"
 
     fn default_link_features() -> tombi_config::CargoExtensionFeatures {
         tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
+            lint: None,
             lsp: Some(tombi_config::CargoLspFeatures::Features(
                 tombi_config::CargoLspFeatureTree {
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
@@ -1549,6 +1553,7 @@ version = "0.1.0"
 
     fn disabled_git_link_features() -> tombi_config::CargoExtensionFeatures {
         tombi_config::CargoExtensionFeatures::Features(tombi_config::CargoExtensionFeatureTree {
+            lint: None,
             lsp: Some(tombi_config::CargoLspFeatures::Features(
                 tombi_config::CargoLspFeatureTree {
                     document_link: Some(tombi_config::CargoDocumentLinkFeatures::Features(
