@@ -4,6 +4,8 @@
 
 Install [mise](https://mise.jdx.dev/) and run `mise install` from the repository root. The versions of Go, Java, Node.js, pnpm, Python, Rust, and uv are declared in `mise.toml`. Activate mise in your shell so its shims take precedence over other version managers.
 
+VS Code / Cursor tasks in `.vscode/tasks.json` run Node tooling through `mise exec`, so the `node` / `pnpm` versions from `mise.toml` are used even when Homebrew or another tool also provides them on `PATH`.
+
 ## Debug CLI
 
 > [!NOTE]
