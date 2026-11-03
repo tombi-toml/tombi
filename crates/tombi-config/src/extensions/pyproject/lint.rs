@@ -81,6 +81,12 @@ impl PyprojectLintFeatures {
 pub struct PyprojectLintRules {
     /// Diagnose names declared as both exclusive and shared imports.
     pub ambiguous_import_name: SeverityLevel,
+    /// Diagnose cyclic dependency group includes.
+    pub cyclic_include_group: SeverityLevel,
+    /// Diagnose dependency group names that collide after normalization.
+    pub duplicate_dependency_group: SeverityLevel,
+    /// Diagnose project extra names that collide after normalization.
+    pub duplicate_extra_name: SeverityLevel,
     /// Diagnose duplicate Python import names.
     pub duplicate_import_name: SeverityLevel,
     /// Diagnose invalid PEP 508 dependency specifiers.
@@ -93,6 +99,8 @@ pub struct PyprojectLintRules {
     pub invalid_import_name: SeverityLevel,
     /// Diagnose import names whose parent is not declared.
     pub missing_import_name_parent: SeverityLevel,
+    /// Diagnose dependency groups that include an undefined group.
+    pub undefined_include_group: SeverityLevel,
     /// Diagnose classifiers not listed in the Trove classifier specification.
     pub unknown_classifier: SeverityLevel,
 }
@@ -101,12 +109,16 @@ impl Default for PyprojectLintRules {
     fn default() -> Self {
         Self {
             ambiguous_import_name: SeverityLevel::Error,
+            cyclic_include_group: SeverityLevel::Error,
+            duplicate_dependency_group: SeverityLevel::Error,
+            duplicate_extra_name: SeverityLevel::Error,
             duplicate_import_name: SeverityLevel::Warn,
             invalid_dependency_specifier: SeverityLevel::Error,
             invalid_email_display_name: SeverityLevel::Error,
             invalid_entry_point_target: SeverityLevel::Error,
             invalid_import_name: SeverityLevel::Error,
             missing_import_name_parent: SeverityLevel::Warn,
+            undefined_include_group: SeverityLevel::Error,
             unknown_classifier: SeverityLevel::Warn,
         }
     }
@@ -116,12 +128,16 @@ impl PyprojectLintRules {
     pub fn off() -> Self {
         Self {
             ambiguous_import_name: SeverityLevel::Off,
+            cyclic_include_group: SeverityLevel::Off,
+            duplicate_dependency_group: SeverityLevel::Off,
+            duplicate_extra_name: SeverityLevel::Off,
             duplicate_import_name: SeverityLevel::Off,
             invalid_dependency_specifier: SeverityLevel::Off,
             invalid_email_display_name: SeverityLevel::Off,
             invalid_entry_point_target: SeverityLevel::Off,
             invalid_import_name: SeverityLevel::Off,
             missing_import_name_parent: SeverityLevel::Off,
+            undefined_include_group: SeverityLevel::Off,
             unknown_classifier: SeverityLevel::Off,
         }
     }

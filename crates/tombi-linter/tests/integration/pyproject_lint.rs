@@ -7,6 +7,10 @@ version = "1.0"
 dependencies = ["not a valid requirement !!!"]
 "#;
 
+const UNDEFINED_INCLUDE_GROUP: &str = r#"[dependency-groups]
+dev = [{ include-group = "missing" }]
+"#;
+
 fn pyproject_path() -> std::path::PathBuf {
     tombi_test_lib::project_root_path().join("pyproject.toml")
 }
@@ -25,6 +29,14 @@ fn invalid_dependency_span() -> tombi_text::Span {
     )
 }
 
+fn undefined_include_group_span() -> tombi_text::Span {
+    let start = UNDEFINED_INCLUDE_GROUP.find("\"missing\"").unwrap();
+    tombi_text::Span::new(
+        tombi_text::Offset::new(start.try_into().unwrap()),
+        tombi_text::Offset::new((start + "\"missing\"".len()).try_into().unwrap()),
+    )
+}
+
 test_lint! {
     #[test]
     fn valid_pyproject_metadata_is_accepted(
@@ -34,6 +46,131 @@ version = "1.0"
 dependencies = ["requests>=2"]
 "#,
         SourcePath(pyproject_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn include_group_can_reference_a_defined_group(
+        r#"[dependency-groups]
+dev = [{ include-group = "Lint_Tools" }]
+"lint-tools" = ["ruff"]
+"#,
+        SourcePath(pyproject_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn dependency_groups_with_equivalent_normalized_names_are_errors(
+        r#"[dependency-groups]
+qa_tools = ["ruff"]
+"QA.Tools" = ["pytest"]
+"#,
+        SourcePath(pyproject_path()),
+    ) -> Diagnostics([{
+        code: "pyproject/duplicate-dependency-group",
+        level: Level::ERROR,
+        span: {
+            let start = r#"[dependency-groups]
+qa_tools = ["ruff"]
+"QA.Tools" = ["pytest"]
+"#.find("\"QA.Tools\"").unwrap();
+            tombi_text::Span::new(
+                tombi_text::Offset::new(start.try_into().unwrap()),
+                tombi_text::Offset::new((start + "\"QA.Tools\"".len()).try_into().unwrap()),
+            )
+        }
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn extra_names_with_equivalent_normalized_names_are_errors(
+        r#"[project.optional-dependencies]
+qa_tools = ["ruff"]
+"QA.Tools" = ["pytest"]
+"#,
+        SourcePath(pyproject_path()),
+    ) -> Diagnostics([{
+        code: "pyproject/duplicate-extra-name",
+        level: Level::ERROR,
+        span: {
+            let start = r#"[project.optional-dependencies]
+qa_tools = ["ruff"]
+"QA.Tools" = ["pytest"]
+"#.find("\"QA.Tools\"").unwrap();
+            tombi_text::Span::new(
+                tombi_text::Offset::new(start.try_into().unwrap()),
+                tombi_text::Offset::new((start + "\"QA.Tools\"".len()).try_into().unwrap()),
+            )
+        }
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn cyclic_dependency_group_includes_are_errors(
+        r#"[dependency-groups]
+a = [{ include-group = "b" }]
+b = [{ include-group = "a" }]
+"#,
+        SourcePath(pyproject_path()),
+    ) -> Diagnostics([{
+        code: "pyproject/cyclic-include-group",
+        level: Level::ERROR,
+        span: {
+            let start = r#"[dependency-groups]
+a = [{ include-group = "b" }]
+b = [{ include-group = "a" }]
+"#.find("\"a\"").unwrap();
+            tombi_text::Span::new(
+                tombi_text::Offset::new(start.try_into().unwrap()),
+                tombi_text::Offset::new((start + "\"a\"".len()).try_into().unwrap()),
+            )
+        }
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn undefined_include_group_uses_default_error_level(
+        UNDEFINED_INCLUDE_GROUP,
+        SourcePath(pyproject_path()),
+    ) -> Diagnostics([{
+        code: "pyproject/undefined-include-group",
+        level: Level::ERROR,
+        span: undefined_include_group_span()
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn undefined_include_group_can_be_disabled(
+        UNDEFINED_INCLUDE_GROUP,
+        SourcePath(pyproject_path()),
+        Config({
+            let mut config = tombi_config::Config::default();
+            config.extensions = Some(tombi_config::Extensions {
+                cargo: None,
+                nagi_sql: None,
+                pyproject: Some(tombi_config::PyprojectExtensionFeatures::Features(
+                    tombi_config::PyprojectExtensionFeatureTree {
+                        lint: Some(tombi_config::PyprojectLintFeatures::Features(
+                            tombi_config::PyprojectLintFeatureTree {
+                                rules: Some(tombi_config::PyprojectLintRules {
+                                    undefined_include_group: tombi_config::SeverityLevel::Off,
+                                    ..Default::default()
+                                }),
+                            },
+                        )),
+                        lsp: None,
+                    },
+                )),
+                tombi: None,
+            });
+            config
+        }),
     ) -> Ok(_)
 }
 

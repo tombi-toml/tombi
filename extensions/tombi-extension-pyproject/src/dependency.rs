@@ -173,8 +173,10 @@ pub(crate) fn find_dependency_group_key<'a>(
         return None;
     };
 
-    let (group_key, _) = dependency_groups.get_key_value(group_name)?;
-    Some(group_key)
+    let normalized_group_name = normalize_pep503_name(group_name);
+    dependency_groups
+        .keys()
+        .find(|group_key| normalize_pep503_name(group_key.value()) == normalized_group_name)
 }
 
 pub(crate) fn include_group_locations(
@@ -224,13 +226,30 @@ pub(crate) fn collect_include_group_values<'a>(
                 continue;
             };
 
-            if include_group.value() == group_name {
+            if normalize_pep503_name(include_group.value()) == normalize_pep503_name(group_name) {
                 include_group_values.push(include_group);
             }
         }
     }
 
     include_group_values
+}
+
+pub(crate) fn normalize_pep503_name(name: &str) -> String {
+    let mut normalized = String::with_capacity(name.len());
+    let mut previous_was_separator = false;
+    for character in name.chars() {
+        if matches!(character, '-' | '_' | '.') {
+            if !previous_was_separator {
+                normalized.push('-');
+            }
+            previous_was_separator = true;
+        } else {
+            normalized.push(character.to_ascii_lowercase());
+            previous_was_separator = false;
+        }
+    }
+    normalized
 }
 
 #[cfg(test)]
