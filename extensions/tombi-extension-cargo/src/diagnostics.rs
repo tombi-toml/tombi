@@ -61,7 +61,7 @@ impl DiagnosticKind {
                 format!("workspace dependency `{path}` is not defined in the workspace Cargo.toml")
             }
             Self::WorkspaceLints => {
-                format!("workspace lints are not defined in the workspace Cargo.toml")
+                "workspace lints are not defined in the workspace Cargo.toml".to_owned()
             }
         }
     }
