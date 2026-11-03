@@ -128,17 +128,19 @@ impl<'a> Linter<'a> {
 
             log::trace!("document_tree: {:#?}", document_tree);
 
-            let is_pyproject = self.source_uri_or_path.is_some_and(|source| match source {
-                Either::Left(uri) => {
-                    uri.path_segments()
-                        .and_then(|mut segments| segments.next_back())
-                        == Some("pyproject.toml")
-                }
-                Either::Right(path) => path
-                    .file_name()
-                    .is_some_and(|name| name == "pyproject.toml"),
-            });
-            let pyproject_diagnostics = if is_pyproject {
+            let cargo_diagnostics = if self.source_file_is_named("Cargo.toml") {
+                let source_path = self.source_path();
+                tombi_extension_cargo::validate_cargo(
+                    &document_tree,
+                    source_path.as_deref(),
+                    self.toml_version,
+                    self.extensions_options.cargo.rules.unwrap_or_default(),
+                )
+            } else {
+                Vec::new()
+            };
+
+            let pyproject_diagnostics = if self.source_file_is_named("pyproject.toml") {
                 tombi_extension_pyproject::validate_pyproject(
                     &document_tree,
                     &self.extensions_options.pyproject,
@@ -185,6 +187,7 @@ impl<'a> Linter<'a> {
                 self.diagnostics.extend(diagnostics);
             }
 
+            self.diagnostics.extend(cargo_diagnostics);
             self.diagnostics.extend(pyproject_diagnostics);
         }
 
@@ -197,6 +200,24 @@ impl<'a> Linter<'a> {
 
     pub fn source_text(&self) -> &str {
         self.source_text
+    }
+
+    fn source_file_is_named(&self, name: &str) -> bool {
+        self.source_uri_or_path.is_some_and(|source| match source {
+            Either::Left(uri) => {
+                uri.path_segments()
+                    .and_then(|mut segments| segments.next_back())
+                    == Some(name)
+            }
+            Either::Right(path) => path.file_name().is_some_and(|file_name| file_name == name),
+        })
+    }
+
+    fn source_path(&self) -> Option<std::path::PathBuf> {
+        self.source_uri_or_path.and_then(|source| match source {
+            Either::Left(uri) => uri.to_file_path().ok(),
+            Either::Right(path) => Some(path.to_path_buf()),
+        })
     }
 
     #[inline]

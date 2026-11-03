@@ -95,6 +95,24 @@ The extension can show inline hints for workspace-aware dependency values in `Ca
 
 Current hints cover resolved dependency versions, `default-features`, and workspace-inherited values so you can inspect the effective dependency state without leaving the current `Cargo.toml`.
 
+### Lint
+
+The Cargo extension checks explicitly configured README, license file, build script, target source, local dependency paths, and `workspace = true` inheritance for package metadata, dependencies, and lints. Missing workspace definitions are errors by default. Paths inferred by Cargo when a field is omitted are not checked.
+
+Configure each rule under `[extensions."tombi-toml/cargo".lint.rules]`:
+
+```toml
+[extensions."tombi-toml/cargo".lint.rules]
+missing-build-script = "error"
+missing-license-file = "error"
+missing-path-dependency = "error"
+missing-readme = "error"
+missing-target-path = "error"
+missing-workspace = "error"
+```
+
+Set a rule to `"off"`, `"warn"`, or `"error"`. See [Cargo extension configuration](/docs/configuration#extensions-tombi-toml-cargo-lint) for details.
+
 ### Go to Definition
 For example, suppose you have a `Cargo.toml` like the one below:
 

@@ -516,6 +516,7 @@ mod tests {
 
     fn default_features_only() -> CargoExtensionFeatures {
         CargoExtensionFeatures::Features(CargoExtensionFeatureTree {
+            lint: None,
             lsp: Some(CargoLspFeatures::Features(CargoLspFeatureTree {
                 completion: Some(CargoCompletionFeatures::Features(
                     CargoCompletionFeatureTree {
