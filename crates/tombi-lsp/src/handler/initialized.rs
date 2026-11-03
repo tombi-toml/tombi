@@ -6,7 +6,9 @@ use tower_lsp_server::gen_lsp_types::{
 
 use crate::{
     backend::{Backend, DiagnosticMode},
-    workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
+    workspace_diagnostic::{
+        WorkspaceDiagnosticOptions, push_workspace_diagnostics, refresh_cargo_file_watchers,
+    },
 };
 
 pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
@@ -55,31 +57,21 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
         }
     });
 
-    log::info!("registering workspace file watchers...");
-    if let Err(error) = register_workspace_file_watcher(backend).await {
-        log::warn!("failed to register workspace file watchers: {error}");
-    }
-}
-
-async fn register_workspace_file_watcher(
-    backend: &Backend,
-) -> Result<(), tower_lsp_server::jsonrpc::Error> {
-    // Cargo lint rules can reference non-TOML paths, so changes to any file can
-    // invalidate diagnostics for Cargo.toml documents.
-    let watcher = FileSystemWatcher {
-        glob_pattern: GlobPattern::Pattern("**/*".to_string()),
-        kind: Some(WatchKind::Create | WatchKind::Change | WatchKind::Delete),
-    };
-
-    let options = DidChangeWatchedFilesRegistrationOptions {
-        watchers: vec![watcher],
-    };
-
     let registration = Registration {
         id: "workspace-diagnostics.file-watcher".to_string(),
         method: "workspace/didChangeWatchedFiles".to_string(),
-        register_options: Some(json!(options)),
+        register_options: Some(json!(DidChangeWatchedFilesRegistrationOptions {
+            watchers: ["**/*.toml", "**/*.json"]
+                .into_iter()
+                .map(|pattern| FileSystemWatcher {
+                    glob_pattern: GlobPattern::Pattern(pattern.to_string()),
+                    kind: Some(WatchKind::Create | WatchKind::Change | WatchKind::Delete),
+                })
+                .collect(),
+        })),
     };
-
-    backend.client.register_capability(vec![registration]).await
+    if let Err(error) = backend.client.register_capability(vec![registration]).await {
+        log::warn!("failed to register workspace file watchers: {error}");
+    }
+    refresh_cargo_file_watchers(backend).await;
 }

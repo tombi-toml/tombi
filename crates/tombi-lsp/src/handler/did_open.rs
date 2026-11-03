@@ -84,6 +84,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         },
     );
     backend.finish_document_open(&text_document_uri);
+    crate::workspace_diagnostic::refresh_cargo_file_watchers(backend).await;
 
     // Publish diagnostics for the opened document
     backend.push_diagnostics(text_document_uri).await;

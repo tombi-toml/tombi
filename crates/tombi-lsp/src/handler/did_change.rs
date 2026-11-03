@@ -94,6 +94,7 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
     }
 
     if need_publish_diagnostics {
+        crate::workspace_diagnostic::refresh_cargo_file_watchers(backend).await;
         // Publish diagnostics for the changed document
         backend.push_diagnostics(text_document_uri).await;
     }
