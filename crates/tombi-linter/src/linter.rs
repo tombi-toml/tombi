@@ -151,12 +151,10 @@ impl<'a> Linter<'a> {
 
             let is_tombi_config = self.source_uri_or_path.is_some_and(|source| match source {
                 Either::Left(uri) => uri
-                    .path_segments()
-                    .and_then(|mut segments| segments.next_back())
-                    .is_some_and(|name| matches!(name, "tombi.toml" | ".tombi.toml")),
-                Either::Right(path) => path
-                    .file_name()
-                    .is_some_and(|name| name == "tombi.toml" || name == ".tombi.toml"),
+                    .to_file_path()
+                    .ok()
+                    .is_some_and(|path| is_tombi_config_path(&path)),
+                Either::Right(path) => is_tombi_config_path(path),
             });
             let tombi_diagnostics = if is_tombi_config {
                 let source_path = self.source_uri_or_path.and_then(|source| match source {
@@ -298,5 +296,16 @@ impl<'a> Linter<'a> {
                 }
             })
             .collect()
+    }
+}
+
+fn is_tombi_config_path(path: &std::path::Path) -> bool {
+    match path.file_name().and_then(|name| name.to_str()) {
+        Some(tombi_config::TOMBI_TOML_FILENAME | tombi_config::DOT_TOMBI_TOML_FILENAME) => true,
+        Some(tombi_config::CONFIG_TOML_FILENAME) => path
+            .parent()
+            .and_then(|parent| parent.file_name())
+            .is_some_and(|name| name == "tombi"),
+        _ => false,
     }
 }

@@ -71,8 +71,8 @@ pub struct TombiLintRules {
 impl Default for TombiLintRules {
     fn default() -> Self {
         Self {
-            missing_catalog_path: SeverityLevel::Error,
-            missing_schema_path: SeverityLevel::Error,
+            missing_catalog_path: SeverityLevel::Warn,
+            missing_schema_path: SeverityLevel::Warn,
         }
     }
 }

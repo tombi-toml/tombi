@@ -3177,7 +3177,7 @@
       "properties": {
         "missing-catalog-path": {
           "description": "Report a local schema catalog path that does not point to a file.",
-          "default": "error",
+          "default": "warn",
           "allOf": [
             {
               "$ref": "#/definitions/SeverityLevel"
@@ -3186,7 +3186,7 @@
         },
         "missing-schema-path": {
           "description": "Report a local schema path that does not point to a file.",
-          "default": "error",
+          "default": "warn",
           "allOf": [
             {
               "$ref": "#/definitions/SeverityLevel"

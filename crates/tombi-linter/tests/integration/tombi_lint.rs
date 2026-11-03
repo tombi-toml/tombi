@@ -17,6 +17,14 @@ fn dot_tombi_path() -> std::path::PathBuf {
     tombi_test_lib::project_root_path().join(".tombi.toml")
 }
 
+fn user_config_path() -> std::path::PathBuf {
+    tombi_test_lib::project_root_path().join(".config/tombi/config.toml")
+}
+
+fn unrelated_config_path() -> std::path::PathBuf {
+    tombi_test_lib::project_root_path().join("services/example/config.toml")
+}
+
 fn span_of(source: &str, value: &str) -> tombi_text::Span {
     let value = format!("\"{value}\"");
     let start = source.find(&value).unwrap();
@@ -59,13 +67,37 @@ test_lint! {
         SourcePath(tombi_path()),
     ) -> Diagnostics([{
         code: "tombi/missing-schema-path",
-        level: Level::ERROR,
+        level: Level::WARNING,
         span: span_of(MISSING_PATHS, "missing-schema-for-tombi-lint-test.json")
     }, {
         code: "tombi/missing-catalog-path",
-        level: Level::ERROR,
+        level: Level::WARNING,
         span: span_of(MISSING_PATHS, "missing-catalog-for-tombi-lint-test.json")
     }])
+}
+
+test_lint! {
+    #[test]
+    fn user_config_tombi_paths_are_linted(
+        MISSING_PATHS,
+        SourcePath(user_config_path()),
+    ) -> Diagnostics([{
+        code: "tombi/missing-schema-path",
+        level: Level::WARNING,
+        span: span_of(MISSING_PATHS, "missing-schema-for-tombi-lint-test.json")
+    }, {
+        code: "tombi/missing-catalog-path",
+        level: Level::WARNING,
+        span: span_of(MISSING_PATHS, "missing-catalog-for-tombi-lint-test.json")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn unrelated_config_toml_is_not_linted_as_tombi_config(
+        MISSING_PATHS,
+        SourcePath(unrelated_config_path()),
+    ) -> Ok(_)
 }
 
 test_lint! {
@@ -75,11 +107,11 @@ test_lint! {
         SourcePath(dot_tombi_path()),
     ) -> Diagnostics([{
         code: "tombi/missing-schema-path",
-        level: Level::ERROR,
+        level: Level::WARNING,
         span: span_of(MISSING_PATHS, "missing-schema-for-tombi-lint-test.json")
     }, {
         code: "tombi/missing-catalog-path",
-        level: Level::ERROR,
+        level: Level::WARNING,
         span: span_of(MISSING_PATHS, "missing-catalog-for-tombi-lint-test.json")
     }])
 }
