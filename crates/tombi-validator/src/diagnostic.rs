@@ -239,7 +239,7 @@ impl DiagnosticKind {
             DiagnosticKind::OneOfNoMatch { .. } => "jsonschema/one-of-no-match",
             DiagnosticKind::AlwaysFails => "jsonschema/always-fails",
             DiagnosticKind::NotSchemaMatch => "jsonschema/not-schema-match",
-            DiagnosticKind::KeyEmpty => "toml/key-empty",
+            DiagnosticKind::KeyEmpty => "discouraged/key-empty",
             DiagnosticKind::TableDependencyRequired { .. } => {
                 "jsonschema/table-dependency-required"
             }

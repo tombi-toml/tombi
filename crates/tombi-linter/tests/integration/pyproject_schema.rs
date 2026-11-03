@@ -452,7 +452,7 @@ version = "1.0"
 "" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "toml/key-empty", level: Level::WARNING }])
+    ) -> Diagnostics([{ code: "discouraged/key-empty", level: Level::WARNING }])
 }
 
 test_lint! {
@@ -465,7 +465,7 @@ version = "1.0"
 "" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "toml/key-empty", level: Level::WARNING }])
+    ) -> Diagnostics([{ code: "discouraged/key-empty", level: Level::WARNING }])
 }
 
 test_lint! {
@@ -478,7 +478,7 @@ version = "1.0"
 "" = "example:main"
 "#,
         SchemaPath(pyproject_schema_path()),
-    ) -> Diagnostics([{ code: "toml/key-empty", level: Level::WARNING }])
+    ) -> Diagnostics([{ code: "discouraged/key-empty", level: Level::WARNING }])
 }
 
 test_lint! {
