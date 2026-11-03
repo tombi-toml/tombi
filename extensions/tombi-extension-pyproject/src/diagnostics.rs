@@ -289,32 +289,39 @@ fn report_include_cycles(
         return;
     }
 
-    if let Some(included_groups) = includes.get(group) {
-        for (included_group, span) in included_groups {
-            if visiting.contains(included_group) {
-                push_diagnostic(
-                    DiagnosticKind::CyclicIncludeGroup {
-                        group: included_group.clone(),
-                    },
-                    severity,
-                    *span,
-                    diagnostics,
-                );
-            } else {
-                report_include_cycles(
-                    included_group,
-                    includes,
-                    visited,
-                    visiting,
-                    severity,
-                    diagnostics,
-                );
-            }
+    let mut stack = vec![(group.to_owned(), 0)];
+    while let Some((current_group, next_include_index)) = stack.last() {
+        let current_group = current_group.clone();
+        let next_include_index = *next_include_index;
+        let Some(included_groups) = includes.get(&current_group) else {
+            let completed_group = stack.pop().unwrap().0;
+            visiting.remove(&completed_group);
+            visited.insert(completed_group);
+            continue;
+        };
+
+        let Some((included_group, span)) = included_groups.get(next_include_index) else {
+            let completed_group = stack.pop().unwrap().0;
+            visiting.remove(&completed_group);
+            visited.insert(completed_group);
+            continue;
+        };
+
+        stack.last_mut().unwrap().1 += 1;
+        if visiting.contains(included_group) {
+            push_diagnostic(
+                DiagnosticKind::CyclicIncludeGroup {
+                    group: included_group.clone(),
+                },
+                severity,
+                *span,
+                diagnostics,
+            );
+        } else if !visited.contains(included_group) {
+            visiting.insert(included_group.clone());
+            stack.push((included_group.clone(), 0));
         }
     }
-
-    visiting.remove(group);
-    visited.insert(group.to_owned());
 }
 
 fn validate_dependency_array(

@@ -37,6 +37,25 @@ fn undefined_include_group_span() -> tombi_text::Span {
     )
 }
 
+fn long_acyclic_dependency_group_chain() -> String {
+    use std::fmt::Write;
+
+    let mut source = String::from("[dependency-groups]\n");
+    for index in 0..10_000 {
+        if index == 0 {
+            writeln!(source, "group-{index} = []").unwrap();
+        } else {
+            writeln!(
+                source,
+                "group-{index} = [{{ include-group = \"group-{}\" }}]",
+                index - 1
+            )
+            .unwrap();
+        }
+    }
+    source
+}
+
 test_lint! {
     #[test]
     fn valid_pyproject_metadata_is_accepted(
@@ -130,6 +149,14 @@ b = [{ include-group = "a" }]
             )
         }
     }])
+}
+
+test_lint! {
+    #[test]
+    fn long_acyclic_dependency_group_chain_does_not_overflow_the_stack(
+        &long_acyclic_dependency_group_chain(),
+        SourcePath(pyproject_path()),
+    ) -> Ok(_)
 }
 
 test_lint! {
