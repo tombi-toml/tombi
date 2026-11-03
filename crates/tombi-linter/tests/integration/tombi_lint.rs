@@ -13,6 +13,10 @@ fn tombi_path() -> std::path::PathBuf {
     tombi_test_lib::project_root_path().join("tombi.toml")
 }
 
+fn dot_tombi_path() -> std::path::PathBuf {
+    tombi_test_lib::project_root_path().join(".tombi.toml")
+}
+
 fn span_of(source: &str, value: &str) -> tombi_text::Span {
     let value = format!("\"{value}\"");
     let start = source.find(&value).unwrap();
@@ -66,6 +70,22 @@ test_lint! {
 
 test_lint! {
     #[test]
+    fn dot_tombi_config_reports_missing_paths(
+        MISSING_PATHS,
+        SourcePath(dot_tombi_path()),
+    ) -> Diagnostics([{
+        code: "tombi/missing-schema-path",
+        level: Level::ERROR,
+        span: span_of(MISSING_PATHS, "missing-schema-for-tombi-lint-test.json")
+    }, {
+        code: "tombi/missing-catalog-path",
+        level: Level::ERROR,
+        span: span_of(MISSING_PATHS, "missing-catalog-for-tombi-lint-test.json")
+    }])
+}
+
+test_lint! {
+    #[test]
     fn path_diagnostic_severity_can_be_configured(
         MISSING_PATHS,
         SourcePath(tombi_path()),
@@ -75,6 +95,39 @@ test_lint! {
         level: Level::WARNING,
         span: span_of(MISSING_PATHS, "missing-schema-for-tombi-lint-test.json")
     }])
+}
+
+test_lint! {
+    #[test]
+    fn catalog_path_diagnostic_can_be_downgraded_to_warning(
+        MISSING_PATHS,
+        SourcePath(tombi_path()),
+        Config(config(tombi_config::SeverityLevel::Off, tombi_config::SeverityLevel::Warn)),
+    ) -> Diagnostics([{
+        code: "tombi/missing-catalog-path",
+        level: Level::WARNING,
+        span: span_of(MISSING_PATHS, "missing-catalog-for-tombi-lint-test.json")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn tombi_extension_can_be_disabled(
+        MISSING_PATHS,
+        SourcePath(tombi_path()),
+        Config({
+            let mut config = tombi_config::Config::default();
+            config.extensions = Some(tombi_config::Extensions {
+                cargo: None,
+                nagi_sql: None,
+                pyproject: None,
+                tombi: Some(tombi_config::TombiExtensionFeatures::Enabled(
+                    tombi_config::EnabledOnly { enabled: false.into() },
+                )),
+            });
+            config
+        }),
+    ) -> Ok(_)
 }
 
 test_lint! {
