@@ -2,11 +2,6 @@ mod cache;
 
 use std::path::PathBuf;
 
-use tower_lsp_server::gen_lsp_types::{
-    BaseUri, DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern, Pattern,
-    Registration, RelativePattern, Unregistration, WatchKind,
-};
-
 use tombi_glob::search_pattern_matched_paths;
 
 use crate::{
@@ -133,97 +128,6 @@ pub async fn refresh_cargo_diagnostics_after_file_changes(
     }
 
     true
-}
-
-/// Keep client-side file watching limited to paths referenced by known Cargo manifests.
-pub async fn refresh_cargo_file_watchers(backend: &Backend) {
-    let paths = {
-        let sources = backend.document_sources.read().await;
-        sources
-            .iter()
-            .filter_map(|(uri, source)| {
-                let manifest_path = uri.to_file_path().ok()?;
-                if manifest_path
-                    .file_name()
-                    .is_none_or(|name| name != "Cargo.toml")
-                {
-                    return None;
-                }
-                Some(tombi_extension_cargo::referenced_paths(
-                    source.document_tree(),
-                    &manifest_path,
-                ))
-            })
-            .flatten()
-            .collect::<std::collections::HashSet<_>>()
-    };
-
-    let mut previous = backend.cargo_file_watchers.lock().await;
-    if previous
-        .iter()
-        .cloned()
-        .collect::<std::collections::HashSet<_>>()
-        == paths
-    {
-        return;
-    }
-
-    if !previous.is_empty()
-        && let Err(error) = backend
-            .client
-            .unregister_capability(vec![Unregistration::new(
-                "cargo-reference-file-watcher".to_string(),
-                "workspace/didChangeWatchedFiles".to_string(),
-            )])
-            .await
-    {
-        log::warn!("failed to unregister Cargo reference file watchers: {error}");
-        return;
-    }
-
-    if !paths.is_empty() {
-        let watchers = paths
-            .iter()
-            .filter_map(|path| {
-                let (base, relative_path) = watcher_base_and_pattern(path)?;
-                let base_uri = tombi_uri::Uri::from_file_path(base).ok()?;
-                Some(FileSystemWatcher {
-                    glob_pattern: GlobPattern::RelativePattern(RelativePattern::new(
-                        BaseUri::Uri(base_uri.into()),
-                        Pattern::from(relative_path),
-                    )),
-                    kind: Some(WatchKind::Create | WatchKind::Change | WatchKind::Delete),
-                })
-            })
-            .collect();
-        let registration = Registration {
-            id: "cargo-reference-file-watcher".to_string(),
-            method: "workspace/didChangeWatchedFiles".to_string(),
-            register_options: Some(serde_json::json!(
-                DidChangeWatchedFilesRegistrationOptions { watchers }
-            )),
-        };
-        if let Err(error) = backend.client.register_capability(vec![registration]).await {
-            log::warn!("failed to register Cargo reference file watchers: {error}");
-            return;
-        }
-    }
-
-    *previous = paths.into_iter().collect();
-}
-
-fn watcher_base_and_pattern(path: &std::path::Path) -> Option<(&std::path::Path, String)> {
-    let mut base = path.parent()?;
-    while !base.is_dir() {
-        base = base.parent()?;
-    }
-    let relative_path = path.strip_prefix(base).ok()?;
-    let pattern = relative_path
-        .components()
-        .map(|component| component.as_os_str().to_str())
-        .collect::<Option<Vec<_>>>()?
-        .join("/");
-    Some((base, pattern))
 }
 
 pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_uri::Uri> {

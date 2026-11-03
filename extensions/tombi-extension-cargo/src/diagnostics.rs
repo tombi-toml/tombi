@@ -217,68 +217,6 @@ pub fn references_path(
     })
 }
 
-/// Returns the filesystem paths whose changes can affect Cargo lint diagnostics.
-pub fn referenced_paths(
-    document_tree: &DocumentTree<'_>,
-    manifest_path: &Path,
-) -> HashSet<std::path::PathBuf> {
-    let Some(manifest_dir) = manifest_path.parent() else {
-        return HashSet::new();
-    };
-    let references = collect_path_references(document_tree, CargoLintRules::default());
-    let mut paths = HashSet::new();
-
-    for reference in &references {
-        if reference.kind.workspace_definition().is_some() {
-            continue;
-        }
-        let path = if matches!(reference.kind, DiagnosticKind::PathDependency) {
-            Path::new(reference.value).join("Cargo.toml")
-        } else {
-            Path::new(reference.value).to_path_buf()
-        };
-        let path = if path.is_absolute() {
-            path
-        } else {
-            manifest_dir.join(path)
-        };
-        paths.insert(tombi_fs::normalize(&path));
-    }
-
-    if references
-        .iter()
-        .any(|reference| reference.kind.workspace_definition().is_some())
-        && !document_tree.contains_key("workspace")
-    {
-        if let Some(workspace_path) = crate::get_workspace_cargo_toml_path(document_tree) {
-            let path = Path::new(workspace_path);
-            let path = if path.is_absolute() {
-                path.to_path_buf()
-            } else {
-                manifest_dir.join(path)
-            };
-            paths.insert(tombi_fs::normalize(&if path
-                .file_name()
-                .is_some_and(|name| name == "Cargo.toml")
-            {
-                path
-            } else {
-                path.join("Cargo.toml")
-            }));
-        } else {
-            // A workspace may be added to any ancestor, so watch only those
-            // specific Cargo.toml candidates rather than every file in the tree.
-            paths.extend(
-                manifest_dir
-                    .ancestors()
-                    .map(|ancestor| tombi_fs::normalize(&ancestor.join("Cargo.toml"))),
-            );
-        }
-    }
-
-    paths
-}
-
 fn collect_path_references<'a>(
     document_tree: &'a DocumentTree<'a>,
     rules: CargoLintRules,

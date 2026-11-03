@@ -54,7 +54,6 @@ pub struct Backend {
     >,
     pub config_manager: Arc<ConfigManager>,
     pub workspace_diagnostics_cache: Arc<tokio::sync::RwLock<WorkspaceDiagnosticsCache>>,
-    pub cargo_file_watchers: Arc<tokio::sync::Mutex<Vec<std::path::PathBuf>>>,
 }
 
 #[derive(Debug)]
@@ -108,7 +107,6 @@ impl Backend {
             opening_documents: Default::default(),
             config_manager: Arc::new(ConfigManager::new(options)),
             workspace_diagnostics_cache: Default::default(),
-            cargo_file_watchers: Default::default(),
         }
     }
 

@@ -17,7 +17,7 @@ mod workspace;
 
 pub use code_action::{CodeActionRefactorRewriteName, code_action};
 pub use completion::completion;
-pub use diagnostics::{referenced_paths, references_path, validate as validate_cargo};
+pub use diagnostics::{references_path, validate as validate_cargo};
 pub use did_open::did_open;
 pub use document_link::{DocumentLinkToolTip, document_link};
 pub use goto_declaration::get_current_declaration;
