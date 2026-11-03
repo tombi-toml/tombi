@@ -158,6 +158,7 @@ color = "orange"
         let diagnostics = crate::Linter::new(
             tombi_config::TomlVersion::default(),
             &crate::LintOptions::default(),
+            tombi_config::ExtensionsLintOptions::default(),
             None,
             &tombi_schema_store::SchemaStore::new(),
         )
@@ -192,6 +193,7 @@ type = "mammal"
         let result = crate::Linter::new(
             tombi_config::TomlVersion::default(),
             &crate::LintOptions::default(),
+            tombi_config::ExtensionsLintOptions::default(),
             None,
             &tombi_schema_store::SchemaStore::new(),
         )
@@ -218,6 +220,7 @@ name = "Nail"
         let diagnostics = crate::Linter::new(
             tombi_config::TomlVersion::default(),
             &crate::LintOptions::default(),
+            tombi_config::ExtensionsLintOptions::default(),
             None,
             &tombi_schema_store::SchemaStore::new(),
         )
@@ -255,6 +258,7 @@ name = "orange"
         let diagnostics = crate::Linter::new(
             tombi_config::TomlVersion::default(),
             &crate::LintOptions::default(),
+            tombi_config::ExtensionsLintOptions::default(),
             None,
             &tombi_schema_store::SchemaStore::new(),
         )

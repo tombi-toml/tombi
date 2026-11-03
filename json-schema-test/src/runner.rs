@@ -194,6 +194,7 @@ async fn validate_case(schema: &JsonValue, data: &JsonValue) -> Result<bool> {
     let linter = Linter::new(
         TomlVersion::default(),
         &lint_options,
+        tombi_config::ExtensionsLintOptions::default(),
         Some(Either::Right(source_path.as_path())),
         &schema_store,
     );

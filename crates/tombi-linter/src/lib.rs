@@ -135,6 +135,10 @@ macro_rules! test_lint {
             let linter = $crate::Linter::new(
                 args.toml_version,
                 &args.options,
+                args.config
+                    .as_ref()
+                    .map(tombi_config::Config::extensions_lint_options)
+                    .unwrap_or_default(),
                 Some(itertools::Either::Right(source_path.as_path())),
                 &schema_store,
             );
@@ -275,6 +279,10 @@ macro_rules! test_lint {
             let linter = $crate::Linter::new(
                 args.toml_version,
                 &args.options,
+                args.config
+                    .as_ref()
+                    .map(tombi_config::Config::extensions_lint_options)
+                    .unwrap_or_default(),
                 Some(itertools::Either::Right(source_path.as_path())),
                 &schema_store,
             );
@@ -420,6 +428,10 @@ macro_rules! test_lint {
             let linter = $crate::Linter::new(
                 args.toml_version,
                 &args.options,
+                args.config
+                    .as_ref()
+                    .map(tombi_config::Config::extensions_lint_options)
+                    .unwrap_or_default(),
                 Some(itertools::Either::Right(source_path.as_path())),
                 &schema_store,
             );

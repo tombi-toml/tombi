@@ -1,7 +1,9 @@
 use super::EnabledOnly;
 
+mod lint;
 mod lsp;
 
+pub use lint::*;
 pub use lsp::*;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -28,6 +30,9 @@ extension_features! {
         ))
     )]
     pub struct PyprojectExtensionFeatureTree {
+        /// # Pyproject lint options
+        pub lint: Option<PyprojectLintFeatures>,
+
         /// # Pyproject LSP feature options
         pub lsp: Option<PyprojectLspFeatures>,
     }

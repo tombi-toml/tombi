@@ -12,6 +12,7 @@ use crate::lint::Lint;
 pub struct Linter<'a> {
     toml_version: TomlVersion,
     options: Cow<'a, crate::LintOptions>,
+    extensions_options: tombi_config::ExtensionsLintOptions,
     source_text: &'a str,
     source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
     schema_store: &'a tombi_schema_store::SchemaStore,
@@ -22,12 +23,14 @@ impl<'a> Linter<'a> {
     pub fn new(
         toml_version: TomlVersion,
         options: &'a crate::LintOptions,
+        extensions_options: tombi_config::ExtensionsLintOptions,
         source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
         schema_store: &'a tombi_schema_store::SchemaStore,
     ) -> Self {
         Self {
             toml_version,
             options: Cow::Borrowed(options),
+            extensions_options,
             source_text: "",
             source_uri_or_path,
             schema_store,
@@ -125,6 +128,26 @@ impl<'a> Linter<'a> {
 
             log::trace!("document_tree: {:#?}", document_tree);
 
+            let pyproject_diagnostics = self
+                .source_uri_or_path
+                .is_some_and(|source| match source {
+                    Either::Left(uri) => {
+                        uri.path_segments()
+                            .and_then(|mut segments| segments.next_back())
+                            == Some("pyproject.toml")
+                    }
+                    Either::Right(path) => path
+                        .file_name()
+                        .is_some_and(|name| name == "pyproject.toml"),
+                })
+                .then(|| {
+                    tombi_extension_pyproject::validate_pyproject(
+                        &document_tree,
+                        &self.extensions_options.pyproject,
+                    )
+                })
+                .unwrap_or_default();
+
             let schema_context = tombi_schema_store::SchemaContext {
                 toml_version: self.toml_version,
                 root_schema: source_schema
@@ -162,6 +185,8 @@ impl<'a> Linter<'a> {
                 let diagnostics = self.apply_lint_rules_to_diagnostics(diagnostics);
                 self.diagnostics.extend(diagnostics);
             }
+
+            self.diagnostics.extend(pyproject_diagnostics);
         }
 
         if self.diagnostics.is_empty() {

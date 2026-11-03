@@ -1,0 +1,144 @@
+use super::EnabledOnly;
+use crate::{BoolDefaultTrue, SeverityLevel};
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub enum PyprojectLintFeatures {
+    Enabled(EnabledOnly),
+    Features(PyprojectLintFeatureTree),
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(deny_unknown_fields, rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(
+    feature = "jsonschema",
+    schemars(extend(
+        "x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending
+    ))
+)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct PyprojectLintFeatureTree {
+    /// # Pyproject lint rules
+    pub rules: Option<PyprojectLintRules>,
+}
+
+impl PyprojectLintFeatureTree {
+    pub fn off() -> Self {
+        Self {
+            rules: Some(PyprojectLintRules::off()),
+        }
+    }
+
+    pub fn severity(&self, code: &str) -> SeverityLevel {
+        self.rules.unwrap_or_default().severity(code)
+    }
+}
+
+impl Default for PyprojectLintFeatures {
+    fn default() -> Self {
+        Self::Features(PyprojectLintFeatureTree::default())
+    }
+}
+
+impl PyprojectLintFeatures {
+    pub fn enabled(&self) -> BoolDefaultTrue {
+        match self {
+            Self::Enabled(enabled) => enabled.enabled,
+            Self::Features(_) => Default::default(),
+        }
+    }
+
+    pub fn rules(&self) -> Option<&PyprojectLintRules> {
+        match self {
+            Self::Enabled(_) => None,
+            Self::Features(features) => features.rules.as_ref(),
+        }
+    }
+
+    pub fn feature_tree(&self) -> PyprojectLintFeatureTree {
+        match self {
+            Self::Enabled(enabled) if !enabled.enabled.value() => PyprojectLintFeatureTree::off(),
+            Self::Enabled(_) => PyprojectLintFeatureTree::default(),
+            Self::Features(features) => *features,
+        }
+    }
+}
+
+/// Severity levels for diagnostics produced by the pyproject extension.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(deny_unknown_fields, rename_all = "kebab-case")
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::VersionSort)))]
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", serde(default))]
+pub struct PyprojectLintRules {
+    /// Diagnose invalid PEP 508 dependency specifiers.
+    pub invalid_dependency_specifier: SeverityLevel,
+    /// Diagnose classifiers not listed in the Trove classifier specification.
+    pub unknown_classifier: SeverityLevel,
+    /// Diagnose invalid author and maintainer email display names.
+    pub invalid_email_display_name: SeverityLevel,
+    /// Diagnose invalid Python entry point targets.
+    pub invalid_entry_point_target: SeverityLevel,
+    /// Diagnose invalid Python import names.
+    pub invalid_import_name: SeverityLevel,
+    /// Diagnose duplicate Python import names.
+    pub duplicate_import_name: SeverityLevel,
+    /// Diagnose names declared as both exclusive and shared imports.
+    pub ambiguous_import_name: SeverityLevel,
+    /// Diagnose import names whose parent is not declared.
+    pub missing_import_name_parent: SeverityLevel,
+}
+
+impl Default for PyprojectLintRules {
+    fn default() -> Self {
+        Self {
+            invalid_dependency_specifier: SeverityLevel::Error,
+            unknown_classifier: SeverityLevel::Warn,
+            invalid_email_display_name: SeverityLevel::Error,
+            invalid_entry_point_target: SeverityLevel::Error,
+            invalid_import_name: SeverityLevel::Error,
+            duplicate_import_name: SeverityLevel::Warn,
+            ambiguous_import_name: SeverityLevel::Error,
+            missing_import_name_parent: SeverityLevel::Warn,
+        }
+    }
+}
+
+impl PyprojectLintRules {
+    pub fn off() -> Self {
+        Self {
+            invalid_dependency_specifier: SeverityLevel::Off,
+            unknown_classifier: SeverityLevel::Off,
+            invalid_email_display_name: SeverityLevel::Off,
+            invalid_entry_point_target: SeverityLevel::Off,
+            invalid_import_name: SeverityLevel::Off,
+            duplicate_import_name: SeverityLevel::Off,
+            ambiguous_import_name: SeverityLevel::Off,
+            missing_import_name_parent: SeverityLevel::Off,
+        }
+    }
+
+    pub fn severity(&self, code: &str) -> SeverityLevel {
+        match code {
+            "pyproject/invalid-dependency-specifier" => self.invalid_dependency_specifier,
+            "pyproject/unknown-classifier" => self.unknown_classifier,
+            "pyproject/invalid-email-display-name" => self.invalid_email_display_name,
+            "pyproject/invalid-entry-point-target" => self.invalid_entry_point_target,
+            "pyproject/invalid-import-name" => self.invalid_import_name,
+            "pyproject/duplicate-import-name" => self.duplicate_import_name,
+            "pyproject/ambiguous-import-name" => self.ambiguous_import_name,
+            "pyproject/missing-import-name-parent" => self.missing_import_name_parent,
+            _ => SeverityLevel::Off,
+        }
+    }
+}
