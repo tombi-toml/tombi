@@ -185,13 +185,12 @@ pub async fn refresh_cargo_file_watchers(backend: &Backend) {
         let watchers = paths
             .iter()
             .filter_map(|path| {
-                let parent = path.parent()?;
-                let file_name = path.file_name()?.to_str()?;
-                let base_uri = tombi_uri::Uri::from_file_path(parent).ok()?;
+                let (base, relative_path) = watcher_base_and_pattern(path)?;
+                let base_uri = tombi_uri::Uri::from_file_path(base).ok()?;
                 Some(FileSystemWatcher {
                     glob_pattern: GlobPattern::RelativePattern(RelativePattern::new(
                         BaseUri::Uri(base_uri.into()),
-                        Pattern::from(file_name.to_owned()),
+                        Pattern::from(relative_path),
                     )),
                     kind: Some(WatchKind::Create | WatchKind::Change | WatchKind::Delete),
                 })
@@ -211,6 +210,20 @@ pub async fn refresh_cargo_file_watchers(backend: &Backend) {
     }
 
     *previous = paths.into_iter().collect();
+}
+
+fn watcher_base_and_pattern(path: &std::path::Path) -> Option<(&std::path::Path, String)> {
+    let mut base = path.parent()?;
+    while !base.is_dir() {
+        base = base.parent()?;
+    }
+    let relative_path = path.strip_prefix(base).ok()?;
+    let pattern = relative_path
+        .components()
+        .map(|component| component.as_os_str().to_str())
+        .collect::<Option<Vec<_>>>()?
+        .join("/");
+    Some((base, pattern))
 }
 
 pub async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_uri::Uri> {

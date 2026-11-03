@@ -26,6 +26,13 @@ pub async fn handle_did_change_watched_files(
     let mut config_changed = false;
     let mut schema_changed = false;
     let mut cargo_reference_changes = Vec::new();
+    let cargo_reference_paths = backend
+        .cargo_file_watchers
+        .lock()
+        .await
+        .iter()
+        .cloned()
+        .collect::<std::collections::HashSet<_>>();
     let home_dir = tombi_fs::home_dir();
     let mut workspace_configs: Option<Vec<WorkspaceConfig>> = None;
 
@@ -38,6 +45,14 @@ pub async fn handle_did_change_watched_files(
             log::debug!("skip watcher event inside VCS metadata directory: {uri}");
             continue;
         }
+
+        let changed_path = uri
+            .to_file_path()
+            .ok()
+            .map(|path| tombi_fs::normalize(&path));
+        let is_cargo_reference = changed_path
+            .as_ref()
+            .is_some_and(|path| cargo_reference_paths.contains(path));
 
         if is_json_file(&uri) {
             // Only schemas already loaded by the schema stores are updated.
@@ -54,8 +69,8 @@ pub async fn handle_did_change_watched_files(
                     Err(err) => log::warn!("failed to update schema {uri}: {err}"),
                 }
             }
-            if let Ok(path) = uri.to_file_path() {
-                cargo_reference_changes.push(path);
+            if is_cargo_reference && let Some(path) = changed_path.as_ref() {
+                cargo_reference_changes.push(path.clone());
             }
             continue;
         }
@@ -77,14 +92,14 @@ pub async fn handle_did_change_watched_files(
         }
 
         if !is_toml_file(&uri) {
-            if let Ok(path) = uri.to_file_path() {
-                cargo_reference_changes.push(path);
+            if is_cargo_reference && let Some(path) = changed_path.as_ref() {
+                cargo_reference_changes.push(path.clone());
             }
             continue;
         }
 
-        if let Ok(path) = uri.to_file_path() {
-            cargo_reference_changes.push(path);
+        if is_cargo_reference && let Some(path) = changed_path.as_ref() {
+            cargo_reference_changes.push(path.clone());
         }
 
         if matches!(
