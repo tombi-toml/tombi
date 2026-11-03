@@ -42,13 +42,13 @@ fn long_acyclic_dependency_group_chain() -> String {
 
     let mut source = String::from("[dependency-groups]\n");
     for index in 0..10_000 {
-        if index == 0 {
+        if index == 9_999 {
             writeln!(source, "group-{index} = []").unwrap();
         } else {
             writeln!(
                 source,
                 "group-{index} = [{{ include-group = \"group-{}\" }}]",
-                index - 1
+                index + 1
             )
             .unwrap();
         }
