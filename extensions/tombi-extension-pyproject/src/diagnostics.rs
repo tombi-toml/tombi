@@ -381,7 +381,7 @@ fn validate_entry_point_table(
 }
 
 fn has_invalid_unicode_identifier_syntax(value: &str) -> bool {
-    if !value.chars().any(|character| !character.is_ascii()) {
+    if value.is_ascii() {
         return false;
     }
 

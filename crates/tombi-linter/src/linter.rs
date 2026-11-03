@@ -128,25 +128,24 @@ impl<'a> Linter<'a> {
 
             log::trace!("document_tree: {:#?}", document_tree);
 
-            let pyproject_diagnostics = self
-                .source_uri_or_path
-                .is_some_and(|source| match source {
-                    Either::Left(uri) => {
-                        uri.path_segments()
-                            .and_then(|mut segments| segments.next_back())
-                            == Some("pyproject.toml")
-                    }
-                    Either::Right(path) => path
-                        .file_name()
-                        .is_some_and(|name| name == "pyproject.toml"),
-                })
-                .then(|| {
-                    tombi_extension_pyproject::validate_pyproject(
-                        &document_tree,
-                        &self.extensions_options.pyproject,
-                    )
-                })
-                .unwrap_or_default();
+            let is_pyproject = self.source_uri_or_path.is_some_and(|source| match source {
+                Either::Left(uri) => {
+                    uri.path_segments()
+                        .and_then(|mut segments| segments.next_back())
+                        == Some("pyproject.toml")
+                }
+                Either::Right(path) => path
+                    .file_name()
+                    .is_some_and(|name| name == "pyproject.toml"),
+            });
+            let pyproject_diagnostics = if is_pyproject {
+                tombi_extension_pyproject::validate_pyproject(
+                    &document_tree,
+                    &self.extensions_options.pyproject,
+                )
+            } else {
+                Vec::new()
+            };
 
             let schema_context = tombi_schema_store::SchemaContext {
                 toml_version: self.toml_version,

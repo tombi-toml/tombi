@@ -146,8 +146,8 @@ tower-lsp-server = { version = "=0.24.0-rc.1", default-features = false, feature
 ] }
 typed-builder = "0.21.0"
 ungrammar.version = "1.16.1"
-unicode-segmentation = "1.12.0"
 unicode-ident = "1.0.24"
+unicode-segmentation = "1.12.0"
 uuid = { version = "1.18.0", default-features = false }
 wasi = { version = "0.14.7" }
 wasm-bindgen = "0.2.100"

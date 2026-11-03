@@ -1,17 +1,9 @@
 use tombi_severity_level::SeverityLevelDefaultWarn;
 
 /// # Extension lint options
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct ExtensionsLintOptions {
     pub pyproject: crate::PyprojectLintFeatureTree,
-}
-
-impl Default for ExtensionsLintOptions {
-    fn default() -> Self {
-        Self {
-            pyproject: crate::PyprojectLintFeatureTree::default(),
-        }
-    }
 }
 
 /// # Linter options
