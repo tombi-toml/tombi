@@ -82,19 +82,19 @@ impl Error {
 
     pub fn code(&self) -> &'static str {
         match self {
-            Self::DuplicateKey { .. } => "toml/duplicate-key",
-            Self::TableConflict { .. } => "toml/table-conflict",
-            Self::ArrayConflict { .. } => "toml/array-conflict",
-            Self::InvalidInteger { .. } => "toml/invalid-integer",
-            Self::InvalidFloat { .. } => "toml/invalid-float",
-            Self::InvalidString { .. } => "toml/invalid-string",
-            Self::InvalidOffsetDateTime { .. } => "toml/invalid-offset-date-time",
-            Self::InvalidLocalDateTime { .. } => "toml/invalid-local-date-time",
-            Self::InvalidLocalDate { .. } => "toml/invalid-local-date",
-            Self::InvalidLocalTime { .. } => "toml/invalid-local-time",
-            Self::InvalidDateTime { .. } => "toml/invalid-date-time",
+            Self::DuplicateKey { .. } => "syntax/duplicate-key",
+            Self::TableConflict { .. } => "syntax/table-conflict",
+            Self::ArrayConflict { .. } => "syntax/array-conflict",
+            Self::InvalidInteger { .. } => "syntax/invalid-integer",
+            Self::InvalidFloat { .. } => "syntax/invalid-float",
+            Self::InvalidString { .. } => "syntax/invalid-string",
+            Self::InvalidOffsetDateTime { .. } => "syntax/invalid-offset-date-time",
+            Self::InvalidLocalDateTime { .. } => "syntax/invalid-local-date-time",
+            Self::InvalidLocalDate { .. } => "syntax/invalid-local-date",
+            Self::InvalidLocalTime { .. } => "syntax/invalid-local-time",
+            Self::InvalidDateTime { .. } => "syntax/invalid-date-time",
             Self::InvalidCommentSyntax { .. } => "comment/invalid-syntax",
-            Self::IncompleteNode { .. } => "toml/incomplete-node",
+            Self::IncompleteNode { .. } => "syntax/incomplete-node",
         }
     }
 
