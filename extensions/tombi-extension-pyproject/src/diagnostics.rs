@@ -87,8 +87,8 @@ pub fn validate(
         }
     }
 
-    check_duplicates(&import_names, rules.duplicate_import_name, &mut diagnostics);
-    check_duplicates(
+    check_duplicate_import_names(&import_names, rules.duplicate_import_name, &mut diagnostics);
+    check_duplicate_import_names(
         &import_namespaces,
         rules.duplicate_import_name,
         &mut diagnostics,
@@ -196,7 +196,7 @@ fn validate_dependency_array(
     }
 }
 
-fn check_duplicates(
+fn check_duplicate_import_names(
     import_names: &[ImportName<'_>],
     severity: tombi_config::SeverityLevel,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
