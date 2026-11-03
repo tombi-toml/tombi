@@ -46,7 +46,7 @@ pub fn validate(
                 let Some(Value::String(name)) = person.get("name") else {
                     continue;
                 };
-                if !name.value().contains(',') && !is_rfc822_display_name(name.value()) {
+                if name.value().contains(',') || !is_rfc822_display_name(name.value()) {
                     push_diagnostic(
                         DiagnosticKind::InvalidEmailDisplayName,
                         name.span(),
@@ -288,16 +288,13 @@ fn read_import_names<'a>(value: Option<&'a Value<'a>>) -> Vec<ImportName<'a>> {
             let Value::String(value) = value else {
                 return None;
             };
-            let (name, modifier) = value
-                .value()
-                .split_once(';')
-                .map_or((value.value(), None), |(name, modifier)| {
-                    (name, Some(modifier.trim()))
-                });
+            let (name, modifier) = match value.value().split_once(';') {
+                Some((name, modifier)) => (name.trim_end(), Some(modifier.trim())),
+                None => (value.value(), None),
+            };
             if modifier.is_some_and(|modifier| modifier != "private") {
                 return None;
             }
-            let name = name.trim();
             (!name.is_empty()).then_some(ImportName {
                 name,
                 span: value.span(),
@@ -406,67 +403,5 @@ fn is_python_identifier(value: &str) -> bool {
 }
 
 fn is_rfc822_display_name(value: &str) -> bool {
-    let bytes = value.as_bytes();
-    let mut index = 0;
-    let mut has_word = false;
-
-    while index < bytes.len() {
-        while bytes
-            .get(index)
-            .is_some_and(|byte| matches!(byte, b' ' | b'\t'))
-        {
-            index += 1;
-        }
-        if index == bytes.len() {
-            break;
-        }
-
-        has_word = true;
-        if bytes[index] == b'"' {
-            index += 1;
-            let mut closed = false;
-            while index < bytes.len() {
-                match bytes[index] {
-                    b'"' => {
-                        index += 1;
-                        closed = true;
-                        break;
-                    }
-                    b'\\' => {
-                        index += 1;
-                        if bytes.get(index).is_none_or(|byte| !byte.is_ascii()) {
-                            return false;
-                        }
-                        index += 1;
-                    }
-                    b'\r' | b'\n' => return false,
-                    byte if byte.is_ascii() => index += 1,
-                    _ => return false,
-                }
-            }
-            if !closed
-                || bytes
-                    .get(index)
-                    .is_some_and(|byte| !matches!(byte, b' ' | b'\t'))
-            {
-                return false;
-            }
-        } else {
-            let start = index;
-            while let Some(byte) = bytes.get(index) {
-                if matches!(byte, b' ' | b'\t') {
-                    break;
-                }
-                if !byte.is_ascii_graphic() || b"()<>@,;:\\\".[]".contains(byte) {
-                    return false;
-                }
-                index += 1;
-            }
-            if index == start {
-                return false;
-            }
-        }
-    }
-
-    has_word
+    !value.trim().is_empty() && value.chars().all(|character| !character.is_control())
 }

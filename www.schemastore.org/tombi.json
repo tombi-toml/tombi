@@ -2435,6 +2435,17 @@
     "PyprojectExtensionFeatureTree": {
       "type": "object",
       "properties": {
+        "lint": {
+          "title": "Pyproject lint options",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PyprojectLintFeatures"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "lsp": {
           "title": "Pyproject LSP feature options",
           "anyOf": [
@@ -2449,6 +2460,114 @@
       },
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
+    },
+    "PyprojectLintFeatures": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnabledOnly"
+        },
+        {
+          "$ref": "#/definitions/PyprojectLintFeatureTree"
+        }
+      ]
+    },
+    "PyprojectLintFeatureTree": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Pyproject lint rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PyprojectLintRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "PyprojectLintRules": {
+      "description": "Severity levels for diagnostics produced by the pyproject extension.",
+      "type": "object",
+      "properties": {
+        "invalid-dependency-specifier": {
+          "description": "Diagnose invalid PEP 508 dependency specifiers.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "unknown-classifier": {
+          "description": "Diagnose classifiers not listed in the Trove classifier specification.",
+          "default": "warn",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "invalid-email-display-name": {
+          "description": "Diagnose invalid author and maintainer email display names.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "invalid-entry-point-target": {
+          "description": "Diagnose invalid Python entry point targets.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "invalid-import-name": {
+          "description": "Diagnose invalid Python import names.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "duplicate-import-name": {
+          "description": "Diagnose duplicate Python import names.",
+          "default": "warn",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "ambiguous-import-name": {
+          "description": "Diagnose names declared as both exclusive and shared imports.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "missing-import-name-parent": {
+          "description": "Diagnose import names whose parent is not declared.",
+          "default": "warn",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "version-sort"
     },
     "PyprojectLspFeatures": {
       "anyOf": [
