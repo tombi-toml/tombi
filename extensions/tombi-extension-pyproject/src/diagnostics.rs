@@ -5,10 +5,11 @@ use tombi_document_tree_syntax::{DocumentTree, Value, dig_keys};
 /// Validate the pyproject metadata rules that cannot be expressed by JSON Schema.
 pub fn validate(
     document_tree: &DocumentTree<'_>,
-    rules: &tombi_config::PyprojectLintFeatureTree,
+    options: &tombi_config::PyprojectLintFeatureTree,
 ) -> Vec<tombi_diagnostic::Diagnostic> {
+    let rules = options.rules.unwrap_or_default();
     let mut diagnostics = Vec::new();
-    validate_dependency_specifiers(document_tree, rules, &mut diagnostics);
+    validate_dependency_specifiers(document_tree, &rules, &mut diagnostics);
 
     let Some((_, Value::Table(project))) = dig_keys(document_tree, &["project"]) else {
         return diagnostics;
@@ -29,8 +30,8 @@ pub fn validate(
                     DiagnosticKind::UnknownTroveClassifier {
                         classifier: classifier.value().to_owned(),
                     },
+                    rules.unknown_classifier,
                     classifier.span(),
-                    rules,
                     &mut diagnostics,
                 );
             }
@@ -49,8 +50,8 @@ pub fn validate(
                 if name.value().contains(',') || !is_rfc822_display_name(name.value()) {
                     push_diagnostic(
                         DiagnosticKind::InvalidEmailDisplayName,
+                        rules.invalid_email_display_name,
                         name.span(),
-                        rules,
                         &mut diagnostics,
                     );
                 }
@@ -60,12 +61,12 @@ pub fn validate(
 
     for field in ["scripts", "gui-scripts"] {
         if let Some(value) = project.get(field) {
-            validate_entry_point_table(value, rules, &mut diagnostics);
+            validate_entry_point_table(value, &rules, &mut diagnostics);
         }
     }
     if let Some(Value::Table(groups)) = project.get("entry-points") {
         for entries in groups.values() {
-            validate_entry_point_table(entries, rules, &mut diagnostics);
+            validate_entry_point_table(entries, &rules, &mut diagnostics);
         }
     }
 
@@ -79,15 +80,19 @@ pub fn validate(
                 DiagnosticKind::InvalidImportName {
                     identifier: identifier.to_owned(),
                 },
+                rules.invalid_import_name,
                 entry.span,
-                rules,
                 &mut diagnostics,
             );
         }
     }
 
-    check_duplicates(&import_names, rules, &mut diagnostics);
-    check_duplicates(&import_namespaces, rules, &mut diagnostics);
+    check_duplicates(&import_names, rules.duplicate_import_name, &mut diagnostics);
+    check_duplicates(
+        &import_namespaces,
+        rules.duplicate_import_name,
+        &mut diagnostics,
+    );
 
     let exclusive = import_names
         .iter()
@@ -97,8 +102,8 @@ pub fn validate(
         if exclusive.contains(entry.name) {
             push_diagnostic(
                 DiagnosticKind::AmbiguousImportName,
+                rules.ambiguous_import_name,
                 entry.span,
-                rules,
                 &mut diagnostics,
             );
         }
@@ -118,8 +123,8 @@ pub fn validate(
                     DiagnosticKind::MissingImportNameParent {
                         parent: parent.clone(),
                     },
+                    rules.missing_import_name_parent,
                     entry.span,
-                    rules,
                     &mut diagnostics,
                 );
             }
@@ -133,7 +138,7 @@ pub fn validate(
 
 fn validate_dependency_specifiers(
     document_tree: &DocumentTree<'_>,
-    rules: &tombi_config::PyprojectLintFeatureTree,
+    rules: &tombi_config::PyprojectLintRules,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
     for path in [
@@ -168,7 +173,7 @@ fn validate_dependency_specifiers(
 
 fn validate_dependency_array(
     value: &Value<'_>,
-    rules: &tombi_config::PyprojectLintFeatureTree,
+    rules: &tombi_config::PyprojectLintRules,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
     let Value::Array(dependencies) = value else {
@@ -183,8 +188,8 @@ fn validate_dependency_array(
                 DiagnosticKind::InvalidDependencySpecifier {
                     requirement: dependency.value().to_owned(),
                 },
+                rules.invalid_dependency_specifier,
                 dependency.span(),
-                rules,
                 diagnostics,
             );
         }
@@ -193,7 +198,7 @@ fn validate_dependency_array(
 
 fn check_duplicates(
     import_names: &[ImportName<'_>],
-    rules: &tombi_config::PyprojectLintFeatureTree,
+    severity: tombi_config::SeverityLevel,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
     let mut seen = HashSet::new();
@@ -201,8 +206,8 @@ fn check_duplicates(
         if !seen.insert(entry.name) {
             push_diagnostic(
                 DiagnosticKind::DuplicateImportName,
+                severity,
                 entry.span,
-                rules,
                 diagnostics,
             );
         }
@@ -253,13 +258,13 @@ static TROVE_CLASSIFIERS: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
 
 fn push_diagnostic(
     kind: DiagnosticKind,
+    level: tombi_config::SeverityLevel,
     span: tombi_text::Span,
-    rules: &tombi_config::PyprojectLintFeatureTree,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
     let message = kind.to_string();
     let code = kind.code();
-    match rules.severity(code) {
+    match level {
         tombi_config::SeverityLevel::Error => {
             diagnostics.push(tombi_diagnostic::Diagnostic::new_error(message, code, span));
         }
@@ -346,7 +351,7 @@ fn is_python_keyword(value: &str) -> bool {
 
 fn validate_entry_point_table(
     value: &Value<'_>,
-    rules: &tombi_config::PyprojectLintFeatureTree,
+    rules: &tombi_config::PyprojectLintRules,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
     let Value::Table(entries) = value else {
@@ -369,8 +374,8 @@ fn validate_entry_point_table(
                 DiagnosticKind::InvalidEntryPointTarget {
                     identifier: identifier.to_owned(),
                 },
+                rules.invalid_entry_point_target,
                 target.span(),
-                rules,
                 diagnostics,
             );
         }

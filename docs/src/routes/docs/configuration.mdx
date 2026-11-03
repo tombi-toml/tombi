@@ -1618,18 +1618,32 @@ Set the severity for individual pyproject diagnostics. Each rule defaults to its
 ```toml
 [extensions."tombi-toml/pyproject"]
 lint.rules = {
+  ambiguous-import-name = "error",
+  duplicate-import-name = "warn",
   invalid-dependency-specifier = "error",
-  unknown-classifier = "warn",
   invalid-email-display-name = "error",
   invalid-entry-point-target = "error",
   invalid-import-name = "error",
-  duplicate-import-name = "warn",
-  ambiguous-import-name = "error",
   missing-import-name-parent = "warn",
+  unknown-classifier = "warn",
 }
 ```
 
 - Type: `Table`
+
+### extensions."tombi-toml/pyproject".lint.rules.ambiguous-import-name
+
+Set the severity for names declared as both exclusive and shared imports.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/pyproject".lint.rules.duplicate-import-name
+
+Set the severity for duplicate Python import names.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
 
 ### extensions."tombi-toml/pyproject".lint.rules.invalid-dependency-specifier
 
@@ -1637,13 +1651,6 @@ Set the severity for dependency strings that do not follow PEP 508.
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
-
-### extensions."tombi-toml/pyproject".lint.rules.unknown-classifier
-
-Set the severity for classifiers not listed in the Trove classifier specification.
-
-- Type: `"off" | "warn" | "error"`
-- Default: `"warn"`
 
 ### extensions."tombi-toml/pyproject".lint.rules.invalid-email-display-name
 
@@ -1666,23 +1673,16 @@ Set the severity for invalid Python import names.
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
 
-### extensions."tombi-toml/pyproject".lint.rules.duplicate-import-name
+### extensions."tombi-toml/pyproject".lint.rules.missing-import-name-parent
 
-Set the severity for duplicate Python import names.
+Set the severity for import names whose parent is not declared.
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"warn"`
 
-### extensions."tombi-toml/pyproject".lint.rules.ambiguous-import-name
+### extensions."tombi-toml/pyproject".lint.rules.unknown-classifier
 
-Set the severity for names declared as both exclusive and shared imports.
-
-- Type: `"off" | "warn" | "error"`
-- Default: `"error"`
-
-### extensions."tombi-toml/pyproject".lint.rules.missing-import-name-parent
-
-Set the severity for import names whose parent is not declared.
+Set the severity for classifiers not listed in the Trove classifier specification.
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"warn"`
