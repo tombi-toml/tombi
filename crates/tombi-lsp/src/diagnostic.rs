@@ -100,6 +100,7 @@ pub async fn get_diagnostics_result(
     let diagnostics = match tombi_linter::Linter::new(
         toml_version,
         &lint_options,
+        config.extensions_lint_options(),
         Some(Either::Left(text_document_uri)),
         &schema_store,
     )

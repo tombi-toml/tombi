@@ -2,6 +2,7 @@ mod accessors;
 mod code_action;
 mod completion;
 mod dependency;
+mod diagnostics;
 mod did_open;
 mod document_link;
 mod goto_declaration;
@@ -15,6 +16,7 @@ mod workspace;
 
 pub use code_action::{CodeActionRefactorRewriteName, code_action};
 pub use completion::completion;
+pub use diagnostics::validate as validate_pyproject;
 pub use did_open::did_open;
 pub use document_link::document_link;
 pub use goto_declaration::get_current_declaration;

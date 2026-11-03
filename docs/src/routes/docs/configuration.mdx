@@ -1605,6 +1605,88 @@ Enable or disable the entire `pyproject.toml` extension.
 - Type: `Boolean`
 - Default: `true`
 
+### extensions."tombi-toml/pyproject".lint
+
+Configure the severity of diagnostics produced by the `pyproject.toml` extension.
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lint.rules
+
+Set the severity for individual pyproject diagnostics. Each rule defaults to its current severity when omitted. Available values are `"off"`, `"warn"`, and `"error"`.
+
+```toml
+[extensions."tombi-toml/pyproject"]
+lint.rules = {
+  invalid-dependency-specifier = "error",
+  unknown-classifier = "warn",
+  invalid-email-display-name = "error",
+  invalid-entry-point-target = "error",
+  invalid-import-name = "error",
+  duplicate-import-name = "warn",
+  ambiguous-import-name = "error",
+  missing-import-name-parent = "warn",
+}
+```
+
+- Type: `Table`
+
+### extensions."tombi-toml/pyproject".lint.rules.invalid-dependency-specifier
+
+Set the severity for dependency strings that do not follow PEP 508.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/pyproject".lint.rules.unknown-classifier
+
+Set the severity for classifiers not listed in the Trove classifier specification.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
+
+### extensions."tombi-toml/pyproject".lint.rules.invalid-email-display-name
+
+Set the severity for invalid author and maintainer email display names.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/pyproject".lint.rules.invalid-entry-point-target
+
+Set the severity for invalid Python entry point targets.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/pyproject".lint.rules.invalid-import-name
+
+Set the severity for invalid Python import names.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/pyproject".lint.rules.duplicate-import-name
+
+Set the severity for duplicate Python import names.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
+
+### extensions."tombi-toml/pyproject".lint.rules.ambiguous-import-name
+
+Set the severity for names declared as both exclusive and shared imports.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/pyproject".lint.rules.missing-import-name-parent
+
+Set the severity for import names whose parent is not declared.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
+
 ### extensions."tombi-toml/pyproject".lsp
 
 Configure `pyproject.toml` extension language-server features such as completion, navigation, document links, and code actions.

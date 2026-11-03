@@ -37,6 +37,7 @@ pub async fn lint_async(
     match tombi_linter::Linter::new(
         toml_version,
         &lint_options,
+        config.extensions_lint_options(),
         Some(itertools::Either::Right(&source_path)),
         &schema_store,
     )

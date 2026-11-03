@@ -13,6 +13,14 @@ These features are designed around the Python packaging ecosystem and currently 
 
 ## Supported Features
 
+### Packaging Metadata Diagnostics
+
+When linting a `pyproject.toml`, Tombi checks static metadata rules from the Python packaging specifications in addition to JSON Schema validation. It parses package requirements in `build-system.requires`, `project.dependencies`, `project.optional-dependencies`, and `dependency-groups` using PEP 508. It applies the same grammar to uv's constraint, override, and build-constraint dependency arrays. It checks classifier names against a bundled snapshot of [PyPA's canonical Trove classifier list](https://github.com/pypa/trove-classifiers) and permits private classifiers beginning with `Private ::`. It also reports invalid email display names, invalid entry point identifiers, invalid import names, duplicate declarations, names declared as both exclusive and shared, and missing intermediate parent names. Unknown classifiers, duplicate names, and missing parents are warnings; invalid names, requirements, and a name declared in both `import-names` and `import-namespaces` are errors.
+
+These checks use only the file contents and run offline. They do not inspect project code or build artifacts. The classifier list is pinned to the revision recorded in `extensions/tombi-extension-pyproject/data/trove-classifiers.txt`.
+
+See the [pyproject.toml specification](https://packaging.python.org/en/latest/specifications/pyproject-toml/#import-names) and [PEP 794](https://peps.python.org/pep-0794/).
+
 ### Completion
 
 The extension provides path-aware completion in places where `pyproject.toml` usually references local files or member projects.

@@ -136,6 +136,7 @@ orange.color = "orange"
         let diagnostics = crate::Linter::new(
             tombi_config::TomlVersion::default(),
             &crate::LintOptions::default(),
+            tombi_config::ExtensionsLintOptions::default(),
             None,
             &tombi_schema_store::SchemaStore::new(),
         )
@@ -169,6 +170,7 @@ orange.color = "orange"
         let result = crate::Linter::new(
             tombi_config::TomlVersion::default(),
             &crate::LintOptions::default(),
+            tombi_config::ExtensionsLintOptions::default(),
             None,
             &tombi_schema_store::SchemaStore::new(),
         )
@@ -192,6 +194,7 @@ lsp.formatting.enabled = true
         let diagnostics = crate::Linter::new(
             tombi_config::TomlVersion::default(),
             &crate::LintOptions::default(),
+            tombi_config::ExtensionsLintOptions::default(),
             None,
             &tombi_schema_store::SchemaStore::new(),
         )
@@ -223,6 +226,7 @@ lsp.formatting.enabled = true
         let result = crate::Linter::new(
             tombi_config::TomlVersion::default(),
             &crate::LintOptions::default(),
+            tombi_config::ExtensionsLintOptions::default(),
             None,
             &tombi_schema_store::SchemaStore::new(),
         )
@@ -246,6 +250,7 @@ lsp.formatting.enabled = true
         let diagnostics = crate::Linter::new(
             tombi_config::TomlVersion::default(),
             &crate::LintOptions::default(),
+            tombi_config::ExtensionsLintOptions::default(),
             None,
             &tombi_schema_store::SchemaStore::new(),
         )

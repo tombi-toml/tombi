@@ -51,6 +51,7 @@ async fn validate_test_suite(
     let linter = Linter::new(
         TomlVersion::default(),
         &lint_options,
+        tombi_config::ExtensionsLintOptions::default(),
         Some(Either::Right(source_path.as_path())),
         &schema_store,
     );

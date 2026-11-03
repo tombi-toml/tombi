@@ -1,5 +1,11 @@
 use tombi_severity_level::SeverityLevelDefaultWarn;
 
+/// # Extension lint options
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct ExtensionsLintOptions {
+    pub pyproject: crate::PyprojectLintFeatureTree,
+}
+
 /// # Linter options
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]

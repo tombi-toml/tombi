@@ -153,6 +153,16 @@ impl Config {
             .and_then(Extensions::pyproject_features)
     }
 
+    pub fn extensions_lint_options(&self) -> ExtensionsLintOptions {
+        let pyproject = self
+            .pyproject_extension_features()
+            .and_then(|features| features.lint())
+            .map(|lint| lint.feature_tree())
+            .unwrap_or_default();
+
+        ExtensionsLintOptions { pyproject }
+    }
+
     pub fn pyproject_inlay_hint_enabled(&self) -> bool {
         self.pyproject_extension_features()
             .and_then(|features| features.lsp())

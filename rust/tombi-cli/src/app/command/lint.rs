@@ -223,6 +223,7 @@ where
                     stdin_path,
                     toml_version,
                     &lint_options,
+                    config.extensions_lint_options(),
                     &schema_store,
                     args.error_on_warnings,
                     encoding,
@@ -262,6 +263,7 @@ where
                             }
 
                             let schema_store = schema_store.clone();
+                            let extensions_options = config.extensions_lint_options();
 
                             tasks.spawn(async move {
                                 match tokio::fs::File::open(&source_path).await {
@@ -271,6 +273,7 @@ where
                                             Some(source_path.as_ref()),
                                             toml_version,
                                             &lint_options,
+                                            extensions_options,
                                             &schema_store,
                                             args.error_on_warnings,
                                             encoding,
@@ -315,6 +318,7 @@ async fn lint_file<R>(
     source_path: Option<&std::path::Path>,
     toml_version: TomlVersion,
     lint_options: &LintOptions,
+    extensions_options: tombi_config::ExtensionsLintOptions,
     schema_store: &tombi_schema_store::SchemaStore,
     error_on_warnings: bool,
     encoding: tombi_text::EncodingKind,
@@ -331,6 +335,7 @@ where
     let diagnostics = tombi_linter::Linter::new(
         toml_version,
         lint_options,
+        extensions_options,
         source_path.map(itertools::Either::Right),
         schema_store,
     )

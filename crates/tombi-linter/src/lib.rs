@@ -11,6 +11,17 @@ pub use linter::Linter;
 use rule::Rule;
 pub use tombi_config::LintOptions;
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __tombi_test_expected_span {
+    () => {
+        None
+    };
+    ($span:expr) => {
+        Some($span)
+    };
+}
+
 #[macro_export]
 macro_rules! test_lint {
     {
@@ -135,6 +146,10 @@ macro_rules! test_lint {
             let linter = $crate::Linter::new(
                 args.toml_version,
                 &args.options,
+                args.config
+                    .as_ref()
+                    .map(tombi_config::Config::extensions_lint_options)
+                    .unwrap_or_default(),
                 Some(itertools::Either::Right(source_path.as_path())),
                 &schema_store,
             );
@@ -275,6 +290,10 @@ macro_rules! test_lint {
             let linter = $crate::Linter::new(
                 args.toml_version,
                 &args.options,
+                args.config
+                    .as_ref()
+                    .map(tombi_config::Config::extensions_lint_options)
+                    .unwrap_or_default(),
                 Some(itertools::Either::Right(source_path.as_path())),
                 &schema_store,
             );
@@ -299,7 +318,7 @@ macro_rules! test_lint {
 
     {
         #[test]
-        fn $name:ident($source:expr $(, $arg:expr )* $(,)? ) -> Diagnostics([$({ code: $code:expr, level: $level:expr $(,)? }),* $(,)?])
+        fn $name:ident($source:expr $(, $arg:expr )* $(,)? ) -> Diagnostics([$({ code: $code:expr, level: $level:expr $(, span: $span:expr)? $(,)? }),* $(,)?])
     } => {
         #[tokio::test]
         async fn $name() {
@@ -420,6 +439,10 @@ macro_rules! test_lint {
             let linter = $crate::Linter::new(
                 args.toml_version,
                 &args.options,
+                args.config
+                    .as_ref()
+                    .map(tombi_config::Config::extensions_lint_options)
+                    .unwrap_or_default(),
                 Some(itertools::Either::Right(source_path.as_path())),
                 &schema_store,
             );
@@ -432,11 +455,19 @@ macro_rules! test_lint {
                 Err(errors) => {
                     pretty_assertions::assert_eq!(
                         errors
-                            .into_iter()
+                            .iter()
                             .map(|error| (error.code().to_string(), error.level()))
                             .collect_vec(),
                         [$(($code.to_string(), $level)),*].into_iter().collect::<Vec<_>>()
                     );
+                    for (error, expected_span) in errors
+                        .iter()
+                        .zip([$( $crate::__tombi_test_expected_span!($($span)?) ),*])
+                    {
+                        if let Some(expected_span) = expected_span {
+                            pretty_assertions::assert_eq!(error.span(), expected_span);
+                        }
+                    }
                 }
             }
         }
