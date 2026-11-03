@@ -6,9 +6,11 @@
     {
       "label": "Build Extension in Background",
       "group": "build",
-      "type": "npm",
-      "script": "watch",
-      "path": "editors/vscode/",
+      "type": "shell",
+      "command": "mise exec -- pnpm run watch",
+      "options": {
+        "cwd": "${workspaceFolder}/editors/vscode/"
+      },
       "problemMatcher": {
         "base": "$tsc-watch",
         "fileLocation": ["relative", "${workspaceFolder}/editors/vscode/"]
@@ -18,7 +20,7 @@
     {
       "label": "pnpm install (Extension)",
       "type": "shell",
-      "command": "pnpm install",
+      "command": "mise exec -- pnpm install",
       "options": {
         "cwd": "${workspaceFolder}/editors/vscode/"
       },
@@ -27,9 +29,11 @@
     {
       "label": "Build Extension",
       "group": "build",
-      "type": "npm",
-      "script": "build",
-      "path": "editors/vscode/",
+      "type": "shell",
+      "command": "mise exec -- pnpm run build",
+      "options": {
+        "cwd": "${workspaceFolder}/editors/vscode/"
+      },
       "dependsOn": ["pnpm install (Extension)"],
       "problemMatcher": {
         "base": "$tsc",
@@ -54,9 +58,11 @@
       "label": "Pretest",
       "group": "build",
       "isBackground": false,
-      "type": "npm",
-      "script": "pretest",
-      "path": "editors/vscode/",
+      "type": "shell",
+      "command": "mise exec -- pnpm run pretest",
+      "options": {
+        "cwd": "${workspaceFolder}/editors/vscode/"
+      },
       "problemMatcher": {
         "base": "$tsc",
         "fileLocation": ["relative", "${workspaceFolder}/editors/vscode/"]
