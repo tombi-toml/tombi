@@ -6,6 +6,7 @@ mod references;
 mod workspace;
 
 pub use completion::completion;
+pub use diagnostics::references_path;
 pub use diagnostics::validate_nagi_sql;
 pub use goto_declaration::goto_declaration;
 pub use goto_definition::{get_current_declaration, goto_definition};

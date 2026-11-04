@@ -70,8 +70,8 @@ pub async fn refresh_diagnostics_after_config_change(backend: &Backend) {
     }
 }
 
-/// Re-diagnose Cargo and pyproject manifests when a file they reference changes.
-pub async fn refresh_cargo_diagnostics_after_file_changes(
+/// Re-diagnose extension manifests when a file they reference changes.
+pub async fn refresh_extension_diagnostics_after_file_changes(
     backend: &Backend,
     changed_paths: &[PathBuf],
 ) -> bool {
@@ -91,6 +91,10 @@ pub async fn refresh_cargo_diagnostics_after_file_changes(
             } else if file_name == "pyproject.toml" {
                 changed_paths.iter().any(|path| {
                     tombi_extension_pyproject::references_path(document_tree, &manifest_path, path)
+                })
+            } else if matches!(file_name.to_str(), Some("nagi.toml" | ".nagi.toml")) {
+                changed_paths.iter().any(|path| {
+                    tombi_extension_nagi_sql::references_path(document_tree, &manifest_path, path)
                 })
             } else {
                 return None;

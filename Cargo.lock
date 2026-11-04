@@ -2959,6 +2959,7 @@ dependencies = [
 name = "tombi-extension-nagi-sql"
 version = "0.0.0-dev"
 dependencies = [
+ "glob",
  "tombi-ast-syntax",
  "tombi-config",
  "tombi-diagnostic",

@@ -8,7 +8,7 @@ use crate::{
         WorkspaceConfig, get_workspace_configs, is_workspace_ignored, is_workspace_target,
     },
     workspace_diagnostic::{
-        refresh_cargo_diagnostics_after_file_changes, refresh_diagnostics_after_config_change,
+        refresh_diagnostics_after_config_change, refresh_extension_diagnostics_after_file_changes,
         upsert_document_source,
     },
 };
@@ -196,12 +196,13 @@ pub async fn handle_did_change_watched_files(
     if config_changed || schema_changed {
         refresh_diagnostics_after_config_change(backend).await;
     } else {
-        let cargo_diagnostics_refreshed = if cargo_reference_changes.is_empty() {
+        let extension_diagnostics_refreshed = if cargo_reference_changes.is_empty() {
             false
         } else {
-            refresh_cargo_diagnostics_after_file_changes(backend, &cargo_reference_changes).await
+            refresh_extension_diagnostics_after_file_changes(backend, &cargo_reference_changes)
+                .await
         };
-        if should_refresh_pull_diagnostics || cargo_diagnostics_refreshed {
+        if should_refresh_pull_diagnostics || extension_diagnostics_refreshed {
             backend.refresh_pull_diagnostics().await;
         }
     }
