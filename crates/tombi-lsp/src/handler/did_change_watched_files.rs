@@ -25,7 +25,7 @@ pub async fn handle_did_change_watched_files(
     let mut should_refresh_pull_diagnostics = false;
     let mut config_changed = false;
     let mut schema_changed = false;
-    let mut cargo_reference_changes = Vec::new();
+    let mut extension_reference_changes = Vec::new();
     let home_dir = tombi_fs::home_dir();
     let mut workspace_configs: Option<Vec<WorkspaceConfig>> = None;
 
@@ -55,7 +55,7 @@ pub async fn handle_did_change_watched_files(
                 }
             }
             if let Ok(path) = uri.to_file_path() {
-                cargo_reference_changes.push(path);
+                extension_reference_changes.push(path);
             }
             continue;
         }
@@ -78,13 +78,13 @@ pub async fn handle_did_change_watched_files(
 
         if !is_toml_file(&uri) {
             if let Ok(path) = uri.to_file_path() {
-                cargo_reference_changes.push(path);
+                extension_reference_changes.push(path);
             }
             continue;
         }
 
         if let Ok(path) = uri.to_file_path() {
-            cargo_reference_changes.push(path);
+            extension_reference_changes.push(path);
         }
 
         if matches!(
@@ -196,10 +196,10 @@ pub async fn handle_did_change_watched_files(
     if config_changed || schema_changed {
         refresh_diagnostics_after_config_change(backend).await;
     } else {
-        let extension_diagnostics_refreshed = if cargo_reference_changes.is_empty() {
+        let extension_diagnostics_refreshed = if extension_reference_changes.is_empty() {
             false
         } else {
-            refresh_extension_diagnostics_after_file_changes(backend, &cargo_reference_changes)
+            refresh_extension_diagnostics_after_file_changes(backend, &extension_reference_changes)
                 .await
         };
         if should_refresh_pull_diagnostics || extension_diagnostics_refreshed {
