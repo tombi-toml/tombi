@@ -1,0 +1,6 @@
+# Fixture package whose directory name contains glob metacharacters.
+# Used by the cargo/missing-workspace-member literal-fallback lint test.
+[package]
+name = "cargo-workspace-member-bracket-fixture"
+version = "0.1.0"
+edition = "2024"

@@ -377,6 +377,40 @@ fn is_glob_pattern(value: &str) -> bool {
     value.contains(['*', '?', '['])
 }
 
+/// Returns whether a changed `pyproject.toml` is referenced by a non-glob
+/// `tool.uv.workspace.members` entry, so the workspace manifest can be re-diagnosed.
+pub fn references_path(
+    document_tree: &DocumentTree<'_>,
+    manifest_path: &Path,
+    changed_path: &Path,
+) -> bool {
+    let Some(workspace_dir) = manifest_path.parent() else {
+        return false;
+    };
+    let Some((_, Value::Array(members))) =
+        dig_keys(document_tree, &["tool", "uv", "workspace", "members"])
+    else {
+        return false;
+    };
+    let changed_path = tombi_fs::normalize(changed_path);
+    members
+        .iter()
+        .filter_map(|value| match value {
+            Value::String(member) => Some(member.value()),
+            _ => None,
+        })
+        .filter(|value| !is_glob_pattern(value))
+        .any(|value| {
+            let member_path = Path::new(value);
+            let member_dir = if member_path.is_absolute() {
+                member_path.to_path_buf()
+            } else {
+                workspace_dir.join(member_path)
+            };
+            tombi_fs::normalize(&member_dir.join("pyproject.toml")) == changed_path
+        })
+}
+
 fn validate_dependency_array(
     value: &Value<'_>,
     rules: &tombi_config::PyprojectLintRules,

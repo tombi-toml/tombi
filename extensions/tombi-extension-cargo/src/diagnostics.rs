@@ -254,6 +254,7 @@ fn workspace_member_references_path(
     manifest_dir: &Path,
     changed_path: &Path,
 ) -> bool {
+    let manifest_dir_normalized = tombi_fs::normalize(manifest_dir);
     for members_key in ["members", "default-members"] {
         let Some((_, Value::Array(members))) = dig_keys(document_tree, &["workspace", members_key])
         else {
@@ -265,11 +266,13 @@ fn workspace_member_references_path(
             };
             let value = member.value();
             if is_glob_pattern(value) {
-                let pattern_path = tombi_fs::normalize(&member_dir(manifest_dir, value));
-                if let Ok(pattern) = glob::Pattern::new(&pattern_path.to_string_lossy())
-                    && changed_path
+                // Match the user pattern against the changed directory relative to the workspace,
+                // so glob metacharacters in the workspace path itself are not reinterpreted.
+                if let Ok(pattern) = glob::Pattern::new(value)
+                    && let Some(relative) = changed_path
                         .parent()
-                        .is_some_and(|parent| pattern.matches_path(parent))
+                        .and_then(|parent| parent.strip_prefix(&manifest_dir_normalized).ok())
+                    && pattern.matches_path(relative)
                 {
                     return true;
                 }
@@ -553,22 +556,24 @@ fn validate_member_pattern(
     out: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
     if is_glob_pattern(value) {
-        let pattern_path = member_dir(manifest_dir, value);
-        // Cargo ignores glob matches that are not directories, but every matched directory
-        // must contain a Cargo.toml unless it is excluded.
-        let matched_dirs = match tombi_fs::glob(&pattern_path.to_string_lossy()) {
-            Ok(paths) => paths
-                .into_iter()
-                .filter(|path| tombi_fs::is_dir(path))
-                .collect::<Vec<_>>(),
+        let matched_paths = match tombi_fs::glob(&member_glob_pattern(manifest_dir, value)) {
+            Ok(paths) => paths,
             Err(_) => return,
         };
-        if matched_dirs.is_empty() {
-            // A glob that matches no directory is treated by Cargo as a literal member path.
-            push_member_diagnostic(value, span, severity, out);
+        if matched_paths.is_empty() {
+            // Cargo falls back to treating the glob as a literal member path only when it matches
+            // nothing, so only report it when that literal fallback also lacks a Cargo.toml.
+            if !tombi_fs::is_file(&member_dir(manifest_dir, value).join("Cargo.toml")) {
+                push_member_diagnostic(value, span, severity, out);
+            }
             return;
         }
-        for dir in matched_dirs {
+        // Cargo ignores glob matches that are not directories, but every matched directory
+        // must contain a Cargo.toml unless it is excluded.
+        for dir in matched_paths
+            .into_iter()
+            .filter(|path| tombi_fs::is_dir(path))
+        {
             if exclude.iter().any(|matcher| matcher.matches(&dir)) {
                 continue;
             }
@@ -635,7 +640,10 @@ fn collect_member_exclude_matchers(
         .filter_map(|value| match value {
             Value::String(value) => {
                 let literal = tombi_fs::normalize(&member_dir(manifest_dir, value.value()));
-                let glob = glob::Pattern::new(&literal.to_string_lossy()).ok();
+                // Escape the workspace directory so glob metacharacters in the path itself are not
+                // reinterpreted, keeping the user exclude pattern intact.
+                let glob =
+                    glob::Pattern::new(&member_glob_pattern(manifest_dir, value.value())).ok();
                 Some(ExcludeMatcher { literal, glob })
             }
             _ => None,
@@ -650,6 +658,18 @@ fn member_dir(manifest_dir: &Path, value: &str) -> std::path::PathBuf {
     } else {
         manifest_dir.join(path)
     }
+}
+
+/// Builds the glob pattern for a relative member, escaping the workspace directory so glob
+/// metacharacters in the workspace path are not reinterpreted while keeping the user pattern intact.
+fn member_glob_pattern(manifest_dir: &Path, value: &str) -> String {
+    if Path::new(value).is_absolute() {
+        return value.to_owned();
+    }
+    let mut pattern = glob::Pattern::escape(&manifest_dir.to_string_lossy());
+    pattern.push(std::path::MAIN_SEPARATOR);
+    pattern.push_str(value);
+    pattern
 }
 
 fn is_glob_pattern(value: &str) -> bool {

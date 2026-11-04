@@ -346,6 +346,26 @@ members = ["member-with-*"]
 
 test_lint! {
     #[test]
+    fn glob_workspace_member_matching_only_files_is_accepted(
+        r#"[workspace]
+members = ["files-only/*"]
+"#,
+        SourcePath(workspace_members_fixture_cargo_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn literal_member_with_glob_metacharacters_is_accepted(
+        r#"[workspace]
+members = ["bracket[1]"]
+"#,
+        SourcePath(workspace_members_fixture_cargo_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
     fn existing_workspace_member_is_accepted(
         r#"[workspace]
 members = ["crates/tombi-linter"]
