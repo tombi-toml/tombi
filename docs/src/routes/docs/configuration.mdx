@@ -164,6 +164,7 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
         - [extensions."tombi-toml/pyproject".lint.rules.ambiguous-import-name](#extensions-tombi-toml-pyproject-lint-rules-ambiguous-import-name)
         - [extensions."tombi-toml/pyproject".lint.rules.cyclic-include-group](#extensions-tombi-toml-pyproject-lint-rules-cyclic-include-group)
         - [extensions."tombi-toml/pyproject".lint.rules.duplicate-dependency-group](#extensions-tombi-toml-pyproject-lint-rules-duplicate-dependency-group)
+        - [extensions."tombi-toml/pyproject".lint.rules.duplicate-extra-name](#extensions-tombi-toml-pyproject-lint-rules-duplicate-extra-name)
         - [extensions."tombi-toml/pyproject".lint.rules.duplicate-import-name](#extensions-tombi-toml-pyproject-lint-rules-duplicate-import-name)
         - [extensions."tombi-toml/pyproject".lint.rules.invalid-dependency-specifier](#extensions-tombi-toml-pyproject-lint-rules-invalid-dependency-specifier)
         - [extensions."tombi-toml/pyproject".lint.rules.invalid-email-display-name](#extensions-tombi-toml-pyproject-lint-rules-invalid-email-display-name)
@@ -1760,6 +1761,7 @@ lint.rules = {
   ambiguous-import-name = "error",
   cyclic-include-group = "error",
   duplicate-dependency-group = "error",
+  duplicate-extra-name = "error",
   duplicate-import-name = "warn",
   invalid-dependency-specifier = "error",
   invalid-email-display-name = "error",
@@ -1802,13 +1804,22 @@ b = [{ include-group = "a" }]
 
 ### extensions."tombi-toml/pyproject".lint.rules.duplicate-dependency-group
 
-Report dependency group or optional dependency extra names that become identical after lowercasing and replacing runs of `-`, `_`, or `.` with `-`.
+Report dependency group names that become identical after lowercasing and replacing runs of `-`, `_`, or `.` with `-`.
 
 ```toml
 [dependency-groups]
 qa_tools = []
 "QA.Tools" = []
+```
 
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/pyproject".lint.rules.duplicate-extra-name
+
+Report optional dependency extra names that become identical after lowercasing and replacing runs of `-`, `_`, or `.` with `-`.
+
+```toml
 [project.optional-dependencies]
 qa_tools = []
 "QA.Tools" = []
