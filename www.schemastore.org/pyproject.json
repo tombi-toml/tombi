@@ -633,8 +633,8 @@
           }
         },
         "import-names": {
-          "description": "An array of strings specifying the import names that the project exclusively provides when installed.\n\nTombi reports errors when an import name contains a Python keyword or is repeated:\n\n```toml\n[project]\nimport-names = [\"if\", \"acme\", \"acme\"]\n```",
-          "markdownDescription": "An array of strings specifying the import names that the project exclusively provides when installed.\n\nTombi reports errors when an import name contains a Python keyword or is repeated:\n\n```toml\n[project]\nimport-names = [\"if\", \"acme\", \"acme\"]\n```",
+          "description": "An array of strings specifying the import names that the project exclusively provides when installed.\n\nTombi reports an error when an import name contains a Python keyword, and a warning when an import name is repeated:\n\n```toml\n[project]\nimport-names = [\"if\", \"acme\", \"acme\"]\n```",
+          "markdownDescription": "An array of strings specifying the import names that the project exclusively provides when installed.\n\nTombi reports an error when an import name contains a Python keyword, and a warning when an import name is repeated:\n\n```toml\n[project]\nimport-names = [\"if\", \"acme\", \"acme\"]\n```",
           "x-intellij-html-description": "An array of strings specifying the import names that the project exclusively provides when installed.",
           "x-taplo": {
             "links": {
@@ -658,8 +658,8 @@
         },
         "import-namespaces": {
           "minItems": 1,
-          "description": "An array of strings specifying the import names that the project provides when installed, but not exclusively.\n\nTombi reports errors when a name is declared as both exclusive and shared, or when a dotted name's parent is not also declared:\n\n```toml\n[project]\nimport-names = [\"acme\"]\nimport-namespaces = [\"acme\", \"tools.plugins\"]\n```\n\nHere `acme` is both exclusive and shared, and `tools` is not declared as a parent of `tools.plugins`.",
-          "markdownDescription": "An array of strings specifying the import names that the project provides when installed, but not exclusively.\n\nTombi reports errors when a name is declared as both exclusive and shared, or when a dotted name's parent is not also declared:\n\n```toml\n[project]\nimport-names = [\"acme\"]\nimport-namespaces = [\"acme\", \"tools.plugins\"]\n```\n\nHere `acme` is both exclusive and shared, and `tools` is not declared as a parent of `tools.plugins`.",
+          "description": "An array of strings specifying the import names that the project provides when installed, but not exclusively.\n\nTombi reports an error when a name is declared as both exclusive and shared, and a warning when a dotted name's parent is not also declared:\n\n```toml\n[project]\nimport-names = [\"acme\"]\nimport-namespaces = [\"acme\", \"tools.plugins\"]\n```\n\nHere `acme` is both exclusive and shared, and `tools` is not declared as a parent of `tools.plugins`.",
+          "markdownDescription": "An array of strings specifying the import names that the project provides when installed, but not exclusively.\n\nTombi reports an error when a name is declared as both exclusive and shared, and a warning when a dotted name's parent is not also declared:\n\n```toml\n[project]\nimport-names = [\"acme\"]\nimport-namespaces = [\"acme\", \"tools.plugins\"]\n```\n\nHere `acme` is both exclusive and shared, and `tools` is not declared as a parent of `tools.plugins`.",
           "x-intellij-html-description": "An array of strings specifying the import names that the project provides when installed, but not exclusively.",
           "x-taplo": {
             "links": {
