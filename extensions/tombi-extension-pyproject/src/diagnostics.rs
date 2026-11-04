@@ -1,6 +1,11 @@
-use std::{collections::HashSet, sync::LazyLock};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::LazyLock,
+};
 
 use tombi_document_tree_syntax::{DocumentTree, Value, dig_keys};
+
+use crate::normalize_pep503_name;
 
 /// Validate the pyproject metadata rules that cannot be expressed by JSON Schema.
 pub fn validate(
@@ -10,6 +15,7 @@ pub fn validate(
     let rules = options.rules.unwrap_or_default();
     let mut diagnostics = Vec::new();
     validate_dependency_specifiers(document_tree, &rules, &mut diagnostics);
+    validate_extra_names(document_tree, &rules, &mut diagnostics);
 
     let Some((_, Value::Table(project))) = dig_keys(document_tree, &["project"]) else {
         return diagnostics;
@@ -136,6 +142,32 @@ pub fn validate(
     diagnostics
 }
 
+fn validate_extra_names(
+    document_tree: &DocumentTree<'_>,
+    rules: &tombi_config::PyprojectLintRules,
+    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+) {
+    let Some((_, Value::Table(extras))) =
+        dig_keys(document_tree, &["project", "optional-dependencies"])
+    else {
+        return;
+    };
+
+    let mut normalized_names = HashSet::new();
+    for name in extras.keys() {
+        if !normalized_names.insert(normalize_pep503_name(name.value())) {
+            push_diagnostic(
+                DiagnosticKind::DuplicateExtraName {
+                    name: name.value().to_owned(),
+                },
+                rules.duplicate_extra_name,
+                name.span(),
+                diagnostics,
+            );
+        }
+    }
+}
+
 fn validate_dependency_specifiers(
     document_tree: &DocumentTree<'_>,
     rules: &tombi_config::PyprojectLintRules,
@@ -167,6 +199,127 @@ fn validate_dependency_specifiers(
         };
         for value in groups.values() {
             validate_dependency_array(value, rules, diagnostics);
+        }
+    }
+
+    validate_include_groups(document_tree, rules, diagnostics);
+}
+
+fn validate_include_groups(
+    document_tree: &DocumentTree<'_>,
+    rules: &tombi_config::PyprojectLintRules,
+    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+) {
+    let Some((_, Value::Table(groups))) = dig_keys(document_tree, &["dependency-groups"]) else {
+        return;
+    };
+
+    let mut normalized_groups = HashSet::new();
+    for key in groups.keys() {
+        let normalized_name = normalize_pep503_name(key.value());
+        if !normalized_groups.insert(normalized_name) {
+            push_diagnostic(
+                DiagnosticKind::DuplicateDependencyGroup {
+                    group: key.value().to_owned(),
+                },
+                rules.duplicate_dependency_group,
+                key.span(),
+                diagnostics,
+            );
+        }
+    }
+
+    let mut includes = HashMap::<String, Vec<(String, tombi_text::Span)>>::new();
+    for (key, group) in groups.key_values() {
+        let Value::Array(dependencies) = group else {
+            continue;
+        };
+        let source_group = normalize_pep503_name(key.value());
+        for dependency in dependencies.values() {
+            let Value::Table(include_group) = dependency else {
+                continue;
+            };
+            let Some(Value::String(name)) = include_group.get("include-group") else {
+                continue;
+            };
+            let included_group = normalize_pep503_name(name.value());
+            if !normalized_groups.contains(&included_group) {
+                push_diagnostic(
+                    DiagnosticKind::UndefinedIncludeGroup {
+                        group: name.value().to_owned(),
+                    },
+                    rules.undefined_include_group,
+                    name.span(),
+                    diagnostics,
+                );
+            } else {
+                includes
+                    .entry(source_group.clone())
+                    .or_default()
+                    .push((included_group, name.span()));
+            }
+        }
+    }
+
+    let mut visited = HashSet::new();
+    let mut visiting = HashSet::new();
+    let mut group_names = normalized_groups.iter().collect::<Vec<_>>();
+    group_names.sort();
+    for group in group_names {
+        report_include_cycles(
+            group,
+            &includes,
+            &mut visited,
+            &mut visiting,
+            rules.cyclic_include_group,
+            diagnostics,
+        );
+    }
+}
+
+fn report_include_cycles(
+    group: &str,
+    includes: &HashMap<String, Vec<(String, tombi_text::Span)>>,
+    visited: &mut HashSet<String>,
+    visiting: &mut HashSet<String>,
+    severity: tombi_config::SeverityLevel,
+    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+) {
+    if visited.contains(group) || !visiting.insert(group.to_owned()) {
+        return;
+    }
+
+    let mut stack = vec![(group.to_owned(), 0)];
+    while let Some((current_group, next_include_index)) = stack.last() {
+        let current_group = current_group.clone();
+        let next_include_index = *next_include_index;
+        let Some(included_groups) = includes.get(&current_group) else {
+            let completed_group = stack.pop().unwrap().0;
+            visiting.remove(&completed_group);
+            visited.insert(completed_group);
+            continue;
+        };
+
+        let Some((included_group, span)) = included_groups.get(next_include_index) else {
+            let completed_group = stack.pop().unwrap().0;
+            visiting.remove(&completed_group);
+            visited.insert(completed_group);
+            continue;
+        };
+
+        stack.last_mut().unwrap().1 += 1;
+        if visiting.contains(included_group) {
+            push_diagnostic(
+                DiagnosticKind::CyclicIncludeGroup {
+                    group: included_group.clone(),
+                },
+                severity,
+                *span,
+                diagnostics,
+            );
+        } else if !visited.contains(included_group) {
+            visiting.insert(included_group.clone());
+            stack.push((included_group.clone(), 0));
         }
     }
 }
@@ -218,6 +371,14 @@ fn check_duplicate_import_names(
 enum DiagnosticKind {
     #[error("dependency specifier `{requirement}` is not valid PEP 508")]
     InvalidDependencySpecifier { requirement: String },
+    #[error("included dependency group `{group}` is not defined")]
+    UndefinedIncludeGroup { group: String },
+    #[error("dependency group `{group}` duplicates another group after normalization")]
+    DuplicateDependencyGroup { group: String },
+    #[error("extra name `{name}` duplicates another name after normalization")]
+    DuplicateExtraName { name: String },
+    #[error("dependency group include cycle reaches `{group}`")]
+    CyclicIncludeGroup { group: String },
     #[error("unknown Trove classifier `{classifier}`")]
     UnknownTroveClassifier { classifier: String },
     #[error("author or maintainer name is not a valid RFC 822 email display name")]
@@ -238,6 +399,10 @@ impl DiagnosticKind {
     fn code(&self) -> &'static str {
         match self {
             Self::InvalidDependencySpecifier { .. } => "pyproject/invalid-dependency-specifier",
+            Self::UndefinedIncludeGroup { .. } => "pyproject/undefined-include-group",
+            Self::DuplicateDependencyGroup { .. } => "pyproject/duplicate-dependency-group",
+            Self::DuplicateExtraName { .. } => "pyproject/duplicate-extra-name",
+            Self::CyclicIncludeGroup { .. } => "pyproject/cyclic-include-group",
             Self::UnknownTroveClassifier { .. } => "pyproject/unknown-classifier",
             Self::InvalidEmailDisplayName => "pyproject/invalid-email-display-name",
             Self::InvalidEntryPointTarget { .. } => "pyproject/invalid-entry-point-target",

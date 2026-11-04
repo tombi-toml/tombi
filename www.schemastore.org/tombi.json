@@ -2603,6 +2603,33 @@
             }
           ]
         },
+        "cyclic-include-group": {
+          "description": "Diagnose cyclic dependency group includes.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "duplicate-dependency-group": {
+          "description": "Diagnose dependency group names that collide after normalization.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "duplicate-extra-name": {
+          "description": "Diagnose project extra names that collide after normalization.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
         "duplicate-import-name": {
           "description": "Diagnose duplicate Python import names.",
           "default": "warn",
@@ -2651,6 +2678,15 @@
         "missing-import-name-parent": {
           "description": "Diagnose import names whose parent is not declared.",
           "default": "warn",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "undefined-include-group": {
+          "description": "Diagnose dependency groups that include an undefined group.",
+          "default": "error",
           "allOf": [
             {
               "$ref": "#/definitions/SeverityLevel"
