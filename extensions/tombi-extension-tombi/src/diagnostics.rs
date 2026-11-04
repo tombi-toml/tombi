@@ -10,6 +10,10 @@ pub fn validate(
     options: &tombi_config::TombiLintFeatureTree,
 ) -> Vec<tombi_diagnostic::Diagnostic> {
     let rules = options.rules.unwrap_or_default();
+    if rules == tombi_config::TombiLintRules::off() {
+        return Vec::new();
+    }
+
     let mut diagnostics = Vec::new();
     if !schema_validation_enabled(document_tree) {
         return diagnostics;
