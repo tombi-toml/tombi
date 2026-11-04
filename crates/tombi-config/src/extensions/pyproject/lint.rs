@@ -95,22 +95,18 @@ pub struct PyprojectLintRules {
     /// test = [{ include-group = "dev" }]
     /// ```
     pub cyclic_include_group: SeverityLevel,
-    /// Diagnose dependency group names that collide after PEP 503 normalization.
+    /// Diagnose dependency group or extra names that collide after PEP 503 normalization.
     ///
     /// ```toml
     /// [dependency-groups]
     /// qa_tools = []
     /// "QA.Tools" = []
-    /// ```
-    pub duplicate_dependency_group: SeverityLevel,
-    /// Diagnose project extra names that collide after PEP 503 normalization.
     ///
-    /// ```toml
     /// [project.optional-dependencies]
     /// qa_tools = []
     /// "QA.Tools" = []
     /// ```
-    pub duplicate_extra_name: SeverityLevel,
+    pub duplicate_dependency_group: SeverityLevel,
     /// Diagnose duplicate Python import names.
     ///
     /// ```toml
@@ -175,7 +171,6 @@ impl Default for PyprojectLintRules {
             ambiguous_import_name: SeverityLevel::Error,
             cyclic_include_group: SeverityLevel::Error,
             duplicate_dependency_group: SeverityLevel::Error,
-            duplicate_extra_name: SeverityLevel::Error,
             duplicate_import_name: SeverityLevel::Warn,
             invalid_dependency_specifier: SeverityLevel::Error,
             invalid_email_display_name: SeverityLevel::Error,
@@ -194,7 +189,6 @@ impl PyprojectLintRules {
             ambiguous_import_name: SeverityLevel::Off,
             cyclic_include_group: SeverityLevel::Off,
             duplicate_dependency_group: SeverityLevel::Off,
-            duplicate_extra_name: SeverityLevel::Off,
             duplicate_import_name: SeverityLevel::Off,
             invalid_dependency_specifier: SeverityLevel::Off,
             invalid_email_display_name: SeverityLevel::Off,
