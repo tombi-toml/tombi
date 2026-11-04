@@ -15,6 +15,11 @@ fn workspace_without_lints_cargo_path() -> std::path::PathBuf {
     )
 }
 
+fn workspace_members_fixture_cargo_path() -> std::path::PathBuf {
+    tombi_test_lib::project_root_path()
+        .join("crates/tombi-linter/tests/fixtures/cargo/workspace-members/Cargo.toml")
+}
+
 fn span_of(source: &str, value: &str) -> tombi_text::Span {
     let quoted = format!("\"{value}\"");
     let start = source.find(&quoted).unwrap();
@@ -250,6 +255,123 @@ local = { path = "crates/tombi-linter/Cargo.toml" }
 local = { path = "crates/tombi-linter/Cargo.toml" }
 "#, "crates/tombi-linter/Cargo.toml")
     }])
+}
+
+test_lint! {
+    #[test]
+    fn missing_workspace_member_is_reported(
+        r#"[workspace]
+members = ["crates/tombi-linter", "missing-member-dir"]
+"#,
+        SourcePath(cargo_path()),
+    ) -> Diagnostics([{
+        code: "cargo/missing-workspace-member",
+        level: Level::ERROR,
+        span: span_of(r#"[workspace]
+members = ["crates/tombi-linter", "missing-member-dir"]
+"#, "missing-member-dir")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn missing_default_workspace_member_is_reported(
+        r#"[workspace]
+members = ["crates/*"]
+default-members = ["missing-default-member"]
+"#,
+        SourcePath(cargo_path()),
+    ) -> Diagnostics([{
+        code: "cargo/missing-workspace-member",
+        level: Level::ERROR,
+        span: span_of(r#"[workspace]
+members = ["crates/*"]
+default-members = ["missing-default-member"]
+"#, "missing-default-member")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn glob_workspace_member_without_manifest_is_reported(
+        r#"[workspace]
+members = ["member-*"]
+"#,
+        SourcePath(workspace_members_fixture_cargo_path()),
+    ) -> Diagnostics([{
+        code: "cargo/missing-workspace-member",
+        level: Level::ERROR,
+        span: span_of(r#"[workspace]
+members = ["member-*"]
+"#, "member-*")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn glob_workspace_member_matching_nothing_is_reported(
+        r#"[workspace]
+members = ["ghost-*"]
+"#,
+        SourcePath(workspace_members_fixture_cargo_path()),
+    ) -> Diagnostics([{
+        code: "cargo/missing-workspace-member",
+        level: Level::ERROR,
+        span: span_of(r#"[workspace]
+members = ["ghost-*"]
+"#, "ghost-*")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn excluded_glob_workspace_member_is_accepted(
+        r#"[workspace]
+members = ["member-*"]
+exclude = ["member-without-manifest"]
+"#,
+        SourcePath(workspace_members_fixture_cargo_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn glob_workspace_member_with_manifest_is_accepted(
+        r#"[workspace]
+members = ["member-with-*"]
+"#,
+        SourcePath(workspace_members_fixture_cargo_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn glob_workspace_member_matching_only_files_is_accepted(
+        r#"[workspace]
+members = ["files-only/*"]
+"#,
+        SourcePath(workspace_members_fixture_cargo_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn literal_member_with_glob_metacharacters_is_accepted(
+        r#"[workspace]
+members = ["bracket[1]"]
+"#,
+        SourcePath(workspace_members_fixture_cargo_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn existing_workspace_member_is_accepted(
+        r#"[workspace]
+members = ["crates/tombi-linter"]
+"#,
+        SourcePath(cargo_path()),
+    ) -> Ok(_)
 }
 
 test_lint! {

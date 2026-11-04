@@ -111,6 +111,8 @@ pub struct CargoLintRules {
     /// serde = { workspace = true } # no [workspace.dependencies].serde
     /// ```
     pub missing_workspace: SeverityLevel,
+    /// Report a `workspace.members` or `workspace.default-members` entry whose directory does not contain Cargo.toml, including every directory matched by a glob pattern.
+    pub missing_workspace_member: SeverityLevel,
 }
 
 impl Default for CargoLintRules {
@@ -122,6 +124,7 @@ impl Default for CargoLintRules {
             missing_readme: SeverityLevel::Error,
             missing_target_path: SeverityLevel::Error,
             missing_workspace: SeverityLevel::Error,
+            missing_workspace_member: SeverityLevel::Error,
         }
     }
 }
@@ -135,6 +138,7 @@ impl CargoLintRules {
             missing_readme: SeverityLevel::Off,
             missing_target_path: SeverityLevel::Off,
             missing_workspace: SeverityLevel::Off,
+            missing_workspace_member: SeverityLevel::Off,
         }
     }
 }

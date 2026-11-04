@@ -1,0 +1,6 @@
+# Fixture package for the cargo/missing-workspace-member lint test.
+# Not part of any Cargo workspace; only read by the linter integration tests.
+[package]
+name = "cargo-workspace-member-fixture"
+version = "0.1.0"
+edition = "2024"

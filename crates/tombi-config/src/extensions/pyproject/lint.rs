@@ -149,6 +149,8 @@ pub struct PyprojectLintRules {
     /// import-namespaces = ["acme.plugins"] # `acme` is not declared
     /// ```
     pub missing_import_name_parent: SeverityLevel,
+    /// Diagnose a non-glob `tool.uv.workspace.members` path whose directory does not contain pyproject.toml.
+    pub missing_workspace_member: SeverityLevel,
     /// Diagnose dependency groups that include an undefined group.
     ///
     /// ```toml
@@ -177,6 +179,7 @@ impl Default for PyprojectLintRules {
             invalid_entry_point_target: SeverityLevel::Error,
             invalid_import_name: SeverityLevel::Error,
             missing_import_name_parent: SeverityLevel::Warn,
+            missing_workspace_member: SeverityLevel::Error,
             undefined_include_group: SeverityLevel::Error,
             unknown_classifier: SeverityLevel::Warn,
         }
@@ -195,6 +198,7 @@ impl PyprojectLintRules {
             invalid_entry_point_target: SeverityLevel::Off,
             invalid_import_name: SeverityLevel::Off,
             missing_import_name_parent: SeverityLevel::Off,
+            missing_workspace_member: SeverityLevel::Off,
             undefined_include_group: SeverityLevel::Off,
             unknown_classifier: SeverityLevel::Off,
         }
