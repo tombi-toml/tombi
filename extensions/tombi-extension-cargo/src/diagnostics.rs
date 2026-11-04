@@ -334,32 +334,48 @@ fn collect_path_references<'a>(
         &mut references,
     );
 
-    for name in ["lib", "bin", "example", "test", "bench"] {
-        if let Some(Value::Array(tables)) = document_tree.get(name) {
-            for table in tables.values() {
-                if let Value::Table(table) = table {
-                    collect_table_file_field(
-                        table,
-                        "path",
-                        DiagnosticKind::TargetPath,
-                        rules.missing_target_path,
-                        &mut references,
-                    );
+    if rules.missing_target_path != SeverityLevel::Off {
+        for name in ["lib", "bin", "example", "test", "bench"] {
+            if let Some(Value::Array(tables)) = document_tree.get(name) {
+                for table in tables.values() {
+                    if let Value::Table(table) = table {
+                        collect_table_file_field(
+                            table,
+                            "path",
+                            DiagnosticKind::TargetPath,
+                            rules.missing_target_path,
+                            &mut references,
+                        );
+                    }
                 }
+            } else if let Some(Value::Table(table)) = document_tree.get(name) {
+                collect_table_file_field(
+                    table,
+                    "path",
+                    DiagnosticKind::TargetPath,
+                    rules.missing_target_path,
+                    &mut references,
+                );
             }
-        } else if let Some(Value::Table(table)) = document_tree.get(name) {
-            collect_table_file_field(
-                table,
-                "path",
-                DiagnosticKind::TargetPath,
-                rules.missing_target_path,
-                &mut references,
-            );
         }
     }
 
-    for name in ["dependencies", "dev-dependencies", "build-dependencies"] {
-        if let Some((_, Value::Table(table))) = dig_keys(document_tree, &[name]) {
+    if rules.missing_path_dependency != SeverityLevel::Off
+        || rules.missing_workspace != SeverityLevel::Off
+    {
+        for name in ["dependencies", "dev-dependencies", "build-dependencies"] {
+            if let Some((_, Value::Table(table))) = dig_keys(document_tree, &[name]) {
+                collect_dependency_paths(
+                    table,
+                    rules.missing_path_dependency,
+                    rules.missing_workspace,
+                    &mut references,
+                );
+            }
+        }
+        if let Some((_, Value::Table(table))) =
+            dig_keys(document_tree, &["workspace", "dependencies"])
+        {
             collect_dependency_paths(
                 table,
                 rules.missing_path_dependency,
@@ -367,49 +383,40 @@ fn collect_path_references<'a>(
                 &mut references,
             );
         }
-    }
-    if let Some((_, Value::Table(table))) = dig_keys(document_tree, &["workspace", "dependencies"])
-    {
-        collect_dependency_paths(
-            table,
-            rules.missing_path_dependency,
-            rules.missing_workspace,
-            &mut references,
-        );
-    }
-    if let Some((_, Value::Table(registries))) = dig_keys(document_tree, &["patch"]) {
-        for packages in registries.values() {
-            if let Value::Table(packages) = packages {
-                collect_dependency_paths(
-                    packages,
-                    rules.missing_path_dependency,
-                    rules.missing_workspace,
-                    &mut references,
-                );
-            }
-        }
-    }
-    if let Some((_, Value::Table(replacements))) = dig_keys(document_tree, &["replace"]) {
-        collect_dependency_paths(
-            replacements,
-            rules.missing_path_dependency,
-            rules.missing_workspace,
-            &mut references,
-        );
-    }
-    if let Some((_, Value::Table(targets))) = dig_keys(document_tree, &["target"]) {
-        for target in targets.values() {
-            let Value::Table(target) = target else {
-                continue;
-            };
-            for name in ["dependencies", "dev-dependencies", "build-dependencies"] {
-                if let Some(Value::Table(table)) = target.get(name) {
+        if let Some((_, Value::Table(registries))) = dig_keys(document_tree, &["patch"]) {
+            for packages in registries.values() {
+                if let Value::Table(packages) = packages {
                     collect_dependency_paths(
-                        table,
+                        packages,
                         rules.missing_path_dependency,
                         rules.missing_workspace,
                         &mut references,
                     );
+                }
+            }
+        }
+        if let Some((_, Value::Table(replacements))) = dig_keys(document_tree, &["replace"]) {
+            collect_dependency_paths(
+                replacements,
+                rules.missing_path_dependency,
+                rules.missing_workspace,
+                &mut references,
+            );
+        }
+        if let Some((_, Value::Table(targets))) = dig_keys(document_tree, &["target"]) {
+            for target in targets.values() {
+                let Value::Table(target) = target else {
+                    continue;
+                };
+                for name in ["dependencies", "dev-dependencies", "build-dependencies"] {
+                    if let Some(Value::Table(table)) = target.get(name) {
+                        collect_dependency_paths(
+                            table,
+                            rules.missing_path_dependency,
+                            rules.missing_workspace,
+                            &mut references,
+                        );
+                    }
                 }
             }
         }
@@ -456,6 +463,10 @@ fn collect_workspace_package_fields<'a>(
     severity: SeverityLevel,
     out: &mut Vec<PathReference<'a>>,
 ) {
+    if severity == SeverityLevel::Off {
+        return;
+    }
+
     const FIELDS: &[&str] = &[
         "authors",
         "categories",
@@ -501,6 +512,10 @@ fn collect_workspace_lints<'a>(
     severity: SeverityLevel,
     out: &mut Vec<PathReference<'a>>,
 ) {
+    if severity == SeverityLevel::Off {
+        return;
+    }
+
     if let Some(Value::Table(lints)) = document_tree.get("lints")
         && let Some(Value::Boolean(workspace)) = lints.get("workspace")
         && workspace.value()
@@ -684,6 +699,10 @@ fn collect_file_field<'a>(
     severity: SeverityLevel,
     out: &mut Vec<PathReference<'a>>,
 ) {
+    if severity == SeverityLevel::Off {
+        return;
+    }
+
     if let Some((_, value)) = dig_keys(tree, keys) {
         match value {
             Value::String(value) => out.push(PathReference {
@@ -715,6 +734,10 @@ fn collect_table_file_field<'a>(
     severity: SeverityLevel,
     out: &mut Vec<PathReference<'a>>,
 ) {
+    if severity == SeverityLevel::Off {
+        return;
+    }
+
     if let Some(Value::String(value)) = table.get(key) {
         out.push(PathReference {
             value: value.value(),
@@ -731,8 +754,15 @@ fn collect_dependency_paths<'a>(
     missing_workspace_severity: SeverityLevel,
     out: &mut Vec<PathReference<'a>>,
 ) {
+    if path_dependency_severity == SeverityLevel::Off
+        && missing_workspace_severity == SeverityLevel::Off
+    {
+        return;
+    }
+
     for (key, value) in table.key_values() {
-        if let Value::Table(options) = value
+        if path_dependency_severity != SeverityLevel::Off
+            && let Value::Table(options) = value
             && let Some(Value::String(path)) = options.get("path")
         {
             out.push(PathReference {
@@ -742,7 +772,8 @@ fn collect_dependency_paths<'a>(
                 severity: path_dependency_severity,
             });
         }
-        if let Value::Table(options) = value
+        if missing_workspace_severity != SeverityLevel::Off
+            && let Value::Table(options) = value
             && let Some(Value::Boolean(workspace)) = options.get("workspace")
             && workspace.value()
         {

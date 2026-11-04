@@ -15,19 +15,52 @@ pub fn validate(
     options: &tombi_config::PyprojectLintFeatureTree,
 ) -> Vec<tombi_diagnostic::Diagnostic> {
     let rules = options.rules.unwrap_or_default();
+    if rules == tombi_config::PyprojectLintRules::off() {
+        return Vec::new();
+    }
+
     let mut diagnostics = Vec::new();
-    validate_dependency_specifiers(document_tree, &rules, &mut diagnostics);
+    if rules.invalid_dependency_specifier != tombi_config::SeverityLevel::Off
+        || rules.duplicate_dependency_group != tombi_config::SeverityLevel::Off
+        || rules.undefined_include_group != tombi_config::SeverityLevel::Off
+        || rules.cyclic_include_group != tombi_config::SeverityLevel::Off
+    {
+        validate_dependency_specifiers(document_tree, &rules, &mut diagnostics);
+    }
     validate_workspace_members(document_tree, manifest_path, &rules, &mut diagnostics);
     validate_extra_names(document_tree, &rules, &mut diagnostics);
+
+    if rules.invalid_import_name == tombi_config::SeverityLevel::Off
+        && rules.duplicate_import_name == tombi_config::SeverityLevel::Off
+        && rules.ambiguous_import_name == tombi_config::SeverityLevel::Off
+        && rules.missing_import_name_parent == tombi_config::SeverityLevel::Off
+        && rules.unknown_classifier == tombi_config::SeverityLevel::Off
+        && rules.invalid_email_display_name == tombi_config::SeverityLevel::Off
+        && rules.invalid_entry_point_target == tombi_config::SeverityLevel::Off
+    {
+        return diagnostics;
+    }
 
     let Some((_, Value::Table(project))) = dig_keys(document_tree, &["project"]) else {
         return diagnostics;
     };
 
-    let import_names = read_import_names(project.get("import-names"));
-    let import_namespaces = read_import_names(project.get("import-namespaces"));
+    let check_import_names = rules.invalid_import_name != tombi_config::SeverityLevel::Off
+        || rules.duplicate_import_name != tombi_config::SeverityLevel::Off
+        || rules.ambiguous_import_name != tombi_config::SeverityLevel::Off
+        || rules.missing_import_name_parent != tombi_config::SeverityLevel::Off;
+    let (import_names, import_namespaces) = if check_import_names {
+        (
+            read_import_names(project.get("import-names")),
+            read_import_names(project.get("import-namespaces")),
+        )
+    } else {
+        (Vec::new(), Vec::new())
+    };
 
-    if let Some(Value::Array(classifiers)) = project.get("classifiers") {
+    if rules.unknown_classifier != tombi_config::SeverityLevel::Off
+        && let Some(Value::Array(classifiers)) = project.get("classifiers")
+    {
         for classifier in classifiers.iter().filter_map(|value| match value {
             Value::String(value) => Some(value),
             _ => None,
@@ -47,52 +80,58 @@ pub fn validate(
         }
     }
 
-    for field in ["authors", "maintainers"] {
-        if let Some(Value::Array(people)) = project.get(field) {
-            for person in people.iter().filter_map(|value| match value {
-                Value::Table(person) => Some(person),
-                _ => None,
-            }) {
-                let Some(Value::String(name)) = person.get("name") else {
-                    continue;
-                };
-                if name.value().contains(',') || !is_rfc822_display_name(name.value()) {
-                    push_diagnostic(
-                        DiagnosticKind::InvalidEmailDisplayName,
-                        rules.invalid_email_display_name,
-                        name.span(),
-                        &mut diagnostics,
-                    );
+    if rules.invalid_email_display_name != tombi_config::SeverityLevel::Off {
+        for field in ["authors", "maintainers"] {
+            if let Some(Value::Array(people)) = project.get(field) {
+                for person in people.iter().filter_map(|value| match value {
+                    Value::Table(person) => Some(person),
+                    _ => None,
+                }) {
+                    let Some(Value::String(name)) = person.get("name") else {
+                        continue;
+                    };
+                    if name.value().contains(',') || !is_rfc822_display_name(name.value()) {
+                        push_diagnostic(
+                            DiagnosticKind::InvalidEmailDisplayName,
+                            rules.invalid_email_display_name,
+                            name.span(),
+                            &mut diagnostics,
+                        );
+                    }
                 }
             }
         }
     }
 
-    for field in ["scripts", "gui-scripts"] {
-        if let Some(value) = project.get(field) {
-            validate_entry_point_table(value, &rules, &mut diagnostics);
+    if rules.invalid_entry_point_target != tombi_config::SeverityLevel::Off {
+        for field in ["scripts", "gui-scripts"] {
+            if let Some(value) = project.get(field) {
+                validate_entry_point_table(value, &rules, &mut diagnostics);
+            }
         }
-    }
-    if let Some(Value::Table(groups)) = project.get("entry-points") {
-        for entries in groups.values() {
-            validate_entry_point_table(entries, &rules, &mut diagnostics);
+        if let Some(Value::Table(groups)) = project.get("entry-points") {
+            for entries in groups.values() {
+                validate_entry_point_table(entries, &rules, &mut diagnostics);
+            }
         }
     }
 
-    for entry in import_names.iter().chain(import_namespaces.iter()) {
-        if let Some(identifier) = entry
-            .name
-            .split('.')
-            .find(|part| is_python_keyword(part) || has_invalid_unicode_identifier_syntax(part))
-        {
-            push_diagnostic(
-                DiagnosticKind::InvalidImportName {
-                    identifier: identifier.to_owned(),
-                },
-                rules.invalid_import_name,
-                entry.span,
-                &mut diagnostics,
-            );
+    if rules.invalid_import_name != tombi_config::SeverityLevel::Off {
+        for entry in import_names.iter().chain(import_namespaces.iter()) {
+            if let Some(identifier) = entry
+                .name
+                .split('.')
+                .find(|part| is_python_keyword(part) || has_invalid_unicode_identifier_syntax(part))
+            {
+                push_diagnostic(
+                    DiagnosticKind::InvalidImportName {
+                        identifier: identifier.to_owned(),
+                    },
+                    rules.invalid_import_name,
+                    entry.span,
+                    &mut diagnostics,
+                );
+            }
         }
     }
 
@@ -103,42 +142,46 @@ pub fn validate(
         &mut diagnostics,
     );
 
-    let exclusive = import_names
-        .iter()
-        .map(|entry| entry.name)
-        .collect::<HashSet<_>>();
-    for entry in &import_namespaces {
-        if exclusive.contains(entry.name) {
-            push_diagnostic(
-                DiagnosticKind::AmbiguousImportName,
-                rules.ambiguous_import_name,
-                entry.span,
-                &mut diagnostics,
-            );
-        }
-    }
-
-    let declared = import_names
-        .iter()
-        .chain(import_namespaces.iter())
-        .map(|entry| entry.name)
-        .collect::<HashSet<_>>();
-    for entry in import_names.iter().chain(import_namespaces.iter()) {
-        let mut parts = entry.name.split('.');
-        let mut parent = parts.next().unwrap_or_default().to_owned();
-        for part in parts {
-            if !declared.contains(parent.as_str()) {
+    if rules.ambiguous_import_name != tombi_config::SeverityLevel::Off {
+        let exclusive = import_names
+            .iter()
+            .map(|entry| entry.name)
+            .collect::<HashSet<_>>();
+        for entry in &import_namespaces {
+            if exclusive.contains(entry.name) {
                 push_diagnostic(
-                    DiagnosticKind::MissingImportNameParent {
-                        parent: parent.clone(),
-                    },
-                    rules.missing_import_name_parent,
+                    DiagnosticKind::AmbiguousImportName,
+                    rules.ambiguous_import_name,
                     entry.span,
                     &mut diagnostics,
                 );
             }
-            parent.push('.');
-            parent.push_str(part);
+        }
+    }
+
+    if rules.missing_import_name_parent != tombi_config::SeverityLevel::Off {
+        let declared = import_names
+            .iter()
+            .chain(import_namespaces.iter())
+            .map(|entry| entry.name)
+            .collect::<HashSet<_>>();
+        for entry in import_names.iter().chain(import_namespaces.iter()) {
+            let mut parts = entry.name.split('.');
+            let mut parent = parts.next().unwrap_or_default().to_owned();
+            for part in parts {
+                if !declared.contains(parent.as_str()) {
+                    push_diagnostic(
+                        DiagnosticKind::MissingImportNameParent {
+                            parent: parent.clone(),
+                        },
+                        rules.missing_import_name_parent,
+                        entry.span,
+                        &mut diagnostics,
+                    );
+                }
+                parent.push('.');
+                parent.push_str(part);
+            }
         }
     }
 
@@ -150,6 +193,9 @@ fn validate_extra_names(
     rules: &tombi_config::PyprojectLintRules,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
+    if rules.duplicate_dependency_group == tombi_config::SeverityLevel::Off {
+        return;
+    }
     let Some((_, Value::Table(extras))) =
         dig_keys(document_tree, &["project", "optional-dependencies"])
     else {
@@ -176,36 +222,43 @@ fn validate_dependency_specifiers(
     rules: &tombi_config::PyprojectLintRules,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
-    for path in [
-        &["build-system", "requires"][..],
-        &["project", "dependencies"][..],
-    ] {
-        if let Some((_, value)) = dig_keys(document_tree, path) {
-            validate_dependency_array(value, rules, diagnostics);
+    if rules.invalid_dependency_specifier != tombi_config::SeverityLevel::Off {
+        for path in [
+            &["build-system", "requires"][..],
+            &["project", "dependencies"][..],
+        ] {
+            if let Some((_, value)) = dig_keys(document_tree, path) {
+                validate_dependency_array(value, rules, diagnostics);
+            }
         }
-    }
 
-    if let Some((_, Value::Table(uv))) = dig_keys(document_tree, &["tool", "uv"]) {
-        for key in crate::UV_DEPENDENCY_KEYS {
-            if let Some(value) = uv.get(key) {
+        if let Some((_, Value::Table(uv))) = dig_keys(document_tree, &["tool", "uv"]) {
+            for key in crate::UV_DEPENDENCY_KEYS {
+                if let Some(value) = uv.get(key) {
+                    validate_dependency_array(value, rules, diagnostics);
+                }
+            }
+        }
+
+        for path in [
+            &["project", "optional-dependencies"][..],
+            &["dependency-groups"][..],
+        ] {
+            let Some((_, Value::Table(groups))) = dig_keys(document_tree, path) else {
+                continue;
+            };
+            for value in groups.values() {
                 validate_dependency_array(value, rules, diagnostics);
             }
         }
     }
 
-    for path in [
-        &["project", "optional-dependencies"][..],
-        &["dependency-groups"][..],
-    ] {
-        let Some((_, Value::Table(groups))) = dig_keys(document_tree, path) else {
-            continue;
-        };
-        for value in groups.values() {
-            validate_dependency_array(value, rules, diagnostics);
-        }
+    if rules.duplicate_dependency_group != tombi_config::SeverityLevel::Off
+        || rules.undefined_include_group != tombi_config::SeverityLevel::Off
+        || rules.cyclic_include_group != tombi_config::SeverityLevel::Off
+    {
+        validate_include_groups(document_tree, rules, diagnostics);
     }
-
-    validate_include_groups(document_tree, rules, diagnostics);
 }
 
 fn validate_include_groups(
@@ -213,6 +266,12 @@ fn validate_include_groups(
     rules: &tombi_config::PyprojectLintRules,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
+    if rules.duplicate_dependency_group == tombi_config::SeverityLevel::Off
+        && rules.undefined_include_group == tombi_config::SeverityLevel::Off
+        && rules.cyclic_include_group == tombi_config::SeverityLevel::Off
+    {
+        return;
+    }
     let Some((_, Value::Table(groups))) = dig_keys(document_tree, &["dependency-groups"]) else {
         return;
     };
@@ -221,6 +280,9 @@ fn validate_include_groups(
     for key in groups.keys() {
         let normalized_name = normalize_pep503_name(key.value());
         if !normalized_groups.insert(normalized_name) {
+            if rules.duplicate_dependency_group == tombi_config::SeverityLevel::Off {
+                continue;
+            }
             push_diagnostic(
                 DiagnosticKind::DuplicateDependencyGroup {
                     group: key.value().to_owned(),
@@ -233,50 +295,57 @@ fn validate_include_groups(
     }
 
     let mut includes = HashMap::<String, Vec<(String, tombi_text::Span)>>::new();
-    for (key, group) in groups.key_values() {
-        let Value::Array(dependencies) = group else {
-            continue;
-        };
-        let source_group = normalize_pep503_name(key.value());
-        for dependency in dependencies.values() {
-            let Value::Table(include_group) = dependency else {
+    if rules.undefined_include_group != tombi_config::SeverityLevel::Off
+        || rules.cyclic_include_group != tombi_config::SeverityLevel::Off
+    {
+        for (key, group) in groups.key_values() {
+            let Value::Array(dependencies) = group else {
                 continue;
             };
-            let Some(Value::String(name)) = include_group.get("include-group") else {
-                continue;
-            };
-            let included_group = normalize_pep503_name(name.value());
-            if !normalized_groups.contains(&included_group) {
-                push_diagnostic(
-                    DiagnosticKind::UndefinedIncludeGroup {
-                        group: name.value().to_owned(),
-                    },
-                    rules.undefined_include_group,
-                    name.span(),
-                    diagnostics,
-                );
-            } else {
-                includes
-                    .entry(source_group.clone())
-                    .or_default()
-                    .push((included_group, name.span()));
+            for dependency in dependencies.values() {
+                let Value::Table(include_group) = dependency else {
+                    continue;
+                };
+                let Some(Value::String(name)) = include_group.get("include-group") else {
+                    continue;
+                };
+                let included_group = normalize_pep503_name(name.value());
+                if !normalized_groups.contains(&included_group) {
+                    if rules.undefined_include_group != tombi_config::SeverityLevel::Off {
+                        push_diagnostic(
+                            DiagnosticKind::UndefinedIncludeGroup {
+                                group: name.value().to_owned(),
+                            },
+                            rules.undefined_include_group,
+                            name.span(),
+                            diagnostics,
+                        );
+                    }
+                } else if rules.cyclic_include_group != tombi_config::SeverityLevel::Off {
+                    includes
+                        .entry(normalize_pep503_name(key.value()))
+                        .or_default()
+                        .push((included_group, name.span()));
+                }
             }
         }
     }
 
-    let mut visited = HashSet::new();
-    let mut visiting = HashSet::new();
-    let mut group_names = normalized_groups.iter().collect::<Vec<_>>();
-    group_names.sort();
-    for group in group_names {
-        report_include_cycles(
-            group,
-            &includes,
-            &mut visited,
-            &mut visiting,
-            rules.cyclic_include_group,
-            diagnostics,
-        );
+    if rules.cyclic_include_group != tombi_config::SeverityLevel::Off {
+        let mut visited = HashSet::new();
+        let mut visiting = HashSet::new();
+        let mut group_names = normalized_groups.iter().collect::<Vec<_>>();
+        group_names.sort();
+        for group in group_names {
+            report_include_cycles(
+                group,
+                &includes,
+                &mut visited,
+                &mut visiting,
+                rules.cyclic_include_group,
+                diagnostics,
+            );
+        }
     }
 }
 
@@ -416,6 +485,9 @@ fn validate_dependency_array(
     rules: &tombi_config::PyprojectLintRules,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
+    if rules.invalid_dependency_specifier == tombi_config::SeverityLevel::Off {
+        return;
+    }
     let Value::Array(dependencies) = value else {
         return;
     };
@@ -441,6 +513,9 @@ fn check_duplicate_import_names(
     severity: tombi_config::SeverityLevel,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
+    if severity == tombi_config::SeverityLevel::Off {
+        return;
+    }
     let mut seen = HashSet::new();
     for entry in import_names {
         if !seen.insert(entry.name) {
@@ -609,6 +684,9 @@ fn validate_entry_point_table(
     rules: &tombi_config::PyprojectLintRules,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
+    if rules.invalid_entry_point_target == tombi_config::SeverityLevel::Off {
+        return;
+    }
     let Value::Table(entries) = value else {
         return;
     };
