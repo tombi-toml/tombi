@@ -11,6 +11,19 @@ const UNDEFINED_INCLUDE_GROUP: &str = r#"[dependency-groups]
 dev = [{ include-group = "missing" }]
 "#;
 
+const DUPLICATE_GROUPS_AND_EXTRAS: &str = r#"[dependency-groups]
+build_tools = []
+"Build.Tools" = []
+
+[project]
+name = "example"
+version = "1.0"
+
+[project.optional-dependencies]
+qa_tools = []
+"QA.Tools" = []
+"#;
+
 fn pyproject_path() -> std::path::PathBuf {
     tombi_test_lib::project_root_path().join("pyproject.toml")
 }
@@ -44,6 +57,32 @@ fn undefined_include_group_span() -> tombi_text::Span {
         tombi_text::Offset::new(start.try_into().unwrap()),
         tombi_text::Offset::new((start + "\"missing\"".len()).try_into().unwrap()),
     )
+}
+
+fn duplicate_group_span() -> tombi_text::Span {
+    span_of_member(DUPLICATE_GROUPS_AND_EXTRAS, "Build.Tools")
+}
+
+fn duplicate_extra_span() -> tombi_text::Span {
+    span_of_member(DUPLICATE_GROUPS_AND_EXTRAS, "QA.Tools")
+}
+
+fn config_with_pyproject_rules(rules: tombi_config::PyprojectLintRules) -> tombi_config::Config {
+    let mut config = tombi_config::Config::default();
+    config.extensions = Some(tombi_config::Extensions {
+        cargo: None,
+        nagi_sql: None,
+        pyproject: Some(tombi_config::PyprojectExtensionFeatures::Features(
+            tombi_config::PyprojectExtensionFeatureTree {
+                lint: Some(tombi_config::PyprojectLintFeatures::Features(
+                    tombi_config::PyprojectLintFeatureTree { rules: Some(rules) },
+                )),
+                lsp: None,
+            },
+        )),
+        tombi: None,
+    });
+    config
 }
 
 fn long_acyclic_dependency_group_chain() -> String {
@@ -133,6 +172,38 @@ qa_tools = ["ruff"]
                 tombi_text::Offset::new((start + "\"QA.Tools\"".len()).try_into().unwrap()),
             )
         }
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn extra_name_rule_is_independent_of_dependency_group_rule(
+        DUPLICATE_GROUPS_AND_EXTRAS,
+        SourcePath(pyproject_path()),
+        Config(config_with_pyproject_rules(tombi_config::PyprojectLintRules {
+            duplicate_dependency_group: tombi_config::SeverityLevel::Off,
+            ..Default::default()
+        })),
+    ) -> Diagnostics([{
+        code: "pyproject/duplicate-extra-name",
+        level: Level::ERROR,
+        span: duplicate_extra_span()
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn dependency_group_rule_is_independent_of_extra_name_rule(
+        DUPLICATE_GROUPS_AND_EXTRAS,
+        SourcePath(pyproject_path()),
+        Config(config_with_pyproject_rules(tombi_config::PyprojectLintRules {
+            duplicate_extra_name: tombi_config::SeverityLevel::Off,
+            ..Default::default()
+        })),
+    ) -> Diagnostics([{
+        code: "pyproject/duplicate-dependency-group",
+        level: Level::ERROR,
+        span: duplicate_group_span()
     }])
 }
 

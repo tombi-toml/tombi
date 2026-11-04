@@ -2622,7 +2622,16 @@
           ]
         },
         "duplicate-dependency-group": {
-          "description": "Diagnose dependency group or extra names that collide after PEP 503 normalization.\n\n```toml\n[dependency-groups]\nqa_tools = []\n\"QA.Tools\" = []\n\n[project.optional-dependencies]\nqa_tools = []\n\"QA.Tools\" = []\n```",
+          "description": "Diagnose dependency group names that collide after PEP 503 normalization.\n\n```toml\n[dependency-groups]\nqa_tools = []\n\"QA.Tools\" = []\n```",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "duplicate-extra-name": {
+          "description": "Diagnose project extra names that collide after PEP 503 normalization.\n\n```toml\n[project.optional-dependencies]\nqa_tools = []\n\"QA.Tools\" = []\n```",
           "default": "error",
           "allOf": [
             {

@@ -193,7 +193,7 @@ fn validate_extra_names(
     rules: &tombi_config::PyprojectLintRules,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
-    if rules.duplicate_dependency_group == tombi_config::SeverityLevel::Off {
+    if rules.duplicate_extra_name == tombi_config::SeverityLevel::Off {
         return;
     }
     let Some((_, Value::Table(extras))) =
@@ -209,7 +209,7 @@ fn validate_extra_names(
                 DiagnosticKind::DuplicateExtraName {
                     name: name.value().to_owned(),
                 },
-                rules.duplicate_dependency_group,
+                rules.duplicate_extra_name,
                 name.span(),
                 diagnostics,
             );
