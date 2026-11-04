@@ -47,18 +47,30 @@
 
         # All the files in the source directory
         unfilteredRoot = ./.;
-        src = nixpkgs.lib.fileset.toSource {
-          root = unfilteredRoot;
-          fileset = nixpkgs.lib.fileset.unions [
-            # Default files from crane (Rust and Cargo files)
-            (craneLib.fileset.commonCargoSources unfilteredRoot)
-            # Also keep any JSON files
-            (nixpkgs.lib.fileset.fileFilter (file: file.hasExt "json") unfilteredRoot)
-            # Classifier data used by the pyproject extension
-            ./extensions/tombi-extension-pyproject/data
-            # Suite pin used by include_str! in json-schema-test
-            ./json-schema-test/src/SUITE_PIN
-          ];
+        # Crane's mkDummySrc walks the original source behind filtered-source wrappers.
+        # Materialize the fileset first so it only sees the selected build sources.
+        src = builtins.path {
+          name = "tombi-source";
+          path = nixpkgs.lib.fileset.toSource {
+            root = unfilteredRoot;
+            fileset = nixpkgs.lib.fileset.unions [
+              # Default files from crane (Rust and Cargo files)
+              (nixpkgs.lib.fileset.difference
+                (craneLib.fileset.commonCargoSources unfilteredRoot)
+                # Crane's dummy-source generation expands these test fixture paths as globs.
+                (nixpkgs.lib.fileset.unions [
+                  (./crates/tombi-linter/tests/fixtures/cargo/workspace-members/bracket + "[1]/Cargo.toml")
+                  (./crates/tombi-linter/tests/fixtures/cargo/workspace-members/bracket + "[1]/src/main.rs")
+                ])
+              )
+              # Also keep any JSON files
+              (nixpkgs.lib.fileset.fileFilter (file: file.hasExt "json") unfilteredRoot)
+              # Classifier data used by the pyproject extension
+              ./extensions/tombi-extension-pyproject/data
+              # Suite pin used by include_str! in json-schema-test
+              ./json-schema-test/src/SUITE_PIN
+            ];
+          };
         };
 
         tombiPkg = craneLib.buildPackage {
