@@ -150,6 +150,11 @@ pub struct PyprojectLintRules {
     /// ```
     pub missing_import_name_parent: SeverityLevel,
     /// Diagnose a non-glob `tool.uv.workspace.members` path whose directory does not contain pyproject.toml.
+    ///
+    /// ```toml
+    /// [tool.uv.workspace]
+    /// members = ["packages/missing"] # directory has no pyproject.toml
+    /// ```
     pub missing_workspace_member: SeverityLevel,
     /// Diagnose dependency groups that include an undefined group.
     ///

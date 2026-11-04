@@ -1183,12 +1183,22 @@ missing-workspace-member = "error"
 
 Report an explicitly configured build script path that does not exist. `build = true` checks `build.rs`; `build = false` is ignored.
 
+```toml
+[package]
+build = "build/build.rs"
+```
+
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
 
 ### extensions."tombi-toml/cargo".lint.rules.missing-license-file
 
 Report an explicitly configured package or workspace license file path that does not exist.
+
+```toml
+[package]
+license-file = "LICENSE"
+```
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
@@ -1197,12 +1207,22 @@ Report an explicitly configured package or workspace license file path that does
 
 Report path dependencies whose directory does not contain a `Cargo.toml` file.
 
+```toml
+[dependencies]
+local-crate = { path = "../local-crate" }
+```
+
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
 
 ### extensions."tombi-toml/cargo".lint.rules.missing-readme
 
 Report an explicitly configured package or workspace README path that does not exist. `readme = true` checks `README.md`.
+
+```toml
+[package]
+readme = "README.md"
+```
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
@@ -1211,6 +1231,12 @@ Report an explicitly configured package or workspace README path that does not e
 
 Report missing explicit `path` values in `[lib]`, `[[bin]]`, `[[example]]`, `[[test]]`, and `[[bench]]` targets. Inferred Cargo target paths are not checked.
 
+```toml
+[[bin]]
+name = "tool"
+path = "src/bin/tool.rs"
+```
+
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
 
@@ -1218,12 +1244,22 @@ Report missing explicit `path` values in `[lib]`, `[[bin]]`, `[[example]]`, `[[t
 
 Report `workspace = true` inheritance when its matching `[workspace.package]` field, `[workspace.dependencies]` entry, or `[workspace.lints]` table cannot be found.
 
+```toml
+[dependencies]
+shared-crate = { workspace = true }
+```
+
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
 
 ### extensions."tombi-toml/cargo".lint.rules.missing-workspace-member
 
 Report a `workspace.members` or `workspace.default-members` entry whose directory does not contain a `Cargo.toml` file. Glob patterns are expanded and every matched directory is checked, except directories removed by `workspace.exclude`. A glob that matches no directory is also reported.
+
+```toml
+[workspace]
+members = ["crates/missing"]
+```
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
@@ -1742,12 +1778,24 @@ lint.rules = {
 
 Set the severity for names declared as both exclusive and shared imports.
 
+```toml
+[project]
+import-names = ["acme"]
+import-namespaces = ["acme"]
+```
+
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
 
 ### extensions."tombi-toml/pyproject".lint.rules.cyclic-include-group
 
 Report a cycle in dependency group includes.
+
+```toml
+[dependency-groups]
+a = [{ include-group = "b" }]
+b = [{ include-group = "a" }]
+```
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
@@ -1773,12 +1821,22 @@ qa_tools = []
 
 Set the severity for duplicate Python import names.
 
+```toml
+[project]
+import-names = ["acme", "acme"]
+```
+
 - Type: `"off" | "warn" | "error"`
 - Default: `"warn"`
 
 ### extensions."tombi-toml/pyproject".lint.rules.invalid-dependency-specifier
 
 Set the severity for dependency strings that do not follow PEP 508.
+
+```toml
+[project]
+dependencies = ["not a valid requirement !!!"]
+```
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
@@ -1787,12 +1845,22 @@ Set the severity for dependency strings that do not follow PEP 508.
 
 Set the severity for invalid author and maintainer email display names.
 
+```toml
+[project]
+authors = [{ name = "Doe, Jane" }]
+```
+
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
 
 ### extensions."tombi-toml/pyproject".lint.rules.invalid-entry-point-target
 
 Set the severity for invalid Python entry point targets.
+
+```toml
+[project.scripts]
+cli = "my_package.class" # `class` is a Python keyword
+```
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
@@ -1801,12 +1869,22 @@ Set the severity for invalid Python entry point targets.
 
 Set the severity for invalid Python import names.
 
+```toml
+[project]
+import-names = ["if"] # `if` is a Python keyword
+```
+
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
 
 ### extensions."tombi-toml/pyproject".lint.rules.missing-import-name-parent
 
 Set the severity for import names whose parent is not declared.
+
+```toml
+[project]
+import-namespaces = ["acme.plugins"] # `acme` is not declared
+```
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"warn"`
@@ -1815,6 +1893,11 @@ Set the severity for import names whose parent is not declared.
 
 Set the severity for a non-glob `tool.uv.workspace.members` path whose directory does not contain a `pyproject.toml` file. Glob patterns are not checked, because uv silently ignores member directories without a `pyproject.toml`.
 
+```toml
+[tool.uv.workspace]
+members = ["packages/missing"]
+```
+
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
 
@@ -1822,12 +1905,22 @@ Set the severity for a non-glob `tool.uv.workspace.members` path whose directory
 
 Report a dependency group that includes a group not defined in `[dependency-groups]`.
 
+```toml
+[dependency-groups]
+dev = [{ include-group = "test" }]
+```
+
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
 
 ### extensions."tombi-toml/pyproject".lint.rules.unknown-classifier
 
 Set the severity for classifiers not listed in the Trove classifier specification.
+
+```toml
+[project]
+classifiers = ["NotAClassifier :: DefinitelyInvalid"]
+```
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"warn"`
@@ -2224,12 +2317,22 @@ missing-schema-path = "warn"
 
 Set the severity for local schema catalog paths that do not point to a file.
 
+```toml
+[schema.catalog]
+paths = ["schemas/catalog.json"]
+```
+
 - Type: `"off" | "warn" | "error"`
 - Default: `"warn"`
 
 ### extensions."tombi-toml/tombi".lint.rules.missing-schema-path
 
 Set the severity for local schema paths that do not point to a file.
+
+```toml
+[[schemas]]
+path = "schemas/example.json"
+```
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"warn"`
