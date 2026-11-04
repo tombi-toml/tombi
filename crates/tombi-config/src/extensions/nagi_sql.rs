@@ -1,7 +1,9 @@
 use super::EnabledOnly;
 
+mod lint;
 mod lsp;
 
+pub use lint::*;
 pub use lsp::*;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -28,6 +30,10 @@ extension_features! {
         ))
     )]
     pub struct NagiSqlExtensionFeatureTree {
+        /// # Nagi SQL lint options
+        #[cfg_attr(feature = "jsonschema", schemars(skip))]
+        pub lint: Option<NagiSqlLintFeatures>,
+
         /// # Nagi SQL LSP feature options
         pub lsp: Option<NagiSqlLspFeatures>,
     }

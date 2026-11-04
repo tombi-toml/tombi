@@ -172,6 +172,20 @@ impl<'a> Linter<'a> {
                 Vec::new()
             };
 
+            let nagi_sql_diagnostics = if self.source_file_is_named("nagi.toml")
+                || self.source_file_is_named(".nagi.toml")
+                || self.source_file_is_named(".config/nagi.toml")
+            {
+                let source_path = self.source_path();
+                tombi_extension_nagi_sql::validate_nagi_sql(
+                    &document_tree,
+                    source_path.as_deref(),
+                    self.extensions_options.nagi_sql.rules.unwrap_or_default(),
+                )
+            } else {
+                Vec::new()
+            };
+
             let schema_context = tombi_schema_store::SchemaContext {
                 toml_version: self.toml_version,
                 root_schema: source_schema
@@ -213,6 +227,7 @@ impl<'a> Linter<'a> {
             self.diagnostics.extend(cargo_diagnostics);
             self.diagnostics.extend(pyproject_diagnostics);
             self.diagnostics.extend(tombi_diagnostics);
+            self.diagnostics.extend(nagi_sql_diagnostics);
         }
 
         if self.diagnostics.is_empty() {

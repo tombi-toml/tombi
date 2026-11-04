@@ -32,6 +32,8 @@ mod issue_2210_mise_dotfiles;
 mod json_schema_test_suite;
 #[path = "integration/min_max_contains_test_schema.rs"]
 mod min_max_contains_test_schema;
+#[path = "integration/nagi_sql_lint.rs"]
+mod nagi_sql_lint;
 #[path = "integration/non_schema.rs"]
 mod non_schema;
 #[path = "integration/not_schema.rs"]

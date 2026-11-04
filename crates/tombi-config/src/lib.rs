@@ -164,6 +164,11 @@ impl Config {
             .and_then(|features| features.lint())
             .map(|lint| lint.feature_tree())
             .unwrap_or_default();
+        let nagi_sql = self
+            .nagi_sql_extension_features()
+            .and_then(|features| features.lint())
+            .map(|lint| lint.feature_tree())
+            .unwrap_or_default();
         let tombi = self
             .tombi_extension_features()
             .and_then(|features| features.lint())
@@ -172,6 +177,7 @@ impl Config {
 
         ExtensionsLintOptions {
             cargo,
+            nagi_sql,
             pyproject,
             tombi,
         }
