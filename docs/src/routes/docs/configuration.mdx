@@ -1188,7 +1188,7 @@ Report an explicitly configured build script path that does not exist. `build = 
 
 ```toml
 [package]
-build = "build/build.rs"
+build = "build/build-missing.rs" # this file does not exist
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1200,7 +1200,7 @@ Report an explicitly configured package or workspace license file path that does
 
 ```toml
 [package]
-license-file = "LICENSE"
+license-file = "LICENSE-missing.txt" # this file does not exist
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1212,7 +1212,7 @@ Report path dependencies whose directory does not contain a `Cargo.toml` file.
 
 ```toml
 [dependencies]
-local-crate = { path = "../local-crate" }
+local-crate = { path = "../local-crate" } # this directory has no Cargo.toml
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1224,7 +1224,7 @@ Report an explicitly configured package or workspace README path that does not e
 
 ```toml
 [package]
-readme = "README.md"
+readme = "README-missing.md" # this file does not exist
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1237,7 +1237,7 @@ Report missing explicit `path` values in `[lib]`, `[[bin]]`, `[[example]]`, `[[t
 ```toml
 [[bin]]
 name = "tool"
-path = "src/bin/tool.rs"
+path = "src/bin/tool-missing.rs" # this file does not exist
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1249,7 +1249,7 @@ Report `workspace = true` inheritance when its matching `[workspace.package]` fi
 
 ```toml
 [dependencies]
-shared-crate = { workspace = true }
+shared-crate = { workspace = true } # no matching [workspace.dependencies] entry
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1261,7 +1261,7 @@ Report a `workspace.members` or `workspace.default-members` entry whose director
 
 ```toml
 [workspace]
-members = ["crates/missing"]
+members = ["crates/missing"] # this directory has no Cargo.toml
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1784,8 +1784,8 @@ Set the severity for names declared as both exclusive and shared imports.
 
 ```toml
 [project]
-import-names = ["acme"]
-import-namespaces = ["acme"]
+import-names = ["acme"] # conflicts with the same name declared below
+import-namespaces = ["acme"] # conflicts with the same name declared above
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1797,8 +1797,8 @@ Report a cycle in dependency group includes.
 
 ```toml
 [dependency-groups]
-a = [{ include-group = "b" }]
-b = [{ include-group = "a" }]
+a = [{ include-group = "b" }] # includes b
+b = [{ include-group = "a" }] # includes a, creating a cycle
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1810,8 +1810,8 @@ Report dependency group names that become identical after lowercasing and replac
 
 ```toml
 [dependency-groups]
-qa_tools = []
-"QA.Tools" = []
+qa_tools = [] # normalizes to "qa-tools", same as the name below
+"QA.Tools" = [] # normalizes to "qa-tools", same as the name above
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1823,8 +1823,8 @@ Report optional dependency extra names that become identical after lowercasing a
 
 ```toml
 [project.optional-dependencies]
-qa_tools = []
-"QA.Tools" = []
+qa_tools = [] # normalizes to "qa-tools", same as the name below
+"QA.Tools" = [] # normalizes to "qa-tools", same as the name above
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1836,7 +1836,7 @@ Set the severity for duplicate Python import names.
 
 ```toml
 [project]
-import-names = ["acme", "acme"]
+import-names = ["acme", "acme"] # the same import name is declared twice
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1848,7 +1848,7 @@ Set the severity for dependency strings that do not follow PEP 508.
 
 ```toml
 [project]
-dependencies = ["not a valid requirement !!!"]
+dependencies = ["not a valid requirement !!!"] # not a valid PEP 508 requirement
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1860,7 +1860,7 @@ Set the severity for invalid author and maintainer email display names.
 
 ```toml
 [project]
-authors = [{ name = "Doe, Jane" }]
+authors = [{ name = "Doe, Jane" }] # commas are not allowed in the display name
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1872,7 +1872,7 @@ Set the severity for invalid Python entry point targets.
 
 ```toml
 [project.scripts]
-cli = "my_package.class" # `class` is a Python keyword
+cli = "my_package.class" # `class` is a Python keyword and cannot be an attribute
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1884,7 +1884,7 @@ Set the severity for invalid Python import names.
 
 ```toml
 [project]
-import-names = ["if"] # `if` is a Python keyword
+import-names = ["if"] # `if` is a Python keyword, not a valid import name
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1896,7 +1896,7 @@ Set the severity for import names whose parent is not declared.
 
 ```toml
 [project]
-import-namespaces = ["acme.plugins"] # `acme` is not declared
+import-namespaces = ["acme.plugins"] # parent `acme` is not declared in either list
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1908,7 +1908,7 @@ Set the severity for a non-glob `tool.uv.workspace.members` path whose directory
 
 ```toml
 [tool.uv.workspace]
-members = ["packages/missing"]
+members = ["packages/missing"] # this directory has no pyproject.toml
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1920,7 +1920,7 @@ Report a dependency group that includes a group not defined in `[dependency-grou
 
 ```toml
 [dependency-groups]
-dev = [{ include-group = "test" }]
+dev = [{ include-group = "test" }] # no [dependency-groups].test exists
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -1932,7 +1932,7 @@ Set the severity for classifiers not listed in the Trove classifier specificatio
 
 ```toml
 [project]
-classifiers = ["NotAClassifier :: DefinitelyInvalid"]
+classifiers = ["NotAClassifier :: DefinitelyInvalid"] # not in the Trove classifier list
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -2334,7 +2334,7 @@ Set the severity for local schema catalog paths that do not point to a file.
 
 ```toml
 [schema.catalog]
-paths = ["schemas/catalog.json"]
+paths = ["schemas/catalog.json"] # no file exists at this path
 ```
 
 - Type: `"off" | "warn" | "error"`
@@ -2346,7 +2346,7 @@ Set the severity for local schema paths that do not point to a file.
 
 ```toml
 [[schemas]]
-path = "schemas/example.json"
+path = "schemas/example.json" # no file exists at this path
 ```
 
 - Type: `"off" | "warn" | "error"`
