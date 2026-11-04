@@ -600,6 +600,18 @@ mod references_tests {
 
         test_references!(
             #[tokio::test]
+            async fn dependency_groups_group_references_use_normalized_names(
+                r#"
+                [dependency-groups]
+                dev = [{ include-group = "Lint_Tools" }]
+                "lint-tools█" = ["ruff"]
+                "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok([project_root_path().join("pyproject.toml")]);
+        );
+
+        test_references!(
+            #[tokio::test]
             async fn project_dependencies_without_workspace_root_usage_return_no_references(
                 r#"
                 [project]

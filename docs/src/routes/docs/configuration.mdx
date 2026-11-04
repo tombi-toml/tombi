@@ -159,6 +159,20 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
       - [extensions."tombi-toml/cargo".lsp.inlay-hint](#extensions-tombi-toml-cargo-lsp-inlay-hint)
       - [extensions."tombi-toml/cargo".lsp.references](#extensions-tombi-toml-cargo-lsp-references)
   - [extensions."tombi-toml/pyproject"](#extensions-tombi-toml-pyproject)
+    - [extensions."tombi-toml/pyproject".lint](#extensions-tombi-toml-pyproject-lint)
+      - [extensions."tombi-toml/pyproject".lint.rules](#extensions-tombi-toml-pyproject-lint-rules)
+        - [extensions."tombi-toml/pyproject".lint.rules.ambiguous-import-name](#extensions-tombi-toml-pyproject-lint-rules-ambiguous-import-name)
+        - [extensions."tombi-toml/pyproject".lint.rules.cyclic-include-group](#extensions-tombi-toml-pyproject-lint-rules-cyclic-include-group)
+        - [extensions."tombi-toml/pyproject".lint.rules.duplicate-dependency-group](#extensions-tombi-toml-pyproject-lint-rules-duplicate-dependency-group)
+        - [extensions."tombi-toml/pyproject".lint.rules.duplicate-extra-name](#extensions-tombi-toml-pyproject-lint-rules-duplicate-extra-name)
+        - [extensions."tombi-toml/pyproject".lint.rules.duplicate-import-name](#extensions-tombi-toml-pyproject-lint-rules-duplicate-import-name)
+        - [extensions."tombi-toml/pyproject".lint.rules.invalid-dependency-specifier](#extensions-tombi-toml-pyproject-lint-rules-invalid-dependency-specifier)
+        - [extensions."tombi-toml/pyproject".lint.rules.invalid-email-display-name](#extensions-tombi-toml-pyproject-lint-rules-invalid-email-display-name)
+        - [extensions."tombi-toml/pyproject".lint.rules.invalid-entry-point-target](#extensions-tombi-toml-pyproject-lint-rules-invalid-entry-point-target)
+        - [extensions."tombi-toml/pyproject".lint.rules.invalid-import-name](#extensions-tombi-toml-pyproject-lint-rules-invalid-import-name)
+        - [extensions."tombi-toml/pyproject".lint.rules.missing-import-name-parent](#extensions-tombi-toml-pyproject-lint-rules-missing-import-name-parent)
+        - [extensions."tombi-toml/pyproject".lint.rules.undefined-include-group](#extensions-tombi-toml-pyproject-lint-rules-undefined-include-group)
+        - [extensions."tombi-toml/pyproject".lint.rules.unknown-classifier](#extensions-tombi-toml-pyproject-lint-rules-unknown-classifier)
     - [extensions."tombi-toml/pyproject".lsp](#extensions-tombi-toml-pyproject-lsp)
       - [extensions."tombi-toml/pyproject".lsp.code-action](#extensions-tombi-toml-pyproject-lsp-code-action)
       - [extensions."tombi-toml/pyproject".lsp.completion](#extensions-tombi-toml-pyproject-lsp-completion)
@@ -1709,6 +1723,9 @@ Set the severity for individual pyproject diagnostics. Each rule defaults to its
 [extensions."tombi-toml/pyproject"]
 lint.rules = {
   ambiguous-import-name = "error",
+  cyclic-include-group = "error",
+  duplicate-dependency-group = "error",
+  duplicate-extra-name = "error",
   duplicate-import-name = "warn",
   invalid-dependency-specifier = "error",
   invalid-email-display-name = "error",
@@ -1716,6 +1733,7 @@ lint.rules = {
   invalid-import-name = "error",
   missing-import-name-parent = "warn",
   missing-workspace-member = "error",
+  undefined-include-group = "error",
   unknown-classifier = "warn",
 }
 ```
@@ -1725,6 +1743,27 @@ lint.rules = {
 ### extensions."tombi-toml/pyproject".lint.rules.ambiguous-import-name
 
 Set the severity for names declared as both exclusive and shared imports.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/pyproject".lint.rules.cyclic-include-group
+
+Report a cycle in dependency group includes.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/pyproject".lint.rules.duplicate-dependency-group
+
+Report dependency group names that become identical after lowercasing and replacing runs of `-`, `_`, or `.` with `-`.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/pyproject".lint.rules.duplicate-extra-name
+
+Report optional dependency extra names that become identical after lowercasing and replacing runs of `-`, `_`, or `.` with `-`.
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
@@ -1774,6 +1813,13 @@ Set the severity for import names whose parent is not declared.
 ### extensions."tombi-toml/pyproject".lint.rules.missing-workspace-member
 
 Set the severity for a non-glob `tool.uv.workspace.members` path whose directory does not contain a `pyproject.toml` file. Glob patterns are not checked, because uv silently ignores member directories without a `pyproject.toml`.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/pyproject".lint.rules.undefined-include-group
+
+Report a dependency group that includes a group not defined in `[dependency-groups]`.
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`

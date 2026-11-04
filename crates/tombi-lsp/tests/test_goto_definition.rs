@@ -1001,6 +1001,18 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
+            async fn dependency_groups_include_group_uses_normalized_group_name(
+                r#"
+                [dependency-groups]
+                dev = [{ include-group = "Lint_Tools█" }]
+                "lint-tools" = ["ruff"]
+                "#,
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok([project_root_path().join("pyproject.toml")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
             async fn tool_pyproject_sources_package_with_workspace(
                 r#"
                 [tool.uv.sources]
