@@ -1917,6 +1917,15 @@
               "$ref": "#/definitions/SeverityLevel"
             }
           ]
+        },
+        "missing-workspace-member": {
+          "description": "Report a `workspace.members` or `workspace.default-members` entry whose directory does not contain Cargo.toml, including every directory matched by a glob pattern.",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -2678,6 +2687,15 @@
         "missing-import-name-parent": {
           "description": "Diagnose import names whose parent is not declared.",
           "default": "warn",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "missing-workspace-member": {
+          "description": "Diagnose a non-glob `tool.uv.workspace.members` path whose directory does not contain pyproject.toml.",
+          "default": "error",
           "allOf": [
             {
               "$ref": "#/definitions/SeverityLevel"

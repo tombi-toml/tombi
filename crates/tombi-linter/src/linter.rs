@@ -141,8 +141,10 @@ impl<'a> Linter<'a> {
             };
 
             let pyproject_diagnostics = if self.source_file_is_named("pyproject.toml") {
+                let source_path = self.source_path();
                 tombi_extension_pyproject::validate_pyproject(
                     &document_tree,
+                    source_path.as_deref(),
                     &self.extensions_options.pyproject,
                 )
             } else {

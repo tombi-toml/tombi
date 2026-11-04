@@ -16,7 +16,7 @@ mod workspace;
 
 pub use code_action::{CodeActionRefactorRewriteName, code_action};
 pub use completion::completion;
-pub use diagnostics::validate as validate_pyproject;
+pub use diagnostics::{references_path, validate as validate_pyproject};
 pub use did_open::did_open;
 pub use document_link::document_link;
 pub use goto_declaration::get_current_declaration;
