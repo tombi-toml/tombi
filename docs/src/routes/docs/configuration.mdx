@@ -148,6 +148,7 @@ Therefore, it is recommended to place `tombi.toml` only at the root of your proj
       - [extensions."tombi-toml/cargo".lint.rules.missing-readme](#extensions-tombi-toml-cargo-lint-rules-missing-readme)
       - [extensions."tombi-toml/cargo".lint.rules.missing-target-path](#extensions-tombi-toml-cargo-lint-rules-missing-target-path)
       - [extensions."tombi-toml/cargo".lint.rules.missing-workspace](#extensions-tombi-toml-cargo-lint-rules-missing-workspace)
+      - [extensions."tombi-toml/cargo".lint.rules.missing-workspace-member](#extensions-tombi-toml-cargo-lint-rules-missing-workspace-member)
     - [extensions."tombi-toml/cargo".lsp](#extensions-tombi-toml-cargo-lsp)
       - [extensions."tombi-toml/cargo".lsp.code-action](#extensions-tombi-toml-cargo-lsp-code-action)
       - [extensions."tombi-toml/cargo".lsp.completion](#extensions-tombi-toml-cargo-lsp-completion)
@@ -1162,6 +1163,7 @@ missing-path-dependency = "error"
 missing-readme = "error"
 missing-target-path = "error"
 missing-workspace = "error"
+missing-workspace-member = "error"
 ```
 
 ### extensions."tombi-toml/cargo".lint.rules.missing-build-script
@@ -1202,6 +1204,13 @@ Report missing explicit `path` values in `[lib]`, `[[bin]]`, `[[example]]`, `[[t
 ### extensions."tombi-toml/cargo".lint.rules.missing-workspace
 
 Report `workspace = true` inheritance when its matching `[workspace.package]` field, `[workspace.dependencies]` entry, or `[workspace.lints]` table cannot be found.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
+
+### extensions."tombi-toml/cargo".lint.rules.missing-workspace-member
+
+Report a `workspace.members` or `workspace.default-members` entry whose directory does not contain a `Cargo.toml` file. Glob patterns are expanded and every matched directory is checked, except directories removed by `workspace.exclude`. A glob that matches no directory is also reported.
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"error"`
@@ -1706,6 +1715,7 @@ lint.rules = {
   invalid-entry-point-target = "error",
   invalid-import-name = "error",
   missing-import-name-parent = "warn",
+  missing-workspace-member = "error",
   unknown-classifier = "warn",
 }
 ```
@@ -1760,6 +1770,13 @@ Set the severity for import names whose parent is not declared.
 
 - Type: `"off" | "warn" | "error"`
 - Default: `"warn"`
+
+### extensions."tombi-toml/pyproject".lint.rules.missing-workspace-member
+
+Set the severity for a non-glob `tool.uv.workspace.members` path whose directory does not contain a `pyproject.toml` file. Glob patterns are not checked, because uv silently ignores member directories without a `pyproject.toml`.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
 
 ### extensions."tombi-toml/pyproject".lint.rules.unknown-classifier
 

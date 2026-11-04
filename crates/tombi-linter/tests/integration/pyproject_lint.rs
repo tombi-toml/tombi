@@ -11,6 +11,15 @@ fn pyproject_path() -> std::path::PathBuf {
     tombi_test_lib::project_root_path().join("pyproject.toml")
 }
 
+fn span_of_member(source: &str, value: &str) -> tombi_text::Span {
+    let quoted = format!("\"{value}\"");
+    let start = source.find(&quoted).unwrap();
+    tombi_text::Span::new(
+        tombi_text::Offset::new(start.try_into().unwrap()),
+        tombi_text::Offset::new((start + quoted.len()).try_into().unwrap()),
+    )
+}
+
 fn invalid_dependency_span() -> tombi_text::Span {
     let start = INVALID_DEPENDENCY
         .find("\"not a valid requirement !!!\"")
@@ -143,4 +152,72 @@ test_lint! {
         level: Level::ERROR,
         span: invalid_dependency_span()
     }])
+}
+
+test_lint! {
+    #[test]
+    fn missing_workspace_member_is_reported(
+        r#"[tool.uv.workspace]
+members = ["python/tombi", "missing-member-dir"]
+"#,
+        SourcePath(pyproject_path()),
+    ) -> Diagnostics([{
+        code: "pyproject/missing-workspace-member",
+        level: Level::ERROR,
+        span: span_of_member(r#"[tool.uv.workspace]
+members = ["python/tombi", "missing-member-dir"]
+"#, "missing-member-dir")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn glob_workspace_members_are_not_checked(
+        r#"[tool.uv.workspace]
+members = ["missing-glob-*"]
+"#,
+        SourcePath(pyproject_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn existing_workspace_member_is_accepted(
+        r#"[tool.uv.workspace]
+members = ["python/tombi"]
+"#,
+        SourcePath(pyproject_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn missing_workspace_member_can_be_disabled(
+        r#"[tool.uv.workspace]
+members = ["missing-member-dir"]
+"#,
+        SourcePath(pyproject_path()),
+        Config({
+            let mut config = tombi_config::Config::default();
+            config.extensions = Some(tombi_config::Extensions {
+                cargo: None,
+                nagi_sql: None,
+                pyproject: Some(tombi_config::PyprojectExtensionFeatures::Features(
+                    tombi_config::PyprojectExtensionFeatureTree {
+                        lint: Some(tombi_config::PyprojectLintFeatures::Features(
+                            tombi_config::PyprojectLintFeatureTree {
+                                rules: Some(tombi_config::PyprojectLintRules {
+                                    missing_workspace_member: tombi_config::SeverityLevel::Off,
+                                    ..Default::default()
+                                }),
+                            },
+                        )),
+                        lsp: None,
+                    },
+                )),
+                tombi: None,
+            });
+            config
+        }),
+    ) -> Ok(_)
 }

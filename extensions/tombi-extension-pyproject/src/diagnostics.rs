@@ -1,15 +1,17 @@
-use std::{collections::HashSet, sync::LazyLock};
+use std::{collections::HashSet, path::Path, sync::LazyLock};
 
 use tombi_document_tree_syntax::{DocumentTree, Value, dig_keys};
 
 /// Validate the pyproject metadata rules that cannot be expressed by JSON Schema.
 pub fn validate(
     document_tree: &DocumentTree<'_>,
+    manifest_path: Option<&Path>,
     options: &tombi_config::PyprojectLintFeatureTree,
 ) -> Vec<tombi_diagnostic::Diagnostic> {
     let rules = options.rules.unwrap_or_default();
     let mut diagnostics = Vec::new();
     validate_dependency_specifiers(document_tree, &rules, &mut diagnostics);
+    validate_workspace_members(document_tree, manifest_path, &rules, &mut diagnostics);
 
     let Some((_, Value::Table(project))) = dig_keys(document_tree, &["project"]) else {
         return diagnostics;
@@ -171,6 +173,56 @@ fn validate_dependency_specifiers(
     }
 }
 
+fn validate_workspace_members(
+    document_tree: &DocumentTree<'_>,
+    manifest_path: Option<&Path>,
+    rules: &tombi_config::PyprojectLintRules,
+    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+) {
+    if rules.missing_workspace_member == tombi_config::SeverityLevel::Off {
+        return;
+    }
+    let Some(workspace_dir) = manifest_path.and_then(Path::parent) else {
+        return;
+    };
+    let Some((_, Value::Array(members))) =
+        dig_keys(document_tree, &["tool", "uv", "workspace", "members"])
+    else {
+        return;
+    };
+
+    for member in members.iter().filter_map(|value| match value {
+        Value::String(member) => Some(member),
+        _ => None,
+    }) {
+        // uv silently ignores member directories without a pyproject.toml, so only the literal
+        // paths the user typed are checked; glob patterns are resolved by uv at build time.
+        if is_glob_pattern(member.value()) {
+            continue;
+        }
+        let member_path = Path::new(member.value());
+        let member_dir = if member_path.is_absolute() {
+            member_path.to_path_buf()
+        } else {
+            workspace_dir.join(member_path)
+        };
+        if !tombi_fs::is_file(&member_dir.join("pyproject.toml")) {
+            push_diagnostic(
+                DiagnosticKind::MissingWorkspaceMember {
+                    member: member.value().to_owned(),
+                },
+                rules.missing_workspace_member,
+                member.span(),
+                diagnostics,
+            );
+        }
+    }
+}
+
+fn is_glob_pattern(value: &str) -> bool {
+    value.contains(['*', '?', '['])
+}
+
 fn validate_dependency_array(
     value: &Value<'_>,
     rules: &tombi_config::PyprojectLintRules,
@@ -232,6 +284,8 @@ enum DiagnosticKind {
     AmbiguousImportName,
     #[error("import name parent `{parent}` is not declared")]
     MissingImportNameParent { parent: String },
+    #[error("workspace member `{member}` does not contain pyproject.toml")]
+    MissingWorkspaceMember { member: String },
 }
 
 impl DiagnosticKind {
@@ -245,6 +299,7 @@ impl DiagnosticKind {
             Self::DuplicateImportName => "pyproject/duplicate-import-name",
             Self::AmbiguousImportName => "pyproject/ambiguous-import-name",
             Self::MissingImportNameParent { .. } => "pyproject/missing-import-name-parent",
+            Self::MissingWorkspaceMember { .. } => "pyproject/missing-workspace-member",
         }
     }
 }

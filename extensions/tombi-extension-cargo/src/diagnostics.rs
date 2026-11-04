@@ -19,6 +19,7 @@ enum DiagnosticKind {
     BuildScript,
     TargetPath,
     PathDependency,
+    WorkspaceMember,
     WorkspacePackageField,
     WorkspaceDependency,
     WorkspaceLints,
@@ -39,6 +40,7 @@ impl DiagnosticKind {
             Self::BuildScript => "cargo/missing-build-script",
             Self::TargetPath => "cargo/missing-target-path",
             Self::PathDependency => "cargo/missing-path-dependency",
+            Self::WorkspaceMember => "cargo/missing-workspace-member",
             Self::WorkspacePackageField | Self::WorkspaceDependency | Self::WorkspaceLints => {
                 "cargo/missing-workspace"
             }
@@ -53,6 +55,9 @@ impl DiagnosticKind {
             Self::TargetPath => format!("target source path `{path}` does not exist"),
             Self::PathDependency => {
                 format!("path dependency `{path}` does not contain Cargo.toml")
+            }
+            Self::WorkspaceMember => {
+                format!("workspace member `{path}` does not contain Cargo.toml")
             }
             Self::WorkspacePackageField => format!(
                 "workspace package field `{path}` is not defined in the workspace Cargo.toml"
@@ -129,7 +134,7 @@ pub fn validate(
         })
     };
 
-    references
+    let mut diagnostics = references
         .into_iter()
         .filter_map(|reference| {
             let exists = if matches!(reference.kind, DiagnosticKind::PathDependency) {
@@ -160,7 +165,16 @@ pub fn validate(
                 SeverityLevel::Off => return None,
             })
         })
-        .collect()
+        .collect::<Vec<_>>();
+
+    validate_workspace_members(
+        document_tree,
+        manifest_dir,
+        rules.missing_workspace_member,
+        &mut diagnostics,
+    );
+
+    diagnostics
 }
 
 pub fn references_path(
@@ -208,6 +222,14 @@ pub fn references_path(
         }
     }
 
+    if changed_path
+        .file_name()
+        .is_some_and(|name| name == "Cargo.toml")
+        && workspace_member_references_path(document_tree, manifest_dir, &changed_path)
+    {
+        return true;
+    }
+
     references.iter().any(|reference| {
         let path = if matches!(reference.kind, DiagnosticKind::PathDependency) {
             Path::new(reference.value).join("Cargo.toml")
@@ -223,6 +245,42 @@ pub fn references_path(
         };
         tombi_fs::normalize(&path) == changed_path
     })
+}
+
+/// Returns whether a changed `Cargo.toml` is referenced by a `workspace.members` or
+/// `workspace.default-members` entry, so the workspace manifest can be re-diagnosed.
+fn workspace_member_references_path(
+    document_tree: &DocumentTree<'_>,
+    manifest_dir: &Path,
+    changed_path: &Path,
+) -> bool {
+    for members_key in ["members", "default-members"] {
+        let Some((_, Value::Array(members))) = dig_keys(document_tree, &["workspace", members_key])
+        else {
+            continue;
+        };
+        for member in members.values() {
+            let Value::String(member) = member else {
+                continue;
+            };
+            let value = member.value();
+            if is_glob_pattern(value) {
+                let pattern_path = tombi_fs::normalize(&member_dir(manifest_dir, value));
+                if let Ok(pattern) = glob::Pattern::new(&pattern_path.to_string_lossy())
+                    && changed_path
+                        .parent()
+                        .is_some_and(|parent| pattern.matches_path(parent))
+                {
+                    return true;
+                }
+            } else if tombi_fs::normalize(&member_dir(manifest_dir, value).join("Cargo.toml"))
+                == changed_path
+            {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 fn collect_path_references<'a>(
@@ -451,6 +509,151 @@ fn collect_workspace_lints<'a>(
             severity,
         });
     }
+}
+
+fn validate_workspace_members(
+    document_tree: &DocumentTree<'_>,
+    manifest_dir: &Path,
+    severity: SeverityLevel,
+    out: &mut Vec<tombi_diagnostic::Diagnostic>,
+) {
+    if severity == SeverityLevel::Off {
+        return;
+    }
+
+    let exclude = collect_member_exclude_matchers(document_tree, manifest_dir);
+
+    for members_key in ["members", "default-members"] {
+        let Some((_, Value::Array(members))) = dig_keys(document_tree, &["workspace", members_key])
+        else {
+            continue;
+        };
+        for member in members.values() {
+            let Value::String(member) = member else {
+                continue;
+            };
+            validate_member_pattern(
+                member.value(),
+                member.span(),
+                manifest_dir,
+                &exclude,
+                severity,
+                out,
+            );
+        }
+    }
+}
+
+fn validate_member_pattern(
+    value: &str,
+    span: Span,
+    manifest_dir: &Path,
+    exclude: &[ExcludeMatcher],
+    severity: SeverityLevel,
+    out: &mut Vec<tombi_diagnostic::Diagnostic>,
+) {
+    if is_glob_pattern(value) {
+        let pattern_path = member_dir(manifest_dir, value);
+        // Cargo ignores glob matches that are not directories, but every matched directory
+        // must contain a Cargo.toml unless it is excluded.
+        let matched_dirs = match tombi_fs::glob(&pattern_path.to_string_lossy()) {
+            Ok(paths) => paths
+                .into_iter()
+                .filter(|path| tombi_fs::is_dir(path))
+                .collect::<Vec<_>>(),
+            Err(_) => return,
+        };
+        if matched_dirs.is_empty() {
+            // A glob that matches no directory is treated by Cargo as a literal member path.
+            push_member_diagnostic(value, span, severity, out);
+            return;
+        }
+        for dir in matched_dirs {
+            if exclude.iter().any(|matcher| matcher.matches(&dir)) {
+                continue;
+            }
+            if !tombi_fs::is_file(&dir.join("Cargo.toml")) {
+                let display = dir
+                    .strip_prefix(manifest_dir)
+                    .unwrap_or(&dir)
+                    .to_string_lossy()
+                    .into_owned();
+                push_member_diagnostic(&display, span, severity, out);
+            }
+        }
+    } else if !tombi_fs::is_file(&member_dir(manifest_dir, value).join("Cargo.toml")) {
+        push_member_diagnostic(value, span, severity, out);
+    }
+}
+
+fn push_member_diagnostic(
+    member: &str,
+    span: Span,
+    severity: SeverityLevel,
+    out: &mut Vec<tombi_diagnostic::Diagnostic>,
+) {
+    let rule = DiagnosticKind::WorkspaceMember.rule();
+    let message = DiagnosticKind::WorkspaceMember.message(member);
+    match severity {
+        SeverityLevel::Error => {
+            out.push(tombi_diagnostic::Diagnostic::new_error(message, rule, span))
+        }
+        SeverityLevel::Warn => out.push(tombi_diagnostic::Diagnostic::new_warning(
+            message, rule, span,
+        )),
+        SeverityLevel::Off => {}
+    }
+}
+
+struct ExcludeMatcher {
+    literal: std::path::PathBuf,
+    glob: Option<glob::Pattern>,
+}
+
+impl ExcludeMatcher {
+    fn matches(&self, dir: &Path) -> bool {
+        if dir == self.literal || dir.starts_with(&self.literal) {
+            return true;
+        }
+        self.glob
+            .as_ref()
+            .is_some_and(|pattern| pattern.matches_path(dir))
+    }
+}
+
+fn collect_member_exclude_matchers(
+    document_tree: &DocumentTree<'_>,
+    manifest_dir: &Path,
+) -> Vec<ExcludeMatcher> {
+    let Some((_, Value::Array(exclude))) = dig_keys(document_tree, &["workspace", "exclude"])
+    else {
+        return Vec::new();
+    };
+    exclude
+        .values()
+        .iter()
+        .filter_map(|value| match value {
+            Value::String(value) => {
+                let literal = tombi_fs::normalize(&member_dir(manifest_dir, value.value()));
+                let glob = glob::Pattern::new(&literal.to_string_lossy()).ok();
+                Some(ExcludeMatcher { literal, glob })
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+fn member_dir(manifest_dir: &Path, value: &str) -> std::path::PathBuf {
+    let path = Path::new(value);
+    if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        manifest_dir.join(path)
+    }
+}
+
+fn is_glob_pattern(value: &str) -> bool {
+    value.contains(['*', '?', '['])
 }
 
 fn collect_file_field<'a>(
