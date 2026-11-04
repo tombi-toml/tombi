@@ -83,95 +83,95 @@ pub struct PyprojectLintRules {
     ///
     /// ```toml
     /// [project]
-    /// import-names = ["acme"]
-    /// import-namespaces = ["acme"]
+    /// import-names = ["acme"] # conflicts with the same name declared below
+    /// import-namespaces = ["acme"] # conflicts with the same name declared above
     /// ```
     pub ambiguous_import_name: SeverityLevel,
     /// Diagnose cyclic dependency group includes.
     ///
     /// ```toml
     /// [dependency-groups]
-    /// dev = [{ include-group = "test" }]
-    /// test = [{ include-group = "dev" }]
+    /// dev = [{ include-group = "test" }] # includes test
+    /// test = [{ include-group = "dev" }] # includes dev, creating a cycle
     /// ```
     pub cyclic_include_group: SeverityLevel,
     /// Diagnose dependency group names that collide after PEP 503 normalization.
     ///
     /// ```toml
     /// [dependency-groups]
-    /// qa_tools = []
-    /// "QA.Tools" = []
+    /// qa_tools = [] # normalizes to "qa-tools", same as the name below
+    /// "QA.Tools" = [] # normalizes to "qa-tools", same as the name above
     /// ```
     pub duplicate_dependency_group: SeverityLevel,
     /// Diagnose project extra names that collide after PEP 503 normalization.
     ///
     /// ```toml
     /// [project.optional-dependencies]
-    /// qa_tools = []
-    /// "QA.Tools" = []
+    /// qa_tools = [] # normalizes to "qa-tools", same as the name below
+    /// "QA.Tools" = [] # normalizes to "qa-tools", same as the name above
     /// ```
     pub duplicate_extra_name: SeverityLevel,
     /// Diagnose duplicate Python import names.
     ///
     /// ```toml
     /// [project]
-    /// import-names = ["acme", "acme"]
+    /// import-names = ["acme", "acme"] # the same import name is declared twice
     /// ```
     pub duplicate_import_name: SeverityLevel,
     /// Diagnose invalid PEP 508 dependency specifiers.
     ///
     /// ```toml
     /// [project]
-    /// dependencies = ["not a valid requirement !!!"]
+    /// dependencies = ["not a valid requirement !!!"] # not a valid PEP 508 requirement
     /// ```
     pub invalid_dependency_specifier: SeverityLevel,
     /// Diagnose invalid author and maintainer email display names.
     ///
     /// ```toml
     /// [project]
-    /// authors = [{ name = "Doe, Jane" }]
+    /// authors = [{ name = "Doe, Jane" }] # commas are not allowed in the display name
     /// ```
     pub invalid_email_display_name: SeverityLevel,
     /// Diagnose invalid Python entry point targets.
     ///
     /// ```toml
     /// [project.scripts]
-    /// cli = "my_package.class" # `class` is a Python keyword
+    /// cli = "my_package.class" # `class` is a Python keyword and cannot be an attribute
     /// ```
     pub invalid_entry_point_target: SeverityLevel,
     /// Diagnose invalid Python import names.
     ///
     /// ```toml
     /// [project]
-    /// import-names = ["if"] # `if` is a Python keyword
+    /// import-names = ["if"] # `if` is a Python keyword, not a valid import name
     /// ```
     pub invalid_import_name: SeverityLevel,
     /// Diagnose import names whose parent is not declared.
     ///
     /// ```toml
     /// [project]
-    /// import-namespaces = ["acme.plugins"] # `acme` is not declared
+    /// import-namespaces = ["acme.plugins"] # parent `acme` is not declared in either list
     /// ```
     pub missing_import_name_parent: SeverityLevel,
     /// Diagnose a non-glob `tool.uv.workspace.members` path whose directory does not contain pyproject.toml.
     ///
     /// ```toml
     /// [tool.uv.workspace]
-    /// members = ["packages/missing"] # directory has no pyproject.toml
+    /// members = ["packages/missing"] # this directory has no pyproject.toml
     /// ```
     pub missing_workspace_member: SeverityLevel,
     /// Diagnose dependency groups that include an undefined group.
     ///
     /// ```toml
     /// [dependency-groups]
-    /// dev = [{ include-group = "missing" }]
+    /// dev = [{ include-group = "missing" }] # no [dependency-groups].missing exists
     /// ```
     pub undefined_include_group: SeverityLevel,
     /// Diagnose classifiers not listed in the Trove classifier specification.
     ///
     /// ```toml
     /// [project]
-    /// classifiers = ["NotAClassifier :: DefinitelyInvalid"]
+    /// classifiers = ["NotAClassifier :: DefinitelyInvalid"] # not in the Trove classifier list
     /// ```
     pub unknown_classifier: SeverityLevel,
 }

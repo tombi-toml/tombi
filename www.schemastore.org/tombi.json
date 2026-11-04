@@ -1865,7 +1865,7 @@
       "type": "object",
       "properties": {
         "missing-build-script": {
-          "description": "Report an explicitly configured build script path that does not exist.\n\n```toml\n[package]\nbuild = \"build-missing.rs\" # file does not exist\n```",
+          "description": "Report an explicitly configured build script path that does not exist.\n\n```toml\n[package]\nbuild = \"build-missing.rs\" # this file does not exist\n```",
           "default": "error",
           "allOf": [
             {
@@ -1874,7 +1874,7 @@
           ]
         },
         "missing-license-file": {
-          "description": "Report an explicitly configured package or workspace license file path that does not exist.\n\n```toml\n[package]\nlicense-file = \"LICENSE-missing.txt\" # file does not exist\n```",
+          "description": "Report an explicitly configured package or workspace license file path that does not exist.\n\n```toml\n[package]\nlicense-file = \"LICENSE-missing.txt\" # this file does not exist\n```",
           "default": "error",
           "allOf": [
             {
@@ -1883,7 +1883,7 @@
           ]
         },
         "missing-path-dependency": {
-          "description": "Report a path dependency whose directory does not contain `Cargo.toml`.\n\n```toml\n[dependencies]\nlocal-utils = { path = \"../local-utils\" } # directory has no Cargo.toml\n```",
+          "description": "Report a path dependency whose directory does not contain `Cargo.toml`.\n\n```toml\n[dependencies]\nlocal-utils = { path = \"../local-utils\" } # this directory has no Cargo.toml\n```",
           "default": "error",
           "allOf": [
             {
@@ -1892,7 +1892,7 @@
           ]
         },
         "missing-readme": {
-          "description": "Report an explicitly configured package or workspace README path that does not exist.\n\n```toml\n[package]\nreadme = \"README-missing.md\" # file does not exist\n```",
+          "description": "Report an explicitly configured package or workspace README path that does not exist.\n\n```toml\n[package]\nreadme = \"README-missing.md\" # this file does not exist\n```",
           "default": "error",
           "allOf": [
             {
@@ -1901,7 +1901,7 @@
           ]
         },
         "missing-target-path": {
-          "description": "Report an explicitly configured target source path that does not exist.\n\n```toml\n[[bin]]\nname = \"app\"\npath = \"src/bin-missing.rs\" # file does not exist\n```",
+          "description": "Report an explicitly configured target source path that does not exist.\n\n```toml\n[[bin]]\nname = \"app\"\npath = \"src/bin-missing.rs\" # this file does not exist\n```",
           "default": "error",
           "allOf": [
             {
@@ -1910,7 +1910,7 @@
           ]
         },
         "missing-workspace": {
-          "description": "Report a Cargo `workspace = true` reference without a matching workspace definition.\n\n```toml\n[dependencies]\nserde = { workspace = true } # no [workspace.dependencies].serde\n```",
+          "description": "Report a Cargo `workspace = true` reference without a matching workspace definition.\n\n```toml\n[dependencies]\nserde = { workspace = true } # no matching [workspace.dependencies].serde entry\n```",
           "default": "error",
           "allOf": [
             {
@@ -1919,7 +1919,7 @@
           ]
         },
         "missing-workspace-member": {
-          "description": "Report a `workspace.members` or `workspace.default-members` entry whose directory does not contain Cargo.toml, including every directory matched by a glob pattern.\n\n```toml\n[workspace]\nmembers = [\"crates/missing\"] # directory has no Cargo.toml\n```",
+          "description": "Report a `workspace.members` or `workspace.default-members` entry whose directory does not contain Cargo.toml, including every directory matched by a glob pattern.\n\n```toml\n[workspace]\nmembers = [\"crates/missing\"] # this directory has no Cargo.toml\n```",
           "default": "error",
           "allOf": [
             {
@@ -2604,7 +2604,7 @@
       "type": "object",
       "properties": {
         "ambiguous-import-name": {
-          "description": "Diagnose names declared as both exclusive and shared imports.\n\n```toml\n[project]\nimport-names = [\"acme\"]\nimport-namespaces = [\"acme\"]\n```",
+          "description": "Diagnose names declared as both exclusive and shared imports.\n\n```toml\n[project]\nimport-names = [\"acme\"] # conflicts with the same name declared below\nimport-namespaces = [\"acme\"] # conflicts with the same name declared above\n```",
           "default": "error",
           "allOf": [
             {
@@ -2613,7 +2613,7 @@
           ]
         },
         "cyclic-include-group": {
-          "description": "Diagnose cyclic dependency group includes.\n\n```toml\n[dependency-groups]\ndev = [{ include-group = \"test\" }]\ntest = [{ include-group = \"dev\" }]\n```",
+          "description": "Diagnose cyclic dependency group includes.\n\n```toml\n[dependency-groups]\ndev = [{ include-group = \"test\" }] # includes test\ntest = [{ include-group = \"dev\" }] # includes dev, creating a cycle\n```",
           "default": "error",
           "allOf": [
             {
@@ -2622,7 +2622,7 @@
           ]
         },
         "duplicate-dependency-group": {
-          "description": "Diagnose dependency group names that collide after PEP 503 normalization.\n\n```toml\n[dependency-groups]\nqa_tools = []\n\"QA.Tools\" = []\n```",
+          "description": "Diagnose dependency group names that collide after PEP 503 normalization.\n\n```toml\n[dependency-groups]\nqa_tools = [] # normalizes to \"qa-tools\", same as the name below\n\"QA.Tools\" = [] # normalizes to \"qa-tools\", same as the name above\n```",
           "default": "error",
           "allOf": [
             {
@@ -2631,7 +2631,7 @@
           ]
         },
         "duplicate-extra-name": {
-          "description": "Diagnose project extra names that collide after PEP 503 normalization.\n\n```toml\n[project.optional-dependencies]\nqa_tools = []\n\"QA.Tools\" = []\n```",
+          "description": "Diagnose project extra names that collide after PEP 503 normalization.\n\n```toml\n[project.optional-dependencies]\nqa_tools = [] # normalizes to \"qa-tools\", same as the name below\n\"QA.Tools\" = [] # normalizes to \"qa-tools\", same as the name above\n```",
           "default": "error",
           "allOf": [
             {
@@ -2640,7 +2640,7 @@
           ]
         },
         "duplicate-import-name": {
-          "description": "Diagnose duplicate Python import names.\n\n```toml\n[project]\nimport-names = [\"acme\", \"acme\"]\n```",
+          "description": "Diagnose duplicate Python import names.\n\n```toml\n[project]\nimport-names = [\"acme\", \"acme\"] # the same import name is declared twice\n```",
           "default": "warn",
           "allOf": [
             {
@@ -2649,7 +2649,7 @@
           ]
         },
         "invalid-dependency-specifier": {
-          "description": "Diagnose invalid PEP 508 dependency specifiers.\n\n```toml\n[project]\ndependencies = [\"not a valid requirement !!!\"]\n```",
+          "description": "Diagnose invalid PEP 508 dependency specifiers.\n\n```toml\n[project]\ndependencies = [\"not a valid requirement !!!\"] # not a valid PEP 508 requirement\n```",
           "default": "error",
           "allOf": [
             {
@@ -2658,7 +2658,7 @@
           ]
         },
         "invalid-email-display-name": {
-          "description": "Diagnose invalid author and maintainer email display names.\n\n```toml\n[project]\nauthors = [{ name = \"Doe, Jane\" }]\n```",
+          "description": "Diagnose invalid author and maintainer email display names.\n\n```toml\n[project]\nauthors = [{ name = \"Doe, Jane\" }] # commas are not allowed in the display name\n```",
           "default": "error",
           "allOf": [
             {
@@ -2667,7 +2667,7 @@
           ]
         },
         "invalid-entry-point-target": {
-          "description": "Diagnose invalid Python entry point targets.\n\n```toml\n[project.scripts]\ncli = \"my_package.class\" # `class` is a Python keyword\n```",
+          "description": "Diagnose invalid Python entry point targets.\n\n```toml\n[project.scripts]\ncli = \"my_package.class\" # `class` is a Python keyword and cannot be an attribute\n```",
           "default": "error",
           "allOf": [
             {
@@ -2676,7 +2676,7 @@
           ]
         },
         "invalid-import-name": {
-          "description": "Diagnose invalid Python import names.\n\n```toml\n[project]\nimport-names = [\"if\"] # `if` is a Python keyword\n```",
+          "description": "Diagnose invalid Python import names.\n\n```toml\n[project]\nimport-names = [\"if\"] # `if` is a Python keyword, not a valid import name\n```",
           "default": "error",
           "allOf": [
             {
@@ -2685,7 +2685,7 @@
           ]
         },
         "missing-import-name-parent": {
-          "description": "Diagnose import names whose parent is not declared.\n\n```toml\n[project]\nimport-namespaces = [\"acme.plugins\"] # `acme` is not declared\n```",
+          "description": "Diagnose import names whose parent is not declared.\n\n```toml\n[project]\nimport-namespaces = [\"acme.plugins\"] # parent `acme` is not declared in either list\n```",
           "default": "warn",
           "allOf": [
             {
@@ -2694,7 +2694,7 @@
           ]
         },
         "missing-workspace-member": {
-          "description": "Diagnose a non-glob `tool.uv.workspace.members` path whose directory does not contain pyproject.toml.\n\n```toml\n[tool.uv.workspace]\nmembers = [\"packages/missing\"] # directory has no pyproject.toml\n```",
+          "description": "Diagnose a non-glob `tool.uv.workspace.members` path whose directory does not contain pyproject.toml.\n\n```toml\n[tool.uv.workspace]\nmembers = [\"packages/missing\"] # this directory has no pyproject.toml\n```",
           "default": "error",
           "allOf": [
             {
@@ -2703,7 +2703,7 @@
           ]
         },
         "undefined-include-group": {
-          "description": "Diagnose dependency groups that include an undefined group.\n\n```toml\n[dependency-groups]\ndev = [{ include-group = \"missing\" }]\n```",
+          "description": "Diagnose dependency groups that include an undefined group.\n\n```toml\n[dependency-groups]\ndev = [{ include-group = \"missing\" }] # no [dependency-groups].missing exists\n```",
           "default": "error",
           "allOf": [
             {
@@ -2712,7 +2712,7 @@
           ]
         },
         "unknown-classifier": {
-          "description": "Diagnose classifiers not listed in the Trove classifier specification.\n\n```toml\n[project]\nclassifiers = [\"NotAClassifier :: DefinitelyInvalid\"]\n```",
+          "description": "Diagnose classifiers not listed in the Trove classifier specification.\n\n```toml\n[project]\nclassifiers = [\"NotAClassifier :: DefinitelyInvalid\"] # not in the Trove classifier list\n```",
           "default": "warn",
           "allOf": [
             {
