@@ -80,28 +80,92 @@ impl PyprojectLintFeatures {
 #[cfg_attr(feature = "serde", serde(default))]
 pub struct PyprojectLintRules {
     /// Diagnose names declared as both exclusive and shared imports.
+    ///
+    /// ```toml
+    /// [project]
+    /// import-names = ["acme"]
+    /// import-namespaces = ["acme"]
+    /// ```
     pub ambiguous_import_name: SeverityLevel,
     /// Diagnose cyclic dependency group includes.
+    ///
+    /// ```toml
+    /// [dependency-groups]
+    /// dev = [{ include-group = "test" }]
+    /// test = [{ include-group = "dev" }]
+    /// ```
     pub cyclic_include_group: SeverityLevel,
-    /// Diagnose dependency group names that collide after normalization.
+    /// Diagnose dependency group names that collide after PEP 503 normalization.
+    ///
+    /// ```toml
+    /// [dependency-groups]
+    /// qa_tools = []
+    /// "QA.Tools" = []
+    /// ```
     pub duplicate_dependency_group: SeverityLevel,
-    /// Diagnose project extra names that collide after normalization.
+    /// Diagnose project extra names that collide after PEP 503 normalization.
+    ///
+    /// ```toml
+    /// [project.optional-dependencies]
+    /// qa_tools = []
+    /// "QA.Tools" = []
+    /// ```
     pub duplicate_extra_name: SeverityLevel,
     /// Diagnose duplicate Python import names.
+    ///
+    /// ```toml
+    /// [project]
+    /// import-names = ["acme", "acme"]
+    /// ```
     pub duplicate_import_name: SeverityLevel,
     /// Diagnose invalid PEP 508 dependency specifiers.
+    ///
+    /// ```toml
+    /// [project]
+    /// dependencies = ["not a valid requirement !!!"]
+    /// ```
     pub invalid_dependency_specifier: SeverityLevel,
     /// Diagnose invalid author and maintainer email display names.
+    ///
+    /// ```toml
+    /// [project]
+    /// authors = [{ name = "Doe, Jane" }]
+    /// ```
     pub invalid_email_display_name: SeverityLevel,
     /// Diagnose invalid Python entry point targets.
+    ///
+    /// ```toml
+    /// [project.scripts]
+    /// cli = "my_package.class" # `class` is a Python keyword
+    /// ```
     pub invalid_entry_point_target: SeverityLevel,
     /// Diagnose invalid Python import names.
+    ///
+    /// ```toml
+    /// [project]
+    /// import-names = ["if"] # `if` is a Python keyword
+    /// ```
     pub invalid_import_name: SeverityLevel,
     /// Diagnose import names whose parent is not declared.
+    ///
+    /// ```toml
+    /// [project]
+    /// import-namespaces = ["acme.plugins"] # `acme` is not declared
+    /// ```
     pub missing_import_name_parent: SeverityLevel,
     /// Diagnose dependency groups that include an undefined group.
+    ///
+    /// ```toml
+    /// [dependency-groups]
+    /// dev = [{ include-group = "missing" }]
+    /// ```
     pub undefined_include_group: SeverityLevel,
     /// Diagnose classifiers not listed in the Trove classifier specification.
+    ///
+    /// ```toml
+    /// [project]
+    /// classifiers = ["NotAClassifier :: DefinitelyInvalid"]
+    /// ```
     pub unknown_classifier: SeverityLevel,
 }
 

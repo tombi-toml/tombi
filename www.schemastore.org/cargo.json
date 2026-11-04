@@ -5,7 +5,7 @@
   "definitions": {
     "Build": {
       "title": "Build",
-      "description": "The `build` field specifies a file in the package root which is a [build script](https://doc.rust-lang.org/cargo/reference/build-scripts.html) for building native code. More information can be found in the [build script guide](https://doc.rust-lang.org/cargo/reference/build-scripts.html).\n\n\n```toml\n[package]\n# ...\nbuild = \"build.rs\"\n```\n\nThe default is `\"build.rs\"`, which loads the script from a file named\n`build.rs` in the root of the package. Use `build = \"custom_build_name.rs\"` to\nspecify a path to a different file or `build = false` to disable automatic\ndetection of the build script.\n",
+      "description": "The `build` field specifies a file in the package root which is a [build script](https://doc.rust-lang.org/cargo/reference/build-scripts.html) for building native code. More information can be found in the [build script guide](https://doc.rust-lang.org/cargo/reference/build-scripts.html).\n\n\n```toml\n[package]\n# ...\nbuild = \"build.rs\"\n```\n\nThe default is `\"build.rs\"`, which loads the script from a file named\n`build.rs` in the root of the package. Use `build = \"custom_build_name.rs\"` to\nspecify a path to a different file or `build = false` to disable automatic\ndetection of the build script.\n\nTombi reports an error when this path does not exist relative to `Cargo.toml`:\n\n```toml\n[package]\nbuild = \"build-missing.rs\"\n```",
       "anyOf": [
         {
           "description": "Path to the build file.",
@@ -96,7 +96,7 @@
           }
         },
         "workspace": {
-          "description": "Inherit this dependency from the workspace manifest.",
+          "description": "Inherit this dependency from the workspace manifest.\n\nTombi reports an error when no matching entry exists in `[workspace.dependencies]`:\n\n```toml\n[dependencies]\nserde = { workspace = true }\n```",
           "type": "boolean",
           "enum": [true],
           "x-taplo": {
@@ -106,7 +106,7 @@
           }
         },
         "path": {
-          "description": "Cargo supports **path dependencies** which are typically sub-crates that live within one repository.\nLet's start off by making a new crate inside of our `hello_world` package:\n\n```console\n# inside of hello_world/\n$ cargo new hello_utils\n```\n\nThis will create a new folder `hello_utils` inside of which a `Cargo.toml` and\n`src` folder are ready to be configured. In order to tell Cargo about this, open\nup `hello_world/Cargo.toml` and add `hello_utils` to your dependencies:\n\n```toml\n[dependencies]\nhello_utils = { path = \"hello_utils\" }\n```\n\nThis tells Cargo that we depend on a crate called `hello_utils` which is found\nin the `hello_utils` folder (relative to the `Cargo.toml` it's written in).",
+          "description": "Cargo supports **path dependencies** which are typically sub-crates that live within one repository.\nLet's start off by making a new crate inside of our `hello_world` package:\n\n```console\n# inside of hello_world/\n$ cargo new hello_utils\n```\n\nThis will create a new folder `hello_utils` inside of which a `Cargo.toml` and\n`src` folder are ready to be configured. In order to tell Cargo about this, open\nup `hello_world/Cargo.toml` and add `hello_utils` to your dependencies:\n\n```toml\n[dependencies]\nhello_utils = { path = \"hello_utils\" }\n```\n\nThis tells Cargo that we depend on a crate called `hello_utils` which is found\nin the `hello_utils` folder (relative to the `Cargo.toml` it's written in).\n\nTombi reports an error when this path does not contain a `Cargo.toml`:\n\n```toml\n[dependencies]\nlocal-utils = { path = \"../local-utils\" }\n```",
           "type": "string",
           "x-taplo": {
             "links": {
@@ -514,7 +514,7 @@
         },
         "readme": {
           "title": "Readme",
-          "description": "The `readme` field should be the path to a file in the package root (relative\nto this `Cargo.toml`) that contains general information about the package.\nThis file will be transferred to the registry when you publish. [crates.io](https://crates.io)\nwill interpret it as Markdown and render it on the crate's page.\n\n```toml\n[package]\n# ...\nreadme = \"README.md\"\n```\n\nIf no value is specified for this field, and a file named `README.md`,\n`README.txt` or `README` exists in the package root, then the name of that\nfile will be used. You can suppress this behavior by setting this field to\n`false`. If the field is set to `true`, a default value of `README.md` will\nbe assumed.\n",
+          "description": "The `readme` field should be the path to a file in the package root (relative\nto this `Cargo.toml`) that contains general information about the package.\nThis file will be transferred to the registry when you publish. [crates.io](https://crates.io)\nwill interpret it as Markdown and render it on the crate's page.\n\n```toml\n[package]\n# ...\nreadme = \"README.md\"\n```\n\nIf no value is specified for this field, and a file named `README.md`,\n`README.txt` or `README` exists in the package root, then the name of that\nfile will be used. You can suppress this behavior by setting this field to\n`false`. If the field is set to `true`, a default value of `README.md` will\nbe assumed.\n\nTombi reports an error when the configured README file does not exist relative to `Cargo.toml`:\n\n```toml\n[package]\nreadme = \"README-missing.md\"\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/Readme"
@@ -562,7 +562,7 @@
         },
         "license-file": {
           "title": "LicenseFile",
-          "description": "The `license-file` field contains the path to a file\ncontaining the text of the license (relative to this `Cargo.toml`).\n\n```toml\n[package]\n# ...\nlicense-file = \"LICENSE.txt\"\n```\n\n> **Note**: [crates.io](https://crates.io) requires either `license` or `license-file` to be set.",
+          "description": "The `license-file` field contains the path to a file\ncontaining the text of the license (relative to this `Cargo.toml`).\n\n```toml\n[package]\n# ...\nlicense-file = \"LICENSE.txt\"\n```\n\n> **Note**: [crates.io](https://crates.io) requires either `license` or `license-file` to be set.\n\nTombi reports an error when the configured license file does not exist relative to `Cargo.toml`:\n\n```toml\n[package]\nlicense-file = \"LICENSE-missing.txt\"\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/LicenseFile"
@@ -1153,7 +1153,7 @@
     },
     "Readme": {
       "title": "Readme",
-      "description": "The `readme` field should be the path to a file in the package root (relative\nto this `Cargo.toml`) that contains general information about the package.\nThis file will be transferred to the registry when you publish. [crates.io](https://crates.io)\nwill interpret it as Markdown and render it on the crate's page.\n\n```toml\n[package]\n# ...\nreadme = \"README.md\"\n```\n\nIf no value is specified for this field, and a file named `README.md`,\n`README.txt` or `README` exists in the package root, then the name of that\nfile will be used. You can suppress this behavior by setting this field to\n`false`. If the field is set to `true`, a default value of `README.md` will\nbe assumed.\n",
+      "description": "The `readme` field should be the path to a file in the package root (relative\nto this `Cargo.toml`) that contains general information about the package.\nThis file will be transferred to the registry when you publish. [crates.io](https://crates.io)\nwill interpret it as Markdown and render it on the crate's page.\n\n```toml\n[package]\n# ...\nreadme = \"README.md\"\n```\n\nIf no value is specified for this field, and a file named `README.md`,\n`README.txt` or `README` exists in the package root, then the name of that\nfile will be used. You can suppress this behavior by setting this field to\n`false`. If the field is set to `true`, a default value of `README.md` will\nbe assumed.\n\nTombi reports an error when the configured README file does not exist relative to `Cargo.toml`:\n\n```toml\n[package]\nreadme = \"README-missing.md\"\n```",
       "anyOf": [
         {
           "description": "The `readme` field should be the path to a file in the package root (relative\nto this `Cargo.toml`) that contains general information about the package.",
@@ -1314,7 +1314,7 @@
           }
         },
         "path": {
-          "description": "The `path` field specifies where the source for the crate is located, relative\nto the `Cargo.toml` file.\n\nIf not specified, the [inferred path](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#target-auto-discovery) is used based on\nthe target name.",
+          "description": "The `path` field specifies where the source for the crate is located, relative\nto the `Cargo.toml` file.\n\nIf not specified, the [inferred path](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#target-auto-discovery) is used based on\nthe target name.\n\nTombi reports an error when the configured source file does not exist relative to `Cargo.toml`:\n\n```toml\n[[bin]]\nname = \"app\"\npath = \"src/bin-missing.rs\"\n```",
           "type": "string",
           "x-taplo": {
             "links": {
@@ -1695,7 +1695,7 @@
     },
     "LicenseFile": {
       "title": "LicenseFile",
-      "description": "The `license-file` field contains the path to a file\ncontaining the text of the license (relative to this `Cargo.toml`).\n\n```toml\n[package]\n# ...\nlicense-file = \"LICENSE.txt\"\n```\n\n> **Note**: [crates.io](https://crates.io) requires either `license` or `license-file` to be set.",
+      "description": "The `license-file` field contains the path to a file\ncontaining the text of the license (relative to this `Cargo.toml`).\n\n```toml\n[package]\n# ...\nlicense-file = \"LICENSE.txt\"\n```\n\n> **Note**: [crates.io](https://crates.io) requires either `license` or `license-file` to be set.\n\nTombi reports an error when the configured license file does not exist relative to `Cargo.toml`:\n\n```toml\n[package]\nlicense-file = \"LICENSE-missing.txt\"\n```",
       "type": "string",
       "x-taplo": {
         "links": {
@@ -1728,7 +1728,7 @@
       "properties": {
         "workspace": {
           "title": "Workspace",
-          "description": "The `workspace` field allow keys to be inherited by defining them in the member package with `{key}.workspace = true`",
+          "description": "The `workspace` field allow keys to be inherited by defining them in the member package with `{key}.workspace = true`\n\nTombi reports an error when the corresponding field is absent from `[workspace.package]`:\n\n```toml\n[package]\nversion.workspace = true\n```",
           "type": "boolean",
           "enum": [true]
         }
