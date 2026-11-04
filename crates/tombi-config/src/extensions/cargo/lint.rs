@@ -112,6 +112,11 @@ pub struct CargoLintRules {
     /// ```
     pub missing_workspace: SeverityLevel,
     /// Report a `workspace.members` or `workspace.default-members` entry whose directory does not contain Cargo.toml, including every directory matched by a glob pattern.
+    ///
+    /// ```toml
+    /// [workspace]
+    /// members = ["crates/missing"] # directory has no Cargo.toml
+    /// ```
     pub missing_workspace_member: SeverityLevel,
 }
 

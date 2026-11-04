@@ -1919,7 +1919,7 @@
           ]
         },
         "missing-workspace-member": {
-          "description": "Report a `workspace.members` or `workspace.default-members` entry whose directory does not contain Cargo.toml, including every directory matched by a glob pattern.",
+          "description": "Report a `workspace.members` or `workspace.default-members` entry whose directory does not contain Cargo.toml, including every directory matched by a glob pattern.\n\n```toml\n[workspace]\nmembers = [\"crates/missing\"] # directory has no Cargo.toml\n```",
           "default": "error",
           "allOf": [
             {
@@ -2685,7 +2685,7 @@
           ]
         },
         "missing-workspace-member": {
-          "description": "Diagnose a non-glob `tool.uv.workspace.members` path whose directory does not contain pyproject.toml.",
+          "description": "Diagnose a non-glob `tool.uv.workspace.members` path whose directory does not contain pyproject.toml.\n\n```toml\n[tool.uv.workspace]\nmembers = [\"packages/missing\"] # directory has no pyproject.toml\n```",
           "default": "error",
           "allOf": [
             {
