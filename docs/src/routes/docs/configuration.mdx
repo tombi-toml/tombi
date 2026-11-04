@@ -1170,15 +1170,17 @@ Enable or disable all Cargo extension lint rules.
 Set the severity of individual Cargo extension diagnostics. Each rule defaults to `"error"`. Available values are `"off"`, `"warn"`, and `"error"`.
 
 ```toml
-[extensions."tombi-toml/cargo"]
-lint.rules = {
-  missing-build-script = "error",
-  missing-license-file = "error",
-  missing-path-dependency = "error",
-  missing-readme = "error",
-  missing-target-path = "error",
-  missing-workspace = "error",
-  missing-workspace-member = "error",
+[extensions]
+"tombi-toml/cargo" = {
+  lint.rules = {
+    missing-build-script = "error",
+    missing-license-file = "error",
+    missing-path-dependency = "error",
+    missing-readme = "error",
+    missing-target-path = "error",
+    missing-workspace = "error",
+    missing-workspace-member = "error",
+  },
 }
 ```
 
@@ -1758,21 +1760,23 @@ Configure the severity of diagnostics produced by the `pyproject.toml` extension
 Set the severity for individual pyproject diagnostics. Each rule defaults to its current severity when omitted. Available values are `"off"`, `"warn"`, and `"error"`.
 
 ```toml
-[extensions."tombi-toml/pyproject"]
-lint.rules = {
-  ambiguous-import-name = "error",
-  cyclic-include-group = "error",
-  duplicate-dependency-group = "error",
-  duplicate-extra-name = "error",
-  duplicate-import-name = "warn",
-  invalid-dependency-specifier = "error",
-  invalid-email-display-name = "error",
-  invalid-entry-point-target = "error",
-  invalid-import-name = "error",
-  missing-import-name-parent = "warn",
-  missing-workspace-member = "error",
-  undefined-include-group = "error",
-  unknown-classifier = "warn",
+[extensions]
+"tombi-toml/pyproject" = {
+  lint.rules = {
+    ambiguous-import-name = "error",
+    cyclic-include-group = "error",
+    duplicate-dependency-group = "error",
+    duplicate-extra-name = "error",
+    duplicate-import-name = "warn",
+    invalid-dependency-specifier = "error",
+    invalid-email-display-name = "error",
+    invalid-entry-point-target = "error",
+    invalid-import-name = "error",
+    missing-import-name-parent = "warn",
+    missing-workspace-member = "error",
+    undefined-include-group = "error",
+    unknown-classifier = "warn",
+  },
 }
 ```
 
@@ -2319,10 +2323,12 @@ Configure diagnostics produced for local schema and schema catalog paths in Tomb
 Set the severity for individual Tombi configuration diagnostics. Each rule defaults to `"warn"` when omitted. Available values are `"off"`, `"warn"`, and `"error"`.
 
 ```toml
-[extensions."tombi-toml/tombi"]
-lint.rules = {
-  missing-catalog-path = "warn",
-  missing-schema-path = "warn",
+[extensions]
+"tombi-toml/tombi" = {
+  lint.rules = {
+    missing-catalog-path = "warn",
+    missing-schema-path = "warn",
+  },
 }
 ```
 
