@@ -63,8 +63,18 @@ impl TombiLintFeatures {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TombiLintRules {
     /// Report a local schema catalog path that does not point to a file.
+    ///
+    /// ```toml
+    /// [schema.catalog]
+    /// paths = ["./schemas/catalog.json"] # no file exists at this path
+    /// ```
     pub missing_catalog_path: SeverityLevel,
     /// Report a local schema path that does not point to a file.
+    ///
+    /// ```toml
+    /// [[schemas]]
+    /// path = "./schemas/app.json" # no file exists at this path
+    /// ```
     pub missing_schema_path: SeverityLevel,
 }
 

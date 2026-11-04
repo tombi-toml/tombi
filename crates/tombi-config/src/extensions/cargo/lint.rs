@@ -69,16 +69,47 @@ impl CargoLintFeatures {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct CargoLintRules {
     /// Report an explicitly configured build script path that does not exist.
+    ///
+    /// ```toml
+    /// [package]
+    /// build = "build-missing.rs" # file does not exist
+    /// ```
     pub missing_build_script: SeverityLevel,
     /// Report an explicitly configured package or workspace license file path that does not exist.
+    ///
+    /// ```toml
+    /// [package]
+    /// license-file = "LICENSE-missing.txt" # file does not exist
+    /// ```
     pub missing_license_file: SeverityLevel,
-    /// Report a path dependency whose directory does not contain Cargo.toml.
+    /// Report a path dependency whose directory does not contain `Cargo.toml`.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// local-utils = { path = "../local-utils" } # directory has no Cargo.toml
+    /// ```
     pub missing_path_dependency: SeverityLevel,
     /// Report an explicitly configured package or workspace README path that does not exist.
+    ///
+    /// ```toml
+    /// [package]
+    /// readme = "README-missing.md" # file does not exist
+    /// ```
     pub missing_readme: SeverityLevel,
     /// Report an explicitly configured target source path that does not exist.
+    ///
+    /// ```toml
+    /// [[bin]]
+    /// name = "app"
+    /// path = "src/bin-missing.rs" # file does not exist
+    /// ```
     pub missing_target_path: SeverityLevel,
     /// Report a Cargo `workspace = true` reference without a matching workspace definition.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// serde = { workspace = true } # no [workspace.dependencies].serde
+    /// ```
     pub missing_workspace: SeverityLevel,
     /// Report a `workspace.members` or `workspace.default-members` entry whose directory does not contain Cargo.toml, including every directory matched by a glob pattern.
     pub missing_workspace_member: SeverityLevel,

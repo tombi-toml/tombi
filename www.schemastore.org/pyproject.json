@@ -399,8 +399,8 @@
             "$ref": "#/definitions/projectAuthor"
           },
           "title": "Project authors",
-          "description": "People or organizations considered as 'authors' of the project. Each author is a table with `name` key, `email` key, or both.",
-          "markdownDescription": "People or organizations considered as 'authors' of the project. Each author is a table with `name` key, `email` key, or both.",
+          "description": "People or organizations considered as 'authors' of the project. Each author is a table with `name` key, `email` key, or both.\n\nTombi reports an error when an author name is not a valid RFC 822 display name, such as a name containing a comma:\n\n```toml\n[project]\nauthors = [{ name = \"Doe, Jane\" }]\n```",
+          "markdownDescription": "People or organizations considered as 'authors' of the project. Each author is a table with `name` key, `email` key, or both.\n\nTombi reports an error when an author name is not a valid RFC 822 display name, such as a name containing a comma:\n\n```toml\n[project]\nauthors = [{ name = \"Doe, Jane\" }]\n```",
           "x-intellij-html-description": "<p>People or organizations considered as 'authors' of the project. Each author is a table with <code>name</code> key, <code>email</code> key, or both.</p>",
           "x-taplo": {
             "links": {
@@ -414,8 +414,8 @@
             "$ref": "#/definitions/projectAuthor"
           },
           "title": "Project maintainers",
-          "description": "People or organizations considered as 'maintainers' of the project. Each maintainer is a table with `name` key, `email` key, or both.",
-          "markdownDescription": "People or organizations considered as 'maintainers' of the project. Each maintainer is a table with `name` key, `email` key, or both.",
+          "description": "People or organizations considered as 'maintainers' of the project. Each maintainer is a table with `name` key, `email` key, or both.\n\nThe same check applies to maintainers:\n\n```toml\n[project]\nmaintainers = [{ name = \"Doe, Jane\" }]\n```",
+          "markdownDescription": "People or organizations considered as 'maintainers' of the project. Each maintainer is a table with `name` key, `email` key, or both.\n\nThe same check applies to maintainers:\n\n```toml\n[project]\nmaintainers = [{ name = \"Doe, Jane\" }]\n```",
           "x-intellij-html-description": "<p>People or organizations considered as 'maintainers' of the project. Each maintainer is a table with <code>name</code> key, <code>email</code> key, or both.</p>",
           "x-taplo": {
             "links": {
@@ -445,8 +445,8 @@
             "type": "string"
           },
           "title": "Applicable Trove classifiers",
-          "description": "List of [Trove classifiers](https://pypi.org/classifiers/) that describe the project. PyPI use the classifiers to categorize projects.",
-          "markdownDescription": "List of [Trove classifiers](https://pypi.org/classifiers/) that describe the project. PyPI use the classifiers to categorize projects.",
+          "description": "List of [Trove classifiers](https://pypi.org/classifiers/) that describe the project. PyPI use the classifiers to categorize projects.\n\nTombi reports a warning for a classifier not in the canonical Trove classifier list:\n\n```toml\n[project]\nclassifiers = [\"NotAClassifier :: DefinitelyInvalid\"]\n```",
+          "markdownDescription": "List of [Trove classifiers](https://pypi.org/classifiers/) that describe the project. PyPI use the classifiers to categorize projects.\n\nTombi reports a warning for a classifier not in the canonical Trove classifier list:\n\n```toml\n[project]\nclassifiers = [\"NotAClassifier :: DefinitelyInvalid\"]\n```",
           "x-intellij-html-description": "<p>List of <a href=\"https://pypi.org/classifiers/\">Trove classifiers</a> that describe the project. PyPI use the classifiers to categorize projects.</p>",
           "x-taplo": {
             "links": {
@@ -495,8 +495,8 @@
             "$ref": "#/definitions/entryPointReference"
           },
           "title": "Console scripts",
-          "description": "Table of [entry points](https://packaging.python.org/en/latest/specifications/entry-points/) that allows package installers to create a command-line wrapper for. Each key is the name of the script to be created, and each value is the function or object to all, in form of either `importable.module` or `importable.module:object.attr`. Windows platform treats `console_scripts` specially in that they are wrapped in a console executable, so they are attached to a console and can use `sys.stdin`, `sys.stdout` and `sys.stderr` for I/O.",
-          "markdownDescription": "Table of [entry points](https://packaging.python.org/en/latest/specifications/entry-points/) that allows package installers to create a command-line wrapper for. Each key is the name of the script to be created, and each value is the function or object to all, in form of either `importable.module` or `importable.module:object.attr`. Windows platform treats `console_scripts` specially in that they are wrapped in a console executable, so they are attached to a console and can use `sys.stdin`, `sys.stdout` and `sys.stderr` for I/O.",
+          "description": "Table of [entry points](https://packaging.python.org/en/latest/specifications/entry-points/) that allows package installers to create a command-line wrapper for. Each key is the name of the script to be created, and each value is the function or object to all, in form of either `importable.module` or `importable.module:object.attr`. Windows platform treats `console_scripts` specially in that they are wrapped in a console executable, so they are attached to a console and can use `sys.stdin`, `sys.stdout` and `sys.stderr` for I/O.\n\nTombi reports an error when a target contains a Python keyword or invalid identifier. This check also applies to `gui-scripts` and `entry-points`:\n\n```toml\n[project.scripts]\ncli = \"my_package.class\"\n```",
+          "markdownDescription": "Table of [entry points](https://packaging.python.org/en/latest/specifications/entry-points/) that allows package installers to create a command-line wrapper for. Each key is the name of the script to be created, and each value is the function or object to all, in form of either `importable.module` or `importable.module:object.attr`. Windows platform treats `console_scripts` specially in that they are wrapped in a console executable, so they are attached to a console and can use `sys.stdin`, `sys.stdout` and `sys.stderr` for I/O.\n\nTombi reports an error when a target contains a Python keyword or invalid identifier. This check also applies to `gui-scripts` and `entry-points`:\n\n```toml\n[project.scripts]\ncli = \"my_package.class\"\n```",
           "x-intellij-html-description": "<p>Table of <a href=\"https://packaging.python.org/en/latest/specifications/entry-points/\">entry points</a> that allows package installers to create a command-line wrapper for. Each key is the name of the script to be created, and each value is the function or object to all, in form of either <code>importable.module</code> or <code>importable.module:object.attr</code>. Windows platform treats <code>console_scripts</code> specially in that they are wrapped in a console executable, so they are attached to a console and can use <code>sys.stdin</code>, <code>sys.stdout</code> and <code>sys.stderr</code> for I/O.</p>",
           "x-taplo": {
             "links": {
@@ -588,8 +588,8 @@
             "type": "string"
           },
           "title": "Project mandatory dependency requirements",
-          "description": "An array of [dependency specifier](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) strings, each representing a mandatory dependent package of the project.",
-          "markdownDescription": "An array of [dependency specifier](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) strings, each representing a mandatory dependent package of the project.",
+          "description": "An array of [dependency specifier](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) strings, each representing a mandatory dependent package of the project.\n\nTombi reports an error when a dependency is not valid PEP 508. The same rule checks `build-system.requires`, optional dependencies, and dependency groups:\n\n```toml\n[project]\ndependencies = [\"not a valid requirement !!!\"]\n```",
+          "markdownDescription": "An array of [dependency specifier](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) strings, each representing a mandatory dependent package of the project.\n\nTombi reports an error when a dependency is not valid PEP 508. The same rule checks `build-system.requires`, optional dependencies, and dependency groups:\n\n```toml\n[project]\ndependencies = [\"not a valid requirement !!!\"]\n```",
           "x-intellij-html-description": "<p>An array of <a href=\"https://packaging.python.org/en/latest/specifications/dependency-specifiers/\">dependency specifier</a> strings, each representing a mandatory dependent package of the project.</p>",
           "x-taplo": {
             "links": {
@@ -610,8 +610,8 @@
             }
           },
           "title": "Project extra dependency requirements",
-          "description": "Each entry is a key/value pair, with the key specifying [extra feature name](https://packaging.python.org/en/latest/specifications/core-metadata/#provides-extra-multiple-use) (such as `socks` in `requests[socks]`), and value is an array of [dependency specifier](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) strings.",
-          "markdownDescription": "Each entry is a key/value pair, with the key specifying [extra feature name](https://packaging.python.org/en/latest/specifications/core-metadata/#provides-extra-multiple-use) (such as `socks` in `requests[socks]`), and value is an array of [dependency specifier](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) strings.",
+          "description": "Each entry is a key/value pair, with the key specifying [extra feature name](https://packaging.python.org/en/latest/specifications/core-metadata/#provides-extra-multiple-use) (such as `socks` in `requests[socks]`), and value is an array of [dependency specifier](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) strings.\n\nTombi reports an error when two extra names collide after PEP 503 normalization (lowercase, with runs of `.`, `_`, and `-` treated alike):\n\n```toml\n[project.optional-dependencies]\nqa_tools = []\n\"QA.Tools\" = []\n```",
+          "markdownDescription": "Each entry is a key/value pair, with the key specifying [extra feature name](https://packaging.python.org/en/latest/specifications/core-metadata/#provides-extra-multiple-use) (such as `socks` in `requests[socks]`), and value is an array of [dependency specifier](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) strings.\n\nTombi reports an error when two extra names collide after PEP 503 normalization (lowercase, with runs of `.`, `_`, and `-` treated alike):\n\n```toml\n[project.optional-dependencies]\nqa_tools = []\n\"QA.Tools\" = []\n```",
           "x-intellij-html-description": "<p>Each entry is a key/value pair, with the key specifying <a href=\"https://packaging.python.org/en/latest/specifications/core-metadata/#provides-extra-multiple-use\">extra feature name</a> (such as <code>socks</code> in <code>requests[socks]</code>), and value is an array of <a href=\"https://packaging.python.org/en/latest/specifications/dependency-specifiers/\">dependency specifier</a> strings.</p>",
           "x-taplo": {
             "links": {
@@ -633,8 +633,8 @@
           }
         },
         "import-names": {
-          "description": "An array of strings specifying the import names that the project exclusively provides when installed.",
-          "markdownDescription": "An array of strings specifying the import names that the project exclusively provides when installed.",
+          "description": "An array of strings specifying the import names that the project exclusively provides when installed.\n\nTombi reports an error when an import name contains a Python keyword, and a warning when an import name is repeated:\n\n```toml\n[project]\nimport-names = [\"if\", \"acme\", \"acme\"]\n```",
+          "markdownDescription": "An array of strings specifying the import names that the project exclusively provides when installed.\n\nTombi reports an error when an import name contains a Python keyword, and a warning when an import name is repeated:\n\n```toml\n[project]\nimport-names = [\"if\", \"acme\", \"acme\"]\n```",
           "x-intellij-html-description": "An array of strings specifying the import names that the project exclusively provides when installed.",
           "x-taplo": {
             "links": {
@@ -658,8 +658,8 @@
         },
         "import-namespaces": {
           "minItems": 1,
-          "description": "An array of strings specifying the import names that the project provides when installed, but not exclusively.",
-          "markdownDescription": "An array of strings specifying the import names that the project provides when installed, but not exclusively.",
+          "description": "An array of strings specifying the import names that the project provides when installed, but not exclusively.\n\nTombi reports an error when a name is declared as both exclusive and shared, and a warning when a dotted name's parent is not also declared:\n\n```toml\n[project]\nimport-names = [\"acme\"]\nimport-namespaces = [\"acme\", \"tools.plugins\"]\n```\n\nHere `acme` is both exclusive and shared, and `tools` is not declared as a parent of `tools.plugins`.",
+          "markdownDescription": "An array of strings specifying the import names that the project provides when installed, but not exclusively.\n\nTombi reports an error when a name is declared as both exclusive and shared, and a warning when a dotted name's parent is not also declared:\n\n```toml\n[project]\nimport-names = [\"acme\"]\nimport-namespaces = [\"acme\", \"tools.plugins\"]\n```\n\nHere `acme` is both exclusive and shared, and `tools` is not declared as a parent of `tools.plugins`.",
           "x-intellij-html-description": "An array of strings specifying the import names that the project provides when installed, but not exclusively.",
           "x-taplo": {
             "links": {
@@ -808,8 +808,8 @@
     },
     "dependency-groups": {
       "title": "PEP 735 dependency groups",
-      "description": "Named groups of dependencies, similar to `requirements.txt` files, which launchers, IDEs, and other tools can find and identify by name. Each item in `[dependency-groups]` is defined as mapping of group name to list of [dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/).",
-      "markdownDescription": "Named groups of dependencies, similar to `requirements.txt` files, which launchers, IDEs, and other tools can find and identify by name. Each item in `[dependency-groups]` is defined as mapping of group name to list of [dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/).",
+      "description": "Named groups of dependencies, similar to `requirements.txt` files, which launchers, IDEs, and other tools can find and identify by name. Each item in `[dependency-groups]` is defined as mapping of group name to list of [dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/).\n\nTombi reports these dependency-group diagnostics:\n\n- An error is reported when an included group is not defined:\n\n  ```toml\n  [dependency-groups]\n  dev = [{ include-group = \"missing\" }]\n  ```\n\n- An error is reported when names collide after PEP 503 normalization:\n\n  ```toml\n  [dependency-groups]\n  qa_tools = []\n  \"QA.Tools\" = []\n  ```\n\n- An error is reported when includes form a cycle:\n\n  ```toml\n  [dependency-groups]\n  dev = [{ include-group = \"test\" }]\n  test = [{ include-group = \"dev\" }]\n  ```\n\n- An error is reported when a dependency string is not valid PEP 508:\n\n  ```toml\n  [dependency-groups]\n  dev = [\"not a valid requirement !!!\"]\n  ```",
+      "markdownDescription": "Named groups of dependencies, similar to `requirements.txt` files, which launchers, IDEs, and other tools can find and identify by name. Each item in `[dependency-groups]` is defined as mapping of group name to list of [dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/).\n\nTombi reports these dependency-group diagnostics:\n\n- An error is reported when an included group is not defined:\n\n  ```toml\n  [dependency-groups]\n  dev = [{ include-group = \"missing\" }]\n  ```\n\n- An error is reported when names collide after PEP 503 normalization:\n\n  ```toml\n  [dependency-groups]\n  qa_tools = []\n  \"QA.Tools\" = []\n  ```\n\n- An error is reported when includes form a cycle:\n\n  ```toml\n  [dependency-groups]\n  dev = [{ include-group = \"test\" }]\n  test = [{ include-group = \"dev\" }]\n  ```\n\n- An error is reported when a dependency string is not valid PEP 508:\n\n  ```toml\n  [dependency-groups]\n  dev = [\"not a valid requirement !!!\"]\n  ```",
       "type": "object",
       "properties": {
         "dev": {

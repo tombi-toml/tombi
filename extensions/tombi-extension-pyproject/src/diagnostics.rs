@@ -163,7 +163,7 @@ fn validate_extra_names(
                 DiagnosticKind::DuplicateExtraName {
                     name: name.value().to_owned(),
                 },
-                rules.duplicate_extra_name,
+                rules.duplicate_dependency_group,
                 name.span(),
                 diagnostics,
             );
