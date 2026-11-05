@@ -125,8 +125,9 @@ fn completion_include_group(
             ),
         ) if span.is_empty() && offset >= equal_span.end => {
             match incomplete_include_group_string_span(root, offset, equal_span) {
-                Some(span) => IncludeGroupCompletionTarget::Replace { span, prefix: None },
-                None => IncludeGroupCompletionTarget::Insert { offset, hint },
+                Ok(Some(span)) => IncludeGroupCompletionTarget::Replace { span, prefix: None },
+                Ok(None) => IncludeGroupCompletionTarget::Insert { offset, hint },
+                Err(()) => return None,
             }
         }
         (Value::Incomplete { span }, _) if !span.is_empty() && span.contains_inclusive(offset) => {
@@ -170,22 +171,26 @@ fn incomplete_include_group_string_span(
     root: &tombi_ast_syntax::Root<'_>,
     offset: tombi_text::Offset,
     equal_span: tombi_text::Span,
-) -> Option<tombi_text::Span> {
+) -> Result<Option<tombi_text::Span>, ()> {
     let mut nodes = root.nodes_at_offset(offset);
-    let span = nodes.find_map(|node| match node {
+    let Some(span) = nodes.find_map(|node| match node {
         TomlNode::Invalid(span) => Some(span),
         _ => None,
-    })?;
-    let key_value = nodes.find_map(|node| match node {
-        TomlNode::KeyValue(key_value) => Some(key_value),
-        _ => None,
-    })?;
+    }) else {
+        return Ok(None);
+    };
+    let key_value = nodes
+        .find_map(|node| match node {
+            TomlNode::KeyValue(key_value) => Some(key_value),
+            _ => None,
+        })
+        .ok_or(())?;
     if key_value.value().is_some()
-        || key_value.eq()?.span() != equal_span
+        || key_value.eq().ok_or(())?.span() != equal_span
         || span.start < equal_span.end
         || !span.contains_inclusive(offset)
     {
-        return None;
+        return Err(());
     }
 
     let text = root.syntax().text();
@@ -198,10 +203,10 @@ fn incomplete_include_group_string_span(
             .trim()
             .is_empty()
     {
-        return None;
+        return Err(());
     }
 
-    Some(span)
+    Ok(Some(span))
 }
 
 fn completion_pyproject_file_path(
