@@ -2389,6 +2389,22 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn pyproject_dependency_groups_include_group_filters_group_names(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+                qa = [{ include-group = "l█" }]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(["\"lint\""]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn pyproject_double_bracket_project_dot(
                 "[[project.█]]",
                 SchemaPath(pyproject_schema_path()),
