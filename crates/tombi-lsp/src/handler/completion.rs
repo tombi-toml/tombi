@@ -216,6 +216,7 @@ pub async fn handle_completion(
         && let Some(items) = tombi_extension_pyproject::completion(
             &text_document_uri,
             document_tree,
+            &root,
             offset,
             &accessors,
             toml_version,
