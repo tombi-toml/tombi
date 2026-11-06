@@ -654,6 +654,18 @@ full = ["dep:$0"]"#);
         }
         test_completion_edit! {
             #[tokio::test]
+            async fn dynamic_cargo_single_quote_prefix_is_filterable(
+                r#"[features]
+core = []
+full = ['co█']"#,
+                Select("\"core\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(r#"[features]
+core = []
+full = ["core"]"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
             async fn dynamic_cargo_prefix_trailing_comma(
                 r#"[dependencies]
 serde = { optional = true }
@@ -705,6 +717,34 @@ conflicts = [[{ extra = █ }]]"#,
 fast = []
 [tool.uv]
 conflicts = [[{ extra = "fast" }]]"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_pyproject_single_quote_prefix_is_filterable(
+                r#"[dependency-groups]
+docs = []
+[tool.uv]
+default-groups = ['d█']"#,
+                Select("\"docs\""),
+                SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/dynamic-completion/member/pyproject.toml")),
+            ) -> Ok(r#"[dependency-groups]
+docs = []
+[tool.uv]
+default-groups = ["docs"]"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_pyproject_normalized_source_key_prefix_is_filterable(
+                r#"[project]
+dependencies = ["foo-bar>=1"]
+[tool.uv.sources]
+foo_█"#,
+                Select("foo-bar"),
+                SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/dynamic-completion/member/pyproject.toml")),
+            ) -> Ok(r#"[project]
+dependencies = ["foo-bar>=1"]
+[tool.uv.sources]
+foo-bar"#);
         }
         test_completion_edit! {
             #[tokio::test]
