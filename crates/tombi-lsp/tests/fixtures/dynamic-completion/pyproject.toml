@@ -1,5 +1,6 @@
 [project]
 name = "root"
+version = "0.1.0"
 dependencies = ["anyio>=4", "requests[socks]>=2; python_version > '3.10'"]
 
 [project.optional-dependencies]
