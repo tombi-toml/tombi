@@ -33,6 +33,7 @@ enum CargoCompletionFeature {
 pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
+    _root: &tombi_ast_syntax::Root<'_>,
     offset: tombi_text::Offset,
     accessors: &[Accessor],
     toml_version: TomlVersion,

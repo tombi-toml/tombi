@@ -621,6 +621,52 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn pyproject_dependency_groups_include_group_inserts_selected_group(
+                r#"
+                [dependency-groups]
+                dev = []
+                qa = [{ include-group = █ }]
+                "#,
+                Select("\"dev\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev = []
+                qa = [{ include-group = "dev" }]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_dependency_groups_include_group_replaces_unclosed_suffix(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+                qa = [{ include-group = "d█ev-tail
+                "#,
+                Select("\"dev\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+                qa = [{ include-group = "dev"
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn pyproject_project_authors_dot(
                 r#"
                 [project]
