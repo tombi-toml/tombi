@@ -614,6 +614,219 @@ mod completion_edit {
         }
     }
 
+    mod dynamic_completion {
+        use super::*;
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_cargo_default_member_escapes_snippet(
+                r#"[workspace]
+members = ["$crate}"]
+default-members = [█]"#,
+                Select("\"$crate}\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(r#"[workspace]
+members = ["$crate}"]
+default-members = [${0:"\$crate\}"}]"#);
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_cargo_prefix_preserves_comment(
+                "[dependencies]\nserde = { optional = true }\n[features]\nfull = [\"other\" # keep\n  █]",
+                Select("\"dep:\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok("[dependencies]\nserde = { optional = true }\n[features]\nfull = [\"other\" # keep\n  , \"dep:$0\"]");
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_cargo_prefix_quoted(
+                r#"[dependencies]
+serde = { optional = true }
+[features]
+full = ["d█"]"#,
+                Select("\"dep:\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(r#"[dependencies]
+serde = { optional = true }
+[features]
+full = ["dep:$0"]"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_cargo_prefix_trailing_comma(
+                r#"[dependencies]
+serde = { optional = true }
+[features]
+full = [█,"other"]"#,
+                Select("\"dep:\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(r#"[dependencies]
+serde = { optional = true }
+[features]
+full = ["dep:$0","other"]"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_cargo_prefix_leading_comma(
+                r#"[dependencies]
+serde = { optional = true }
+[features]
+full = ["other" █]"#,
+                Select("\"dep:\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(r#"[dependencies]
+serde = { optional = true }
+[features]
+full = ["other", "dep:$0"]"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_cargo_unclosed_feature(
+                r#"[features]
+first = []
+full = ["fi█"#,
+                Select("\"first\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(r#"[features]
+first = []
+full = ["first""#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_pyproject_empty_conflict(
+                r#"[project.optional-dependencies]
+fast = []
+[tool.uv]
+conflicts = [[{ extra = █ }]]"#,
+                Select("\"fast\""),
+                SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/dynamic-completion/member/pyproject.toml")),
+            ) -> Ok(r#"[project.optional-dependencies]
+fast = []
+[tool.uv]
+conflicts = [[{ extra = "fast" }]]"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_pyproject_source_header(
+                r#"[project]
+dependencies = ["requests>=2"]
+[tool.uv.sources.req█]"#,
+                Select("requests"),
+                SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/dynamic-completion/member/pyproject.toml")),
+            ) -> Ok(r#"[project]
+dependencies = ["requests>=2"]
+[tool.uv.sources.requests]"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_pyproject_source_normalized_key(
+                r#"[project]
+dependencies = ["foo.bar>=2"]
+[tool.uv.sources]
+foo█"#,
+                Select("foo-bar"),
+                SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/dynamic-completion/member/pyproject.toml")),
+            ) -> Ok(r#"[project]
+dependencies = ["foo.bar>=2"]
+[tool.uv.sources]
+foo-bar"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_pyproject_groups_inline(
+                r#"[dependency-groups]
+docs = []
+[tool.uv]
+dependency-groups = { do█ }"#,
+                Select("docs"),
+                SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/dynamic-completion/member/pyproject.toml")),
+            ) -> Ok(r#"[dependency-groups]
+docs = []
+[tool.uv]
+dependency-groups = { docs }"#);
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_cargo_dep_prefix(
+                r#"[dependencies]
+serde = { optional = true }
+[features]
+full = [█]"#,
+                Select("\"dep:\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(r#"[dependencies]
+serde = { optional = true }
+[features]
+full = ["dep:$0"]"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_cargo_dep_second(
+                r#"[dependencies]
+serde = { optional = true }
+[features]
+full = ["dep:s█uffix"]"#,
+                Select("\"dep:serde\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(r#"[dependencies]
+serde = { optional = true }
+[features]
+full = ["dep:serde"]"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_cargo_default_member(
+                r#"[workspace]
+members = ["crates/*"]
+default-members = ["cr█"]"#,
+                Select("\"crates/*\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(r#"[workspace]
+members = ["crates/*"]
+default-members = ["crates/*"]"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_pyproject_conflict(
+                r#"[dependency-groups]
+dev = []
+[tool.uv]
+conflicts = [[{ group = "d█" }]]"#,
+                Select("\"dev\""),
+                SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/dynamic-completion/member/pyproject.toml")),
+            ) -> Ok(r#"[dependency-groups]
+dev = []
+[tool.uv]
+conflicts = [[{ group = "dev" }]]"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_pyproject_source(
+                r#"[project]
+dependencies = ["requests[socks]>=2"]
+[tool.uv.sources]
+req█"#,
+                Select("requests"),
+                SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/dynamic-completion/member/pyproject.toml")),
+            ) -> Ok(r#"[project]
+dependencies = ["requests[socks]>=2"]
+[tool.uv.sources]
+requests"#);
+        }
+        test_completion_edit! {
+            #[tokio::test]
+            async fn dynamic_pyproject_workspace_name(
+                r#"[project]
+        dependencies = ["req█"]"#,
+                Select("\"requests\""),
+                SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/dynamic-completion/member/pyproject.toml")),
+            ) -> Ok(r#"[project]
+        dependencies = ["requests"]"#);
+        }
+    }
+
     mod pyproject_schema {
         use tombi_test_lib::pyproject_schema_path;
 

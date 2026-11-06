@@ -1,0 +1,265 @@
+use std::collections::BTreeSet;
+
+use tombi_ast_syntax::{AstNode, TomlNode};
+use tombi_document_tree_syntax::{DocumentTree, Value, dig_accessors, dig_keys};
+use tombi_extension::{
+    CompletionContent, CompletionEdit, CompletionHint, CompletionTextEdit, InsertTextFormat,
+    TextEdit,
+};
+use tombi_schema_store::{Accessor, matches_accessors};
+use tombi_text::{Offset, Span};
+
+enum CargoCompletionSite<'a> {
+    DefaultMember,
+    RequiredFeature,
+    FeatureActivation(&'a str),
+}
+
+struct CargoStringSlot {
+    span: Option<Span>,
+    prefix: String,
+    present: BTreeSet<String>,
+    offset: Offset,
+    hint: Option<CompletionHint>,
+}
+
+impl CargoStringSlot {
+    fn at(
+        document: &DocumentTree<'_>,
+        root: &tombi_ast_syntax::Root<'_>,
+        offset: Offset,
+        accessors: &[Accessor],
+        hint: Option<CompletionHint>,
+    ) -> Option<Self> {
+        let array_accessors = if matches!(accessors.last(), Some(Accessor::Index(_))) {
+            &accessors[..accessors.len() - 1]
+        } else {
+            accessors
+        };
+        let array = dig_accessors(document, array_accessors).and_then(|(_, value)| match value {
+            Value::Array(array) if offset > array.span().start && offset <= array.span().end => {
+                Some(array)
+            }
+            _ => None,
+        });
+        array?;
+        let value = dig_accessors(document, accessors).map(|(_, value)| value);
+        let invalid = root.nodes_at_offset(offset).find_map(|node| match node {
+            TomlNode::Invalid(span) => Some(span),
+            _ => None,
+        });
+        let invalid = invalid.filter(|span| {
+            !(span.start == offset
+                && matches!(
+                    hint,
+                    Some(CompletionHint::Comma {
+                        trailing_comma: Some(_),
+                        ..
+                    })
+                ))
+        });
+        let span = if let Some(Value::String(value)) =
+            value.filter(|value| value.span().contains_inclusive(offset))
+        {
+            Some(value.span())
+        } else if let Some(span) = invalid {
+            let text = &root.syntax().text()[span];
+            if !text.starts_with(['"', '\''])
+                || text.starts_with("\"\"\"")
+                || text.starts_with("'''")
+                || text.contains(['\n', '\r'])
+            {
+                return None;
+            }
+            Some(span)
+        } else if array.is_some() {
+            None
+        } else if matches!(value, Some(Value::Incomplete { .. }))
+            && matches!(hint, Some(CompletionHint::EqualTrigger { .. }))
+        {
+            None
+        } else {
+            return None;
+        };
+        let hint = if span.is_none()
+            && let Some(array) = array
+        {
+            Some(CompletionHint::new_array_item(
+                array.values().iter().map(Value::span),
+                root.syntax().text(),
+                offset,
+                hint,
+            ))
+        } else {
+            hint
+        };
+        let prefix = span
+            .map(|span| {
+                let text = root.syntax().text();
+                let raw = &text[Span::new(span.start, offset.min(span.end))];
+                let raw = raw
+                    .strip_prefix('"')
+                    .or_else(|| raw.strip_prefix('\''))
+                    .unwrap_or(raw);
+                let raw = raw
+                    .strip_suffix('"')
+                    .or_else(|| raw.strip_suffix('\''))
+                    .unwrap_or(raw);
+                serde_json::from_str::<String>(&format!("\"{raw}\""))
+                    .unwrap_or_else(|_| raw.to_owned())
+            })
+            .unwrap_or_default();
+        let present = match dig_accessors(document, array_accessors) {
+            Some((_, Value::Array(array))) => array
+                .values()
+                .iter()
+                .filter_map(|value| match value {
+                    Value::String(value) if Some(value.span()) != span => {
+                        Some(value.value().to_owned())
+                    }
+                    _ => None,
+                })
+                .collect(),
+            _ => BTreeSet::new(),
+        };
+        Some(Self {
+            span,
+            prefix,
+            present,
+            offset,
+            hint,
+        })
+    }
+
+    fn edit(&self, label: &str, prefix: bool) -> Option<CompletionEdit> {
+        if prefix {
+            if let Some(span) = self.span {
+                return Some(CompletionEdit {
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        span,
+                        new_text: "\"dep:$0\"".to_owned(),
+                    }),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    additional_text_edits: None,
+                });
+            }
+            CompletionEdit::new_prefixed_string_literal("dep:", "\"", self.offset, self.hint)
+        } else if let Some(span) = self.span {
+            CompletionEdit::new_string_literal_while_editing(label, span)
+        } else {
+            CompletionEdit::new_literal(label, self.offset, self.hint)
+        }
+    }
+}
+
+fn table_keys(document: &DocumentTree<'_>, keys: &[&str]) -> BTreeSet<String> {
+    match dig_keys(document, keys) {
+        Some((_, Value::Table(table))) => table.keys().map(|key| key.value().to_owned()).collect(),
+        _ => BTreeSet::new(),
+    }
+}
+
+fn optional_dependencies(document: &DocumentTree<'_>) -> BTreeSet<String> {
+    fn collect(dependencies: &Value<'_>, names: &mut BTreeSet<String>) {
+        if let Value::Table(dependencies) = dependencies {
+            for (name, dependency) in dependencies.key_values() {
+                if let Value::Table(dependency) = dependency
+                    && let Some(Value::Boolean(optional)) = dependency.get("optional")
+                    && optional.value()
+                {
+                    names.insert(name.value().to_owned());
+                }
+            }
+        }
+    }
+    let mut names = BTreeSet::new();
+    for key in ["dependencies", "build-dependencies", "dev-dependencies"] {
+        if let Some((_, dependencies)) = dig_keys(document, &[key]) {
+            collect(dependencies, &mut names);
+        }
+        if let Some((_, Value::Table(targets))) = dig_keys(document, &["target"]) {
+            for (_, target) in targets.key_values() {
+                if let Value::Table(target) = target
+                    && let Some(dependencies) = target.get(key)
+                {
+                    collect(dependencies, &mut names);
+                }
+            }
+        }
+    }
+    names
+}
+
+pub(super) fn complete(
+    document: &DocumentTree<'_>,
+    root: &tombi_ast_syntax::Root<'_>,
+    offset: Offset,
+    accessors: &[Accessor],
+    hint: Option<CompletionHint>,
+) -> Option<Vec<CompletionContent>> {
+    let site = if matches_accessors!(accessors, ["workspace", "default-members"])
+        || matches_accessors!(accessors, ["workspace", "default-members", _])
+    {
+        CargoCompletionSite::DefaultMember
+    } else if accessors
+        .first()
+        .and_then(Accessor::as_key)
+        .is_some_and(|key| matches!(key, "bin" | "bench" | "test" | "example"))
+        && (matches_accessors!(accessors, [_, _, "required-features"])
+            || matches_accessors!(accessors, [_, _, "required-features", _]))
+    {
+        CargoCompletionSite::RequiredFeature
+    } else if (matches_accessors!(accessors, ["features", _])
+        || matches_accessors!(accessors, ["features", _, _]))
+        && let Some(Accessor::Key(owner)) = accessors.get(1)
+    {
+        CargoCompletionSite::FeatureActivation(owner)
+    } else {
+        return None;
+    };
+    let Some(slot) = CargoStringSlot::at(document, root, offset, accessors, hint) else {
+        return Some(Vec::new());
+    };
+    let mut choices = match site {
+        CargoCompletionSite::DefaultMember => match dig_keys(document, &["workspace", "members"]) {
+            Some((_, Value::Array(array))) => array
+                .values()
+                .iter()
+                .filter_map(|value| match value {
+                    Value::String(value) => Some(value.value().to_owned()),
+                    _ => None,
+                })
+                .collect(),
+            _ => BTreeSet::new(),
+        },
+        CargoCompletionSite::RequiredFeature => table_keys(document, &["features"]),
+        CargoCompletionSite::FeatureActivation(owner) => {
+            let dependencies = optional_dependencies(document);
+            if slot.prefix.starts_with("dep:") {
+                dependencies
+                    .into_iter()
+                    .map(|name| format!("dep:{name}"))
+                    .collect()
+            } else {
+                let mut features = table_keys(document, &["features"]);
+                features.extend(dependencies.iter().cloned());
+                features.remove(owner);
+                if !dependencies.is_empty() {
+                    features.insert("dep:".to_owned());
+                }
+                features
+            }
+        }
+    };
+    choices.retain(|choice| choice.starts_with(&slot.prefix) && !slot.present.contains(choice));
+    Some(
+        choices
+            .into_iter()
+            .map(|choice| {
+                let label = serde_json::Value::String(choice.clone()).to_string();
+                let edit = slot.edit(&label, choice == "dep:");
+                CompletionContent::new_enum_value(label, None, None, edit, None, None)
+            })
+            .collect(),
+    )
+}

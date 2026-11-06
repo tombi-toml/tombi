@@ -24,6 +24,8 @@ use crate::{
     is_any_dependency_path_accessor, is_dependency_accessor,
 };
 
+mod local;
+
 enum CargoCompletionFeature {
     DependencyVersion,
     DependencyFeature,
@@ -33,7 +35,7 @@ enum CargoCompletionFeature {
 pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
-    _root: &tombi_ast_syntax::Root<'_>,
+    root: &tombi_ast_syntax::Root<'_>,
     offset: tombi_text::Offset,
     accessors: &[Accessor],
     toml_version: TomlVersion,
@@ -59,6 +61,10 @@ pub async fn completion(
         .value()
     {
         return Ok(None);
+    }
+
+    if let Some(items) = local::complete(document_tree, root, offset, accessors, completion_hint) {
+        return Ok(Some(items));
     }
 
     if let Some(completions) = cargo_completion_enabled(features, CargoCompletionFeature::Path)
@@ -114,7 +120,6 @@ fn completion_cargo_file_path(
 ) -> Option<Vec<CompletionContent>> {
     if matches_accessors!(accessors, ["workspace", "members", _])
         || matches_accessors!(accessors, ["workspace", "exclude", _])
-        || matches_accessors!(accessors, ["workspace", "default-members", _])
     {
         return completion_directory_path(text_document_uri, document_tree, offset, accessors);
     }

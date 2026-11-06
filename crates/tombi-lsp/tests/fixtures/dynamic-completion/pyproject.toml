@@ -1,0 +1,9 @@
+[project]
+name = "root"
+dependencies = ["requests[socks]>=2; python_version > '3.10'", "anyio>=4"]
+[project.optional-dependencies]
+excluded = ["excluded-package>=1"]
+[dependency-groups]
+dev = ["pytest>=8"]
+[tool.uv.workspace]
+members = ["member"]

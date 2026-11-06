@@ -9,13 +9,15 @@ use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::accessors::is_dependency_groups_include_group_accessors;
 
+mod dynamic;
+
 pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     root: &tombi_ast_syntax::Root<'_>,
     offset: tombi_text::Offset,
     accessors: &[Accessor],
-    _toml_version: TomlVersion,
+    toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
     in_comment: bool,
     features: Option<&tombi_config::PyprojectExtensionFeatures>,
@@ -55,6 +57,18 @@ pub async fn completion(
         .flatten()
     {
         return Ok(Some(completions));
+    }
+
+    if let Some(items) = dynamic::complete(
+        text_document_uri,
+        document_tree,
+        root,
+        offset,
+        accessors,
+        toml_version,
+        completion_hint,
+    ) {
+        return Ok(Some(items));
     }
 
     Ok(completion_include_group(
