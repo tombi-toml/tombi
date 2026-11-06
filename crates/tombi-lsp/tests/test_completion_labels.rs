@@ -3111,6 +3111,28 @@ full = ["dep:r█"]"#,
         }
         test_completion_labels! {
             #[tokio::test]
+            async fn dynamic_cargo_explicit_dependency_hides_implicit_feature(
+                r#"[dependencies]
+serde = { optional = true }
+[features]
+internal = ["dep:serde"]
+cli = ["s█"]"#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok([]);
+        }
+        test_completion_labels! {
+            #[tokio::test]
+            async fn dynamic_cargo_explicit_feature_name_remains_available(
+                r#"[dependencies]
+serde = { optional = true }
+[features]
+serde = ["dep:serde"]
+cli = ["s█"]"#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(["\"serde\""]);
+        }
+        test_completion_labels! {
+            #[tokio::test]
             async fn dynamic_cargo_features_target_optional(
                 r#"[target.'cfg(unix)'.build-dependencies]
 unix = { optional = true }

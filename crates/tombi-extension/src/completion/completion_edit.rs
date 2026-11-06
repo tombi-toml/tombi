@@ -178,7 +178,6 @@ impl CompletionEdit {
                 .replace('$', "\\$")
                 .replace('}', "\\}");
             text_edit.new_text = text_edit.new_text.replace("$1", &format!("{prefix}$0"));
-            // The final cursor belongs inside this string, including before a trailing comma.
             if text_edit.new_text.ends_with("$0") {
                 text_edit.new_text.truncate(text_edit.new_text.len() - 2);
             }
@@ -196,6 +195,28 @@ impl CompletionEdit {
                 span: value_span,
             }),
             insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
+            additional_text_edits: None,
+        })
+    }
+
+    /// Replaces a string literal and places the cursor before its closing quote.
+    pub fn new_string_literal_while_editing_with_cursor(
+        value: &str,
+        value_span: tombi_text::Span,
+    ) -> Option<Self> {
+        let quoted_value = serde_json::Value::String(value.to_owned()).to_string();
+        let value = &quoted_value[1..quoted_value.len() - 1];
+        let value = value
+            .replace('\\', "\\\\")
+            .replace('$', "\\$")
+            .replace('}', "\\}");
+
+        Some(Self {
+            text_edit: CompletionTextEdit::Edit(TextEdit {
+                new_text: format!("\"{value}$0\""),
+                span: value_span,
+            }),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
             additional_text_edits: None,
         })
     }

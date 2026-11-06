@@ -131,7 +131,7 @@ impl CargoStringSlot {
         })
     }
 
-    fn edit(&self, label: &str, prefix: bool) -> Option<CompletionEdit> {
+    fn edit(&self, value: &str, prefix: bool) -> Option<CompletionEdit> {
         if prefix {
             if let Some(span) = self.span {
                 return Some(CompletionEdit {
@@ -145,9 +145,15 @@ impl CargoStringSlot {
             }
             CompletionEdit::new_prefixed_string_literal("dep:", "\"", self.offset, self.hint)
         } else if let Some(span) = self.span {
-            CompletionEdit::new_string_literal_while_editing(label, span)
+            if self.prefix.starts_with("dep:") {
+                CompletionEdit::new_string_literal_while_editing_with_cursor(value, span)
+            } else {
+                let label = serde_json::Value::String(value.to_owned()).to_string();
+                CompletionEdit::new_string_literal_while_editing(&label, span)
+            }
         } else {
-            CompletionEdit::new_literal(label, self.offset, self.hint)
+            let label = serde_json::Value::String(value.to_owned()).to_string();
+            CompletionEdit::new_literal(&label, self.offset, self.hint)
         }
     }
 }
@@ -188,6 +194,26 @@ fn optional_dependencies(document: &DocumentTree<'_>) -> BTreeSet<String> {
         }
     }
     names
+}
+
+fn explicitly_activated_dependencies(document: &DocumentTree<'_>) -> BTreeSet<String> {
+    let Some((_, Value::Table(features))) = dig_keys(document, &["features"]) else {
+        return BTreeSet::new();
+    };
+    features
+        .values()
+        .filter_map(|value| match value {
+            Value::Array(values) => Some(values),
+            _ => None,
+        })
+        .flat_map(|values| values.values())
+        .filter_map(|value| match value {
+            Value::String(value) => value.value().strip_prefix("dep:"),
+            _ => None,
+        })
+        .filter(|dependency| !dependency.is_empty())
+        .map(str::to_owned)
+        .collect()
 }
 
 pub(super) fn complete(
@@ -242,7 +268,13 @@ pub(super) fn complete(
                     .collect()
             } else {
                 let mut features = table_keys(document, &["features"]);
-                features.extend(dependencies.iter().cloned());
+                let explicitly_activated = explicitly_activated_dependencies(document);
+                features.extend(
+                    dependencies
+                        .iter()
+                        .filter(|name| !explicitly_activated.contains(*name))
+                        .cloned(),
+                );
                 features.remove(owner);
                 if !dependencies.is_empty() {
                     features.insert("dep:".to_owned());
@@ -257,7 +289,7 @@ pub(super) fn complete(
             .into_iter()
             .map(|choice| {
                 let label = serde_json::Value::String(choice.clone()).to_string();
-                let edit = slot.edit(&label, choice == "dep:");
+                let edit = slot.edit(&choice, choice == "dep:");
                 CompletionContent::new_enum_value(label, None, None, edit, None, None)
             })
             .collect(),

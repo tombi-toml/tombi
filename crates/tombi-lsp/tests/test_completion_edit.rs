@@ -773,7 +773,7 @@ full = ["dep:s█uffix"]"#,
             ) -> Ok(r#"[dependencies]
 serde = { optional = true }
 [features]
-full = ["dep:serde"]"#);
+full = ["dep:serde$0"]"#);
         }
         test_completion_edit! {
             #[tokio::test]

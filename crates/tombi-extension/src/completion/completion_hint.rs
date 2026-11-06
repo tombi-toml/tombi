@@ -76,7 +76,6 @@ impl CompletionHint {
             let mut start_offset = previous.end;
             let mut whitespace = &text[tombi_text::Span::new(start_offset, offset)];
             if !whitespace.chars().all(char::is_whitespace) {
-                // Preserve comments between the existing value and the new item.
                 start_offset = offset;
                 whitespace = "";
             }

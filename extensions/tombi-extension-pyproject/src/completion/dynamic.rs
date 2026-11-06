@@ -154,16 +154,12 @@ fn package_names(document: &DocumentTree<'_>) -> BTreeSet<String> {
     let Some((_, Value::Array(array))) = dig_keys(document, &["project", "dependencies"]) else {
         return BTreeSet::new();
     };
-    array
-        .values()
-        .iter()
-        .filter_map(|value| match value {
-            Value::String(value) => {
-                parse_requirement(value.value()).map(|requirement| requirement.name.to_string())
-            }
-            _ => None,
-        })
-        .collect()
+    unique_packages(array.values().iter().filter_map(|value| match value {
+        Value::String(value) => {
+            parse_requirement(value.value()).map(|requirement| requirement.name.to_string())
+        }
+        _ => None,
+    }))
 }
 
 fn unique_packages(names: impl IntoIterator<Item = String>) -> BTreeSet<String> {
