@@ -35,7 +35,13 @@ impl PyprojectStringSlot {
         };
         let array = dig_accessors(document, array_accessors).and_then(|(_, value)| match value {
             Value::Array(array) if offset > array.span().start && offset <= array.span().end => {
-                Some(array)
+                root.array_at_span(array.span())
+                    .filter(|syntax| {
+                        syntax
+                            .bracket_end()
+                            .is_none_or(|bracket| offset <= bracket.span().start)
+                    })
+                    .map(|_| array)
             }
             _ => None,
         });
@@ -68,6 +74,14 @@ impl PyprojectStringSlot {
                 return None;
             }
             Some(span)
+        } else if array.is_some_and(|array| {
+            array.values().iter().any(|value| {
+                !matches!(value, Value::Incomplete { .. })
+                    && value.span().start < offset
+                    && offset < value.span().end
+            })
+        }) {
+            return None;
         } else if array.is_some()
             || (matches!(value, Some(Value::Incomplete { .. }))
                 && matches!(hint, Some(CompletionHint::EqualTrigger { .. })))
