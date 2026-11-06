@@ -3007,6 +3007,33 @@ default-members = ["one", "o█"]"#,
         }
         test_completion_labels! {
             #[tokio::test]
+            async fn dynamic_cargo_literal_string_backslash_prefix(
+                r#"[workspace]
+members = ['foo\bar']
+default-members = ['foo\b█']"#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(["\"foo\\\\bar\""]);
+        }
+        test_completion_labels! {
+            #[tokio::test]
+            async fn dynamic_cargo_triple_basic_string_prefix(
+                r#"[workspace]
+members = ["foo/bar"]
+default-members = ["""foo█"""]"#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(["\"foo/bar\""]);
+        }
+        test_completion_labels! {
+            #[tokio::test]
+            async fn dynamic_cargo_triple_literal_string_prefix(
+                r#"[workspace]
+members = ["foo/bar"]
+default-members = ['''foo█''']"#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+            ) -> Ok(["\"foo/bar\""]);
+        }
+        test_completion_labels! {
+            #[tokio::test]
             async fn dynamic_cargo_default_members_no_filesystem(
                 r#"[workspace]
 members = []

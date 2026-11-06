@@ -63,7 +63,14 @@ pub async fn completion(
         return Ok(None);
     }
 
-    if let Some(items) = local::complete(document_tree, root, offset, accessors, completion_hint) {
+    if let Some(items) = local::complete(
+        document_tree,
+        root,
+        offset,
+        accessors,
+        completion_hint,
+        toml_version,
+    ) {
         return Ok(Some(items));
     }
 

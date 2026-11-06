@@ -659,6 +659,7 @@ full = ["dep:$0"]"#);
 core = []
 full = ['co█']"#,
                 Select("\"core\""),
+                FilterText("'core"),
                 SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok(r#"[features]
 core = []
@@ -726,6 +727,7 @@ docs = []
 [tool.uv]
 default-groups = ['d█']"#,
                 Select("\"docs\""),
+                FilterText("'docs"),
                 SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/dynamic-completion/member/pyproject.toml")),
             ) -> Ok(r#"[dependency-groups]
 docs = []
@@ -740,6 +742,7 @@ dependencies = ["foo-bar>=1"]
 [tool.uv.sources]
 foo_█"#,
                 Select("foo-bar"),
+                FilterText("foo_bar"),
                 SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/dynamic-completion/member/pyproject.toml")),
             ) -> Ok(r#"[project]
 dependencies = ["foo-bar>=1"]
@@ -1575,6 +1578,7 @@ requests"#);
                 #[derive(Default)]
                 struct TestArgs {
                     select: Option<String>,
+                    filter_text: Option<String>,
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
                     backend_options: tombi_lsp::backend::Options,
@@ -1591,6 +1595,15 @@ requests"#);
                 impl<T: ToString> ApplyTestArg for Select<T> {
                     fn apply(self, args: &mut TestArgs) {
                         args.select = Some(self.0.to_string());
+                    }
+                }
+
+                #[allow(unused)]
+                struct FilterText<T>(T);
+
+                impl<T: ToString> ApplyTestArg for FilterText<T> {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.filter_text = Some(self.0.to_string());
                     }
                 }
 
@@ -1766,6 +1779,10 @@ requests"#);
                         .into(),
                     );
                 };
+
+                if let Some(expected) = args.filter_text.as_deref() {
+                    assert_eq!(completion_content.filter_text.as_deref(), Some(expected));
+                }
 
                 let Some(completion_edit) = completion_content.edit else {
                     return Err(format!(

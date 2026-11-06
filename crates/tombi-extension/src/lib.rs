@@ -1,5 +1,6 @@
 mod code_action;
 mod completion;
+mod completion_string_prefix;
 mod document_link;
 mod hover;
 mod inlay_hint;
@@ -11,6 +12,7 @@ mod text_edit;
 
 pub use code_action::*;
 pub use completion::*;
+pub use completion_string_prefix::CompletionStringPrefix;
 pub use document_link::*;
 pub use hover::*;
 pub use inlay_hint::*;

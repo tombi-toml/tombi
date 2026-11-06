@@ -13,7 +13,7 @@ use tombi_text::{Offset, Span};
 
 struct PyprojectStringSlot {
     span: Option<Span>,
-    prefix: String,
+    prefix: Option<tombi_extension::CompletionStringPrefix>,
     present: BTreeSet<String>,
     offset: Offset,
     hint: Option<CompletionHint>,
@@ -26,6 +26,7 @@ impl PyprojectStringSlot {
         offset: Offset,
         accessors: &[Accessor],
         hint: Option<CompletionHint>,
+        version: tombi_config::TomlVersion,
     ) -> Option<Self> {
         let array_accessors = if matches!(accessors.last(), Some(Accessor::Index(_))) {
             &accessors[..accessors.len() - 1]
@@ -67,10 +68,9 @@ impl PyprojectStringSlot {
                 return None;
             }
             Some(span)
-        } else if array.is_some() {
-            None
-        } else if matches!(value, Some(Value::Incomplete { .. }))
-            && matches!(hint, Some(CompletionHint::EqualTrigger { .. }))
+        } else if array.is_some()
+            || (matches!(value, Some(Value::Incomplete { .. }))
+                && matches!(hint, Some(CompletionHint::EqualTrigger { .. })))
         {
             None
         } else {
@@ -88,22 +88,14 @@ impl PyprojectStringSlot {
         } else {
             hint
         };
-        let prefix = span
-            .map(|span| {
-                let text = root.syntax().text();
-                let raw = &text[Span::new(span.start, offset.min(span.end))];
-                let raw = raw
-                    .strip_prefix('"')
-                    .or_else(|| raw.strip_prefix('\''))
-                    .unwrap_or(raw);
-                let raw = raw
-                    .strip_suffix('"')
-                    .or_else(|| raw.strip_suffix('\''))
-                    .unwrap_or(raw);
-                serde_json::from_str::<String>(&format!("\"{raw}\""))
-                    .unwrap_or_else(|_| raw.to_owned())
-            })
-            .unwrap_or_default();
+        let prefix = span.and_then(|span| {
+            tombi_extension::CompletionStringPrefix::parse(
+                root.syntax().text(),
+                span,
+                offset,
+                version,
+            )
+        });
         let present = match dig_accessors(document, array_accessors) {
             Some((_, Value::Array(array))) => array
                 .values()
@@ -124,6 +116,12 @@ impl PyprojectStringSlot {
             offset,
             hint,
         })
+    }
+
+    fn prefix(&self) -> &str {
+        self.prefix
+            .as_ref()
+            .map_or("", tombi_extension::CompletionStringPrefix::value)
     }
 
     fn edit(&self, label: &str) -> Option<CompletionEdit> {
@@ -237,7 +235,9 @@ pub(super) fn complete(
         site,
         PyprojectCompletionSite::DependencyGroupKey | PyprojectCompletionSite::SourcePackageKey
     ) {
-        return complete_keys(document, root, offset, accessors, hint, choices, package);
+        return complete_keys(
+            document, root, offset, accessors, hint, choices, package, version,
+        );
     }
     if matches!(
         site,
@@ -255,16 +255,16 @@ pub(super) fn complete(
             return Some(Vec::new());
         }
     }
-    let mut slot = PyprojectStringSlot::at(document, root, offset, accessors, hint)?;
-    if let PyprojectCompletionSite::Conflict(field) = site {
-        if let Some((_, Value::Array(conflict))) = dig_accessors(document, &accessors[..4]) {
-            for entry in conflict.values() {
-                if let Value::Table(entry) = entry
-                    && let Some(Value::String(value)) = entry.get(field)
-                    && Some(value.span()) != slot.span
-                {
-                    slot.present.insert(value.value().to_owned());
-                }
+    let mut slot = PyprojectStringSlot::at(document, root, offset, accessors, hint, version)?;
+    if let PyprojectCompletionSite::Conflict(field) = site
+        && let Some((_, Value::Array(conflict))) = dig_accessors(document, &accessors[..4])
+    {
+        for entry in conflict.values() {
+            if let Value::Table(entry) = entry
+                && let Some(Value::String(value)) = entry.get(field)
+                && Some(value.span()) != slot.span
+            {
+                slot.present.insert(value.value().to_owned());
             }
         }
     }
@@ -283,16 +283,28 @@ pub(super) fn complete(
             .into_iter()
             .filter(|choice| {
                 if package {
-                    normalize_pep503_name(choice).starts_with(&normalize_pep503_name(&slot.prefix))
+                    normalize_pep503_name(choice).starts_with(&normalize_pep503_name(slot.prefix()))
                         && !slot.present.contains(&normalize_pep503_name(choice))
                 } else {
-                    choice.starts_with(&slot.prefix) && !slot.present.contains(choice)
+                    choice.starts_with(slot.prefix()) && !slot.present.contains(choice)
                 }
             })
             .map(|choice| {
+                let suffix = if package {
+                    normalize_pep503_name(&choice)[normalize_pep503_name(slot.prefix()).len()..]
+                        .to_owned()
+                } else {
+                    choice[slot.prefix().len()..].to_owned()
+                };
                 let label = serde_json::Value::String(choice).to_string();
                 let edit = slot.edit(&label);
-                CompletionContent::new_enum_value(label, None, None, edit, None, None)
+                let mut content =
+                    CompletionContent::new_enum_value(label, None, None, edit, None, None);
+                content.filter_text = slot
+                    .prefix
+                    .as_ref()
+                    .map(|prefix| prefix.filter_text_for_suffix(&suffix));
+                content
             })
             .collect(),
     )
@@ -306,20 +318,48 @@ fn complete_keys(
     hint: Option<CompletionHint>,
     choices: BTreeSet<String>,
     package: bool,
+    version: TomlVersion,
 ) -> Option<Vec<CompletionContent>> {
     let (_, Value::Table(table)) = dig_accessors(document, &accessors[..3])? else {
         return None;
     };
-    let (span, prefix) = if let Some(Accessor::Key(name)) = accessors.get(3) {
-        let (key, _) = table.get_key_value(name.as_str())?;
-        if !key.span().contains_inclusive(offset) {
+    if accessors.get(3).is_none() && matches!(hint, Some(CompletionHint::InTableHeader { .. })) {
+        let header = root.nodes_at_offset(offset).find_map(|node| match node {
+            TomlNode::Table(table) => table.header(),
+            TomlNode::ArrayOfTable(table) => table.header(),
+            _ => None,
+        })?;
+        let last_key = header.keys().last()?;
+        let dot = header.last_dot()?;
+        if dot.span().start < last_key.span().end
+            || dot.span().end > offset
+            || !root.syntax().text()[Span::new(dot.span().end, offset)]
+                .trim()
+                .is_empty()
+        {
             return None;
         }
-        let raw = &root.syntax().text()[Span::new(key.span().start, offset)];
-        (key.span(), raw.trim_matches(['"', '\'']).to_owned())
-    } else {
-        (Span::empty(offset), String::new())
-    };
+    }
+    let (span, prefix, raw_prefix, string_prefix) =
+        if let Some(Accessor::Key(name)) = accessors.get(3) {
+            let (key, _) = table.get_key_value(name.as_str())?;
+            if !key.span().contains_inclusive(offset) {
+                return None;
+            }
+            let raw = &root.syntax().text()[Span::new(key.span().start, offset)];
+            let string_prefix = tombi_extension::CompletionStringPrefix::parse(
+                root.syntax().text(),
+                key.span(),
+                offset,
+                version,
+            );
+            let prefix = string_prefix
+                .as_ref()
+                .map_or_else(|| raw.to_owned(), |prefix| prefix.value().to_owned());
+            (key.span(), prefix, raw.to_owned(), string_prefix)
+        } else {
+            (Span::empty(offset), String::new(), String::new(), None)
+        };
     let present: BTreeSet<_> = table
         .keys()
         .filter(|key| key.span() != span)
@@ -348,6 +388,16 @@ fn complete_keys(
                 choice.starts_with(&prefix) && !present.contains(&choice)
             })
             .map(|choice| {
+                let suffix = if package {
+                    normalize_pep503_name(&choice)[normalize_pep503_name(&prefix).len()..]
+                        .to_owned()
+                } else {
+                    choice[prefix.len()..].to_owned()
+                };
+                let filter_text = string_prefix.as_ref().map_or_else(
+                    || format!("{raw_prefix}{suffix}"),
+                    |prefix| prefix.filter_text_for_suffix(&suffix),
+                );
                 let key = if choice
                     .chars()
                     .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_')
@@ -359,6 +409,7 @@ fn complete_keys(
                 let edit = CompletionEdit::new_key(&key, span, hint);
                 let mut content =
                     CompletionContent::new_enum_value(key, None, None, edit, None, None);
+                content.filter_text = Some(filter_text);
                 content.kind = tombi_extension::CompletionKind::Key;
                 content
             })

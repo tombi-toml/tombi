@@ -17,7 +17,7 @@ enum CargoCompletionSite<'a> {
 
 struct CargoStringSlot {
     span: Option<Span>,
-    prefix: String,
+    prefix: Option<tombi_extension::CompletionStringPrefix>,
     present: BTreeSet<String>,
     offset: Offset,
     hint: Option<CompletionHint>,
@@ -30,6 +30,7 @@ impl CargoStringSlot {
         offset: Offset,
         accessors: &[Accessor],
         hint: Option<CompletionHint>,
+        version: tombi_config::TomlVersion,
     ) -> Option<Self> {
         let array_accessors = if matches!(accessors.last(), Some(Accessor::Index(_))) {
             &accessors[..accessors.len() - 1]
@@ -72,10 +73,9 @@ impl CargoStringSlot {
                 return None;
             }
             Some(span)
-        } else if array.is_some() {
-            None
-        } else if matches!(value, Some(Value::Incomplete { .. }))
-            && matches!(hint, Some(CompletionHint::EqualTrigger { .. }))
+        } else if array.is_some()
+            || (matches!(value, Some(Value::Incomplete { .. }))
+                && matches!(hint, Some(CompletionHint::EqualTrigger { .. })))
         {
             None
         } else {
@@ -93,22 +93,14 @@ impl CargoStringSlot {
         } else {
             hint
         };
-        let prefix = span
-            .map(|span| {
-                let text = root.syntax().text();
-                let raw = &text[Span::new(span.start, offset.min(span.end))];
-                let raw = raw
-                    .strip_prefix('"')
-                    .or_else(|| raw.strip_prefix('\''))
-                    .unwrap_or(raw);
-                let raw = raw
-                    .strip_suffix('"')
-                    .or_else(|| raw.strip_suffix('\''))
-                    .unwrap_or(raw);
-                serde_json::from_str::<String>(&format!("\"{raw}\""))
-                    .unwrap_or_else(|_| raw.to_owned())
-            })
-            .unwrap_or_default();
+        let prefix = span.and_then(|span| {
+            tombi_extension::CompletionStringPrefix::parse(
+                root.syntax().text(),
+                span,
+                offset,
+                version,
+            )
+        });
         let present = match dig_accessors(document, array_accessors) {
             Some((_, Value::Array(array))) => array
                 .values()
@@ -131,6 +123,12 @@ impl CargoStringSlot {
         })
     }
 
+    fn prefix(&self) -> &str {
+        self.prefix
+            .as_ref()
+            .map_or("", tombi_extension::CompletionStringPrefix::value)
+    }
+
     fn edit(&self, value: &str, prefix: bool) -> Option<CompletionEdit> {
         if prefix {
             if let Some(span) = self.span {
@@ -145,7 +143,7 @@ impl CargoStringSlot {
             }
             CompletionEdit::new_prefixed_string_literal("dep:", "\"", self.offset, self.hint)
         } else if let Some(span) = self.span {
-            if self.prefix.starts_with("dep:") {
+            if self.prefix().starts_with("dep:") {
                 CompletionEdit::new_string_literal_while_editing_with_cursor(value, span)
             } else {
                 let label = serde_json::Value::String(value.to_owned()).to_string();
@@ -222,6 +220,7 @@ pub(super) fn complete(
     offset: Offset,
     accessors: &[Accessor],
     hint: Option<CompletionHint>,
+    version: tombi_config::TomlVersion,
 ) -> Option<Vec<CompletionContent>> {
     let site = if matches_accessors!(accessors, ["workspace", "default-members"])
         || matches_accessors!(accessors, ["workspace", "default-members", _])
@@ -243,7 +242,7 @@ pub(super) fn complete(
     } else {
         return None;
     };
-    let Some(slot) = CargoStringSlot::at(document, root, offset, accessors, hint) else {
+    let Some(slot) = CargoStringSlot::at(document, root, offset, accessors, hint, version) else {
         return Some(Vec::new());
     };
     let mut choices = match site {
@@ -261,7 +260,7 @@ pub(super) fn complete(
         CargoCompletionSite::RequiredFeature => table_keys(document, &["features"]),
         CargoCompletionSite::FeatureActivation(owner) => {
             let dependencies = optional_dependencies(document);
-            if slot.prefix.starts_with("dep:") {
+            if slot.prefix().starts_with("dep:") {
                 dependencies
                     .into_iter()
                     .map(|name| format!("dep:{name}"))
@@ -283,14 +282,20 @@ pub(super) fn complete(
             }
         }
     };
-    choices.retain(|choice| choice.starts_with(&slot.prefix) && !slot.present.contains(choice));
+    choices.retain(|choice| choice.starts_with(slot.prefix()) && !slot.present.contains(choice));
     Some(
         choices
             .into_iter()
             .map(|choice| {
                 let label = serde_json::Value::String(choice.clone()).to_string();
                 let edit = slot.edit(&choice, choice == "dep:");
-                CompletionContent::new_enum_value(label, None, None, edit, None, None)
+                let mut content =
+                    CompletionContent::new_enum_value(label, None, None, edit, None, None);
+                content.filter_text = slot
+                    .prefix
+                    .as_ref()
+                    .map(|prefix| prefix.filter_text_for_suffix(&choice[slot.prefix().len()..]));
+                content
             })
             .collect(),
     )
