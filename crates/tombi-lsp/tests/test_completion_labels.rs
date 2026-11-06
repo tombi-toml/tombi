@@ -1700,7 +1700,7 @@ mod completion_labels {
             async fn deep_double_bracket_second_level_without_declaration(
                 "[[parent.child_nested.middle_array.leaf_array.█]]",
                 SchemaPath(table_header_completion_test_schema_path()),
-            ) -> Ok([]);
+            ) -> Ok(["$key"]);
         }
 
         test_completion_labels! {
@@ -1759,7 +1759,7 @@ mod completion_labels {
             async fn additional_array_of_tables_single_bracket(
                 "[parent.child_additional_arrays.█]",
                 SchemaPath(table_header_completion_test_schema_path()),
-            ) -> Ok([]);
+            ) -> Ok(["$key"]);
         }
 
         test_completion_labels! {
@@ -2415,7 +2415,12 @@ mod completion_labels {
                     "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
                 )),
                 SchemaPath(pyproject_schema_path()),
-            ) -> Ok([]);
+            ) -> Ok([
+                "\"\"",
+                "\"\"\"\"\"\"",
+                "''",
+                "''''''",
+            ]);
         }
 
         test_completion_labels! {
@@ -3325,7 +3330,7 @@ default-groups = [tr█ue]"#,
             #[tokio::test]
             async fn dynamic_pyproject_workspace_dependencies_inside_number(
                 r#"[project]
-dependencies = [1█2]"#,
+        dependencies = [1█2]"#,
                 SourcePath(project_root_path().join("crates/tombi-lsp/tests/fixtures/dynamic-completion/member/pyproject.toml")),
             ) -> Ok([]);
         }
