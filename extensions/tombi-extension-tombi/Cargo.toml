@@ -7,7 +7,6 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-tombi-ast-syntax.workspace = true
 tombi-config.workspace = true
 tombi-diagnostic.workspace = true
 tombi-document-tree-syntax.workspace = true

@@ -1,4 +1,3 @@
-use tombi_ast_syntax::{AstNode, TomlNode};
 use tombi_config::TomlVersion;
 use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
 use tombi_extension::{
@@ -12,7 +11,6 @@ use crate::accessors::is_dependency_groups_include_group_accessors;
 pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
-    root: &tombi_ast_syntax::Root<'_>,
     offset: tombi_text::Offset,
     accessors: &[Accessor],
     _toml_version: TomlVersion,
@@ -59,7 +57,6 @@ pub async fn completion(
 
     Ok(completion_include_group(
         document_tree,
-        root,
         offset,
         accessors,
         completion_hint,
@@ -99,7 +96,6 @@ impl<'a> IncludeGroupCompletionTarget<'a> {
 
 fn completion_include_group(
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
-    root: &tombi_ast_syntax::Root<'_>,
     offset: tombi_text::Offset,
     accessors: &[Accessor],
     completion_hint: Option<CompletionHint>,
@@ -124,11 +120,7 @@ fn completion_include_group(
                 },
             ),
         ) if span.is_empty() && offset >= equal_span.end => {
-            match incomplete_include_group_string_span(root, offset, equal_span) {
-                Ok(Some(span)) => IncludeGroupCompletionTarget::Replace { span, prefix: None },
-                Ok(None) => IncludeGroupCompletionTarget::Insert { offset, hint },
-                Err(()) => return None,
-            }
+            IncludeGroupCompletionTarget::Insert { offset, hint }
         }
         (Value::Incomplete { span }, _) if !span.is_empty() && span.contains_inclusive(offset) => {
             IncludeGroupCompletionTarget::Replace {
@@ -171,48 +163,6 @@ fn completion_include_group(
             })
             .collect(),
     )
-}
-
-fn incomplete_include_group_string_span(
-    root: &tombi_ast_syntax::Root<'_>,
-    offset: tombi_text::Offset,
-    equal_span: tombi_text::Span,
-) -> Result<Option<tombi_text::Span>, ()> {
-    let mut nodes = root.nodes_at_offset(offset);
-    let Some(span) = nodes.find_map(|node| match node {
-        TomlNode::Invalid(span) => Some(span),
-        _ => None,
-    }) else {
-        return Ok(None);
-    };
-    let key_value = nodes
-        .find_map(|node| match node {
-            TomlNode::KeyValue(key_value) => Some(key_value),
-            _ => None,
-        })
-        .ok_or(())?;
-    if key_value.value().is_some()
-        || key_value.eq().ok_or(())?.span() != equal_span
-        || span.start < equal_span.end
-        || !span.contains_inclusive(offset)
-    {
-        return Err(());
-    }
-
-    let text = root.syntax().text();
-    let token = &text[span];
-    if !(token.starts_with('"') || token.starts_with('\''))
-        || token.starts_with("\"\"\"")
-        || token.starts_with("'''")
-        || token.contains(['\n', '\r'])
-        || !text[tombi_text::Span::new(equal_span.end, span.start)]
-            .trim()
-            .is_empty()
-    {
-        return Err(());
-    }
-
-    Ok(Some(span))
 }
 
 fn completion_pyproject_file_path(
