@@ -23,6 +23,7 @@ pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     offset: tombi_text::Offset,
+    line_index: &tombi_text::LineIndex<'_>,
     accessors: &[Accessor],
     toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
@@ -72,9 +73,13 @@ pub async fn completion(
         return Ok(Some(completions));
     }
 
-    if let Some(completions) =
-        completion_uv_declared_name(document_tree, offset, accessors, completion_hint)
-    {
+    if let Some(completions) = completion_uv_declared_name(
+        document_tree,
+        offset,
+        line_index,
+        accessors,
+        completion_hint,
+    ) {
         return Ok(Some(completions));
     }
 
@@ -82,6 +87,7 @@ pub async fn completion(
         text_document_uri,
         document_tree,
         offset,
+        line_index,
         accessors,
         toml_version,
         completion_hint,
@@ -92,6 +98,7 @@ pub async fn completion(
 fn completion_uv_declared_name(
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     offset: tombi_text::Offset,
+    line_index: &tombi_text::LineIndex<'_>,
     accessors: &[Accessor],
     completion_hint: Option<CompletionHint>,
 ) -> Option<Vec<CompletionContent>> {
@@ -110,12 +117,17 @@ fn completion_uv_declared_name(
 
     let (_, value) = dig_accessors(document_tree, accessors)?;
     let target = match (value, completion_hint) {
-        // `default-groups = [█]`: insert into the list. Only the list itself is offered here,
+        // `default-groups = [█]`: insert into the array. Only the array itself is offered here,
         // not a string value such as `"all"`.
         (Value::Array(array), _) if array.span().contains_inclusive(offset) => {
             CompletionNameTarget::Insert {
                 offset,
-                hint: completion_hint,
+                hint: Some(CompletionHint::new_in_array(
+                    completion_hint,
+                    line_index,
+                    offset,
+                    array.iter().map(|item| item.span()),
+                )),
             }
         }
         _ if is_default_groups_list => return None,
@@ -220,6 +232,7 @@ fn completion_workspace_dependency_name(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     offset: tombi_text::Offset,
+    line_index: &tombi_text::LineIndex<'_>,
     accessors: &[Accessor],
     toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
@@ -230,11 +243,16 @@ fn completion_workspace_dependency_name(
 
     let (_, value) = dig_accessors(document_tree, accessors)?;
     let target = match (value, completion_hint) {
-        // `dependencies = [█]`: insert a new item into the list.
+        // `dependencies = [█]`: insert a new item into the array.
         (Value::Array(array), _) if array.span().contains_inclusive(offset) => {
             CompletionNameTarget::Insert {
                 offset,
-                hint: completion_hint,
+                hint: Some(CompletionHint::new_in_array(
+                    completion_hint,
+                    line_index,
+                    offset,
+                    array.iter().map(|item| item.span()),
+                )),
             }
         }
         (Value::String(value), _)
