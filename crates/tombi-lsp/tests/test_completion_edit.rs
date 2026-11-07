@@ -970,6 +970,36 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn pyproject_workspace_member_dependencies_before_item_with_following_comma_inserts_once(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = ["anyio", █"pydantic", "ruff"]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#,
+                Select("\"app2\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app3/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = ["anyio", ${1:"app2"},$0"pydantic", "ruff"]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn pyproject_workspace_member_dependencies_before_item_inserts_with_trailing_comma(
                 r#"
                 [project]
