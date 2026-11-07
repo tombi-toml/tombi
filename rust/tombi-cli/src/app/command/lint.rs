@@ -169,8 +169,11 @@ fn inner_run<P>(
 where
     crate::Error: Print<P>,
 {
-    let (config, config_path, config_level) =
-        serde_tombi::config::load_with_path_and_level(std::env::current_dir().ok())?;
+    let runtime = super::runtime(FileInputType::from(args.files.as_ref()) == FileInputType::Stdin)
+        .map_err(|error| format!("failed to create tokio runtime: {error}"))?;
+    let (config, config_path, config_level) = runtime.block_on(
+        serde_tombi::config::load_with_path_and_level_async(std::env::current_dir().ok()),
+    )?;
 
     let toml_version = config.toml_version.unwrap_or_default();
     let schema_options = config.schema.as_ref();
@@ -183,9 +186,6 @@ where
             cache: Some(args.common.cache_options()),
             trusted_hosts: None,
         });
-
-    let runtime = super::runtime(FileInputType::from(args.files.as_ref()) == FileInputType::Stdin)
-        .map_err(|error| format!("failed to create tokio runtime: {error}"))?;
 
     // The tasks convert the spans of the diagnostics before their sources are dropped.
     let encoding = diagnostics_reporter.encoding();

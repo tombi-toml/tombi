@@ -46,7 +46,7 @@ pub struct Options {
     pub config: Option<ConfigInput>,
 }
 
-fn load_config(
+async fn load_config(
     options: Options,
 ) -> Result<(tombi_config::Config, Option<std::path::PathBuf>), Error> {
     if let Some(config) = options.config {
@@ -57,18 +57,15 @@ fn load_config(
                 std::path::PathBuf::from(tombi_config::TOMBI_TOML_FILENAME),
             ),
         };
-        let config =
-            serde_tombi::config::from_str(&config_content, &config_path).map_err(|error| {
+        let config = serde_tombi::config::from_str_async(&config_content, &config_path)
+            .await
+            .map_err(|error| {
                 log::warn!("{error}");
-                tombi_config::Error::ConfigFileParseFailed {
-                    config_path: config_path.clone(),
-                }
+                error
             })?;
         Ok((config, Some(config_path)))
     } else {
-        Ok(serde_tombi::config::load_with_path(
-            std::env::current_dir().ok(),
-        )?)
+        Ok(serde_tombi::config::load_with_path_async(std::env::current_dir().ok()).await?)
     }
 }
 

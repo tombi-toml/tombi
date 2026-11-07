@@ -88,7 +88,7 @@ pub async fn get_workspace_configs(backend: &Backend) -> Option<Vec<WorkspaceCon
 
     for workspace_folder_path in workspace_folder_paths {
         if let Ok((config, config_path)) =
-            serde_tombi::config::load_with_path(Some(workspace_folder_path.clone()))
+            serde_tombi::config::load_with_path_async(Some(workspace_folder_path.clone())).await
         {
             configs.push(WorkspaceConfig {
                 workspace_folder_path,

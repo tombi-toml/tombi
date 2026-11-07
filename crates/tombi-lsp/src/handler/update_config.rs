@@ -12,7 +12,7 @@ pub async fn handle_update_config(
     let text_document_uri: tombi_uri::Uri = params.uri.into();
 
     if let Ok(config_path) = text_document_uri.to_file_path() {
-        match serde_tombi::config::try_from_path(&config_path) {
+        match serde_tombi::config::try_from_path_async(&config_path).await {
             Ok(Some(config)) => {
                 match backend
                     .config_manager

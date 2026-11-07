@@ -2299,6 +2299,7 @@ dependencies = [
  "tombi-test-lib",
  "tombi-toml-text",
  "tombi-toml-version",
+ "tombi-uri",
  "tombi-validator",
  "typed-builder",
 ]

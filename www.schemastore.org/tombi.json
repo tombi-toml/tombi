@@ -97,11 +97,22 @@
           "type": "null"
         }
       ]
+    },
+    "extends": {
+      "description": "One or more local config paths or HTTP(S) URLs to inherit.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/OneOrMany"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
-  "additionalProperties": false,
   "x-tombi-toml-version": "v1.1.0",
   "x-tombi-table-keys-order": "schema",
+  "additionalProperties": false,
   "definitions": {
     "TomlVersion": {
       "title": "TOML version",
@@ -3419,6 +3430,19 @@
     "TombiHoverFeatureTree": {
       "type": "object",
       "additionalProperties": false
+    },
+    "OneOrMany": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
     }
   }
 }

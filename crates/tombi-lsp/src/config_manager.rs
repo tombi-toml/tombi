@@ -1,5 +1,8 @@
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 use tombi_config::Config;
 use tombi_schema_store::{SchemaStore, SchemaUri};
@@ -39,6 +42,8 @@ pub struct ConfigManager {
     /// Maps config file paths to their ConfigSchemaStore
     config_schema_stores:
         Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, ConfigSchemaStore>>>,
+    config_schema_versions: tokio::sync::RwLock<std::collections::HashMap<PathBuf, u64>>,
+    config_update_sequence: AtomicU64,
     /// Default ConfigSchemaStore when no config file is found
     /// Contains the source type (Default or Editor) and the ConfigSchemaStore
     default_config_schema_store:
@@ -48,7 +53,7 @@ pub struct ConfigManager {
     associated_schemas: Arc<tokio::sync::RwLock<Vec<AssociatedSchema>>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct AssociatedSchema {
     schema_uri: SchemaUri,
     file_match: Vec<String>,
@@ -57,43 +62,12 @@ struct AssociatedSchema {
 
 impl ConfigManager {
     pub fn new(backend_options: &crate::backend::Options) -> Self {
-        // Try to load the default config
-        let (config, config_path) =
-            match serde_tombi::config::load_with_path(std::env::current_dir().ok()) {
-                Ok((config, config_path)) => (config, config_path),
-                Err(err) => {
-                    log::error!("failed to load default config: {err}");
-                    (Config::default(), None)
-                }
-            };
-
-        // Initialize config_schema_stores with the default config if it has a path
-        let mut config_schema_stores = tombi_hashmap::HashMap::new();
-        let mut default_config_schema_store = None;
-        if let Some(config_path) = config_path {
-            let schema_options = schema_store_options(&config, backend_options);
-            config_schema_stores.insert(
-                config_path.clone(),
-                ConfigSchemaStore::new(
-                    config,
-                    Some(config_path),
-                    SchemaStore::new_with_options(schema_options),
-                ),
-            );
-        } else {
-            let schema_options = schema_store_options(&config, backend_options);
-            default_config_schema_store = Some((
-                DefaultConfigSource::Default,
-                ConfigSchemaStore::new(config, None, SchemaStore::new_with_options(schema_options)),
-            ));
-        }
-
         Self {
             source_config_paths: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
-            config_schema_stores: Arc::new(tokio::sync::RwLock::new(config_schema_stores)),
-            default_config_schema_store: Arc::new(tokio::sync::RwLock::new(
-                default_config_schema_store,
-            )),
+            config_schema_stores: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
+            config_schema_versions: tokio::sync::RwLock::new(std::collections::HashMap::new()),
+            config_update_sequence: AtomicU64::new(0),
+            default_config_schema_store: Arc::new(tokio::sync::RwLock::new(None)),
             backend_options: backend_options.clone(),
             associated_schemas: Arc::new(tokio::sync::RwLock::new(Vec::new())),
         }
@@ -121,61 +95,58 @@ impl ConfigManager {
         &self,
         text_document_path: &Path,
     ) -> ConfigSchemaStore {
-        // Check if we already have a config path for this source file
-        let mut source_config_paths = self.source_config_paths.write().await;
-        let config_path: PathBuf = match source_config_paths.get(text_document_path) {
-            Some(config_path) => config_path.to_owned(),
-            None => {
-                let text_document_path_buf: PathBuf = text_document_path.to_path_buf();
-                if let Ok((config, Some(config_path_buf))) = serde_tombi::config::load_with_path(
-                    text_document_path_buf.parent().map(ToOwned::to_owned),
-                ) {
-                    source_config_paths.insert(text_document_path_buf, config_path_buf.clone());
+        if let Some(config_path) = self
+            .source_config_paths
+            .read()
+            .await
+            .get(text_document_path)
+            .cloned()
+            && let Some(config_schema_store) = self
+                .config_schema_stores
+                .read()
+                .await
+                .get(&config_path)
+                .cloned()
+        {
+            return config_schema_store;
+        }
 
-                    let schema_options = schema_store_options(&config, &self.backend_options);
-                    let mut config_schema_stores = self.config_schema_stores.write().await;
-                    let ConfigSchemaStore {
-                        config,
-                        schema_store,
-                        ..
-                    } = config_schema_stores
-                        .entry(config_path_buf.clone())
-                        .or_insert_with(|| {
-                            ConfigSchemaStore::new(
-                                config,
-                                Some(config_path_buf.clone()),
-                                SchemaStore::new_with_options(schema_options),
-                            )
-                        });
-
-                    if schema_store.is_empty().await {
-                        log::info!("add new SchemaStore for {config_path_buf:?}");
-                        let associated_schemas = self.associated_schemas.read().await;
-                        if let Err(err) = load_schema_store_with_associations(
-                            schema_store,
-                            config,
-                            Some(&config_path_buf),
-                            &associated_schemas,
-                        )
-                        .await
-                        {
-                            log::error!("failed to load schema store: {err}");
-                        }
-                    }
-
-                    config_path_buf
-                } else {
-                    return self.default_config_schema_store().await;
-                }
-            }
+        // Resolve inherited files before acquiring shared map locks so remote reads do not
+        // keep config-map state locked while the network is in flight.
+        let text_document_path_buf = text_document_path.to_path_buf();
+        let Ok((config, Some(config_path))) = serde_tombi::config::load_with_path_async(
+            text_document_path_buf.parent().map(ToOwned::to_owned),
+        )
+        .await
+        else {
+            return self.default_config_schema_store().await;
         };
 
-        let config_schema_stores = self.config_schema_stores.read().await;
-        if let Some(config_schema_store) = config_schema_stores.get(&config_path) {
-            config_schema_store.clone()
-        } else {
-            self.default_config_schema_store().await
+        self.source_config_paths
+            .write()
+            .await
+            .insert(text_document_path_buf, config_path.clone());
+
+        if let Some(config_schema_store) = self
+            .config_schema_stores
+            .read()
+            .await
+            .get(&config_path)
+            .cloned()
+        {
+            return config_schema_store;
         }
+
+        if let Err(error) = self.update_config_with_path(config, &config_path).await {
+            log::error!("failed to load schema store for {config_path:?}: {error}");
+            return self.default_config_schema_store().await;
+        }
+        self.config_schema_stores
+            .read()
+            .await
+            .get(&config_path)
+            .cloned()
+            .unwrap_or_else(|| ConfigSchemaStore::new(Config::default(), None, SchemaStore::new()))
     }
 
     /// Update a specific config and its path
@@ -184,11 +155,9 @@ impl ConfigManager {
         config: Config,
         config_path: &Path,
     ) -> Result<(), tombi_schema_store::Error> {
-        // Hold the write lock while loading so concurrent reloads of the same config apply in order.
-        let mut config_schema_stores = self.config_schema_stores.write().await;
-
+        let sequence = self.config_update_sequence.fetch_add(1, Ordering::Relaxed);
         // `SchemaStore` options are fixed at construction, so a config change builds a new store.
-        let associated_schemas = self.associated_schemas.read().await;
+        let associated_schemas = self.associated_schemas.read().await.clone();
         let schema_options = schema_store_options(&config, &self.backend_options);
         let schema_store = SchemaStore::new_with_options(schema_options);
         load_schema_store_with_associations(
@@ -199,6 +168,17 @@ impl ConfigManager {
         )
         .await?;
 
+        // Load the replacement before taking the shared map lock. If concurrent reloads finish
+        // out of order, the per-path sequence keeps the newer config in the map.
+        let mut config_schema_versions = self.config_schema_versions.write().await;
+        if config_schema_versions
+            .get(config_path)
+            .is_some_and(|current| *current > sequence)
+        {
+            return Ok(());
+        }
+        let mut config_schema_stores = self.config_schema_stores.write().await;
+        config_schema_versions.insert(config_path.to_owned(), sequence);
         config_schema_stores.insert(
             config_path.to_owned(),
             ConfigSchemaStore::new(config, Some(config_path.to_owned()), schema_store),
@@ -208,27 +188,40 @@ impl ConfigManager {
 
     /// Get the default config
     async fn default_config_schema_store(&self) -> ConfigSchemaStore {
+        if let Some((_, config_schema_store)) =
+            self.default_config_schema_store.read().await.as_ref()
+        {
+            return config_schema_store.clone();
+        }
+
+        let (config, config_path) =
+            match serde_tombi::config::load_with_path_async(std::env::current_dir().ok()).await {
+                Ok((config, config_path)) => (config, config_path),
+                Err(error) => {
+                    log::warn!("failed to load default config: {error}");
+                    (Config::default(), None)
+                }
+            };
+        let associated_schemas = self.associated_schemas.read().await.clone();
+        let schema_options = schema_store_options(&config, &self.backend_options);
+        let schema_store = SchemaStore::new_with_options(schema_options);
+
+        if let Err(err) = load_schema_store_with_associations(
+            &schema_store,
+            &config,
+            config_path.as_deref(),
+            &associated_schemas,
+        )
+        .await
+        {
+            log::error!("failed to load default schema store: {err}");
+        }
+
+        let config_schema_store = ConfigSchemaStore::new(config, config_path, schema_store);
         let mut default_config_schema_store = self.default_config_schema_store.write().await;
-        if let Some((_, ref config_schema_store)) = *default_config_schema_store {
-            config_schema_store.clone()
+        if let Some((_, existing)) = default_config_schema_store.as_ref() {
+            existing.clone()
         } else {
-            let config = Config::default();
-            let associated_schemas = self.associated_schemas.read().await;
-            let schema_options = schema_store_options(&config, &self.backend_options);
-            let schema_store = SchemaStore::new_with_options(schema_options);
-
-            if let Err(err) = load_schema_store_with_associations(
-                &schema_store,
-                &config,
-                None,
-                &associated_schemas,
-            )
-            .await
-            {
-                log::error!("failed to load default schema store: {err}");
-            }
-
-            let config_schema_store = ConfigSchemaStore::new(config, None, schema_store);
             *default_config_schema_store =
                 Some((DefaultConfigSource::Default, config_schema_store.clone()));
             config_schema_store
@@ -251,15 +244,21 @@ impl ConfigManager {
         schema_uri: SchemaUri,
     ) -> Result<bool, tombi_schema_store::Error> {
         let mut updated = false;
-        let mut config_schema_stores = self.config_schema_stores.write().await;
-        for config_schema_store in config_schema_stores.values_mut() {
+        let config_schema_stores = self
+            .config_schema_stores
+            .read()
+            .await
+            .values()
+            .cloned()
+            .collect::<Vec<_>>();
+        for config_schema_store in config_schema_stores {
             updated |= config_schema_store
                 .schema_store
                 .update_schema(schema_uri.clone())
                 .await?;
         }
         if let Some((_, ConfigSchemaStore { schema_store, .. })) =
-            &mut *self.default_config_schema_store.write().await
+            self.default_config_schema_store.read().await.clone()
         {
             updated |= schema_store.update_schema(schema_uri).await?;
         }
@@ -282,49 +281,57 @@ impl ConfigManager {
                 options: options.clone(),
             });
 
-        // Update config_schema_stores
+        // Update stores after cloning them so no map lock spans schema store work.
+        let config_schema_stores = self
+            .config_schema_stores
+            .read()
+            .await
+            .values()
+            .cloned()
+            .collect::<Vec<_>>();
+        for config_schema_store in config_schema_stores {
+            config_schema_store
+                .schema_store
+                .associate_schema(schema_uri.clone(), file_match.to_vec(), options)
+                .await;
+        }
+        if let Some((_, ConfigSchemaStore { schema_store, .. })) =
+            self.default_config_schema_store.read().await.clone()
         {
-            let mut config_schema_stores = self.config_schema_stores.write().await;
-            for config_schema_store in config_schema_stores.values_mut() {
-                config_schema_store
-                    .schema_store
-                    .associate_schema(schema_uri.clone(), file_match.to_vec(), options)
-                    .await;
-            }
-            if let Some((_, ConfigSchemaStore { schema_store, .. })) =
-                &mut *self.default_config_schema_store.write().await
-            {
-                schema_store
-                    .associate_schema(schema_uri.clone(), file_match.to_vec(), options)
-                    .await;
-            }
+            schema_store
+                .associate_schema(schema_uri.clone(), file_match.to_vec(), options)
+                .await;
         }
     }
 
     pub async fn load(&self) -> Result<(), tombi_schema_store::Error> {
-        let mut config_schema_stores = self.config_schema_stores.write().await;
-        for (
-            config_path,
-            ConfigSchemaStore {
-                config,
-                schema_store,
-                ..
-            },
-        ) in config_schema_stores.iter_mut()
+        if self.config_schema_stores.read().await.is_empty()
+            && self.default_config_schema_store.read().await.is_none()
         {
-            schema_store.load_config(config, Some(config_path)).await?;
-        }
-
-        if let Some((
-            _,
-            ConfigSchemaStore {
-                config,
-                schema_store,
-                ..
-            },
-        )) = &mut *self.default_config_schema_store.write().await
-        {
-            schema_store.load_config(config, None).await?;
+            match serde_tombi::config::load_with_path_and_level_async(std::env::current_dir().ok())
+                .await
+            {
+                Ok((config, Some(config_path), _)) => {
+                    self.update_config_with_path(config, &config_path).await?;
+                }
+                Ok((config, None, _)) => {
+                    let associated_schemas = self.associated_schemas.read().await.clone();
+                    let schema_options = schema_store_options(&config, &self.backend_options);
+                    let schema_store = SchemaStore::new_with_options(schema_options);
+                    load_schema_store_with_associations(
+                        &schema_store,
+                        &config,
+                        None,
+                        &associated_schemas,
+                    )
+                    .await?;
+                    *self.default_config_schema_store.write().await = Some((
+                        DefaultConfigSource::Default,
+                        ConfigSchemaStore::new(config, None, schema_store),
+                    ));
+                }
+                Err(error) => log::warn!("failed to discover startup config: {error}"),
+            }
         }
 
         Ok(())
@@ -343,7 +350,7 @@ impl ConfigManager {
             .cloned()
             .collect();
         for config_path in config_paths {
-            match serde_tombi::config::try_from_path(&config_path) {
+            match serde_tombi::config::try_from_path_async(&config_path).await {
                 Ok(Some(config)) => {
                     self.update_config_with_path(config, &config_path).await?;
                     updated = true;
@@ -358,22 +365,26 @@ impl ConfigManager {
             }
         }
 
-        let mut config_schema_stores = self.config_schema_stores.write().await;
-        let associated_schemas = self.associated_schemas.read().await;
-        for (
+        let config_schema_stores = self
+            .config_schema_stores
+            .read()
+            .await
+            .values()
+            .cloned()
+            .collect::<Vec<_>>();
+        let default_config_schema_store = self.default_config_schema_store.read().await.clone();
+        let associated_schemas = self.associated_schemas.read().await.clone();
+        for ConfigSchemaStore {
+            config,
             config_path,
-            ConfigSchemaStore {
-                config,
-                schema_store,
-                ..
-            },
-        ) in config_schema_stores.iter_mut()
+            schema_store,
+        } in config_schema_stores
         {
             if schema_store
-                .refresh_cache(config, Some(config_path))
+                .refresh_cache(&config, config_path.as_deref())
                 .await?
             {
-                load_associations(schema_store, &associated_schemas).await;
+                load_associations(&schema_store, &associated_schemas).await;
                 updated = true;
             }
         }
@@ -382,13 +393,15 @@ impl ConfigManager {
             _,
             ConfigSchemaStore {
                 config,
+                config_path,
                 schema_store,
-                ..
             },
-        )) = &mut *self.default_config_schema_store.write().await
-            && schema_store.refresh_cache(config, None).await?
+        )) = default_config_schema_store
+            && schema_store
+                .refresh_cache(&config, config_path.as_deref())
+                .await?
         {
-            load_associations(schema_store, &associated_schemas).await;
+            load_associations(&schema_store, &associated_schemas).await;
             updated = true;
         }
 
@@ -397,7 +410,7 @@ impl ConfigManager {
 
     /// Update editor configuration
     pub async fn update_editor_config(&self, config: Config) {
-        let associated_schemas = self.associated_schemas.read().await;
+        let associated_schemas = self.associated_schemas.read().await.clone();
         let schema_options = schema_store_options(&config, &self.backend_options);
         let schema_store = SchemaStore::new_with_options(schema_options);
 
@@ -429,8 +442,14 @@ impl ConfigManager {
             tombi_hashmap::IndexMap::new();
 
         // Get schemas from all config_schema_stores
-        let config_schema_stores = self.config_schema_stores.read().await;
-        for config_schema_store in config_schema_stores.values() {
+        let config_schema_stores = self
+            .config_schema_stores
+            .read()
+            .await
+            .values()
+            .cloned()
+            .collect::<Vec<_>>();
+        for config_schema_store in config_schema_stores {
             for schema in config_schema_store.schema_store.list_schemas().await {
                 if let Some(existing_schema) = schema_map.get_mut(&schema.schema_uri) {
                     merge_schema(existing_schema, schema);
@@ -442,7 +461,7 @@ impl ConfigManager {
 
         // Get schemas from default_config_schema_store
         if let Some((_, default_config_schema_store)) =
-            &*self.default_config_schema_store.read().await
+            self.default_config_schema_store.read().await.clone()
         {
             let schemas = default_config_schema_store
                 .schema_store
