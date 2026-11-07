@@ -212,7 +212,7 @@ impl ConfigManager {
                 continue;
             }
             match source_cache
-                .try_from_path(&candidate.path, self.config_options())
+                .try_from_path(&candidate.path, self.load_options())
                 .await
             {
                 Ok(Some(report)) => {
@@ -239,8 +239,8 @@ impl ConfigManager {
         Ok(None)
     }
 
-    fn config_options(&self) -> tombi_config::Options {
-        tombi_config::Options {
+    fn load_options(&self) -> tombi_config::LoadOptions {
+        tombi_config::LoadOptions {
             offline: self.is_offline(),
         }
     }
@@ -270,7 +270,7 @@ impl ConfigManager {
         let mut reloaded = false;
         for config_path in config_paths {
             match source_cache
-                .try_from_path(&config_path, self.config_options())
+                .try_from_path(&config_path, self.load_options())
                 .await
             {
                 Ok(Some(report)) => {
@@ -509,7 +509,7 @@ impl ConfigManager {
             .collect();
         for config_path in config_paths {
             match source_cache
-                .try_from_path(&config_path, self.config_options())
+                .try_from_path(&config_path, self.load_options())
                 .await
             {
                 Ok(Some(report)) => {

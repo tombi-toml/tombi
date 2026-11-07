@@ -145,7 +145,7 @@ impl Deserializer<'_> {
                 None => {
                     let (config, config_path) = crate::config::load_with_path(
                         std::env::current_dir().ok(),
-                        tombi_config::Options::default(),
+                        tombi_config::LoadOptions::default(),
                     )
                     .await?;
 
@@ -693,7 +693,7 @@ optional_string = "provided"
         let config = crate::config::from_str(
             &std::fs::read_to_string(&config_path).unwrap(),
             &config_path,
-            tombi_config::Options::default(),
+            tombi_config::LoadOptions::default(),
         )
         .await
         .expect("Failed to parse tombi.toml");

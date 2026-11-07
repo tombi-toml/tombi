@@ -191,7 +191,7 @@ where
     let (config, config_path, config_level) = runtime
         .block_on(serde_tombi::config::load_with_path_and_level(
             std::env::current_dir().ok(),
-            tombi_config::Options {
+            tombi_config::LoadOptions {
                 offline: args.common.offline,
             },
         ))

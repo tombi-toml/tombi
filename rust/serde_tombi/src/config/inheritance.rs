@@ -385,7 +385,7 @@ impl ConfigSourceCache {
     pub async fn try_from_path<P: AsRef<std::path::Path>>(
         &mut self,
         config_path: P,
-        options: tombi_config::Options,
+        options: tombi_config::LoadOptions,
     ) -> Result<Option<super::ConfigLoadReport>, tombi_config::Error> {
         let config_path = config_path.as_ref();
         super::validate_config_path(config_path)?;
@@ -741,7 +741,7 @@ async fn resolve(
 pub(crate) async fn from_str(
     text: &str,
     config_path: &std::path::Path,
-    options: tombi_config::Options,
+    options: tombi_config::LoadOptions,
 ) -> Result<tombi_config::Config, tombi_config::Error> {
     let source = ConfigSource::from_path(config_path.to_owned());
     let root = parse_document(text, source.clone(), false)?.ok_or_else(|| {

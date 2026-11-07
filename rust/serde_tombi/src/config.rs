@@ -13,7 +13,7 @@ pub use inheritance::ConfigSourceCache;
 pub async fn from_str(
     toml_text: &str,
     config_path: &std::path::Path,
-    options: tombi_config::Options,
+    options: tombi_config::LoadOptions,
 ) -> Result<Config, tombi_config::Error> {
     inheritance::from_str(toml_text, config_path, options).await
 }
@@ -72,7 +72,7 @@ fn validate_config_path(config_path: &std::path::Path) -> Result<(), tombi_confi
 
 pub async fn try_from_path<P: AsRef<std::path::Path>>(
     config_path: P,
-    options: tombi_config::Options,
+    options: tombi_config::LoadOptions,
 ) -> Result<Option<Config>, tombi_config::Error> {
     Ok(ConfigSourceCache::default()
         .try_from_path(config_path, options)
@@ -82,7 +82,7 @@ pub async fn try_from_path<P: AsRef<std::path::Path>>(
 
 pub async fn load_with_path_and_level(
     search_dir: Option<std::path::PathBuf>,
-    options: tombi_config::Options,
+    options: tombi_config::LoadOptions,
 ) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
     for candidate in config_candidates(search_dir) {
         if !tombi_fs::is_file(&candidate.path) {
@@ -100,7 +100,7 @@ pub async fn load_with_path_and_level(
 
 pub async fn load_with_path(
     search_dir: Option<std::path::PathBuf>,
-    options: tombi_config::Options,
+    options: tombi_config::LoadOptions,
 ) -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
     let (config, config_path, _) = load_with_path_and_level(search_dir, options).await?;
     Ok((config, config_path))
@@ -108,7 +108,7 @@ pub async fn load_with_path(
 
 pub async fn load(
     search_dir: Option<std::path::PathBuf>,
-    options: tombi_config::Options,
+    options: tombi_config::LoadOptions,
 ) -> Result<Config, tombi_config::Error> {
     let (config, _, _) = load_with_path_and_level(search_dir, options).await?;
     Ok(config)
@@ -228,7 +228,7 @@ mod tests {
         );
 
         let (config, config_path, config_level) =
-            load_with_path_and_level(Some(nested_dir), tombi_config::Options::default())
+            load_with_path_and_level(Some(nested_dir), tombi_config::LoadOptions::default())
                 .await
                 .unwrap();
 
@@ -253,7 +253,7 @@ mod tests {
         );
 
         let (config, config_path, config_level) =
-            load_with_path_and_level(Some(nested_dir), tombi_config::Options::default())
+            load_with_path_and_level(Some(nested_dir), tombi_config::LoadOptions::default())
                 .await
                 .unwrap();
 
@@ -281,7 +281,7 @@ mod tests {
         );
 
         let (config, config_path, config_level) =
-            load_with_path_and_level(Some(nested_dir), tombi_config::Options::default())
+            load_with_path_and_level(Some(nested_dir), tombi_config::LoadOptions::default())
                 .await
                 .unwrap();
 
@@ -303,7 +303,7 @@ mod tests {
         let config_path = temp_dir.path().join("app/tombi.toml");
         write_file(&config_path, "extends = \"../shared/.tombi.toml\"\n");
 
-        let config = try_from_path(&config_path, tombi_config::Options { offline: true })
+        let config = try_from_path(&config_path, tombi_config::LoadOptions { offline: true })
             .await
             .unwrap()
             .unwrap();
@@ -321,7 +321,7 @@ mod tests {
         let config_path = temp_dir.path().join("app/tombi.toml");
         write_file(&config_path, "extends = \"../shared/base.toml\"\n");
 
-        let error = try_from_path(&config_path, tombi_config::Options { offline: true })
+        let error = try_from_path(&config_path, tombi_config::LoadOptions { offline: true })
             .await
             .unwrap_err();
 
