@@ -44,14 +44,14 @@
       "label": "Build CLI",
       "group": "build",
       "type": "shell",
-      "command": "cargo build --package tombi-cli",
+      "command": "mise exec -- cargo build --package tombi-cli",
       "problemMatcher": "$rustc"
     },
     {
       "label": "Build CLI (Release)",
       "group": "build",
       "type": "shell",
-      "command": "cargo build --release --package tombi-cli",
+      "command": "mise exec -- cargo build --release --package tombi-cli",
       "problemMatcher": "$rustc"
     },
     {
