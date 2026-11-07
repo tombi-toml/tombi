@@ -76,11 +76,11 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                         let mut new_item_index = 0;
                         let mut new_item_start_offset = None;
                         for (index, value) in self.values().iter().enumerate() {
-                            if value.span().end < offset {
+                            if value.span().end <= offset {
                                 new_item_index = index + 1;
                                 new_item_start_offset = Some(value.span().end);
                             }
-                            if value.contains(offset) {
+                            if value.contains_inside_quotes(offset) {
                                 // `[[array.█]]` is valid only after `[[array]]` has been declared above it.
                                 if self.kind() == ArrayKind::ArrayOfTable
                                     && index == 0
