@@ -38,7 +38,8 @@ pub struct ConfigManager {
     source_config_paths: Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, PathBuf>>>,
     /// Maps config file paths to their ConfigSchemaStore
     config_schema_stores:
-        Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, ConfigSchemaStore>>>,
+        Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, CachedConfigSchemaStore>>>,
+    config_resolution_lock: tokio::sync::Mutex<()>,
     schema_store_operation_lock: tokio::sync::Mutex<()>,
     /// Default ConfigSchemaStore when no config file is found
     /// Contains the source type (Default or Editor) and the ConfigSchemaStore
@@ -47,6 +48,12 @@ pub struct ConfigManager {
 
     backend_options: crate::backend::Options,
     associated_schemas: Arc<tokio::sync::RwLock<Vec<AssociatedSchema>>>,
+}
+
+#[derive(Debug, Clone)]
+struct CachedConfigSchemaStore {
+    store: ConfigSchemaStore,
+    local_dependencies: Vec<PathBuf>,
 }
 
 #[derive(Debug, Clone)]
@@ -61,6 +68,7 @@ impl ConfigManager {
         Self {
             source_config_paths: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
             config_schema_stores: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
+            config_resolution_lock: tokio::sync::Mutex::new(()),
             schema_store_operation_lock: tokio::sync::Mutex::new(()),
             default_config_schema_store: Arc::new(tokio::sync::RwLock::new(None)),
             backend_options: backend_options.clone(),
@@ -85,61 +93,156 @@ impl ConfigManager {
         }
     }
 
-    /// Get or compute the config for a given TOML file path
     pub async fn config_schema_store_for_file(
         &self,
         text_document_path: &Path,
     ) -> ConfigSchemaStore {
-        if let Some(config_path) = self
-            .source_config_paths
-            .read()
-            .await
-            .get(text_document_path)
-            .cloned()
-            && let Some(config_schema_store) = self
-                .config_schema_stores
-                .read()
+        if let Some(store) = self.cached_store_for_file(text_document_path).await {
+            return store;
+        }
+        let _resolution = self.config_resolution_lock.lock().await;
+        if let Some(store) = self.cached_store_for_file(text_document_path).await {
+            return store;
+        }
+        let store = self
+            .config_schema_store_for_directory_locked(
+                text_document_path.parent().map(ToOwned::to_owned),
+            )
+            .await;
+        if let Some(config_path) = &store.config_path {
+            self.source_config_paths
+                .write()
                 .await
-                .get(&config_path)
-                .cloned()
-        {
-            return config_schema_store;
+                .insert(text_document_path.to_owned(), config_path.clone());
         }
+        store
+    }
 
-        let text_document_path_buf = text_document_path.to_path_buf();
-        let Ok((config, Some(config_path))) = serde_tombi::config::load_with_path_async(
-            text_document_path_buf.parent().map(ToOwned::to_owned),
-        )
-        .await
-        else {
-            return self.default_config_schema_store().await;
-        };
-
-        self.source_config_paths
-            .write()
-            .await
-            .insert(text_document_path_buf, config_path.clone());
-
-        if let Some(config_schema_store) = self
-            .config_schema_stores
-            .read()
-            .await
-            .get(&config_path)
-            .cloned()
-        {
-            return config_schema_store;
-        }
-
-        if let Err(error) = self.update_config_with_path(config, &config_path).await {
-            log::error!("failed to load schema store for {config_path:?}: {error}");
-            return self.default_config_schema_store().await;
-        }
+    async fn cached_store_for_file(&self, path: &Path) -> Option<ConfigSchemaStore> {
+        let config_path = self.source_config_paths.read().await.get(path).cloned()?;
         self.config_schema_stores
             .read()
             .await
             .get(&config_path)
-            .cloned()
-            .unwrap_or_else(|| ConfigSchemaStore::new(Config::default(), None, SchemaStore::new()))
+            .map(|entry| entry.store.clone())
+    }
+
+    pub async fn config_schema_store_for_directory(
+        &self,
+        directory: Option<PathBuf>,
+    ) -> ConfigSchemaStore {
+        let _resolution = self.config_resolution_lock.lock().await;
+        self.config_schema_store_for_directory_locked(directory)
+            .await
+    }
+
+    async fn config_schema_store_for_directory_locked(
+        &self,
+        directory: Option<PathBuf>,
+    ) -> ConfigSchemaStore {
+        for candidate in serde_tombi::config::config_candidates(directory) {
+            if let Some(entry) = self.config_schema_stores.read().await.get(&candidate.path) {
+                return entry.store.clone();
+            }
+            if !tombi_fs::is_file(&candidate.path) {
+                continue;
+            }
+            match serde_tombi::config::try_from_path_with_options(
+                &candidate.path,
+                self.config_load_options(),
+            )
+            .await
+            {
+                Ok(Some(report)) => {
+                    let _operation = self.schema_store_operation_lock.lock().await;
+                    match self
+                        .update_config_report_locked(report, &candidate.path)
+                        .await
+                    {
+                        Ok(()) => {
+                            return self
+                                .config_schema_stores
+                                .read()
+                                .await
+                                .get(&candidate.path)
+                                .expect("loaded config store exists")
+                                .store
+                                .clone();
+                        }
+                        Err(error) => log::warn!(
+                            "failed to load schema store for {:?}: {error}",
+                            candidate.path
+                        ),
+                    }
+                }
+                Ok(None) => {}
+                Err(error @ tombi_config::Error::ConfigOffline { .. }) => {
+                    log::warn!("failed to load config {:?}: {error}", candidate.path);
+                    break;
+                }
+                Err(error) => log::warn!("failed to load config {:?}: {error}", candidate.path),
+            }
+        }
+        self.default_config_schema_store().await
+    }
+
+    fn config_load_options(&self) -> serde_tombi::config::ConfigLoadOptions {
+        serde_tombi::config::ConfigLoadOptions {
+            offline: self.backend_options.offline.unwrap_or(false),
+        }
+    }
+
+    pub async fn invalidate_local_dependencies(&self, paths: &[PathBuf], rediscover: bool) -> bool {
+        let _resolution = self.config_resolution_lock.lock().await;
+        let changed_paths = paths
+            .iter()
+            .flat_map(|path| {
+                let selected = absolute_normalized_path(path);
+                let identity = tombi_fs::canonicalize(path).unwrap_or_else(|_| selected.clone());
+                [selected, identity]
+            })
+            .collect::<std::collections::HashSet<_>>();
+        let mut stores = self.config_schema_stores.write().await;
+        let before = stores.len();
+        stores.retain(|_, entry| {
+            !entry
+                .local_dependencies
+                .iter()
+                .any(|path| changed_paths.contains(path))
+        });
+        let invalidated = before != stores.len();
+        let mut source_paths = self.source_config_paths.write().await;
+        if rediscover {
+            source_paths.clear();
+        } else if invalidated {
+            source_paths.retain(|_, path| stores.contains_key(path));
+        }
+        invalidated
+    }
+
+    pub async fn reload_config(
+        &self,
+        config_path: &Path,
+    ) -> Result<bool, tombi_schema_store::Error> {
+        let _resolution = self.config_resolution_lock.lock().await;
+        match serde_tombi::config::try_from_path_with_options(
+            config_path,
+            self.config_load_options(),
+        )
+        .await
+        {
+            Ok(Some(report)) => {
+                let _operation = self.schema_store_operation_lock.lock().await;
+                self.update_config_report_locked(report, config_path)
+                    .await?;
+                Ok(true)
+            }
+            Ok(None) => Ok(false),
+            Err(error) => {
+                log::warn!("failed to reload config {config_path:?}: {error}");
+                Ok(false)
+            }
+        }
     }
 
     /// Update a specific config and its path
@@ -148,16 +251,31 @@ impl ConfigManager {
         config: Config,
         config_path: &Path,
     ) -> Result<(), tombi_schema_store::Error> {
+        let _resolution = self.config_resolution_lock.lock().await;
         let _schema_store_operation = self.schema_store_operation_lock.lock().await;
-        self.update_config_with_path_locked(config, config_path)
-            .await
+        self.update_config_report_locked(
+            serde_tombi::config::ConfigLoadReport {
+                config,
+                local_dependencies: vec![
+                    absolute_normalized_path(config_path),
+                    tombi_fs::canonicalize(config_path)
+                        .unwrap_or_else(|_| absolute_normalized_path(config_path)),
+                ],
+            },
+            config_path,
+        )
+        .await
     }
 
-    async fn update_config_with_path_locked(
+    async fn update_config_report_locked(
         &self,
-        config: Config,
+        report: serde_tombi::config::ConfigLoadReport,
         config_path: &Path,
     ) -> Result<(), tombi_schema_store::Error> {
+        let serde_tombi::config::ConfigLoadReport {
+            config,
+            local_dependencies,
+        } = report;
         let associated_schemas = self.associated_schemas.read().await.clone();
         let schema_options = schema_store_options(&config, &self.backend_options);
         let schema_store = SchemaStore::new_with_options(schema_options);
@@ -172,7 +290,10 @@ impl ConfigManager {
         let mut config_schema_stores = self.config_schema_stores.write().await;
         config_schema_stores.insert(
             config_path.to_owned(),
-            ConfigSchemaStore::new(config, Some(config_path.to_owned()), schema_store),
+            CachedConfigSchemaStore {
+                store: ConfigSchemaStore::new(config, Some(config_path.to_owned()), schema_store),
+                local_dependencies,
+            },
         );
         Ok(())
     }
@@ -237,7 +358,7 @@ impl ConfigManager {
             .read()
             .await
             .values()
-            .cloned()
+            .map(|entry| entry.store.clone())
             .collect::<Vec<_>>();
         for config_schema_store in config_schema_stores {
             updated |= config_schema_store
@@ -273,7 +394,7 @@ impl ConfigManager {
                 .read()
                 .await
                 .values()
-                .cloned()
+                .map(|entry| entry.store.clone())
                 .collect::<Vec<_>>()
         };
         for config_schema_store in config_schema_stores {
@@ -286,7 +407,6 @@ impl ConfigManager {
     }
 
     pub async fn load(&self) -> Result<(), tombi_schema_store::Error> {
-        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         let has_editor_config = self
             .default_config_schema_store
             .read()
@@ -294,48 +414,17 @@ impl ConfigManager {
             .as_ref()
             .is_some_and(|(source, _)| *source == DefaultConfigSource::Editor);
         if !has_editor_config {
-            match serde_tombi::config::load_with_path_and_level_async(std::env::current_dir().ok())
-                .await
-            {
-                Ok((config, Some(config_path), _)) => {
-                    self.update_config_with_path_locked(config, &config_path)
-                        .await?;
-                }
-                Ok((config, None, _)) => {
-                    if self.default_config_schema_store.read().await.is_none() {
-                        let associated_schemas = self.associated_schemas.read().await.clone();
-                        let schema_options = schema_store_options(&config, &self.backend_options);
-                        let schema_store = SchemaStore::new_with_options(schema_options);
-                        load_schema_store_with_associations(
-                            &schema_store,
-                            &config,
-                            None,
-                            &associated_schemas,
-                        )
-                        .await?;
-                        let config_schema_store =
-                            ConfigSchemaStore::new(config, None, schema_store);
-                        let mut default_config_schema_store =
-                            self.default_config_schema_store.write().await;
-                        if default_config_schema_store.is_none() {
-                            *default_config_schema_store =
-                                Some((DefaultConfigSource::Default, config_schema_store));
-                        }
-                    }
-                }
-                Err(error) => log::warn!("failed to discover startup config: {error}"),
-            }
+            self.config_schema_store_for_directory(std::env::current_dir().ok())
+                .await;
         }
-
         Ok(())
     }
 
     pub async fn refresh_cache(&self) -> Result<bool, tombi_schema_store::Error> {
+        let _resolution = self.config_resolution_lock.lock().await;
         let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         let mut updated = false;
 
-        // Re-read config files from disk so that changes made outside the editor are applied.
-        // Collect the keys so the read lock is released before `update_config_with_path` takes the write lock.
         let config_paths: Vec<PathBuf> = self
             .config_schema_stores
             .read()
@@ -344,9 +433,14 @@ impl ConfigManager {
             .cloned()
             .collect();
         for config_path in config_paths {
-            match serde_tombi::config::try_from_path_async(&config_path).await {
-                Ok(Some(config)) => {
-                    self.update_config_with_path_locked(config, &config_path)
+            match serde_tombi::config::try_from_path_with_options(
+                &config_path,
+                self.config_load_options(),
+            )
+            .await
+            {
+                Ok(Some(report)) => {
+                    self.update_config_report_locked(report, &config_path)
                         .await?;
                     updated = true;
                 }
@@ -365,7 +459,7 @@ impl ConfigManager {
             .read()
             .await
             .values()
-            .cloned()
+            .map(|entry| entry.store.clone())
             .collect::<Vec<_>>();
         let default_config_schema_store = self.default_config_schema_store.read().await.clone();
         let associated_schemas = self.associated_schemas.read().await.clone();
@@ -443,7 +537,7 @@ impl ConfigManager {
             .read()
             .await
             .values()
-            .cloned()
+            .map(|entry| entry.store.clone())
             .collect::<Vec<_>>();
         for config_schema_store in config_schema_stores {
             for schema in config_schema_store.schema_store.list_schemas().await {
@@ -549,4 +643,15 @@ fn merge_schema(
             }
         }
     }
+}
+
+fn absolute_normalized_path(path: &Path) -> PathBuf {
+    let absolute = if path.is_absolute() {
+        path.to_owned()
+    } else {
+        std::env::current_dir()
+            .map(|cwd| cwd.join(path))
+            .unwrap_or_else(|_| path.to_owned())
+    };
+    tombi_fs::normalize(&absolute)
 }

@@ -1,4 +1,8 @@
-use std::{collections::HashMap, path::PathBuf, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+    str::FromStr,
+};
 
 use tombi_document::{Key, KeyKind, Table, Value};
 use tombi_schema_store::{DefaultHttpClient, HttpClient};
@@ -7,10 +11,15 @@ use tombi_uri::Uri;
 
 const MAX_EXTENDS_DEPTH: usize = 32;
 const MAX_EXTENDS_REFERENCES: usize = 256;
+const MAX_MERGED_ENTRIES: usize = 16_384;
+const MAX_CACHED_ENTRIES: usize = 65_536;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum ConfigSource {
-    File(PathBuf),
+    File {
+        selected_path: PathBuf,
+        identity: PathBuf,
+    },
     Remote(Uri),
 }
 
@@ -24,20 +33,53 @@ impl ConfigSource {
                 .unwrap_or(path)
         };
 
-        let path = tombi_fs::canonicalize(&path).unwrap_or_else(|_| tombi_fs::normalize(&path));
-        Self::File(path)
+        let identity = tombi_fs::canonicalize(&path).unwrap_or_else(|_| tombi_fs::normalize(&path));
+        Self::File {
+            selected_path: path,
+            identity,
+        }
+    }
+
+    fn same_identity(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                Self::File { identity: left, .. },
+                Self::File {
+                    identity: right, ..
+                },
+            ) => left == right,
+            (Self::Remote(left), Self::Remote(right)) => left == right,
+            _ => false,
+        }
+    }
+
+    fn local_dependencies(&self) -> impl Iterator<Item = PathBuf> {
+        let paths = match self {
+            Self::File {
+                selected_path,
+                identity,
+            } => vec![tombi_fs::normalize(selected_path), identity.clone()],
+            Self::Remote(_) => Vec::new(),
+        };
+        paths.into_iter()
     }
 
     fn display(&self) -> std::string::String {
         match self {
-            Self::File(path) => path.display().to_string(),
+            Self::File {
+                selected_path: path,
+                ..
+            } => path.display().to_string(),
             Self::Remote(uri) => uri.to_string(),
         }
     }
 
     fn is_pyproject(&self) -> bool {
         match self {
-            Self::File(path) => path
+            Self::File {
+                selected_path: path,
+                ..
+            } => path
                 .file_name()
                 .is_some_and(|name| name == "pyproject.toml"),
             Self::Remote(uri) => uri.path().ends_with("/pyproject.toml"),
@@ -71,7 +113,10 @@ impl ConfigSource {
                 uri.set_fragment(None);
                 Ok(Self::Remote(uri))
             }
-            Self::File(source_path) => {
+            Self::File {
+                selected_path: source_path,
+                ..
+            } => {
                 if reference.starts_with("file:") {
                     let uri =
                         Uri::from_str(reference).map_err(|error| invalid(&error.to_string()))?;
@@ -144,17 +189,19 @@ struct ResolutionFrame {
     next_base: usize,
     inherited: tombi_document::Document,
     max_base_depth: usize,
+    local_dependencies: HashSet<PathBuf>,
 }
 
 #[derive(Clone)]
 struct ResolvedConfig {
     values: tombi_document::Document,
     depth: usize,
+    local_dependencies: HashSet<PathBuf>,
 }
 
 enum ResolutionStep {
     Read(ConfigSource),
-    Complete(tombi_document::Document),
+    Complete(tombi_document::Document, HashSet<PathBuf>),
 }
 
 struct ConfigResolution {
@@ -163,6 +210,7 @@ struct ConfigResolution {
     completed: HashMap<ConfigSource, ResolvedConfig>,
     pending: Option<ConfigSource>,
     reference_count: usize,
+    cached_entries: usize,
 }
 
 impl ConfigResolution {
@@ -170,6 +218,7 @@ impl ConfigResolution {
         let source = root.source.clone();
         Self {
             stack: vec![ResolutionFrame {
+                local_dependencies: source.local_dependencies().collect(),
                 document: root,
                 next_base: 0,
                 inherited: tombi_document::Document::new(),
@@ -179,6 +228,7 @@ impl ConfigResolution {
             completed: HashMap::new(),
             pending: None,
             reference_count: 0,
+            cached_entries: 0,
         }
     }
 
@@ -191,8 +241,9 @@ impl ConfigResolution {
                 unreachable!("a requested config source must be loaded before advancing")
             };
             debug_assert_eq!(loaded.source, expected_source);
-            self.active.push(expected_source);
+            self.active.push(expected_source.clone());
             self.stack.push(ResolutionFrame {
+                local_dependencies: expected_source.local_dependencies().collect(),
                 document: loaded,
                 next_base: 0,
                 inherited: tombi_document::Document::new(),
@@ -218,7 +269,11 @@ impl ConfigResolution {
                 }
                 self.reference_count += 1;
 
-                if let Some(index) = self.active.iter().position(|active| active == &source) {
+                if let Some(index) = self
+                    .active
+                    .iter()
+                    .position(|active| active.same_identity(&source))
+                {
                     let mut chain = self.active[index..]
                         .iter()
                         .map(ConfigSource::display)
@@ -242,7 +297,11 @@ impl ConfigResolution {
                         });
                     }
                     frame.max_base_depth = frame.max_base_depth.max(completed.depth + 1);
-                    overlay(&mut frame.inherited, completed.values.clone(), true);
+                    preflight_merge(&frame.inherited, &completed.values)?;
+                    overlay(&mut frame.inherited, completed.values.clone());
+                    frame
+                        .local_dependencies
+                        .extend(completed.local_dependencies.iter().cloned());
                     continue;
                 }
 
@@ -254,42 +313,99 @@ impl ConfigResolution {
             let source = frame.document.source.clone();
             self.active.pop();
             let mut resolved = frame.inherited;
-            overlay(&mut resolved, frame.document.values, true);
+            preflight_merge(&resolved, &frame.document.values)?;
+            overlay(&mut resolved, frame.document.values);
+            let entries = special_entries(&resolved);
+            check_limit(self.cached_entries + entries, MAX_CACHED_ENTRIES)?;
+            self.cached_entries += entries;
             self.completed.insert(
                 source,
                 ResolvedConfig {
                     values: resolved.clone(),
                     depth: frame.max_base_depth,
+                    local_dependencies: frame.local_dependencies.clone(),
                 },
             );
 
             if let Some(parent) = self.stack.last_mut() {
                 parent.max_base_depth = parent.max_base_depth.max(frame.max_base_depth + 1);
-                overlay(&mut parent.inherited, resolved, true);
+                preflight_merge(&parent.inherited, &resolved)?;
+                overlay(&mut parent.inherited, resolved);
+                parent.local_dependencies.extend(frame.local_dependencies);
             } else {
-                return Ok(ResolutionStep::Complete(resolved));
+                return Ok(ResolutionStep::Complete(resolved, frame.local_dependencies));
             }
         }
     }
 }
 
-fn overlay(
-    inherited: &mut tombi_document::Document,
-    higher_priority: tombi_document::Document,
-    root: bool,
-) {
-    overlay_table(inherited, higher_priority.into(), root);
+fn special_entries(values: &tombi_document::Document) -> usize {
+    ["schemas", "overrides"]
+        .iter()
+        .map(|name| match values.key_values().get(&key(name)) {
+            Some(Value::Array(array)) => array.values().len(),
+            _ => 0,
+        })
+        .sum()
 }
 
-fn overlay_table(inherited: &mut Table, higher_priority: Table, root: bool) {
+fn check_limit(entries: usize, limit: usize) -> Result<(), tombi_config::Error> {
+    if entries > limit {
+        Err(tombi_config::Error::ConfigInheritanceEntriesExceeded { limit })
+    } else {
+        Ok(())
+    }
+}
+
+fn preflight_merge(
+    inherited: &tombi_document::Document,
+    higher: &tombi_document::Document,
+) -> Result<(), tombi_config::Error> {
+    check_limit(
+        special_entries(inherited) + special_entries(higher),
+        MAX_MERGED_ENTRIES,
+    )
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum TableScope {
+    Root,
+    Ordinary,
+    Extensions,
+}
+
+fn overlay(inherited: &mut tombi_document::Document, higher_priority: tombi_document::Document) {
+    overlay_table(inherited, higher_priority.into(), TableScope::Root);
+}
+
+fn overlay_table(inherited: &mut Table, higher_priority: Table, scope: TableScope) {
     for (key, higher_value) in higher_priority.key_values().clone() {
         if let Some(inherited_value) = inherited.key_values_mut().get_mut(&key) {
             match (&mut *inherited_value, higher_value) {
                 (Value::Table(inherited_table), Value::Table(higher_table)) => {
-                    overlay_table(inherited_table, higher_table, false);
+                    let child_scope = if scope == TableScope::Extensions
+                        || scope == TableScope::Root && key.value() == "extensions"
+                    {
+                        TableScope::Extensions
+                    } else {
+                        TableScope::Ordinary
+                    };
+                    if scope == TableScope::Extensions
+                        && (inherited_table
+                            .key_values()
+                            .contains_key(&self::key("enabled"))
+                            || higher_table
+                                .key_values()
+                                .contains_key(&self::key("enabled")))
+                    {
+                        *inherited_table = higher_table;
+                    } else {
+                        overlay_table(inherited_table, higher_table, child_scope);
+                    }
                 }
                 (Value::Array(inherited_array), Value::Array(mut higher_array))
-                    if root && matches!(key.value(), "schemas" | "overrides") =>
+                    if scope == TableScope::Root
+                        && matches!(key.value(), "schemas" | "overrides") =>
                 {
                     let mut values = std::mem::take(higher_array.values_mut());
                     values.extend(std::mem::take(inherited_array.values_mut()));
@@ -310,7 +426,10 @@ fn key(name: &str) -> Key {
 
 fn source_error(source: &ConfigSource, reason: impl std::fmt::Display) -> tombi_config::Error {
     match source {
-        ConfigSource::File(path) => tombi_config::Error::ConfigFileReadFailed {
+        ConfigSource::File {
+            selected_path: path,
+            ..
+        } => tombi_config::Error::ConfigFileReadFailed {
             config_path: path.clone(),
         },
         ConfigSource::Remote(uri) => tombi_config::Error::ConfigUriFetchFailed {
@@ -325,7 +444,12 @@ fn layer_error(
     inherited: bool,
     reason: impl std::fmt::Display,
 ) -> tombi_config::Error {
-    if !inherited && let ConfigSource::File(path) = source {
+    if !inherited
+        && let ConfigSource::File {
+            selected_path: path,
+            ..
+        } = source
+    {
         return tombi_config::Error::ConfigFileParseFailed {
             config_path: path.clone(),
         };
@@ -401,6 +525,7 @@ fn parse_document(
         }
     };
 
+    check_limit(special_entries(&values), MAX_MERGED_ENTRIES)?;
     crate::from_document::<tombi_config::Config>(values.clone())
         .map_err(|error| layer_error(&source, inherited, error))?;
 
@@ -437,12 +562,21 @@ fn extract_pyproject_config(
 async fn read_document_async(
     source: ConfigSource,
     inherited: bool,
+    options: super::ConfigLoadOptions,
 ) -> Result<ConfigDocument, tombi_config::Error> {
     let text = match &source {
-        ConfigSource::File(path) => tombi_fs::read_to_string_async(path)
+        ConfigSource::File {
+            selected_path: path,
+            ..
+        } => tombi_fs::read_to_string_async(path)
             .await
             .map_err(|error| source_error(&source, error))?,
         ConfigSource::Remote(uri) => {
+            if options.offline {
+                return Err(tombi_config::Error::ConfigOffline {
+                    config_uri: uri.clone(),
+                });
+            }
             let bytes = DefaultHttpClient::new()
                 .get_bytes(uri.as_str())
                 .await
@@ -466,9 +600,10 @@ fn read_document_sync(
     inherited: bool,
 ) -> Result<ConfigDocument, tombi_config::Error> {
     let text = match &source {
-        ConfigSource::File(path) => {
-            tombi_fs::read_to_string(path).map_err(|error| source_error(&source, error))?
-        }
+        ConfigSource::File {
+            selected_path: path,
+            ..
+        } => tombi_fs::read_to_string(path).map_err(|error| source_error(&source, error))?,
         ConfigSource::Remote(uri) => {
             return Err(tombi_config::Error::ConfigAsyncRequired {
                 config_uri: uri.clone(),
@@ -484,21 +619,30 @@ fn read_document_sync(
     })
 }
 
-async fn resolve_async(root: ConfigDocument) -> Result<tombi_config::Config, tombi_config::Error> {
+async fn resolve(
+    root: ConfigDocument,
+    options: super::ConfigLoadOptions,
+) -> Result<super::ConfigLoadReport, tombi_config::Error> {
     let mut resolution = ConfigResolution::new(root);
     let mut step = resolution.advance(None)?;
     loop {
         step = match step {
             ResolutionStep::Read(source) => {
-                let document = read_document_async(source, true).await?;
+                let document = read_document_async(source, true, options).await?;
                 resolution.advance(Some(document))?
             }
-            ResolutionStep::Complete(document) => {
-                return crate::from_document(document).map_err(|error| {
+            ResolutionStep::Complete(document, local_dependencies) => {
+                let config = crate::from_document(document).map_err(|error| {
                     tombi_config::Error::ConfigExtendsParseFailed {
                         config_source: "merged config".to_owned(),
                         reason: error.to_string(),
                     }
+                })?;
+                let mut local_dependencies = local_dependencies.into_iter().collect::<Vec<_>>();
+                local_dependencies.sort();
+                return Ok(super::ConfigLoadReport {
+                    config,
+                    local_dependencies,
                 });
             }
         };
@@ -515,7 +659,7 @@ fn resolve_sync(root: ConfigDocument) -> Result<tombi_config::Config, tombi_conf
                 let document = read_document_sync(source, true)?;
                 resolution.advance(Some(document))?
             }
-            ResolutionStep::Complete(document) => {
+            ResolutionStep::Complete(document, _) => {
                 return crate::from_document(document).map_err(|error| {
                     tombi_config::Error::ConfigExtendsParseFailed {
                         config_source: "merged config".to_owned(),
@@ -538,7 +682,9 @@ pub(crate) async fn from_str_async(
             reason: "pyproject.toml does not contain [tool.tombi]".to_owned(),
         }
     })?;
-    resolve_async(root).await
+    resolve(root, super::ConfigLoadOptions::default())
+        .await
+        .map(|report| report.config)
 }
 
 #[cfg(target_family = "wasm")]
@@ -556,9 +702,10 @@ pub(crate) fn from_str_sync(
     resolve_sync(root)
 }
 
-pub(crate) async fn try_from_path_async(
+pub(crate) async fn try_from_path(
     config_path: &std::path::Path,
-) -> Result<Option<tombi_config::Config>, tombi_config::Error> {
+    options: super::ConfigLoadOptions,
+) -> Result<Option<super::ConfigLoadReport>, tombi_config::Error> {
     if !tombi_fs::is_file(config_path) {
         return Err(tombi_config::Error::ConfigFileNotFound {
             config_path: config_path.to_owned(),
@@ -572,7 +719,7 @@ pub(crate) async fn try_from_path_async(
     let Some(root) = parse_document(&text, source, false)? else {
         return Ok(None);
     };
-    resolve_async(root).await.map(Some)
+    resolve(root, options).await.map(Some)
 }
 
 #[cfg(target_family = "wasm")]

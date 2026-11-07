@@ -65,25 +65,57 @@ where
     .map_err(|_| runtime_error("config resolver thread panicked".to_owned()))?
 }
 
-pub fn try_from_path<P: AsRef<std::path::Path>>(
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ConfigLoadOptions {
+    pub offline: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct ConfigLoadReport {
+    pub config: Config,
+    pub local_dependencies: Vec<std::path::PathBuf>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ConfigCandidate {
+    pub path: std::path::PathBuf,
+    pub level: ConfigLevel,
+}
+
+pub fn config_candidates(search_dir: Option<std::path::PathBuf>) -> Vec<ConfigCandidate> {
+    let mut candidates = Vec::new();
+    if let Some(mut current_dir) = search_dir {
+        loop {
+            for path in [
+                current_dir.join(DOT_TOMBI_TOML_FILENAME),
+                current_dir.join(TOMBI_TOML_FILENAME),
+                current_dir.join(".config").join(TOMBI_TOML_FILENAME),
+                current_dir.join(PYPROJECT_TOML_FILENAME),
+            ] {
+                candidates.push(ConfigCandidate {
+                    path,
+                    level: ConfigLevel::Project,
+                });
+            }
+            if !current_dir.pop() {
+                break;
+            }
+        }
+    }
+    if let Some((path, level)) = get_user_or_system_tombi_config_path_and_level() {
+        candidates.push(ConfigCandidate { path, level });
+    }
+    candidates
+}
+
+pub fn try_from_path_sync<P: AsRef<std::path::Path>>(
     config_path: P,
 ) -> Result<Option<Config>, tombi_config::Error> {
     let config_path = config_path.as_ref().to_owned();
-    match config_path.file_name().and_then(|name| name.to_str()) {
-        Some(
-            DOT_TOMBI_TOML_FILENAME
-            | TOMBI_TOML_FILENAME
-            | CONFIG_TOML_FILENAME
-            | PYPROJECT_TOML_FILENAME,
-        ) => {}
-        _ => return Err(tombi_config::Error::ConfigFileUnsupported { config_path }),
-    }
-
+    validate_config_path(&config_path)?;
     #[cfg(not(target_family = "wasm"))]
     {
-        run_async_in_thread(
-            move || async move { inheritance::try_from_path_async(&config_path).await },
-        )
+        run_async_in_thread(move || async move { try_from_path(config_path).await })
     }
     #[cfg(target_family = "wasm")]
     {
@@ -91,21 +123,36 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
     }
 }
 
-pub async fn try_from_path_async<P: AsRef<std::path::Path>>(
-    config_path: P,
-) -> Result<Option<Config>, tombi_config::Error> {
-    let config_path = config_path.as_ref();
+fn validate_config_path(config_path: &std::path::Path) -> Result<(), tombi_config::Error> {
     match config_path.file_name().and_then(|name| name.to_str()) {
         Some(
             DOT_TOMBI_TOML_FILENAME
             | TOMBI_TOML_FILENAME
             | CONFIG_TOML_FILENAME
             | PYPROJECT_TOML_FILENAME,
-        ) => inheritance::try_from_path_async(config_path).await,
+        ) => Ok(()),
         _ => Err(tombi_config::Error::ConfigFileUnsupported {
             config_path: config_path.to_owned(),
         }),
     }
+}
+
+pub async fn try_from_path<P: AsRef<std::path::Path>>(
+    config_path: P,
+) -> Result<Option<Config>, tombi_config::Error> {
+    Ok(
+        try_from_path_with_options(config_path, ConfigLoadOptions::default())
+            .await?
+            .map(|report| report.config),
+    )
+}
+
+pub async fn try_from_path_with_options<P: AsRef<std::path::Path>>(
+    config_path: P,
+    options: ConfigLoadOptions,
+) -> Result<Option<ConfigLoadReport>, tombi_config::Error> {
+    validate_config_path(config_path.as_ref())?;
+    inheritance::try_from_path(config_path.as_ref(), options).await
 }
 
 pub fn load_with_path_and_level(
@@ -117,126 +164,40 @@ pub fn load_with_path_and_level(
     }
     #[cfg(target_family = "wasm")]
     {
-        load_with_path_and_level_sync(search_dir)
+        for candidate in config_candidates(search_dir) {
+            if !tombi_fs::is_file(&candidate.path) {
+                continue;
+            }
+            match try_from_path_sync(&candidate.path) {
+                Ok(Some(config)) => return Ok((config, Some(candidate.path), candidate.level)),
+                Ok(None) => {}
+                Err(error @ tombi_config::Error::ConfigAsyncRequired { .. }) => return Err(error),
+                Err(error) => log::warn!("failed to load config {:?}: {error}", candidate.path),
+            }
+        }
+        Ok((Config::default(), None, ConfigLevel::Default))
     }
 }
 
 pub async fn load_with_path_and_level_async(
     search_dir: Option<std::path::PathBuf>,
 ) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
-    if let Some(mut current_dir) = search_dir {
-        loop {
-            for config_path in [
-                current_dir.join(DOT_TOMBI_TOML_FILENAME),
-                current_dir.join(TOMBI_TOML_FILENAME),
-                current_dir.join(".config").join(TOMBI_TOML_FILENAME),
-            ] {
-                log::trace!("checking config file at {:?}", config_path);
-                if tombi_fs::is_file(&config_path) {
-                    log::debug!("project config found at {:?}", config_path);
-
-                    match try_from_path_async(&config_path).await {
-                        Ok(Some(config)) => {
-                            return Ok((config, Some(config_path), ConfigLevel::Project));
-                        }
-                        Ok(None) => {
-                            unreachable!(
-                                "project config should always be parsed successfully: {:?}",
-                                config_path
-                            );
-                        }
-                        Err(error) => log::warn!("failed to load config {config_path:?}: {error}"),
-                    }
-                }
-            }
-
-            let pyproject_toml_path = current_dir.join(PYPROJECT_TOML_FILENAME);
-            log::trace!("checking pyproject.toml file at {:?}", pyproject_toml_path);
-            if tombi_fs::is_file(&pyproject_toml_path) {
-                log::debug!(
-                    "\"{}\" found at {:?}",
-                    PYPROJECT_TOML_FILENAME,
-                    pyproject_toml_path
-                );
-
-                match try_from_path_async(&pyproject_toml_path).await {
-                    Ok(Some(config)) => {
-                        return Ok((config, Some(pyproject_toml_path), ConfigLevel::Project));
-                    }
-                    Ok(None) => log::debug!("no [tool.tombi] found in {:?}", pyproject_toml_path),
-                    Err(error) => {
-                        log::warn!("failed to load config {pyproject_toml_path:?}: {error}")
-                    }
-                }
-            }
-
-            if !current_dir.pop() {
-                break;
-            }
-        }
-    }
-
-    if let Some((user_config_path, config_level)) = get_user_or_system_tombi_config_path_and_level()
-    {
-        log::debug!("{CONFIG_TOML_FILENAME} found at {:?}", user_config_path);
-        match try_from_path_async(&user_config_path).await {
-            Ok(Some(config)) => {
-                return Ok((config, Some(user_config_path), config_level));
-            }
-            Ok(None) => log::warn!("user config {user_config_path:?} has no Tombi config"),
-            Err(error) => {
-                log::warn!("failed to load user config {user_config_path:?}: {error}");
-            }
-        }
-    }
-
-    log::debug!("config file not found, use default config");
-
-    Ok((Config::default(), None, ConfigLevel::Default))
+    load_with_path_and_level_with_options(search_dir, ConfigLoadOptions::default()).await
 }
 
-#[cfg(target_family = "wasm")]
-fn load_with_path_and_level_sync(
+pub async fn load_with_path_and_level_with_options(
     search_dir: Option<std::path::PathBuf>,
+    options: ConfigLoadOptions,
 ) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
-    if let Some(mut current_dir) = search_dir {
-        loop {
-            for config_path in [
-                current_dir.join(DOT_TOMBI_TOML_FILENAME),
-                current_dir.join(TOMBI_TOML_FILENAME),
-                current_dir.join(".config").join(TOMBI_TOML_FILENAME),
-            ] {
-                if tombi_fs::is_file(&config_path) {
-                    match try_from_path(&config_path) {
-                        Ok(Some(config)) => {
-                            return Ok((config, Some(config_path), ConfigLevel::Project));
-                        }
-                        Ok(None) => {}
-                        Err(error) => log::warn!("failed to load config {config_path:?}: {error}"),
-                    }
-                }
-            }
-            let pyproject_path = current_dir.join(PYPROJECT_TOML_FILENAME);
-            if tombi_fs::is_file(&pyproject_path) {
-                match try_from_path(&pyproject_path) {
-                    Ok(Some(config)) => {
-                        return Ok((config, Some(pyproject_path), ConfigLevel::Project));
-                    }
-                    Ok(None) => {}
-                    Err(error) => log::warn!("failed to load config {pyproject_path:?}: {error}"),
-                }
-            }
-            if !current_dir.pop() {
-                break;
-            }
+    for candidate in config_candidates(search_dir) {
+        if !tombi_fs::is_file(&candidate.path) {
+            continue;
         }
-    }
-
-    if let Some((path, level)) = get_user_or_system_tombi_config_path_and_level() {
-        match try_from_path(&path) {
-            Ok(Some(config)) => return Ok((config, Some(path), level)),
-            Ok(None) => log::warn!("user config {path:?} has no Tombi config"),
-            Err(error) => log::warn!("failed to load user config {path:?}: {error}"),
+        match try_from_path_with_options(&candidate.path, options).await {
+            Ok(Some(report)) => return Ok((report.config, Some(candidate.path), candidate.level)),
+            Ok(None) => {}
+            Err(error @ tombi_config::Error::ConfigOffline { .. }) => return Err(error),
+            Err(error) => log::warn!("failed to load config {:?}: {error}", candidate.path),
         }
     }
     Ok((Config::default(), None, ConfigLevel::Default))

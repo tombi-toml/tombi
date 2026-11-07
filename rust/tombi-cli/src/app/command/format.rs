@@ -189,8 +189,11 @@ where
     let runtime = super::runtime(FileInputType::from(args.files.as_ref()) == FileInputType::Stdin)
         .map_err(|error| format!("failed to create tokio runtime: {error}"))?;
     let (config, config_path, config_level) = runtime
-        .block_on(serde_tombi::config::load_with_path_and_level_async(
+        .block_on(serde_tombi::config::load_with_path_and_level_with_options(
             std::env::current_dir().ok(),
+            serde_tombi::config::ConfigLoadOptions {
+                offline: args.common.offline,
+            },
         ))
         .inspect_err(|_| {
             if FileInputType::from(args.files.as_ref()) == FileInputType::Stdin

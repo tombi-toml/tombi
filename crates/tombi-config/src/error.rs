@@ -46,6 +46,12 @@ pub enum Error {
         reason: std::string::String,
     },
 
+    #[error("remote config {config_uri} cannot be loaded while offline")]
+    ConfigOffline { config_uri: tombi_uri::Uri },
+
+    #[error("config inheritance exceeds the maximum of {limit} schemas and overrides entries")]
+    ConfigInheritanceEntriesExceeded { limit: usize },
+
     #[error("loading remote config {config_uri} requires the asynchronous config API")]
     ConfigAsyncRequired { config_uri: tombi_uri::Uri },
 }

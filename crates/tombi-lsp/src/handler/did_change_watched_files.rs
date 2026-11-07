@@ -29,6 +29,27 @@ pub async fn handle_did_change_watched_files(
     let home_dir = tombi_fs::home_dir();
     let mut workspace_configs: Option<Vec<WorkspaceConfig>> = None;
 
+    let config_dependency_changes = params
+        .changes
+        .iter()
+        .filter_map(|change| {
+            let uri: tombi_uri::Uri = change.uri.clone().into();
+            if is_in_vcs_metadata_dir_uri(&uri) {
+                None
+            } else {
+                uri.to_file_path().ok()
+            }
+        })
+        .collect::<Vec<_>>();
+    let rediscover = params.changes.iter().any(|change| {
+        let uri: tombi_uri::Uri = change.uri.clone().into();
+        !is_in_vcs_metadata_dir_uri(&uri) && is_config_file(&uri)
+    });
+    config_changed |= backend
+        .config_manager
+        .invalidate_local_dependencies(&config_dependency_changes, rediscover)
+        .await;
+
     for change in params.changes {
         let uri: tombi_uri::Uri = change.uri.clone().into();
 
@@ -62,8 +83,6 @@ pub async fn handle_did_change_watched_files(
 
         if is_config_file(&uri) {
             // Config files changed outside the editor are reloaded as on save.
-            // Config discovery must be redone since a config may have been added or removed.
-            backend.config_manager.clear_source_config_paths().await;
             config_changed = true;
             if matches!(
                 change.kind,
