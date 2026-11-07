@@ -94,11 +94,11 @@ pub struct Config {
 #[schemars(extend("$id" = concat!("tombi://", tombi_uri::schemastore_hostname!(), "/tombi.json")))]
 #[schemars(extend("additionalProperties" = false))]
 pub struct ConfigFileSchema {
-    #[schemars(flatten)]
-    pub config: Config,
-
     /// One or more local config paths or HTTP(S) URLs to inherit.
     pub extends: Option<OneOrMany<std::string::String>>,
+
+    #[schemars(flatten)]
+    pub config: Config,
 }
 
 impl Config {

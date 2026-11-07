@@ -94,7 +94,7 @@ impl Backend {
     #[inline]
     pub fn new(client: tower_lsp_server::Client, options: &Options) -> Self {
         Self {
-            client,
+            client: client.clone(),
             capabilities: Arc::new(tokio::sync::RwLock::new(BackendCapabilities {
                 encoding_kind: EncodingKind::default(),
                 diagnostic_mode: DiagnosticMode::Push,
@@ -105,7 +105,7 @@ impl Backend {
             background_tasks: Default::default(),
             document_sources: Default::default(),
             opening_documents: Default::default(),
-            config_manager: Arc::new(ConfigManager::new(options)),
+            config_manager: Arc::new(ConfigManager::new(client.clone(), options)),
             workspace_diagnostics_cache: Default::default(),
         }
     }

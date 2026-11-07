@@ -1,8 +1,19 @@
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 
 use tombi_config::Config;
 use tombi_schema_store::{SchemaStore, SchemaUri};
+use tower_lsp_server::gen_lsp_types::{
+    BaseUri, DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern,
+    Registration, RelativePattern, Unregistration, WatchKind,
+};
+
+const LOCAL_DEPENDENCY_WATCHER_REGISTRATION_ID: &str = "config-extends.file-watcher";
+const DID_CHANGE_WATCHED_FILES_METHOD: &str = "workspace/didChangeWatchedFiles";
 
 /// Source type for ConfigSchemaStore without a specific config file
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,6 +57,9 @@ pub struct ConfigManager {
     default_config_schema_store:
         Arc<tokio::sync::RwLock<Option<(DefaultConfigSource, ConfigSchemaStore)>>>,
 
+    client: tower_lsp_server::Client,
+    local_dependency_watchers: tokio::sync::Mutex<HashSet<PathBuf>>,
+    supports_relative_patterns: AtomicBool,
     backend_options: crate::backend::Options,
     associated_schemas: Arc<tokio::sync::RwLock<Vec<AssociatedSchema>>>,
 }
@@ -64,13 +78,19 @@ struct AssociatedSchema {
 }
 
 impl ConfigManager {
-    pub fn new(backend_options: &crate::backend::Options) -> Self {
+    pub fn new(
+        client: tower_lsp_server::Client,
+        backend_options: &crate::backend::Options,
+    ) -> Self {
         Self {
             source_config_paths: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
             config_schema_stores: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
             config_resolution_lock: tokio::sync::Mutex::new(()),
             schema_store_operation_lock: tokio::sync::Mutex::new(()),
             default_config_schema_store: Arc::new(tokio::sync::RwLock::new(None)),
+            client,
+            local_dependency_watchers: tokio::sync::Mutex::new(HashSet::new()),
+            supports_relative_patterns: AtomicBool::new(false),
             backend_options: backend_options.clone(),
             associated_schemas: Arc::new(tokio::sync::RwLock::new(Vec::new())),
         }
@@ -79,6 +99,11 @@ impl ConfigManager {
     /// Forget which config each source file uses, so config discovery runs again.
     pub async fn clear_source_config_paths(&self) {
         self.source_config_paths.write().await.clear();
+    }
+
+    pub fn set_supports_relative_patterns(&self, supports_relative_patterns: bool) {
+        self.supports_relative_patterns
+            .store(supports_relative_patterns, Ordering::Relaxed);
     }
 
     /// Get config for a URI
@@ -226,7 +251,71 @@ impl ConfigManager {
         } else if invalidated {
             source_paths.retain(|_, path| stores.contains_key(path));
         }
+        drop(source_paths);
+        drop(stores);
+
+        if let Err(error) = self.sync_local_dependency_watchers().await {
+            log::warn!("failed to update local extends file watchers: {error}");
+        }
+
         invalidated
+    }
+
+    /// Watch the local files currently referenced by loaded config files.
+    pub async fn sync_local_dependency_watchers(
+        &self,
+    ) -> Result<(), tower_lsp_server::jsonrpc::Error> {
+        let mut registered_paths = self.local_dependency_watchers.lock().await;
+        let dependency_paths = self
+            .config_schema_stores
+            .read()
+            .await
+            .values()
+            .flat_map(|entry| entry.local_dependencies.iter().cloned())
+            .filter(|path| {
+                !matches!(
+                    path.extension().and_then(|extension| extension.to_str()),
+                    Some("toml" | "json")
+                )
+            })
+            .collect::<HashSet<_>>();
+
+        if *registered_paths == dependency_paths {
+            return Ok(());
+        }
+
+        if !registered_paths.is_empty() {
+            self.client
+                .unregister_capability(vec![Unregistration {
+                    id: LOCAL_DEPENDENCY_WATCHER_REGISTRATION_ID.to_string(),
+                    method: DID_CHANGE_WATCHED_FILES_METHOD.to_string(),
+                }])
+                .await?;
+            registered_paths.clear();
+        }
+
+        let supports_relative_patterns = self.supports_relative_patterns.load(Ordering::Relaxed);
+        let mut seen_watchers = HashSet::new();
+        let watchers = dependency_paths
+            .iter()
+            .filter_map(|path| local_dependency_watcher(path, supports_relative_patterns))
+            .filter(|watcher| seen_watchers.insert(watcher.clone()))
+            .collect::<Vec<_>>();
+        if watchers.is_empty() {
+            return Ok(());
+        }
+
+        self.client
+            .register_capability(vec![Registration {
+                id: LOCAL_DEPENDENCY_WATCHER_REGISTRATION_ID.to_string(),
+                method: DID_CHANGE_WATCHED_FILES_METHOD.to_string(),
+                register_options: Some(serde_json::json!(
+                    DidChangeWatchedFilesRegistrationOptions { watchers }
+                )),
+            }])
+            .await?;
+        *registered_paths = dependency_paths;
+        Ok(())
     }
 
     pub async fn reload_config(
@@ -304,6 +393,12 @@ impl ConfigManager {
                 local_dependencies,
             },
         );
+        drop(config_schema_stores);
+
+        if let Err(error) = self.sync_local_dependency_watchers().await {
+            log::warn!("failed to update local extends file watchers: {error}");
+        }
+
         Ok(())
     }
 
@@ -600,6 +695,38 @@ impl ConfigManager {
 
         schema_map.into_values().collect()
     }
+}
+
+fn local_dependency_watcher(
+    path: &Path,
+    supports_relative_patterns: bool,
+) -> Option<FileSystemWatcher> {
+    let file_name = path.file_name()?.to_str()?;
+    let glob_pattern = if supports_relative_patterns {
+        let base_uri = tombi_uri::Uri::from_file_path(path.parent()?).ok()?;
+        GlobPattern::RelativePattern(RelativePattern {
+            base_uri: BaseUri::Uri(base_uri.into()),
+            pattern: escape_glob_pattern(file_name),
+        })
+    } else {
+        GlobPattern::Pattern(format!("**/{}", escape_glob_pattern(file_name)))
+    };
+
+    Some(FileSystemWatcher {
+        glob_pattern,
+        kind: Some(WatchKind::Create | WatchKind::Change | WatchKind::Delete),
+    })
+}
+
+fn escape_glob_pattern(value: &str) -> String {
+    let mut pattern = String::with_capacity(value.len());
+    for character in value.chars() {
+        if matches!(character, '\\' | '*' | '?' | '[' | ']' | '{' | '}' | '!') {
+            pattern.push('\\');
+        }
+        pattern.push(character);
+    }
+    pattern
 }
 
 /// Load config and associated schemas into an existing SchemaStore

@@ -5,6 +5,17 @@
   "description": "**Tombi** (鳶 `/toɴbi/`) is a toolkit for TOML; providing a formatter/linter and language server.\nSee the [GitHub repository](https://github.com/tombi-toml/tombi) for more information.",
   "type": "object",
   "properties": {
+    "extends": {
+      "description": "One or more local config paths or HTTP(S) URLs to inherit.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/OneOrMany"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "toml-version": {
       "title": "TOML version",
       "description": "TOML version to use if not specified in the schema and comment directive.",
@@ -97,23 +108,25 @@
           "type": "null"
         }
       ]
-    },
-    "extends": {
-      "description": "One or more local config paths or HTTP(S) URLs to inherit.",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/OneOrMany"
-        },
-        {
-          "type": "null"
-        }
-      ]
     }
   },
   "x-tombi-toml-version": "v1.1.0",
   "x-tombi-table-keys-order": "schema",
   "additionalProperties": false,
   "definitions": {
+    "OneOrMany": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
     "TomlVersion": {
       "title": "TOML version",
       "oneOf": [
@@ -3430,19 +3443,6 @@
     "TombiHoverFeatureTree": {
       "type": "object",
       "additionalProperties": false
-    },
-    "OneOrMany": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      ]
     }
   }
 }

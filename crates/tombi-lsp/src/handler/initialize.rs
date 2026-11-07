@@ -38,6 +38,16 @@ pub async fn handle_initialize(
         log::info!("{name} version: {version}",);
     }
 
+    let supports_relative_patterns = client_capabilities
+        .workspace
+        .as_ref()
+        .and_then(|workspace| workspace.did_change_watched_files.as_ref())
+        .and_then(|watched_files| watched_files.relative_pattern_support)
+        .unwrap_or_default();
+    backend
+        .config_manager
+        .set_supports_relative_patterns(supports_relative_patterns);
+
     let mut backend_capabilities = backend.capabilities.write().await;
     backend_capabilities.encoding_kind = negotiated_wide_encoding(&client_capabilities);
     backend_capabilities.workspace_diagnostic_refresh_support = client_capabilities
