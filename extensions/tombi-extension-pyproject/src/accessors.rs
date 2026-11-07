@@ -12,6 +12,14 @@ pub(crate) fn is_dependency_name_accessors(accessors: &[Accessor]) -> bool {
         || matches_accessors!(accessors, ["dependency-groups", _, _])
 }
 
+/// The list itself, such as `dependencies = [█]`, where a new item is inserted.
+#[inline]
+pub(crate) fn is_dependency_name_list_accessors(accessors: &[Accessor]) -> bool {
+    matches_accessors!(accessors, ["project", "dependencies"])
+        || matches_accessors!(accessors, ["project", "optional-dependencies", _])
+        || matches_accessors!(accessors, ["dependency-groups", _])
+}
+
 #[inline]
 pub(crate) fn is_dependency_group_name_accessors(accessors: &[Accessor]) -> bool {
     matches_accessors!(accessors, ["dependency-groups", _])
