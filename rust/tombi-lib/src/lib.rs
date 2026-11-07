@@ -57,7 +57,7 @@ async fn load_config(
                 std::path::PathBuf::from(tombi_config::TOMBI_TOML_FILENAME),
             ),
         };
-        let config = serde_tombi::config::from_str_async(&config_content, &config_path)
+        let config = serde_tombi::config::from_str(&config_content, &config_path)
             .await
             .map_err(|error| {
                 log::warn!("{error}");

@@ -691,6 +691,7 @@ optional_string = "provided"
             &std::fs::read_to_string(&config_path).unwrap(),
             &config_path,
         )
+        .await
         .expect("Failed to parse tombi.toml");
 
         // Verify the parsed values

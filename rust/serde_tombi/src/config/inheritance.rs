@@ -669,7 +669,7 @@ fn resolve_sync(root: ConfigDocument) -> Result<tombi_config::Config, tombi_conf
     }
 }
 
-pub(crate) async fn from_str_async(
+pub(crate) async fn from_str(
     text: &str,
     config_path: &std::path::Path,
 ) -> Result<tombi_config::Config, tombi_config::Error> {
@@ -683,21 +683,6 @@ pub(crate) async fn from_str_async(
     resolve(root, super::ConfigLoadOptions::default())
         .await
         .map(|report| report.config)
-}
-
-#[cfg(target_family = "wasm")]
-pub(crate) fn from_str_sync(
-    text: &str,
-    config_path: &std::path::Path,
-) -> Result<tombi_config::Config, tombi_config::Error> {
-    let source = ConfigSource::from_path(config_path.to_owned());
-    let root = parse_document(text, source.clone(), false)?.ok_or_else(|| {
-        tombi_config::Error::ConfigExtendsParseFailed {
-            config_source: source.display(),
-            reason: "pyproject.toml does not contain [tool.tombi]".to_owned(),
-        }
-    })?;
-    resolve_sync(root)
 }
 
 pub(crate) async fn try_from_path(

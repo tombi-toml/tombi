@@ -7,36 +7,12 @@ use tombi_toml_version::TomlVersion;
 
 mod inheritance;
 
-/// Parse the TOML text into a `Config` struct.
-///
-/// This synchronous compatibility API resolves local inheritance on all targets and runs the
-/// asynchronous resolver on a dedicated thread on native targets. Use [`from_str_async`] from
-/// asynchronous code, especially when the config may extend a remote URL.
-pub fn from_str(
-    toml_text: &str,
-    config_path: &std::path::Path,
-) -> Result<Config, crate::de::Error> {
-    let toml_text = toml_text.to_owned();
-    let config_path = config_path.to_owned();
-    #[cfg(not(target_family = "wasm"))]
-    {
-        run_async_in_thread(move || async move {
-            inheritance::from_str_async(&toml_text, &config_path).await
-        })
-        .map_err(Into::into)
-    }
-    #[cfg(target_family = "wasm")]
-    {
-        inheritance::from_str_sync(&toml_text, &config_path).map_err(Into::into)
-    }
-}
-
 /// Parse and resolve a Tombi config document using asynchronous local and HTTP reads.
-pub async fn from_str_async(
+pub async fn from_str(
     toml_text: &str,
     config_path: &std::path::Path,
 ) -> Result<Config, tombi_config::Error> {
-    inheritance::from_str_async(toml_text, config_path).await
+    inheritance::from_str(toml_text, config_path).await
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -52,7 +28,7 @@ fn run_async_in_thread<T, F, Fut>(run: F) -> Result<T, tombi_config::Error>
 where
     T: Send + 'static,
     F: FnOnce() -> Fut + Send + 'static,
-    Fut: std::future::Future<Output = Result<T, tombi_config::Error>> + Send + 'static,
+    Fut: std::future::Future<Output = Result<T, tombi_config::Error>> + 'static,
 {
     std::thread::spawn(move || {
         let runtime = tokio::runtime::Builder::new_current_thread()
