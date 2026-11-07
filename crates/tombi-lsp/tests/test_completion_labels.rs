@@ -2535,6 +2535,63 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn pyproject_workspace_member_dependencies_before_item_completes_names(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = ["anyio", █"pydantic"]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app3/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                "\"app2\"",
+                "\"pytest\"",
+                "\"ruff\"",
+                "\"\"",
+                "\"\"\"\"\"\"",
+                "''",
+                "''''''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_dynamic_middle_item_excludes_listed_values(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dynamic = ["version", █"description"]
+                "#,
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                "\"authors\"",
+                "\"classifiers\"",
+                "\"dependencies\"",
+                "\"entry-points\"",
+                "\"gui-scripts\"",
+                "\"import-names\"",
+                "\"import-namespaces\"",
+                "\"keywords\"",
+                "\"license\"",
+                "\"license-files\"",
+                "\"maintainers\"",
+                "\"optional-dependencies\"",
+                "\"readme\"",
+                "\"requires-python\"",
+                "\"scripts\"",
+                "\"urls\"",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn pyproject_workspace_member_dependencies_editing_item_excludes_other_items(
                 r#"
                 [project]

@@ -149,10 +149,11 @@ fn completion_declared_name(
     let target = match (value, completion_hint) {
         // `default = [█]`: insert into the list itself.
         (Value::Array(array), _) if is_list && array.span().contains_inclusive(offset) => {
-            CompletionNameTarget::Insert {
+            CompletionNameTarget::list_insert(
                 offset,
-                hint: completion_hint,
-            }
+                completion_hint,
+                array.iter().map(|item| item.span()),
+            )
         }
         _ if is_list => return None,
         (Value::String(value), _) if value.span().contains_inclusive(offset) => {
@@ -195,10 +196,7 @@ fn completion_declared_name(
     };
 
     // Names already listed in the same array are not offered again. The item being edited is not counted.
-    let edited_span = match &target {
-        CompletionNameTarget::Replace { span, .. } => Some(*span),
-        CompletionNameTarget::Insert { .. } => None,
-    };
+    let edited_span = target.edited_span(offset);
     let listed_names = if is_inherits {
         BTreeSet::new()
     } else {
@@ -266,6 +264,7 @@ fn completion_declared_name(
                 None,
                 None,
             )
+            .with_emoji_icon('🦀')
         })
         .collect_vec();
 

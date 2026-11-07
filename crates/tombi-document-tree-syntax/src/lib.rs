@@ -202,7 +202,7 @@ pub fn get_accessors<'t>(
 
     if let CurrentValue::Value(crate::Value::Array(array)) = current {
         for (index, value) in array.values().iter().enumerate() {
-            if value.contains(offset) {
+            if value.contains_as_array_item(offset) {
                 accessors.push(tombi_accessor::Accessor::Index(index));
                 break;
             }
@@ -228,7 +228,7 @@ fn find_value_in_current<'a, 't>(
         CurrentValue::Root(table) => table.get(key).map_or(current, CurrentValue::Value),
         CurrentValue::Value(crate::Value::Array(array)) => {
             for (index, value) in array.values().iter().enumerate() {
-                if value.contains(offset) {
+                if value.contains_as_array_item(offset) {
                     accessors.push(tombi_accessor::Accessor::Index(index));
                     return find_value_in_current(
                         CurrentValue::Value(value),

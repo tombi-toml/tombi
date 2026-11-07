@@ -184,6 +184,14 @@ impl<'t> Value<'t> {
                     .any(|comment_directive| comment_directive.span().contains_inclusive(offset))
             })
     }
+
+    /// Whether the cursor selects this value as an array item.
+    /// A cursor on a string's boundary is outside the string, so the enclosing array is selected instead.
+    pub fn contains_as_array_item(&self, offset: tombi_text::Offset) -> bool {
+        self.contains(offset)
+            && !(matches!(self, Value::String(_))
+                && (self.span().start == offset || self.span().end == offset))
+    }
 }
 
 impl<'t> std::fmt::Display for Value<'t> {

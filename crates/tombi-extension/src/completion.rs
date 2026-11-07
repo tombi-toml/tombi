@@ -100,6 +100,12 @@ impl CompletionContent {
         }
     }
 
+    /// Sets the icon shown before the label, such as the language of the file the candidate belongs to.
+    pub fn with_emoji_icon(mut self, emoji_icon: char) -> Self {
+        self.emoji_icon = Some(emoji_icon);
+        self
+    }
+
     pub fn new_enum_value(
         label: String,
         detail: Option<String>,

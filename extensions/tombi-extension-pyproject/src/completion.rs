@@ -113,10 +113,11 @@ fn completion_uv_declared_name(
         // `default-groups = [█]`: insert into the list. Only the list itself is offered here,
         // not a string value such as `"all"`.
         (Value::Array(array), _) if array.span().contains_inclusive(offset) => {
-            CompletionNameTarget::Insert {
+            CompletionNameTarget::list_insert(
                 offset,
-                hint: completion_hint,
-            }
+                completion_hint,
+                array.iter().map(|item| item.span()),
+            )
         }
         _ if is_default_groups_list => return None,
         (Value::String(value), _) if value.span().contains_inclusive(offset) => {
@@ -161,10 +162,7 @@ fn completion_uv_declared_name(
         } else {
             &accessors[..accessors.len() - 1]
         };
-        let edited_span = match &target {
-            CompletionNameTarget::Replace { span, .. } => Some(*span),
-            CompletionNameTarget::Insert { .. } => None,
-        };
+        let edited_span = target.edited_span(offset);
         match dig_accessors(document_tree, list_accessors) {
             Some((_, Value::Array(items))) => items
                 .iter()
@@ -204,6 +202,7 @@ fn completion_uv_declared_name(
                 None,
                 None,
             )
+            .with_emoji_icon('🐍')
         })
         .collect_vec();
 
@@ -227,50 +226,58 @@ fn completion_workspace_dependency_name(
         return None;
     }
 
+    let list_accessors = if is_dependency_name_list_accessors(accessors) {
+        accessors
+    } else {
+        &accessors[..accessors.len() - 1]
+    };
     let (_, value) = dig_accessors(document_tree, accessors)?;
-    let target = match (value, completion_hint) {
+    let Some((_, Value::Array(list))) = dig_accessors(document_tree, list_accessors) else {
+        return None;
+    };
+    let target = match value {
         // `dependencies = [█]`: insert a new item into the list.
-        (Value::Array(array), _) if array.span().contains_inclusive(offset) => {
-            CompletionNameTarget::Insert {
+        Value::Array(array) if array.span().contains_inclusive(offset) => {
+            CompletionNameTarget::list_insert(
                 offset,
-                hint: completion_hint,
-            }
+                completion_hint,
+                list.iter().map(|item| item.span()),
+            )
         }
-        (Value::String(value), _)
+        // The cursor is inside an item: replace it.
+        Value::String(value)
             if is_dependency_name_accessors(accessors)
-                && value.span().contains_inclusive(offset) =>
+                && value.span().start < offset
+                && offset < value.span().end =>
         {
             CompletionNameTarget::Replace {
                 span: value.span(),
                 prefix: Some(value.value()),
             }
         }
+        // The cursor is on an item's boundary: insert a new item next to it.
+        Value::String(_) if is_dependency_name_accessors(accessors) => {
+            CompletionNameTarget::list_insert(
+                offset,
+                completion_hint,
+                list.iter().map(|item| item.span()),
+            )
+        }
         _ => return None,
     };
 
     // Names already written in the list are not offered again. The item being edited is excluded.
-    let list_accessors = if is_dependency_name_list_accessors(accessors) {
-        accessors
-    } else {
-        &accessors[..accessors.len() - 1]
-    };
-    let edited_span = match &target {
-        CompletionNameTarget::Replace { span, .. } => Some(*span),
-        CompletionNameTarget::Insert { .. } => None,
-    };
-    let existing_names = match dig_accessors(document_tree, list_accessors) {
-        Some((_, Value::Array(items))) => items
-            .iter()
-            .filter_map(|item| match item {
-                Value::String(item) if Some(item.span()) != edited_span => {
-                    parse_requirement(item.value())
-                        .map(|requirement| normalize_pep503_name(requirement.name.as_ref()))
-                }
-                _ => None,
-            })
-            .collect::<BTreeSet<_>>(),
-        _ => BTreeSet::new(),
-    };
+    let edited_span = target.edited_span(offset);
+    let existing_names = list
+        .iter()
+        .filter_map(|item| match item {
+            Value::String(item) if Some(item.span()) != edited_span => {
+                parse_requirement(item.value())
+                    .map(|requirement| normalize_pep503_name(requirement.name.as_ref()))
+            }
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
 
     let pyproject_toml_path = text_document_uri.to_file_path().ok()?;
     // Names from this file's `tool.uv.sources` are offered even when the workspace root is not found.
@@ -366,6 +373,7 @@ fn completion_workspace_dependency_name(
                 None,
                 None,
             )
+            .with_emoji_icon('🐍')
         })
         .collect_vec();
 
@@ -439,10 +447,7 @@ fn completion_include_group(
 
     // Groups already included by the same dependency group are not offered again.
     // `accessors[..2]` is the group array, whose items are `{ include-group = ... }` tables.
-    let edited_span = match &target {
-        CompletionNameTarget::Replace { span, .. } => Some(*span),
-        CompletionNameTarget::Insert { .. } => None,
-    };
+    let edited_span = target.edited_span(offset);
     let listed_groups = match dig_accessors(document_tree, &accessors[..2]) {
         Some((_, Value::Array(items))) => items
             .iter()
@@ -480,6 +485,7 @@ fn completion_include_group(
                     None,
                     None,
                 )
+                .with_emoji_icon('🐍')
             })
             .collect(),
     )

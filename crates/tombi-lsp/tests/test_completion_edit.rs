@@ -755,6 +755,66 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn pyproject_workspace_member_dependencies_middle_inserts_name_with_trailing_comma(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = ["anyio", █"pydantic"]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#,
+                Select("\"app2\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app3/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = ["anyio", "app2", "pydantic"]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_workspace_member_dependencies_after_item_without_comma_inserts_leading_comma(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = ["anyio"█]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#,
+                Select("\"app2\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app3/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = ["anyio", "app2"]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn pyproject_workspace_member_empty_dependencies_inserts_root_dependency(
                 r#"
                 [project]
@@ -779,6 +839,64 @@ mod completion_edit {
 
                 [tool.uv.sources]
                 app2 = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_uv_default_groups_before_item_inserts_with_trailing_comma(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+                test = []
+
+                [tool.uv]
+                default-groups = ["dev", █"lint"]
+                "#,
+                Select("\"test\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+                test = []
+
+                [tool.uv]
+                default-groups = ["dev", "test", "lint"]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_required_features_after_item_inserts_with_leading_comma(
+                r#"
+                [features]
+                fast = []
+                slow = []
+
+                [[bin]]
+                name = "app"
+                required-features = ["fast"█]
+                "#,
+                Select("\"slow\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(tombi_test_lib::cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [features]
+                fast = []
+                slow = []
+
+                [[bin]]
+                name = "app"
+                required-features = ["fast", "slow"]
                 "#
             );
         }
