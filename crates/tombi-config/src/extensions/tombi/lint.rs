@@ -62,12 +62,6 @@ impl TombiLintFeatures {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TombiLintRules {
-    /// Report an `extends` entry that is not a valid config file path or URL.
-    ///
-    /// ```toml
-    /// extends = ["../shared/tombi.toml"] # no file exists at this path
-    /// ```
-    pub invalid_extends: SeverityLevel,
     /// Report a local schema catalog path that does not point to a file.
     ///
     /// ```toml
@@ -87,7 +81,6 @@ pub struct TombiLintRules {
 impl Default for TombiLintRules {
     fn default() -> Self {
         Self {
-            invalid_extends: SeverityLevel::Error,
             missing_catalog_path: SeverityLevel::Warn,
             missing_schema_path: SeverityLevel::Warn,
         }
@@ -97,7 +90,6 @@ impl Default for TombiLintRules {
 impl TombiLintRules {
     pub fn off() -> Self {
         Self {
-            invalid_extends: SeverityLevel::Off,
             missing_catalog_path: SeverityLevel::Off,
             missing_schema_path: SeverityLevel::Off,
         }

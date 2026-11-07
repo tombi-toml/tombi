@@ -5,27 +5,21 @@ use tombi_uri::{CatalogUri, SchemaUri};
 
 use crate::extends::{self, ExtendsTarget};
 
-/// Validate local schema and catalog paths configured in a Tombi config file.
+/// Validate `extends` and the local schema and catalog paths configured in a Tombi config file.
 pub fn validate(
     document_tree: &DocumentTree<'_>,
     source_path: Option<&Path>,
     options: &tombi_config::TombiLintFeatureTree,
 ) -> Vec<tombi_diagnostic::Diagnostic> {
-    let rules = options.rules.unwrap_or_default();
-    if rules == tombi_config::TombiLintRules::off() {
-        return Vec::new();
+    let mut diagnostics = Vec::new();
+    // A broken `extends` fails config loading whatever the lint settings are.
+    if let Some(source_path) = source_path {
+        validate_extends(document_tree, source_path, &mut diagnostics);
     }
 
-    let mut diagnostics = Vec::new();
-    if rules.invalid_extends != tombi_config::SeverityLevel::Off
-        && let Some(source_path) = source_path
-    {
-        validate_extends(
-            document_tree,
-            source_path,
-            rules.invalid_extends,
-            &mut diagnostics,
-        );
+    let rules = options.rules.unwrap_or_default();
+    if rules == tombi_config::TombiLintRules::off() {
+        return diagnostics;
     }
 
     if !schema_validation_enabled(document_tree) {
@@ -89,7 +83,6 @@ pub fn validate(
 fn validate_extends(
     document_tree: &DocumentTree<'_>,
     source_path: &Path,
-    severity: tombi_config::SeverityLevel,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
     let references = match document_tree.get("extends") {
@@ -116,13 +109,11 @@ fn validate_extends(
             Ok(_) => continue,
             Err(reason) => format!("invalid extends `{}`: {reason}", reference.value()),
         };
-        push_diagnostic(
+        diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
             message,
             "tombi/invalid-extends",
-            severity,
             reference.span(),
-            diagnostics,
-        );
+        ));
     }
 }
 

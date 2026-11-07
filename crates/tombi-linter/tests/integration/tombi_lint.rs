@@ -56,7 +56,6 @@ fn config(
                 lint: Some(tombi_config::TombiLintFeatures::Features(
                     tombi_config::TombiLintFeatureTree {
                         rules: Some(tombi_config::TombiLintRules {
-                            invalid_extends: tombi_config::SeverityLevel::Error,
                             missing_schema_path,
                             missing_catalog_path,
                         }),
@@ -194,6 +193,34 @@ test_lint! {
     fn invalid_extends_are_reported(
         INVALID_EXTENDS,
         SourcePath(dot_tombi_path()),
+    ) -> Diagnostics([{
+        code: "tombi/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "missing-extends-for-tombi-lint-test/tombi.toml")
+    }, {
+        code: "tombi/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "ftp://example.org/tombi.toml")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn invalid_extends_are_reported_even_if_tombi_extension_is_disabled(
+        INVALID_EXTENDS,
+        SourcePath(dot_tombi_path()),
+        Config({
+            let mut config = tombi_config::Config::default();
+            config.extensions = Some(tombi_config::Extensions {
+                cargo: None,
+                nagi_sql: None,
+                pyproject: None,
+                tombi: Some(tombi_config::TombiExtensionFeatures::Enabled(
+                    tombi_config::EnabledOnly { enabled: false.into() },
+                )),
+            });
+            config
+        }),
     ) -> Diagnostics([{
         code: "tombi/invalid-extends",
         level: Level::ERROR,
