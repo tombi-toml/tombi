@@ -4,13 +4,14 @@ use itertools::Itertools;
 use tombi_config::TomlVersion;
 use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
 use tombi_extension::{
-    CompletionContent, CompletionEdit, CompletionHint, CompletionNameTarget,
-    completion_directory_path, completion_file_path_from_uri,
+    CompletionContent, CompletionHint, CompletionNameTarget, completion_directory_path,
+    completion_file_path_from_uri,
 };
 use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::accessors::{
     is_dependency_groups_include_group_accessors, is_dependency_name_accessors,
+    is_dependency_name_list_accessors,
 };
 use crate::dependency::{normalize_pep503_name, parse_requirement};
 use crate::manifest::{find_workspace_pyproject_toml, get_project_name};
@@ -83,6 +84,7 @@ pub async fn completion(
         offset,
         accessors,
         toml_version,
+        completion_hint,
     ))
 }
 
@@ -190,19 +192,35 @@ fn completion_workspace_dependency_name(
     offset: tombi_text::Offset,
     accessors: &[Accessor],
     toml_version: TomlVersion,
+    completion_hint: Option<CompletionHint>,
 ) -> Option<Vec<CompletionContent>> {
-    if !is_dependency_name_accessors(accessors) {
+    if !is_dependency_name_accessors(accessors) && !is_dependency_name_list_accessors(accessors) {
         return None;
     }
 
-    let (_, Value::String(value)) = dig_accessors(document_tree, accessors)? else {
-        return None;
+    let (_, value) = dig_accessors(document_tree, accessors)?;
+    let target = match (value, completion_hint) {
+        // `dependencies = [█]`: insert a new item into the list.
+        (Value::Array(array), _) if array.span().contains_inclusive(offset) => {
+            CompletionNameTarget::Insert {
+                offset,
+                hint: completion_hint,
+            }
+        }
+        (Value::String(value), _)
+            if is_dependency_name_accessors(accessors)
+                && value.span().contains_inclusive(offset) =>
+        {
+            CompletionNameTarget::Replace {
+                span: value.span(),
+                prefix: Some(value.value()),
+            }
+        }
+        _ => return None,
     };
-    if !value.span().contains_inclusive(offset) {
-        return None;
-    }
 
     let pyproject_toml_path = text_document_uri.to_file_path().ok()?;
+    // Names from this file's `tool.uv.sources` are offered even when the workspace root is not found.
     let workspace_dependency_names = find_workspace_pyproject_toml(
         &pyproject_toml_path,
         toml_version,
@@ -258,7 +276,8 @@ fn completion_workspace_dependency_name(
             )
         },
     )
-    .flatten()?;
+    .flatten()
+    .unwrap_or_default();
 
     let workspace_member_names = match dig_keys(document_tree, &["tool", "uv", "sources"]) {
         Some((_, Value::Table(sources))) => sources
@@ -277,10 +296,14 @@ fn completion_workspace_dependency_name(
         .chain(workspace_member_names)
         .filter(|name| Some(normalize_pep503_name(name)) != project_name)
         .unique()
-        .filter(|name| name.starts_with(value.value()))
+        .filter(|name| {
+            target
+                .prefix()
+                .is_none_or(|prefix| name.starts_with(prefix))
+        })
         .map(|name| {
             let label = serde_json::Value::String(name).to_string();
-            let edit = CompletionEdit::new_string_literal_while_editing(&label, value.span());
+            let edit = target.edit(&label);
             CompletionContent::new_enum_value(
                 label,
                 Some("Workspace dependency".to_string()),
