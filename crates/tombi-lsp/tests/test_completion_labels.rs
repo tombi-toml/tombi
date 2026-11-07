@@ -2554,6 +2554,52 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn pyproject_uv_default_groups_excludes_listed_group(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+
+                [tool.uv]
+                default-groups = ["dev", █]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                "\"lint\"",
+                "\"\"",
+                "\"\"\"\"\"\"",
+                "''",
+                "''''''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_include_group_excludes_already_included_group(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+                qa = [{ include-group = "dev" }, { include-group = █ }]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                "\"lint\"",
+                "\"\"",
+                "\"\"\"\"\"\"",
+                "''",
+                "''''''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn pyproject_workspace_non_member_dependency_name_is_not_completed(
                 r#"
                 [project]
@@ -3562,6 +3608,68 @@ mod completion_labels {
                 "''",
                 "''''''",
                 "{}",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_bin_required_features_excludes_listed_feature(
+                r#"
+                [features]
+                fast = []
+                slow = []
+
+                [[bin]]
+                name = "app"
+                required-features = ["fast", █]
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"slow\"",
+                "\"\"",
+                "\"\"\"\"\"\"",
+                "''",
+                "''''''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_bin_required_features_editing_item_keeps_its_own_name(
+                r#"
+                [features]
+                fast = []
+                slow = []
+
+                [[bin]]
+                name = "app"
+                required-features = ["fast█"]
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"fast\"",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_features_list_excludes_listed_feature(
+                r#"
+                [features]
+                fast = []
+                slow = []
+                default = ["fast", █]
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"slow\"",
+                "\"\"",
+                "\"\"\"\"\"\"",
+                "''",
+                "''''''",
             ]);
         }
 

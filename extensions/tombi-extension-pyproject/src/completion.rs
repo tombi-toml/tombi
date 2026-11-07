@@ -153,12 +153,41 @@ fn completion_uv_declared_name(
         _ => return None,
     };
 
+    // Groups already listed in `default-groups` are not offered again. The item being edited is not counted.
+    let is_default_groups_item = matches_accessors!(accessors, ["tool", "uv", "default-groups", _]);
+    let listed_names = if is_default_groups_list || is_default_groups_item {
+        let list_accessors = if is_default_groups_list {
+            accessors
+        } else {
+            &accessors[..accessors.len() - 1]
+        };
+        let edited_span = match &target {
+            CompletionNameTarget::Replace { span, .. } => Some(*span),
+            CompletionNameTarget::Insert { .. } => None,
+        };
+        match dig_accessors(document_tree, list_accessors) {
+            Some((_, Value::Array(items))) => items
+                .iter()
+                .filter_map(|item| match item {
+                    Value::String(item) if Some(item.span()) != edited_span => {
+                        Some(item.value().to_owned())
+                    }
+                    _ => None,
+                })
+                .collect::<BTreeSet<_>>(),
+            _ => BTreeSet::new(),
+        }
+    } else {
+        BTreeSet::new()
+    };
+
     let (_, Value::Table(names)) = dig_keys(document_tree, table_keys)? else {
         return None;
     };
 
     let completions = names
         .keys()
+        .filter(|name| !listed_names.contains(name.value()))
         .filter(|name| {
             target
                 .prefix()
@@ -408,10 +437,33 @@ fn completion_include_group(
         _ => None,
     };
 
+    // Groups already included by the same dependency group are not offered again.
+    // `accessors[..2]` is the group array, whose items are `{ include-group = ... }` tables.
+    let edited_span = match &target {
+        CompletionNameTarget::Replace { span, .. } => Some(*span),
+        CompletionNameTarget::Insert { .. } => None,
+    };
+    let listed_groups = match dig_accessors(document_tree, &accessors[..2]) {
+        Some((_, Value::Array(items))) => items
+            .iter()
+            .filter_map(|item| match item {
+                Value::Table(table) => match table.get("include-group") {
+                    Some(Value::String(group)) if Some(group.span()) != edited_span => {
+                        Some(group.value().to_owned())
+                    }
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect::<BTreeSet<_>>(),
+        _ => BTreeSet::new(),
+    };
+
     Some(
         groups
             .keys()
             .filter(|key| Some(key.value()) != current_group)
+            .filter(|key| !listed_groups.contains(key.value()))
             .filter(|key| {
                 target
                     .prefix()
