@@ -15,7 +15,7 @@ async fn main() {
     let search_dir = Some(PathBuf::from(root));
     let (config, _config_path) = match serde_tombi::config::load_with_path(
         search_dir,
-        tombi_schema_store::http_client(false, None).as_ref(),
+        tombi_schema_store::http_client(Default::default()).as_ref(),
     )
     .await
     {

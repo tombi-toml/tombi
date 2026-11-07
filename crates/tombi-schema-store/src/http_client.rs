@@ -25,17 +25,37 @@ pub trait HttpClient: std::fmt::Debug + Send + Sync {
 
 pub type ContentValidator<'a> = dyn Fn(&[u8]) -> bool + Send + Sync + 'a;
 
+/// Options of the [`HttpClient`] that reads remote files.
+#[derive(Debug, Clone)]
+pub struct Options {
+    /// Serve cached content only, without reaching the network.
+    pub offline: bool,
+    pub cache: Option<tombi_cache::Options>,
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Self {
+            offline: false,
+            cache: Some(tombi_cache::Options::default()),
+        }
+    }
+}
+
+impl From<&crate::Options> for Options {
+    fn from(options: &crate::Options) -> Self {
+        Self {
+            offline: options.offline.unwrap_or_default(),
+            cache: options.cache.clone(),
+        }
+    }
+}
+
 /// The [`HttpClient`] used to read remote files, backed by the shared on-disk cache.
-///
-/// When `offline` is set, only cached content is served.
-pub fn http_client(
-    offline: bool,
-    cache_options: Option<tombi_cache::Options>,
-) -> std::sync::Arc<dyn HttpClient> {
+pub fn http_client(options: Options) -> std::sync::Arc<dyn HttpClient> {
     std::sync::Arc::new(CachedHttpClient::new(
         std::sync::Arc::new(DefaultHttpClient::new()),
-        cache_options,
-        offline,
+        options,
     ))
 }
 

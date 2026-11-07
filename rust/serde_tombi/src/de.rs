@@ -146,8 +146,7 @@ impl Deserializer<'_> {
                     let (config, config_path) = crate::config::load_with_path(
                         std::env::current_dir().ok(),
                         tombi_schema_store::http_client(
-                            false,
-                            tombi_schema_store::Options::default().cache,
+                            tombi_schema_store::HttpClientOptions::default(),
                         )
                         .as_ref(),
                     )
@@ -697,7 +696,7 @@ optional_string = "provided"
         let config = crate::config::from_str(
             &std::fs::read_to_string(&config_path).unwrap(),
             &config_path,
-            tombi_schema_store::http_client(false, tombi_schema_store::Options::default().cache)
+            tombi_schema_store::http_client(tombi_schema_store::HttpClientOptions::default())
                 .as_ref(),
         )
         .await

@@ -126,8 +126,7 @@ impl Serializer<'_> {
                         loaded_config = crate::config::load_with_path(
                             std::env::current_dir().ok(),
                             tombi_schema_store::http_client(
-                                false,
-                                tombi_schema_store::Options::default().cache,
+                                tombi_schema_store::HttpClientOptions::default(),
                             )
                             .as_ref(),
                         )

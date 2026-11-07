@@ -299,11 +299,7 @@ impl SchemaStore {
         http_client: Arc<dyn HttpClient>,
         fetch_policy: Arc<SchemaFetchPolicy>,
     ) -> Self {
-        let http_client = Arc::new(crate::CachedHttpClient::new(
-            http_client,
-            options.cache.clone(),
-            options.offline.unwrap_or_default(),
-        ));
+        let http_client = Arc::new(crate::CachedHttpClient::new(http_client, (&options).into()));
         Self {
             http_client,
             fetch_policy,

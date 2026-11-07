@@ -118,10 +118,10 @@ impl ConfigManager {
             schema_store_operation_lock: tokio::sync::Mutex::new(()),
             default_config_schema_store: Arc::new(tokio::sync::RwLock::new(None)),
             backend_options: backend_options.clone(),
-            http_client: tombi_schema_store::http_client(
-                backend_options.offline.unwrap_or(false),
-                Some(backend_options.cache.clone()),
-            ),
+            http_client: tombi_schema_store::http_client(tombi_schema_store::HttpClientOptions {
+                offline: backend_options.offline.unwrap_or_default(),
+                cache: Some(backend_options.cache.clone()),
+            }),
             associated_schemas: Arc::new(tokio::sync::RwLock::new(Vec::new())),
         }
     }

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bytes::Bytes;
 use tombi_future::Boxable;
 
-use super::{ContentValidator, FetchError, HttpClient, HttpFuture};
+use super::{ContentValidator, FetchError, HttpClient, HttpFuture, Options};
 
 /// An [`HttpClient`] that serves responses through the on-disk cache shared by schemas and configs.
 ///
@@ -12,21 +12,12 @@ use super::{ContentValidator, FetchError, HttpClient, HttpFuture};
 #[derive(Debug, Clone)]
 pub struct CachedHttpClient {
     inner: Arc<dyn HttpClient>,
-    cache_options: Option<tombi_cache::Options>,
-    offline: bool,
+    options: Options,
 }
 
 impl CachedHttpClient {
-    pub fn new(
-        inner: Arc<dyn HttpClient>,
-        cache_options: Option<tombi_cache::Options>,
-        offline: bool,
-    ) -> Self {
-        Self {
-            inner,
-            cache_options,
-            offline,
-        }
+    pub fn new(inner: Arc<dyn HttpClient>, options: Options) -> Self {
+        Self { inner, options }
     }
 
     async fn get_bytes_cached(
@@ -40,14 +31,14 @@ impl CachedHttpClient {
         };
 
         if let Ok(Some(content)) =
-            tombi_cache::read_from_cache(cache_path.as_deref(), self.cache_options.as_ref()).await
+            tombi_cache::read_from_cache(cache_path.as_deref(), self.options.cache.as_ref()).await
             && is_valid(content.as_bytes())
         {
             log::trace!("load from cache: {url}");
             return Ok(Bytes::from(content));
         }
 
-        if self.offline {
+        if self.options.offline {
             return match self.read_stale_cache(cache_path.as_deref(), is_valid).await {
                 Some(bytes) => Ok(bytes),
                 None => Err(FetchError::Offline),
@@ -77,7 +68,7 @@ impl CachedHttpClient {
         cache_path: Option<&std::path::Path>,
         is_valid: &ContentValidator<'_>,
     ) -> Option<Bytes> {
-        let mut cache_options = self.cache_options.clone().unwrap_or_default();
+        let mut cache_options = self.options.cache.clone().unwrap_or_default();
         cache_options.cache_ttl = None;
         tombi_cache::read_from_cache(cache_path, Some(&cache_options))
             .await
@@ -169,8 +160,10 @@ mod tests {
         let inner = FakeHttpClient::new(Ok("fetched"));
         let client = CachedHttpClient::new(
             inner.clone(),
-            cache_options(std::time::Duration::from_secs(60)),
-            false,
+            Options {
+                offline: false,
+                cache: cache_options(std::time::Duration::from_secs(60)),
+            },
         );
 
         assert_eq!(client.get_bytes(URL).await.unwrap(), "fetched");
@@ -184,8 +177,10 @@ mod tests {
         let inner = FakeHttpClient::new(Ok("<html>"));
         let client = CachedHttpClient::new(
             inner.clone(),
-            cache_options(std::time::Duration::from_secs(60)),
-            false,
+            Options {
+                offline: false,
+                cache: cache_options(std::time::Duration::from_secs(60)),
+            },
         );
 
         let is_valid = |_: &[u8]| false;
@@ -199,7 +194,13 @@ mod tests {
         let _cache_home = TestCacheHome::new();
         write_cache(b"stale", std::time::Duration::from_secs(60 * 60 * 25)).await;
         let inner = FakeHttpClient::new(Ok("fetched"));
-        let client = CachedHttpClient::new(inner.clone(), None, true);
+        let client = CachedHttpClient::new(
+            inner.clone(),
+            Options {
+                offline: true,
+                cache: None,
+            },
+        );
 
         assert_eq!(client.get_bytes(URL).await.unwrap(), "stale");
         assert_eq!(inner.calls(), 0);
@@ -209,7 +210,13 @@ mod tests {
     async fn offline_without_cache_fails_with_offline() {
         let _cache_home = TestCacheHome::new();
         let inner = FakeHttpClient::new(Ok("fetched"));
-        let client = CachedHttpClient::new(inner.clone(), None, true);
+        let client = CachedHttpClient::new(
+            inner.clone(),
+            Options {
+                offline: true,
+                cache: None,
+            },
+        );
 
         assert!(matches!(
             client.get_bytes(URL).await,
@@ -225,8 +232,10 @@ mod tests {
         let inner = FakeHttpClient::new(Err(FetchError::StatusNotOk { status: 500 }));
         let client = CachedHttpClient::new(
             inner.clone(),
-            cache_options(std::time::Duration::from_secs(60)),
-            false,
+            Options {
+                offline: false,
+                cache: cache_options(std::time::Duration::from_secs(60)),
+            },
         );
 
         assert_eq!(client.get_bytes(URL).await.unwrap(), "stale");
@@ -240,8 +249,10 @@ mod tests {
         let inner = FakeHttpClient::new(Err(FetchError::HostNotTrusted));
         let client = CachedHttpClient::new(
             inner,
-            cache_options(std::time::Duration::from_secs(60)),
-            false,
+            Options {
+                offline: false,
+                cache: cache_options(std::time::Duration::from_secs(60)),
+            },
         );
 
         assert!(matches!(

@@ -313,7 +313,10 @@ mod tests {
     }
 
     fn offline_client() -> std::sync::Arc<dyn HttpClient> {
-        tombi_schema_store::http_client(true, None)
+        tombi_schema_store::http_client(tombi_schema_store::HttpClientOptions {
+            offline: true,
+            cache: None,
+        })
     }
 
     #[tokio::test]

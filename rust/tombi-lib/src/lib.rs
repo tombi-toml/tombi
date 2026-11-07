@@ -50,7 +50,7 @@ async fn load_config(
     options: Options,
 ) -> Result<(tombi_config::Config, Option<std::path::PathBuf>), Error> {
     let http_client =
-        tombi_schema_store::http_client(false, tombi_schema_store::Options::default().cache);
+        tombi_schema_store::http_client(tombi_schema_store::HttpClientOptions::default());
     if let Some(config) = options.config {
         let (config_content, config_path) = match config {
             ConfigInput::File { content, path } => (content, path),
