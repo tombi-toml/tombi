@@ -4,6 +4,7 @@ mod files;
 pub mod format;
 mod level;
 mod lint;
+mod options;
 mod overrides;
 mod schema;
 mod server;
@@ -15,6 +16,7 @@ pub use files::FilesOptions;
 pub use format::*;
 pub use level::*;
 pub use lint::*;
+pub use options::Options;
 pub use overrides::*;
 pub use schema::SchemaOverviewOptions;
 pub use schema::{

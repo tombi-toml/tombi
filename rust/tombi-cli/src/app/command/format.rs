@@ -191,7 +191,9 @@ where
     let (config, config_path, config_level) = runtime
         .block_on(serde_tombi::config::load_with_path_and_level(
             std::env::current_dir().ok(),
-            args.common.offline,
+            tombi_config::Options {
+                offline: args.common.offline,
+            },
         ))
         .inspect_err(|_| {
             if FileInputType::from(args.files.as_ref()) == FileInputType::Stdin

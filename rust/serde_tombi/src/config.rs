@@ -13,9 +13,9 @@ pub use inheritance::ConfigSourceCache;
 pub async fn from_str(
     toml_text: &str,
     config_path: &std::path::Path,
-    offline: bool,
+    options: tombi_config::Options,
 ) -> Result<Config, tombi_config::Error> {
-    inheritance::from_str(toml_text, config_path, offline).await
+    inheritance::from_str(toml_text, config_path, options).await
 }
 
 #[derive(Debug, Clone)]
@@ -72,23 +72,23 @@ fn validate_config_path(config_path: &std::path::Path) -> Result<(), tombi_confi
 
 pub async fn try_from_path<P: AsRef<std::path::Path>>(
     config_path: P,
-    offline: bool,
+    options: tombi_config::Options,
 ) -> Result<Option<Config>, tombi_config::Error> {
     Ok(ConfigSourceCache::default()
-        .try_from_path(config_path, offline)
+        .try_from_path(config_path, options)
         .await?
         .map(|report| report.config))
 }
 
 pub async fn load_with_path_and_level(
     search_dir: Option<std::path::PathBuf>,
-    offline: bool,
+    options: tombi_config::Options,
 ) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
     for candidate in config_candidates(search_dir) {
         if !tombi_fs::is_file(&candidate.path) {
             continue;
         }
-        match try_from_path(&candidate.path, offline).await {
+        match try_from_path(&candidate.path, options).await {
             Ok(Some(config)) => return Ok((config, Some(candidate.path), candidate.level)),
             Ok(None) => {}
             Err(error @ tombi_config::Error::ConfigOffline { .. }) => return Err(error),
@@ -100,17 +100,17 @@ pub async fn load_with_path_and_level(
 
 pub async fn load_with_path(
     search_dir: Option<std::path::PathBuf>,
-    offline: bool,
+    options: tombi_config::Options,
 ) -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
-    let (config, config_path, _) = load_with_path_and_level(search_dir, offline).await?;
+    let (config, config_path, _) = load_with_path_and_level(search_dir, options).await?;
     Ok((config, config_path))
 }
 
 pub async fn load(
     search_dir: Option<std::path::PathBuf>,
-    offline: bool,
+    options: tombi_config::Options,
 ) -> Result<Config, tombi_config::Error> {
-    let (config, _, _) = load_with_path_and_level(search_dir, offline).await?;
+    let (config, _, _) = load_with_path_and_level(search_dir, options).await?;
     Ok(config)
 }
 
@@ -227,9 +227,10 @@ mod tests {
             "toml-version = \"v1.0.0\"\n",
         );
 
-        let (config, config_path, config_level) = load_with_path_and_level(Some(nested_dir), false)
-            .await
-            .unwrap();
+        let (config, config_path, config_level) =
+            load_with_path_and_level(Some(nested_dir), tombi_config::Options::default())
+                .await
+                .unwrap();
 
         assert_eq!(config.toml_version, Some(TomlVersion::V1_0_0));
         assert_eq!(config_path, Some(temp_dir.path().join(TOMBI_TOML_FILENAME)));
@@ -251,9 +252,10 @@ mod tests {
             "[tool.tombi]\ntoml-version = \"v1.0.0\"\n",
         );
 
-        let (config, config_path, config_level) = load_with_path_and_level(Some(nested_dir), false)
-            .await
-            .unwrap();
+        let (config, config_path, config_level) =
+            load_with_path_and_level(Some(nested_dir), tombi_config::Options::default())
+                .await
+                .unwrap();
 
         assert_eq!(config.toml_version, Some(TomlVersion::V1_1_0));
         assert_eq!(
@@ -278,9 +280,10 @@ mod tests {
             "toml-version = \"v1.0.0\"\n",
         );
 
-        let (config, config_path, config_level) = load_with_path_and_level(Some(nested_dir), false)
-            .await
-            .unwrap();
+        let (config, config_path, config_level) =
+            load_with_path_and_level(Some(nested_dir), tombi_config::Options::default())
+                .await
+                .unwrap();
 
         assert_eq!(config.toml_version, Some(TomlVersion::V1_0_0));
         assert_eq!(
@@ -300,7 +303,10 @@ mod tests {
         let config_path = temp_dir.path().join("app/tombi.toml");
         write_file(&config_path, "extends = \"../shared/.tombi.toml\"\n");
 
-        let config = try_from_path(&config_path, true).await.unwrap().unwrap();
+        let config = try_from_path(&config_path, tombi_config::Options { offline: true })
+            .await
+            .unwrap()
+            .unwrap();
 
         assert_eq!(config.toml_version, Some(TomlVersion::V1_0_0));
     }
@@ -315,7 +321,9 @@ mod tests {
         let config_path = temp_dir.path().join("app/tombi.toml");
         write_file(&config_path, "extends = \"../shared/base.toml\"\n");
 
-        let error = try_from_path(&config_path, true).await.unwrap_err();
+        let error = try_from_path(&config_path, tombi_config::Options { offline: true })
+            .await
+            .unwrap_err();
 
         assert!(
             matches!(error, tombi_config::Error::ConfigExtendsInvalid { .. }),

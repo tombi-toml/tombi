@@ -385,7 +385,7 @@ impl ConfigSourceCache {
     pub async fn try_from_path<P: AsRef<std::path::Path>>(
         &mut self,
         config_path: P,
-        offline: bool,
+        options: tombi_config::Options,
     ) -> Result<Option<super::ConfigLoadReport>, tombi_config::Error> {
         let config_path = config_path.as_ref();
         super::validate_config_path(config_path)?;
@@ -413,7 +413,7 @@ impl ConfigSourceCache {
             return Ok(None);
         };
 
-        resolve(root, offline, self).await.map(Some)
+        resolve(root, options.offline, self).await.map(Some)
     }
 
     pub fn invalidate_local_paths(&mut self, paths: &[PathBuf]) -> bool {
@@ -741,7 +741,7 @@ async fn resolve(
 pub(crate) async fn from_str(
     text: &str,
     config_path: &std::path::Path,
-    offline: bool,
+    options: tombi_config::Options,
 ) -> Result<tombi_config::Config, tombi_config::Error> {
     let source = ConfigSource::from_path(config_path.to_owned());
     let root = parse_document(text, source.clone(), false)?.ok_or_else(|| {
@@ -751,7 +751,7 @@ pub(crate) async fn from_str(
         }
     })?;
     let mut source_cache = ConfigSourceCache::default();
-    resolve(root, offline, &mut source_cache)
+    resolve(root, options.offline, &mut source_cache)
         .await
         .map(|report| report.config)
 }

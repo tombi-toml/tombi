@@ -13,15 +13,17 @@ async fn main() {
     );
 
     let search_dir = Some(PathBuf::from(root));
-    let (config, _config_path) = match serde_tombi::config::load_with_path(search_dir, false).await
-    {
-        Ok(config) => config,
-        Err(err) => {
-            eprintln!("Warning: Failed to load .tombi.toml/tombi.toml: {err}");
-            eprintln!("Using default configuration");
-            (Default::default(), None)
-        }
-    };
+    let (config, _config_path) =
+        match serde_tombi::config::load_with_path(search_dir, tombi_config::Options::default())
+            .await
+        {
+            Ok(config) => config,
+            Err(err) => {
+                eprintln!("Warning: Failed to load .tombi.toml/tombi.toml: {err}");
+                eprintln!("Using default configuration");
+                (Default::default(), None)
+            }
+        };
 
     let files_options = config.files.clone().unwrap_or_default();
 

@@ -123,9 +123,11 @@ impl Serializer<'_> {
                 let (config, config_path) = match self.config {
                     Some(config) => (config, self.config_path),
                     None => {
-                        loaded_config =
-                            crate::config::load_with_path(std::env::current_dir().ok(), false)
-                                .await?;
+                        loaded_config = crate::config::load_with_path(
+                            std::env::current_dir().ok(),
+                            tombi_config::Options::default(),
+                        )
+                        .await?;
                         (&loaded_config.0, loaded_config.1.as_deref())
                     }
                 };
