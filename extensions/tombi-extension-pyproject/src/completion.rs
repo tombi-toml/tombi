@@ -143,9 +143,15 @@ fn completion_include_group(
         return None;
     };
 
+    let current_group = match accessors.get(1) {
+        Some(Accessor::Key(key)) => Some(key.as_str()),
+        _ => None,
+    };
+
     Some(
         groups
             .keys()
+            .filter(|key| Some(key.value()) != current_group)
             .filter(|key| {
                 target
                     .prefix()

@@ -2405,6 +2405,22 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn pyproject_dependency_groups_include_group_excludes_own_group(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+                qa = [{ include-group = "█" }]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(["\"dev\"", "\"lint\""]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn pyproject_dependency_groups_include_group_ignores_invalid_triple_quoted_value(
                 r#"
                 [dependency-groups]
