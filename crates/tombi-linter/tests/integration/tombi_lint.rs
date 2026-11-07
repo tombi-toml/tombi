@@ -194,11 +194,11 @@ test_lint! {
         INVALID_EXTENDS,
         SourcePath(dot_tombi_path()),
     ) -> Diagnostics([{
-        code: "tombi/invalid-extends",
+        code: "config/invalid-extends",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "missing-extends-for-tombi-lint-test/tombi.toml")
     }, {
-        code: "tombi/invalid-extends",
+        code: "config/invalid-extends",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "ftp://example.org/tombi.toml")
     }])
@@ -222,11 +222,11 @@ test_lint! {
             config
         }),
     ) -> Diagnostics([{
-        code: "tombi/invalid-extends",
+        code: "config/invalid-extends",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "missing-extends-for-tombi-lint-test/tombi.toml")
     }, {
-        code: "tombi/invalid-extends",
+        code: "config/invalid-extends",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "ftp://example.org/tombi.toml")
     }])

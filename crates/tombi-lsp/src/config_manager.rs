@@ -773,6 +773,75 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn reload_config_keeps_previous_config_when_extends_is_invalid() {
+        let _cache_home = tombi_test_lib::TestCacheHome::new();
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("tombi.toml");
+        write_file(&config_path, "toml-version = \"v1.0.0\"\n");
+
+        let manager = ConfigManager::new(&crate::backend::Options {
+            offline: Some(true),
+            ..Default::default()
+        });
+        assert_eq!(
+            toml_version(&manager, temp_dir.path()).await,
+            Some(tombi_config::TomlVersion::V1_0_0)
+        );
+
+        for extends in [
+            "missing/tombi.toml",
+            "base.toml",
+            "ftp://example.org/tombi.toml",
+        ] {
+            write_file(
+                &config_path,
+                &format!("toml-version = \"v1.1.0\"\nextends = \"{extends}\"\n"),
+            );
+            write_file(&temp_dir.path().join("base.toml"), "");
+
+            assert!(!manager.reload_config(&config_path).await.unwrap());
+            assert_eq!(
+                toml_version(&manager, temp_dir.path()).await,
+                Some(tombi_config::TomlVersion::V1_0_0),
+                "extends = {extends}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn reload_config_keeps_dependents_when_extended_config_becomes_invalid() {
+        let _cache_home = tombi_test_lib::TestCacheHome::new();
+        let temp_dir = tempfile::tempdir().unwrap();
+        let base_path = temp_dir.path().join("shared/tombi.toml");
+        let app_dir = temp_dir.path().join("app");
+        write_file(&base_path, "toml-version = \"v1.0.0\"\n");
+        write_file(
+            &app_dir.join("tombi.toml"),
+            "extends = \"../shared/tombi.toml\"\n",
+        );
+
+        let manager = ConfigManager::new(&crate::backend::Options {
+            offline: Some(true),
+            ..Default::default()
+        });
+        assert_eq!(
+            toml_version(&manager, &app_dir).await,
+            Some(tombi_config::TomlVersion::V1_0_0)
+        );
+
+        write_file(
+            &base_path,
+            "toml-version = \"v1.1.0\"\nextends = \"missing/tombi.toml\"\n",
+        );
+        assert!(!manager.reload_config(&base_path).await.unwrap());
+
+        assert_eq!(
+            toml_version(&manager, &app_dir).await,
+            Some(tombi_config::TomlVersion::V1_0_0)
+        );
+    }
+
     #[test]
     fn dependency_graph_forgets_removed_dependencies() {
         let mut graph = ConfigDependencyGraph::default();

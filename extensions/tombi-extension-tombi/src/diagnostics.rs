@@ -111,7 +111,7 @@ fn validate_extends(
         };
         diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
             message,
-            "tombi/invalid-extends",
+            "config/invalid-extends",
             reference.span(),
         ));
     }
