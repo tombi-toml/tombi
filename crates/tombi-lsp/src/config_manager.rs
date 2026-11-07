@@ -106,13 +106,19 @@ impl ConfigManager {
         &self,
         text_document_path: &Path,
     ) -> ConfigSchemaStore {
-        if let Some(store) = self.cached_store_for_file(text_document_path).await {
-            return store;
+        let cached_config_path = self
+            .source_config_paths
+            .read()
+            .await
+            .get(text_document_path)
+            .cloned();
+        if let Some(config_path) = cached_config_path
+            && let Some(config) = self.config_schema_stores.read().await.get(&config_path)
+        {
+            return config.store.clone();
         }
+
         let mut source_cache = self.config_source_cache.lock().await;
-        if let Some(store) = self.cached_store_for_file(text_document_path).await {
-            return store;
-        }
         let store = self
             .config_schema_store_for_directory_locked(
                 text_document_path.parent().map(ToOwned::to_owned),
@@ -126,15 +132,6 @@ impl ConfigManager {
                 .insert(text_document_path.to_owned(), config_path.clone());
         }
         store
-    }
-
-    async fn cached_store_for_file(&self, path: &Path) -> Option<ConfigSchemaStore> {
-        let config_path = self.source_config_paths.read().await.get(path).cloned()?;
-        self.config_schema_stores
-            .read()
-            .await
-            .get(&config_path)
-            .map(|config| config.store.clone())
     }
 
     pub async fn config_schema_store_for_directory(
