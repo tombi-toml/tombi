@@ -219,6 +219,30 @@ fn completion_workspace_dependency_name(
         _ => return None,
     };
 
+    // Names already written in the list are not offered again. The item being edited is excluded.
+    let list_accessors = if is_dependency_name_list_accessors(accessors) {
+        accessors
+    } else {
+        &accessors[..accessors.len() - 1]
+    };
+    let edited_span = match &target {
+        CompletionNameTarget::Replace { span, .. } => Some(*span),
+        CompletionNameTarget::Insert { .. } => None,
+    };
+    let existing_names = match dig_accessors(document_tree, list_accessors) {
+        Some((_, Value::Array(items))) => items
+            .iter()
+            .filter_map(|item| match item {
+                Value::String(item) if Some(item.span()) != edited_span => {
+                    parse_requirement(item.value())
+                        .map(|requirement| normalize_pep503_name(requirement.name.as_ref()))
+                }
+                _ => None,
+            })
+            .collect::<BTreeSet<_>>(),
+        _ => BTreeSet::new(),
+    };
+
     let pyproject_toml_path = text_document_uri.to_file_path().ok()?;
     // Names from this file's `tool.uv.sources` are offered even when the workspace root is not found.
     let workspace_dependency_names = find_workspace_pyproject_toml(
@@ -295,6 +319,7 @@ fn completion_workspace_dependency_name(
         .into_iter()
         .chain(workspace_member_names)
         .filter(|name| Some(normalize_pep503_name(name)) != project_name)
+        .filter(|name| !existing_names.contains(&normalize_pep503_name(name)))
         .unique()
         .filter(|name| {
             target

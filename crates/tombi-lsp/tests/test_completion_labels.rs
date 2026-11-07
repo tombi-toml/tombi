@@ -2522,7 +2522,6 @@ mod completion_labels {
                 )),
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok([
-                "\"anyio\"",
                 "\"app2\"",
                 "\"pydantic\"",
                 "\"pytest\"",
@@ -2532,6 +2531,25 @@ mod completion_labels {
                 "''",
                 "''''''",
             ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_workspace_member_dependencies_editing_item_excludes_other_items(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = ["anyio", "pyd█"]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app3/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(["\"pydantic\""]);
         }
 
         test_completion_labels! {
