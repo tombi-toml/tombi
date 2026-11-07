@@ -168,6 +168,40 @@ mod goto_definition_tests {
         );
     }
 
+    mod tombi_extends {
+        use super::*;
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn extends_relative_path(
+                r#"
+                extends = "tombi.toml█"
+                "#,
+                SourcePath(project_root_path().join(".tombi.toml")),
+            ) -> Ok([project_root_path().join("tombi.toml")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn extends_array_item_url(
+                r#"
+                extends = ["tombi.toml", "https://example.org/tombi.toml█"]
+                "#,
+                SourcePath(project_root_path().join(".tombi.toml")),
+            ) -> Ok(["https://example.org/tombi.toml"]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn extends_ignores_missing_path(
+                r#"
+                extends = "does-not-exist/tombi.toml█"
+                "#,
+                SourcePath(project_root_path().join(".tombi.toml")),
+            ) -> Ok([]);
+        );
+    }
+
     mod document_schema {
         use super::*;
 

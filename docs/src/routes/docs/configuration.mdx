@@ -205,6 +205,7 @@ An inheritance chain can follow at most 32 references. One resolution can use at
   - [extensions."tombi-toml/tombi"](#extensions-tombi-toml-tombi)
     - [extensions."tombi-toml/tombi".lint](#extensions-tombi-toml-tombi-lint)
       - [extensions."tombi-toml/tombi".lint.rules](#extensions-tombi-toml-tombi-lint-rules)
+        - [extensions."tombi-toml/tombi".lint.rules.invalid-extends](#extensions-tombi-toml-tombi-lint-rules-invalid-extends)
         - [extensions."tombi-toml/tombi".lint.rules.missing-catalog-path](#extensions-tombi-toml-tombi-lint-rules-missing-catalog-path)
         - [extensions."tombi-toml/tombi".lint.rules.missing-schema-path](#extensions-tombi-toml-tombi-lint-rules-missing-schema-path)
     - [extensions."tombi-toml/tombi".lsp](#extensions-tombi-toml-tombi-lsp)
@@ -2334,18 +2335,19 @@ Enable or disable the entire Tombi configuration extension.
 
 ### extensions."tombi-toml/tombi".lint
 
-Configure diagnostics produced for local schema and schema catalog paths in Tombi configuration files.
+Configure diagnostics produced for `extends`, local schema, and schema catalog paths in Tombi configuration files.
 
 - Type: `Table`
 
 ### extensions."tombi-toml/tombi".lint.rules
 
-Set the severity for individual Tombi configuration diagnostics. Each rule defaults to `"warn"` when omitted. Available values are `"off"`, `"warn"`, and `"error"`.
+Set the severity for individual Tombi configuration diagnostics. Each rule defaults to `"warn"` when omitted, except `invalid-extends`, which defaults to `"error"`. Available values are `"off"`, `"warn"`, and `"error"`.
 
 ```toml
 [extensions]
 "tombi-toml/tombi" = {
   lint.rules = {
+    invalid-extends = "error",
     missing-catalog-path = "warn",
     missing-schema-path = "warn",
   },
@@ -2353,6 +2355,17 @@ Set the severity for individual Tombi configuration diagnostics. Each rule defau
 ```
 
 - Type: `Table`
+
+### extensions."tombi-toml/tombi".lint.rules.invalid-extends
+
+Set the severity for `extends` entries that are not a valid config file path or URL. A local path must point to a file, and a URL must use `http://`, `https://`, or `file://`.
+
+```toml
+extends = ["../shared/tombi.toml"] # no file exists at this path
+```
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
 
 ### extensions."tombi-toml/tombi".lint.rules.missing-catalog-path
 

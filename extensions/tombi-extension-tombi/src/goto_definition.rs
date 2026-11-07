@@ -4,6 +4,8 @@ use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion, co
 use tombi_document_tree_syntax::dig_accessors;
 use tombi_schema_store::matches_accessors;
 
+use crate::extends::ExtendsTarget;
+
 pub async fn goto_definition(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
@@ -70,6 +72,34 @@ pub async fn goto_definition(
                 }
             }
         }
+
+        if accessors.first() == Some(&tombi_schema_store::Accessor::Key("extends".to_string()))
+            && matches!(accessors.len(), 1 | 2)
+            && let Some((_, extends)) = dig_accessors(document_tree, &accessors[..1])
+        {
+            let references = match extends {
+                tombi_document_tree_syntax::Value::String(reference) => vec![reference],
+                tombi_document_tree_syntax::Value::Array(references) => {
+                    let index = accessors.get(1).and_then(|accessor| accessor.as_index());
+                    references
+                        .iter()
+                        .enumerate()
+                        .filter(|(i, _)| index.is_none() || index == Some(*i))
+                        .filter_map(|(_, value)| match value {
+                            tombi_document_tree_syntax::Value::String(reference) => Some(reference),
+                            _ => None,
+                        })
+                        .collect()
+                }
+                _ => Vec::new(),
+            };
+
+            for reference in references {
+                if let Some(uri) = get_extends_link(reference.value(), &tombi_toml_path) {
+                    locations.push(tombi_extension::Location { uri, range: None });
+                }
+            }
+        }
     }
 
     if locations.is_empty() {
@@ -94,5 +124,15 @@ fn get_definition_link(url_str: &str, tombi_toml_path: &std::path::Path) -> Opti
         }
     } else {
         None
+    }
+}
+
+fn get_extends_link(reference: &str, tombi_toml_path: &std::path::Path) -> Option<tombi_uri::Uri> {
+    match crate::extends::resolve(reference, tombi_toml_path).ok()? {
+        ExtendsTarget::File(path) if tombi_fs::is_file(&path) => {
+            tombi_uri::Uri::from_file_path(path).ok()
+        }
+        ExtendsTarget::File(_) => None,
+        ExtendsTarget::Remote(uri) => Some(uri),
     }
 }

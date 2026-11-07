@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 use tombi_document_tree_syntax::{DocumentTree, Value};
 use tombi_uri::{CatalogUri, SchemaUri};
 
+use crate::extends::{self, ExtendsTarget};
+
 /// Validate local schema and catalog paths configured in a Tombi config file.
 pub fn validate(
     document_tree: &DocumentTree<'_>,
@@ -15,6 +17,17 @@ pub fn validate(
     }
 
     let mut diagnostics = Vec::new();
+    if rules.invalid_extends != tombi_config::SeverityLevel::Off
+        && let Some(source_path) = source_path
+    {
+        validate_extends(
+            document_tree,
+            source_path,
+            rules.invalid_extends,
+            &mut diagnostics,
+        );
+    }
+
     if !schema_validation_enabled(document_tree) {
         return diagnostics;
     }
@@ -71,6 +84,46 @@ pub fn validate(
     }
 
     diagnostics
+}
+
+fn validate_extends(
+    document_tree: &DocumentTree<'_>,
+    source_path: &Path,
+    severity: tombi_config::SeverityLevel,
+    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+) {
+    let references = match document_tree.get("extends") {
+        Some(Value::String(reference)) => vec![reference],
+        Some(Value::Array(references)) => references
+            .values()
+            .iter()
+            .filter_map(|value| match value {
+                Value::String(reference) => Some(reference),
+                _ => None,
+            })
+            .collect(),
+        _ => return,
+    };
+
+    for reference in references {
+        let message = match extends::resolve(reference.value(), source_path) {
+            Ok(ExtendsTarget::File(path)) if !tombi_fs::is_file(&path) => {
+                format!(
+                    "extends path `{}` does not point to a file",
+                    reference.value()
+                )
+            }
+            Ok(_) => continue,
+            Err(reason) => format!("invalid extends `{}`: {reason}", reference.value()),
+        };
+        push_diagnostic(
+            message,
+            "tombi/invalid-extends",
+            severity,
+            reference.span(),
+            diagnostics,
+        );
+    }
 }
 
 fn schema_validation_enabled(document_tree: &DocumentTree<'_>) -> bool {

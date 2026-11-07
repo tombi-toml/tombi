@@ -129,17 +129,8 @@
     },
     "ExtendsReference": {
       "description": "A config path or URL whose file name is `tombi.toml` or `.tombi.toml`.",
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "uri",
-          "pattern": "(^|[/\\\\])\\.?tombi\\.toml([?#].*)?$"
-        },
-        {
-          "type": "string",
-          "pattern": "(^|[/\\\\])\\.?tombi\\.toml([?#].*)?$"
-        }
-      ]
+      "type": "string",
+      "pattern": "(^|[/\\\\])\\.?tombi\\.toml([?#].*)?$"
     },
     "TomlVersion": {
       "title": "TOML version",
@@ -3267,6 +3258,15 @@
       "description": "Severity levels for diagnostics produced by the Tombi extension.",
       "type": "object",
       "properties": {
+        "invalid-extends": {
+          "description": "Report an `extends` entry that is not a valid config file path or URL.\n\n```toml\nextends = [\"../shared/tombi.toml\"] # no file exists at this path\n```",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
         "missing-catalog-path": {
           "description": "Report a local schema catalog path that does not point to a file.\n\n```toml\n[schema.catalog]\npaths = [\"./schemas/catalog.json\"] # no file exists at this path\n```",
           "default": "warn",

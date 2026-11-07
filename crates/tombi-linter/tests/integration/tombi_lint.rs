@@ -9,6 +9,14 @@ include = ["*.toml"]
 paths = ["missing-catalog-for-tombi-lint-test.json"]
 "#;
 
+const INVALID_EXTENDS: &str = r#"extends = [
+    "missing-extends-for-tombi-lint-test/tombi.toml",
+    "ftp://example.org/tombi.toml",
+    "https://example.org/tombi.toml",
+    "tombi.toml",
+]
+"#;
+
 fn tombi_path() -> std::path::PathBuf {
     tombi_test_lib::project_root_path().join("tombi.toml")
 }
@@ -48,6 +56,7 @@ fn config(
                 lint: Some(tombi_config::TombiLintFeatures::Features(
                     tombi_config::TombiLintFeatureTree {
                         rules: Some(tombi_config::TombiLintRules {
+                            invalid_extends: tombi_config::SeverityLevel::Error,
                             missing_schema_path,
                             missing_catalog_path,
                         }),
@@ -178,4 +187,20 @@ paths = ["Cargo.toml", "https://example.com/catalog.json"]
 "#,
         SourcePath(tombi_path()),
     ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn invalid_extends_are_reported(
+        INVALID_EXTENDS,
+        SourcePath(dot_tombi_path()),
+    ) -> Diagnostics([{
+        code: "tombi/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "missing-extends-for-tombi-lint-test/tombi.toml")
+    }, {
+        code: "tombi/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "ftp://example.org/tombi.toml")
+    }])
 }
