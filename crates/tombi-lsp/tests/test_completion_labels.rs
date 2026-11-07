@@ -2578,6 +2578,30 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn pyproject_uv_default_groups_excludes_listed_group_by_normalized_name(
+                r#"
+                [dependency-groups]
+                lint-tools = []
+                dev = []
+
+                [tool.uv]
+                default-groups = ["Lint_Tools", █]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                "\"dev\"",
+                "\"\"",
+                "\"\"\"\"\"\"",
+                "''",
+                "''''''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn pyproject_include_group_excludes_already_included_group(
                 r#"
                 [dependency-groups]
@@ -3650,6 +3674,28 @@ mod completion_labels {
                 SchemaPath(cargo_schema_path()),
             ) -> Ok([
                 "\"fast\"",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_features_list_excludes_listed_dep_feature(
+                r#"
+                [features]
+                fast = []
+                default = ["dep:tokio", █]
+
+                [dependencies]
+                tokio = { version = "1", optional = true }
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"fast\"",
+                "\"\"",
+                "\"\"\"\"\"\"",
+                "''",
+                "''''''",
             ]);
         }
 

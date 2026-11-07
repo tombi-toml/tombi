@@ -170,7 +170,7 @@ fn completion_uv_declared_name(
                 .iter()
                 .filter_map(|item| match item {
                     Value::String(item) if Some(item.span()) != edited_span => {
-                        Some(item.value().to_owned())
+                        Some(normalize_pep503_name(item.value()))
                     }
                     _ => None,
                 })
@@ -187,7 +187,7 @@ fn completion_uv_declared_name(
 
     let completions = names
         .keys()
-        .filter(|name| !listed_names.contains(name.value()))
+        .filter(|name| !listed_names.contains(&normalize_pep503_name(name.value())))
         .filter(|name| {
             target
                 .prefix()
@@ -449,7 +449,7 @@ fn completion_include_group(
             .filter_map(|item| match item {
                 Value::Table(table) => match table.get("include-group") {
                     Some(Value::String(group)) if Some(group.span()) != edited_span => {
-                        Some(group.value().to_owned())
+                        Some(normalize_pep503_name(group.value()))
                     }
                     _ => None,
                 },
@@ -463,7 +463,7 @@ fn completion_include_group(
         groups
             .keys()
             .filter(|key| Some(key.value()) != current_group)
-            .filter(|key| !listed_groups.contains(key.value()))
+            .filter(|key| !listed_groups.contains(&normalize_pep503_name(key.value())))
             .filter(|key| {
                 target
                     .prefix()
