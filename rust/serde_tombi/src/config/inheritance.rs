@@ -67,7 +67,7 @@ impl ConfigSource {
                             .map_err(|error| invalid(&error.to_string()))?,
                     )
                 };
-                validate_remote_uri(&uri).map_err(&invalid)?;
+                validate_remote_uri(&uri).map_err(invalid)?;
                 uri.set_fragment(None);
                 Ok(Self::Remote(uri))
             }
@@ -87,7 +87,7 @@ impl ConfigSource {
                 if is_http(reference) {
                     let mut uri =
                         Uri::from_str(reference).map_err(|error| invalid(&error.to_string()))?;
-                    validate_remote_uri(&uri).map_err(&invalid)?;
+                    validate_remote_uri(&uri).map_err(invalid)?;
                     uri.set_fragment(None);
                     return Ok(Self::Remote(uri));
                 }

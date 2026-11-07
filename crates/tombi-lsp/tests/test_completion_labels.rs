@@ -88,6 +88,7 @@ mod completion_labels {
                 "█",
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extends",
                 "extensions",
                 "files",
                 "format",
@@ -221,6 +222,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extends",
                 "extensions",
                 "files",
                 "format",
@@ -244,6 +246,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extends",
                 "extensions",
                 "files",
                 "format",
@@ -267,6 +270,7 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "extends",
                 "extensions",
                 "files",
                 "format",
