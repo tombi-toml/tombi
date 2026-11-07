@@ -158,6 +158,7 @@ impl ConfigManager {
         let sequence = self.config_update_sequence.fetch_add(1, Ordering::Relaxed);
         // `SchemaStore` options are fixed at construction, so a config change builds a new store.
         let associated_schemas = self.associated_schemas.read().await.clone();
+        let associated_schema_count = associated_schemas.len();
         let schema_options = schema_store_options(&config, &self.backend_options);
         let schema_store = SchemaStore::new_with_options(schema_options);
         load_schema_store_with_associations(
@@ -169,7 +170,11 @@ impl ConfigManager {
         .await?;
 
         // Load the replacement before taking the shared map lock. If concurrent reloads finish
-        // out of order, the per-path sequence keeps the newer config in the map.
+        // out of order, the per-path sequence keeps the newer config in the map. The association
+        // lock closes the gap between the snapshot above and publishing the replacement.
+        let _associated_schemas = self
+            .synchronize_associations(&schema_store, associated_schema_count)
+            .await;
         let mut config_schema_versions = self.config_schema_versions.write().await;
         if config_schema_versions
             .get(config_path)
@@ -203,6 +208,7 @@ impl ConfigManager {
                 }
             };
         let associated_schemas = self.associated_schemas.read().await.clone();
+        let associated_schema_count = associated_schemas.len();
         let schema_options = schema_store_options(&config, &self.backend_options);
         let schema_store = SchemaStore::new_with_options(schema_options);
 
@@ -218,6 +224,9 @@ impl ConfigManager {
         }
 
         let config_schema_store = ConfigSchemaStore::new(config, config_path, schema_store);
+        let _associated_schemas = self
+            .synchronize_associations(&config_schema_store.schema_store, associated_schema_count)
+            .await;
         let mut default_config_schema_store = self.default_config_schema_store.write().await;
         if let Some((_, existing)) = default_config_schema_store.as_ref() {
             existing.clone()
@@ -271,36 +280,30 @@ impl ConfigManager {
         file_match: &[String],
         options: &tombi_schema_store::AssociateSchemaOptions,
     ) {
-        // Add to associated_schemas
-        self.associated_schemas
-            .write()
-            .await
-            .push(AssociatedSchema {
-                schema_uri: schema_uri.clone(),
-                file_match: file_match.to_vec(),
-                options: options.clone(),
-            });
+        // Serialize registration with store publication. The map locks are held only while
+        // cloning stores; schema-store work runs after those guards are dropped.
+        let mut associated_schemas = self.associated_schemas.write().await;
+        let associated_schema = AssociatedSchema {
+            schema_uri: schema_uri.clone(),
+            file_match: file_match.to_vec(),
+            options: options.clone(),
+        };
+        associated_schemas.push(associated_schema.clone());
 
-        // Update stores after cloning them so no map lock spans schema store work.
-        let config_schema_stores = self
-            .config_schema_stores
-            .read()
-            .await
-            .values()
-            .cloned()
-            .collect::<Vec<_>>();
+        let config_schema_stores = {
+            self.config_schema_stores
+                .read()
+                .await
+                .values()
+                .cloned()
+                .collect::<Vec<_>>()
+        };
         for config_schema_store in config_schema_stores {
-            config_schema_store
-                .schema_store
-                .associate_schema(schema_uri.clone(), file_match.to_vec(), options)
-                .await;
+            apply_association(&config_schema_store.schema_store, &associated_schema).await;
         }
-        if let Some((_, ConfigSchemaStore { schema_store, .. })) =
-            self.default_config_schema_store.read().await.clone()
-        {
-            schema_store
-                .associate_schema(schema_uri.clone(), file_match.to_vec(), options)
-                .await;
+        let default_config_schema_store = self.default_config_schema_store.read().await.clone();
+        if let Some((_, ConfigSchemaStore { schema_store, .. })) = default_config_schema_store {
+            apply_association(&schema_store, &associated_schema).await;
         }
     }
 
@@ -316,6 +319,7 @@ impl ConfigManager {
                 }
                 Ok((config, None, _)) => {
                     let associated_schemas = self.associated_schemas.read().await.clone();
+                    let associated_schema_count = associated_schemas.len();
                     let schema_options = schema_store_options(&config, &self.backend_options);
                     let schema_store = SchemaStore::new_with_options(schema_options);
                     load_schema_store_with_associations(
@@ -325,10 +329,19 @@ impl ConfigManager {
                         &associated_schemas,
                     )
                     .await?;
-                    *self.default_config_schema_store.write().await = Some((
-                        DefaultConfigSource::Default,
-                        ConfigSchemaStore::new(config, None, schema_store),
-                    ));
+                    let config_schema_store = ConfigSchemaStore::new(config, None, schema_store);
+                    let _associated_schemas = self
+                        .synchronize_associations(
+                            &config_schema_store.schema_store,
+                            associated_schema_count,
+                        )
+                        .await;
+                    let mut default_config_schema_store =
+                        self.default_config_schema_store.write().await;
+                    if default_config_schema_store.is_none() {
+                        *default_config_schema_store =
+                            Some((DefaultConfigSource::Default, config_schema_store));
+                    }
                 }
                 Err(error) => log::warn!("failed to discover startup config: {error}"),
             }
@@ -411,6 +424,7 @@ impl ConfigManager {
     /// Update editor configuration
     pub async fn update_editor_config(&self, config: Config) {
         let associated_schemas = self.associated_schemas.read().await.clone();
+        let associated_schema_count = associated_schemas.len();
         let schema_options = schema_store_options(&config, &self.backend_options);
         let schema_store = SchemaStore::new_with_options(schema_options);
 
@@ -422,8 +436,28 @@ impl ConfigManager {
         }
 
         let config_schema_store = ConfigSchemaStore::new(config, None, schema_store);
+        let _associated_schemas = self
+            .synchronize_associations(&config_schema_store.schema_store, associated_schema_count)
+            .await;
         let mut default_config_schema_store = self.default_config_schema_store.write().await;
         *default_config_schema_store = Some((DefaultConfigSource::Editor, config_schema_store));
+    }
+
+    /// Catch up a store created from an earlier association snapshot and hold the association
+    /// lock until the caller publishes it. `associate_schema` uses the same lock through its
+    /// updates to currently published stores, so each registration is applied exactly once.
+    async fn synchronize_associations(
+        &self,
+        schema_store: &SchemaStore,
+        applied_association_count: usize,
+    ) -> tokio::sync::RwLockWriteGuard<'_, Vec<AssociatedSchema>> {
+        let associated_schemas = self.associated_schemas.write().await;
+        load_associations(
+            schema_store,
+            &associated_schemas[applied_association_count..],
+        )
+        .await;
+        associated_schemas
     }
 
     /// Get editor configuration
@@ -496,14 +530,18 @@ async fn load_schema_store_with_associations(
 
 async fn load_associations(schema_store: &SchemaStore, associated_schemas: &[AssociatedSchema]) {
     for associated_schema in associated_schemas {
-        schema_store
-            .associate_schema(
-                associated_schema.schema_uri.clone(),
-                associated_schema.file_match.clone(),
-                &associated_schema.options,
-            )
-            .await;
+        apply_association(schema_store, associated_schema).await;
     }
+}
+
+async fn apply_association(schema_store: &SchemaStore, associated_schema: &AssociatedSchema) {
+    schema_store
+        .associate_schema(
+            associated_schema.schema_uri.clone(),
+            associated_schema.file_match.clone(),
+            &associated_schema.options,
+        )
+        .await;
 }
 
 fn schema_store_options(
