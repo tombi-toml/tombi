@@ -725,6 +725,66 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn pyproject_workspace_member_empty_dependencies_inserts_uv_source_member(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = [█]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#,
+                Select("\"app2\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app3/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = ["app2"]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_workspace_member_empty_dependencies_inserts_root_dependency(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = [█]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#,
+                Select("\"anyio\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app3/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = ["anyio"]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn pyproject_uv_default_groups_empty_list_inserts_dependency_group(
                 r#"
                 [dependency-groups]
