@@ -63,7 +63,7 @@ impl CompletionEdit {
             }) => {
                 let new_text = match add_trailing_comma {
                     Some(_) => format!("${{1:{label}}},$0"),
-                    None => format!("${{0:{label}}}"),
+                    None => label.to_string(),
                 };
                 let additional_text_edits =
                     head_comma_text_edits(add_leading_comma, add_trailing_comma, offset);

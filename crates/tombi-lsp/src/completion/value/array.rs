@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use tombi_document_tree_syntax::{ArrayKind, LiteralValueRef};
-use tombi_extension::{AddLeadingComma, AddTrailingComma, CompletionKind};
+use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, SchemaUri, SchemaView};
 
@@ -74,11 +74,9 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                 match current_schema.schema_view.as_ref() {
                     SchemaView::Array(array_schema) => {
                         let mut new_item_index = 0;
-                        let mut new_item_start_offset = None;
                         for (index, value) in self.values().iter().enumerate() {
                             if value.span().end <= offset {
                                 new_item_index = index + 1;
-                                new_item_start_offset = Some(value.span().end);
                             }
                             if value.contains_inside_quotes(offset) {
                                 // `[[array.█]]` is valid only after `[[array]]` has been declared above it.
@@ -310,58 +308,12 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                                     Some(&current_schema),
                                     schema_context,
                                     if self.kind() == ArrayKind::Array {
-                                        if new_item_index == 0 {
-                                            let add_trailing_comma = if self.is_empty()
-                                                || matches!(
-                                                    completion_hint,
-                                                    Some(CompletionHint::Comma {
-                                                        trailing_comma: Some(_),
-                                                        ..
-                                                    })
-                                                ) {
-                                                None
-                                            } else {
-                                                Some(AddTrailingComma)
-                                            };
-
-                                            Some(CompletionHint::InArray {
-                                                add_leading_comma: None,
-                                                add_trailing_comma,
-                                            })
-                                        } else {
-                                            let add_leading_comma = if matches!(
-                                                completion_hint,
-                                                Some(CompletionHint::Comma {
-                                                    leading_comma: Some(_),
-                                                    ..
-                                                })
-                                            ) {
-                                                None
-                                            } else {
-                                                new_item_start_offset.map(|start_offset| {
-                                                    add_leading_comma(start_offset, cursor)
-                                                })
-                                            };
-
-                                            let add_trailing_comma = if matches!(
-                                                completion_hint,
-                                                Some(CompletionHint::Comma {
-                                                    trailing_comma: Some(_),
-                                                    ..
-                                                })
-                                            ) {
-                                                None
-                                            } else if new_item_index != self.len() {
-                                                Some(AddTrailingComma)
-                                            } else {
-                                                None
-                                            };
-
-                                            Some(CompletionHint::InArray {
-                                                add_leading_comma,
-                                                add_trailing_comma,
-                                            })
-                                        }
+                                        Some(CompletionHint::new_in_array(
+                                            completion_hint,
+                                            cursor.line_index(),
+                                            offset,
+                                            self.values().iter().map(|value| value.span()),
+                                        ))
                                     } else {
                                         completion_hint
                                     },
@@ -502,13 +454,11 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                 }
             } else {
                 let mut new_item_index = 0;
-                let mut new_item_start_offset = None;
                 for (index, value) in self.values().iter().enumerate() {
-                    if value.span().end < offset {
+                    if value.span().end <= offset {
                         new_item_index = index + 1;
-                        new_item_start_offset = Some(value.span().end);
                     }
-                    if value.contains(offset) {
+                    if value.contains_inside_quotes(offset) {
                         // Array of tables
                         if let tombi_document_tree_syntax::Value::Table(table) = value
                             && keys.len() == 1
@@ -575,13 +525,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                     .get_subschema(&new_item_accessors, None)
                     .await
                 {
-                    let new_item_hint = new_item_completion_hint(
-                        self,
-                        new_item_index,
-                        new_item_start_offset,
-                        cursor,
-                        completion_hint,
-                    );
+                    let new_item_hint = new_item_completion_hint(self, cursor, completion_hint);
                     return SchemaCompletion
                         .find_completion_contents(
                             cursor,
@@ -601,23 +545,8 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
     }
 }
 
-/// The comma to add after the previous item, keeping the line breaks and the indent before the cursor.
-fn add_leading_comma(
-    start_offset: tombi_text::Offset,
-    cursor: crate::CursorPosition<'_>,
-) -> AddLeadingComma {
-    let (line_breaks, indent) = cursor.line_breaks_and_column_from(start_offset);
-    AddLeadingComma {
-        start_offset,
-        line_breaks,
-        indent,
-    }
-}
-
 fn new_item_completion_hint(
     array: &tombi_document_tree_syntax::Array<'_>,
-    new_item_index: usize,
-    new_item_start_offset: Option<tombi_text::Offset>,
     cursor: crate::CursorPosition<'_>,
     completion_hint: Option<CompletionHint>,
 ) -> Option<CompletionHint> {
@@ -625,42 +554,12 @@ fn new_item_completion_hint(
         return completion_hint;
     }
 
-    let has_trailing_comma = matches!(
+    Some(CompletionHint::new_in_array(
         completion_hint,
-        Some(CompletionHint::Comma {
-            trailing_comma: Some(_),
-            ..
-        })
-    );
-    let has_leading_comma = matches!(
-        completion_hint,
-        Some(CompletionHint::Comma {
-            leading_comma: Some(_),
-            ..
-        })
-    );
-
-    if new_item_index == 0 {
-        let add_trailing_comma =
-            (!array.is_empty() && !has_trailing_comma).then_some(AddTrailingComma);
-        return Some(CompletionHint::InArray {
-            add_leading_comma: None,
-            add_trailing_comma,
-        });
-    }
-
-    let add_leading_comma = if has_leading_comma {
-        None
-    } else {
-        new_item_start_offset.map(|start_offset| add_leading_comma(start_offset, cursor))
-    };
-    let add_trailing_comma =
-        (!has_trailing_comma && new_item_index != array.len()).then_some(AddTrailingComma);
-
-    Some(CompletionHint::InArray {
-        add_leading_comma,
-        add_trailing_comma,
-    })
+        cursor.line_index(),
+        cursor.offset(),
+        array.values().iter().map(|value| value.span()),
+    ))
 }
 
 impl FindCompletionContents for ArraySchema {

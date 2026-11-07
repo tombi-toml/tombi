@@ -5,7 +5,6 @@
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct CursorPosition<'a> {
     offset: tombi_text::Offset,
-    line: tombi_text::Line,
     /// The start of the line of the cursor.
     line_start: tombi_text::Offset,
     /// The start of the next line, or `None` on the last line.
@@ -21,7 +20,6 @@ impl<'a> CursorPosition<'a> {
         let line = line_index.line(offset);
         Self {
             offset,
-            line,
             line_start: line_index.line_start(line).unwrap_or_default(),
             next_line_start: line_index.line_start(line + 1),
             line_index,
@@ -39,14 +37,9 @@ impl<'a> CursorPosition<'a> {
         self.line_start <= offset && self.next_line_start.is_none_or(|next| offset < next)
     }
 
-    /// The number of line breaks from `offset` to the cursor, and the column of the cursor
-    /// in grapheme clusters, to keep the layout before the cursor.
-    pub(crate) fn line_breaks_and_column_from(self, offset: tombi_text::Offset) -> (u32, u32) {
-        let line_breaks = self.line.saturating_sub(self.line_index.line(offset));
-        let column = self
-            .line_index
-            .position(self.offset, tombi_text::EncodingKind::GraphemeCluster)
-            .column;
-        (line_breaks, column)
+    /// The line index of the document, to compute the layout around the cursor.
+    #[inline]
+    pub(crate) fn line_index(self) -> &'a tombi_text::LineIndex<'a> {
+        self.line_index
     }
 }
