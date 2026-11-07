@@ -154,7 +154,7 @@ fn completion_declared_name(
                 hint: Some(CompletionHint::new_in_array(
                     completion_hint,
                     offset,
-                    array.iter().map(|item| item.span()),
+                    array.iter().map(|item| item.symbol_span()),
                 )),
             }
         }

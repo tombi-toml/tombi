@@ -861,6 +861,56 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn pyproject_dependency_groups_standalone_comment_before_cursor_is_not_doubled(
+                r#"
+                [dependency-groups]
+                dev = [
+                    "pyright",
+
+                    # standalone comment
+                    █
+                ]
+                "#,
+                Select("include-group"),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev = [
+                    "pyright",
+
+                    # standalone comment
+                    { include-group$1 }$0
+                ]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_dependency_groups_trailing_comment_after_inline_table_is_kept(
+                r#"
+                [dependency-groups]
+                dev = [
+                    { include-group = "ci" } # keep this comment
+                    █
+                ]
+                "#,
+                Select("include-group"),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev = [
+                    { include-group = "ci" }, # keep this comment
+                    { include-group$1 }$0
+                ]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn pyproject_dependency_groups_comment_after_item_is_kept_for_schema_completion(
                 r#"
                 [dependency-groups]

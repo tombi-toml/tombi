@@ -118,7 +118,7 @@ fn completion_uv_declared_name(
                 hint: Some(CompletionHint::new_in_array(
                     completion_hint,
                     offset,
-                    array.iter().map(|item| item.span()),
+                    array.iter().map(|item| item.symbol_span()),
                 )),
             }
         }
@@ -241,7 +241,7 @@ fn completion_workspace_dependency_name(
                 hint: Some(CompletionHint::new_in_array(
                     completion_hint,
                     offset,
-                    array.iter().map(|item| item.span()),
+                    array.iter().map(|item| item.symbol_span()),
                 )),
             }
         }

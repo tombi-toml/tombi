@@ -43,6 +43,7 @@ impl<'t> crate::Array<'t> {
                     tombi_ast_syntax::SyntaxKind::WHITESPACE
                         | tombi_ast_syntax::SyntaxKind::LINE_BREAK
                         | tombi_ast_syntax::SyntaxKind::COMMENT
+                        | tombi_ast_syntax::SyntaxKind::DANGLING_COMMENT_GROUP
                 )
             })
             .last()?;

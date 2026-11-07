@@ -311,7 +311,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                                         Some(CompletionHint::new_in_array(
                                             completion_hint,
                                             offset,
-                                            self.values().iter().map(|value| value.span()),
+                                            self.values().iter().map(|value| value.symbol_span()),
                                         ))
                                     } else {
                                         completion_hint
@@ -561,7 +561,7 @@ fn new_item_completion_hint(
     Some(CompletionHint::new_in_array(
         completion_hint,
         cursor.offset(),
-        array.values().iter().map(|value| value.span()),
+        array.values().iter().map(|value| value.symbol_span()),
     ))
 }
 
