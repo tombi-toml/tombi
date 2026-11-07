@@ -44,6 +44,10 @@ pub struct ConfigManager {
         Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, ConfigSchemaStore>>>,
     config_schema_versions: tokio::sync::RwLock<std::collections::HashMap<PathBuf, u64>>,
     config_update_sequence: AtomicU64,
+    /// Serializes schema-store rebuilds, cache mutations, and schema invalidation. Nested lock
+    /// order is this mutex, associations, then config/default maps; map locks are released before
+    /// network operations.
+    schema_store_operation_lock: tokio::sync::Mutex<()>,
     /// Default ConfigSchemaStore when no config file is found
     /// Contains the source type (Default or Editor) and the ConfigSchemaStore
     default_config_schema_store:
@@ -67,6 +71,7 @@ impl ConfigManager {
             config_schema_stores: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
             config_schema_versions: tokio::sync::RwLock::new(std::collections::HashMap::new()),
             config_update_sequence: AtomicU64::new(0),
+            schema_store_operation_lock: tokio::sync::Mutex::new(()),
             default_config_schema_store: Arc::new(tokio::sync::RwLock::new(None)),
             backend_options: backend_options.clone(),
             associated_schemas: Arc::new(tokio::sync::RwLock::new(Vec::new())),
@@ -155,6 +160,16 @@ impl ConfigManager {
         config: Config,
         config_path: &Path,
     ) -> Result<(), tombi_schema_store::Error> {
+        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
+        self.update_config_with_path_locked(config, config_path)
+            .await
+    }
+
+    async fn update_config_with_path_locked(
+        &self,
+        config: Config,
+        config_path: &Path,
+    ) -> Result<(), tombi_schema_store::Error> {
         let sequence = self.config_update_sequence.fetch_add(1, Ordering::Relaxed);
         // `SchemaStore` options are fixed at construction, so a config change builds a new store.
         let associated_schemas = self.associated_schemas.read().await.clone();
@@ -193,6 +208,13 @@ impl ConfigManager {
 
     /// Get the default config
     async fn default_config_schema_store(&self) -> ConfigSchemaStore {
+        if let Some((_, config_schema_store)) =
+            self.default_config_schema_store.read().await.as_ref()
+        {
+            return config_schema_store.clone();
+        }
+
+        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         if let Some((_, config_schema_store)) =
             self.default_config_schema_store.read().await.as_ref()
         {
@@ -252,6 +274,7 @@ impl ConfigManager {
         &self,
         schema_uri: SchemaUri,
     ) -> Result<bool, tombi_schema_store::Error> {
+        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         let mut updated = false;
         let config_schema_stores = self
             .config_schema_stores
@@ -280,6 +303,7 @@ impl ConfigManager {
         file_match: &[String],
         options: &tombi_schema_store::AssociateSchemaOptions,
     ) {
+        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         // Serialize registration with store publication. The map locks are held only while
         // cloning stores; schema-store work runs after those guards are dropped.
         let mut associated_schemas = self.associated_schemas.write().await;
@@ -308,6 +332,7 @@ impl ConfigManager {
     }
 
     pub async fn load(&self) -> Result<(), tombi_schema_store::Error> {
+        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         if self.config_schema_stores.read().await.is_empty()
             && self.default_config_schema_store.read().await.is_none()
         {
@@ -315,7 +340,8 @@ impl ConfigManager {
                 .await
             {
                 Ok((config, Some(config_path), _)) => {
-                    self.update_config_with_path(config, &config_path).await?;
+                    self.update_config_with_path_locked(config, &config_path)
+                        .await?;
                 }
                 Ok((config, None, _)) => {
                     let associated_schemas = self.associated_schemas.read().await.clone();
@@ -351,6 +377,7 @@ impl ConfigManager {
     }
 
     pub async fn refresh_cache(&self) -> Result<bool, tombi_schema_store::Error> {
+        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         let mut updated = false;
 
         // Re-read config files from disk so that changes made outside the editor are applied.
@@ -365,7 +392,8 @@ impl ConfigManager {
         for config_path in config_paths {
             match serde_tombi::config::try_from_path_async(&config_path).await {
                 Ok(Some(config)) => {
-                    self.update_config_with_path(config, &config_path).await?;
+                    self.update_config_with_path_locked(config, &config_path)
+                        .await?;
                     updated = true;
                 }
                 Ok(None) => {}
@@ -423,6 +451,7 @@ impl ConfigManager {
 
     /// Update editor configuration
     pub async fn update_editor_config(&self, config: Config) {
+        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         let associated_schemas = self.associated_schemas.read().await.clone();
         let associated_schema_count = associated_schemas.len();
         let schema_options = schema_store_options(&config, &self.backend_options);
