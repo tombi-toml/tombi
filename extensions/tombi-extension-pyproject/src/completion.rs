@@ -4,8 +4,8 @@ use itertools::Itertools;
 use tombi_config::TomlVersion;
 use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
 use tombi_extension::{
-    CompletionContent, CompletionEdit, CompletionHint, completion_directory_path,
-    completion_file_path_from_uri,
+    CompletionContent, CompletionEdit, CompletionHint, CompletionNameTarget,
+    completion_directory_path, completion_file_path_from_uri,
 };
 use tombi_schema_store::{Accessor, matches_accessors};
 
@@ -71,7 +71,9 @@ pub async fn completion(
         return Ok(Some(completions));
     }
 
-    if let Some(completions) = completion_uv_declared_name(document_tree, offset, accessors) {
+    if let Some(completions) =
+        completion_uv_declared_name(document_tree, offset, accessors, completion_hint)
+    {
         return Ok(Some(completions));
     }
 
@@ -89,9 +91,11 @@ fn completion_uv_declared_name(
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     offset: tombi_text::Offset,
     accessors: &[Accessor],
+    completion_hint: Option<CompletionHint>,
 ) -> Option<Vec<CompletionContent>> {
     let (table_keys, detail): (&[&str], &str) =
         if matches_accessors!(accessors, ["tool", "uv", "default-groups", _])
+            || matches_accessors!(accessors, ["tool", "uv", "default-groups"])
             || matches_accessors!(accessors, ["tool", "uv", "conflicts", _, _, "group"])
         {
             (&["dependency-groups"], "Dependency group")
@@ -100,13 +104,52 @@ fn completion_uv_declared_name(
         } else {
             return None;
         };
+    let is_default_groups_list = matches_accessors!(accessors, ["tool", "uv", "default-groups"]);
 
-    let (_, Value::String(value)) = dig_accessors(document_tree, accessors)? else {
-        return None;
+    let (_, value) = dig_accessors(document_tree, accessors)?;
+    let target = match (value, completion_hint) {
+        // `default-groups = [█]`: insert into the list. Only the list itself is offered here,
+        // not a string value such as `"all"`.
+        (Value::Array(array), _) if array.span().contains_inclusive(offset) => {
+            CompletionNameTarget::Insert {
+                offset,
+                hint: completion_hint,
+            }
+        }
+        _ if is_default_groups_list => return None,
+        (Value::String(value), _) if value.span().contains_inclusive(offset) => {
+            CompletionNameTarget::Replace {
+                span: value.span(),
+                prefix: Some(value.value()),
+            }
+        }
+        (
+            Value::Incomplete { span },
+            Some(
+                hint @ CompletionHint::EqualTrigger {
+                    span: equal_span, ..
+                },
+            ),
+        ) if span.is_empty() && offset >= equal_span.end => CompletionNameTarget::Insert {
+            offset,
+            hint: Some(hint),
+        },
+        (Value::Incomplete { span }, Some(hint @ CompletionHint::InArray { .. }))
+            if span.is_empty() =>
+        {
+            CompletionNameTarget::Insert {
+                offset,
+                hint: Some(hint),
+            }
+        }
+        (Value::Incomplete { span }, _) if !span.is_empty() && span.contains_inclusive(offset) => {
+            CompletionNameTarget::Replace {
+                span: *span,
+                prefix: None,
+            }
+        }
+        _ => return None,
     };
-    if !value.span().contains_inclusive(offset) {
-        return None;
-    }
 
     let (_, Value::Table(names)) = dig_keys(document_tree, table_keys)? else {
         return None;
@@ -114,10 +157,14 @@ fn completion_uv_declared_name(
 
     let completions = names
         .keys()
-        .filter(|name| name.value().starts_with(value.value()))
+        .filter(|name| {
+            target
+                .prefix()
+                .is_none_or(|prefix| name.value().starts_with(prefix))
+        })
         .map(|name| {
             let label = serde_json::Value::String(name.value().to_owned()).to_string();
-            let edit = CompletionEdit::new_string_literal_while_editing(&label, value.span());
+            let edit = target.edit(&label);
             CompletionContent::new_enum_value(
                 label,
                 Some(detail.to_string()),
@@ -266,37 +313,6 @@ fn is_workspace_source(source: &Value<'_>) -> bool {
     )
 }
 
-enum IncludeGroupCompletionTarget<'a> {
-    Replace {
-        span: tombi_text::Span,
-        prefix: Option<&'a str>,
-    },
-    Insert {
-        offset: tombi_text::Offset,
-        hint: CompletionHint,
-    },
-}
-
-impl<'a> IncludeGroupCompletionTarget<'a> {
-    fn prefix(&self) -> Option<&'a str> {
-        match self {
-            Self::Replace { prefix, .. } => *prefix,
-            Self::Insert { .. } => None,
-        }
-    }
-
-    fn edit(&self, label: &str) -> Option<CompletionEdit> {
-        match self {
-            Self::Replace { span, .. } => {
-                CompletionEdit::new_string_literal_while_editing(label, *span)
-            }
-            Self::Insert { offset, hint } => {
-                CompletionEdit::new_literal(label, *offset, Some(*hint))
-            }
-        }
-    }
-}
-
 fn completion_include_group(
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     offset: tombi_text::Offset,
@@ -310,7 +326,7 @@ fn completion_include_group(
     let (_, value) = dig_accessors(document_tree, accessors)?;
     let target = match (value, completion_hint) {
         (Value::String(value), _) if value.span().contains_inclusive(offset) => {
-            IncludeGroupCompletionTarget::Replace {
+            CompletionNameTarget::Replace {
                 span: value.span(),
                 prefix: Some(value.value()),
             }
@@ -322,11 +338,12 @@ fn completion_include_group(
                     span: equal_span, ..
                 },
             ),
-        ) if span.is_empty() && offset >= equal_span.end => {
-            IncludeGroupCompletionTarget::Insert { offset, hint }
-        }
+        ) if span.is_empty() && offset >= equal_span.end => CompletionNameTarget::Insert {
+            offset,
+            hint: Some(hint),
+        },
         (Value::Incomplete { span }, _) if !span.is_empty() && span.contains_inclusive(offset) => {
-            IncludeGroupCompletionTarget::Replace {
+            CompletionNameTarget::Replace {
                 span: *span,
                 prefix: None,
             }
