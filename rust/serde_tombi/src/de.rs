@@ -144,7 +144,7 @@ impl Deserializer<'_> {
                 }
                 None => {
                     let (config, config_path) =
-                        crate::config::load_with_path_async(std::env::current_dir().ok()).await?;
+                        crate::config::load_with_path(std::env::current_dir().ok()).await?;
 
                     if let Some(new_toml_version) = config.toml_version {
                         toml_version = new_toml_version;

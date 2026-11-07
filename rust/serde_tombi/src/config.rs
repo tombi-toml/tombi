@@ -181,7 +181,7 @@ pub async fn load_with_path_and_level_with_options(
     Ok((Config::default(), None, ConfigLevel::Default))
 }
 
-pub async fn load_with_path_async(
+pub async fn load_with_path(
     search_dir: Option<std::path::PathBuf>,
 ) -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
     let (config, config_path, _) = load_with_path_and_level_async(search_dir).await?;
@@ -193,14 +193,6 @@ pub async fn load_async(
 ) -> Result<Config, tombi_config::Error> {
     let (config, _, _) = load_with_path_and_level_async(search_dir).await?;
     Ok(config)
-}
-
-#[inline]
-pub fn load_with_path(
-    search_dir: Option<std::path::PathBuf>,
-) -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
-    let (config, config_path, _) = load_with_path_and_level(search_dir)?;
-    Ok((config, config_path))
 }
 
 #[inline]

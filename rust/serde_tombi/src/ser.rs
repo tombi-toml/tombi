@@ -124,8 +124,7 @@ impl Serializer<'_> {
                     Some(config) => (config, self.config_path),
                     None => {
                         loaded_config =
-                            crate::config::load_with_path_async(std::env::current_dir().ok())
-                                .await?;
+                            crate::config::load_with_path(std::env::current_dir().ok()).await?;
                         (&loaded_config.0, loaded_config.1.as_deref())
                     }
                 };

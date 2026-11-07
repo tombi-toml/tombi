@@ -65,7 +65,7 @@ async fn load_config(
             })?;
         Ok((config, Some(config_path)))
     } else {
-        Ok(serde_tombi::config::load_with_path_async(std::env::current_dir().ok()).await?)
+        Ok(serde_tombi::config::load_with_path(std::env::current_dir().ok()).await?)
     }
 }
 
