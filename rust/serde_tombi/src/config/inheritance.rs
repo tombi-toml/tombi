@@ -143,6 +143,13 @@ struct ResolutionFrame {
     document: ConfigDocument,
     next_base: usize,
     inherited: tombi_document::Document,
+    max_base_depth: usize,
+}
+
+#[derive(Clone)]
+struct ResolvedConfig {
+    values: tombi_document::Document,
+    depth: usize,
 }
 
 enum ResolutionStep {
@@ -153,7 +160,7 @@ enum ResolutionStep {
 struct ConfigResolution {
     stack: Vec<ResolutionFrame>,
     active: Vec<ConfigSource>,
-    completed: HashMap<ConfigSource, tombi_document::Document>,
+    completed: HashMap<ConfigSource, ResolvedConfig>,
     pending: Option<ConfigSource>,
     reference_count: usize,
 }
@@ -166,6 +173,7 @@ impl ConfigResolution {
                 document: root,
                 next_base: 0,
                 inherited: tombi_document::Document::new(),
+                max_base_depth: 0,
             }],
             active: vec![source],
             completed: HashMap::new(),
@@ -188,6 +196,7 @@ impl ConfigResolution {
                 document: loaded,
                 next_base: 0,
                 inherited: tombi_document::Document::new(),
+                max_base_depth: 0,
             });
         } else {
             debug_assert!(loaded.is_none());
@@ -227,7 +236,13 @@ impl ConfigResolution {
                 }
 
                 if let Some(completed) = self.completed.get(&source) {
-                    overlay(&mut frame.inherited, completed.clone(), true);
+                    if self.active.len() + completed.depth > MAX_EXTENDS_DEPTH {
+                        return Err(tombi_config::Error::ConfigExtendsDepthExceeded {
+                            limit: MAX_EXTENDS_DEPTH,
+                        });
+                    }
+                    frame.max_base_depth = frame.max_base_depth.max(completed.depth + 1);
+                    overlay(&mut frame.inherited, completed.values.clone(), true);
                     continue;
                 }
 
@@ -240,9 +255,16 @@ impl ConfigResolution {
             self.active.pop();
             let mut resolved = frame.inherited;
             overlay(&mut resolved, frame.document.values, true);
-            self.completed.insert(source, resolved.clone());
+            self.completed.insert(
+                source,
+                ResolvedConfig {
+                    values: resolved.clone(),
+                    depth: frame.max_base_depth,
+                },
+            );
 
             if let Some(parent) = self.stack.last_mut() {
+                parent.max_base_depth = parent.max_base_depth.max(frame.max_base_depth + 1);
                 overlay(&mut parent.inherited, resolved, true);
             } else {
                 return Ok(ResolutionStep::Complete(resolved));
@@ -353,18 +375,25 @@ fn parse_document(
     let extends_strings = match extends_value {
         None => Vec::new(),
         Some(Value::String(value)) => vec![value.value().to_owned()],
-        Some(Value::Array(values)) => values
-            .values()
-            .iter()
-            .map(|value| match value {
-                Value::String(value) => Ok(value.value().to_owned()),
-                _ => Err(tombi_config::Error::ConfigExtendsInvalid {
-                    config_source: source.display(),
-                    reference: "extends".to_owned(),
-                    reason: "extends arrays must contain only strings".to_owned(),
-                }),
-            })
-            .collect::<Result<Vec<_>, _>>()?,
+        Some(Value::Array(values)) => {
+            if values.values().len() > MAX_EXTENDS_REFERENCES {
+                return Err(tombi_config::Error::ConfigExtendsCountExceeded {
+                    limit: MAX_EXTENDS_REFERENCES,
+                });
+            }
+            values
+                .values()
+                .iter()
+                .map(|value| match value {
+                    Value::String(value) => Ok(value.value().to_owned()),
+                    _ => Err(tombi_config::Error::ConfigExtendsInvalid {
+                        config_source: source.display(),
+                        reference: "extends".to_owned(),
+                        reason: "extends arrays must contain only strings".to_owned(),
+                    }),
+                })
+                .collect::<Result<Vec<_>, _>>()?
+        }
         Some(_) => {
             return Err(tombi_config::Error::ConfigExtendsInvalid {
                 config_source: source.display(),
@@ -374,7 +403,6 @@ fn parse_document(
         }
     };
 
-    // Validate every layer on its own so a local override cannot hide invalid inherited keys.
     crate::from_document::<tombi_config::Config>(values.clone())
         .map_err(|error| layer_error(&source, inherited, error))?;
 

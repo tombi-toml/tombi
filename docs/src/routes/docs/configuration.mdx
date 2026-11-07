@@ -51,8 +51,8 @@ line-width = 100
 
 Configs are applied from left to right, with the local config last. Later configs take precedence over earlier ones. Tables merge recursively, and local scalar values replace inherited values. Most arrays are replaced by the higher-priority config. `schemas` and `overrides` are combined with higher-priority entries first, so local entries take precedence over inherited entries.
 
-Paths and globs in inherited settings are resolved relative to the extending config file.
-An inheritance chain can contain at most 32 levels and 256 references in total.
+Paths and globs in inherited settings are resolved relative to the extending config's base directory, using Tombi's existing path rules.
+An inheritance chain can follow at most 32 references. One resolution can use at most 256 references in total.
 
 ## Available Options
 

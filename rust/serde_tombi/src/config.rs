@@ -230,8 +230,10 @@ fn load_with_path_and_level_sync(
     }
 
     if let Some((path, level)) = get_user_or_system_tombi_config_path_and_level() {
-        if let Some(config) = try_from_path(&path)? {
-            return Ok((config, Some(path), level));
+        match try_from_path(&path) {
+            Ok(Some(config)) => return Ok((config, Some(path), level)),
+            Ok(None) => log::warn!("user config {path:?} has no Tombi config"),
+            Err(error) => log::warn!("failed to load user config {path:?}: {error}"),
         }
     }
     Ok((Config::default(), None, ConfigLevel::Default))
