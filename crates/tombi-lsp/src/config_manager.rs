@@ -38,7 +38,8 @@ pub struct ConfigManager {
     source_config_paths: Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, PathBuf>>>,
     /// Maps config file paths to their ConfigSchemaStore
     config_schema_stores:
-        Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, CachedConfigSchemaStore>>>,
+        Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, ConfigSchemaStore>>>,
+    config_dependency_graph: tokio::sync::RwLock<ConfigDependencyGraph>,
     config_source_cache: tokio::sync::Mutex<serde_tombi::config::ConfigSourceCache>,
     schema_store_operation_lock: tokio::sync::Mutex<()>,
     /// Default ConfigSchemaStore when no config file is found
@@ -50,10 +51,52 @@ pub struct ConfigManager {
     associated_schemas: Arc<tokio::sync::RwLock<Vec<AssociatedSchema>>>,
 }
 
-#[derive(Debug, Clone)]
-struct CachedConfigSchemaStore {
-    store: ConfigSchemaStore,
-    local_dependencies: Vec<PathBuf>,
+/// Which configs inherit from which local config files via `extends`.
+#[derive(Debug, Default)]
+struct ConfigDependencyGraph {
+    /// config path -> local config files it is built from (itself included)
+    dependencies: tombi_hashmap::HashMap<PathBuf, Vec<PathBuf>>,
+    /// local config file -> config paths built from it (itself included)
+    dependents: tombi_hashmap::HashMap<PathBuf, tombi_hashmap::HashSet<PathBuf>>,
+}
+
+impl ConfigDependencyGraph {
+    fn set(&mut self, config_path: &Path, dependencies: Vec<PathBuf>) {
+        self.remove(config_path);
+        for dependency in &dependencies {
+            self.dependents
+                .entry(dependency.clone())
+                .or_default()
+                .insert(config_path.to_owned());
+        }
+        self.dependencies
+            .insert(config_path.to_owned(), dependencies);
+    }
+
+    fn remove(&mut self, config_path: &Path) {
+        for dependency in self.dependencies.remove(config_path).unwrap_or_default() {
+            if let Some(dependents) = self.dependents.get_mut(&dependency) {
+                dependents.remove(config_path);
+                if dependents.is_empty() {
+                    self.dependents.remove(&dependency);
+                }
+            }
+        }
+    }
+
+    fn dependents_of(&self, path: &Path) -> Vec<PathBuf> {
+        let selected = absolute_normalized_path(path);
+        let identity = tombi_fs::canonicalize(path).unwrap_or_else(|_| selected.clone());
+        let mut dependents = [selected, identity]
+            .iter()
+            .filter_map(|path| self.dependents.get(path))
+            .flatten()
+            .cloned()
+            .collect::<Vec<_>>();
+        dependents.sort();
+        dependents.dedup();
+        dependents
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -68,6 +111,7 @@ impl ConfigManager {
         Self {
             source_config_paths: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
             config_schema_stores: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
+            config_dependency_graph: tokio::sync::RwLock::new(ConfigDependencyGraph::default()),
             config_source_cache: tokio::sync::Mutex::new(Default::default()),
             schema_store_operation_lock: tokio::sync::Mutex::new(()),
             default_config_schema_store: Arc::new(tokio::sync::RwLock::new(None)),
@@ -125,7 +169,7 @@ impl ConfigManager {
             .read()
             .await
             .get(&config_path)
-            .map(|entry| entry.store.clone())
+            .cloned()
     }
 
     pub async fn config_schema_store_for_directory(
@@ -161,8 +205,8 @@ impl ConfigManager {
         source_cache: &mut serde_tombi::config::ConfigSourceCache,
     ) -> Result<Option<ConfigSchemaStore>, tombi_schema_store::Error> {
         for candidate in serde_tombi::config::config_candidates(directory) {
-            if let Some(entry) = self.config_schema_stores.read().await.get(&candidate.path) {
-                return Ok(Some(entry.store.clone()));
+            if let Some(store) = self.config_schema_stores.read().await.get(&candidate.path) {
+                return Ok(Some(store.clone()));
             }
             if !tombi_fs::is_file(&candidate.path) {
                 continue;
@@ -181,7 +225,6 @@ impl ConfigManager {
                             .await
                             .get(&candidate.path)
                             .expect("loaded config store exists")
-                            .store
                             .clone(),
                     ));
                 }
@@ -200,60 +243,43 @@ impl ConfigManager {
         self.backend_options.offline.unwrap_or(false)
     }
 
-    pub async fn invalidate_local_dependencies(&self, paths: &[PathBuf], rediscover: bool) -> bool {
-        let mut source_cache = self.config_source_cache.lock().await;
-        source_cache.invalidate_local_paths(paths);
-        let changed_paths = paths
-            .iter()
-            .flat_map(|path| {
-                let selected = absolute_normalized_path(path);
-                let identity = tombi_fs::canonicalize(path).unwrap_or_else(|_| selected.clone());
-                [selected, identity]
-            })
-            .collect::<std::collections::HashSet<_>>();
-        let mut stores = self.config_schema_stores.write().await;
-        let before = stores.len();
-        stores.retain(|_, entry| {
-            !entry
-                .local_dependencies
-                .iter()
-                .any(|path| changed_paths.contains(path))
-        });
-        let invalidated = before != stores.len();
-        let mut source_paths = self.source_config_paths.write().await;
-        if rediscover {
-            source_paths.clear();
-        } else if invalidated {
-            source_paths.retain(|_, path| stores.contains_key(path));
-        }
-        drop(source_paths);
-        drop(stores);
-
-        invalidated
-    }
-
+    /// Reload a config file and every config that inherits from it via `extends`.
     pub async fn reload_config(
         &self,
         config_path: &Path,
     ) -> Result<bool, tombi_schema_store::Error> {
         let mut source_cache = self.config_source_cache.lock().await;
         source_cache.invalidate_local_paths(&[config_path.to_owned()]);
-        match source_cache
-            .try_from_path(config_path, self.is_offline())
-            .await
-        {
-            Ok(Some(report)) => {
-                let _operation = self.schema_store_operation_lock.lock().await;
-                self.update_config_report_locked(report, config_path)
-                    .await?;
-                Ok(true)
-            }
-            Ok(None) => Ok(false),
-            Err(error) => {
-                log::warn!("failed to reload config {config_path:?}: {error}");
-                Ok(false)
+
+        let mut config_paths = vec![config_path.to_owned()];
+        config_paths.extend(
+            self.config_dependency_graph
+                .read()
+                .await
+                .dependents_of(config_path)
+                .into_iter()
+                .filter(|dependent| dependent != config_path),
+        );
+
+        let mut reloaded = false;
+        for config_path in config_paths {
+            match source_cache
+                .try_from_path(&config_path, self.is_offline())
+                .await
+            {
+                Ok(Some(report)) => {
+                    let _operation = self.schema_store_operation_lock.lock().await;
+                    self.update_config_report_locked(report, &config_path)
+                        .await?;
+                    reloaded = true;
+                }
+                Ok(None) => {}
+                Err(error) => {
+                    log::warn!("failed to reload config {config_path:?}: {error}");
+                }
             }
         }
+        Ok(reloaded)
     }
 
     /// Update a specific config and its path
@@ -301,12 +327,13 @@ impl ConfigManager {
         let mut config_schema_stores = self.config_schema_stores.write().await;
         config_schema_stores.insert(
             config_path.to_owned(),
-            CachedConfigSchemaStore {
-                store: ConfigSchemaStore::new(config, Some(config_path.to_owned()), schema_store),
-                local_dependencies,
-            },
+            ConfigSchemaStore::new(config, Some(config_path.to_owned()), schema_store),
         );
         drop(config_schema_stores);
+        self.config_dependency_graph
+            .write()
+            .await
+            .set(config_path, local_dependencies);
 
         Ok(())
     }
@@ -371,7 +398,7 @@ impl ConfigManager {
             .read()
             .await
             .values()
-            .map(|entry| entry.store.clone())
+            .cloned()
             .collect::<Vec<_>>();
         for config_schema_store in config_schema_stores {
             updated |= config_schema_store
@@ -407,7 +434,7 @@ impl ConfigManager {
                 .read()
                 .await
                 .values()
-                .map(|entry| entry.store.clone())
+                .cloned()
                 .collect::<Vec<_>>()
         };
         for config_schema_store in config_schema_stores {
@@ -499,7 +526,7 @@ impl ConfigManager {
             .read()
             .await
             .values()
-            .map(|entry| entry.store.clone())
+            .cloned()
             .collect::<Vec<_>>();
         let default_config_schema_store = self.default_config_schema_store.read().await.clone();
         let associated_schemas = self.associated_schemas.read().await.clone();
@@ -577,7 +604,7 @@ impl ConfigManager {
             .read()
             .await
             .values()
-            .map(|entry| entry.store.clone())
+            .cloned()
             .collect::<Vec<_>>();
         for config_schema_store in config_schema_stores {
             for schema in config_schema_store.schema_store.list_schemas().await {
@@ -694,4 +721,68 @@ fn absolute_normalized_path(path: &Path) -> PathBuf {
             .unwrap_or_else(|_| path.to_owned())
     };
     tombi_fs::normalize(&absolute)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn write_file(path: &Path, contents: &str) {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, contents).unwrap();
+    }
+
+    async fn toml_version(
+        manager: &ConfigManager,
+        directory: &Path,
+    ) -> Option<tombi_config::TomlVersion> {
+        manager
+            .config_schema_store_for_directory(Some(directory.to_owned()))
+            .await
+            .config
+            .toml_version
+    }
+
+    #[tokio::test]
+    async fn reload_config_reloads_configs_extending_it() {
+        let _cache_home = tombi_test_lib::TestCacheHome::new();
+        let temp_dir = tempfile::tempdir().unwrap();
+        let base_path = temp_dir.path().join("shared/tombi.toml");
+        let app_dir = temp_dir.path().join("app");
+        write_file(&base_path, "toml-version = \"v1.0.0\"\n");
+        write_file(
+            &app_dir.join("tombi.toml"),
+            "extends = [\"../shared/tombi.toml\"]\n",
+        );
+
+        let manager = ConfigManager::new(&crate::backend::Options {
+            offline: Some(true),
+            ..Default::default()
+        });
+        assert_eq!(
+            toml_version(&manager, &app_dir).await,
+            Some(tombi_config::TomlVersion::V1_0_0)
+        );
+
+        write_file(&base_path, "toml-version = \"v1.1.0\"\n");
+        assert!(manager.reload_config(&base_path).await.unwrap());
+
+        assert_eq!(
+            toml_version(&manager, &app_dir).await,
+            Some(tombi_config::TomlVersion::V1_1_0)
+        );
+    }
+
+    #[test]
+    fn dependency_graph_forgets_removed_dependencies() {
+        let mut graph = ConfigDependencyGraph::default();
+        let config_path = PathBuf::from("/app/tombi.toml");
+        let base_path = PathBuf::from("/shared/tombi.toml");
+
+        graph.set(&config_path, vec![config_path.clone(), base_path.clone()]);
+        assert_eq!(graph.dependents_of(&base_path), vec![config_path.clone()]);
+
+        graph.set(&config_path, vec![config_path.clone()]);
+        assert!(graph.dependents_of(&base_path).is_empty());
+    }
 }

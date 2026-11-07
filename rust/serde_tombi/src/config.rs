@@ -265,4 +265,37 @@ mod tests {
         );
         assert_eq!(config_level, ConfigLevel::Project);
     }
+
+    #[tokio::test]
+    async fn extends_accepts_dot_tombi_toml() {
+        let temp_dir = temp_test_dir("extends-dot-tombi");
+        write_file(
+            &temp_dir.path().join("shared/.tombi.toml"),
+            "toml-version = \"v1.0.0\"\n",
+        );
+        let config_path = temp_dir.path().join("app/tombi.toml");
+        write_file(&config_path, "extends = \"../shared/.tombi.toml\"\n");
+
+        let config = try_from_path(&config_path, true).await.unwrap().unwrap();
+
+        assert_eq!(config.toml_version, Some(TomlVersion::V1_0_0));
+    }
+
+    #[tokio::test]
+    async fn extends_rejects_files_not_named_tombi_toml() {
+        let temp_dir = temp_test_dir("extends-other-name");
+        write_file(
+            &temp_dir.path().join("shared/base.toml"),
+            "toml-version = \"v1.0.0\"\n",
+        );
+        let config_path = temp_dir.path().join("app/tombi.toml");
+        write_file(&config_path, "extends = \"../shared/base.toml\"\n");
+
+        let error = try_from_path(&config_path, true).await.unwrap_err();
+
+        assert!(
+            matches!(error, tombi_config::Error::ConfigExtendsInvalid { .. }),
+            "{error}"
+        );
+    }
 }

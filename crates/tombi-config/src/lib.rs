@@ -91,6 +91,7 @@ pub struct Config {
 #[schemars(extend("additionalProperties" = false))]
 pub struct ConfigFileSchema {
     /// One or more local config paths or HTTP(S) URLs to inherit.
+    /// Each must be named `tombi.toml` or `.tombi.toml`.
     pub extends: Option<OneOrMany<std::string::String>>,
 
     #[schemars(flatten)]

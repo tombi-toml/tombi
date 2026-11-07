@@ -82,11 +82,48 @@ impl ConfigSource {
             } => path
                 .file_name()
                 .is_some_and(|name| name == "pyproject.toml"),
-            Self::Remote(uri) => uri.path().ends_with("/pyproject.toml"),
+            Self::Remote(_) => false,
         }
     }
 
+    fn is_tombi_toml(&self) -> bool {
+        let file_name = match self {
+            Self::File {
+                selected_path: path,
+                ..
+            } => path.file_name().and_then(|name| name.to_str()),
+            Self::Remote(uri) => uri.path().rsplit('/').next(),
+        };
+        matches!(
+            file_name,
+            Some(tombi_config::TOMBI_TOML_FILENAME | tombi_config::DOT_TOMBI_TOML_FILENAME)
+        )
+    }
+
+    /// Resolve an `extends` reference.
+    ///
+    /// Only `tombi.toml` and `.tombi.toml` can be extended,
+    /// so that the schema for Tombi config files applies to every inherited config.
     fn resolve_reference(&self, reference: &str) -> Result<ConfigSource, tombi_config::Error> {
+        let source = self.resolve_reference_target(reference)?;
+        if !source.is_tombi_toml() {
+            return Err(tombi_config::Error::ConfigExtendsInvalid {
+                config_source: self.display(),
+                reference: reference.to_owned(),
+                reason: format!(
+                    "extended configs must be named {} or {}",
+                    tombi_config::TOMBI_TOML_FILENAME,
+                    tombi_config::DOT_TOMBI_TOML_FILENAME
+                ),
+            });
+        }
+        Ok(source)
+    }
+
+    fn resolve_reference_target(
+        &self,
+        reference: &str,
+    ) -> Result<ConfigSource, tombi_config::Error> {
         let invalid = |reason: &str| tombi_config::Error::ConfigExtendsInvalid {
             config_source: self.display(),
             reference: reference.to_owned(),
