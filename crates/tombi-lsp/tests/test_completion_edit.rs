@@ -631,26 +631,26 @@ default-members = [${0:"\$crate\}"}]"#);
 
         test_completion_edit! {
             #[tokio::test]
-            async fn dynamic_cargo_prefix_preserves_comment(
+            async fn dynamic_cargo_dependency_preserves_comment(
                 "[dependencies]\nserde = { optional = true }\n[features]\nfull = [\"other\" # keep\n  █]",
-                Select("\"dep:\""),
+                Select("\"dep:serde\""),
                 SourcePath(project_root_path().join("Cargo.toml")),
-            ) -> Ok("[dependencies]\nserde = { optional = true }\n[features]\nfull = [\"other\" # keep\n  , \"dep:$0\"]");
+            ) -> Ok("[dependencies]\nserde = { optional = true }\n[features]\nfull = [\"other\" # keep\n  , ${0:\"dep:serde\"}]");
         }
 
         test_completion_edit! {
             #[tokio::test]
-            async fn dynamic_cargo_prefix_quoted(
+            async fn dynamic_cargo_dependency_quoted(
                 r#"[dependencies]
 serde = { optional = true }
 [features]
 full = ["d█"]"#,
-                Select("\"dep:\""),
+                Select("\"dep:serde\""),
                 SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok(r#"[dependencies]
 serde = { optional = true }
 [features]
-full = ["dep:$0"]"#);
+full = ["dep:serde"]"#);
         }
         test_completion_edit! {
             #[tokio::test]
@@ -667,31 +667,31 @@ full = ["core"]"#);
         }
         test_completion_edit! {
             #[tokio::test]
-            async fn dynamic_cargo_prefix_trailing_comma(
+            async fn dynamic_cargo_dependency_trailing_comma(
                 r#"[dependencies]
 serde = { optional = true }
 [features]
 full = [█,"other"]"#,
-                Select("\"dep:\""),
+                Select("\"dep:serde\""),
                 SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok(r#"[dependencies]
 serde = { optional = true }
 [features]
-full = ["dep:$0","other"]"#);
+full = [${0:"dep:serde"},"other"]"#);
         }
         test_completion_edit! {
             #[tokio::test]
-            async fn dynamic_cargo_prefix_leading_comma(
+            async fn dynamic_cargo_dependency_leading_comma(
                 r#"[dependencies]
 serde = { optional = true }
 [features]
 full = ["other" █]"#,
-                Select("\"dep:\""),
+                Select("\"dep:serde\""),
                 SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok(r#"[dependencies]
 serde = { optional = true }
 [features]
-full = ["other", "dep:$0"]"#);
+full = ["other", ${0:"dep:serde"}]"#);
         }
         test_completion_edit! {
             #[tokio::test]
@@ -792,21 +792,21 @@ dependency-groups = { docs }"#);
 
         test_completion_edit! {
             #[tokio::test]
-            async fn dynamic_cargo_dep_prefix(
+            async fn dynamic_cargo_dependency_empty_slot(
                 r#"[dependencies]
 serde = { optional = true }
 [features]
 full = [█]"#,
-                Select("\"dep:\""),
+                Select("\"dep:serde\""),
                 SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok(r#"[dependencies]
 serde = { optional = true }
 [features]
-full = ["dep:$0"]"#);
+full = [${0:"dep:serde"}]"#);
         }
         test_completion_edit! {
             #[tokio::test]
-            async fn dynamic_cargo_dep_second(
+            async fn dynamic_cargo_dependency_prefix_cursor(
                 r#"[dependencies]
 serde = { optional = true }
 [features]

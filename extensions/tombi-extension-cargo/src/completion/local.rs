@@ -2,10 +2,7 @@ use std::collections::BTreeSet;
 
 use tombi_ast_syntax::{AstNode, TomlNode};
 use tombi_document_tree_syntax::{DocumentTree, Value, dig_accessors, dig_keys};
-use tombi_extension::{
-    CompletionContent, CompletionEdit, CompletionHint, CompletionTextEdit, InsertTextFormat,
-    TextEdit,
-};
+use tombi_extension::{CompletionContent, CompletionEdit, CompletionHint};
 use tombi_schema_store::{Accessor, matches_accessors};
 use tombi_text::{Offset, Span};
 
@@ -143,20 +140,8 @@ impl CargoStringSlot {
             .map_or("", tombi_extension::CompletionStringPrefix::value)
     }
 
-    fn edit(&self, value: &str, prefix: bool) -> Option<CompletionEdit> {
-        if prefix {
-            if let Some(span) = self.span {
-                return Some(CompletionEdit {
-                    text_edit: CompletionTextEdit::Edit(TextEdit {
-                        span,
-                        new_text: "\"dep:$0\"".to_owned(),
-                    }),
-                    insert_text_format: Some(InsertTextFormat::SNIPPET),
-                    additional_text_edits: None,
-                });
-            }
-            CompletionEdit::new_prefixed_string_literal("dep:", "\"", self.offset, self.hint)
-        } else if let Some(span) = self.span {
+    fn edit(&self, value: &str) -> Option<CompletionEdit> {
+        if let Some(span) = self.span {
             if self.prefix().starts_with("dep:") {
                 CompletionEdit::new_string_literal_while_editing_with_cursor(value, span)
             } else {
@@ -274,26 +259,17 @@ pub(super) fn complete(
         CargoCompletionSite::RequiredFeature => table_keys(document, &["features"]),
         CargoCompletionSite::FeatureActivation(owner) => {
             let dependencies = optional_dependencies(document);
-            if slot.prefix().starts_with("dep:") {
+            let mut features = table_keys(document, &["features"]);
+            let explicitly_activated = explicitly_activated_dependencies(document);
+            features.extend(
                 dependencies
-                    .into_iter()
-                    .map(|name| format!("dep:{name}"))
-                    .collect()
-            } else {
-                let mut features = table_keys(document, &["features"]);
-                let explicitly_activated = explicitly_activated_dependencies(document);
-                features.extend(
-                    dependencies
-                        .iter()
-                        .filter(|name| !explicitly_activated.contains(*name))
-                        .cloned(),
-                );
-                features.remove(owner);
-                if !dependencies.is_empty() {
-                    features.insert("dep:".to_owned());
-                }
-                features
-            }
+                    .iter()
+                    .filter(|name| !explicitly_activated.contains(*name))
+                    .cloned(),
+            );
+            features.remove(owner);
+            features.extend(dependencies.into_iter().map(|name| format!("dep:{name}")));
+            features
         }
     };
     choices.retain(|choice| choice.starts_with(slot.prefix()) && !slot.present.contains(choice));
@@ -302,7 +278,7 @@ pub(super) fn complete(
             .into_iter()
             .map(|choice| {
                 let label = serde_json::Value::String(choice.clone()).to_string();
-                let edit = slot.edit(&choice, choice == "dep:");
+                let edit = slot.edit(&choice);
                 let mut content =
                     CompletionContent::new_enum_value(label, None, None, edit, None, None);
                 content.filter_text = slot

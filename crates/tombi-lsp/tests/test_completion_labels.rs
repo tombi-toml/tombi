@@ -3167,18 +3167,25 @@ required-features = ["cli", "c█"]"#,
         }
         test_completion_labels! {
             #[tokio::test]
-            async fn dynamic_cargo_features_first_stage(
+            async fn dynamic_cargo_feature_candidates(
                 r#"[dependencies]
 renamed = { package = "serde", optional = true }
+other = { optional = true }
 [features]
 core = []
 full = ["█"]"#,
                 SourcePath(project_root_path().join("Cargo.toml")),
-            ) -> Ok(["\"core\"", "\"dep:\"", "\"renamed\""]);
+            ) -> Ok([
+                "\"core\"",
+                "\"dep:other\"",
+                "\"dep:renamed\"",
+                "\"other\"",
+                "\"renamed\"",
+            ]);
         }
         test_completion_labels! {
             #[tokio::test]
-            async fn dynamic_cargo_features_second_stage(
+            async fn dynamic_cargo_feature_dependency_prefix(
                 r#"[dependencies]
 renamed = { package = "serde", optional = true }
 [features]

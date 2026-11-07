@@ -164,27 +164,6 @@ impl CompletionEdit {
         }
     }
 
-    /// Inserts a string prefix with the caret before the closing quote.
-    pub fn new_prefixed_string_literal(
-        prefix: &str,
-        quote: &str,
-        offset: tombi_text::Offset,
-        hint: Option<CompletionHint>,
-    ) -> Option<Self> {
-        let mut edit = Self::new_string_literal(quote, offset, hint)?;
-        if let CompletionTextEdit::Edit(text_edit) = &mut edit.text_edit {
-            let prefix = prefix
-                .replace('\\', "\\\\")
-                .replace('$', "\\$")
-                .replace('}', "\\}");
-            text_edit.new_text = text_edit.new_text.replace("$1", &format!("{prefix}$0"));
-            if text_edit.new_text.ends_with("$0") {
-                text_edit.new_text.truncate(text_edit.new_text.len() - 2);
-            }
-        }
-        Some(edit)
-    }
-
     pub fn new_string_literal_while_editing(
         label: &str,
         value_span: tombi_text::Span,
