@@ -1,4 +1,6 @@
+mod cached;
 mod error;
+pub use cached::CachedHttpClient;
 pub use error::FetchError;
 
 use bytes::Bytes;
@@ -7,6 +9,54 @@ pub type HttpFuture<'a, T> = tombi_future::BoxFuture<'a, T>;
 /// HTTP operations required by the schema store.
 pub trait HttpClient: std::fmt::Debug + Send + Sync {
     fn get_bytes<'a>(&'a self, url: &'a str) -> HttpFuture<'a, Result<Bytes, FetchError>>;
+
+    /// Like [`get_bytes`](Self::get_bytes), but `is_valid` tells whether the content is usable.
+    ///
+    /// Caching clients use it to avoid persisting or serving unusable content.
+    fn get_validated<'a>(
+        &'a self,
+        url: &'a str,
+        is_valid: &'a ContentValidator<'a>,
+    ) -> HttpFuture<'a, Result<Bytes, FetchError>> {
+        let _ = is_valid;
+        self.get_bytes(url)
+    }
+}
+
+pub type ContentValidator<'a> = dyn Fn(&[u8]) -> bool + Send + Sync + 'a;
+
+/// Options of the [`HttpClient`] that reads remote files.
+#[derive(Debug, Clone)]
+pub struct Options {
+    /// Serve cached content only, without reaching the network.
+    pub offline: bool,
+    pub cache: Option<tombi_cache::Options>,
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Self {
+            offline: false,
+            cache: Some(tombi_cache::Options::default()),
+        }
+    }
+}
+
+impl From<&crate::Options> for Options {
+    fn from(options: &crate::Options) -> Self {
+        Self {
+            offline: options.offline.unwrap_or_default(),
+            cache: options.cache.clone(),
+        }
+    }
+}
+
+/// The [`HttpClient`] used to read remote files, backed by the shared on-disk cache.
+pub fn http_client(options: Options) -> std::sync::Arc<dyn HttpClient> {
+    std::sync::Arc::new(CachedHttpClient::new(
+        std::sync::Arc::new(DefaultHttpClient::new()),
+        options,
+    ))
 }
 
 #[allow(dead_code)]

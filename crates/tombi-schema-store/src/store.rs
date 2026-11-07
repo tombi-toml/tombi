@@ -16,7 +16,7 @@ use itertools::{Either, Itertools};
 use parking_lot::RwLock as ParkingRwLock;
 use tokio::sync::RwLock;
 use tombi_ast_syntax::SchemaDocumentCommentDirective;
-use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
+use tombi_cache::{get_cache_file_path, refresh_cache};
 use tombi_config::{
     BoolDefaultTrue, SchemaItem, SchemaOverviewOptions, TomlVersion, config_base_dir,
 };
@@ -299,6 +299,7 @@ impl SchemaStore {
         http_client: Arc<dyn HttpClient>,
         fetch_policy: Arc<SchemaFetchPolicy>,
     ) -> Self {
+        let http_client = Arc::new(crate::CachedHttpClient::new(http_client, (&options).into()));
         Self {
             http_client,
             fetch_policy,
@@ -535,63 +536,25 @@ impl SchemaStore {
                 })?
             }
             "http" | "https" => {
-                let catalog_cache_path = get_cache_file_path(catalog_uri).await;
-                if let Some(catalog_cache_path) = &catalog_cache_path
-                    && let Ok(Some(catalog)) = load_catalog_from_cache(
-                        catalog_uri,
-                        catalog_cache_path,
-                        self.cache_options(),
-                    )
+                let bytes = match self
+                    .http_client
+                    .get_validated(catalog_uri.as_str(), &|bytes| {
+                        serde_json::from_slice::<crate::json::JsonCatalog>(bytes).is_ok()
+                    })
                     .await
                 {
-                    return Ok(Some(catalog));
-                }
-
-                if self.offline() {
-                    if let Ok(Some(catalog)) = load_catalog_from_cache_ignoring_ttl(
-                        catalog_uri,
-                        catalog_cache_path.as_deref(),
-                        self.cache_options().cloned(),
-                    )
-                    .await
-                    {
-                        return Ok(Some(catalog));
-                    }
-                    log::debug!("offline mode, skip fetch catalog from url: {}", catalog_uri);
-                    return Ok(None);
-                }
-
-                let bytes = match self.http_client.get_bytes(catalog_uri.as_str()).await {
-                    Ok(bytes) => {
-                        log::debug!("fetch catalog from url: {}", catalog_uri);
-                        bytes
+                    Ok(bytes) => bytes,
+                    Err(crate::FetchError::Offline) => {
+                        log::debug!("offline mode, skip fetch catalog from url: {}", catalog_uri);
+                        return Ok(None);
                     }
                     Err(err) => {
-                        if err.is_policy_denied() {
-                            return Err(crate::Error::CatalogUriFetchFailed {
-                                catalog_uri: catalog_uri.clone(),
-                                reason: err.to_string(),
-                            });
-                        }
-                        if let Ok(Some(catalog)) = load_catalog_from_cache_ignoring_ttl(
-                            catalog_uri,
-                            catalog_cache_path.as_deref(),
-                            self.cache_options().cloned(),
-                        )
-                        .await
-                        {
-                            return Ok(Some(catalog));
-                        }
                         return Err(crate::Error::CatalogUriFetchFailed {
                             catalog_uri: catalog_uri.clone(),
                             reason: err.to_string(),
                         });
                     }
                 };
-
-                if let Err(err) = save_to_cache(catalog_cache_path.as_deref(), &bytes).await {
-                    log::warn!("{err}");
-                }
 
                 match serde_json::from_slice::<crate::json::JsonCatalog>(&bytes) {
                     Ok(catalog) => catalog,
@@ -767,56 +730,22 @@ impl SchemaStore {
                 )?))
             }
             "http" | "https" => {
-                let schema_cache_path = get_cache_file_path(schema_uri).await;
-                if let Some(schema_cache_path) = &schema_cache_path
-                    && let Ok(Some(schema_document)) = load_json_schema_from_cache(
-                        schema_uri,
-                        schema_cache_path,
-                        self.cache_options(),
-                    )
+                let bytes = match self
+                    .http_client
+                    .get_validated(schema_uri.as_str(), &|bytes| {
+                        tombi_json::Document::from_reader(std::io::Cursor::new(bytes)).is_ok()
+                    })
                     .await
                 {
-                    return Ok(Some(schema_document));
-                }
-
-                if self.offline() {
-                    if let Ok(Some(schema_document)) = load_json_schema_from_cache_ignoring_ttl(
-                        schema_uri,
-                        schema_cache_path.as_deref(),
-                        self.cache_options().cloned(),
-                    )
-                    .await
-                    {
-                        return Ok(Some(schema_document));
-                    }
-                    log::debug!("offline mode, skip fetch schema from uri: {}", schema_uri);
-                    return Ok(None);
-                }
-
-                let bytes = match self.http_client.get_bytes(schema_uri.as_str()).await {
-                    Ok(bytes) => {
-                        log::debug!("fetch schema from uri: {}", schema_uri);
-                        bytes
-                    }
-                    Err(err @ crate::FetchError::AuthenticationFailed { .. }) => {
-                        return Err(crate::Error::SchemaFetchFailed {
-                            schema_uri: schema_uri.clone(),
-                            reason: err.to_string(),
-                        });
+                    Ok(bytes) => bytes,
+                    Err(crate::FetchError::Offline) => {
+                        log::debug!("offline mode, skip fetch schema from uri: {}", schema_uri);
+                        return Ok(None);
                     }
                     Err(err) if err.is_policy_denied() => {
                         return Err(crate::Error::from_schema_fetch_error(schema_uri, err));
                     }
                     Err(err) => {
-                        if let Ok(Some(schema_document)) = load_json_schema_from_cache_ignoring_ttl(
-                            schema_uri,
-                            schema_cache_path.as_deref(),
-                            self.cache_options().cloned(),
-                        )
-                        .await
-                        {
-                            return Ok(Some(schema_document));
-                        }
                         return Err(crate::Error::SchemaFetchFailed {
                             schema_uri: schema_uri.clone(),
                             reason: err.to_string(),
@@ -831,9 +760,6 @@ impl SchemaStore {
                     schema_uri: schema_uri.to_owned(),
                     reason: err.to_string(),
                 })?;
-                if let Err(err) = save_to_cache(schema_cache_path.as_deref(), &bytes).await {
-                    log::warn!("{err}");
-                }
 
                 Ok(Some(schema_document))
             }
@@ -1849,89 +1775,6 @@ fn canonicalize_file_match_pattern(pattern: &str) -> String {
     }
 }
 
-async fn load_catalog_from_cache_ignoring_ttl(
-    tagalog_uri: &CatalogUri,
-    catalog_cache_path: Option<&std::path::Path>,
-    cache_options: Option<tombi_cache::Options>,
-) -> Result<Option<JsonCatalog>, crate::Error> {
-    if let Some(catalog_cache_path) = catalog_cache_path {
-        let mut owned_cache_options = cache_options.unwrap_or_default();
-        owned_cache_options.cache_ttl = None;
-        if let Ok(Some(catalog)) =
-            load_catalog_from_cache(tagalog_uri, catalog_cache_path, Some(&owned_cache_options))
-                .await
-        {
-            return Ok(Some(catalog));
-        }
-    }
-
-    Ok(None)
-}
-
-async fn load_catalog_from_cache(
-    tagalog_uri: &CatalogUri,
-    catalog_cache_path: &std::path::Path,
-    cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<JsonCatalog>, crate::Error> {
-    if let Some(catalog_cache_content) =
-        read_from_cache(Some(catalog_cache_path), cache_options).await?
-    {
-        log::debug!("load catalog from cache: {}", tagalog_uri);
-
-        return Ok(Some(serde_json::from_str(&catalog_cache_content).map_err(
-            |err| crate::Error::CatalogFileParseFailed {
-                tagalog_uri: tagalog_uri.to_owned(),
-                reason: err.to_string(),
-            },
-        )?));
-    }
-
-    Ok(None)
-}
-
-/// Attempt to load the json schema from the cache, ignoring the TTL.
-async fn load_json_schema_from_cache_ignoring_ttl(
-    schema_uri: &SchemaUri,
-    schema_cache_path: Option<&std::path::Path>,
-    cache_options: Option<tombi_cache::Options>,
-) -> Result<Option<tombi_json::Document>, crate::Error> {
-    if let Some(schema_cache_path) = schema_cache_path {
-        let mut owned_cache_options = cache_options.unwrap_or_default();
-        owned_cache_options.cache_ttl = None;
-        if let Ok(Some(schema_document)) =
-            load_json_schema_from_cache(schema_uri, schema_cache_path, Some(&owned_cache_options))
-                .await
-        {
-            return Ok(Some(schema_document));
-        }
-    }
-
-    Ok(None)
-}
-
-async fn load_json_schema_from_cache(
-    schema_uri: &SchemaUri,
-    schema_cache_path: &std::path::Path,
-    cache_options: Option<&tombi_cache::Options>,
-) -> Result<Option<tombi_json::Document>, crate::Error> {
-    if let Some(schema_cache_content) =
-        read_from_cache(Some(schema_cache_path), cache_options).await?
-    {
-        log::trace!("load schema from cache: {}", schema_uri);
-
-        return Ok(Some(
-            tombi_json::Document::from_str(&schema_cache_content).map_err(|err| {
-                crate::Error::SchemaFileParseFailed {
-                    schema_uri: schema_uri.to_owned(),
-                    reason: err.to_string(),
-                }
-            })?,
-        ));
-    }
-
-    Ok(None)
-}
-
 fn canonicalize_path_for_matching(path: &std::path::Path) -> std::path::PathBuf {
     tombi_fs::canonicalize(path).unwrap_or_else(|_| {
         if path.is_absolute() {
@@ -2020,32 +1863,16 @@ fn parse_override_target(target: &str) -> Option<Vec<PatternAccessor>> {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        fs,
-        path::{Path, PathBuf},
-        str::FromStr,
-        sync::Arc,
-        time::Duration,
-    };
+    use std::{fs, path::Path, str::FromStr, sync::Arc, time::Duration};
 
-    use super::{
-        SchemaStore, get_cache_file_path, load_catalog_from_cache_ignoring_ttl,
-        load_json_schema_from_cache_ignoring_ttl, matches_schema_patterns, save_to_cache,
-    };
+    use super::{SchemaStore, get_cache_file_path, matches_schema_patterns};
     use crate::{
         CatalogUri, SchemaView, http_client::ReqwestHttpClient,
         schema_fetch_policy::SchemaFetchPolicy,
     };
+    use tombi_cache::save_to_cache;
     use tombi_test_lib::TestCacheHome;
     use tombi_uri::SchemaUri;
-
-    fn temp_cache_path(test_name: &str) -> PathBuf {
-        let unique = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        std::env::temp_dir().join(format!("tombi-schema-store-{test_name}-{unique}.json"))
-    }
 
     #[cfg(not(target_arch = "wasm32"))]
     #[tokio::test(flavor = "current_thread")]
@@ -2298,57 +2125,5 @@ mod tests {
         assert_eq!(catalog.unwrap().schemas.len(), 1);
 
         let _ = std::fs::remove_file(catalog_path);
-    }
-
-    #[tokio::test]
-    async fn ignores_ttl_for_catalog_cache_without_cache_options() {
-        let cache_path = temp_cache_path("catalog-cache-offline-default-options");
-        std::fs::write(
-            &cache_path,
-            r#"{"schemas":[{"name":"test","description":"desc","url":"https://example.invalid/schema.json"}]}"#,
-        )
-        .unwrap();
-        std::fs::File::options()
-            .write(true)
-            .open(&cache_path)
-            .unwrap()
-            .set_modified(std::time::SystemTime::now() - Duration::from_secs(60 * 60 * 25))
-            .unwrap();
-
-        let catalog = load_catalog_from_cache_ignoring_ttl(
-            &CatalogUri::from_str("https://example.invalid/catalog.json").unwrap(),
-            Some(&cache_path),
-            None,
-        )
-        .await
-        .unwrap();
-
-        assert_eq!(catalog.unwrap().schemas.len(), 1);
-
-        let _ = std::fs::remove_file(cache_path);
-    }
-
-    #[tokio::test]
-    async fn ignores_ttl_for_schema_cache_without_cache_options() {
-        let cache_path = temp_cache_path("schema-cache-offline-default-options");
-        std::fs::write(&cache_path, r#"{"type":"string"}"#).unwrap();
-        std::fs::File::options()
-            .write(true)
-            .open(&cache_path)
-            .unwrap()
-            .set_modified(std::time::SystemTime::now() - Duration::from_secs(60 * 60 * 25))
-            .unwrap();
-
-        let schema_document = load_json_schema_from_cache_ignoring_ttl(
-            &SchemaUri::from_str("https://example.invalid/schema.json").unwrap(),
-            Some(&cache_path),
-            None,
-        )
-        .await
-        .unwrap();
-
-        assert!(schema_document.is_some());
-
-        let _ = std::fs::remove_file(cache_path);
     }
 }

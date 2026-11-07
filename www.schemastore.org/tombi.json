@@ -5,6 +5,17 @@
   "description": "**Tombi** (鳶 `/toɴbi/`) is a toolkit for TOML; providing a formatter/linter and language server.\nSee the [GitHub repository](https://github.com/tombi-toml/tombi) for more information.",
   "type": "object",
   "properties": {
+    "extends": {
+      "description": "Config files to inherit.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/OneOrMany"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "toml-version": {
       "title": "TOML version",
       "description": "TOML version to use if not specified in the schema and comment directive.",
@@ -99,10 +110,28 @@
       ]
     }
   },
-  "additionalProperties": false,
   "x-tombi-toml-version": "v1.1.0",
   "x-tombi-table-keys-order": "schema",
+  "additionalProperties": false,
   "definitions": {
+    "OneOrMany": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ExtendsReference"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ExtendsReference"
+          }
+        }
+      ]
+    },
+    "ExtendsReference": {
+      "description": "A config path or URL whose file name is `tombi.toml` or `.tombi.toml`.",
+      "type": "string",
+      "pattern": "(^|[/\\\\])\\.?tombi\\.toml([?#].*)?$"
+    },
     "TomlVersion": {
       "title": "TOML version",
       "oneOf": [

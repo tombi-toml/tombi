@@ -87,15 +87,15 @@ pub async fn get_workspace_configs(backend: &Backend) -> Option<Vec<WorkspaceCon
     let mut configs = Vec::with_capacity(workspace_folder_paths.len());
 
     for workspace_folder_path in workspace_folder_paths {
-        if let Ok((config, config_path)) =
-            serde_tombi::config::load_with_path(Some(workspace_folder_path.clone()))
-        {
-            configs.push(WorkspaceConfig {
-                workspace_folder_path,
-                config,
-                config_path,
-            });
-        };
+        let store = backend
+            .config_manager
+            .config_schema_store_for_directory(Some(workspace_folder_path.clone()))
+            .await;
+        configs.push(WorkspaceConfig {
+            workspace_folder_path,
+            config: store.config,
+            config_path: store.config_path,
+        });
     }
 
     Some(configs)

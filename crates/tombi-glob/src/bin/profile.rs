@@ -13,7 +13,12 @@ async fn main() {
     );
 
     let search_dir = Some(PathBuf::from(root));
-    let (config, _config_path) = match serde_tombi::config::load_with_path(search_dir) {
+    let (config, _config_path) = match serde_tombi::config::load_with_path(
+        search_dir,
+        tombi_schema_store::http_client(Default::default()).as_ref(),
+    )
+    .await
+    {
         Ok(config) => config,
         Err(err) => {
             eprintln!("Warning: Failed to load .tombi.toml/tombi.toml: {err}");

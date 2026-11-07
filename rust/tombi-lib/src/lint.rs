@@ -18,7 +18,7 @@ pub async fn lint_async(
     options: Options,
 ) -> Result<LintResult, Error> {
     let source_path = std::path::PathBuf::from(source_path);
-    let (config, config_path) = crate::load_config(options)?;
+    let (config, config_path) = crate::load_config(options).await?;
     let toml_version = config.toml_version.unwrap_or_default();
     let schema_store = crate::new_schema_store(&config);
 

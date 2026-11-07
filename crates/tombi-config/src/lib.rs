@@ -45,10 +45,6 @@ pub const SUPPORTED_CONFIG_FILENAMES: [&str; 3] = [
 ];
 pub const TOMBI_CONFIG_TOML_VERSION: TomlVersion = TomlVersion::V1_1_0;
 
-/// # Tombi
-///
-/// **Tombi** (鳶 `/toɴbi/`) is a toolkit for TOML; providing a formatter/linter and language server.
-/// See the [GitHub repository](https://github.com/tombi-toml/tombi) for more information.
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
@@ -81,6 +77,31 @@ pub struct Config {
     overrides: Option<Vec<OverrideItem>>,
 
     pub extensions: Option<Extensions>,
+}
+
+/// A config path or URL whose file name is `tombi.toml` or `.tombi.toml`.
+#[cfg(feature = "jsonschema")]
+#[derive(schemars::JsonSchema)]
+pub struct ExtendsReference(
+    #[schemars(regex(pattern = r"(^|[/\\])\.?tombi\.toml([?#].*)?$"))] pub std::string::String,
+);
+
+/// # Tombi
+///
+/// **Tombi** (鳶 `/toɴbi/`) is a toolkit for TOML; providing a formatter/linter and language server.
+/// See the [GitHub repository](https://github.com/tombi-toml/tombi) for more information.
+#[cfg(feature = "jsonschema")]
+#[derive(schemars::JsonSchema)]
+#[schemars(extend("x-tombi-toml-version" = TOMBI_CONFIG_TOML_VERSION))]
+#[schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema))]
+#[schemars(extend("$id" = concat!("tombi://", tombi_uri::schemastore_hostname!(), "/tombi.json")))]
+#[schemars(extend("additionalProperties" = false))]
+pub struct ConfigFileSchema {
+    /// Config files to inherit.
+    pub extends: Option<OneOrMany<ExtendsReference>>,
+
+    #[schemars(flatten)]
+    pub config: Config,
 }
 
 impl Config {
