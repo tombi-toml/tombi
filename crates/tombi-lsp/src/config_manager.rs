@@ -31,17 +31,24 @@ impl ConfigSchemaStore {
     }
 }
 
+/// A config with its store, and the local config files it is built from (itself included).
+#[derive(Debug)]
+struct LoadedConfig {
+    store: ConfigSchemaStore,
+    local_dependencies: Vec<PathBuf>,
+}
+
 /// Manages configuration files and their associated schema stores for different source files
+///
+/// Lock order: `config_source_cache`, then `associated_schemas`, then the store maps.
 #[derive(Debug)]
 pub struct ConfigManager {
     /// Maps source file paths to their associated config file paths
     source_config_paths: Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, PathBuf>>>,
-    /// Maps config file paths to their ConfigSchemaStore
-    config_schema_stores:
-        Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, ConfigSchemaStore>>>,
-    config_dependency_graph: tokio::sync::RwLock<ConfigDependencyGraph>,
+    /// Maps config file paths to their loaded config
+    config_schema_stores: Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, LoadedConfig>>>,
+    /// Serializes config resolution, which is the only part that reads and fetches configs.
     config_source_cache: tokio::sync::Mutex<serde_tombi::config::ConfigSourceCache>,
-    schema_store_operation_lock: tokio::sync::Mutex<()>,
     /// Default ConfigSchemaStore when no config file is found
     /// Contains the source type (Default or Editor) and the ConfigSchemaStore
     default_config_schema_store:
@@ -50,55 +57,9 @@ pub struct ConfigManager {
     backend_options: crate::backend::Options,
     /// Reads remote `extends` configs through the shared on-disk cache.
     http_client: Arc<dyn tombi_schema_store::HttpClient>,
+    /// Append-only. Holding it keeps `associate_schema` from running, so that a store
+    /// built from a snapshot of it is registered without missing an association.
     associated_schemas: Arc<tokio::sync::RwLock<Vec<AssociatedSchema>>>,
-}
-
-/// Which configs inherit from which local config files via `extends`.
-#[derive(Debug, Default)]
-struct ConfigDependencyGraph {
-    /// config path -> local config files it is built from (itself included)
-    dependencies: tombi_hashmap::HashMap<PathBuf, Vec<PathBuf>>,
-    /// local config file -> config paths built from it (itself included)
-    dependents: tombi_hashmap::HashMap<PathBuf, tombi_hashmap::HashSet<PathBuf>>,
-}
-
-impl ConfigDependencyGraph {
-    fn set(&mut self, config_path: &Path, dependencies: Vec<PathBuf>) {
-        self.remove(config_path);
-        for dependency in &dependencies {
-            self.dependents
-                .entry(dependency.clone())
-                .or_default()
-                .insert(config_path.to_owned());
-        }
-        self.dependencies
-            .insert(config_path.to_owned(), dependencies);
-    }
-
-    fn remove(&mut self, config_path: &Path) {
-        for dependency in self.dependencies.remove(config_path).unwrap_or_default() {
-            if let Some(dependents) = self.dependents.get_mut(&dependency) {
-                dependents.remove(config_path);
-                if dependents.is_empty() {
-                    self.dependents.remove(&dependency);
-                }
-            }
-        }
-    }
-
-    fn dependents_of(&self, path: &Path) -> Vec<PathBuf> {
-        let selected = absolute_normalized_path(path);
-        let identity = tombi_fs::canonicalize(path).unwrap_or_else(|_| selected.clone());
-        let mut dependents = [selected, identity]
-            .iter()
-            .filter_map(|path| self.dependents.get(path))
-            .flatten()
-            .cloned()
-            .collect::<Vec<_>>();
-        dependents.sort();
-        dependents.dedup();
-        dependents
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -113,9 +74,7 @@ impl ConfigManager {
         Self {
             source_config_paths: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
             config_schema_stores: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
-            config_dependency_graph: tokio::sync::RwLock::new(ConfigDependencyGraph::default()),
             config_source_cache: tokio::sync::Mutex::new(Default::default()),
-            schema_store_operation_lock: tokio::sync::Mutex::new(()),
             default_config_schema_store: Arc::new(tokio::sync::RwLock::new(None)),
             backend_options: backend_options.clone(),
             http_client: tombi_schema_store::http_client(tombi_schema_store::HttpClientOptions {
@@ -175,7 +134,7 @@ impl ConfigManager {
             .read()
             .await
             .get(&config_path)
-            .cloned()
+            .map(|config| config.store.clone())
     }
 
     pub async fn config_schema_store_for_directory(
@@ -211,8 +170,8 @@ impl ConfigManager {
         source_cache: &mut serde_tombi::config::ConfigSourceCache,
     ) -> Result<Option<ConfigSchemaStore>, tombi_schema_store::Error> {
         for candidate in serde_tombi::config::config_candidates(directory) {
-            if let Some(store) = self.config_schema_stores.read().await.get(&candidate.path) {
-                return Ok(Some(store.clone()));
+            if let Some(config) = self.config_schema_stores.read().await.get(&candidate.path) {
+                return Ok(Some(config.store.clone()));
             }
             if !tombi_fs::is_file(&candidate.path) {
                 continue;
@@ -222,16 +181,8 @@ impl ConfigManager {
                 .await
             {
                 Ok(Some(report)) => {
-                    let _operation = self.schema_store_operation_lock.lock().await;
-                    self.update_config_report_locked(report, &candidate.path)
-                        .await?;
                     return Ok(Some(
-                        self.config_schema_stores
-                            .read()
-                            .await
-                            .get(&candidate.path)
-                            .expect("loaded config store exists")
-                            .clone(),
+                        self.update_config_report(report, &candidate.path).await?,
                     ));
                 }
                 Ok(None) => {}
@@ -239,10 +190,6 @@ impl ConfigManager {
             }
         }
         Ok(None)
-    }
-
-    fn is_offline(&self) -> bool {
-        self.backend_options.offline.unwrap_or(false)
     }
 
     /// Reload a config file and every config that inherits from it via `extends`.
@@ -255,10 +202,7 @@ impl ConfigManager {
 
         let mut config_paths = vec![config_path.to_owned()];
         config_paths.extend(
-            self.config_dependency_graph
-                .read()
-                .await
-                .dependents_of(config_path)
+            dependents_of(&*self.config_schema_stores.read().await, config_path)
                 .into_iter()
                 .filter(|dependent| dependent != config_path),
         );
@@ -270,9 +214,7 @@ impl ConfigManager {
                 .await
             {
                 Ok(Some(report)) => {
-                    let _operation = self.schema_store_operation_lock.lock().await;
-                    self.update_config_report_locked(report, &config_path)
-                        .await?;
+                    self.update_config_report(report, &config_path).await?;
                     reloaded = true;
                 }
                 Ok(None) => {}
@@ -291,8 +233,7 @@ impl ConfigManager {
         config_path: &Path,
     ) -> Result<(), tombi_schema_store::Error> {
         let _source_cache = self.config_source_cache.lock().await;
-        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
-        self.update_config_report_locked(
+        self.update_config_report(
             serde_tombi::config::ConfigLoadReport {
                 config,
                 local_dependencies: vec![
@@ -303,79 +244,120 @@ impl ConfigManager {
             },
             config_path,
         )
-        .await
+        .await?;
+        Ok(())
     }
 
-    async fn update_config_report_locked(
+    async fn update_config_report(
         &self,
         report: serde_tombi::config::ConfigLoadReport,
         config_path: &Path,
-    ) -> Result<(), tombi_schema_store::Error> {
+    ) -> Result<ConfigSchemaStore, tombi_schema_store::Error> {
         let serde_tombi::config::ConfigLoadReport {
             config,
             local_dependencies,
         } = report;
+        let (schema_store, applied, result) =
+            self.build_schema_store(&config, Some(config_path)).await;
+        result?;
+        let store = ConfigSchemaStore::new(config, Some(config_path.to_owned()), schema_store);
+
+        let _associations = self
+            .catch_up_associations(&store.schema_store, applied)
+            .await;
+        self.config_schema_stores.write().await.insert(
+            config_path.to_owned(),
+            LoadedConfig {
+                store: store.clone(),
+                local_dependencies,
+            },
+        );
+        Ok(store)
+    }
+
+    /// Build a store for `config` from the associations registered so far.
+    ///
+    /// Returns the store (usable even when loading failed), the number of
+    /// associations applied, and the loading result.
+    async fn build_schema_store(
+        &self,
+        config: &Config,
+        config_path: Option<&Path>,
+    ) -> (SchemaStore, usize, Result<(), tombi_schema_store::Error>) {
         let associated_schemas = self.associated_schemas.read().await.clone();
-        let schema_options = schema_store_options(&config, &self.backend_options);
-        let schema_store = SchemaStore::new_with_options(schema_options);
-        load_schema_store_with_associations(
+        let schema_store =
+            SchemaStore::new_with_options(schema_store_options(config, &self.backend_options));
+        let result = load_schema_store_with_associations(
             &schema_store,
-            &config,
-            Some(config_path),
+            config,
+            config_path,
             &associated_schemas,
         )
-        .await?;
+        .await;
+        (schema_store, associated_schemas.len(), result)
+    }
 
-        let mut config_schema_stores = self.config_schema_stores.write().await;
-        config_schema_stores.insert(
-            config_path.to_owned(),
-            ConfigSchemaStore::new(config, Some(config_path.to_owned()), schema_store),
-        );
-        drop(config_schema_stores);
-        self.config_dependency_graph
-            .write()
+    /// Apply the associations added since `applied` to a freshly built store.
+    ///
+    /// Keep the returned guard until the store is registered: `associate_schema`
+    /// waits for it, so no association can be missed in between.
+    async fn catch_up_associations(
+        &self,
+        schema_store: &SchemaStore,
+        applied: usize,
+    ) -> tokio::sync::RwLockReadGuard<'_, Vec<AssociatedSchema>> {
+        let associated_schemas = self.associated_schemas.read().await;
+        load_associations(schema_store, &associated_schemas[applied..]).await;
+        associated_schemas
+    }
+
+    /// Every store, the default one included.
+    async fn all_config_schema_stores(&self) -> Vec<ConfigSchemaStore> {
+        let mut stores = self
+            .config_schema_stores
+            .read()
             .await
-            .set(config_path, local_dependencies);
-
-        Ok(())
+            .values()
+            .map(|config| config.store.clone())
+            .collect::<Vec<_>>();
+        if let Some((_, store)) = self.default_config_schema_store.read().await.as_ref() {
+            stores.push(store.clone());
+        }
+        stores
     }
 
     /// Get the default config
     async fn default_config_schema_store(&self) -> ConfigSchemaStore {
-        if let Some((_, config_schema_store)) =
-            self.default_config_schema_store.read().await.as_ref()
-        {
-            return config_schema_store.clone();
+        let (store, result) = self.init_default_config_schema_store().await;
+        if let Err(err) = result {
+            log::error!("failed to load default schema store: {err}");
         }
+        store
+    }
 
-        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
-        if let Some((_, config_schema_store)) =
-            self.default_config_schema_store.read().await.as_ref()
-        {
-            return config_schema_store.clone();
+    async fn init_default_config_schema_store(
+        &self,
+    ) -> (ConfigSchemaStore, Result<(), tombi_schema_store::Error>) {
+        if let Some((_, store)) = self.default_config_schema_store.read().await.as_ref() {
+            return (store.clone(), Ok(()));
         }
 
         let config = Config::default();
-        let associated_schemas = self.associated_schemas.read().await.clone();
-        let schema_options = schema_store_options(&config, &self.backend_options);
-        let schema_store = SchemaStore::new_with_options(schema_options);
+        let (schema_store, applied, result) = self.build_schema_store(&config, None).await;
+        let store = ConfigSchemaStore::new(config, None, schema_store);
 
-        if let Err(err) =
-            load_schema_store_with_associations(&schema_store, &config, None, &associated_schemas)
-                .await
-        {
-            log::error!("failed to load default schema store: {err}");
-        }
-
-        let config_schema_store = ConfigSchemaStore::new(config, None, schema_store);
+        let _associations = self
+            .catch_up_associations(&store.schema_store, applied)
+            .await;
         let mut default_config_schema_store = self.default_config_schema_store.write().await;
-        if let Some((_, existing)) = default_config_schema_store.as_ref() {
-            existing.clone()
-        } else {
-            *default_config_schema_store =
-                Some((DefaultConfigSource::Default, config_schema_store.clone()));
-            config_schema_store
-        }
+        let store = match default_config_schema_store.as_ref() {
+            Some((_, existing)) => existing.clone(),
+            None => {
+                *default_config_schema_store = Some((DefaultConfigSource::Default, store.clone()));
+                store
+            }
+        };
+        (store, result)
     }
 
     /// Get the config path for a specific URI
@@ -393,25 +375,12 @@ impl ConfigManager {
         &self,
         schema_uri: SchemaUri,
     ) -> Result<bool, tombi_schema_store::Error> {
-        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         let mut updated = false;
-        let config_schema_stores = self
-            .config_schema_stores
-            .read()
-            .await
-            .values()
-            .cloned()
-            .collect::<Vec<_>>();
-        for config_schema_store in config_schema_stores {
+        for config_schema_store in self.all_config_schema_stores().await {
             updated |= config_schema_store
                 .schema_store
                 .update_schema(schema_uri.clone())
                 .await?;
-        }
-        if let Some((_, ConfigSchemaStore { schema_store, .. })) =
-            self.default_config_schema_store.read().await.clone()
-        {
-            updated |= schema_store.update_schema(schema_uri).await?;
         }
         Ok(updated)
     }
@@ -422,7 +391,6 @@ impl ConfigManager {
         file_match: &[String],
         options: &tombi_schema_store::AssociateSchemaOptions,
     ) {
-        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         let mut associated_schemas = self.associated_schemas.write().await;
         let associated_schema = AssociatedSchema {
             schema_uri: schema_uri.clone(),
@@ -431,20 +399,8 @@ impl ConfigManager {
         };
         associated_schemas.push(associated_schema.clone());
 
-        let config_schema_stores = {
-            self.config_schema_stores
-                .read()
-                .await
-                .values()
-                .cloned()
-                .collect::<Vec<_>>()
-        };
-        for config_schema_store in config_schema_stores {
+        for config_schema_store in self.all_config_schema_stores().await {
             apply_association(&config_schema_store.schema_store, &associated_schema).await;
-        }
-        let default_config_schema_store = self.default_config_schema_store.read().await.clone();
-        if let Some((_, ConfigSchemaStore { schema_store, .. })) = default_config_schema_store {
-            apply_association(&schema_store, &associated_schema).await;
         }
     }
 
@@ -464,36 +420,17 @@ impl ConfigManager {
                 )
                 .await?
                 .is_none()
-            && self.default_config_schema_store.read().await.is_none()
         {
-            let _operation = self.schema_store_operation_lock.lock().await;
-            if self.default_config_schema_store.read().await.is_none() {
-                let config = Config::default();
-                let associated_schemas = self.associated_schemas.read().await.clone();
-                let schema_options = schema_store_options(&config, &self.backend_options);
-                let schema_store = SchemaStore::new_with_options(schema_options);
-                load_schema_store_with_associations(
-                    &schema_store,
-                    &config,
-                    None,
-                    &associated_schemas,
-                )
-                .await?;
-                *self.default_config_schema_store.write().await = Some((
-                    DefaultConfigSource::Default,
-                    ConfigSchemaStore::new(config, None, schema_store),
-                ));
-            }
+            self.init_default_config_schema_store().await.1?;
         }
         Ok(())
     }
 
     pub async fn refresh_cache(&self) -> Result<bool, tombi_schema_store::Error> {
         let mut source_cache = self.config_source_cache.lock().await;
-        if !self.is_offline() {
+        if !self.backend_options.offline.unwrap_or_default() {
             source_cache.clear();
         }
-        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         let mut updated = false;
 
         let config_paths: Vec<PathBuf> = self
@@ -509,8 +446,7 @@ impl ConfigManager {
                 .await
             {
                 Ok(Some(report)) => {
-                    self.update_config_report_locked(report, &config_path)
-                        .await?;
+                    self.update_config_report(report, &config_path).await?;
                     updated = true;
                 }
                 Ok(None) => {}
@@ -523,20 +459,13 @@ impl ConfigManager {
             }
         }
 
-        let config_schema_stores = self
-            .config_schema_stores
-            .read()
-            .await
-            .values()
-            .cloned()
-            .collect::<Vec<_>>();
-        let default_config_schema_store = self.default_config_schema_store.read().await.clone();
-        let associated_schemas = self.associated_schemas.read().await.clone();
+        // Keep `associate_schema` out while the associations are re-applied.
+        let associated_schemas = self.associated_schemas.read().await;
         for ConfigSchemaStore {
             config,
             config_path,
             schema_store,
-        } in config_schema_stores
+        } in self.all_config_schema_stores().await
         {
             if schema_store
                 .refresh_cache(&config, config_path.as_deref())
@@ -547,42 +476,22 @@ impl ConfigManager {
             }
         }
 
-        if let Some((
-            _,
-            ConfigSchemaStore {
-                config,
-                config_path,
-                schema_store,
-            },
-        )) = default_config_schema_store
-            && schema_store
-                .refresh_cache(&config, config_path.as_deref())
-                .await?
-        {
-            load_associations(&schema_store, &associated_schemas).await;
-            updated = true;
-        }
-
         Ok(updated)
     }
 
     /// Update editor configuration
     pub async fn update_editor_config(&self, config: Config) {
-        let _schema_store_operation = self.schema_store_operation_lock.lock().await;
-        let associated_schemas = self.associated_schemas.read().await.clone();
-        let schema_options = schema_store_options(&config, &self.backend_options);
-        let schema_store = SchemaStore::new_with_options(schema_options);
-
-        if let Err(err) =
-            load_schema_store_with_associations(&schema_store, &config, None, &associated_schemas)
-                .await
-        {
+        let (schema_store, applied, result) = self.build_schema_store(&config, None).await;
+        if let Err(err) = result {
             log::error!("failed to load editor config schema store: {err}");
         }
-
         let config_schema_store = ConfigSchemaStore::new(config, None, schema_store);
-        let mut default_config_schema_store = self.default_config_schema_store.write().await;
-        *default_config_schema_store = Some((DefaultConfigSource::Editor, config_schema_store));
+
+        let _associations = self
+            .catch_up_associations(&config_schema_store.schema_store, applied)
+            .await;
+        *self.default_config_schema_store.write().await =
+            Some((DefaultConfigSource::Editor, config_schema_store));
     }
 
     /// Get editor configuration
@@ -600,33 +509,8 @@ impl ConfigManager {
         let mut schema_map: tombi_hashmap::IndexMap<SchemaUri, tombi_schema_store::Schema> =
             tombi_hashmap::IndexMap::new();
 
-        // Get schemas from all config_schema_stores
-        let config_schema_stores = self
-            .config_schema_stores
-            .read()
-            .await
-            .values()
-            .cloned()
-            .collect::<Vec<_>>();
-        for config_schema_store in config_schema_stores {
+        for config_schema_store in self.all_config_schema_stores().await {
             for schema in config_schema_store.schema_store.list_schemas().await {
-                if let Some(existing_schema) = schema_map.get_mut(&schema.schema_uri) {
-                    merge_schema(existing_schema, schema);
-                } else {
-                    schema_map.insert(schema.schema_uri.clone(), schema);
-                }
-            }
-        }
-
-        // Get schemas from default_config_schema_store
-        if let Some((_, default_config_schema_store)) =
-            self.default_config_schema_store.read().await.clone()
-        {
-            let schemas = default_config_schema_store
-                .schema_store
-                .list_schemas()
-                .await;
-            for schema in schemas {
                 if let Some(existing_schema) = schema_map.get_mut(&schema.schema_uri) {
                     merge_schema(existing_schema, schema);
                 } else {
@@ -712,6 +596,27 @@ fn merge_schema(
             }
         }
     }
+}
+
+/// Configs built from the local config file `path`, itself included.
+fn dependents_of(
+    stores: &tombi_hashmap::HashMap<PathBuf, LoadedConfig>,
+    path: &Path,
+) -> Vec<PathBuf> {
+    let selected = absolute_normalized_path(path);
+    let identity = tombi_fs::canonicalize(path).unwrap_or_else(|_| selected.clone());
+    let mut dependents = stores
+        .iter()
+        .filter(|(_, config)| {
+            config
+                .local_dependencies
+                .iter()
+                .any(|dependency| *dependency == selected || *dependency == identity)
+        })
+        .map(|(config_path, _)| config_path.clone())
+        .collect::<Vec<_>>();
+    dependents.sort();
+    dependents
 }
 
 fn absolute_normalized_path(path: &Path) -> PathBuf {
@@ -845,15 +750,29 @@ mod tests {
     }
 
     #[test]
-    fn dependency_graph_forgets_removed_dependencies() {
-        let mut graph = ConfigDependencyGraph::default();
+    fn dependents_of_forgets_removed_dependencies() {
         let config_path = PathBuf::from("/app/tombi.toml");
         let base_path = PathBuf::from("/shared/tombi.toml");
+        let loaded = |local_dependencies: Vec<PathBuf>| LoadedConfig {
+            store: ConfigSchemaStore::new(
+                Config::default(),
+                Some(config_path.clone()),
+                SchemaStore::new(),
+            ),
+            local_dependencies,
+        };
+        let mut stores = tombi_hashmap::HashMap::new();
 
-        graph.set(&config_path, vec![config_path.clone(), base_path.clone()]);
-        assert_eq!(graph.dependents_of(&base_path), vec![config_path.clone()]);
+        stores.insert(
+            config_path.clone(),
+            loaded(vec![config_path.clone(), base_path.clone()]),
+        );
+        assert_eq!(
+            dependents_of(&stores, &base_path),
+            vec![config_path.clone()]
+        );
 
-        graph.set(&config_path, vec![config_path.clone()]);
-        assert!(graph.dependents_of(&base_path).is_empty());
+        stores.insert(config_path.clone(), loaded(vec![config_path.clone()]));
+        assert!(dependents_of(&stores, &base_path).is_empty());
     }
 }
