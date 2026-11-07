@@ -45,10 +45,6 @@ pub const SUPPORTED_CONFIG_FILENAMES: [&str; 3] = [
 ];
 pub const TOMBI_CONFIG_TOML_VERSION: TomlVersion = TomlVersion::V1_1_0;
 
-/// # Tombi
-///
-/// **Tombi** (鳶 `/toɴbi/`) is a toolkit for TOML; providing a formatter/linter and language server.
-/// See the [GitHub repository](https://github.com/tombi-toml/tombi) for more information.
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
