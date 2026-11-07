@@ -16,32 +16,6 @@ pub async fn from_str(
     inheritance::from_str(toml_text, config_path).await
 }
 
-#[cfg(not(target_family = "wasm"))]
-fn runtime_error(reason: std::string::String) -> tombi_config::Error {
-    tombi_config::Error::ConfigExtendsParseFailed {
-        config_source: "config resolver".to_owned(),
-        reason,
-    }
-}
-
-#[cfg(not(target_family = "wasm"))]
-fn run_async_in_thread<T, F, Fut>(run: F) -> Result<T, tombi_config::Error>
-where
-    T: Send + 'static,
-    F: FnOnce() -> Fut + Send + 'static,
-    Fut: std::future::Future<Output = Result<T, tombi_config::Error>> + 'static,
-{
-    std::thread::spawn(move || {
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .map_err(|error| runtime_error(error.to_string()))?;
-        runtime.block_on(run())
-    })
-    .join()
-    .map_err(|_| runtime_error("config resolver thread panicked".to_owned()))?
-}
-
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ConfigLoadOptions {
     pub offline: bool,
@@ -85,21 +59,6 @@ pub fn config_candidates(search_dir: Option<std::path::PathBuf>) -> Vec<ConfigCa
     candidates
 }
 
-pub fn try_from_path_sync<P: AsRef<std::path::Path>>(
-    config_path: P,
-) -> Result<Option<Config>, tombi_config::Error> {
-    let config_path = config_path.as_ref().to_owned();
-    validate_config_path(&config_path)?;
-    #[cfg(not(target_family = "wasm"))]
-    {
-        run_async_in_thread(move || async move { try_from_path(config_path).await })
-    }
-    #[cfg(target_family = "wasm")]
-    {
-        inheritance::try_from_path_sync(&config_path)
-    }
-}
-
 fn validate_config_path(config_path: &std::path::Path) -> Result<(), tombi_config::Error> {
     match config_path.file_name().and_then(|name| name.to_str()) {
         Some(
@@ -133,31 +92,7 @@ pub async fn try_from_path_with_options<P: AsRef<std::path::Path>>(
         .await
 }
 
-pub fn load_with_path_and_level(
-    search_dir: Option<std::path::PathBuf>,
-) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
-    #[cfg(not(target_family = "wasm"))]
-    {
-        run_async_in_thread(move || async move { load_with_path_and_level_async(search_dir).await })
-    }
-    #[cfg(target_family = "wasm")]
-    {
-        for candidate in config_candidates(search_dir) {
-            if !tombi_fs::is_file(&candidate.path) {
-                continue;
-            }
-            match try_from_path_sync(&candidate.path) {
-                Ok(Some(config)) => return Ok((config, Some(candidate.path), candidate.level)),
-                Ok(None) => {}
-                Err(error @ tombi_config::Error::ConfigAsyncRequired { .. }) => return Err(error),
-                Err(error) => log::warn!("failed to load config {:?}: {error}", candidate.path),
-            }
-        }
-        Ok((Config::default(), None, ConfigLevel::Default))
-    }
-}
-
-pub async fn load_with_path_and_level_async(
+pub async fn load_with_path_and_level(
     search_dir: Option<std::path::PathBuf>,
 ) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
     load_with_path_and_level_with_options(search_dir, ConfigLoadOptions::default()).await
@@ -184,20 +119,12 @@ pub async fn load_with_path_and_level_with_options(
 pub async fn load_with_path(
     search_dir: Option<std::path::PathBuf>,
 ) -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
-    let (config, config_path, _) = load_with_path_and_level_async(search_dir).await?;
+    let (config, config_path, _) = load_with_path_and_level(search_dir).await?;
     Ok((config, config_path))
 }
 
-pub async fn load_async(
-    search_dir: Option<std::path::PathBuf>,
-) -> Result<Config, tombi_config::Error> {
-    let (config, _, _) = load_with_path_and_level_async(search_dir).await?;
-    Ok(config)
-}
-
-#[inline]
-pub fn load(search_dir: Option<std::path::PathBuf>) -> Result<Config, tombi_config::Error> {
-    let (config, _, _) = load_with_path_and_level(search_dir)?;
+pub async fn load(search_dir: Option<std::path::PathBuf>) -> Result<Config, tombi_config::Error> {
+    let (config, _, _) = load_with_path_and_level(search_dir).await?;
     Ok(config)
 }
 
@@ -276,8 +203,8 @@ mod tests {
             .unwrap()
     }
 
-    #[test]
-    fn loads_next_project_config_after_parse_error() {
+    #[tokio::test]
+    async fn loads_next_project_config_after_parse_error() {
         let temp_dir = temp_test_dir("config-parse-error-fallback");
         let nested_dir = temp_dir.path().join("workspace/nested");
 
@@ -292,15 +219,15 @@ mod tests {
         );
 
         let (config, config_path, config_level) =
-            load_with_path_and_level(Some(nested_dir)).unwrap();
+            load_with_path_and_level(Some(nested_dir)).await.unwrap();
 
         assert_eq!(config.toml_version, Some(TomlVersion::V1_0_0));
         assert_eq!(config_path, Some(temp_dir.path().join(TOMBI_TOML_FILENAME)));
         assert_eq!(config_level, ConfigLevel::Project);
     }
 
-    #[test]
-    fn loads_project_config_from_dot_config_tombi_toml_before_pyproject() {
+    #[tokio::test]
+    async fn loads_project_config_from_dot_config_tombi_toml_before_pyproject() {
         let temp_dir = temp_test_dir("dot-config-tombi");
         let nested_dir = temp_dir.path().join("workspace/nested");
 
@@ -315,7 +242,7 @@ mod tests {
         );
 
         let (config, config_path, config_level) =
-            load_with_path_and_level(Some(nested_dir)).unwrap();
+            load_with_path_and_level(Some(nested_dir)).await.unwrap();
 
         assert_eq!(config.toml_version, Some(TomlVersion::V1_1_0));
         assert_eq!(
@@ -325,8 +252,8 @@ mod tests {
         assert_eq!(config_level, ConfigLevel::Project);
     }
 
-    #[test]
-    fn ignores_dot_tombi_toml_inside_dot_config() {
+    #[tokio::test]
+    async fn ignores_dot_tombi_toml_inside_dot_config() {
         let temp_dir = temp_test_dir("ignore-dot-config-dot-tombi");
         let nested_dir = temp_dir.path().join("workspace/nested");
 
@@ -341,7 +268,7 @@ mod tests {
         );
 
         let (config, config_path, config_level) =
-            load_with_path_and_level(Some(nested_dir)).unwrap();
+            load_with_path_and_level(Some(nested_dir)).await.unwrap();
 
         assert_eq!(config.toml_version, Some(TomlVersion::V1_0_0));
         assert_eq!(

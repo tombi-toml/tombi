@@ -49,7 +49,7 @@ line-width = 100
 
 `extends` accepts one path or URL, or an array. Local paths are resolved relative to the config file that declares them. HTTP and HTTPS URLs are supported; a relative URL in a remote config is resolved against that URL. A remote config cannot use `file://` to read a local file. In `pyproject.toml`, place `extends` inside `[tool.tombi]`.
 
-Configs are applied from left to right, with the local config last. Later configs take precedence over earlier ones. Tables merge recursively, and local scalar values replace inherited values. Most arrays are replaced by the higher-priority config. `schemas` and `overrides` are combined with higher-priority entries first, so local entries take precedence over inherited entries.
+The configs in `extends` are applied in the order listed, starting with the first entry. The local config is applied last, and later configs take precedence over earlier ones. Tables merge recursively, and local scalar values replace inherited values. Most arrays are replaced by the higher-priority config. `schemas` and `overrides` are combined with higher-priority entries first, so local entries take precedence over inherited entries.
 
 Paths and globs in inherited settings are resolved relative to the extending config's base directory, using Tombi's existing path rules.
 An inheritance chain can follow at most 32 references. One resolution can use at most 256 references in total.

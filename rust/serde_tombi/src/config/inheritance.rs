@@ -411,7 +411,7 @@ impl ConfigSourceCache {
             return Ok(document.clone());
         }
 
-        let document = read_document_async(source.clone(), inherited, options).await?;
+        let document = read_document(source.clone(), inherited, options).await?;
         self.documents.insert(source, document.clone());
         Ok(document)
     }
@@ -635,7 +635,7 @@ fn extract_pyproject_config(
     Ok(Some(config.into()))
 }
 
-async fn read_document_async(
+async fn read_document(
     source: ConfigSource,
     inherited: bool,
     options: super::ConfigLoadOptions,
@@ -659,31 +659,6 @@ async fn read_document_async(
                 .map_err(|error| source_error(&source, error))?;
             std::string::String::from_utf8(bytes.to_vec())
                 .map_err(|error| source_error(&source, error))?
-        }
-    };
-
-    parse_document(&text, source.clone(), inherited)?.ok_or_else(|| {
-        tombi_config::Error::ConfigExtendsParseFailed {
-            config_source: source.display(),
-            reason: "pyproject.toml does not contain [tool.tombi]".to_owned(),
-        }
-    })
-}
-
-#[cfg(target_family = "wasm")]
-fn read_document_sync(
-    source: ConfigSource,
-    inherited: bool,
-) -> Result<ConfigDocument, tombi_config::Error> {
-    let text = match &source {
-        ConfigSource::File {
-            selected_path: path,
-            ..
-        } => tombi_fs::read_to_string(path).map_err(|error| source_error(&source, error))?,
-        ConfigSource::Remote(uri) => {
-            return Err(tombi_config::Error::ConfigAsyncRequired {
-                config_uri: uri.clone(),
-            });
         }
     };
 
@@ -726,28 +701,6 @@ async fn resolve(
     }
 }
 
-#[cfg(target_family = "wasm")]
-fn resolve_sync(root: ConfigDocument) -> Result<tombi_config::Config, tombi_config::Error> {
-    let mut resolution = ConfigResolution::new(root);
-    let mut step = resolution.advance(None)?;
-    loop {
-        step = match step {
-            ResolutionStep::Read(source) => {
-                let document = read_document_sync(source, true)?;
-                resolution.advance(Some(document))?
-            }
-            ResolutionStep::Complete(document, _) => {
-                return crate::from_document(document).map_err(|error| {
-                    tombi_config::Error::ConfigExtendsParseFailed {
-                        config_source: "merged config".to_owned(),
-                        reason: error.to_string(),
-                    }
-                });
-            }
-        };
-    }
-}
-
 pub(crate) async fn from_str(
     text: &str,
     config_path: &std::path::Path,
@@ -763,23 +716,4 @@ pub(crate) async fn from_str(
     resolve(root, super::ConfigLoadOptions::default(), &mut source_cache)
         .await
         .map(|report| report.config)
-}
-
-#[cfg(target_family = "wasm")]
-pub(crate) fn try_from_path_sync(
-    config_path: &std::path::Path,
-) -> Result<Option<tombi_config::Config>, tombi_config::Error> {
-    if !tombi_fs::is_file(config_path) {
-        return Err(tombi_config::Error::ConfigFileNotFound {
-            config_path: config_path.to_owned(),
-        });
-    }
-
-    let source = ConfigSource::from_path(config_path.to_owned());
-    let text =
-        tombi_fs::read_to_string(config_path).map_err(|error| source_error(&source, error))?;
-    let Some(root) = parse_document(&text, source, false)? else {
-        return Ok(None);
-    };
-    resolve_sync(root).map(Some)
 }
