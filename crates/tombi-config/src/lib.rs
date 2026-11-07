@@ -79,6 +79,13 @@ pub struct Config {
     pub extensions: Option<Extensions>,
 }
 
+/// A config path or URL whose file name is `tombi.toml` or `.tombi.toml`.
+#[cfg(feature = "jsonschema")]
+#[derive(schemars::JsonSchema)]
+pub struct ExtendsReference(
+    #[schemars(regex(pattern = r"(^|[/\\])\.?tombi\.toml([?#].*)?$"))] pub std::string::String,
+);
+
 /// # Tombi
 ///
 /// **Tombi** (鳶 `/toɴbi/`) is a toolkit for TOML; providing a formatter/linter and language server.
@@ -92,7 +99,7 @@ pub struct Config {
 pub struct ConfigFileSchema {
     /// One or more local config paths or HTTP(S) URLs to inherit.
     /// Each must be named `tombi.toml` or `.tombi.toml`.
-    pub extends: Option<OneOrMany<std::string::String>>,
+    pub extends: Option<OneOrMany<ExtendsReference>>,
 
     #[schemars(flatten)]
     pub config: Config,
