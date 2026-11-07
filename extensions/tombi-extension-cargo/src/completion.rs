@@ -147,11 +147,15 @@ fn completion_declared_name(
 
     let (_, value) = dig_accessors(document_tree, accessors)?;
     let target = match (value, completion_hint) {
-        // `default = [█]`: insert into the list itself.
+        // `default = [█]`: insert into the array itself.
         (Value::Array(array), _) if is_list && array.span().contains_inclusive(offset) => {
             CompletionNameTarget::Insert {
                 offset,
-                hint: completion_hint,
+                hint: Some(CompletionHint::new_in_array(
+                    completion_hint,
+                    offset,
+                    array.iter().map(|item| item.symbol_span()),
+                )),
             }
         }
         _ if is_list => return None,
@@ -194,6 +198,33 @@ fn completion_declared_name(
         _ => None,
     };
 
+    // Names already listed in the same array are not offered again. The item being edited is not counted.
+    let edited_span = match &target {
+        CompletionNameTarget::Replace { span, .. } => Some(*span),
+        CompletionNameTarget::Insert { .. } => None,
+    };
+    let listed_names = if is_inherits {
+        BTreeSet::new()
+    } else {
+        let list_accessors = if is_list {
+            accessors
+        } else {
+            &accessors[..accessors.len() - 1]
+        };
+        match dig_accessors(document_tree, list_accessors) {
+            Some((_, Value::Array(items))) => items
+                .iter()
+                .filter_map(|item| match item {
+                    Value::String(item) if Some(item.span()) != edited_span => {
+                        Some(item.value().to_owned())
+                    }
+                    _ => None,
+                })
+                .collect::<BTreeSet<_>>(),
+            _ => BTreeSet::new(),
+        }
+    };
+
     let mut names = BTreeSet::new();
     let mut detail = "Feature";
     if is_inherits {
@@ -222,6 +253,7 @@ fn completion_declared_name(
     let completions = names
         .into_iter()
         .filter(|name| Some(name.as_str()) != current_name)
+        .filter(|name| !listed_names.contains(name.as_str()))
         .filter(|name| {
             target
                 .prefix()
@@ -238,6 +270,7 @@ fn completion_declared_name(
                 None,
                 None,
             )
+            .with_emoji_icon('🦀')
         })
         .collect_vec();
 

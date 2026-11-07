@@ -184,6 +184,15 @@ impl<'t> Value<'t> {
                     .any(|comment_directive| comment_directive.span().contains_inclusive(offset))
             })
     }
+
+    /// Whether the cursor is inside this value, as an array item.
+    /// For a string, the cursor must be inside its quotes: a cursor right before the opening quote
+    /// or right after the closing quote selects the enclosing array instead. Other values are the same as `contains`.
+    pub fn contains_inside_quotes(&self, offset: tombi_text::Offset) -> bool {
+        self.contains(offset)
+            && !(matches!(self, Value::String(_))
+                && (self.span().start == offset || self.span().end == offset))
+    }
 }
 
 impl<'t> std::fmt::Display for Value<'t> {

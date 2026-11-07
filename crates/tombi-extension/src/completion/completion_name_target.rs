@@ -30,19 +30,18 @@ impl<'a> CompletionNameTarget<'a> {
             Self::Replace { span, .. } => {
                 CompletionEdit::new_string_literal_while_editing(label, *span)
             }
-            // `new_literal` has no edit without a hint, so a plain insertion is built here.
-            Self::Insert { offset, hint: None } => Some(CompletionEdit {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: label.to_owned(),
-                    span: tombi_text::Span::empty(*offset),
+            // `new_literal` has no edit without a hint or with a comma hint, so the label is inserted as it is.
+            Self::Insert { offset, hint } => CompletionEdit::new_literal(label, *offset, *hint)
+                .or_else(|| {
+                    Some(CompletionEdit {
+                        text_edit: CompletionTextEdit::Edit(TextEdit {
+                            new_text: label.to_owned(),
+                            span: tombi_text::Span::empty(*offset),
+                        }),
+                        insert_text_format: None,
+                        additional_text_edits: None,
+                    })
                 }),
-                insert_text_format: None,
-                additional_text_edits: None,
-            }),
-            Self::Insert {
-                offset,
-                hint: Some(hint),
-            } => CompletionEdit::new_literal(label, *offset, Some(*hint)),
         }
     }
 }

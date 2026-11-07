@@ -11,7 +11,7 @@ use super::branch_result::collect_branch_completions;
 
 pub fn find_any_of_completion_items<'a: 'b, 'b, T>(
     value: &'a T,
-    cursor: crate::CursorPosition<'a>,
+    cursor: crate::CursorPosition,
     keys: &'a [tombi_document_tree_syntax::Key<'_>],
     accessors: &'a [Accessor],
     any_of_schema: &'a tombi_schema_store::AnyOfSchema,

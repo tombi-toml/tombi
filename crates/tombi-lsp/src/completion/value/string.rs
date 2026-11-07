@@ -15,7 +15,7 @@ use crate::{
 impl FindCompletionContents for tombi_document_tree_syntax::String<'_> {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
-        cursor: crate::CursorPosition<'a>,
+        cursor: crate::CursorPosition,
         keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
@@ -104,7 +104,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::String<'_> {
 impl FindCompletionContents for StringSchema {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
-        cursor: crate::CursorPosition<'a>,
+        cursor: crate::CursorPosition,
         _keys: &'a [tombi_document_tree_syntax::Key<'_>],
         _accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
