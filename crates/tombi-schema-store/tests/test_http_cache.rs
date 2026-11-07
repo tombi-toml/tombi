@@ -55,7 +55,7 @@ fn store(client: Arc<ControlledHttpClient>, ttl: Duration) -> SchemaStore {
 
 #[rstest]
 #[tokio::test(flavor = "current_thread")]
-async fn authentication_failure_does_not_use_stale_cache() {
+async fn authentication_failure_uses_stale_cache() {
     let _cache_home = TestCacheHome::new();
     let uri = SchemaUri::from_str("https://example.com/cache/schema.json").unwrap();
     let cache_path = tombi_cache::get_cache_file_path(&uri).await.unwrap();
@@ -71,10 +71,7 @@ async fn authentication_failure_does_not_use_stale_cache() {
         .fetch_schema_document(&uri)
         .await;
 
-    assert!(matches!(
-        result,
-        Err(tombi_schema_store::Error::SchemaFetchFailed { .. })
-    ));
+    assert!(result.unwrap().is_some());
     assert_eq!(client.calls.load(Ordering::Relaxed), 1);
 }
 

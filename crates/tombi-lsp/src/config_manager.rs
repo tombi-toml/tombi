@@ -235,10 +235,6 @@ impl ConfigManager {
                     ));
                 }
                 Ok(None) => {}
-                Err(error @ tombi_config::Error::ConfigOffline { .. }) => {
-                    log::warn!("failed to load config {:?}: {error}", candidate.path);
-                    break;
-                }
                 Err(error) => log::warn!("failed to load config {:?}: {error}", candidate.path),
             }
         }

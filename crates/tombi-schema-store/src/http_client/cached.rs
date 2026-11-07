@@ -64,12 +64,7 @@ impl CachedHttpClient {
                 }
                 Ok(bytes)
             }
-            Err(error)
-                if error.is_policy_denied()
-                    || matches!(error, FetchError::AuthenticationFailed { .. }) =>
-            {
-                Err(error)
-            }
+            Err(error) if error.is_policy_denied() => Err(error),
             Err(error) => match self.read_stale_cache(cache_path.as_deref(), is_valid).await {
                 Some(bytes) => Ok(bytes),
                 None => Err(error),
