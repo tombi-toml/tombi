@@ -168,7 +168,7 @@ impl ConfigManager {
                 continue;
             }
             match source_cache
-                .try_from_path_with_options(&candidate.path, self.config_load_options())
+                .try_from_path(&candidate.path, self.is_offline())
                 .await
             {
                 Ok(Some(report)) => {
@@ -196,10 +196,8 @@ impl ConfigManager {
         Ok(None)
     }
 
-    fn config_load_options(&self) -> serde_tombi::config::ConfigLoadOptions {
-        serde_tombi::config::ConfigLoadOptions {
-            offline: self.backend_options.offline.unwrap_or(false),
-        }
+    fn is_offline(&self) -> bool {
+        self.backend_options.offline.unwrap_or(false)
     }
 
     pub async fn invalidate_local_dependencies(&self, paths: &[PathBuf], rediscover: bool) -> bool {
@@ -241,7 +239,7 @@ impl ConfigManager {
         let mut source_cache = self.config_source_cache.lock().await;
         source_cache.invalidate_local_paths(&[config_path.to_owned()]);
         match source_cache
-            .try_from_path_with_options(config_path, self.config_load_options())
+            .try_from_path(config_path, self.is_offline())
             .await
         {
             Ok(Some(report)) => {
@@ -463,7 +461,7 @@ impl ConfigManager {
 
     pub async fn refresh_cache(&self) -> Result<bool, tombi_schema_store::Error> {
         let mut source_cache = self.config_source_cache.lock().await;
-        if !self.config_load_options().offline {
+        if !self.is_offline() {
             source_cache.clear();
         }
         let _schema_store_operation = self.schema_store_operation_lock.lock().await;
@@ -478,7 +476,7 @@ impl ConfigManager {
             .collect();
         for config_path in config_paths {
             match source_cache
-                .try_from_path_with_options(&config_path, self.config_load_options())
+                .try_from_path(&config_path, self.is_offline())
                 .await
             {
                 Ok(Some(report)) => {

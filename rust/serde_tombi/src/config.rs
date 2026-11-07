@@ -12,13 +12,9 @@ pub use inheritance::ConfigSourceCache;
 pub async fn from_str(
     toml_text: &str,
     config_path: &std::path::Path,
+    offline: bool,
 ) -> Result<Config, tombi_config::Error> {
-    inheritance::from_str(toml_text, config_path).await
-}
-
-#[derive(Debug, Clone, Copy, Default)]
-pub struct ConfigLoadOptions {
-    pub offline: bool,
+    inheritance::from_str(toml_text, config_path, offline).await
 }
 
 #[derive(Debug, Clone)]
@@ -75,39 +71,24 @@ fn validate_config_path(config_path: &std::path::Path) -> Result<(), tombi_confi
 
 pub async fn try_from_path<P: AsRef<std::path::Path>>(
     config_path: P,
+    offline: bool,
 ) -> Result<Option<Config>, tombi_config::Error> {
-    Ok(
-        try_from_path_with_options(config_path, ConfigLoadOptions::default())
-            .await?
-            .map(|report| report.config),
-    )
-}
-
-pub async fn try_from_path_with_options<P: AsRef<std::path::Path>>(
-    config_path: P,
-    options: ConfigLoadOptions,
-) -> Result<Option<ConfigLoadReport>, tombi_config::Error> {
-    ConfigSourceCache::default()
-        .try_from_path_with_options(config_path, options)
-        .await
+    Ok(ConfigSourceCache::default()
+        .try_from_path(config_path, offline)
+        .await?
+        .map(|report| report.config))
 }
 
 pub async fn load_with_path_and_level(
     search_dir: Option<std::path::PathBuf>,
-) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
-    load_with_path_and_level_with_options(search_dir, ConfigLoadOptions::default()).await
-}
-
-pub async fn load_with_path_and_level_with_options(
-    search_dir: Option<std::path::PathBuf>,
-    options: ConfigLoadOptions,
+    offline: bool,
 ) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
     for candidate in config_candidates(search_dir) {
         if !tombi_fs::is_file(&candidate.path) {
             continue;
         }
-        match try_from_path_with_options(&candidate.path, options).await {
-            Ok(Some(report)) => return Ok((report.config, Some(candidate.path), candidate.level)),
+        match try_from_path(&candidate.path, offline).await {
+            Ok(Some(config)) => return Ok((config, Some(candidate.path), candidate.level)),
             Ok(None) => {}
             Err(error @ tombi_config::Error::ConfigOffline { .. }) => return Err(error),
             Err(error) => log::warn!("failed to load config {:?}: {error}", candidate.path),
@@ -118,13 +99,17 @@ pub async fn load_with_path_and_level_with_options(
 
 pub async fn load_with_path(
     search_dir: Option<std::path::PathBuf>,
+    offline: bool,
 ) -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
-    let (config, config_path, _) = load_with_path_and_level(search_dir).await?;
+    let (config, config_path, _) = load_with_path_and_level(search_dir, offline).await?;
     Ok((config, config_path))
 }
 
-pub async fn load(search_dir: Option<std::path::PathBuf>) -> Result<Config, tombi_config::Error> {
-    let (config, _, _) = load_with_path_and_level(search_dir).await?;
+pub async fn load(
+    search_dir: Option<std::path::PathBuf>,
+    offline: bool,
+) -> Result<Config, tombi_config::Error> {
+    let (config, _, _) = load_with_path_and_level(search_dir, offline).await?;
     Ok(config)
 }
 
@@ -218,8 +203,9 @@ mod tests {
             "toml-version = \"v1.0.0\"\n",
         );
 
-        let (config, config_path, config_level) =
-            load_with_path_and_level(Some(nested_dir)).await.unwrap();
+        let (config, config_path, config_level) = load_with_path_and_level(Some(nested_dir), false)
+            .await
+            .unwrap();
 
         assert_eq!(config.toml_version, Some(TomlVersion::V1_0_0));
         assert_eq!(config_path, Some(temp_dir.path().join(TOMBI_TOML_FILENAME)));
@@ -241,8 +227,9 @@ mod tests {
             "[tool.tombi]\ntoml-version = \"v1.0.0\"\n",
         );
 
-        let (config, config_path, config_level) =
-            load_with_path_and_level(Some(nested_dir)).await.unwrap();
+        let (config, config_path, config_level) = load_with_path_and_level(Some(nested_dir), false)
+            .await
+            .unwrap();
 
         assert_eq!(config.toml_version, Some(TomlVersion::V1_1_0));
         assert_eq!(
@@ -267,8 +254,9 @@ mod tests {
             "toml-version = \"v1.0.0\"\n",
         );
 
-        let (config, config_path, config_level) =
-            load_with_path_and_level(Some(nested_dir)).await.unwrap();
+        let (config, config_path, config_level) = load_with_path_and_level(Some(nested_dir), false)
+            .await
+            .unwrap();
 
         assert_eq!(config.toml_version, Some(TomlVersion::V1_0_0));
         assert_eq!(

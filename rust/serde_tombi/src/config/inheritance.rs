@@ -345,10 +345,10 @@ impl ConfigResolution {
 }
 
 impl ConfigSourceCache {
-    pub async fn try_from_path_with_options<P: AsRef<std::path::Path>>(
+    pub async fn try_from_path<P: AsRef<std::path::Path>>(
         &mut self,
         config_path: P,
-        options: super::ConfigLoadOptions,
+        offline: bool,
     ) -> Result<Option<super::ConfigLoadReport>, tombi_config::Error> {
         let config_path = config_path.as_ref();
         super::validate_config_path(config_path)?;
@@ -376,7 +376,7 @@ impl ConfigSourceCache {
             return Ok(None);
         };
 
-        resolve(root, options, self).await.map(Some)
+        resolve(root, offline, self).await.map(Some)
     }
 
     pub fn invalidate_local_paths(&mut self, paths: &[PathBuf]) -> bool {
@@ -405,13 +405,13 @@ impl ConfigSourceCache {
         &mut self,
         source: ConfigSource,
         inherited: bool,
-        options: super::ConfigLoadOptions,
+        offline: bool,
     ) -> Result<ConfigDocument, tombi_config::Error> {
         if let Some(document) = self.documents.get(&source) {
             return Ok(document.clone());
         }
 
-        let document = read_document(source.clone(), inherited, options).await?;
+        let document = read_document(source.clone(), inherited, offline).await?;
         self.documents.insert(source, document.clone());
         Ok(document)
     }
@@ -638,7 +638,7 @@ fn extract_pyproject_config(
 async fn read_document(
     source: ConfigSource,
     inherited: bool,
-    options: super::ConfigLoadOptions,
+    offline: bool,
 ) -> Result<ConfigDocument, tombi_config::Error> {
     let text = match &source {
         ConfigSource::File {
@@ -648,7 +648,7 @@ async fn read_document(
             .await
             .map_err(|error| source_error(&source, error))?,
         ConfigSource::Remote(uri) => {
-            if options.offline {
+            if offline {
                 return Err(tombi_config::Error::ConfigOffline {
                     config_uri: uri.clone(),
                 });
@@ -672,7 +672,7 @@ async fn read_document(
 
 async fn resolve(
     root: ConfigDocument,
-    options: super::ConfigLoadOptions,
+    offline: bool,
     source_cache: &mut ConfigSourceCache,
 ) -> Result<super::ConfigLoadReport, tombi_config::Error> {
     let mut resolution = ConfigResolution::new(root);
@@ -680,7 +680,7 @@ async fn resolve(
     loop {
         step = match step {
             ResolutionStep::Read(source) => {
-                let document = source_cache.read_document(source, true, options).await?;
+                let document = source_cache.read_document(source, true, offline).await?;
                 resolution.advance(Some(document))?
             }
             ResolutionStep::Complete(document, local_dependencies) => {
@@ -704,6 +704,7 @@ async fn resolve(
 pub(crate) async fn from_str(
     text: &str,
     config_path: &std::path::Path,
+    offline: bool,
 ) -> Result<tombi_config::Config, tombi_config::Error> {
     let source = ConfigSource::from_path(config_path.to_owned());
     let root = parse_document(text, source.clone(), false)?.ok_or_else(|| {
@@ -713,7 +714,7 @@ pub(crate) async fn from_str(
         }
     })?;
     let mut source_cache = ConfigSourceCache::default();
-    resolve(root, super::ConfigLoadOptions::default(), &mut source_cache)
+    resolve(root, offline, &mut source_cache)
         .await
         .map(|report| report.config)
 }
