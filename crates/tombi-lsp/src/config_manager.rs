@@ -44,9 +44,6 @@ pub struct ConfigManager {
         Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, ConfigSchemaStore>>>,
     config_schema_versions: tokio::sync::RwLock<std::collections::HashMap<PathBuf, u64>>,
     config_update_sequence: AtomicU64,
-    /// Serializes schema-store rebuilds, cache mutations, and schema invalidation. Nested lock
-    /// order is this mutex, associations, then config/default maps; map locks are released before
-    /// network operations.
     schema_store_operation_lock: tokio::sync::Mutex<()>,
     /// Default ConfigSchemaStore when no config file is found
     /// Contains the source type (Default or Editor) and the ConfigSchemaStore
