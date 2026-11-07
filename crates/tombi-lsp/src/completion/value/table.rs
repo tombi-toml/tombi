@@ -24,7 +24,7 @@ use crate::{
 impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
-        cursor: crate::CursorPosition<'a>,
+        cursor: crate::CursorPosition,
         keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
@@ -1029,7 +1029,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
 impl FindCompletionContents for TableSchema {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
-        cursor: crate::CursorPosition<'a>,
+        cursor: crate::CursorPosition,
         keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
@@ -1218,7 +1218,7 @@ async fn count_table_or_array_schema(
 
 fn get_property_value_completion_contents<'a: 'b, 'b>(
     value: &'a tombi_document_tree_syntax::Value<'_>,
-    cursor: crate::CursorPosition<'a>,
+    cursor: crate::CursorPosition,
     key: &'a tombi_document_tree_syntax::Key<'_>,
     keys: &'a [tombi_document_tree_syntax::Key<'_>],
     accessors: &'a [Accessor],

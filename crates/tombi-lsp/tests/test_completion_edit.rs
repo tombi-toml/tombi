@@ -694,6 +694,40 @@ mod completion_edit {
                 "#
             );
         }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_bin_required_features_comment_after_item_is_kept(
+                r#"
+                [features]
+                fast = []
+                slow = []
+
+                [[bin]]
+                name = "app"
+                required-features = [
+                    "fast" # keep this comment
+                    █
+                ]
+                "#,
+                Select("\"slow\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [features]
+                fast = []
+                slow = []
+
+                [[bin]]
+                name = "app"
+                required-features = [
+                    "fast", # keep this comment
+                    "slow"
+                ]
+                "#
+            );
+        }
     }
 
     mod pyproject_schema {
@@ -780,6 +814,151 @@ mod completion_edit {
                 version = "0.1.0"
                 dependencies = [
                     "anyio",
+                    "app2"
+                ]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_workspace_member_dependencies_comment_after_item_is_kept(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = [
+                    "anyio" # keep this comment
+                    █
+                ]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#,
+                Select("\"app2\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app3/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = [
+                    "anyio", # keep this comment
+                    "app2"
+                ]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_dependency_groups_standalone_comment_before_cursor_is_not_doubled(
+                r#"
+                [dependency-groups]
+                dev = [
+                    "pyright",
+
+                    # standalone comment
+                    █
+                ]
+                "#,
+                Select("include-group"),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev = [
+                    "pyright",
+
+                    # standalone comment
+                    { include-group$1 }$0
+                ]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_dependency_groups_trailing_comment_after_inline_table_is_kept(
+                r#"
+                [dependency-groups]
+                dev = [
+                    { include-group = "ci" } # keep this comment
+                    █
+                ]
+                "#,
+                Select("include-group"),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev = [
+                    { include-group = "ci" }, # keep this comment
+                    { include-group$1 }$0
+                ]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_dependency_groups_comment_after_item_is_kept_for_schema_completion(
+                r#"
+                [dependency-groups]
+                dev = [
+                    "pyright" # keep this comment
+                    █
+                ]
+                "#,
+                Select("include-group"),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev = [
+                    "pyright", # keep this comment
+                    { include-group$1 }$0
+                ]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_workspace_member_dependencies_existing_comma_before_comment_is_not_doubled(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = [
+                    "anyio", # keep this comment
+                    █
+                ]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#,
+                Select("\"app2\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app3/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+                dependencies = [
+                    "anyio", # keep this comment
                     "app2"
                 ]
 

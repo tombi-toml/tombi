@@ -23,7 +23,6 @@ pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     offset: tombi_text::Offset,
-    line_index: &tombi_text::LineIndex<'_>,
     accessors: &[Accessor],
     toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
@@ -73,13 +72,9 @@ pub async fn completion(
         return Ok(Some(completions));
     }
 
-    if let Some(completions) = completion_uv_declared_name(
-        document_tree,
-        offset,
-        line_index,
-        accessors,
-        completion_hint,
-    ) {
+    if let Some(completions) =
+        completion_uv_declared_name(document_tree, offset, accessors, completion_hint)
+    {
         return Ok(Some(completions));
     }
 
@@ -87,7 +82,6 @@ pub async fn completion(
         text_document_uri,
         document_tree,
         offset,
-        line_index,
         accessors,
         toml_version,
         completion_hint,
@@ -98,7 +92,6 @@ pub async fn completion(
 fn completion_uv_declared_name(
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     offset: tombi_text::Offset,
-    line_index: &tombi_text::LineIndex<'_>,
     accessors: &[Accessor],
     completion_hint: Option<CompletionHint>,
 ) -> Option<Vec<CompletionContent>> {
@@ -124,9 +117,8 @@ fn completion_uv_declared_name(
                 offset,
                 hint: Some(CompletionHint::new_in_array(
                     completion_hint,
-                    line_index,
                     offset,
-                    array.iter().map(|item| item.span()),
+                    array.iter().map(|item| item.symbol_span()),
                 )),
             }
         }
@@ -232,7 +224,6 @@ fn completion_workspace_dependency_name(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
     offset: tombi_text::Offset,
-    line_index: &tombi_text::LineIndex<'_>,
     accessors: &[Accessor],
     toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
@@ -249,9 +240,8 @@ fn completion_workspace_dependency_name(
                 offset,
                 hint: Some(CompletionHint::new_in_array(
                     completion_hint,
-                    line_index,
                     offset,
-                    array.iter().map(|item| item.span()),
+                    array.iter().map(|item| item.symbol_span()),
                 )),
             }
         }

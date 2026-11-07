@@ -24,24 +24,37 @@ impl<'t> crate::Array<'t> {
             .child_elements()
             .skip_while(|element| !element.span().contains_inclusive(offset))
             .nth(1)?;
-        match following {
-            tombi_ast_syntax::SyntaxElement::Node(node)
-                if node.kind() == tombi_ast_syntax::SyntaxKind::COMMA =>
+        comma_token(following)
+    }
+
+    /// Returns the comma immediately preceding `offset`, skipping the comments
+    /// and line breaks between them. Invalid nodes are inspected as well.
+    pub fn comma_before(
+        &self,
+        offset: tombi_text::Offset,
+    ) -> Option<tombi_ast_syntax::SyntaxToken<'t>> {
+        let previous = self
+            .syntax()
+            .child_elements()
+            .filter(|element| element.span().end <= offset)
+            .filter(|element| {
+                !matches!(
+                    element.kind(),
+                    tombi_ast_syntax::SyntaxKind::WHITESPACE
+                        | tombi_ast_syntax::SyntaxKind::LINE_BREAK
+                        | tombi_ast_syntax::SyntaxKind::COMMENT
+                        | tombi_ast_syntax::SyntaxKind::DANGLING_COMMENT_GROUP
+                )
+            })
+            .last()?;
+        match previous {
+            // An item is grouped with the comma that follows it.
+            tombi_ast_syntax::SyntaxElement::Node(group)
+                if group.kind() == tombi_ast_syntax::SyntaxKind::VALUE_WITH_COMMA_GROUP =>
             {
-                node.first_token()
+                group.child_elements().last().and_then(comma_token)
             }
-            tombi_ast_syntax::SyntaxElement::Node(node)
-                if node.kind() == tombi_ast_syntax::SyntaxKind::INVALID_TOKEN =>
-            {
-                node.first_token()
-                    .filter(|token| token.kind() == tombi_ast_syntax::SyntaxKind::COMMA)
-            }
-            tombi_ast_syntax::SyntaxElement::Token(token)
-                if token.kind() == tombi_ast_syntax::SyntaxKind::COMMA =>
-            {
-                Some(token)
-            }
-            _ => None,
+            previous => comma_token(previous),
         }
     }
 
@@ -200,5 +213,29 @@ impl<'t> crate::Array<'t> {
     #[inline]
     pub fn has_inner_comments(&self) -> bool {
         support::comment::has_inner_comments(self.syntax().child_elements(), T!('['), T!(']'))
+    }
+}
+
+fn comma_token(
+    element: tombi_ast_syntax::SyntaxElement<'_>,
+) -> Option<tombi_ast_syntax::SyntaxToken<'_>> {
+    match element {
+        tombi_ast_syntax::SyntaxElement::Node(node)
+            if node.kind() == tombi_ast_syntax::SyntaxKind::COMMA =>
+        {
+            node.first_token()
+        }
+        tombi_ast_syntax::SyntaxElement::Node(node)
+            if node.kind() == tombi_ast_syntax::SyntaxKind::INVALID_TOKEN =>
+        {
+            node.first_token()
+                .filter(|token| token.kind() == tombi_ast_syntax::SyntaxKind::COMMA)
+        }
+        tombi_ast_syntax::SyntaxElement::Token(token)
+            if token.kind() == tombi_ast_syntax::SyntaxKind::COMMA =>
+        {
+            Some(token)
+        }
+        _ => None,
     }
 }

@@ -79,10 +79,16 @@ impl<'t> crate::Root<'t> {
             return crate::AdjacentCommas::default();
         };
 
-        let before = node
-            .last_child()
-            .filter(|child| child.kind() == SyntaxKind::COMMA)
-            .map(|child| child.span())
+        let array_comma_before = crate::Array::cast(node)
+            .and_then(|array| array.comma_before(offset))
+            .map(|comma| comma.span());
+
+        let before = array_comma_before
+            .or_else(|| {
+                node.last_child()
+                    .filter(|child| child.kind() == SyntaxKind::COMMA)
+                    .map(|child| child.span())
+            })
             .or_else(|| {
                 node.siblings_with_tokens(Direction::Prev)
                     .find(|element| !element.span().contains_inclusive(offset))

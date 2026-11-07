@@ -28,11 +28,8 @@ pub struct CommaHint {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AddLeadingComma {
+    /// The end of the item before the new item. The comma is inserted here.
     pub start_offset: tombi_text::Offset,
-    /// The number of line breaks between the start and the cursor, kept after the comma.
-    pub line_breaks: u32,
-    /// The column of the cursor, kept as the indent after the line breaks.
-    pub indent: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,10 +38,8 @@ pub struct AddTrailingComma;
 impl CompletionHint {
     /// The hint for inserting a new item into the array at `offset`. `item_spans` are the spans of the array's items.
     /// The commas already written around `offset` are not added again.
-    /// `line_index` keeps the line breaks and the indent before `offset` in the leading comma.
     pub fn new_in_array(
         completion_hint: Option<CompletionHint>,
-        line_index: &tombi_text::LineIndex<'_>,
         offset: tombi_text::Offset,
         item_spans: impl IntoIterator<Item = tombi_text::Span>,
     ) -> Self {
@@ -68,15 +63,7 @@ impl CompletionHint {
         Self::InArray {
             add_leading_comma: previous_end
                 .filter(|_| !has_leading_comma)
-                .map(|start_offset| AddLeadingComma {
-                    start_offset,
-                    line_breaks: line_index
-                        .line(offset)
-                        .saturating_sub(line_index.line(start_offset)),
-                    indent: line_index
-                        .position(offset, tombi_text::EncodingKind::GraphemeCluster)
-                        .column,
-                }),
+                .map(|start_offset| AddLeadingComma { start_offset }),
             add_trailing_comma: (has_next_item && !has_trailing_comma).then_some(AddTrailingComma),
         }
     }

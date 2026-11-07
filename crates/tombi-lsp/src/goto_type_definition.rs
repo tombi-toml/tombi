@@ -20,7 +20,7 @@ use self::type_definition_source::TypeDefinitionSource;
 
 pub async fn get_type_definition(
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
-    cursor: crate::CursorPosition<'_>,
+    cursor: crate::CursorPosition,
     keys: &[tombi_document_tree_syntax::Key<'_>],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Vec<TypeDefinition> {
@@ -198,7 +198,7 @@ fn prefer_type_definitions(
 pub(super) trait GetTypeDefinition {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
-        cursor: crate::CursorPosition<'a>,
+        cursor: crate::CursorPosition,
         keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
@@ -215,7 +215,7 @@ pub(super) async fn adjacent_type_definition<
         + std::fmt::Debug,
 >(
     value: &T,
-    cursor: crate::CursorPosition<'_>,
+    cursor: crate::CursorPosition,
     keys: &[tombi_document_tree_syntax::Key<'_>],
     accessors: &[Accessor],
     current_schema: Option<&CurrentSchema<'_>>,
