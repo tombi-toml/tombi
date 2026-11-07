@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use tombi_config::{
     CONFIG_TOML_FILENAME, Config, ConfigLevel, DOT_TOMBI_TOML_FILENAME, PYPROJECT_TOML_FILENAME,
     TOMBI_TOML_FILENAME,
@@ -113,7 +114,20 @@ pub async fn load(
     Ok(config)
 }
 
+/// `tombi.toml` next to the given user `config.toml` paths is never loaded at user level.
+fn misplaced_tombi_tomls(
+    user_config_paths: &[std::path::PathBuf],
+) -> impl Iterator<Item = std::path::PathBuf> + '_ {
+    user_config_paths
+        .iter()
+        .unique()
+        .map(|path| path.with_file_name(TOMBI_TOML_FILENAME))
+        .filter(|path| tombi_fs::is_file(path))
+}
+
 fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBuf, ConfigLevel)> {
+    let mut user_config_paths = Vec::new();
+
     // 1. $XDG_CONFIG_HOME/tombi/config.toml
     if let Ok(xdg_config_home) = std::env::var("XDG_CONFIG_HOME") {
         let mut config_path = std::path::PathBuf::from(xdg_config_home);
@@ -122,6 +136,7 @@ fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBu
         if tombi_fs::is_file(&config_path) {
             return Some((config_path, ConfigLevel::User));
         }
+        user_config_paths.push(config_path.clone());
     }
 
     if let Some(home_dir) = dirs::home_dir() {
@@ -133,6 +148,7 @@ fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBu
         if tombi_fs::is_file(&config_path) {
             return Some((config_path, ConfigLevel::User));
         }
+        user_config_paths.push(config_path.clone());
 
         #[cfg(target_os = "macos")]
         {
@@ -145,6 +161,7 @@ fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBu
             if tombi_fs::is_file(&config_path) {
                 return Some((config_path, ConfigLevel::User));
             }
+            user_config_paths.push(config_path.clone());
         }
     }
 
@@ -158,7 +175,14 @@ fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBu
             if tombi_fs::is_file(&config_path) {
                 return Some((config_path, ConfigLevel::User));
             }
+            user_config_paths.push(config_path.clone());
         }
+    }
+
+    for path in misplaced_tombi_tomls(&user_config_paths) {
+        log::warn!(
+            "\"{TOMBI_TOML_FILENAME}\" in the user config directory is ignored. Rename it to \"{CONFIG_TOML_FILENAME}\": {path:?}"
+        );
     }
 
     // 4. /etc/tombi/config.toml
@@ -296,6 +320,24 @@ mod tests {
         assert!(
             matches!(error, tombi_config::Error::ConfigExtendsInvalid { .. }),
             "{error}"
+        );
+    }
+
+    #[test]
+    fn detects_tombi_toml_next_to_user_config_toml_path() {
+        let temp_dir = temp_test_dir("misplaced-user-tombi-toml");
+        let misplaced = temp_dir.path().join("misplaced");
+        let empty = temp_dir.path().join("empty");
+        write_file(&misplaced.join(TOMBI_TOML_FILENAME), "");
+
+        assert_eq!(
+            misplaced_tombi_tomls(&[
+                misplaced.join(CONFIG_TOML_FILENAME),
+                misplaced.join(CONFIG_TOML_FILENAME),
+                empty.join(CONFIG_TOML_FILENAME)
+            ])
+            .collect::<Vec<_>>(),
+            vec![misplaced.join(TOMBI_TOML_FILENAME)]
         );
     }
 }
