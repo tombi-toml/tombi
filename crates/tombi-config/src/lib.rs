@@ -79,16 +79,16 @@ pub struct Config {
     pub extensions: Option<Extensions>,
 }
 
+/// # Tombi
+///
+/// **Tombi** (鳶 `/toɴbi/`) is a toolkit for TOML; providing a formatter/linter and language server.
+/// See the [GitHub repository](https://github.com/tombi-toml/tombi) for more information.
 #[cfg(feature = "jsonschema")]
 #[derive(schemars::JsonSchema)]
 #[schemars(extend("x-tombi-toml-version" = TOMBI_CONFIG_TOML_VERSION))]
 #[schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema))]
 #[schemars(extend("$id" = concat!("tombi://", tombi_uri::schemastore_hostname!(), "/tombi.json")))]
 #[schemars(extend("additionalProperties" = false))]
-/// # Tombi
-///
-/// **Tombi** (鳶 `/toɴbi/`) is a toolkit for TOML; providing a formatter/linter and language server.
-/// See the [GitHub repository](https://github.com/tombi-toml/tombi) for more information.
 pub struct ConfigFileSchema {
     /// One or more local config paths or HTTP(S) URLs to inherit.
     pub extends: Option<OneOrMany<std::string::String>>,
