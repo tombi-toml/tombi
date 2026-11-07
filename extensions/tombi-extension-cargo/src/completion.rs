@@ -1,6 +1,8 @@
+use std::collections::BTreeSet;
+
 use itertools::Itertools;
 use tombi_config::TomlVersion;
-use tombi_document_tree_syntax::{dig_accessors, dig_keys};
+use tombi_document_tree_syntax::{Value, dig_accessors, dig_keys};
 use tombi_extension::CompletionContent;
 use tombi_extension::CompletionContentPriority;
 use tombi_extension::CompletionEdit;
@@ -67,6 +69,10 @@ pub async fn completion(
         return Ok(Some(completions));
     }
 
+    if let Some(completions) = completion_declared_name(document_tree, offset, accessors) {
+        return Ok(Some(completions));
+    }
+
     let Ok(cargo_toml_path) = text_document_uri.to_file_path() else {
         return Ok(None);
     };
@@ -102,6 +108,99 @@ pub async fn completion(
     } else {
         Ok(None)
     }
+}
+
+/// Completes names declared in the same Cargo.toml.
+///
+/// - `required-features` of targets: feature names in `[features]`
+/// - `[features]` values: other feature names and `dep:` names of optional dependencies
+/// - `[profile.*] inherits`: profile names in this file and the built-in `dev` / `release`
+fn completion_declared_name(
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
+    offset: tombi_text::Offset,
+    accessors: &[Accessor],
+) -> Option<Vec<CompletionContent>> {
+    let is_required_features = matches_accessors!(accessors, ["bin", _, "required-features", _])
+        || matches_accessors!(accessors, ["example", _, "required-features", _])
+        || matches_accessors!(accessors, ["test", _, "required-features", _])
+        || matches_accessors!(accessors, ["bench", _, "required-features", _]);
+    let is_inherits = matches_accessors!(accessors, ["profile", _, "inherits"]);
+    let is_feature_value = matches_accessors!(accessors, ["features", _, _]);
+    if !(is_required_features || is_inherits || is_feature_value) {
+        return None;
+    }
+
+    let (_, Value::String(value)) = dig_accessors(document_tree, accessors)? else {
+        return None;
+    };
+    if !value.span().contains_inclusive(offset) {
+        return None;
+    }
+
+    let current_name = match accessors.get(1) {
+        Some(Accessor::Key(key)) => Some(key.as_str()),
+        _ => None,
+    };
+
+    let mut names = BTreeSet::new();
+    let mut detail = "Feature";
+    if is_inherits {
+        detail = "Profile";
+        // The built-in profiles are already offered by the schema, so only custom ones are added here.
+        if let Some((_, Value::Table(profiles))) = dig_keys(document_tree, &["profile"]) {
+            names.extend(
+                profiles
+                    .keys()
+                    .map(|key| key.value().to_owned())
+                    .filter(|name| !matches!(name.as_str(), "dev" | "release" | "test" | "bench")),
+            );
+        }
+    } else if let Some((_, Value::Table(features))) = dig_keys(document_tree, &["features"]) {
+        names.extend(features.keys().map(|key| key.value().to_owned()));
+    }
+
+    if is_feature_value
+        && let Some((_, Value::Table(dependencies))) = dig_keys(document_tree, &["dependencies"])
+    {
+        names.extend(
+            dependencies
+                .key_values()
+                .iter()
+                .filter(|(_, dependency)| is_optional_dependency(dependency))
+                .map(|(name, _)| format!("dep:{}", name.value())),
+        );
+    }
+
+    let completions = names
+        .into_iter()
+        .filter(|name| Some(name.as_str()) != current_name)
+        .filter(|name| name.starts_with(value.value()))
+        .map(|name| {
+            let label = serde_json::Value::String(name).to_string();
+            let edit = CompletionEdit::new_string_literal_while_editing(&label, value.span());
+            CompletionContent::new_enum_value(
+                label,
+                Some(detail.to_string()),
+                None,
+                edit,
+                None,
+                None,
+            )
+        })
+        .collect_vec();
+
+    (!completions.is_empty()).then_some(completions)
+}
+
+fn is_optional_dependency(dependency: &Value<'_>) -> bool {
+    let Value::Table(dependency) = dependency else {
+        return false;
+    };
+
+    matches!(
+        dependency.get_key_value("optional"),
+        Some((_, Value::Boolean(is_optional))) if is_optional.value()
+    )
 }
 
 /// Tries directory-only completion, then .rs path completion, then any-file path completion.

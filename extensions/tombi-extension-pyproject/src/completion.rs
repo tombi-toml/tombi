@@ -71,6 +71,10 @@ pub async fn completion(
         return Ok(Some(completions));
     }
 
+    if let Some(completions) = completion_uv_declared_name(document_tree, offset, accessors) {
+        return Ok(Some(completions));
+    }
+
     Ok(completion_workspace_dependency_name(
         text_document_uri,
         document_tree,
@@ -78,6 +82,54 @@ pub async fn completion(
         accessors,
         toml_version,
     ))
+}
+
+/// Completes group and extra names in `tool.uv` that refer to tables declared in this file.
+fn completion_uv_declared_name(
+    document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
+    offset: tombi_text::Offset,
+    accessors: &[Accessor],
+) -> Option<Vec<CompletionContent>> {
+    let (table_keys, detail): (&[&str], &str) =
+        if matches_accessors!(accessors, ["tool", "uv", "default-groups", _])
+            || matches_accessors!(accessors, ["tool", "uv", "conflicts", _, _, "group"])
+        {
+            (&["dependency-groups"], "Dependency group")
+        } else if matches_accessors!(accessors, ["tool", "uv", "conflicts", _, _, "extra"]) {
+            (&["project", "optional-dependencies"], "Extra")
+        } else {
+            return None;
+        };
+
+    let (_, Value::String(value)) = dig_accessors(document_tree, accessors)? else {
+        return None;
+    };
+    if !value.span().contains_inclusive(offset) {
+        return None;
+    }
+
+    let (_, Value::Table(names)) = dig_keys(document_tree, table_keys)? else {
+        return None;
+    };
+
+    let completions = names
+        .keys()
+        .filter(|name| name.value().starts_with(value.value()))
+        .map(|name| {
+            let label = serde_json::Value::String(name.value().to_owned()).to_string();
+            let edit = CompletionEdit::new_string_literal_while_editing(&label, value.span());
+            CompletionContent::new_enum_value(
+                label,
+                Some(detail.to_string()),
+                None,
+                edit,
+                None,
+                None,
+            )
+        })
+        .collect_vec();
+
+    (!completions.is_empty()).then_some(completions)
 }
 
 /// Completes dependency names of a workspace member from the workspace root.
