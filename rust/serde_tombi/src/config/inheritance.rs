@@ -5,7 +5,7 @@ use std::{
 };
 
 use tombi_document::{Key, KeyKind, Table, Value};
-use tombi_schema_store::{DefaultHttpClient, HttpClient};
+use tombi_schema_store::{FetchError, HttpClient};
 use tombi_toml_version::TomlVersion;
 use tombi_uri::Uri;
 
@@ -159,6 +159,9 @@ impl ConfigSource {
                         Uri::from_str(reference).map_err(|error| invalid(&error.to_string()))?;
                     if uri.scheme() != "file" {
                         return Err(invalid("expected a file:// URL"));
+                    }
+                    if uri.query().is_some() || uri.fragment().is_some() {
+                        return Err(invalid("file URLs must not have a query or fragment"));
                     }
                     let path = uri
                         .to_file_path()
@@ -385,7 +388,7 @@ impl ConfigSourceCache {
     pub async fn try_from_path<P: AsRef<std::path::Path>>(
         &mut self,
         config_path: P,
-        options: tombi_config::LoadOptions,
+        http_client: &dyn HttpClient,
     ) -> Result<Option<super::ConfigLoadReport>, tombi_config::Error> {
         let config_path = config_path.as_ref();
         super::validate_config_path(config_path)?;
@@ -413,7 +416,7 @@ impl ConfigSourceCache {
             return Ok(None);
         };
 
-        resolve(root, options.offline, self).await.map(Some)
+        resolve(root, http_client, self).await.map(Some)
     }
 
     pub fn invalidate_local_paths(&mut self, paths: &[PathBuf]) -> bool {
@@ -442,13 +445,13 @@ impl ConfigSourceCache {
         &mut self,
         source: ConfigSource,
         inherited: bool,
-        offline: bool,
+        http_client: &dyn HttpClient,
     ) -> Result<ConfigDocument, tombi_config::Error> {
         if let Some(document) = self.documents.get(&source) {
             return Ok(document.clone());
         }
 
-        let document = read_document(source.clone(), inherited, offline).await?;
+        let document = read_document(source.clone(), inherited, http_client).await?;
         self.documents.insert(source, document.clone());
         Ok(document)
     }
@@ -675,7 +678,7 @@ fn extract_pyproject_config(
 async fn read_document(
     source: ConfigSource,
     inherited: bool,
-    offline: bool,
+    http_client: &dyn HttpClient,
 ) -> Result<ConfigDocument, tombi_config::Error> {
     let text = match &source {
         ConfigSource::File {
@@ -685,15 +688,19 @@ async fn read_document(
             .await
             .map_err(|error| source_error(&source, error))?,
         ConfigSource::Remote(uri) => {
-            if offline {
-                return Err(tombi_config::Error::ConfigOffline {
-                    config_uri: uri.clone(),
-                });
-            }
-            let bytes = DefaultHttpClient::new()
-                .get_bytes(uri.as_str())
+            let is_valid = |bytes: &[u8]| {
+                std::str::from_utf8(bytes)
+                    .is_ok_and(|text| parse_document(text, source.clone(), inherited).is_ok())
+            };
+            let bytes = http_client
+                .get_validated(uri.as_str(), &is_valid)
                 .await
-                .map_err(|error| source_error(&source, error))?;
+                .map_err(|error| match error {
+                    FetchError::Offline => tombi_config::Error::ConfigOffline {
+                        config_uri: uri.clone(),
+                    },
+                    error => source_error(&source, error),
+                })?;
             std::string::String::from_utf8(bytes.to_vec())
                 .map_err(|error| source_error(&source, error))?
         }
@@ -709,7 +716,7 @@ async fn read_document(
 
 async fn resolve(
     root: ConfigDocument,
-    offline: bool,
+    http_client: &dyn HttpClient,
     source_cache: &mut ConfigSourceCache,
 ) -> Result<super::ConfigLoadReport, tombi_config::Error> {
     let mut resolution = ConfigResolution::new(root);
@@ -717,7 +724,9 @@ async fn resolve(
     loop {
         step = match step {
             ResolutionStep::Read(source) => {
-                let document = source_cache.read_document(source, true, offline).await?;
+                let document = source_cache
+                    .read_document(source, true, http_client)
+                    .await?;
                 resolution.advance(Some(document))?
             }
             ResolutionStep::Complete(document, local_dependencies) => {
@@ -741,7 +750,7 @@ async fn resolve(
 pub(crate) async fn from_str(
     text: &str,
     config_path: &std::path::Path,
-    options: tombi_config::LoadOptions,
+    http_client: &dyn HttpClient,
 ) -> Result<tombi_config::Config, tombi_config::Error> {
     let source = ConfigSource::from_path(config_path.to_owned());
     let root = parse_document(text, source.clone(), false)?.ok_or_else(|| {
@@ -751,7 +760,7 @@ pub(crate) async fn from_str(
         }
     })?;
     let mut source_cache = ConfigSourceCache::default();
-    resolve(root, options.offline, &mut source_cache)
+    resolve(root, http_client, &mut source_cache)
         .await
         .map(|report| report.config)
 }

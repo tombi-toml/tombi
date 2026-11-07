@@ -1,4 +1,6 @@
+mod cached;
 mod error;
+pub use cached::CachedHttpClient;
 pub use error::FetchError;
 
 use bytes::Bytes;
@@ -7,6 +9,34 @@ pub type HttpFuture<'a, T> = tombi_future::BoxFuture<'a, T>;
 /// HTTP operations required by the schema store.
 pub trait HttpClient: std::fmt::Debug + Send + Sync {
     fn get_bytes<'a>(&'a self, url: &'a str) -> HttpFuture<'a, Result<Bytes, FetchError>>;
+
+    /// Like [`get_bytes`](Self::get_bytes), but `is_valid` tells whether the content is usable.
+    ///
+    /// Caching clients use it to avoid persisting or serving unusable content.
+    fn get_validated<'a>(
+        &'a self,
+        url: &'a str,
+        is_valid: &'a ContentValidator<'a>,
+    ) -> HttpFuture<'a, Result<Bytes, FetchError>> {
+        let _ = is_valid;
+        self.get_bytes(url)
+    }
+}
+
+pub type ContentValidator<'a> = dyn Fn(&[u8]) -> bool + Send + Sync + 'a;
+
+/// The [`HttpClient`] used to read remote files, backed by the shared on-disk cache.
+///
+/// When `offline` is set, only cached content is served.
+pub fn http_client(
+    offline: bool,
+    cache_options: Option<tombi_cache::Options>,
+) -> std::sync::Arc<dyn HttpClient> {
+    std::sync::Arc::new(CachedHttpClient::new(
+        std::sync::Arc::new(DefaultHttpClient::new()),
+        cache_options,
+        offline,
+    ))
 }
 
 #[allow(dead_code)]

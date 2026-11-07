@@ -49,7 +49,8 @@ pub struct Options {
 async fn load_config(
     options: Options,
 ) -> Result<(tombi_config::Config, Option<std::path::PathBuf>), Error> {
-    let load_options = tombi_config::LoadOptions::default();
+    let http_client =
+        tombi_schema_store::http_client(false, tombi_schema_store::Options::default().cache);
     if let Some(config) = options.config {
         let (config_content, config_path) = match config {
             ConfigInput::File { content, path } => (content, path),
@@ -58,15 +59,19 @@ async fn load_config(
                 std::path::PathBuf::from(tombi_config::TOMBI_TOML_FILENAME),
             ),
         };
-        let config = serde_tombi::config::from_str(&config_content, &config_path, load_options)
-            .await
-            .map_err(|error| {
-                log::warn!("{error}");
-                error
-            })?;
+        let config =
+            serde_tombi::config::from_str(&config_content, &config_path, http_client.as_ref())
+                .await
+                .map_err(|error| {
+                    log::warn!("{error}");
+                    error
+                })?;
         Ok((config, Some(config_path)))
     } else {
-        Ok(serde_tombi::config::load_with_path(std::env::current_dir().ok(), load_options).await?)
+        Ok(
+            serde_tombi::config::load_with_path(std::env::current_dir().ok(), http_client.as_ref())
+                .await?,
+        )
     }
 }
 

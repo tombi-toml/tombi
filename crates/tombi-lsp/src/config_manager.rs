@@ -48,6 +48,8 @@ pub struct ConfigManager {
         Arc<tokio::sync::RwLock<Option<(DefaultConfigSource, ConfigSchemaStore)>>>,
 
     backend_options: crate::backend::Options,
+    /// Reads remote `extends` configs through the shared on-disk cache.
+    http_client: Arc<dyn tombi_schema_store::HttpClient>,
     associated_schemas: Arc<tokio::sync::RwLock<Vec<AssociatedSchema>>>,
 }
 
@@ -116,6 +118,10 @@ impl ConfigManager {
             schema_store_operation_lock: tokio::sync::Mutex::new(()),
             default_config_schema_store: Arc::new(tokio::sync::RwLock::new(None)),
             backend_options: backend_options.clone(),
+            http_client: tombi_schema_store::http_client(
+                backend_options.offline.unwrap_or(false),
+                Some(backend_options.cache.clone()),
+            ),
             associated_schemas: Arc::new(tokio::sync::RwLock::new(Vec::new())),
         }
     }
@@ -212,7 +218,7 @@ impl ConfigManager {
                 continue;
             }
             match source_cache
-                .try_from_path(&candidate.path, self.load_options())
+                .try_from_path(&candidate.path, self.http_client.as_ref())
                 .await
             {
                 Ok(Some(report)) => {
@@ -237,12 +243,6 @@ impl ConfigManager {
             }
         }
         Ok(None)
-    }
-
-    fn load_options(&self) -> tombi_config::LoadOptions {
-        tombi_config::LoadOptions {
-            offline: self.is_offline(),
-        }
     }
 
     fn is_offline(&self) -> bool {
@@ -270,7 +270,7 @@ impl ConfigManager {
         let mut reloaded = false;
         for config_path in config_paths {
             match source_cache
-                .try_from_path(&config_path, self.load_options())
+                .try_from_path(&config_path, self.http_client.as_ref())
                 .await
             {
                 Ok(Some(report)) => {
@@ -509,7 +509,7 @@ impl ConfigManager {
             .collect();
         for config_path in config_paths {
             match source_cache
-                .try_from_path(&config_path, self.load_options())
+                .try_from_path(&config_path, self.http_client.as_ref())
                 .await
             {
                 Ok(Some(report)) => {
