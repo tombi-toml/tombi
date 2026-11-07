@@ -81,10 +81,25 @@ pub struct Config {
 
 /// A config path or URL whose file name is `tombi.toml` or `.tombi.toml`.
 #[cfg(feature = "jsonschema")]
-#[derive(schemars::JsonSchema)]
-pub struct ExtendsReference(
-    #[schemars(regex(pattern = r"(^|[/\\])\.?tombi\.toml([?#].*)?$"))] pub std::string::String,
-);
+pub struct ExtendsReference;
+
+#[cfg(feature = "jsonschema")]
+impl schemars::JsonSchema for ExtendsReference {
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "ExtendsReference".into()
+    }
+
+    fn json_schema(_generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        let pattern = r"(^|[/\\])\.?tombi\.toml([?#].*)?$";
+        schemars::json_schema!({
+            "description": "A config path or URL whose file name is `tombi.toml` or `.tombi.toml`.",
+            "anyOf": [
+                {"type": "string", "format": "uri", "pattern": pattern},
+                {"type": "string", "pattern": pattern},
+            ]
+        })
+    }
+}
 
 /// # Tombi
 ///

@@ -129,8 +129,17 @@
     },
     "ExtendsReference": {
       "description": "A config path or URL whose file name is `tombi.toml` or `.tombi.toml`.",
-      "type": "string",
-      "pattern": "(^|[/\\\\])\\.?tombi\\.toml([?#].*)?$"
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri",
+          "pattern": "(^|[/\\\\])\\.?tombi\\.toml([?#].*)?$"
+        },
+        {
+          "type": "string",
+          "pattern": "(^|[/\\\\])\\.?tombi\\.toml([?#].*)?$"
+        }
+      ]
     },
     "TomlVersion": {
       "title": "TOML version",
