@@ -970,7 +970,7 @@ mod completion_edit {
                 [project]
                 name = "app3"
                 version = "0.1.0"
-                dependencies = ["anyio", "pydantic","app2", "ruff"]
+                dependencies = ["anyio", "pydantic", "app2", "ruff"]
 
                 [tool.uv.sources]
                 app2 = { workspace = true }
@@ -1730,7 +1730,7 @@ mod completion_edit {
                 r#"key=["foo"█]"#,
                 Select("$key"),
             ) -> Ok(
-                r#"key=["foo",{ ${1:key} }$0]"#
+                r#"key=["foo", { ${1:key} }$0]"#
             );
         }
 
