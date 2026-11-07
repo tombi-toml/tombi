@@ -67,7 +67,7 @@ impl ConfigSource {
                             .map_err(|error| invalid(&error.to_string()))?,
                     )
                 };
-                validate_remote_uri(&uri).map_err(|reason| invalid(reason))?;
+                validate_remote_uri(&uri).map_err(&invalid)?;
                 uri.set_fragment(None);
                 Ok(Self::Remote(uri))
             }
@@ -87,7 +87,7 @@ impl ConfigSource {
                 if is_http(reference) {
                     let mut uri =
                         Uri::from_str(reference).map_err(|error| invalid(&error.to_string()))?;
-                    validate_remote_uri(&uri).map_err(|reason| invalid(reason))?;
+                    validate_remote_uri(&uri).map_err(&invalid)?;
                     uri.set_fragment(None);
                     return Ok(Self::Remote(uri));
                 }
@@ -229,7 +229,7 @@ impl ConfigResolution {
                     });
                 }
 
-                if self.active.len() - 1 >= MAX_EXTENDS_DEPTH {
+                if self.active.len() > MAX_EXTENDS_DEPTH {
                     return Err(tombi_config::Error::ConfigExtendsDepthExceeded {
                         limit: MAX_EXTENDS_DEPTH,
                     });
@@ -325,12 +325,10 @@ fn layer_error(
     inherited: bool,
     reason: impl std::fmt::Display,
 ) -> tombi_config::Error {
-    if !inherited {
-        if let ConfigSource::File(path) = source {
-            return tombi_config::Error::ConfigFileParseFailed {
-                config_path: path.clone(),
-            };
-        }
+    if !inherited && let ConfigSource::File(path) = source {
+        return tombi_config::Error::ConfigFileParseFailed {
+            config_path: path.clone(),
+        };
     }
     tombi_config::Error::ConfigExtendsParseFailed {
         config_source: source.display(),

@@ -2,6 +2,8 @@ use tombi_config::{
     CONFIG_TOML_FILENAME, Config, ConfigLevel, DOT_TOMBI_TOML_FILENAME, PYPROJECT_TOML_FILENAME,
     TOMBI_TOML_FILENAME,
 };
+#[cfg(test)]
+use tombi_toml_version::TomlVersion;
 
 mod inheritance;
 
@@ -37,6 +39,7 @@ pub async fn from_str_async(
     inheritance::from_str_async(toml_text, config_path).await
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn runtime_error(reason: std::string::String) -> tombi_config::Error {
     tombi_config::Error::ConfigExtendsParseFailed {
         config_source: "config resolver".to_owned(),
