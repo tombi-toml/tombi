@@ -97,8 +97,7 @@ pub struct ExtendsReference(
 #[schemars(extend("$id" = concat!("tombi://", tombi_uri::schemastore_hostname!(), "/tombi.json")))]
 #[schemars(extend("additionalProperties" = false))]
 pub struct ConfigFileSchema {
-    /// One or more local config paths or HTTP(S) URLs to inherit.
-    /// Each must be named `tombi.toml` or `.tombi.toml`.
+    /// Config files to inherit.
     pub extends: Option<OneOrMany<ExtendsReference>>,
 
     #[schemars(flatten)]
