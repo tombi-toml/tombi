@@ -538,6 +538,11 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                         .await;
                 }
 
+                let completion_hint = if self.is_empty() {
+                    completion_hint
+                } else {
+                    new_item_completion_hint(self, cursor, completion_hint)
+                };
                 type_hint_value(None, offset, None, completion_hint)
             }
         }

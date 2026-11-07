@@ -1597,6 +1597,16 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn key_equal_array_after_item_inserts_comma(
+                r#"key=["foo"█]"#,
+                Select("$key"),
+            ) -> Ok(
+                r#"key=["foo", { ${1:key} }$0]"#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn key_equal_array_bra_abc_dot_def_ket(
                 "key=[{ abc.def█ }]",
                 Select("$key"),

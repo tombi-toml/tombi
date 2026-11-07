@@ -61,9 +61,10 @@ impl CompletionEdit {
                 add_leading_comma,
                 add_trailing_comma,
             }) => {
-                let new_text = match add_trailing_comma {
-                    Some(_) => format!("${{1:{label}}},$0"),
-                    None => label.to_string(),
+                // Without a trailing comma the label is plain text, so `$` in it is not read as a snippet token.
+                let (new_text, insert_text_format) = match add_trailing_comma {
+                    Some(_) => (format!("${{1:{label}}},$0"), InsertTextFormat::SNIPPET),
+                    None => (label.to_string(), InsertTextFormat::PLAIN_TEXT),
                 };
                 let additional_text_edits =
                     head_comma_text_edits(add_leading_comma, add_trailing_comma, offset);
@@ -73,7 +74,7 @@ impl CompletionEdit {
                         new_text,
                         span: tombi_text::Span::empty(offset),
                     }),
-                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    insert_text_format: Some(insert_text_format),
                     additional_text_edits,
                 })
             }
