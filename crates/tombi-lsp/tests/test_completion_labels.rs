@@ -2498,6 +2498,60 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn pyproject_uv_default_groups_completes_dependency_groups(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+
+                [tool.uv]
+                default-groups = ["█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(["\"dev\"", "\"lint\""]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_uv_conflicts_group_completes_dependency_groups(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+
+                [tool.uv]
+                conflicts = [[{ group = "█" }]]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(["\"dev\"", "\"lint\""]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_uv_conflicts_extra_completes_optional_dependencies(
+                r#"
+                [project.optional-dependencies]
+                cpu = []
+                gpu = []
+
+                [tool.uv]
+                conflicts = [[{ extra = "█" }]]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(["\"cpu\"", "\"gpu\""]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn pyproject_dependency_groups_include_group_ignores_invalid_triple_quoted_value(
                 r#"
                 [dependency-groups]
@@ -3437,6 +3491,55 @@ mod completion_labels {
                 "''''''",
                 "{}",
             ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_bin_required_features_completes_feature_names(
+                r#"
+                [features]
+                serde = []
+                fast = []
+
+                [[bin]]
+                name = "app"
+                required-features = ["█"]
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(["\"fast\"", "\"serde\""]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_features_value_completes_features_and_optional_dependencies(
+                r#"
+                [dependencies]
+                tokio = { version = "1", optional = true }
+                serde = "1"
+
+                [features]
+                default = ["█"]
+                extra = []
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(["\"dep:tokio\"", "\"extra\""]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_profile_inherits_completes_profile_names(
+                r#"
+                [profile.fast]
+                inherits = "█"
+
+                [profile.ci]
+                inherits = "dev"
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(["\"ci\"", "\"bench\"", "\"dev\"", "\"release\"", "\"test\""]);
         }
 
         test_completion_labels! {

@@ -1,6 +1,7 @@
 mod completion_edit;
 mod completion_hint;
 mod completion_kind;
+mod completion_name_target;
 
 use std::path::Path;
 
@@ -9,6 +10,7 @@ pub use completion_edit::{
 };
 pub use completion_hint::{AddLeadingComma, AddTrailingComma, CommaHint, CompletionHint};
 pub use completion_kind::CompletionKind;
+pub use completion_name_target::CompletionNameTarget;
 use tombi_document_tree::{Node as _, ValueNode as _, dig_accessors};
 use tombi_schema_store::{Accessor, SchemaUri};
 

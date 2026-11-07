@@ -612,6 +612,88 @@ mod completion_edit {
                 "#
             );
         }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_bin_required_features_empty_list_inserts_feature_name(
+                r#"
+                [features]
+                fast = []
+
+                [[bin]]
+                name = "app"
+                required-features = [█]
+                "#,
+                Select("\"fast\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [features]
+                fast = []
+
+                [[bin]]
+                name = "app"
+                required-features = ["fast"]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_features_empty_list_inserts_optional_build_dependency(
+                r#"
+                [build-dependencies]
+                builder = { version = "1", optional = true }
+
+                [target.'cfg(windows)'.dependencies]
+                winapi = { version = "1", optional = true }
+
+                [features]
+                default = [█]
+                extra = []
+                "#,
+                Select("\"dep:builder\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [build-dependencies]
+                builder = { version = "1", optional = true }
+
+                [target.'cfg(windows)'.dependencies]
+                winapi = { version = "1", optional = true }
+
+                [features]
+                default = ["dep:builder"]
+                extra = []
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_profile_inherits_incomplete_value_completes_profile_name(
+                r#"
+                [profile.ci]
+                opt-level = 1
+
+                [profile.fast]
+                inherits = █
+                "#,
+                Select("\"ci\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [profile.ci]
+                opt-level = 1
+
+                [profile.fast]
+                inherits = "ci"
+                "#
+            );
+        }
     }
 
     mod pyproject_schema {
@@ -637,6 +719,88 @@ mod completion_edit {
                 [dependency-groups]
                 dev = []
                 qa = [{ include-group = "dev" }]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_uv_default_groups_empty_list_inserts_dependency_group(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+
+                [tool.uv]
+                default-groups = [█]
+                "#,
+                Select("\"dev\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+
+                [tool.uv]
+                default-groups = ["dev"]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_uv_conflicts_unquoted_group_inserts_dependency_group(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+
+                [tool.uv]
+                conflicts = [[{ group = █ }]]
+                "#,
+                Select("\"dev\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev = []
+                lint = []
+
+                [tool.uv]
+                conflicts = [[{ group = "dev" }]]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_uv_conflicts_unquoted_extra_inserts_optional_dependency(
+                r#"
+                [project.optional-dependencies]
+                cuda = []
+
+                [tool.uv]
+                conflicts = [[{ extra = █ }]]
+                "#,
+                Select("\"cuda\""),
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [project.optional-dependencies]
+                cuda = []
+
+                [tool.uv]
+                conflicts = [[{ extra = "cuda" }]]
                 "#
             );
         }
