@@ -49,6 +49,7 @@ pub struct Options {
 async fn load_config(
     options: Options,
 ) -> Result<(tombi_config::Config, Option<std::path::PathBuf>), Error> {
+    let offline = false;
     if let Some(config) = options.config {
         let (config_content, config_path) = match config {
             ConfigInput::File { content, path } => (content, path),
@@ -57,7 +58,7 @@ async fn load_config(
                 std::path::PathBuf::from(tombi_config::TOMBI_TOML_FILENAME),
             ),
         };
-        let config = serde_tombi::config::from_str(&config_content, &config_path, false)
+        let config = serde_tombi::config::from_str(&config_content, &config_path, offline)
             .await
             .map_err(|error| {
                 log::warn!("{error}");
@@ -65,7 +66,7 @@ async fn load_config(
             })?;
         Ok((config, Some(config_path)))
     } else {
-        Ok(serde_tombi::config::load_with_path(std::env::current_dir().ok(), false).await?)
+        Ok(serde_tombi::config::load_with_path(std::env::current_dir().ok(), offline).await?)
     }
 }
 

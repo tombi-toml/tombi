@@ -6,7 +6,7 @@
   "type": "object",
   "properties": {
     "extends": {
-      "description": "One or more local config paths or HTTP(S) URLs to inherit.\nEach must be named `tombi.toml` or `.tombi.toml`.",
+      "description": "Config files to inherit.",
       "anyOf": [
         {
           "$ref": "#/definitions/OneOrMany"
