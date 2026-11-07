@@ -67,7 +67,7 @@ impl CompletionEdit {
                     None => (label.to_string(), InsertTextFormat::PLAIN_TEXT),
                 };
                 let additional_text_edits =
-                    head_comma_text_edits(add_leading_comma, add_trailing_comma, offset);
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma);
 
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
@@ -137,7 +137,7 @@ impl CompletionEdit {
                     None => format!("{quote}$1{quote}$0"),
                 };
                 let additional_text_edits =
-                    head_comma_text_edits(add_leading_comma, add_trailing_comma, offset);
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma);
 
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
@@ -203,7 +203,7 @@ impl CompletionEdit {
                     None => "[$1]$0".to_string(),
                 };
                 let additional_text_edits =
-                    head_comma_text_edits(add_leading_comma, add_trailing_comma, offset);
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma);
 
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
@@ -255,7 +255,7 @@ impl CompletionEdit {
                     None => "{ $1 }$0".to_string(),
                 };
                 let additional_text_edits =
-                    head_comma_text_edits(add_leading_comma, add_trailing_comma, offset);
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma);
 
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
@@ -293,7 +293,7 @@ impl CompletionEdit {
                     None => format!("{{ {key_name}$1 }}$0"),
                 };
                 let additional_text_edits =
-                    head_comma_text_edits(add_leading_comma, add_trailing_comma, key_span.start);
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma);
 
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
@@ -355,7 +355,7 @@ impl CompletionEdit {
                     None => format!("{{ {key_name} = {value_label} }}$0"),
                 };
                 let additional_text_edits =
-                    head_comma_text_edits(add_leading_comma, add_trailing_comma, key_span.start);
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma);
 
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
@@ -415,7 +415,7 @@ impl CompletionEdit {
                     None => format!("{{ ${{1:{key_name}}} }}$0"),
                 };
                 let additional_text_edits =
-                    head_comma_text_edits(add_leading_comma, add_trailing_comma, key_span.start);
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma);
 
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
@@ -549,29 +549,12 @@ impl CompletionEdit {
 fn head_comma_text_edits(
     add_leading_comma: Option<AddLeadingComma>,
     _add_trailing_comma: Option<AddTrailingComma>,
-    cursor_offset: tombi_text::Offset,
 ) -> Option<Vec<TextEdit>> {
-    if let Some(AddLeadingComma {
-        start_offset,
-        line_breaks,
-        indent,
-    }) = add_leading_comma
-    {
-        let new_text = if line_breaks == 0 {
-            ", ".to_string()
-        } else {
-            format!(
-                ",{newlines}{spaces}",
-                newlines = "\n".repeat(line_breaks as usize),
-                spaces = " ".repeat(indent as usize)
-            )
-        };
-
-        Some(vec![TextEdit {
-            span: tombi_text::Span::new(start_offset, cursor_offset),
-            new_text,
-        }])
-    } else {
-        None
-    }
+    // Only the comma is inserted, so the whitespace and comments after the previous item are kept.
+    add_leading_comma.map(|AddLeadingComma { start_offset }| {
+        vec![TextEdit {
+            span: tombi_text::Span::empty(start_offset),
+            new_text: ",".to_string(),
+        }]
+    })
 }

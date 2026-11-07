@@ -7,7 +7,7 @@ use super::{GetTypeDefinition, TypeDefinition, schema_type_definition};
 
 pub fn get_all_of_type_definition<'a: 'b, 'b, T>(
     value: &'a T,
-    cursor: crate::CursorPosition<'a>,
+    cursor: crate::CursorPosition,
     keys: &'a [tombi_document_tree_syntax::Key<'_>],
     accessors: &'a [tombi_schema_store::Accessor],
     all_of_schema: &'a tombi_schema_store::AllOfSchema,
@@ -68,7 +68,7 @@ where
 impl GetTypeDefinition for tombi_schema_store::AllOfSchema {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
-        _cursor: crate::CursorPosition<'a>,
+        _cursor: crate::CursorPosition,
         _keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,

@@ -217,7 +217,7 @@ pub fn extract_keys_and_hint<'t>(
 
 pub async fn find_completion_contents(
     document_tree: &tombi_document_tree_syntax::DocumentTree<'_>,
-    cursor: crate::CursorPosition<'_>,
+    cursor: crate::CursorPosition,
     keys: &[tombi_document_tree_syntax::Key<'_>],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     completion_hint: Option<CompletionHint>,
@@ -337,7 +337,7 @@ pub async fn find_completion_contents(
 pub trait FindCompletionContents {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
-        cursor: crate::CursorPosition<'a>,
+        cursor: crate::CursorPosition,
         keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
@@ -444,7 +444,7 @@ fn is_generic_literal_type_hint(completion_item: &CompletionContent) -> bool {
 }
 
 pub(super) async fn merge_adjacent_schema_completion_items(
-    cursor: crate::CursorPosition<'_>,
+    cursor: crate::CursorPosition,
     keys: &[tombi_document_tree_syntax::Key<'_>],
     accessors: &[Accessor],
     current_schema: Option<&CurrentSchema<'_>>,

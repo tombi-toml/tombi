@@ -18,7 +18,7 @@ use crate::{
 impl FindCompletionContents for tombi_document_tree_syntax::OffsetDateTime {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
-        cursor: crate::CursorPosition<'a>,
+        cursor: crate::CursorPosition,
         keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
@@ -57,7 +57,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::OffsetDateTime {
 impl FindCompletionContents for OffsetDateTimeSchema {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
-        cursor: crate::CursorPosition<'a>,
+        cursor: crate::CursorPosition,
         keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,

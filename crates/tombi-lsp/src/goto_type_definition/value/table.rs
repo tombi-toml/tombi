@@ -17,7 +17,7 @@ use crate::{
 impl GetTypeDefinition for tombi_document_tree_syntax::Table<'_> {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
-        cursor: crate::CursorPosition<'a>,
+        cursor: crate::CursorPosition,
         keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
@@ -404,7 +404,7 @@ impl GetTypeDefinition for tombi_document_tree_syntax::Table<'_> {
 impl GetTypeDefinition for TableSchema {
     fn get_type_definition<'a: 'b, 'b>(
         &'a self,
-        _cursor: crate::CursorPosition<'a>,
+        _cursor: crate::CursorPosition,
         _keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,

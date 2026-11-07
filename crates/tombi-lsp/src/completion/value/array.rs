@@ -21,7 +21,7 @@ use crate::{
 impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
-        cursor: crate::CursorPosition<'a>,
+        cursor: crate::CursorPosition,
         keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
@@ -310,7 +310,6 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
                                     if self.kind() == ArrayKind::Array {
                                         Some(CompletionHint::new_in_array(
                                             completion_hint,
-                                            cursor.line_index(),
                                             offset,
                                             self.values().iter().map(|value| value.span()),
                                         ))
@@ -552,7 +551,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Array<'_> {
 
 fn new_item_completion_hint(
     array: &tombi_document_tree_syntax::Array<'_>,
-    cursor: crate::CursorPosition<'_>,
+    cursor: crate::CursorPosition,
     completion_hint: Option<CompletionHint>,
 ) -> Option<CompletionHint> {
     if array.kind() != ArrayKind::Array {
@@ -561,7 +560,6 @@ fn new_item_completion_hint(
 
     Some(CompletionHint::new_in_array(
         completion_hint,
-        cursor.line_index(),
         cursor.offset(),
         array.values().iter().map(|value| value.span()),
     ))
@@ -570,7 +568,7 @@ fn new_item_completion_hint(
 impl FindCompletionContents for ArraySchema {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
-        cursor: crate::CursorPosition<'a>,
+        cursor: crate::CursorPosition,
         keys: &'a [tombi_document_tree_syntax::Key<'_>],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
