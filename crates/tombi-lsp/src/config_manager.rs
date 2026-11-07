@@ -140,9 +140,26 @@ impl ConfigManager {
         &self,
         directory: Option<PathBuf>,
     ) -> ConfigSchemaStore {
+        match self
+            .try_config_schema_store_for_directory_locked(directory)
+            .await
+        {
+            Ok(Some(store)) => store,
+            Ok(None) => self.default_config_schema_store().await,
+            Err(error) => {
+                log::warn!("failed to load schema store: {error}");
+                self.default_config_schema_store().await
+            }
+        }
+    }
+
+    async fn try_config_schema_store_for_directory_locked(
+        &self,
+        directory: Option<PathBuf>,
+    ) -> Result<Option<ConfigSchemaStore>, tombi_schema_store::Error> {
         for candidate in serde_tombi::config::config_candidates(directory) {
             if let Some(entry) = self.config_schema_stores.read().await.get(&candidate.path) {
-                return entry.store.clone();
+                return Ok(Some(entry.store.clone()));
             }
             if !tombi_fs::is_file(&candidate.path) {
                 continue;
@@ -155,25 +172,17 @@ impl ConfigManager {
             {
                 Ok(Some(report)) => {
                     let _operation = self.schema_store_operation_lock.lock().await;
-                    match self
-                        .update_config_report_locked(report, &candidate.path)
-                        .await
-                    {
-                        Ok(()) => {
-                            return self
-                                .config_schema_stores
-                                .read()
-                                .await
-                                .get(&candidate.path)
-                                .expect("loaded config store exists")
-                                .store
-                                .clone();
-                        }
-                        Err(error) => log::warn!(
-                            "failed to load schema store for {:?}: {error}",
-                            candidate.path
-                        ),
-                    }
+                    self.update_config_report_locked(report, &candidate.path)
+                        .await?;
+                    return Ok(Some(
+                        self.config_schema_stores
+                            .read()
+                            .await
+                            .get(&candidate.path)
+                            .expect("loaded config store exists")
+                            .store
+                            .clone(),
+                    ));
                 }
                 Ok(None) => {}
                 Err(error @ tombi_config::Error::ConfigOffline { .. }) => {
@@ -183,7 +192,7 @@ impl ConfigManager {
                 Err(error) => log::warn!("failed to load config {:?}: {error}", candidate.path),
             }
         }
-        self.default_config_schema_store().await
+        Ok(None)
     }
 
     fn config_load_options(&self) -> serde_tombi::config::ConfigLoadOptions {
@@ -407,15 +416,38 @@ impl ConfigManager {
     }
 
     pub async fn load(&self) -> Result<(), tombi_schema_store::Error> {
+        let _resolution = self.config_resolution_lock.lock().await;
         let has_editor_config = self
             .default_config_schema_store
             .read()
             .await
             .as_ref()
             .is_some_and(|(source, _)| *source == DefaultConfigSource::Editor);
-        if !has_editor_config {
-            self.config_schema_store_for_directory(std::env::current_dir().ok())
-                .await;
+        if !has_editor_config
+            && self
+                .try_config_schema_store_for_directory_locked(std::env::current_dir().ok())
+                .await?
+                .is_none()
+            && self.default_config_schema_store.read().await.is_none()
+        {
+            let _operation = self.schema_store_operation_lock.lock().await;
+            if self.default_config_schema_store.read().await.is_none() {
+                let config = Config::default();
+                let associated_schemas = self.associated_schemas.read().await.clone();
+                let schema_options = schema_store_options(&config, &self.backend_options);
+                let schema_store = SchemaStore::new_with_options(schema_options);
+                load_schema_store_with_associations(
+                    &schema_store,
+                    &config,
+                    None,
+                    &associated_schemas,
+                )
+                .await?;
+                *self.default_config_schema_store.write().await = Some((
+                    DefaultConfigSource::Default,
+                    ConfigSchemaStore::new(config, None, schema_store),
+                ));
+            }
         }
         Ok(())
     }

@@ -383,9 +383,7 @@ fn overlay_table(inherited: &mut Table, higher_priority: Table, scope: TableScop
         if let Some(inherited_value) = inherited.key_values_mut().get_mut(&key) {
             match (&mut *inherited_value, higher_value) {
                 (Value::Table(inherited_table), Value::Table(higher_table)) => {
-                    let child_scope = if scope == TableScope::Extensions
-                        || scope == TableScope::Root && key.value() == "extensions"
-                    {
+                    let child_scope = if scope == TableScope::Root && key.value() == "extensions" {
                         TableScope::Extensions
                     } else {
                         TableScope::Ordinary
