@@ -2459,6 +2459,41 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn pyproject_workspace_member_dependency_name_excludes_normalized_own_project(
+                r#"
+                [project]
+                name = "Anyio"
+                version = "0.1.0"
+                dependencies = ["█"]
+
+                [tool.uv.sources]
+                app2 = { workspace = true }
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app3/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(["\"app2\"", "\"pydantic\"", "\"pytest\"", "\"ruff\""]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_workspace_non_member_dependency_name_is_not_completed(
+                r#"
+                [project]
+                name = "demo"
+                version = "0.1.0"
+                dependencies = ["█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/examples/demo/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn pyproject_dependency_groups_include_group_ignores_invalid_triple_quoted_value(
                 r#"
                 [dependency-groups]

@@ -12,8 +12,11 @@ use tombi_schema_store::{Accessor, matches_accessors};
 use crate::accessors::{
     is_dependency_groups_include_group_accessors, is_dependency_name_accessors,
 };
-use crate::dependency::parse_requirement;
+use crate::dependency::{normalize_pep503_name, parse_requirement};
 use crate::manifest::{find_workspace_pyproject_toml, get_project_name};
+use crate::workspace::{
+    extract_exclude_patterns, extract_member_patterns, find_pyproject_toml_paths,
+};
 
 pub async fn completion(
     text_document_uri: &tombi_uri::Uri,
@@ -111,6 +114,18 @@ fn completion_workspace_dependency_name(
                 return None;
             }
 
+            let member_patterns = extract_member_patterns(workspace_document_tree, &[]);
+            let exclude_patterns = extract_exclude_patterns(workspace_document_tree);
+            let workspace_dir_path = workspace_pyproject_toml_path.parent()?;
+            let is_member =
+                find_pyproject_toml_paths(&member_patterns, &exclude_patterns, workspace_dir_path)
+                    .any(|(_, member_pyproject_toml_path)| {
+                        is_same_file(&member_pyproject_toml_path, &pyproject_toml_path)
+                    });
+            if !is_member {
+                return None;
+            }
+
             let mut dependency_arrays = Vec::new();
             if let Some((_, Value::Array(dependencies))) =
                 dig_keys(workspace_document_tree, &["project", "dependencies"])
@@ -156,11 +171,12 @@ fn completion_workspace_dependency_name(
         _ => BTreeSet::new(),
     };
 
-    let project_name = get_project_name(document_tree).map(|name| name.value().to_owned());
+    let project_name =
+        get_project_name(document_tree).map(|name| normalize_pep503_name(name.value()));
     let completions = workspace_dependency_names
         .into_iter()
         .chain(workspace_member_names)
-        .filter(|name| Some(name) != project_name.as_ref())
+        .filter(|name| Some(normalize_pep503_name(name)) != project_name)
         .unique()
         .filter(|name| name.starts_with(value.value()))
         .map(|name| {
@@ -178,6 +194,13 @@ fn completion_workspace_dependency_name(
         .collect_vec();
 
     (!completions.is_empty()).then_some(completions)
+}
+
+fn is_same_file(path: &std::path::Path, other: &std::path::Path) -> bool {
+    match (tombi_fs::canonicalize(path), tombi_fs::canonicalize(other)) {
+        (Ok(path), Ok(other)) => path == other,
+        _ => path == other,
+    }
 }
 
 fn is_workspace_source(source: &Value<'_>) -> bool {
