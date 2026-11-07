@@ -1,19 +1,8 @@
-use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
-};
+use std::sync::Arc;
 
 use tombi_config::Config;
 use tombi_schema_store::{SchemaStore, SchemaUri};
-use tower_lsp_server::gen_lsp_types::{
-    BaseUri, DidChangeWatchedFilesRegistrationOptions, FileSystemWatcher, GlobPattern,
-    Registration, RelativePattern, Unregistration, WatchKind,
-};
-
-const LOCAL_DEPENDENCY_WATCHER_REGISTRATION_ID: &str = "config-extends.file-watcher";
-const DID_CHANGE_WATCHED_FILES_METHOD: &str = "workspace/didChangeWatchedFiles";
 
 /// Source type for ConfigSchemaStore without a specific config file
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,16 +39,13 @@ pub struct ConfigManager {
     /// Maps config file paths to their ConfigSchemaStore
     config_schema_stores:
         Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, CachedConfigSchemaStore>>>,
-    config_resolution_lock: tokio::sync::Mutex<()>,
+    config_source_cache: tokio::sync::Mutex<serde_tombi::config::ConfigSourceCache>,
     schema_store_operation_lock: tokio::sync::Mutex<()>,
     /// Default ConfigSchemaStore when no config file is found
     /// Contains the source type (Default or Editor) and the ConfigSchemaStore
     default_config_schema_store:
         Arc<tokio::sync::RwLock<Option<(DefaultConfigSource, ConfigSchemaStore)>>>,
 
-    client: tower_lsp_server::Client,
-    local_dependency_watchers: tokio::sync::Mutex<HashSet<PathBuf>>,
-    supports_relative_patterns: AtomicBool,
     backend_options: crate::backend::Options,
     associated_schemas: Arc<tokio::sync::RwLock<Vec<AssociatedSchema>>>,
 }
@@ -78,19 +64,13 @@ struct AssociatedSchema {
 }
 
 impl ConfigManager {
-    pub fn new(
-        client: tower_lsp_server::Client,
-        backend_options: &crate::backend::Options,
-    ) -> Self {
+    pub fn new(backend_options: &crate::backend::Options) -> Self {
         Self {
             source_config_paths: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
             config_schema_stores: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
-            config_resolution_lock: tokio::sync::Mutex::new(()),
+            config_source_cache: tokio::sync::Mutex::new(Default::default()),
             schema_store_operation_lock: tokio::sync::Mutex::new(()),
             default_config_schema_store: Arc::new(tokio::sync::RwLock::new(None)),
-            client,
-            local_dependency_watchers: tokio::sync::Mutex::new(HashSet::new()),
-            supports_relative_patterns: AtomicBool::new(false),
             backend_options: backend_options.clone(),
             associated_schemas: Arc::new(tokio::sync::RwLock::new(Vec::new())),
         }
@@ -99,11 +79,6 @@ impl ConfigManager {
     /// Forget which config each source file uses, so config discovery runs again.
     pub async fn clear_source_config_paths(&self) {
         self.source_config_paths.write().await.clear();
-    }
-
-    pub fn set_supports_relative_patterns(&self, supports_relative_patterns: bool) {
-        self.supports_relative_patterns
-            .store(supports_relative_patterns, Ordering::Relaxed);
     }
 
     /// Get config for a URI
@@ -125,13 +100,14 @@ impl ConfigManager {
         if let Some(store) = self.cached_store_for_file(text_document_path).await {
             return store;
         }
-        let _resolution = self.config_resolution_lock.lock().await;
+        let mut source_cache = self.config_source_cache.lock().await;
         if let Some(store) = self.cached_store_for_file(text_document_path).await {
             return store;
         }
         let store = self
             .config_schema_store_for_directory_locked(
                 text_document_path.parent().map(ToOwned::to_owned),
+                &mut source_cache,
             )
             .await;
         if let Some(config_path) = &store.config_path {
@@ -156,17 +132,18 @@ impl ConfigManager {
         &self,
         directory: Option<PathBuf>,
     ) -> ConfigSchemaStore {
-        let _resolution = self.config_resolution_lock.lock().await;
-        self.config_schema_store_for_directory_locked(directory)
+        let mut source_cache = self.config_source_cache.lock().await;
+        self.config_schema_store_for_directory_locked(directory, &mut source_cache)
             .await
     }
 
     async fn config_schema_store_for_directory_locked(
         &self,
         directory: Option<PathBuf>,
+        source_cache: &mut serde_tombi::config::ConfigSourceCache,
     ) -> ConfigSchemaStore {
         match self
-            .try_config_schema_store_for_directory_locked(directory)
+            .try_config_schema_store_for_directory_locked(directory, source_cache)
             .await
         {
             Ok(Some(store)) => store,
@@ -181,6 +158,7 @@ impl ConfigManager {
     async fn try_config_schema_store_for_directory_locked(
         &self,
         directory: Option<PathBuf>,
+        source_cache: &mut serde_tombi::config::ConfigSourceCache,
     ) -> Result<Option<ConfigSchemaStore>, tombi_schema_store::Error> {
         for candidate in serde_tombi::config::config_candidates(directory) {
             if let Some(entry) = self.config_schema_stores.read().await.get(&candidate.path) {
@@ -189,11 +167,9 @@ impl ConfigManager {
             if !tombi_fs::is_file(&candidate.path) {
                 continue;
             }
-            match serde_tombi::config::try_from_path_with_options(
-                &candidate.path,
-                self.config_load_options(),
-            )
-            .await
+            match source_cache
+                .try_from_path_with_options(&candidate.path, self.config_load_options())
+                .await
             {
                 Ok(Some(report)) => {
                     let _operation = self.schema_store_operation_lock.lock().await;
@@ -227,7 +203,8 @@ impl ConfigManager {
     }
 
     pub async fn invalidate_local_dependencies(&self, paths: &[PathBuf], rediscover: bool) -> bool {
-        let _resolution = self.config_resolution_lock.lock().await;
+        let mut source_cache = self.config_source_cache.lock().await;
+        source_cache.invalidate_local_paths(paths);
         let changed_paths = paths
             .iter()
             .flat_map(|path| {
@@ -254,80 +231,18 @@ impl ConfigManager {
         drop(source_paths);
         drop(stores);
 
-        if let Err(error) = self.sync_local_dependency_watchers().await {
-            log::warn!("failed to update local extends file watchers: {error}");
-        }
-
         invalidated
-    }
-
-    /// Watch the local files currently referenced by loaded config files.
-    pub async fn sync_local_dependency_watchers(
-        &self,
-    ) -> Result<(), tower_lsp_server::jsonrpc::Error> {
-        let mut registered_paths = self.local_dependency_watchers.lock().await;
-        let dependency_paths = self
-            .config_schema_stores
-            .read()
-            .await
-            .values()
-            .flat_map(|entry| entry.local_dependencies.iter().cloned())
-            .filter(|path| {
-                !matches!(
-                    path.extension().and_then(|extension| extension.to_str()),
-                    Some("toml" | "json")
-                )
-            })
-            .collect::<HashSet<_>>();
-
-        if *registered_paths == dependency_paths {
-            return Ok(());
-        }
-
-        if !registered_paths.is_empty() {
-            self.client
-                .unregister_capability(vec![Unregistration {
-                    id: LOCAL_DEPENDENCY_WATCHER_REGISTRATION_ID.to_string(),
-                    method: DID_CHANGE_WATCHED_FILES_METHOD.to_string(),
-                }])
-                .await?;
-            registered_paths.clear();
-        }
-
-        let supports_relative_patterns = self.supports_relative_patterns.load(Ordering::Relaxed);
-        let mut seen_watchers = HashSet::new();
-        let watchers = dependency_paths
-            .iter()
-            .filter_map(|path| local_dependency_watcher(path, supports_relative_patterns))
-            .filter(|watcher| seen_watchers.insert(watcher.clone()))
-            .collect::<Vec<_>>();
-        if watchers.is_empty() {
-            return Ok(());
-        }
-
-        self.client
-            .register_capability(vec![Registration {
-                id: LOCAL_DEPENDENCY_WATCHER_REGISTRATION_ID.to_string(),
-                method: DID_CHANGE_WATCHED_FILES_METHOD.to_string(),
-                register_options: Some(serde_json::json!(
-                    DidChangeWatchedFilesRegistrationOptions { watchers }
-                )),
-            }])
-            .await?;
-        *registered_paths = dependency_paths;
-        Ok(())
     }
 
     pub async fn reload_config(
         &self,
         config_path: &Path,
     ) -> Result<bool, tombi_schema_store::Error> {
-        let _resolution = self.config_resolution_lock.lock().await;
-        match serde_tombi::config::try_from_path_with_options(
-            config_path,
-            self.config_load_options(),
-        )
-        .await
+        let mut source_cache = self.config_source_cache.lock().await;
+        source_cache.invalidate_local_paths(&[config_path.to_owned()]);
+        match source_cache
+            .try_from_path_with_options(config_path, self.config_load_options())
+            .await
         {
             Ok(Some(report)) => {
                 let _operation = self.schema_store_operation_lock.lock().await;
@@ -349,7 +264,7 @@ impl ConfigManager {
         config: Config,
         config_path: &Path,
     ) -> Result<(), tombi_schema_store::Error> {
-        let _resolution = self.config_resolution_lock.lock().await;
+        let _source_cache = self.config_source_cache.lock().await;
         let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         self.update_config_report_locked(
             serde_tombi::config::ConfigLoadReport {
@@ -394,10 +309,6 @@ impl ConfigManager {
             },
         );
         drop(config_schema_stores);
-
-        if let Err(error) = self.sync_local_dependency_watchers().await {
-            log::warn!("failed to update local extends file watchers: {error}");
-        }
 
         Ok(())
     }
@@ -511,7 +422,7 @@ impl ConfigManager {
     }
 
     pub async fn load(&self) -> Result<(), tombi_schema_store::Error> {
-        let _resolution = self.config_resolution_lock.lock().await;
+        let mut source_cache = self.config_source_cache.lock().await;
         let has_editor_config = self
             .default_config_schema_store
             .read()
@@ -520,7 +431,10 @@ impl ConfigManager {
             .is_some_and(|(source, _)| *source == DefaultConfigSource::Editor);
         if !has_editor_config
             && self
-                .try_config_schema_store_for_directory_locked(std::env::current_dir().ok())
+                .try_config_schema_store_for_directory_locked(
+                    std::env::current_dir().ok(),
+                    &mut source_cache,
+                )
                 .await?
                 .is_none()
             && self.default_config_schema_store.read().await.is_none()
@@ -548,7 +462,10 @@ impl ConfigManager {
     }
 
     pub async fn refresh_cache(&self) -> Result<bool, tombi_schema_store::Error> {
-        let _resolution = self.config_resolution_lock.lock().await;
+        let mut source_cache = self.config_source_cache.lock().await;
+        if !self.config_load_options().offline {
+            source_cache.clear();
+        }
         let _schema_store_operation = self.schema_store_operation_lock.lock().await;
         let mut updated = false;
 
@@ -560,11 +477,9 @@ impl ConfigManager {
             .cloned()
             .collect();
         for config_path in config_paths {
-            match serde_tombi::config::try_from_path_with_options(
-                &config_path,
-                self.config_load_options(),
-            )
-            .await
+            match source_cache
+                .try_from_path_with_options(&config_path, self.config_load_options())
+                .await
             {
                 Ok(Some(report)) => {
                     self.update_config_report_locked(report, &config_path)
@@ -695,38 +610,6 @@ impl ConfigManager {
 
         schema_map.into_values().collect()
     }
-}
-
-fn local_dependency_watcher(
-    path: &Path,
-    supports_relative_patterns: bool,
-) -> Option<FileSystemWatcher> {
-    let file_name = path.file_name()?.to_str()?;
-    let glob_pattern = if supports_relative_patterns {
-        let base_uri = tombi_uri::Uri::from_file_path(path.parent()?).ok()?;
-        GlobPattern::RelativePattern(RelativePattern {
-            base_uri: BaseUri::Uri(base_uri.into()),
-            pattern: escape_glob_pattern(file_name),
-        })
-    } else {
-        GlobPattern::Pattern(format!("**/{}", escape_glob_pattern(file_name)))
-    };
-
-    Some(FileSystemWatcher {
-        glob_pattern,
-        kind: Some(WatchKind::Create | WatchKind::Change | WatchKind::Delete),
-    })
-}
-
-fn escape_glob_pattern(value: &str) -> String {
-    let mut pattern = String::with_capacity(value.len());
-    for character in value.chars() {
-        if matches!(character, '\\' | '*' | '?' | '[' | ']' | '{' | '}' | '!') {
-            pattern.push('\\');
-        }
-        pattern.push(character);
-    }
-    pattern
 }
 
 /// Load config and associated schemas into an existing SchemaStore

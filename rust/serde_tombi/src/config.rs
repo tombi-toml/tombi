@@ -6,6 +6,7 @@ use tombi_config::{
 use tombi_toml_version::TomlVersion;
 
 mod inheritance;
+pub use inheritance::ConfigSourceCache;
 
 /// Parse and resolve a Tombi config document using asynchronous local and HTTP reads.
 pub async fn from_str(
@@ -127,8 +128,9 @@ pub async fn try_from_path_with_options<P: AsRef<std::path::Path>>(
     config_path: P,
     options: ConfigLoadOptions,
 ) -> Result<Option<ConfigLoadReport>, tombi_config::Error> {
-    validate_config_path(config_path.as_ref())?;
-    inheritance::try_from_path(config_path.as_ref(), options).await
+    ConfigSourceCache::default()
+        .try_from_path_with_options(config_path, options)
+        .await
 }
 
 pub fn load_with_path_and_level(

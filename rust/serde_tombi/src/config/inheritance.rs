@@ -177,11 +177,16 @@ fn validate_remote_uri(uri: &Uri) -> Result<(), &'static str> {
     Ok(())
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ConfigDocument {
     source: ConfigSource,
     extends: Vec<ConfigSource>,
     values: tombi_document::Document,
+}
+
+#[derive(Debug, Default)]
+pub struct ConfigSourceCache {
+    documents: HashMap<ConfigSource, ConfigDocument>,
 }
 
 struct ResolutionFrame {
@@ -336,6 +341,79 @@ impl ConfigResolution {
                 return Ok(ResolutionStep::Complete(resolved, frame.local_dependencies));
             }
         }
+    }
+}
+
+impl ConfigSourceCache {
+    pub async fn try_from_path_with_options<P: AsRef<std::path::Path>>(
+        &mut self,
+        config_path: P,
+        options: super::ConfigLoadOptions,
+    ) -> Result<Option<super::ConfigLoadReport>, tombi_config::Error> {
+        let config_path = config_path.as_ref();
+        super::validate_config_path(config_path)?;
+        if !tombi_fs::is_file(config_path) {
+            return Err(tombi_config::Error::ConfigFileNotFound {
+                config_path: config_path.to_owned(),
+            });
+        }
+
+        let source = ConfigSource::from_path(config_path.to_owned());
+        let root = if let Some(document) = self.documents.get(&source) {
+            Some(document.clone())
+        } else {
+            let text = tombi_fs::read_to_string_async(config_path)
+                .await
+                .map_err(|error| source_error(&source, error))?;
+            let document = parse_document(&text, source.clone(), false)?;
+            if let Some(document) = &document {
+                self.documents.insert(source, document.clone());
+            }
+            document
+        };
+
+        let Some(root) = root else {
+            return Ok(None);
+        };
+
+        resolve(root, options, self).await.map(Some)
+    }
+
+    pub fn invalidate_local_paths(&mut self, paths: &[PathBuf]) -> bool {
+        let changed_paths = paths
+            .iter()
+            .flat_map(|path| {
+                let selected = tombi_fs::normalize(path);
+                let identity = tombi_fs::canonicalize(path).unwrap_or_else(|_| selected.clone());
+                [selected, identity]
+            })
+            .collect::<HashSet<_>>();
+        let before = self.documents.len();
+        self.documents.retain(|source, _| {
+            !source
+                .local_dependencies()
+                .any(|path| changed_paths.contains(&path))
+        });
+        before != self.documents.len()
+    }
+
+    pub fn clear(&mut self) {
+        self.documents.clear();
+    }
+
+    async fn read_document(
+        &mut self,
+        source: ConfigSource,
+        inherited: bool,
+        options: super::ConfigLoadOptions,
+    ) -> Result<ConfigDocument, tombi_config::Error> {
+        if let Some(document) = self.documents.get(&source) {
+            return Ok(document.clone());
+        }
+
+        let document = read_document_async(source.clone(), inherited, options).await?;
+        self.documents.insert(source, document.clone());
+        Ok(document)
     }
 }
 
@@ -620,13 +698,14 @@ fn read_document_sync(
 async fn resolve(
     root: ConfigDocument,
     options: super::ConfigLoadOptions,
+    source_cache: &mut ConfigSourceCache,
 ) -> Result<super::ConfigLoadReport, tombi_config::Error> {
     let mut resolution = ConfigResolution::new(root);
     let mut step = resolution.advance(None)?;
     loop {
         step = match step {
             ResolutionStep::Read(source) => {
-                let document = read_document_async(source, true, options).await?;
+                let document = source_cache.read_document(source, true, options).await?;
                 resolution.advance(Some(document))?
             }
             ResolutionStep::Complete(document, local_dependencies) => {
@@ -680,29 +759,10 @@ pub(crate) async fn from_str(
             reason: "pyproject.toml does not contain [tool.tombi]".to_owned(),
         }
     })?;
-    resolve(root, super::ConfigLoadOptions::default())
+    let mut source_cache = ConfigSourceCache::default();
+    resolve(root, super::ConfigLoadOptions::default(), &mut source_cache)
         .await
         .map(|report| report.config)
-}
-
-pub(crate) async fn try_from_path(
-    config_path: &std::path::Path,
-    options: super::ConfigLoadOptions,
-) -> Result<Option<super::ConfigLoadReport>, tombi_config::Error> {
-    if !tombi_fs::is_file(config_path) {
-        return Err(tombi_config::Error::ConfigFileNotFound {
-            config_path: config_path.to_owned(),
-        });
-    }
-
-    let source = ConfigSource::from_path(config_path.to_owned());
-    let text = tombi_fs::read_to_string_async(config_path)
-        .await
-        .map_err(|error| source_error(&source, error))?;
-    let Some(root) = parse_document(&text, source, false)? else {
-        return Ok(None);
-    };
-    resolve(root, options).await.map(Some)
 }
 
 #[cfg(target_family = "wasm")]

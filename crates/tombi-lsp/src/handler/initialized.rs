@@ -59,13 +59,6 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
     if let Err(error) = register_workspace_file_watcher(backend).await {
         log::warn!("failed to register workspace file watchers: {error}");
     }
-    if let Err(error) = backend
-        .config_manager
-        .sync_local_dependency_watchers()
-        .await
-    {
-        log::warn!("failed to register local extends file watchers: {error}");
-    }
 }
 
 async fn register_workspace_file_watcher(
