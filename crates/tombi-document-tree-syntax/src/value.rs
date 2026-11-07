@@ -185,9 +185,10 @@ impl<'t> Value<'t> {
             })
     }
 
-    /// Whether the cursor selects this value as an array item.
-    /// A cursor on a string's boundary is outside the string, so the enclosing array is selected instead.
-    pub fn contains_as_array_item(&self, offset: tombi_text::Offset) -> bool {
+    /// Whether the cursor is inside this value, as an array item.
+    /// For a string, the cursor must be inside its quotes: a cursor right before the opening quote
+    /// or right after the closing quote selects the enclosing array instead. Other values are the same as `contains`.
+    pub fn contains_inside_quotes(&self, offset: tombi_text::Offset) -> bool {
         self.contains(offset)
             && !(matches!(self, Value::String(_))
                 && (self.span().start == offset || self.span().end == offset))
