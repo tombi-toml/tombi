@@ -516,8 +516,9 @@ impl SchemaStore {
                 })?;
 
                 // Go on without a missing local catalog, instead of aborting before linting starts.
-                // The Tombi config linter reports it with the configured severity.
+                // The Tombi config linter also reports it, but only when the config is linted.
                 if !tombi_fs::is_file(&catalog_path) {
+                    log::error!("catalog file not found: {}", catalog_path.display());
                     return Ok(None);
                 }
 
