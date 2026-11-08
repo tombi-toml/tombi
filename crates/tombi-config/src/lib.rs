@@ -100,8 +100,12 @@ pub struct ExtendsReference(pub std::string::String);
 #[schemars(extend("$id" = concat!("tombi://", tombi_uri::schemastore_hostname!(), "/tombi.json")))]
 #[schemars(extend("additionalProperties" = false))]
 pub struct ConfigFileSchema {
+    /// # Extends
+    ///
     /// Config files to inherit.
-    pub extends: Option<OneOrMany<ExtendsReference>>,
+    ///
+    /// The files are interpreted in order, starting with the first entry. Later entries take precedence over earlier ones, and this config takes precedence over all of them.
+    pub extends: Option<Vec<ExtendsReference>>,
 
     #[schemars(flatten)]
     pub config: Config,

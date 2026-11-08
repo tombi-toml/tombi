@@ -302,7 +302,7 @@ mod tests {
             "toml-version = \"v1.0.0\"\n",
         );
         let config_path = temp_dir.path().join("app/tombi.toml");
-        write_file(&config_path, "extends = \"../shared/.tombi.toml\"\n");
+        write_file(&config_path, "extends = [\"../shared/.tombi.toml\"]\n");
 
         let config = try_from_path(&config_path, offline_client().as_ref())
             .await
@@ -327,7 +327,7 @@ mod tests {
             "toml-version = \"v1.0.0\"\n",
         );
         let config_path = temp_dir.path().join("app/tombi.toml");
-        write_file(&config_path, "extends = \"../shared/base.toml\"\n");
+        write_file(&config_path, "extends = [\"../shared/base.toml\"]\n");
 
         let error = try_from_path(&config_path, offline_client().as_ref())
             .await
@@ -335,6 +335,30 @@ mod tests {
 
         assert!(
             matches!(error, tombi_config::Error::ConfigExtendsInvalid { .. }),
+            "{error}"
+        );
+    }
+
+    #[tokio::test]
+    async fn extends_rejects_string_form() {
+        let temp_dir = temp_test_dir("extends-string-form");
+        write_file(
+            &temp_dir.path().join("shared/tombi.toml"),
+            "toml-version = \"v1.0.0\"\n",
+        );
+        let config_path = temp_dir.path().join("app/tombi.toml");
+        write_file(&config_path, "extends = \"../shared/tombi.toml\"\n");
+
+        let error = try_from_path(&config_path, offline_client().as_ref())
+            .await
+            .unwrap_err();
+
+        assert!(
+            matches!(
+                &error,
+                tombi_config::Error::ConfigExtendsInvalid { reason, .. }
+                    if reason == "extends must be an array of strings"
+            ),
             "{error}"
         );
     }
@@ -349,7 +373,7 @@ mod tests {
         let config_path = temp_dir.path().join("app/tombi.toml");
         write_file(
             &config_path,
-            "extends = \"../shared/tombi.toml\"\n\n[extensions.\"tombi-toml/cargo\".lsp]\nenabled = false\n",
+            "extends = [\"../shared/tombi.toml\"]\n\n[extensions.\"tombi-toml/cargo\".lsp]\nenabled = false\n",
         );
 
         let config = try_from_path(&config_path, offline_client().as_ref())
@@ -385,7 +409,7 @@ mod tests {
             file_url("tombi.toml?x=1"),
         ] {
             let config_path = temp_dir.path().join("app/tombi.toml");
-            write_file(&config_path, &format!("extends = \"{reference}\"\n"));
+            write_file(&config_path, &format!("extends = [\"{reference}\"]\n"));
 
             let error = try_from_path(&config_path, offline_client().as_ref())
                 .await
