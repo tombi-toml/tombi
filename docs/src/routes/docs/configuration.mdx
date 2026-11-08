@@ -2360,7 +2360,7 @@ Set the severity for individual Tombi configuration diagnostics. Each rule defau
 
 ### extensions."tombi-toml/tombi".lint.rules.missing-catalog-path
 
-Set the severity for schema catalogs that do not exist: a local path that does not point to a file, or a URL for which the server answers 404 or 410. Network failures and offline mode are not reported.
+Set the severity for schema catalogs that do not exist: a local path that does not point to a file, a `tombi://` URL that names no built-in file, or an `http(s)://` URL for which the server answers 404 or 410 (at most a warning, as it depends on the network). Network failures and offline mode are not reported.
 
 ```toml
 [schema.catalog]
@@ -2372,7 +2372,7 @@ paths = ["schemas/catalog.json"] # no file exists at this path
 
 ### extensions."tombi-toml/tombi".lint.rules.missing-extends-path
 
-Set the severity for `extends` entries that do not exist: a local path that does not point to a file, or a URL for which the server answers 404 or 410. Network failures and offline mode are not reported.
+Set the severity for `extends` entries that do not exist: a local path that does not point to a file, or an `http(s)://` URL for which the server answers 404 or 410 (at most a warning, as it depends on the network). Network failures and offline mode are not reported.
 
 ```toml
 extends = ["base/tombi.toml"] # no file exists at this path
@@ -2383,7 +2383,7 @@ extends = ["base/tombi.toml"] # no file exists at this path
 
 ### extensions."tombi-toml/tombi".lint.rules.missing-schema-path
 
-Set the severity for schemas that do not exist: a local path that does not point to a file, or a URL for which the server answers 404 or 410. Network failures and offline mode are not reported.
+Set the severity for schemas that do not exist: a local path that does not point to a file, a `tombi://` URL that names no built-in file, or an `http(s)://` URL for which the server answers 404 or 410 (at most a warning, as it depends on the network). Network failures and offline mode are not reported.
 
 ```toml
 [[schemas]]
