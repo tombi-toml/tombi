@@ -165,7 +165,7 @@ pub struct AssociateSchemaOptions {
 
 #[derive(Debug, Clone)]
 pub struct SchemaStore {
-    http_client: Arc<dyn HttpClient>,
+    http_client: Arc<crate::CachedHttpClient>,
     fetch_policy: Arc<SchemaFetchPolicy>,
     document_schemas: DocumentSchemas,
     schema_resource_index: SchemaResourceIndex,

@@ -56,7 +56,7 @@ pub struct ConfigManager {
 
     backend_options: crate::backend::Options,
     /// Reads remote `extends` configs through the shared on-disk cache.
-    http_client: Arc<dyn tombi_schema_store::HttpClient>,
+    http_client: Arc<tombi_schema_store::CachedHttpClient>,
     /// Append-only. Holding it keeps `associate_schema` from running, so that a store
     /// built from a snapshot of it is registered without missing an association.
     associated_schemas: Arc<tokio::sync::RwLock<Vec<AssociatedSchema>>>,
@@ -135,7 +135,7 @@ impl ConfigManager {
     }
 
     /// The HTTP client that reads remote configs, honoring offline mode and the cache options.
-    pub fn http_client(&self) -> &dyn tombi_schema_store::HttpClient {
+    pub fn http_client(&self) -> &tombi_schema_store::CachedHttpClient {
         self.http_client.as_ref()
     }
 

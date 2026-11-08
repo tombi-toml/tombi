@@ -6,7 +6,7 @@ use tombi_config::{
 #[cfg(test)]
 use tombi_toml_version::TomlVersion;
 
-use tombi_schema_store::HttpClient;
+use tombi_schema_store::CachedHttpClient;
 
 mod inheritance;
 pub use inheritance::ConfigSourceCache;
@@ -15,7 +15,7 @@ pub use inheritance::ConfigSourceCache;
 pub async fn from_str(
     toml_text: &str,
     config_path: &std::path::Path,
-    http_client: &dyn HttpClient,
+    http_client: &CachedHttpClient,
 ) -> Result<Config, tombi_config::Error> {
     inheritance::from_str(toml_text, config_path, http_client).await
 }
@@ -74,7 +74,7 @@ fn validate_config_path(config_path: &std::path::Path) -> Result<(), tombi_confi
 
 pub async fn try_from_path<P: AsRef<std::path::Path>>(
     config_path: P,
-    http_client: &dyn HttpClient,
+    http_client: &CachedHttpClient,
 ) -> Result<Option<Config>, tombi_config::Error> {
     Ok(ConfigSourceCache::default()
         .try_from_path(config_path, http_client)
@@ -84,7 +84,7 @@ pub async fn try_from_path<P: AsRef<std::path::Path>>(
 
 pub async fn load_with_path_and_level(
     search_dir: Option<std::path::PathBuf>,
-    http_client: &dyn HttpClient,
+    http_client: &CachedHttpClient,
 ) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
     for candidate in config_candidates(search_dir) {
         if !tombi_fs::is_file(&candidate.path) {
@@ -101,7 +101,7 @@ pub async fn load_with_path_and_level(
 
 pub async fn load_with_path(
     search_dir: Option<std::path::PathBuf>,
-    http_client: &dyn HttpClient,
+    http_client: &CachedHttpClient,
 ) -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
     let (config, config_path, _) = load_with_path_and_level(search_dir, http_client).await?;
     Ok((config, config_path))
@@ -109,7 +109,7 @@ pub async fn load_with_path(
 
 pub async fn load(
     search_dir: Option<std::path::PathBuf>,
-    http_client: &dyn HttpClient,
+    http_client: &CachedHttpClient,
 ) -> Result<Config, tombi_config::Error> {
     let (config, _, _) = load_with_path_and_level(search_dir, http_client).await?;
     Ok(config)
@@ -312,7 +312,7 @@ mod tests {
         assert_eq!(config.toml_version, Some(TomlVersion::V1_0_0));
     }
 
-    fn offline_client() -> std::sync::Arc<dyn HttpClient> {
+    fn offline_client() -> std::sync::Arc<CachedHttpClient> {
         tombi_schema_store::http_client(tombi_schema_store::HttpClientOptions {
             offline: true,
             cache: None,

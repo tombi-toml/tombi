@@ -20,6 +20,17 @@ impl CachedHttpClient {
         Self { inner, options }
     }
 
+    /// Like [`HttpClient::get_bytes`], but `is_valid` tells whether the content is usable.
+    ///
+    /// Unusable content is neither persisted nor served from the cache.
+    pub async fn get_validated(
+        &self,
+        url: &str,
+        is_valid: &ContentValidator<'_>,
+    ) -> Result<Bytes, FetchError> {
+        self.get_bytes_cached(url, is_valid).await
+    }
+
     async fn get_bytes_cached(
         &self,
         url: &str,
@@ -82,14 +93,6 @@ impl CachedHttpClient {
 impl HttpClient for CachedHttpClient {
     fn get_bytes<'a>(&'a self, url: &'a str) -> HttpFuture<'a, Result<Bytes, FetchError>> {
         self.get_bytes_cached(url, &|_| true).boxed()
-    }
-
-    fn get_validated<'a>(
-        &'a self,
-        url: &'a str,
-        is_valid: &'a ContentValidator<'a>,
-    ) -> HttpFuture<'a, Result<Bytes, FetchError>> {
-        self.get_bytes_cached(url, is_valid).boxed()
     }
 }
 

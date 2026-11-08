@@ -9,18 +9,6 @@ pub type HttpFuture<'a, T> = tombi_future::BoxFuture<'a, T>;
 /// HTTP operations required by the schema store.
 pub trait HttpClient: std::fmt::Debug + Send + Sync {
     fn get_bytes<'a>(&'a self, url: &'a str) -> HttpFuture<'a, Result<Bytes, FetchError>>;
-
-    /// Like [`get_bytes`](Self::get_bytes), but `is_valid` tells whether the content is usable.
-    ///
-    /// Caching clients use it to avoid persisting or serving unusable content.
-    fn get_validated<'a>(
-        &'a self,
-        url: &'a str,
-        is_valid: &'a ContentValidator<'a>,
-    ) -> HttpFuture<'a, Result<Bytes, FetchError>> {
-        let _ = is_valid;
-        self.get_bytes(url)
-    }
 }
 
 pub type ContentValidator<'a> = dyn Fn(&[u8]) -> bool + Send + Sync + 'a;
@@ -52,7 +40,7 @@ impl From<&crate::Options> for Options {
 }
 
 /// The [`HttpClient`] used to read remote files, backed by the shared on-disk cache.
-pub fn http_client(options: Options) -> std::sync::Arc<dyn HttpClient> {
+pub fn http_client(options: Options) -> std::sync::Arc<CachedHttpClient> {
     std::sync::Arc::new(CachedHttpClient::new(
         std::sync::Arc::new(DefaultHttpClient::new()),
         options,

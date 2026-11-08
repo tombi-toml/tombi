@@ -5,7 +5,7 @@ use std::{
 };
 
 use tombi_document::{Key, KeyKind, Table, Value};
-use tombi_schema_store::{FetchError, HttpClient};
+use tombi_schema_store::{CachedHttpClient, FetchError};
 use tombi_toml_version::TomlVersion;
 use tombi_uri::Uri;
 
@@ -388,7 +388,7 @@ impl ConfigSourceCache {
     pub async fn try_from_path<P: AsRef<std::path::Path>>(
         &mut self,
         config_path: P,
-        http_client: &dyn HttpClient,
+        http_client: &CachedHttpClient,
     ) -> Result<Option<super::ConfigLoadReport>, tombi_config::Error> {
         let config_path = config_path.as_ref();
         super::validate_config_path(config_path)?;
@@ -445,7 +445,7 @@ impl ConfigSourceCache {
         &mut self,
         source: ConfigSource,
         inherited: bool,
-        http_client: &dyn HttpClient,
+        http_client: &CachedHttpClient,
     ) -> Result<ConfigDocument, tombi_config::Error> {
         if let Some(document) = self.documents.get(&source) {
             return Ok(document.clone());
@@ -678,7 +678,7 @@ fn extract_pyproject_config(
 async fn read_document(
     source: ConfigSource,
     inherited: bool,
-    http_client: &dyn HttpClient,
+    http_client: &CachedHttpClient,
 ) -> Result<ConfigDocument, tombi_config::Error> {
     let text = match &source {
         ConfigSource::File {
@@ -716,7 +716,7 @@ async fn read_document(
 
 async fn resolve(
     root: ConfigDocument,
-    http_client: &dyn HttpClient,
+    http_client: &CachedHttpClient,
     source_cache: &mut ConfigSourceCache,
 ) -> Result<super::ConfigLoadReport, tombi_config::Error> {
     let mut resolution = ConfigResolution::new(root);
@@ -750,7 +750,7 @@ async fn resolve(
 pub(crate) async fn from_str(
     text: &str,
     config_path: &std::path::Path,
-    http_client: &dyn HttpClient,
+    http_client: &CachedHttpClient,
 ) -> Result<tombi_config::Config, tombi_config::Error> {
     let source = ConfigSource::from_path(config_path.to_owned());
     let root = parse_document(text, source.clone(), false)?.ok_or_else(|| {
