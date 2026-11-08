@@ -438,10 +438,9 @@ impl SchemaStore {
                         self.add_json_catalog(catalog_uri, catalog).await?;
                     }
                     Ok(None) => {}
-                    Err(crate::Error::CatalogFileNotFound { catalog_path }) => {
+                    Err(crate::Error::CatalogFileNotFound { .. }) => {
                         // Let the Tombi config linter report missing local catalog paths with
                         // the configured severity instead of aborting before linting starts.
-                        log::debug!("catalog file not found: {}", catalog_path.display());
                     }
                     Err(e) => return Err(e),
                 }
