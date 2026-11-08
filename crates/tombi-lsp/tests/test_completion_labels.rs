@@ -1044,6 +1044,37 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_extends_path_completion_skips_other_file_names(
+                r#"
+                extends = ["█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extends-completion/tombi.toml"
+                )),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "base/",
+                "tombi.toml",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_extends_path_completion_in_subdirectory(
+                r#"
+                extends = ["base/█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/extends-completion/tombi.toml"
+                )),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "base/tombi.toml",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_extends_string_path_completion_from_dot_config_project_root(
                 r#"
                 extends = "█"
