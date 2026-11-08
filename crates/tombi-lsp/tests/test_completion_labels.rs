@@ -1031,6 +1031,32 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_extends_path_completion_offers_tombi_toml(
+                r#"
+                extends = ["tomb█"]
+                "#,
+                SourcePath(project_root_path().join("tombi.toml")),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "tombi.toml",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_extends_string_path_completion_from_dot_config_project_root(
+                r#"
+                extends = "█"
+                "#,
+                SourcePath(dot_config_project_root_fixture_path().join(".config/tombi.toml")),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "schemas/",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_schema_catalog_paths_file_completion(
                 r#"
                 [schema.catalog]

@@ -66,6 +66,25 @@ pub async fn completion(
             return Ok(Some(completions));
         }
 
+        // Only `tombi.toml` can be extended, so other files are not offered.
+        if (matches_accessors!(accessors, ["extends"])
+            || matches_accessors!(accessors, ["extends", _]))
+            && let Some(mut completions) = completion_file_path_from_base_dir(
+                base_dir,
+                document_tree,
+                offset,
+                accessors,
+                Some(&["toml"]),
+            )
+        {
+            completions.retain(|completion| {
+                completion.label.ends_with('/') || completion.label.ends_with(TOMBI_TOML_FILENAME)
+            });
+            if !completions.is_empty() {
+                return Ok(Some(completions));
+            }
+        }
+
         if matches_accessors!(accessors, ["schema", "catalog", "paths", _])
             && let Some(completions) = completion_file_path_from_base_dir(
                 base_dir,
