@@ -19,6 +19,18 @@ const INVALID_EXTENDS: &str = r#"extends = [
 ]
 "#;
 
+const EMBEDDED_PATHS: &str = r#"[[schemas]]
+path = "tombi://www.schemastore.org/cargo.json"
+include = ["Cargo.toml"]
+
+[[schemas]]
+path = "tombi://www.schemtore.org/cargo.json"
+include = ["Cargo.toml"]
+
+[schema.catalog]
+paths = ["tombi://www.schemastore.org/api/json/catalog.json", "tombi://www.schemastore.org/missing-catalog.json"]
+"#;
+
 fn tombi_path() -> std::path::PathBuf {
     tombi_test_lib::project_root_path().join("tombi.toml")
 }
@@ -88,6 +100,22 @@ test_lint! {
         code: "tombi/missing-catalog-path",
         level: Level::ERROR,
         span: span_of(MISSING_PATHS, "missing-catalog-for-tombi-lint-test.json")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn missing_embedded_schema_and_catalog_are_reported(
+        EMBEDDED_PATHS,
+        SourcePath(tombi_path()),
+    ) -> Diagnostics([{
+        code: "tombi/missing-schema-path",
+        level: Level::ERROR,
+        span: span_of(EMBEDDED_PATHS, "tombi://www.schemtore.org/cargo.json")
+    }, {
+        code: "tombi/missing-catalog-path",
+        level: Level::ERROR,
+        span: span_of(EMBEDDED_PATHS, "tombi://www.schemastore.org/missing-catalog.json")
     }])
 }
 

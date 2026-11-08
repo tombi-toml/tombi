@@ -63,7 +63,7 @@ impl TombiLintFeatures {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TombiLintRules {
     /// Report a schema catalog that does not exist: a local path that does not point to a file,
-    /// or a URL for which the server answers 404 or 410.
+    /// a `tombi://` URL that names no built-in file, or an `http(s)://` URL for which the server answers 404 or 410 (at most a warning, as it depends on the network).
     ///
     /// ```toml
     /// [schema.catalog]
@@ -71,14 +71,14 @@ pub struct TombiLintRules {
     /// ```
     pub missing_catalog_path: SeverityLevel,
     /// Report an `extends` entry that does not exist: a local path that does not point to a file,
-    /// or a URL for which the server answers 404 or 410.
+    /// or an `http(s)://` URL for which the server answers 404 or 410 (at most a warning, as it depends on the network).
     ///
     /// ```toml
     /// extends = ["./base/tombi.toml"] # no file exists at this path
     /// ```
     pub missing_extends_path: SeverityLevel,
     /// Report a schema that does not exist: a local path that does not point to a file,
-    /// or a URL for which the server answers 404 or 410.
+    /// a `tombi://` URL that names no built-in file, or an `http(s)://` URL for which the server answers 404 or 410 (at most a warning, as it depends on the network).
     ///
     /// ```toml
     /// [[schemas]]

@@ -194,6 +194,13 @@ impl std::fmt::Display for ReferenceKind {
     }
 }
 
+/// Where a schema or catalog reference points to.
+enum ReferenceTarget {
+    Located(ExtendsTarget),
+    /// A `tombi://` URL, which names a file embedded in Tombi.
+    Embedded(Uri),
+}
+
 /// Every diagnostic that the Tombi extension reports.
 #[derive(thiserror::Error, Debug)]
 enum DiagnosticKind {
@@ -212,6 +219,8 @@ enum DiagnosticKind {
     MissingPath { kind: ReferenceKind, path: String },
     #[error("{kind} URL `{url}` does not exist")]
     MissingUrl { kind: ReferenceKind, url: String },
+    #[error("{kind} `{url}` is not built in to Tombi")]
+    MissingEmbedded { kind: ReferenceKind, url: String },
 }
 
 impl DiagnosticKind {
@@ -221,7 +230,9 @@ impl DiagnosticKind {
             | Self::ExtendsEntryNotAString
             | Self::InvalidExtends { .. }
             | Self::ExtendsLoadFailed { .. } => "config/invalid-extends",
-            Self::MissingPath { kind, .. } | Self::MissingUrl { kind, .. } => match kind {
+            Self::MissingPath { kind, .. }
+            | Self::MissingUrl { kind, .. }
+            | Self::MissingEmbedded { kind, .. } => match kind {
                 ReferenceKind::Extends => "tombi/missing-extends-path",
                 ReferenceKind::Schema => "tombi/missing-schema-path",
                 ReferenceKind::SchemaCatalog => "tombi/missing-catalog-path",
@@ -237,22 +248,30 @@ async fn check_reference(
     schema_store: &tombi_schema_store::SchemaStore,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
-    if let Some(target) = reference_target(value.value(), source_path) {
-        report_if_missing(value, target, reference, schema_store, diagnostics).await;
-    }
-}
-
-async fn report_if_missing(
-    value: &tombi_document_tree_syntax::String<'_>,
-    target: ExtendsTarget,
-    reference: Reference,
-    schema_store: &tombi_schema_store::SchemaStore,
-    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-) {
-    if reference.severity != tombi_config::SeverityLevel::Off
-        && target_is_missing(&target, schema_store).await
-    {
-        report_missing(value, reference, &target, diagnostics);
+    match reference_target(value.value(), source_path) {
+        Some(ReferenceTarget::Located(target)) => {
+            if reference.severity != tombi_config::SeverityLevel::Off
+                && target_is_missing(&target, schema_store).await
+            {
+                report_missing(value, reference, &target, diagnostics);
+            }
+        }
+        // The embedded files are fixed at build time, so a missing one is a mistake
+        // whatever the network looks like.
+        Some(ReferenceTarget::Embedded(uri))
+            if tombi_schema_store::get_tombi_schemastore_content(&uri).is_none() =>
+        {
+            push_diagnostic(
+                DiagnosticKind::MissingEmbedded {
+                    kind: reference.kind,
+                    url: value.value().to_owned(),
+                },
+                reference.severity,
+                value.span(),
+                diagnostics,
+            );
+        }
+        Some(ReferenceTarget::Embedded(_)) | None => {}
     }
 }
 
@@ -272,21 +291,29 @@ fn report_missing(
     target: &ExtendsTarget,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
-    if reference.severity == tombi_config::SeverityLevel::Off {
-        return;
-    }
     let value_text = value.value().to_owned();
-    let kind = match target {
-        ExtendsTarget::File(_) => DiagnosticKind::MissingPath {
-            kind: reference.kind,
-            path: value_text,
-        },
-        ExtendsTarget::Remote(_) => DiagnosticKind::MissingUrl {
-            kind: reference.kind,
-            url: value_text,
-        },
+    let (kind, severity) = match target {
+        ExtendsTarget::File(_) => (
+            DiagnosticKind::MissingPath {
+                kind: reference.kind,
+                path: value_text,
+            },
+            reference.severity,
+        ),
+        // Whether a remote file exists depends on the network environment,
+        // so it is at most a warning.
+        ExtendsTarget::Remote(_) => (
+            DiagnosticKind::MissingUrl {
+                kind: reference.kind,
+                url: value_text,
+            },
+            match reference.severity {
+                tombi_config::SeverityLevel::Error => tombi_config::SeverityLevel::Warn,
+                severity => severity,
+            },
+        ),
     };
-    push_diagnostic(kind, reference.severity, value.span(), diagnostics);
+    push_diagnostic(kind, severity, value.span(), diagnostics);
 }
 
 fn schema_validation_enabled(document_tree: &DocumentTree<'_>) -> bool {
@@ -298,18 +325,22 @@ fn schema_validation_enabled(document_tree: &DocumentTree<'_>) -> bool {
 
 /// Where a schema or catalog reference points to.
 ///
-/// Anything other than a local path, `file://` or `http(s)://` is left unchecked.
-fn reference_target(value: &str, source_path: Option<&Path>) -> Option<ExtendsTarget> {
+/// Anything other than a local path, `file://`, `tombi://` or `http(s)://` is left unchecked.
+fn reference_target(value: &str, source_path: Option<&Path>) -> Option<ReferenceTarget> {
     if Path::new(value).is_absolute() {
-        return Some(ExtendsTarget::File(PathBuf::from(value)));
+        return Some(ReferenceTarget::Located(ExtendsTarget::File(
+            PathBuf::from(value),
+        )));
     }
-    match value.parse::<Uri>() {
+    let located = match value.parse::<Uri>() {
+        Ok(uri) if uri.scheme() == "tombi" => return Some(ReferenceTarget::Embedded(uri)),
         Ok(uri) if uri.scheme() == "file" => uri.to_file_path().ok().map(ExtendsTarget::File),
         Ok(uri) => tombi_config::validate_remote_uri(uri)
             .ok()
             .map(ExtendsTarget::Remote),
         Err(_) => relative_path(value, source_path).map(ExtendsTarget::File),
-    }
+    };
+    located.map(ReferenceTarget::Located)
 }
 
 fn relative_path(value: &str, source_path: Option<&Path>) -> Option<PathBuf> {
