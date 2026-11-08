@@ -61,11 +61,7 @@ async fn load_config(
         };
         let config =
             serde_tombi::config::from_str(&config_content, &config_path, http_client.as_ref())
-                .await
-                .map_err(|error| {
-                    log::warn!("{error}");
-                    error
-                })?;
+                .await?;
         Ok((config, Some(config_path)))
     } else {
         Ok(

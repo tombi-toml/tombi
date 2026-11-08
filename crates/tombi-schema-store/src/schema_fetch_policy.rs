@@ -65,7 +65,7 @@ impl SchemaFetchPolicy {
 
         if !configuration_errors.is_empty() {
             let reason = configuration_errors.join("; ");
-            log::warn!("invalid schema trust configuration: {reason}");
+            log::error!("invalid schema trust configuration: {reason}");
             policy.configuration_error = Some(reason);
         }
 

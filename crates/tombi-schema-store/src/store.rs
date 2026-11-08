@@ -441,7 +441,7 @@ impl SchemaStore {
                     Err(crate::Error::CatalogFileNotFound { catalog_path }) => {
                         // Let the Tombi config linter report missing local catalog paths with
                         // the configured severity instead of aborting before linting starts.
-                        log::warn!("catalog file not found: {}", catalog_path.display());
+                        log::debug!("catalog file not found: {}", catalog_path.display());
                     }
                     Err(e) => return Err(e),
                 }
@@ -471,7 +471,7 @@ impl SchemaStore {
             } {
                 schema_uri
             } else {
-                log::warn!("invalid schema path: {}", schema.path());
+                log::error!("invalid schema path: {}", schema.path());
                 return;
             };
 
@@ -1573,7 +1573,8 @@ impl SchemaStore {
                     );
                 }
                 Err(err) => {
-                    log::warn!(
+                    log::log!(
+                        err.log_level(),
                         "failed to get document schema for {url}: {err}",
                         url = matching_schema.schema_uri,
                     );
