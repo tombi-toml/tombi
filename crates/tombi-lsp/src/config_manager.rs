@@ -697,7 +697,7 @@ mod tests {
         ] {
             write_file(
                 &config_path,
-                &format!("toml-version = \"v1.1.0\"\nextends = \"{extends}\"\n"),
+                &format!("toml-version = \"v1.1.0\"\nextends = [\"{extends}\"]\n"),
             );
             write_file(&temp_dir.path().join("base.toml"), "");
 
@@ -719,7 +719,7 @@ mod tests {
         write_file(&base_path, "toml-version = \"v1.0.0\"\n");
         write_file(
             &app_dir.join("tombi.toml"),
-            "extends = \"../shared/tombi.toml\"\n",
+            "extends = [\"../shared/tombi.toml\"]\n",
         );
 
         let manager = ConfigManager::new(&crate::backend::Options {
@@ -733,7 +733,7 @@ mod tests {
 
         write_file(
             &base_path,
-            "toml-version = \"v1.1.0\"\nextends = \"missing/tombi.toml\"\n",
+            "toml-version = \"v1.1.0\"\nextends = [\"missing/tombi.toml\"]\n",
         );
         assert!(!manager.reload_config(&base_path).await.unwrap());
 
