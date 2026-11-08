@@ -167,7 +167,9 @@ impl<'a> Linter<'a> {
                     &document_tree,
                     source_path.as_deref(),
                     &self.extensions_options.tombi,
+                    self.schema_store,
                 )
+                .await
             } else {
                 Vec::new()
             };

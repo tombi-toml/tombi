@@ -12,10 +12,10 @@ paths = ["missing-catalog-for-tombi-lint-test.json"]
 const INVALID_EXTENDS: &str = r#"extends = [
     "missing-extends-for-tombi-lint-test/tombi.toml",
     "ftp://example.org/tombi.toml",
-    "https://example.org/tombi.toml",
+    "https://tombi-lint-test.invalid/tombi.toml",
     "tombi.toml",
     "base.toml",
-    "https://example.org/base.toml?file=tombi.toml",
+    "https://tombi-lint-test.invalid/base.toml?file=tombi.toml",
 ]
 "#;
 
@@ -64,6 +64,7 @@ fn config(
                         rules: Some(tombi_config::TombiLintRules {
                             missing_schema_path,
                             missing_catalog_path,
+                            missing_extends_path: tombi_config::SeverityLevel::Error,
                         }),
                     },
                 )),
@@ -81,11 +82,11 @@ test_lint! {
         SourcePath(tombi_path()),
     ) -> Diagnostics([{
         code: "tombi/missing-schema-path",
-        level: Level::WARNING,
+        level: Level::ERROR,
         span: span_of(MISSING_PATHS, "missing-schema-for-tombi-lint-test.json")
     }, {
         code: "tombi/missing-catalog-path",
-        level: Level::WARNING,
+        level: Level::ERROR,
         span: span_of(MISSING_PATHS, "missing-catalog-for-tombi-lint-test.json")
     }])
 }
@@ -97,11 +98,11 @@ test_lint! {
         SourcePath(user_config_path()),
     ) -> Diagnostics([{
         code: "tombi/missing-schema-path",
-        level: Level::WARNING,
+        level: Level::ERROR,
         span: span_of(MISSING_PATHS, "missing-schema-for-tombi-lint-test.json")
     }, {
         code: "tombi/missing-catalog-path",
-        level: Level::WARNING,
+        level: Level::ERROR,
         span: span_of(MISSING_PATHS, "missing-catalog-for-tombi-lint-test.json")
     }])
 }
@@ -121,11 +122,11 @@ test_lint! {
         SourcePath(dot_tombi_path()),
     ) -> Diagnostics([{
         code: "tombi/missing-schema-path",
-        level: Level::WARNING,
+        level: Level::ERROR,
         span: span_of(MISSING_PATHS, "missing-schema-for-tombi-lint-test.json")
     }, {
         code: "tombi/missing-catalog-path",
-        level: Level::WARNING,
+        level: Level::ERROR,
         span: span_of(MISSING_PATHS, "missing-catalog-for-tombi-lint-test.json")
     }])
 }
@@ -184,11 +185,11 @@ path = "Cargo.toml"
 include = ["*.toml"]
 
 [[schemas]]
-path = "https://example.com/schema.json"
+path = "https://tombi-lint-test.invalid/schema.json"
 include = ["*.toml"]
 
 [schema.catalog]
-paths = ["Cargo.toml", "https://example.com/catalog.json"]
+paths = ["Cargo.toml", "https://tombi-lint-test.invalid/catalog.json"]
 "#,
         SourcePath(tombi_path()),
     ) -> Ok(_)
@@ -209,7 +210,7 @@ test_lint! {
         INVALID_EXTENDS,
         SourcePath(dot_tombi_path()),
     ) -> Diagnostics([{
-        code: "config/invalid-extends",
+        code: "tombi/missing-extends-path",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "missing-extends-for-tombi-lint-test/tombi.toml")
     }, {
@@ -223,8 +224,39 @@ test_lint! {
     }, {
         code: "config/invalid-extends",
         level: Level::ERROR,
-        span: span_of(INVALID_EXTENDS, "https://example.org/base.toml?file=tombi.toml")
+        span: span_of(INVALID_EXTENDS, "https://tombi-lint-test.invalid/base.toml?file=tombi.toml")
     }])
+}
+
+test_lint! {
+    #[test]
+    fn missing_extends_path_can_be_turned_off(
+        r#"extends = ["missing-extends-for-tombi-lint-test/tombi.toml"]
+"#,
+        SourcePath(tombi_path()),
+        Config({
+            let mut config = tombi_config::Config::default();
+            config.extensions = Some(tombi_config::Extensions {
+                cargo: None,
+                nagi_sql: None,
+                pyproject: None,
+                tombi: Some(tombi_config::TombiExtensionFeatures::Features(
+                    tombi_config::TombiExtensionFeatureTree {
+                        lint: Some(tombi_config::TombiLintFeatures::Features(
+                            tombi_config::TombiLintFeatureTree {
+                                rules: Some(tombi_config::TombiLintRules {
+                                    missing_extends_path: tombi_config::SeverityLevel::Off,
+                                    ..Default::default()
+                                }),
+                            },
+                        )),
+                        lsp: None,
+                    },
+                )),
+            });
+            config
+        }),
+    ) -> Ok(_)
 }
 
 test_lint! {
@@ -247,10 +279,6 @@ test_lint! {
     ) -> Diagnostics([{
         code: "config/invalid-extends",
         level: Level::ERROR,
-        span: span_of(INVALID_EXTENDS, "missing-extends-for-tombi-lint-test/tombi.toml")
-    }, {
-        code: "config/invalid-extends",
-        level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "ftp://example.org/tombi.toml")
     }, {
         code: "config/invalid-extends",
@@ -259,6 +287,6 @@ test_lint! {
     }, {
         code: "config/invalid-extends",
         level: Level::ERROR,
-        span: span_of(INVALID_EXTENDS, "https://example.org/base.toml?file=tombi.toml")
+        span: span_of(INVALID_EXTENDS, "https://tombi-lint-test.invalid/base.toml?file=tombi.toml")
     }])
 }

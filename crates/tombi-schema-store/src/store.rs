@@ -320,6 +320,14 @@ impl SchemaStore {
         self.options.offline.unwrap_or_default()
     }
 
+    /// Whether the server answers that the remote file does not exist (404 or 410).
+    ///
+    /// Network failures, offline mode and refusals by the fetch policy are not evidence
+    /// that the file is missing, so they return `false`.
+    pub async fn remote_file_is_missing(&self, uri: &tombi_uri::Uri) -> bool {
+        self.http_client.is_missing(uri.as_str()).await
+    }
+
     /// Cache options
     pub fn cache_options(&self) -> Option<&tombi_cache::Options> {
         self.options.cache.as_ref()
