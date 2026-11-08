@@ -21,7 +21,9 @@ pub fn has_error() -> bool {
 /// so that a command can decide its exit code.
 ///
 /// The records that are formatted are the ones that pass the filter, which always admits warnings.
+/// `max_level` only decides which of them are written, so that `-qq` does not change the exit code.
 pub fn format(
+    max_level: log::LevelFilter,
     use_ansi_color: bool,
     show_trace_location: bool,
 ) -> impl Fn(&mut Formatter, &Record) -> std::io::Result<()> + Send + Sync + 'static {
@@ -30,6 +32,10 @@ pub fn format(
             log::Level::Error => HAS_ERROR.store(true, Ordering::Relaxed),
             log::Level::Warn => HAS_WARNING.store(true, Ordering::Relaxed),
             _ => {}
+        }
+
+        if record.level() > max_level {
+            return Ok(());
         }
 
         let level_style = level_style_for(record.level(), use_ansi_color);

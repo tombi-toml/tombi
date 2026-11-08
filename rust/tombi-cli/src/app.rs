@@ -66,23 +66,32 @@ impl CommonArgs {
 
 pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
     let args: Args = args.into();
-    let log_level = args.verbosity.log_level();
+    let verbosity_level = args.verbosity.verbosity_level();
+    let quiet = verbosity_level.is_quiet();
+    let log_level = verbosity_level.log_level_filter();
     let show_trace_location = log_level == log::LevelFilter::Trace;
+
+    // Warnings must pass the filter to be counted for the exit code, even if they are not written.
+    let filter_level = log_level.max(log::LevelFilter::Warn);
 
     let use_ansi_color = use_ansi_color();
     env_logger::Builder::new()
         .filter_level(log::LevelFilter::Warn)
-        .filter_module("tombi", log_level)
-        .filter_module("tombi_", log_level)
-        .filter_module("serde_tombi", log_level)
-        .format(tombi_log::format(use_ansi_color, show_trace_location))
+        .filter_module("tombi", filter_level)
+        .filter_module("tombi_", filter_level)
+        .filter_module("serde_tombi", filter_level)
+        .format(tombi_log::format(
+            log_level,
+            use_ansi_color,
+            show_trace_location,
+        ))
         .target(env_logger::Target::Stderr)
         .init();
 
     match args.subcommand {
         command::TomlCommand::Cache(args) => command::cache::run(args),
-        command::TomlCommand::Format(args) => command::format::run(args),
-        command::TomlCommand::Lint(args) => command::lint::run(args),
+        command::TomlCommand::Format(args) => command::format::run(args, quiet),
+        command::TomlCommand::Lint(args) => command::lint::run(args, quiet),
         command::TomlCommand::Lsp(args) => command::lsp::run(args),
         command::TomlCommand::Completion(args) => command::completion::run(args),
     }
