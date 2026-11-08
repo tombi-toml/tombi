@@ -337,6 +337,27 @@ impl ConfigSourceCache {
         resolve(root, http_client, self).await.map(Some)
     }
 
+    /// Load the config that `reference` resolves to, as if the config at `config_path`
+    /// extended only it.
+    ///
+    /// This reports every error that loading an `extends` entry can fail with, so that
+    /// editors show what the loader would reject. Configs read for one entry are reused
+    /// by the next.
+    pub async fn check_extends_reference(
+        &mut self,
+        reference: &str,
+        config_path: &std::path::Path,
+        http_client: &CachedHttpClient,
+    ) -> Result<(), tombi_config::Error> {
+        let source = ConfigSource::from_path(config_path.to_owned());
+        let root = ConfigDocument {
+            extends: vec![source.resolve_reference(reference)?],
+            source,
+            values: tombi_document::Document::new(),
+        };
+        resolve(root, http_client, self).await.map(|_| ())
+    }
+
     pub fn invalidate_local_paths(&mut self, paths: &[PathBuf]) -> bool {
         let changed_paths = paths
             .iter()
@@ -550,7 +571,7 @@ fn parse_document(
                     _ => Err(tombi_config::Error::ConfigExtendsInvalid {
                         config_source: source.display(),
                         reference: "extends".to_owned(),
-                        reason: "extends arrays must contain only strings".to_owned(),
+                        reason: tombi_config::EXTENDS_ENTRY_NOT_A_STRING.to_owned(),
                     }),
                 })
                 .collect::<Result<Vec<_>, _>>()?
@@ -559,7 +580,7 @@ fn parse_document(
             return Err(tombi_config::Error::ConfigExtendsInvalid {
                 config_source: source.display(),
                 reference: "extends".to_owned(),
-                reason: "extends must be an array of strings".to_owned(),
+                reason: tombi_config::EXTENDS_NOT_AN_ARRAY.to_owned(),
             });
         }
     };
@@ -622,6 +643,11 @@ async fn read_document(
                     FetchError::Offline => tombi_config::Error::ConfigOffline {
                         config_uri: uri.clone(),
                     },
+                    FetchError::StatusNotOk { status: 404 | 410 } => {
+                        tombi_config::Error::ConfigUriNotFound {
+                            config_uri: uri.clone(),
+                        }
+                    }
                     error => source_error(&source, error),
                 })?;
             std::string::String::from_utf8(bytes.to_vec())

@@ -7,6 +7,9 @@ use tombi_uri::Uri;
 
 use crate::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, config_base_dir};
 
+pub const EXTENDS_NOT_AN_ARRAY: &str = "extends must be an array of strings";
+pub const EXTENDS_ENTRY_NOT_A_STRING: &str = "extends arrays must contain only strings";
+
 /// Where an `extends` reference points to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExtendsTarget {
