@@ -12,6 +12,7 @@ mod value_type;
 mod x_taplo;
 
 pub use error::{Error, SCHEMA_RESOLUTION_DIAGNOSTIC_CODE};
+pub use http_client::Options as HttpClientOptions;
 pub use http_client::*;
 use itertools::Either;
 use itertools::Itertools;

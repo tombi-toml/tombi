@@ -18,6 +18,7 @@ thiserror.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
 tombi-config.workspace = true
 tombi-fs.workspace = true
+tombi-schema-store = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile.workspace = true
@@ -25,7 +26,7 @@ tokio = { workspace = true, features = ["macros", "rt"] }
 
 [features]
 default = []
-profile = ["dep:serde_tombi"]
+profile = ["dep:serde_tombi", "dep:tombi-schema-store"]
 
 [lints]
 workspace = true

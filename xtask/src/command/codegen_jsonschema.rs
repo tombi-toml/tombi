@@ -34,7 +34,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_config::Config>(),
+                .into_root_schema_for::<tombi_config::ConfigFileSchema>(),
         )? + "\n",
     )?;
 

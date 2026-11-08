@@ -9,6 +9,16 @@ include = ["*.toml"]
 paths = ["missing-catalog-for-tombi-lint-test.json"]
 "#;
 
+const INVALID_EXTENDS: &str = r#"extends = [
+    "missing-extends-for-tombi-lint-test/tombi.toml",
+    "ftp://example.org/tombi.toml",
+    "https://example.org/tombi.toml",
+    "tombi.toml",
+    "base.toml",
+    "https://example.org/base.toml?file=tombi.toml",
+]
+"#;
+
 fn tombi_path() -> std::path::PathBuf {
     tombi_test_lib::project_root_path().join("tombi.toml")
 }
@@ -178,4 +188,72 @@ paths = ["Cargo.toml", "https://example.com/catalog.json"]
 "#,
         SourcePath(tombi_path()),
     ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn invalid_extends_are_reported(
+        INVALID_EXTENDS,
+        SourcePath(dot_tombi_path()),
+    ) -> Diagnostics([{
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "missing-extends-for-tombi-lint-test/tombi.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "ftp://example.org/tombi.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "base.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "https://example.org/base.toml?file=tombi.toml")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn invalid_extends_are_reported_even_if_tombi_extension_is_disabled(
+        INVALID_EXTENDS,
+        SourcePath(dot_tombi_path()),
+        Config({
+            let mut config = tombi_config::Config::default();
+            config.extensions = Some(tombi_config::Extensions {
+                cargo: None,
+                nagi_sql: None,
+                pyproject: None,
+                tombi: Some(tombi_config::TombiExtensionFeatures::Enabled(
+                    tombi_config::EnabledOnly { enabled: false.into() },
+                )),
+            });
+            config
+        }),
+    ) -> Diagnostics([{
+        code: "jsonschema/string-pattern",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "base.toml")
+    }, {
+        code: "jsonschema/string-pattern",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "https://example.org/base.toml?file=tombi.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "missing-extends-for-tombi-lint-test/tombi.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "ftp://example.org/tombi.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "base.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "https://example.org/base.toml?file=tombi.toml")
+    }])
 }

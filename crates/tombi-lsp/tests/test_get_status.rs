@@ -93,7 +93,12 @@ mod get_status {
                 }
 
                 let config_path = source_path.parent().unwrap().join("tombi.toml");
-                let config = serde_tombi::config::try_from_path(&config_path)?.unwrap();
+                let config = serde_tombi::config::try_from_path(&config_path, tombi_schema_store::http_client(tombi_schema_store::HttpClientOptions {
+                    offline: true,
+                    cache: None,
+                }).as_ref())
+                    .await?
+                    .unwrap();
                 backend
                     .config_manager
                     .update_config_with_path(config, &config_path)

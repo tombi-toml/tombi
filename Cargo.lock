@@ -2299,6 +2299,7 @@ dependencies = [
  "tombi-test-lib",
  "tombi-toml-text",
  "tombi-toml-version",
+ "tombi-uri",
  "tombi-validator",
  "typed-builder",
 ]
@@ -3089,6 +3090,7 @@ dependencies = [
  "tokio",
  "tombi-config",
  "tombi-fs",
+ "tombi-schema-store",
 ]
 
 [[package]]
@@ -3329,6 +3331,7 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
+ "sha2",
  "system-configuration",
  "tempfile",
  "thiserror 2.0.20",

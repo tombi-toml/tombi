@@ -1,5 +1,7 @@
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum FetchError {
+    #[error("offline mode")]
+    Offline,
     #[error("destination host is not trusted")]
     HostNotTrusted,
     #[error("{reason}")]
