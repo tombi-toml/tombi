@@ -3245,7 +3245,7 @@
       "type": "object",
       "properties": {
         "missing-catalog-path": {
-          "description": "Report a schema catalog that does not exist: a local path that does not point to a file,\nor a URL for which the server answers 404 or 410.\n\n```toml\n[schema.catalog]\npaths = [\"./schemas/catalog.json\"] # no file exists at this path\n```",
+          "description": "Report a schema catalog that does not exist: a local path that does not point to a file,\na `tombi://` URL that names no built-in file, or an `http(s)://` URL for which the server answers 404 or 410 (at most a warning, as it depends on the network).\n\n```toml\n[schema.catalog]\npaths = [\"./schemas/catalog.json\"] # no file exists at this path\n```",
           "default": "error",
           "allOf": [
             {
@@ -3254,7 +3254,7 @@
           ]
         },
         "missing-extends-path": {
-          "description": "Report an `extends` entry that does not exist: a local path that does not point to a file,\nor a URL for which the server answers 404 or 410.\n\n```toml\nextends = [\"./base/tombi.toml\"] # no file exists at this path\n```",
+          "description": "Report an `extends` entry that does not exist: a local path that does not point to a file,\nor an `http(s)://` URL for which the server answers 404 or 410 (at most a warning, as it depends on the network).\n\n```toml\nextends = [\"./base/tombi.toml\"] # no file exists at this path\n```",
           "default": "error",
           "allOf": [
             {
@@ -3263,7 +3263,7 @@
           ]
         },
         "missing-schema-path": {
-          "description": "Report a schema that does not exist: a local path that does not point to a file,\nor a URL for which the server answers 404 or 410.\n\n```toml\n[[schemas]]\npath = \"./schemas/app.json\" # no file exists at this path\n```",
+          "description": "Report a schema that does not exist: a local path that does not point to a file,\na `tombi://` URL that names no built-in file, or an `http(s)://` URL for which the server answers 404 or 410 (at most a warning, as it depends on the network).\n\n```toml\n[[schemas]]\npath = \"./schemas/app.json\" # no file exists at this path\n```",
           "default": "error",
           "allOf": [
             {
