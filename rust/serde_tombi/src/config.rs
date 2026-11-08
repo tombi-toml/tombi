@@ -433,9 +433,45 @@ mod tests {
         }
     }
 
+    static WARNINGS: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+    struct WarningCollector;
+
+    impl log::Log for WarningCollector {
+        fn enabled(&self, metadata: &log::Metadata) -> bool {
+            metadata.level() <= log::Level::Warn
+        }
+
+        fn log(&self, record: &log::Record) {
+            if record.level() == log::Level::Warn {
+                WARNINGS.lock().unwrap().push(record.args().to_string());
+            }
+        }
+
+        fn flush(&self) {}
+    }
+
+    fn warnings_mentioning(root: &std::path::Path, search_dir: &std::path::Path) -> Vec<String> {
+        // Ignore the error: another test may have installed the collector already.
+        let _ = log::set_logger(&WarningCollector);
+        log::set_max_level(log::LevelFilter::Warn);
+
+        config_candidates(Some(search_dir.to_owned()));
+        let root = root.to_string_lossy();
+        WARNINGS
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|message| message.contains(root.as_ref()))
+            .cloned()
+            .collect()
+    }
+
     #[test]
-    fn misplaced_dot_config_tombi_toml_path() {
+    fn warns_on_misplaced_dot_config_tombi_toml_in_ancestor() {
         let temp_dir = temp_test_dir("misplaced-dot-config-tombi-toml");
+        let nested = temp_dir.path().join("nested");
+        write_file(&nested.join("pyproject.toml"), "");
         write_file(
             &temp_dir
                 .path()
@@ -444,9 +480,20 @@ mod tests {
             "",
         );
 
-        assert!(tombi_fs::is_file(&misplaced_dot_config_tombi_toml(
-            temp_dir.path()
-        )));
+        let warnings = warnings_mentioning(temp_dir.path(), &nested);
+        assert_eq!(warnings.len(), 1, "{warnings:?}");
+        assert!(warnings[0].contains("Rename it to \"tombi.toml\""));
+    }
+
+    #[test]
+    fn does_not_warn_without_misplaced_dot_config_tombi_toml() {
+        let temp_dir = temp_test_dir("no-misplaced-dot-config-tombi-toml");
+        write_file(
+            &temp_dir.path().join(".config").join(TOMBI_TOML_FILENAME),
+            "",
+        );
+
+        assert!(warnings_mentioning(temp_dir.path(), temp_dir.path()).is_empty());
     }
 
     #[test]
