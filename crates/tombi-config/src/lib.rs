@@ -87,9 +87,7 @@ pub struct Config {
 /// A config path or URL whose file name is `tombi.toml` or `.tombi.toml`.
 #[cfg(feature = "jsonschema")]
 #[derive(schemars::JsonSchema)]
-pub struct ExtendsReference(
-    #[schemars(regex(pattern = r"^([^?#]*[/\\])?\.?tombi\.toml([?#].*)?$"))] pub std::string::String,
-);
+pub struct ExtendsReference(pub std::string::String);
 
 /// # Tombi
 ///

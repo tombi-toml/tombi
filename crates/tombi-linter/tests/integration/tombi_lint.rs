@@ -264,14 +264,6 @@ test_lint! {
             config
         }),
     ) -> Diagnostics([{
-        code: "jsonschema/string-pattern",
-        level: Level::ERROR,
-        span: span_of(INVALID_EXTENDS, "base.toml")
-    }, {
-        code: "jsonschema/string-pattern",
-        level: Level::ERROR,
-        span: span_of(INVALID_EXTENDS, "https://tombi-lint-test.invalid/base.toml?file=tombi.toml")
-    }, {
         code: "config/invalid-extends",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "ftp://example.org/tombi.toml")
