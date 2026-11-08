@@ -1,23 +1,33 @@
 use std::path::{Path, PathBuf};
 
-use tombi_document_tree_syntax::{DocumentTree, Value};
-use tombi_uri::{CatalogUri, SchemaUri};
-
 use tombi_config::ExtendsTarget;
+use tombi_document_tree_syntax::{DocumentTree, Value};
+use tombi_uri::Uri;
 
-/// Validate `extends` and the local schema and catalog paths configured in a Tombi config file.
-pub fn validate(
+/// Validate `extends` and the schema and catalog paths configured in a Tombi config file.
+///
+/// All three share one check: a local file must exist, and a remote file must not be
+/// answered with 404 or 410.
+pub async fn validate(
     document_tree: &DocumentTree<'_>,
     source_path: Option<&Path>,
     options: &tombi_config::TombiLintFeatureTree,
+    schema_store: &tombi_schema_store::SchemaStore,
 ) -> Vec<tombi_diagnostic::Diagnostic> {
     let mut diagnostics = Vec::new();
-    // A broken `extends` fails config loading whatever the lint settings are.
+    let rules = options.rules.unwrap_or_default();
+    // A malformed `extends` fails config loading whatever the lint settings are.
     if let Some(source_path) = source_path {
-        validate_extends(document_tree, source_path, &mut diagnostics);
+        validate_extends(
+            document_tree,
+            source_path,
+            rules.missing_extends_path,
+            schema_store,
+            &mut diagnostics,
+        )
+        .await;
     }
 
-    let rules = options.rules.unwrap_or_default();
     if rules == tombi_config::TombiLintRules::off() {
         return diagnostics;
     }
@@ -36,18 +46,18 @@ pub fn validate(
             let Some(Value::String(path)) = schema.get("path") else {
                 continue;
             };
-            let Some(path_to_check) = local_schema_path(path.value(), source_path) else {
-                continue;
-            };
-            if !tombi_fs::is_file(&path_to_check) {
-                push_diagnostic(
-                    format!("schema path `{}` does not point to a file", path.value()),
-                    "tombi/missing-schema-path",
-                    rules.missing_schema_path,
-                    path.span(),
-                    &mut diagnostics,
-                );
-            }
+            check_reference(
+                path,
+                source_path,
+                Reference {
+                    kind: "schema",
+                    code: "tombi/missing-schema-path",
+                    severity: rules.missing_schema_path,
+                },
+                schema_store,
+                &mut diagnostics,
+            )
+            .await;
         }
     }
 
@@ -59,30 +69,29 @@ pub fn validate(
             Value::String(path) => Some(path),
             _ => None,
         }) {
-            let Some(path_to_check) = local_catalog_path(path.value(), source_path) else {
-                continue;
-            };
-            if !tombi_fs::is_file(&path_to_check) {
-                push_diagnostic(
-                    format!(
-                        "schema catalog path `{}` does not point to a file",
-                        path.value()
-                    ),
-                    "tombi/missing-catalog-path",
-                    rules.missing_catalog_path,
-                    path.span(),
-                    &mut diagnostics,
-                );
-            }
+            check_reference(
+                path,
+                source_path,
+                Reference {
+                    kind: "schema catalog",
+                    code: "tombi/missing-catalog-path",
+                    severity: rules.missing_catalog_path,
+                },
+                schema_store,
+                &mut diagnostics,
+            )
+            .await;
         }
     }
 
     diagnostics
 }
 
-fn validate_extends(
+async fn validate_extends(
     document_tree: &DocumentTree<'_>,
     source_path: &Path,
+    severity: tombi_config::SeverityLevel,
+    schema_store: &tombi_schema_store::SchemaStore,
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
     let references = match document_tree.get("extends") {
@@ -99,22 +108,76 @@ fn validate_extends(
     };
 
     for reference in references {
-        let message = match tombi_config::resolve_local_extends(reference.value(), source_path) {
-            Ok(ExtendsTarget::File(path)) if !tombi_fs::is_file(&path) => {
-                format!(
-                    "extends path `{}` does not point to a file",
-                    reference.value()
+        match tombi_config::resolve_local_extends(reference.value(), source_path) {
+            Ok(target) => {
+                report_if_missing(
+                    reference,
+                    target,
+                    Reference {
+                        kind: "extends",
+                        code: "tombi/missing-extends-path",
+                        severity,
+                    },
+                    schema_store,
+                    diagnostics,
                 )
+                .await
             }
-            Ok(_) => continue,
-            Err(reason) => format!("invalid extends `{}`: {reason}", reference.value()),
-        };
-        diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
-            message,
-            "config/invalid-extends",
-            reference.span(),
-        ));
+            Err(reason) => diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
+                format!("invalid extends `{}`: {reason}", reference.value()),
+                "config/invalid-extends",
+                reference.span(),
+            )),
+        }
     }
+}
+
+struct Reference {
+    kind: &'static str,
+    code: &'static str,
+    severity: tombi_config::SeverityLevel,
+}
+
+async fn check_reference(
+    value: &tombi_document_tree_syntax::String<'_>,
+    source_path: Option<&Path>,
+    reference: Reference,
+    schema_store: &tombi_schema_store::SchemaStore,
+    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+) {
+    if let Some(target) = reference_target(value.value(), source_path) {
+        report_if_missing(value, target, reference, schema_store, diagnostics).await;
+    }
+}
+
+async fn report_if_missing(
+    value: &tombi_document_tree_syntax::String<'_>,
+    target: ExtendsTarget,
+    reference: Reference,
+    schema_store: &tombi_schema_store::SchemaStore,
+    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+) {
+    if reference.severity == tombi_config::SeverityLevel::Off {
+        return;
+    }
+    let message = match target {
+        ExtendsTarget::File(path) if !tombi_fs::is_file(&path) => format!(
+            "{} path `{}` does not point to a file",
+            reference.kind,
+            value.value()
+        ),
+        ExtendsTarget::Remote(uri) if schema_store.remote_file_is_missing(&uri).await => {
+            format!("{} URL `{}` does not exist", reference.kind, value.value())
+        }
+        _ => return,
+    };
+    push_diagnostic(
+        message,
+        reference.code,
+        reference.severity,
+        value.span(),
+        diagnostics,
+    );
 }
 
 fn schema_validation_enabled(document_tree: &DocumentTree<'_>) -> bool {
@@ -124,25 +187,19 @@ fn schema_validation_enabled(document_tree: &DocumentTree<'_>) -> bool {
     }
 }
 
-fn local_schema_path(value: &str, source_path: Option<&Path>) -> Option<PathBuf> {
+/// Where a schema or catalog reference points to.
+///
+/// Anything other than a local path, `file://` or `http(s)://` is left unchecked.
+fn reference_target(value: &str, source_path: Option<&Path>) -> Option<ExtendsTarget> {
     if Path::new(value).is_absolute() {
-        return Some(PathBuf::from(value));
+        return Some(ExtendsTarget::File(PathBuf::from(value)));
     }
-    match value.parse::<SchemaUri>() {
-        Ok(uri) if uri.scheme() == "file" => uri.to_file_path().ok(),
-        Ok(_) => None,
-        Err(_) => relative_path(value, source_path),
-    }
-}
-
-fn local_catalog_path(value: &str, source_path: Option<&Path>) -> Option<PathBuf> {
-    if Path::new(value).is_absolute() {
-        return Some(PathBuf::from(value));
-    }
-    match value.parse::<CatalogUri>() {
-        Ok(uri) if uri.scheme() == "file" => uri.to_file_path().ok(),
-        Ok(_) => None,
-        Err(_) => relative_path(value, source_path),
+    match value.parse::<Uri>() {
+        Ok(uri) if uri.scheme() == "file" => uri.to_file_path().ok().map(ExtendsTarget::File),
+        Ok(uri) => tombi_config::validate_remote_uri(uri)
+            .ok()
+            .map(ExtendsTarget::Remote),
+        Err(_) => relative_path(value, source_path).map(ExtendsTarget::File),
     }
 }
 

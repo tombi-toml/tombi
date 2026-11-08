@@ -89,6 +89,36 @@ impl CachedHttpClient {
         }
     }
 
+    /// Whether the server answers 404 or 410 for `url`.
+    ///
+    /// Unlike [`Self::get_validated`], a stale cache entry does not hide the answer and
+    /// nothing is cached. A fresh cache entry shows that the file exists, so it is
+    /// answered without a request. Failures other than 404 and 410, offline mode and a
+    /// refusal by the access policy are no evidence that the file is missing.
+    pub async fn is_missing(&self, url: &str) -> bool {
+        let Ok(uri) = url.parse::<tombi_uri::Uri>() else {
+            return false;
+        };
+        if matches!(uri.scheme(), "http" | "https") && self.policy.check_http_url(&uri).is_err() {
+            return false;
+        }
+        if self.options.offline {
+            return false;
+        }
+
+        let cache_path = tombi_cache::get_cache_file_path(&cache_key_uri(&uri)).await;
+        if let Ok(Some(_)) =
+            tombi_cache::read_from_cache(cache_path.as_deref(), self.options.cache.as_ref()).await
+        {
+            return false;
+        }
+
+        matches!(
+            self.inner.get_bytes(url).await,
+            Err(FetchError::StatusNotOk { status: 404 | 410 })
+        )
+    }
+
     async fn read_stale_cache(
         &self,
         cache_path: Option<&std::path::Path>,
@@ -288,6 +318,73 @@ mod tests {
         client.get_validated(URL, &is_valid).await.unwrap();
         client.get_validated(URL, &is_valid).await.unwrap();
         assert_eq!(inner.calls(), 2);
+    }
+
+    fn online(ttl: std::time::Duration) -> Options {
+        Options {
+            offline: false,
+            cache: cache_options(ttl),
+        }
+    }
+
+    #[tokio::test]
+    async fn stale_cache_does_not_hide_a_missing_file() {
+        let _cache_home = TestCacheHome::new();
+        write_cache(b"stale", std::time::Duration::from_secs(60 * 60 * 25)).await;
+        let inner = FakeHttpClient::new(Err(FetchError::StatusNotOk { status: 404 }));
+        let client =
+            CachedHttpClient::new(inner.clone(), online(std::time::Duration::from_secs(60)));
+
+        assert!(client.is_missing(URL).await);
+    }
+
+    #[tokio::test]
+    async fn fresh_cache_shows_that_the_file_exists_without_a_request() {
+        let _cache_home = TestCacheHome::new();
+        write_cache(b"fresh", std::time::Duration::ZERO).await;
+        let inner = FakeHttpClient::new(Err(FetchError::StatusNotOk { status: 404 }));
+        let client =
+            CachedHttpClient::new(inner.clone(), online(std::time::Duration::from_secs(60)));
+
+        assert!(!client.is_missing(URL).await);
+        assert_eq!(inner.calls(), 0);
+    }
+
+    #[tokio::test]
+    async fn only_404_and_410_mean_missing() {
+        let _cache_home = TestCacheHome::new();
+        for (response, missing) in [
+            (FetchError::StatusNotOk { status: 410 }, true),
+            (FetchError::StatusNotOk { status: 500 }, false),
+            (
+                FetchError::FetchFailed {
+                    reason: "unreachable".to_string(),
+                },
+                false,
+            ),
+        ] {
+            let client = CachedHttpClient::new(
+                FakeHttpClient::new(Err(response)),
+                online(std::time::Duration::from_secs(60)),
+            );
+            assert_eq!(client.is_missing(URL).await, missing);
+        }
+    }
+
+    #[tokio::test]
+    async fn offline_never_means_missing() {
+        let _cache_home = TestCacheHome::new();
+        let inner = FakeHttpClient::new(Err(FetchError::StatusNotOk { status: 404 }));
+        let client = CachedHttpClient::new(
+            inner.clone(),
+            Options {
+                offline: true,
+                cache: cache_options(std::time::Duration::from_secs(60)),
+            },
+        );
+
+        assert!(!client.is_missing(URL).await);
+        assert_eq!(inner.calls(), 0);
     }
 
     #[tokio::test]

@@ -8,6 +8,9 @@ toml-version = "v1.0.0"
 [files]
 exclude = [
   "editors/intellij/src/test/testData/*",
+  # Fixtures of nagi-sql lint tests; `missing` member patterns are intentional.
+  "crates/tombi-linter/tests/fixtures/nagi-sql/workspace/nagi.toml",
+  "crates/tombi-linter/tests/fixtures/nagi-sql/dot-config/.config/nagi.toml",
 ]
 
 [format]

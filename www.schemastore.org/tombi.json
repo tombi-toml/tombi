@@ -3245,8 +3245,17 @@
       "type": "object",
       "properties": {
         "missing-catalog-path": {
-          "description": "Report a local schema catalog path that does not point to a file.\n\n```toml\n[schema.catalog]\npaths = [\"./schemas/catalog.json\"] # no file exists at this path\n```",
-          "default": "warn",
+          "description": "Report a schema catalog that does not exist: a local path that does not point to a file,\nor a URL for which the server answers 404 or 410.\n\n```toml\n[schema.catalog]\npaths = [\"./schemas/catalog.json\"] # no file exists at this path\n```",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SeverityLevel"
+            }
+          ]
+        },
+        "missing-extends-path": {
+          "description": "Report an `extends` entry that does not exist: a local path that does not point to a file,\nor a URL for which the server answers 404 or 410.\n\n```toml\nextends = [\"./base/tombi.toml\"] # no file exists at this path\n```",
+          "default": "error",
           "allOf": [
             {
               "$ref": "#/definitions/SeverityLevel"
@@ -3254,8 +3263,8 @@
           ]
         },
         "missing-schema-path": {
-          "description": "Report a local schema path that does not point to a file.\n\n```toml\n[[schemas]]\npath = \"./schemas/app.json\" # no file exists at this path\n```",
-          "default": "warn",
+          "description": "Report a schema that does not exist: a local path that does not point to a file,\nor a URL for which the server answers 404 or 410.\n\n```toml\n[[schemas]]\npath = \"./schemas/app.json\" # no file exists at this path\n```",
+          "default": "error",
           "allOf": [
             {
               "$ref": "#/definitions/SeverityLevel"

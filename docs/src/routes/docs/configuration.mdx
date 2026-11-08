@@ -208,6 +208,7 @@ An inheritance chain can follow at most 32 references. One resolution can use at
     - [extensions."tombi-toml/tombi".lint](#extensions-tombi-toml-tombi-lint)
       - [extensions."tombi-toml/tombi".lint.rules](#extensions-tombi-toml-tombi-lint-rules)
         - [extensions."tombi-toml/tombi".lint.rules.missing-catalog-path](#extensions-tombi-toml-tombi-lint-rules-missing-catalog-path)
+        - [extensions."tombi-toml/tombi".lint.rules.missing-extends-path](#extensions-tombi-toml-tombi-lint-rules-missing-extends-path)
         - [extensions."tombi-toml/tombi".lint.rules.missing-schema-path](#extensions-tombi-toml-tombi-lint-rules-missing-schema-path)
     - [extensions."tombi-toml/tombi".lsp](#extensions-tombi-toml-tombi-lsp)
       - [extensions."tombi-toml/tombi".lsp.completion](#extensions-tombi-toml-tombi-lsp-completion)
@@ -2342,14 +2343,15 @@ Configure diagnostics produced for local schema and schema catalog paths in Tomb
 
 ### extensions."tombi-toml/tombi".lint.rules
 
-Set the severity for individual Tombi configuration diagnostics. Each rule defaults to `"warn"` when omitted. Available values are `"off"`, `"warn"`, and `"error"`.
+Set the severity for individual Tombi configuration diagnostics. Each rule defaults to `"error"` when omitted. Available values are `"off"`, `"warn"`, and `"error"`.
 
 ```toml
 [extensions]
 "tombi-toml/tombi" = {
   lint.rules = {
-    missing-catalog-path = "warn",
-    missing-schema-path = "warn",
+    missing-catalog-path = "error",
+    missing-extends-path = "error",
+    missing-schema-path = "error",
   },
 }
 ```
@@ -2358,7 +2360,7 @@ Set the severity for individual Tombi configuration diagnostics. Each rule defau
 
 ### extensions."tombi-toml/tombi".lint.rules.missing-catalog-path
 
-Set the severity for local schema catalog paths that do not point to a file.
+Set the severity for schema catalogs that do not exist: a local path that does not point to a file, or a URL for which the server answers 404 or 410. Network failures and offline mode are not reported.
 
 ```toml
 [schema.catalog]
@@ -2366,11 +2368,22 @@ paths = ["schemas/catalog.json"] # no file exists at this path
 ```
 
 - Type: `"off" | "warn" | "error"`
-- Default: `"warn"`
+- Default: `"error"`
+
+### extensions."tombi-toml/tombi".lint.rules.missing-extends-path
+
+Set the severity for `extends` entries that do not exist: a local path that does not point to a file, or a URL for which the server answers 404 or 410. Network failures and offline mode are not reported.
+
+```toml
+extends = ["base/tombi.toml"] # no file exists at this path
+```
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"error"`
 
 ### extensions."tombi-toml/tombi".lint.rules.missing-schema-path
 
-Set the severity for local schema paths that do not point to a file.
+Set the severity for schemas that do not exist: a local path that does not point to a file, or a URL for which the server answers 404 or 410. Network failures and offline mode are not reported.
 
 ```toml
 [[schemas]]
@@ -2378,7 +2391,7 @@ path = "schemas/example.json" # no file exists at this path
 ```
 
 - Type: `"off" | "warn" | "error"`
-- Default: `"warn"`
+- Default: `"error"`
 
 ### extensions."tombi-toml/tombi".lsp
 
