@@ -536,7 +536,6 @@ fn parse_document(
     let extends_value = values.key_values_mut().shift_remove(&key("extends"));
     let extends_strings = match extends_value {
         None => Vec::new(),
-        Some(Value::String(value)) => vec![value.value().to_owned()],
         Some(Value::Array(values)) => {
             if values.values().len() > MAX_EXTENDS_REFERENCES {
                 return Err(tombi_config::Error::ConfigExtendsCountExceeded {
@@ -560,7 +559,7 @@ fn parse_document(
             return Err(tombi_config::Error::ConfigExtendsInvalid {
                 config_source: source.display(),
                 reference: "extends".to_owned(),
-                reason: "extends must be a string or an array of strings".to_owned(),
+                reason: "extends must be an array of strings".to_owned(),
             });
         }
     };
