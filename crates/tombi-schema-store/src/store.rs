@@ -544,11 +544,20 @@ impl SchemaStore {
                 })?
             }
             "http" | "https" => {
+                // Reuse the catalog parsed while validating cached or fetched bytes.
+                let parsed_catalog = std::sync::OnceLock::new();
                 let bytes = match self
                     .http_client
-                    .get_validated(catalog_uri.as_str(), &|bytes| {
-                        serde_json::from_slice::<crate::json::JsonCatalog>(bytes).is_ok()
-                    })
+                    .get_validated(
+                        catalog_uri.as_str(),
+                        &|bytes| match serde_json::from_slice::<crate::json::JsonCatalog>(bytes) {
+                            Ok(catalog) => {
+                                let _ = parsed_catalog.set(catalog);
+                                true
+                            }
+                            Err(_) => false,
+                        },
+                    )
                     .await
                 {
                     Ok(bytes) => bytes,
@@ -564,14 +573,14 @@ impl SchemaStore {
                     }
                 };
 
-                match serde_json::from_slice::<crate::json::JsonCatalog>(&bytes) {
-                    Ok(catalog) => catalog,
-                    Err(err) => {
-                        return Err(crate::Error::InvalidJsonFormat {
+                match parsed_catalog.into_inner() {
+                    Some(catalog) => catalog,
+                    None => serde_json::from_slice::<crate::json::JsonCatalog>(&bytes).map_err(
+                        |err| crate::Error::InvalidJsonFormat {
                             uri: catalog_uri.deref().clone(),
                             reason: err.to_string(),
-                        });
-                    }
+                        },
+                    )?,
                 }
             }
             "tombi" => {
@@ -738,10 +747,18 @@ impl SchemaStore {
                 )?))
             }
             "http" | "https" => {
+                // Reuse the schema parsed while validating cached or fetched bytes.
+                let parsed_schema = std::sync::OnceLock::new();
                 let bytes = match self
                     .http_client
                     .get_validated(schema_uri.as_str(), &|bytes| {
-                        tombi_json::Document::from_reader(std::io::Cursor::new(bytes)).is_ok()
+                        match tombi_json::Document::from_reader(std::io::Cursor::new(bytes)) {
+                            Ok(document) => {
+                                let _ = parsed_schema.set(document);
+                                true
+                            }
+                            Err(_) => false,
+                        }
                     })
                     .await
                 {
@@ -761,13 +778,14 @@ impl SchemaStore {
                     }
                 };
 
-                let schema_document = tombi_json::Document::from_reader(std::io::Cursor::new(
-                    &bytes,
-                ))
-                .map_err(|err| crate::Error::SchemaFileParseFailed {
-                    schema_uri: schema_uri.to_owned(),
-                    reason: err.to_string(),
-                })?;
+                let schema_document = match parsed_schema.into_inner() {
+                    Some(document) => document,
+                    None => tombi_json::Document::from_reader(std::io::Cursor::new(&bytes))
+                        .map_err(|err| crate::Error::SchemaFileParseFailed {
+                            schema_uri: schema_uri.to_owned(),
+                            reason: err.to_string(),
+                        })?,
+                };
 
                 Ok(Some(schema_document))
             }
