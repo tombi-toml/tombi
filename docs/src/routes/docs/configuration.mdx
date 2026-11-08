@@ -60,6 +60,7 @@ An inheritance chain can follow at most 32 references. One resolution can use at
 
 ## Available Options
 
+- [extends](#extends)
 - [toml-version](#toml-version)
 - [files](#files)
   - [files.include](#files-include)
@@ -220,6 +221,12 @@ An inheritance chain can follow at most 32 references. One resolution can use at
 
 ```toml file="snippets/configuration-full-structure.toml"
 ```
+
+### extends
+
+Config files to inherit, in order. Later entries take precedence over earlier ones, and the current config takes precedence over all inherited configs. See [Extending a shared config](#extending-a-shared-config) for path resolution, merge behavior, and restrictions.
+
+- Type: `String[]` (paths or URLs to `tombi.toml` or `.tombi.toml`)
 
 ### toml-version
 
