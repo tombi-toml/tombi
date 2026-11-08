@@ -1,6 +1,5 @@
-import * as vscode from "vscode";
-
 import type { PythonExtension } from "@vscode/python-extension";
+import * as vscode from "vscode";
 
 export interface IInterpreterDetails {
   pythonPath?: string;

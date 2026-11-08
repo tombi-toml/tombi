@@ -1,6 +1,6 @@
-import * as vscode from "vscode";
 import { createInterface } from "node:readline";
 import type { Readable } from "node:stream";
+import * as vscode from "vscode";
 import type * as languageclient from "vscode-languageclient/node";
 import {
   SUPPORT_TOMBI_CONFIG_FILENAMES,
