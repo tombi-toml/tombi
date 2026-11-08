@@ -6,15 +6,15 @@
   "type": "object",
   "properties": {
     "extends": {
-      "description": "Config files to inherit.",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/OneOrMany"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "title": "Extends",
+      "description": "Config files to inherit.\n\nThe files are interpreted in order, starting with the first entry. Later entries take precedence over earlier ones, and this config takes precedence over all of them.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/ExtendsReference"
+      }
     },
     "toml-version": {
       "title": "TOML version",
@@ -114,19 +114,6 @@
   "x-tombi-table-keys-order": "schema",
   "additionalProperties": false,
   "definitions": {
-    "OneOrMany": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/ExtendsReference"
-        },
-        {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ExtendsReference"
-          }
-        }
-      ]
-    },
     "ExtendsReference": {
       "description": "A config path or URL whose file name is `tombi.toml` or `.tombi.toml`.",
       "type": "string"

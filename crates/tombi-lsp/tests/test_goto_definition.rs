@@ -175,7 +175,7 @@ mod goto_definition_tests {
             #[tokio::test]
             async fn extends_relative_path(
                 r#"
-                extends = "tombi.toml█"
+                extends = ["tombi.toml█"]
                 "#,
                 SourcePath(project_root_path().join(".tombi.toml")),
             ) -> Ok([project_root_path().join("tombi.toml")]);
@@ -195,7 +195,7 @@ mod goto_definition_tests {
             #[tokio::test]
             async fn extends_ignores_missing_path(
                 r#"
-                extends = "does-not-exist/tombi.toml█"
+                extends = ["does-not-exist/tombi.toml█"]
                 "#,
                 SourcePath(project_root_path().join(".tombi.toml")),
             ) -> Ok([]);
