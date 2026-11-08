@@ -93,7 +93,7 @@ pub async fn load_with_path_and_level(
         match try_from_path(&candidate.path, http_client).await {
             Ok(Some(config)) => return Ok((config, Some(candidate.path), candidate.level)),
             Ok(None) => {}
-            Err(error) => log::warn!("failed to load config {:?}: {error}", candidate.path),
+            Err(error) => log::error!("failed to load config {:?}: {error}", candidate.path),
         }
     }
     Ok((Config::default(), None, ConfigLevel::Default))

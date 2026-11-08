@@ -33,9 +33,6 @@ pub enum Error {
         reason: String,
     },
 
-    #[error("catalog file not found: {catalog_path}")]
-    CatalogFileNotFound { catalog_path: PathBuf },
-
     #[error("invalid catalog file uri: {catalog_uri}")]
     InvalidCatalogFileUri { catalog_uri: CatalogUri },
 
@@ -147,6 +144,28 @@ impl Error {
         }
     }
 
+    /// The level to log the error at, when the store goes on without the schema.
+    ///
+    /// A schema that the user pointed at with a local path or URI, and that cannot be used, is
+    /// an error: the result is not what the user asked for, and only the user can fix it.
+    /// Anything else, such as a fetch that failed or a schema of someone else that is broken,
+    /// is a warning: the result is degraded, but it may change when the network is back.
+    pub fn log_level(&self) -> log::Level {
+        match self {
+            Self::InvalidSchemaUri { .. }
+            | Self::InvalidSchemaUriOrFilePath { .. }
+            | Self::SchemaFileNotFound { .. }
+            | Self::SchemaFileReadFailed { .. } => log::Level::Error,
+            Self::SchemaFileParseFailed { schema_uri, .. }
+            | Self::SchemaMustBeObjectOrBoolean { schema_uri }
+                if schema_uri.scheme() == "file" =>
+            {
+                log::Level::Error
+            }
+            _ => log::Level::Warn,
+        }
+    }
+
     #[inline]
     pub fn to_warning_diagnostic(&self, span: tombi_text::Span) -> tombi_diagnostic::Diagnostic {
         tombi_diagnostic::Diagnostic::new_warning(
@@ -165,4 +184,83 @@ pub(crate) fn format_schema_document(uri: &SchemaUri) -> String {
         return file_name.to_string_lossy().into_owned();
     }
     uri.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+
+    macro_rules! test_log_level {
+        (#[test] fn $name:ident($error:expr) -> $level:ident) => {
+            #[test]
+            fn $name() {
+                pretty_assertions::assert_eq!($error.log_level(), log::Level::$level);
+            }
+        };
+    }
+
+    fn uri(uri: &str) -> SchemaUri {
+        SchemaUri::from_str(uri).unwrap()
+    }
+
+    test_log_level! {
+        #[test]
+        fn missing_local_schema_is_an_error(Error::SchemaFileNotFound {
+            schema_path: PathBuf::from("schema.json"),
+        }) -> Error
+    }
+
+    test_log_level! {
+        #[test]
+        fn invalid_schema_uri_is_an_error(Error::InvalidSchemaUri {
+            schema_uri: "::".to_string(),
+        }) -> Error
+    }
+
+    test_log_level! {
+        #[test]
+        fn broken_local_schema_is_an_error(Error::SchemaFileParseFailed {
+            schema_uri: uri("file:///project/schema.json"),
+            reason: "expected value".to_string(),
+        }) -> Error
+    }
+
+    test_log_level! {
+        #[test]
+        fn broken_remote_schema_is_a_warning(Error::SchemaFileParseFailed {
+            schema_uri: uri("https://example.com/schema.json"),
+            reason: "expected value".to_string(),
+        }) -> Warn
+    }
+
+    test_log_level! {
+        #[test]
+        fn failed_fetch_is_a_warning(Error::SchemaFetchFailed {
+            schema_uri: uri("https://example.com/schema.json"),
+            reason: "connection refused".to_string(),
+        }) -> Warn
+    }
+
+    test_log_level! {
+        #[test]
+        fn untrusted_host_is_a_warning(Error::SchemaHostNotTrusted {
+            schema_uri: uri("https://example.com/schema.json"),
+        }) -> Warn
+    }
+
+    test_log_level! {
+        #[test]
+        fn local_schema_of_wrong_type_is_an_error(Error::SchemaMustBeObjectOrBoolean {
+            schema_uri: uri("file:///project/schema.json"),
+        }) -> Error
+    }
+
+    test_log_level! {
+        #[test]
+        fn remote_schema_of_wrong_type_is_a_warning(Error::SchemaMustBeObjectOrBoolean {
+            schema_uri: uri("https://example.com/schema.json"),
+        }) -> Warn
+    }
 }
