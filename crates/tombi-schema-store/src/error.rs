@@ -156,7 +156,10 @@ impl Error {
             | Self::InvalidSchemaUriOrFilePath { .. }
             | Self::SchemaFileNotFound { .. }
             | Self::SchemaFileReadFailed { .. } => log::Level::Error,
-            Self::SchemaFileParseFailed { schema_uri, .. } if schema_uri.scheme() == "file" => {
+            Self::SchemaFileParseFailed { schema_uri, .. }
+            | Self::SchemaMustBeObjectOrBoolean { schema_uri }
+                if schema_uri.scheme() == "file" =>
+            {
                 log::Level::Error
             }
             _ => log::Level::Warn,
@@ -243,6 +246,20 @@ mod tests {
     test_log_level! {
         #[test]
         fn untrusted_host_is_a_warning(Error::SchemaHostNotTrusted {
+            schema_uri: uri("https://example.com/schema.json"),
+        }) -> Warn
+    }
+
+    test_log_level! {
+        #[test]
+        fn local_schema_of_wrong_type_is_an_error(Error::SchemaMustBeObjectOrBoolean {
+            schema_uri: uri("file:///project/schema.json"),
+        }) -> Error
+    }
+
+    test_log_level! {
+        #[test]
+        fn remote_schema_of_wrong_type_is_a_warning(Error::SchemaMustBeObjectOrBoolean {
             schema_uri: uri("https://example.com/schema.json"),
         }) -> Warn
     }
