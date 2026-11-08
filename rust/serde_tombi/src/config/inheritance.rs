@@ -550,7 +550,7 @@ fn parse_document(
                     _ => Err(tombi_config::Error::ConfigExtendsInvalid {
                         config_source: source.display(),
                         reference: "extends".to_owned(),
-                        reason: "extends arrays must contain only strings".to_owned(),
+                        reason: tombi_config::EXTENDS_ENTRY_NOT_A_STRING.to_owned(),
                     }),
                 })
                 .collect::<Result<Vec<_>, _>>()?
@@ -559,7 +559,7 @@ fn parse_document(
             return Err(tombi_config::Error::ConfigExtendsInvalid {
                 config_source: source.display(),
                 reference: "extends".to_owned(),
-                reason: "extends must be an array of strings".to_owned(),
+                reason: tombi_config::EXTENDS_NOT_AN_ARRAY.to_owned(),
             });
         }
     };
@@ -668,6 +668,26 @@ async fn resolve(
             }
         };
     }
+}
+
+/// Load the config that `reference` resolves to, as if the config at `config_path` extended only it.
+///
+/// This reports every error that loading an `extends` entry can fail with,
+/// so that editors show what the loader would reject.
+pub(crate) async fn check_extends_reference(
+    reference: &str,
+    config_path: &std::path::Path,
+    http_client: &CachedHttpClient,
+) -> Result<(), tombi_config::Error> {
+    let source = ConfigSource::from_path(config_path.to_owned());
+    let root = ConfigDocument {
+        extends: vec![source.resolve_reference(reference)?],
+        source,
+        values: tombi_document::Document::new(),
+    };
+    resolve(root, http_client, &mut ConfigSourceCache::default())
+        .await
+        .map(|_| ())
 }
 
 pub(crate) async fn from_str(

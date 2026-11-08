@@ -3012,6 +3012,8 @@ dependencies = [
 name = "tombi-extension-tombi"
 version = "0.0.0-dev"
 dependencies = [
+ "serde_tombi",
+ "thiserror 2.0.20",
  "tombi-config",
  "tombi-diagnostic",
  "tombi-document-tree-syntax",
@@ -3205,6 +3207,7 @@ dependencies = [
  "log",
  "pretty_assertions",
  "serde_json",
+ "serde_tombi",
  "tempfile",
  "textwrap",
  "thiserror 2.0.20",

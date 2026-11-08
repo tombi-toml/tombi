@@ -51,7 +51,7 @@ line-width = 100
 
 The extended file must be named `tombi.toml` or `.tombi.toml`, so that the Tombi config schema applies to it. `pyproject.toml` cannot be extended.
 
-In the editor, an `extends` entry that does not point to a file or uses an unsupported URL is reported as an error, and you can jump to the extended config with go to definition.
+In the editor, an `extends` entry that does not exist, cannot be loaded (for example a config cycle, a parse error in an inherited config, or a failed fetch), or uses an unsupported URL is reported as an error, and you can jump to the extended config with go to definition.
 
 The configs in `extends` are applied in the order listed, starting with the first entry. The local config is applied last, and later configs take precedence over earlier ones. Tables merge recursively, and local scalar values replace inherited values. Most arrays are replaced by the higher-priority config. `schemas` and `overrides` are combined with higher-priority entries first, so local entries take precedence over inherited entries.
 

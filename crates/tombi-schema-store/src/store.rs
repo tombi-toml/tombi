@@ -320,6 +320,10 @@ impl SchemaStore {
         self.options.offline.unwrap_or_default()
     }
 
+    pub fn http_client(&self) -> &crate::CachedHttpClient {
+        &self.http_client
+    }
+
     /// Whether the server answers that the remote file does not exist (404 or 410).
     ///
     /// Network failures, offline mode and refusals by the fetch policy are not evidence

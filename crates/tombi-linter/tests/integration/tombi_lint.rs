@@ -220,11 +220,56 @@ test_lint! {
     }, {
         code: "config/invalid-extends",
         level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "https://tombi-lint-test.invalid/tombi.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "base.toml")
     }, {
         code: "config/invalid-extends",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "https://tombi-lint-test.invalid/base.toml?file=tombi.toml")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn self_extends_is_reported(
+        r#"extends = ["tombi.toml"]
+"#,
+        SourcePath(tombi_path()),
+    ) -> Diagnostics([{
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(r#"extends = ["tombi.toml"]
+"#, "tombi.toml")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn extends_must_be_an_array_of_strings(
+        r#"extends = "tombi.toml"
+"#,
+        SourcePath(tombi_path()),
+    ) -> Diagnostics([{
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(r#"extends = "tombi.toml"
+"#, "tombi.toml")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn extends_entries_must_be_strings(
+        r#"extends = [1]
+"#,
+        SourcePath(tombi_path()),
+    ) -> Diagnostics([{
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: tombi_text::Span::new(tombi_text::Offset::new(11), tombi_text::Offset::new(12))
     }])
 }
 
@@ -280,6 +325,10 @@ test_lint! {
         code: "config/invalid-extends",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "ftp://example.org/tombi.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "https://tombi-lint-test.invalid/tombi.toml")
     }, {
         code: "config/invalid-extends",
         level: Level::ERROR,
