@@ -16,7 +16,7 @@ use itertools::{Either, Itertools};
 use parking_lot::RwLock as ParkingRwLock;
 use tokio::sync::RwLock;
 use tombi_ast_syntax::SchemaDocumentCommentDirective;
-use tombi_cache::{get_cache_file_path, refresh_cache};
+use tombi_cache::refresh_cache;
 use tombi_config::{
     BoolDefaultTrue, SchemaItem, SchemaOverviewOptions, TomlVersion, config_base_dir,
 };
@@ -299,7 +299,11 @@ impl SchemaStore {
         http_client: Arc<dyn HttpClient>,
         fetch_policy: Arc<SchemaFetchPolicy>,
     ) -> Self {
-        let http_client = Arc::new(crate::CachedHttpClient::new(http_client, (&options).into()));
+        let http_client = Arc::new(crate::CachedHttpClient::with_policy(
+            http_client,
+            (&options).into(),
+            fetch_policy.clone(),
+        ));
         Self {
             http_client,
             fetch_policy,
@@ -1717,7 +1721,7 @@ impl Drop for SchemaLoadGuard {
 async fn schema_cache_version(schema_uri: &SchemaUri) -> Option<SchemaCacheVersion> {
     let path = match schema_uri.scheme() {
         "file" => tombi_uri::Uri::to_file_path(schema_uri).ok(),
-        "http" | "https" => get_cache_file_path(schema_uri).await,
+        "http" | "https" => tombi_cache::get_cache_file_path(schema_uri).await,
         _ => None,
     }?;
 
@@ -1865,11 +1869,12 @@ fn parse_override_target(target: &str) -> Option<Vec<PatternAccessor>> {
 mod tests {
     use std::{fs, path::Path, str::FromStr, sync::Arc, time::Duration};
 
-    use super::{SchemaStore, get_cache_file_path, matches_schema_patterns};
+    use super::{SchemaStore, matches_schema_patterns};
     use crate::{
         CatalogUri, SchemaView, http_client::ReqwestHttpClient,
         schema_fetch_policy::SchemaFetchPolicy,
     };
+    use tombi_cache::get_cache_file_path;
     use tombi_cache::save_to_cache;
     use tombi_test_lib::TestCacheHome;
     use tombi_uri::SchemaUri;

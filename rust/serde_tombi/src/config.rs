@@ -340,6 +340,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn extends_replaces_nested_extension_feature_forms() {
+        let temp_dir = temp_test_dir("extends-extension-feature-form");
+        write_file(
+            &temp_dir.path().join("shared/tombi.toml"),
+            "[extensions.\"tombi-toml/cargo\".lsp.hover]\nenabled = true\n",
+        );
+        let config_path = temp_dir.path().join("app/tombi.toml");
+        write_file(
+            &config_path,
+            "extends = \"../shared/tombi.toml\"\n\n[extensions.\"tombi-toml/cargo\".lsp]\nenabled = false\n",
+        );
+
+        let config = try_from_path(&config_path, offline_client().as_ref())
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert!(matches!(
+            config.cargo_extension_features().unwrap().lsp(),
+            Some(tombi_config::CargoLspFeatures::Enabled(_))
+        ));
+    }
+
+    #[tokio::test]
     async fn extends_rejects_tombi_toml_only_in_query_or_fragment() {
         let temp_dir = temp_test_dir("extends-query-bypass");
         write_file(&temp_dir.path().join("shared/tombi.toml"), "");

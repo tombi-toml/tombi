@@ -407,7 +407,11 @@ fn preflight_merge(
 enum TableScope {
     Root,
     Ordinary,
+    /// The `extensions` table.
     Extensions,
+    /// Below `extensions`: a table with `enabled` is a different form than one with features,
+    /// so the higher priority one replaces the inherited one instead of mixing both.
+    ExtensionFeature,
 }
 
 fn overlay(inherited: &mut tombi_document::Document, higher_priority: tombi_document::Document) {
@@ -419,12 +423,14 @@ fn overlay_table(inherited: &mut Table, higher_priority: Table, scope: TableScop
         if let Some(inherited_value) = inherited.key_values_mut().get_mut(&key) {
             match (&mut *inherited_value, higher_value) {
                 (Value::Table(inherited_table), Value::Table(higher_table)) => {
-                    let child_scope = if scope == TableScope::Root && key.value() == "extensions" {
-                        TableScope::Extensions
-                    } else {
-                        TableScope::Ordinary
+                    let child_scope = match scope {
+                        TableScope::Root if key.value() == "extensions" => TableScope::Extensions,
+                        TableScope::Extensions | TableScope::ExtensionFeature => {
+                            TableScope::ExtensionFeature
+                        }
+                        _ => TableScope::Ordinary,
                     };
-                    if scope == TableScope::Extensions
+                    if matches!(scope, TableScope::Extensions | TableScope::ExtensionFeature)
                         && (inherited_table
                             .key_values()
                             .contains_key(&self::key("enabled"))

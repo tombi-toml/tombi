@@ -88,7 +88,7 @@ pub struct Config {
 #[cfg(feature = "jsonschema")]
 #[derive(schemars::JsonSchema)]
 pub struct ExtendsReference(
-    #[schemars(regex(pattern = r"(^|[/\\])\.?tombi\.toml([?#].*)?$"))] pub std::string::String,
+    #[schemars(regex(pattern = r"^([^?#]*[/\\])?\.?tombi\.toml([?#].*)?$"))] pub std::string::String,
 );
 
 /// # Tombi

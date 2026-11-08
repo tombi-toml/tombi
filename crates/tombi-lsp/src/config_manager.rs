@@ -163,20 +163,22 @@ impl ConfigManager {
         source_cache: &mut serde_tombi::config::ConfigSourceCache,
     ) -> Result<Option<ConfigSchemaStore>, tombi_schema_store::Error> {
         for candidate in serde_tombi::config::config_candidates(directory) {
-            if let Some(config) = self.config_schema_stores.read().await.get(&candidate.path) {
-                return Ok(Some(config.store.clone()));
-            }
             if !tombi_fs::is_file(&candidate.path) {
                 continue;
+            }
+            if let Some(config) = self.config_schema_stores.read().await.get(&candidate.path) {
+                return Ok(Some(config.store.clone()));
             }
             match source_cache
                 .try_from_path(&candidate.path, self.http_client.as_ref())
                 .await
             {
                 Ok(Some(report)) => {
-                    return Ok(Some(
-                        self.update_config_report(report, &candidate.path).await?,
-                    ));
+                    let (store, result) = self.update_config_report(report, &candidate.path).await;
+                    if let Err(error) = result {
+                        log::warn!("failed to load schemas for {:?}: {error}", candidate.path);
+                    }
+                    return Ok(Some(store));
                 }
                 Ok(None) => {}
                 Err(error) => log::warn!("failed to load config {:?}: {error}", candidate.path),
@@ -207,7 +209,7 @@ impl ConfigManager {
                 .await
             {
                 Ok(Some(report)) => {
-                    self.update_config_report(report, &config_path).await?;
+                    self.update_config_report(report, &config_path).await.1?;
                     reloaded = true;
                 }
                 Ok(None) => {}
@@ -237,22 +239,21 @@ impl ConfigManager {
             },
             config_path,
         )
-        .await?;
-        Ok(())
+        .await
+        .1
     }
 
     async fn update_config_report(
         &self,
         report: serde_tombi::config::ConfigLoadReport,
         config_path: &Path,
-    ) -> Result<ConfigSchemaStore, tombi_schema_store::Error> {
+    ) -> (ConfigSchemaStore, Result<(), tombi_schema_store::Error>) {
         let serde_tombi::config::ConfigLoadReport {
             config,
             local_dependencies,
         } = report;
         let (schema_store, applied, result) =
             self.build_schema_store(&config, Some(config_path)).await;
-        result?;
         let store = ConfigSchemaStore::new(config, Some(config_path.to_owned()), schema_store);
 
         let _associations = self
@@ -265,7 +266,7 @@ impl ConfigManager {
                 local_dependencies,
             },
         );
-        Ok(store)
+        (store, result)
     }
 
     /// Build a store for `config` from the associations registered so far.
@@ -421,10 +422,11 @@ impl ConfigManager {
 
     pub async fn refresh_cache(&self) -> Result<bool, tombi_schema_store::Error> {
         let mut source_cache = self.config_source_cache.lock().await;
-        if !self.backend_options.offline.unwrap_or_default() {
-            source_cache.clear();
-        }
-        let mut updated = false;
+        source_cache.clear();
+        // Drop the shared disk cache once, before configs are re-resolved, so that remote
+        // `extends` are fetched again. The stores below must not drop it a second time.
+        let disk_cache_cleared = tombi_cache::refresh_cache().await?;
+        let mut updated = disk_cache_cleared;
 
         let config_paths: Vec<PathBuf> = self
             .config_schema_stores
@@ -439,7 +441,7 @@ impl ConfigManager {
                 .await
             {
                 Ok(Some(report)) => {
-                    self.update_config_report(report, &config_path).await?;
+                    self.update_config_report(report, &config_path).await.1?;
                     updated = true;
                 }
                 Ok(None) => {}
@@ -460,12 +462,11 @@ impl ConfigManager {
             schema_store,
         } in self.all_config_schema_stores().await
         {
-            if schema_store
-                .refresh_cache(&config, config_path.as_deref())
-                .await?
-            {
+            if disk_cache_cleared {
+                schema_store
+                    .reload_config(&config, config_path.as_deref())
+                    .await?;
                 load_associations(&schema_store, &associated_schemas).await;
-                updated = true;
             }
         }
 

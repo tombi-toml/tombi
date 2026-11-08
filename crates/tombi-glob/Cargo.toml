@@ -14,6 +14,7 @@ ignore.workspace = true
 log.workspace = true
 rayon.workspace = true
 serde_tombi = { workspace = true, optional = true }
+tombi-schema-store = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
 tombi-config.workspace = true
@@ -25,7 +26,7 @@ tokio = { workspace = true, features = ["macros", "rt"] }
 
 [features]
 default = []
-profile = ["dep:serde_tombi"]
+profile = ["dep:serde_tombi", "dep:tombi-schema-store"]
 
 [lints]
 workspace = true
