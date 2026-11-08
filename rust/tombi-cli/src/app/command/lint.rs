@@ -26,7 +26,8 @@ pub struct Args {
 
     /// Exit with error code on warnings
     ///
-    /// If `true`, the program will exit with error code if there are warnings.
+    /// If `true`, the program will exit with error code if there are warnings,
+    /// including warnings of the environment such as a schema that could not be fetched.
     #[arg(long, default_value_t = false)]
     error_on_warnings: bool,
 
@@ -100,6 +101,7 @@ fn record_task_result<P>(
 
 pub fn run(args: Args) -> Result<(), crate::Error> {
     let quiet = args.quiet;
+    let error_on_warnings = args.error_on_warnings;
     let is_stdin = FileInputType::from(args.files.as_ref()) == FileInputType::Stdin;
     let mut diagnostics_reporter = match DiagnosticsReporter::open(
         &args.diagnostics,
@@ -154,7 +156,10 @@ pub fn run(args: Args) -> Result<(), crate::Error> {
         }
     }
 
-    if error_num > 0 {
+    if error_num > 0
+        || crate::app::tombi_log::has_error()
+        || (error_on_warnings && crate::app::tombi_log::has_warning())
+    {
         std::process::exit(1);
     }
 
