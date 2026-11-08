@@ -78,7 +78,9 @@ pub async fn completion(
             )
         {
             completions.retain(|completion| {
-                completion.label.ends_with('/') || completion.label.ends_with(TOMBI_TOML_FILENAME)
+                completion.label.ends_with('/')
+                    || std::path::Path::new(&completion.label).file_name()
+                        == Some(std::ffi::OsStr::new(TOMBI_TOML_FILENAME))
             });
             if !completions.is_empty() {
                 return Ok(Some(completions));
