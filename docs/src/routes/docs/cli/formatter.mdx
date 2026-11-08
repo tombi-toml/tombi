@@ -23,4 +23,9 @@ tombi format **/*.toml
 cat Cargo.toml | tombi format -
 ```
 
+<Note>
+If only warnings are logged during formatting, such as a schema that could not be fetched, Tombi will exit successfully by default.  
+However, you can use the `--error-on-warnings` option to make Tombi exit with an error when warnings are present.
+</Note>
+
 See [Diagnostics Output](/docs/cli/diagnostics-output) to report unformatted files in machine-readable formats such as JUnit and SARIF.

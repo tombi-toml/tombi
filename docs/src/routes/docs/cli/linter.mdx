@@ -28,7 +28,7 @@ cat Cargo.toml | tombi lint -
 
 <Note>
 If only warnings are found during linting, Tombi will exit successfully by default.  
-However, you can use the `--error-on-warnings` option to make Tombi exit with an error when warnings are present.
+However, you can use the `--error-on-warnings` option to make Tombi exit with an error when warnings are present, including warnings that are logged, such as a schema that could not be fetched.
 </Note>
 
 See [Diagnostics Output](/docs/cli/diagnostics-output) for machine-readable formats such as GitLab Code Quality and SARIF.

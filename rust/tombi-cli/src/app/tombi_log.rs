@@ -2,12 +2,36 @@ use env_logger::fmt::Formatter;
 use log::Record;
 use nu_ansi_term::Style;
 use std::io::Write;
+use std::sync::atomic::{AtomicBool, Ordering};
 
+static HAS_WARNING: AtomicBool = AtomicBool::new(false);
+static HAS_ERROR: AtomicBool = AtomicBool::new(false);
+
+/// Whether a warning has been logged.
+pub fn has_warning() -> bool {
+    HAS_WARNING.load(Ordering::Relaxed)
+}
+
+/// Whether an error has been logged.
+pub fn has_error() -> bool {
+    HAS_ERROR.load(Ordering::Relaxed)
+}
+
+/// Formats the records, and remembers whether a warning or an error was logged,
+/// so that a command can decide its exit code.
+///
+/// The records that are formatted are the ones that pass the filter, which always admits warnings.
 pub fn format(
     use_ansi_color: bool,
     show_trace_location: bool,
 ) -> impl Fn(&mut Formatter, &Record) -> std::io::Result<()> + Send + Sync + 'static {
     move |f, record| {
+        match record.level() {
+            log::Level::Error => HAS_ERROR.store(true, Ordering::Relaxed),
+            log::Level::Warn => HAS_WARNING.store(true, Ordering::Relaxed),
+            _ => {}
+        }
+
         let level_style = level_style_for(record.level(), use_ansi_color);
         let level_str = match record.level() {
             log::Level::Error => "Error",
