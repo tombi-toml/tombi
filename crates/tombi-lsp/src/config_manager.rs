@@ -134,13 +134,9 @@ impl ConfigManager {
         store
     }
 
-    pub async fn config_schema_store_for_directory(
-        &self,
-        directory: Option<PathBuf>,
-    ) -> ConfigSchemaStore {
-        let mut source_cache = self.config_source_cache.lock().await;
-        self.config_schema_store_for_directory_locked(directory, &mut source_cache)
-            .await
+    /// The HTTP client that reads remote configs, honoring offline mode and the cache options.
+    pub fn http_client(&self) -> &dyn tombi_schema_store::HttpClient {
+        self.http_client.as_ref()
     }
 
     async fn config_schema_store_for_directory_locked(
@@ -641,7 +637,7 @@ mod tests {
         directory: &Path,
     ) -> Option<tombi_config::TomlVersion> {
         manager
-            .config_schema_store_for_directory(Some(directory.to_owned()))
+            .config_schema_store_for_file(&directory.join("source.toml"))
             .await
             .config
             .toml_version
