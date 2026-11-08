@@ -46,6 +46,27 @@ impl CachedHttpClient {
         url: &str,
         is_valid: &ContentValidator<'_>,
     ) -> Result<Bytes, FetchError> {
+        let (bytes, _) = self
+            .get_parsed(url, |bytes| if is_valid(bytes) { Ok(()) } else { Err(()) })
+            .await?;
+        Ok(bytes)
+    }
+
+    /// Like [`Self::get_validated`], but `parse` turns the content into a value that is
+    /// returned along with the bytes, so that the caller does not parse them again.
+    ///
+    /// Content that `parse` rejects is neither persisted nor served from the cache. A
+    /// response that is fetched but rejected is still returned, with the parse error.
+    pub async fn get_parsed<T, E, F>(
+        &self,
+        url: &str,
+        parse: F,
+    ) -> Result<(Bytes, Result<T, E>), FetchError>
+    where
+        T: Send,
+        E: Send,
+        F: Fn(&[u8]) -> Result<T, E> + Send + Sync,
+    {
         let cache_path = match url.parse::<tombi_uri::Uri>() {
             Ok(uri) => {
                 if matches!(uri.scheme(), "http" | "https") {
@@ -58,32 +79,33 @@ impl CachedHttpClient {
 
         if let Ok(Some(content)) =
             tombi_cache::read_from_cache(cache_path.as_deref(), self.options.cache.as_ref()).await
-            && is_valid(content.as_bytes())
+            && let Ok(value) = parse(content.as_bytes())
         {
             log::trace!("load from cache: {url}");
-            return Ok(Bytes::from(content));
+            return Ok((Bytes::from(content), Ok(value)));
         }
 
         if self.options.offline {
-            return match self.read_stale_cache(cache_path.as_deref(), is_valid).await {
-                Some(bytes) => Ok(bytes),
+            return match self.read_stale_cache(cache_path.as_deref(), &parse).await {
+                Some(parsed) => Ok(parsed),
                 None => Err(FetchError::Offline),
             };
         }
 
         match self.inner.get_bytes(url).await {
             Ok(bytes) => {
-                if is_valid(&bytes)
+                let parsed = parse(&bytes);
+                if parsed.is_ok()
                     && let Err(error) =
                         tombi_cache::save_to_cache(cache_path.as_deref(), &bytes).await
                 {
                     log::warn!("{error}");
                 }
-                Ok(bytes)
+                Ok((bytes, parsed))
             }
             Err(error) if error.is_policy_denied() => Err(error),
-            Err(error) => match self.read_stale_cache(cache_path.as_deref(), is_valid).await {
-                Some(bytes) => Ok(bytes),
+            Err(error) => match self.read_stale_cache(cache_path.as_deref(), &parse).await {
+                Some(parsed) => Ok(parsed),
                 None => Err(error),
             },
         }
@@ -119,19 +141,19 @@ impl CachedHttpClient {
         )
     }
 
-    async fn read_stale_cache(
+    async fn read_stale_cache<T, E>(
         &self,
         cache_path: Option<&std::path::Path>,
-        is_valid: &ContentValidator<'_>,
-    ) -> Option<Bytes> {
+        parse: &(impl Fn(&[u8]) -> Result<T, E> + Send + Sync),
+    ) -> Option<(Bytes, Result<T, E>)> {
         let mut cache_options = self.options.cache.clone().unwrap_or_default();
         cache_options.cache_ttl = None;
-        tombi_cache::read_from_cache(cache_path, Some(&cache_options))
+        let content = tombi_cache::read_from_cache(cache_path, Some(&cache_options))
             .await
             .ok()
-            .flatten()
-            .filter(|content| is_valid(content.as_bytes()))
-            .map(Bytes::from)
+            .flatten()?;
+        let value = parse(content.as_bytes()).ok()?;
+        Some((Bytes::from(content), Ok(value)))
     }
 }
 
