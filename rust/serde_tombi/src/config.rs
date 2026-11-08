@@ -340,6 +340,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn extends_rejects_string_form() {
+        let temp_dir = temp_test_dir("extends-string-form");
+        write_file(
+            &temp_dir.path().join("shared/tombi.toml"),
+            "toml-version = \"v1.0.0\"\n",
+        );
+        let config_path = temp_dir.path().join("app/tombi.toml");
+        write_file(&config_path, "extends = \"../shared/tombi.toml\"\n");
+
+        let error = try_from_path(&config_path, offline_client().as_ref())
+            .await
+            .unwrap_err();
+
+        assert!(
+            matches!(
+                &error,
+                tombi_config::Error::ConfigExtendsInvalid { reason, .. }
+                    if reason == "extends must be an array of strings"
+            ),
+            "{error}"
+        );
+    }
+
+    #[tokio::test]
     async fn extends_replaces_nested_extension_feature_forms() {
         let temp_dir = temp_test_dir("extends-extension-feature-form");
         write_file(
