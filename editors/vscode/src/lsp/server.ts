@@ -15,12 +15,13 @@ export class Server {
   }
 
   async showVersion(): Promise<string> {
-    if (this.version === undefined) {
+    while (this.version === undefined) {
+      const tombiBin = this.tombiBin;
       let version: string;
       try {
         version = await text(
-          spawn(this.tombiBin.command, [
-            ...this.tombiBin.args,
+          spawn(tombiBin.command, [
+            ...tombiBin.args,
             "--version",
           ]).stdout.setEncoding("utf-8"),
         );
@@ -30,9 +31,10 @@ export class Server {
         version = "<unknown>";
       }
 
-      this.version = version;
-
-      return version;
+      // NOTE: If the binary was updated while waiting, discard the stale result and retry.
+      if (this.tombiBin === tombiBin) {
+        this.version = version;
+      }
     }
 
     return this.version;
