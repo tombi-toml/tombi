@@ -46,6 +46,9 @@ pub enum Error {
         reason: std::string::String,
     },
 
+    #[error("remote config {config_uri} does not exist")]
+    ConfigUriNotFound { config_uri: tombi_uri::Uri },
+
     #[error("remote config {config_uri} cannot be loaded while offline")]
     ConfigOffline { config_uri: tombi_uri::Uri },
 

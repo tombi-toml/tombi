@@ -220,11 +220,92 @@ test_lint! {
     }, {
         code: "config/invalid-extends",
         level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "https://tombi-lint-test.invalid/tombi.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "base.toml")
     }, {
         code: "config/invalid-extends",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "https://tombi-lint-test.invalid/base.toml?file=tombi.toml")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn self_extends_is_reported(
+        r#"extends = ["tombi.toml"]
+"#,
+        SourcePath(tombi_path()),
+    ) -> Diagnostics([{
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(r#"extends = ["tombi.toml"]
+"#, "tombi.toml")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn extends_must_be_an_array_of_strings(
+        r#"extends = "tombi.toml"
+"#,
+        SourcePath(tombi_path()),
+    ) -> Diagnostics([{
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(r#"extends = "tombi.toml"
+"#, "tombi.toml")
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn extends_entries_must_be_strings(
+        r#"extends = [1]
+"#,
+        SourcePath(tombi_path()),
+    ) -> Diagnostics([{
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: tombi_text::Span::new(tombi_text::Offset::new(11), tombi_text::Offset::new(12))
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn self_extends_is_reported_even_if_the_file_does_not_exist(
+        r#"extends = ["tombi.toml"]
+"#,
+        SourcePath(tombi_test_lib::project_root_path().join("self-extends-for-tombi-lint-test/tombi.toml")),
+        Config({
+            let mut config = tombi_config::Config::default();
+            config.extensions = Some(tombi_config::Extensions {
+                cargo: None,
+                nagi_sql: None,
+                pyproject: None,
+                tombi: Some(tombi_config::TombiExtensionFeatures::Features(
+                    tombi_config::TombiExtensionFeatureTree {
+                        lint: Some(tombi_config::TombiLintFeatures::Features(
+                            tombi_config::TombiLintFeatureTree {
+                                rules: Some(tombi_config::TombiLintRules {
+                                    missing_extends_path: tombi_config::SeverityLevel::Off,
+                                    ..Default::default()
+                                }),
+                            },
+                        )),
+                        lsp: None,
+                    },
+                )),
+            });
+            config
+        }),
+    ) -> Diagnostics([{
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(r#"extends = ["tombi.toml"]
+"#, "tombi.toml")
     }])
 }
 
@@ -280,6 +361,10 @@ test_lint! {
         code: "config/invalid-extends",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "ftp://example.org/tombi.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "https://tombi-lint-test.invalid/tombi.toml")
     }, {
         code: "config/invalid-extends",
         level: Level::ERROR,
