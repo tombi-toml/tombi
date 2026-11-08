@@ -519,7 +519,7 @@ pub(crate) fn get_workspace_member_dependency_definitions(
                 toml_version,
                 encoding,
                 |_, member_document_tree, member_converter| {
-                    collect_dependency_requirements_from_document_tree(member_document_tree)
+                    crate::collect_usage_requirements_from_document_tree(member_document_tree)
                         .into_iter()
                         .filter(|DependencyRequirement { requirement, .. }| {
                             requirement.name.as_ref() == package_name

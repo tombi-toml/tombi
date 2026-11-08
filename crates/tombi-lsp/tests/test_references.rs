@@ -668,6 +668,30 @@ mod references_tests {
 
         test_references!(
             #[tokio::test]
+            async fn workspace_dependency_string_lists_member_build_system_requires(
+                r#"
+                [project]
+                name = "workspace"
+                version = "0.1.0"
+
+                [dependency-groups]
+                dev = ["hatchling>=1.0█"]
+
+                [tool.uv.workspace]
+                members = [
+                    "members/app1",
+                    "members/app2",
+                    "members/app3",
+                ]
+                "#,
+                SourcePath(pyproject_workspace_fixtures_path().join("pyproject.toml")),
+            ) -> Ok([
+                pyproject_workspace_fixtures_path().join("members/app3/pyproject.toml"),
+            ]);
+        );
+
+        test_references!(
+            #[tokio::test]
             async fn include_declaration_adds_workspace_dependency_declaration_for_member_dependency(
                 r#"
                 [project]

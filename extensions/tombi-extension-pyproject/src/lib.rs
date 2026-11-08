@@ -33,7 +33,8 @@ pub(crate) use accessors::{
 pub(crate) use dependency::{
     DependencyRequirement, UV_DEPENDENCY_KEYS,
     collect_all_dependency_requirements_from_document_tree,
-    collect_dependency_requirements_from_document_tree, find_dependency_group_key,
+    collect_dependency_requirements_from_document_tree,
+    collect_usage_requirements_from_document_tree, find_dependency_group_key,
     get_dependency_accessors, include_group_locations, normalize_pep503_name,
     parse_dependency_requirement, parse_requirement,
 };

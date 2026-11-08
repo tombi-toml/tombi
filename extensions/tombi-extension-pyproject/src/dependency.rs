@@ -74,6 +74,22 @@ pub(crate) fn collect_all_dependency_requirements_from_document_tree<'a>(
     dependency_requirements
 }
 
+/// Every requirement a package can declare, including the build backend's `build-system.requires`.
+pub(crate) fn collect_usage_requirements_from_document_tree<'a>(
+    document_tree: &'a tombi_document_tree_syntax::DocumentTree<'a>,
+) -> Vec<DependencyRequirement<'a>> {
+    let mut dependency_requirements =
+        collect_all_dependency_requirements_from_document_tree(document_tree);
+
+    collect_dependency_requirements_from_array_path(
+        document_tree,
+        &["build-system", "requires"],
+        &mut dependency_requirements,
+    );
+
+    dependency_requirements
+}
+
 pub(crate) fn get_dependency_accessors(accessors: &[Accessor]) -> Option<&[Accessor]> {
     if matches_accessors!(accessors, ["project", "dependencies", _])
         || matches_accessors!(accessors, ["build-system", "requires", _])
