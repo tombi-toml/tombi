@@ -1,6 +1,5 @@
 use std::io::Write;
 
-use tombi_cli_options::VerbosityLevel;
 use tombi_config::TomlVersion;
 use xshell::Shell;
 
@@ -39,7 +38,7 @@ fn decode_test(
     );
 
     let mut options = vec![];
-    if verbosity.verbosity_level() != VerbosityLevel::Default {
+    if verbosity.verbosity_level().is_verbose() {
         options.push("-v");
     };
 
