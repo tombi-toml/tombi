@@ -40,6 +40,9 @@ impl From<&crate::Options> for Options {
 }
 
 /// The [`HttpClient`] used to read remote files, backed by the shared on-disk cache.
+///
+/// Its fetch policy comes from the environment (`TOMBI_SCHEMA_TRUSTED_HOSTS`), not from
+/// a config file: a config being loaded cannot decide which hosts it may be fetched from.
 pub fn http_client(options: Options) -> std::sync::Arc<CachedHttpClient> {
     std::sync::Arc::new(CachedHttpClient::new(
         std::sync::Arc::new(DefaultHttpClient::new()),

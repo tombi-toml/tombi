@@ -1,4 +1,5 @@
 mod error;
+mod extends;
 mod extensions;
 mod files;
 pub mod format;
@@ -10,6 +11,10 @@ mod server;
 mod types;
 
 pub use error::Error;
+pub use extends::{
+    ExtendsTarget, extends_file_name_error, is_extends_file_name, is_http_url,
+    resolve_local_extends, validate_remote_uri,
+};
 pub use extensions::*;
 pub use files::FilesOptions;
 pub use format::*;

@@ -14,6 +14,8 @@ const INVALID_EXTENDS: &str = r#"extends = [
     "ftp://example.org/tombi.toml",
     "https://example.org/tombi.toml",
     "tombi.toml",
+    "base.toml",
+    "https://example.org/base.toml?file=tombi.toml",
 ]
 "#;
 
@@ -201,6 +203,14 @@ test_lint! {
         code: "config/invalid-extends",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "ftp://example.org/tombi.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "base.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "https://example.org/base.toml?file=tombi.toml")
     }])
 }
 
@@ -222,6 +232,14 @@ test_lint! {
             config
         }),
     ) -> Diagnostics([{
+        code: "jsonschema/string-pattern",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "base.toml")
+    }, {
+        code: "jsonschema/string-pattern",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "https://example.org/base.toml?file=tombi.toml")
+    }, {
         code: "config/invalid-extends",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "missing-extends-for-tombi-lint-test/tombi.toml")
@@ -229,5 +247,13 @@ test_lint! {
         code: "config/invalid-extends",
         level: Level::ERROR,
         span: span_of(INVALID_EXTENDS, "ftp://example.org/tombi.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "base.toml")
+    }, {
+        code: "config/invalid-extends",
+        level: Level::ERROR,
+        span: span_of(INVALID_EXTENDS, "https://example.org/base.toml?file=tombi.toml")
     }])
 }

@@ -28,14 +28,6 @@ impl CachedHttpClient {
         url: &str,
         is_valid: &ContentValidator<'_>,
     ) -> Result<Bytes, FetchError> {
-        self.get_bytes_cached(url, is_valid).await
-    }
-
-    async fn get_bytes_cached(
-        &self,
-        url: &str,
-        is_valid: &ContentValidator<'_>,
-    ) -> Result<Bytes, FetchError> {
         let cache_path = match url.parse::<tombi_uri::Uri>() {
             Ok(uri) => tombi_cache::get_cache_file_path(&uri).await,
             Err(_) => None,
@@ -92,7 +84,7 @@ impl CachedHttpClient {
 
 impl HttpClient for CachedHttpClient {
     fn get_bytes<'a>(&'a self, url: &'a str) -> HttpFuture<'a, Result<Bytes, FetchError>> {
-        self.get_bytes_cached(url, &|_| true).boxed()
+        self.get_validated(url, &|_| true).boxed()
     }
 }
 

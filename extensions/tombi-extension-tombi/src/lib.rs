@@ -1,7 +1,6 @@
 mod completion;
 mod diagnostics;
 mod document_link;
-mod extends;
 mod goto_definition;
 mod hover;
 

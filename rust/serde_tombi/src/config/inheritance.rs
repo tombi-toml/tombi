@@ -86,135 +86,53 @@ impl ConfigSource {
         }
     }
 
-    fn is_tombi_toml(&self) -> bool {
-        let file_name = match self {
-            Self::File {
-                selected_path: path,
-                ..
-            } => path.file_name().and_then(|name| name.to_str()),
-            Self::Remote(uri) => uri.path().rsplit('/').next(),
-        };
-        matches!(
-            file_name,
-            Some(tombi_config::TOMBI_TOML_FILENAME | tombi_config::DOT_TOMBI_TOML_FILENAME)
-        )
-    }
-
     /// Resolve an `extends` reference.
     ///
-    /// Only `tombi.toml` and `.tombi.toml` can be extended,
-    /// so that the schema for Tombi config files applies to every inherited config.
+    /// Only `tombi.toml` and `.tombi.toml` can be extended.
     fn resolve_reference(&self, reference: &str) -> Result<ConfigSource, tombi_config::Error> {
-        let source = self.resolve_reference_target(reference)?;
-        if !source.is_tombi_toml() {
-            return Err(tombi_config::Error::ConfigExtendsInvalid {
-                config_source: self.display(),
-                reference: reference.to_owned(),
-                reason: format!(
-                    "extended configs must be named {} or {}",
-                    tombi_config::TOMBI_TOML_FILENAME,
-                    tombi_config::DOT_TOMBI_TOML_FILENAME
-                ),
-            });
-        }
-        Ok(source)
-    }
-
-    fn resolve_reference_target(
-        &self,
-        reference: &str,
-    ) -> Result<ConfigSource, tombi_config::Error> {
-        let invalid = |reason: &str| tombi_config::Error::ConfigExtendsInvalid {
+        let invalid = |reason: String| tombi_config::Error::ConfigExtendsInvalid {
             config_source: self.display(),
             reference: reference.to_owned(),
-            reason: reason.to_owned(),
+            reason,
         };
 
-        match self {
-            Self::Remote(base) => {
-                if reference.starts_with("file:")
-                    || reference.contains("://") && !is_http(reference)
-                {
-                    return Err(invalid("remote configs may only extend HTTP(S) sources"));
-                }
-
-                let mut uri = if is_http(reference) {
-                    Uri::from_str(reference).map_err(|error| invalid(&error.to_string()))?
-                } else {
-                    Uri::from(
-                        base.join(reference)
-                            .map_err(|error| invalid(&error.to_string()))?,
-                    )
-                };
-                validate_remote_uri(&uri).map_err(invalid)?;
-                uri.set_fragment(None);
-                Ok(Self::Remote(uri))
-            }
+        let target = match self {
             Self::File {
                 selected_path: source_path,
                 ..
-            } => {
-                if reference.starts_with("file:") {
-                    let uri =
-                        Uri::from_str(reference).map_err(|error| invalid(&error.to_string()))?;
-                    if uri.scheme() != "file" {
-                        return Err(invalid("expected a file:// URL"));
-                    }
-                    if uri.query().is_some() || uri.fragment().is_some() {
-                        return Err(invalid("file URLs must not have a query or fragment"));
-                    }
-                    let path = uri
-                        .to_file_path()
-                        .map_err(|_| invalid("file URL does not contain a valid local path"))?;
-                    return Ok(Self::from_path(path));
-                }
-
-                if is_http(reference) {
-                    let mut uri =
-                        Uri::from_str(reference).map_err(|error| invalid(&error.to_string()))?;
-                    validate_remote_uri(&uri).map_err(invalid)?;
-                    uri.set_fragment(None);
-                    return Ok(Self::Remote(uri));
-                }
-
-                if reference.contains("://") {
+            } => tombi_config::resolve_local_extends(reference, source_path).map_err(invalid)?,
+            Self::Remote(base) => {
+                if reference.starts_with("file:")
+                    || reference.contains("://") && !tombi_config::is_http_url(reference)
+                {
                     return Err(invalid(
-                        "only file://, http://, and https:// URLs are supported",
+                        "remote configs may only extend HTTP(S) sources".to_owned(),
                     ));
                 }
 
-                let reference_path = PathBuf::from(reference);
-                let path = if reference_path.is_absolute() {
-                    reference_path
+                let uri = if tombi_config::is_http_url(reference) {
+                    Uri::from_str(reference).map_err(|error| invalid(error.to_string()))?
                 } else {
-                    source_path
-                        .parent()
-                        .unwrap_or_else(|| std::path::Path::new("."))
-                        .join(reference_path)
+                    Uri::from(
+                        base.join(reference)
+                            .map_err(|error| invalid(error.to_string()))?,
+                    )
                 };
-                Ok(Self::from_path(path))
+                let target = tombi_config::ExtendsTarget::Remote(
+                    tombi_config::validate_remote_uri(uri).map_err(invalid)?,
+                );
+                if !target.has_extends_file_name() {
+                    return Err(invalid(tombi_config::extends_file_name_error()));
+                }
+                target
             }
-        }
-    }
-}
+        };
 
-fn is_http(reference: &str) -> bool {
-    reference
-        .get(..7)
-        .is_some_and(|scheme| scheme.eq_ignore_ascii_case("http://"))
-        || reference
-            .get(..8)
-            .is_some_and(|scheme| scheme.eq_ignore_ascii_case("https://"))
-}
-
-fn validate_remote_uri(uri: &Uri) -> Result<(), &'static str> {
-    if !matches!(uri.scheme(), "http" | "https") {
-        return Err("only http:// and https:// URLs are supported");
+        Ok(match target {
+            tombi_config::ExtendsTarget::File(path) => Self::from_path(path),
+            tombi_config::ExtendsTarget::Remote(uri) => Self::Remote(uri),
+        })
     }
-    if !uri.username().is_empty() || uri.password().is_some() {
-        return Err("URL credentials are not allowed");
-    }
-    Ok(())
 }
 
 #[derive(Debug, Clone)]

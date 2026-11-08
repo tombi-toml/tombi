@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use tombi_document_tree_syntax::{DocumentTree, Value};
 use tombi_uri::{CatalogUri, SchemaUri};
 
-use crate::extends::{self, ExtendsTarget};
+use tombi_config::ExtendsTarget;
 
 /// Validate `extends` and the local schema and catalog paths configured in a Tombi config file.
 pub fn validate(
@@ -99,7 +99,7 @@ fn validate_extends(
     };
 
     for reference in references {
-        let message = match extends::resolve(reference.value(), source_path) {
+        let message = match tombi_config::resolve_local_extends(reference.value(), source_path) {
             Ok(ExtendsTarget::File(path)) if !tombi_fs::is_file(&path) => {
                 format!(
                     "extends path `{}` does not point to a file",

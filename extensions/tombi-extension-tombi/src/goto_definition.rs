@@ -4,7 +4,7 @@ use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion, co
 use tombi_document_tree_syntax::dig_accessors;
 use tombi_schema_store::matches_accessors;
 
-use crate::extends::ExtendsTarget;
+use tombi_config::ExtendsTarget;
 
 pub async fn goto_definition(
     text_document_uri: &tombi_uri::Uri,
@@ -128,7 +128,7 @@ fn get_definition_link(url_str: &str, tombi_toml_path: &std::path::Path) -> Opti
 }
 
 fn get_extends_link(reference: &str, tombi_toml_path: &std::path::Path) -> Option<tombi_uri::Uri> {
-    match crate::extends::resolve(reference, tombi_toml_path).ok()? {
+    match tombi_config::resolve_local_extends(reference, tombi_toml_path).ok()? {
         ExtendsTarget::File(path) if tombi_fs::is_file(&path) => {
             tombi_uri::Uri::from_file_path(path).ok()
         }
