@@ -327,6 +327,11 @@ async fn authenticated_response(
                 reason: "authenticated GitHub schema request failed".to_string(),
             },
         })?;
+    if matches!(response.status().as_u16(), 404 | 410) {
+        return Err(FetchError::StatusNotOk {
+            status: response.status().as_u16(),
+        });
+    }
     if !response.status().is_success() {
         return Err(FetchError::AuthenticationFailed {
             reason: format!("unexpected status: {}", response.status().as_u16()),

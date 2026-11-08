@@ -325,13 +325,7 @@ impl SchemaStore {
     /// Network failures, offline mode and refusals by the fetch policy are not evidence
     /// that the file is missing, so they return `false`.
     pub async fn remote_file_is_missing(&self, uri: &tombi_uri::Uri) -> bool {
-        // Content is cached only when it is UTF-8, as the config loader would read it.
-        matches!(
-            self.http_client
-                .get_validated(uri.as_str(), &|bytes| std::str::from_utf8(bytes).is_ok())
-                .await,
-            Err(crate::http_client::FetchError::StatusNotOk { status: 404 | 410 })
-        )
+        self.http_client.is_missing(uri.as_str()).await
     }
 
     /// Cache options
