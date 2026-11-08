@@ -23,6 +23,10 @@ fn tombi_path() -> std::path::PathBuf {
     tombi_test_lib::project_root_path().join("tombi.toml")
 }
 
+fn dot_config_tombi_path() -> std::path::PathBuf {
+    tombi_test_lib::project_root_path().join(".config/tombi.toml")
+}
+
 fn dot_tombi_path() -> std::path::PathBuf {
     tombi_test_lib::project_root_path().join(".tombi.toml")
 }
@@ -187,6 +191,15 @@ include = ["*.toml"]
 paths = ["Cargo.toml", "https://example.com/catalog.json"]
 "#,
         SourcePath(tombi_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn extends_of_dot_config_tombi_toml_is_relative_to_the_project_root(
+        r#"extends = ["tombi.toml"]
+"#,
+        SourcePath(dot_config_tombi_path()),
     ) -> Ok(_)
 }
 
