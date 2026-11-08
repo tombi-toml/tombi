@@ -33,9 +33,6 @@ pub enum Error {
         reason: String,
     },
 
-    #[error("catalog file not found: {catalog_path}")]
-    CatalogFileNotFound { catalog_path: PathBuf },
-
     #[error("invalid catalog file uri: {catalog_uri}")]
     InvalidCatalogFileUri { catalog_uri: CatalogUri },
 

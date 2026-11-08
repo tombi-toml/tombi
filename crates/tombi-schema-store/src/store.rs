@@ -438,10 +438,6 @@ impl SchemaStore {
                         self.add_json_catalog(catalog_uri, catalog).await?;
                     }
                     Ok(None) => {}
-                    Err(crate::Error::CatalogFileNotFound { .. }) => {
-                        // Let the Tombi config linter report missing local catalog paths with
-                        // the configured severity instead of aborting before linting starts.
-                    }
                     Err(e) => return Err(e),
                 }
             }
@@ -519,10 +515,10 @@ impl SchemaStore {
                     }
                 })?;
 
+                // Go on without a missing local catalog, instead of aborting before linting starts.
+                // The Tombi config linter reports it with the configured severity.
                 if !tombi_fs::is_file(&catalog_path) {
-                    return Err(crate::Error::CatalogFileNotFound {
-                        catalog_path: catalog_path.to_path_buf(),
-                    });
+                    return Ok(None);
                 }
 
                 let content = tombi_fs::read_to_string(&catalog_path).map_err(|_| {
@@ -2130,5 +2126,25 @@ mod tests {
         assert_eq!(catalog.unwrap().schemas.len(), 1);
 
         let _ = std::fs::remove_file(catalog_path);
+    }
+
+    #[tokio::test]
+    async fn load_catalog_from_uri_goes_on_without_a_missing_file() {
+        let catalog_path = std::env::temp_dir().join(format!(
+            "tombi_missing_catalog_{}_{}.json",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let catalog_uri = CatalogUri::from_file_path(&catalog_path).unwrap();
+
+        let catalog = SchemaStore::new()
+            .load_catalog_from_uri(&catalog_uri)
+            .await
+            .unwrap();
+
+        assert!(catalog.is_none());
     }
 }
