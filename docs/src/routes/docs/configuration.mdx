@@ -47,7 +47,7 @@ extends = ["../shared/tombi.toml", "https://example.org/config/tombi.toml"]
 line-width = 100
 ```
 
-`extends` accepts an array of paths or URLs. Local paths are resolved relative to the config file that declares them. HTTP and HTTPS URLs are supported; a relative URL in a remote config is resolved against that URL. A remote config cannot use `file://` to read a local file. In `pyproject.toml`, place `extends` inside `[tool.tombi]`.
+`extends` accepts an array of paths or URLs. Local paths are resolved relative to the directory of the config file that declares them, or relative to the project root for `.config/tombi.toml`, like the paths of `schemas` and `schema.catalog`. HTTP and HTTPS URLs are supported; a relative URL in a remote config is resolved against that URL. A remote config cannot use `file://` to read a local file. In `pyproject.toml`, place `extends` inside `[tool.tombi]`.
 
 The extended file must be named `tombi.toml` or `.tombi.toml`, so that the Tombi config schema applies to it. `pyproject.toml` cannot be extended.
 

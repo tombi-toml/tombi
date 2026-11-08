@@ -5,7 +5,7 @@ use std::{
 
 use tombi_uri::Uri;
 
-use crate::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME};
+use crate::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, config_base_dir};
 
 /// Where an `extends` reference points to.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -39,7 +39,8 @@ impl ExtendsTarget {
 
 /// Resolve an `extends` reference declared by the local config `source_path`.
 ///
-/// Local paths are relative to the directory of the config that declares them.
+/// Local paths are relative to the base directory of the config that declares them,
+/// the same one that `schemas` and `schema.catalog` paths use (see [`config_base_dir`]).
 /// The loader and the editor features share this, so they agree on what is valid.
 pub fn resolve_local_extends(reference: &str, source_path: &Path) -> Result<ExtendsTarget, String> {
     let target = if reference.starts_with("file:") {
@@ -63,8 +64,7 @@ pub fn resolve_local_extends(reference: &str, source_path: &Path) -> Result<Exte
         ExtendsTarget::File(if path.is_absolute() {
             path
         } else {
-            source_path
-                .parent()
+            config_base_dir(source_path)
                 .unwrap_or_else(|| Path::new("."))
                 .join(path)
         })
@@ -100,4 +100,35 @@ pub fn validate_remote_uri(mut uri: Uri) -> Result<Uri, String> {
     }
     uri.set_fragment(None);
     Ok(uri)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::{Path, PathBuf};
+
+    use super::{ExtendsTarget, resolve_local_extends};
+
+    fn resolved(source_path: &str) -> Result<ExtendsTarget, String> {
+        resolve_local_extends("base/tombi.toml", Path::new(source_path))
+    }
+
+    #[test]
+    fn extends_is_relative_to_the_config_directory() {
+        assert_eq!(
+            resolved("/tmp/project/tombi.toml"),
+            Ok(ExtendsTarget::File(PathBuf::from(
+                "/tmp/project/base/tombi.toml"
+            )))
+        );
+    }
+
+    #[test]
+    fn extends_of_dot_config_tombi_toml_is_relative_to_the_project_root() {
+        assert_eq!(
+            resolved("/tmp/project/.config/tombi.toml"),
+            Ok(ExtendsTarget::File(PathBuf::from(
+                "/tmp/project/base/tombi.toml"
+            )))
+        );
+    }
 }
