@@ -47,6 +47,12 @@ pub fn config_candidates(search_dir: Option<std::path::PathBuf>) -> Vec<ConfigCa
                     level: ConfigLevel::Project,
                 });
             }
+            let misplaced = misplaced_dot_config_tombi_toml(&current_dir);
+            if tombi_fs::is_file(&misplaced) {
+                log::warn!(
+                    "\"{DOT_TOMBI_TOML_FILENAME}\" in the \".config\" directory is ignored. Rename it to \"{TOMBI_TOML_FILENAME}\": {misplaced:?}"
+                );
+            }
             if !current_dir.pop() {
                 break;
             }
@@ -56,6 +62,11 @@ pub fn config_candidates(search_dir: Option<std::path::PathBuf>) -> Vec<ConfigCa
         candidates.push(ConfigCandidate { path, level });
     }
     candidates
+}
+
+/// `.config/.tombi.toml` is never loaded; only `.config/tombi.toml` is supported.
+fn misplaced_dot_config_tombi_toml(dir: &std::path::Path) -> std::path::PathBuf {
+    dir.join(".config").join(DOT_TOMBI_TOML_FILENAME)
 }
 
 fn validate_config_path(config_path: &std::path::Path) -> Result<(), tombi_config::Error> {
@@ -420,6 +431,22 @@ mod tests {
                 "{reference}: {error}"
             );
         }
+    }
+
+    #[test]
+    fn misplaced_dot_config_tombi_toml_path() {
+        let temp_dir = temp_test_dir("misplaced-dot-config-tombi-toml");
+        write_file(
+            &temp_dir
+                .path()
+                .join(".config")
+                .join(DOT_TOMBI_TOML_FILENAME),
+            "",
+        );
+
+        assert!(tombi_fs::is_file(&misplaced_dot_config_tombi_toml(
+            temp_dir.path()
+        )));
     }
 
     #[test]
