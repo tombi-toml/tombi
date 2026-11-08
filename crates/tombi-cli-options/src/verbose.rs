@@ -52,7 +52,7 @@ pub struct Verbosity {
     ///
     /// [default: INFO]
     ///
-    #[clap(short = 'v', long, action = clap::ArgAction::Count, global = true, conflicts_with = "quiet")]
+    #[clap(short = 'v', long, action = clap::ArgAction::Count, global = true, conflicts_with = "quiet", value_parser = clap::value_parser!(u8).range(..=2))]
     verbose: u8,
 
     /// Lower the logging level and omit the summary
@@ -73,9 +73,9 @@ impl Verbosity {
         match (self.verbose, self.quiet) {
             (0, 0) => VerbosityLevel::Default,
             (0, 1) => VerbosityLevel::Quiet,
-            (0, 2..) => VerbosityLevel::VeryQuiet,
+            (0, _) => VerbosityLevel::VeryQuiet,
             (1, _) => VerbosityLevel::Verbose,
-            (2.., _) => VerbosityLevel::VeryVerbose,
+            (_, _) => VerbosityLevel::VeryVerbose,
         }
     }
 
@@ -114,7 +114,9 @@ mod tests {
 
     test_verbosity!(#[test] fn default() -> Default);
     test_verbosity!(#[test] fn verbose("-v") -> Verbose);
+    test_verbosity!(#[test] fn verbose_long("--verbose") -> Verbose);
     test_verbosity!(#[test] fn very_verbose("-vv") -> VeryVerbose);
+    test_verbosity!(#[test] fn too_verbose("-vvv") -> Err);
     test_verbosity!(#[test] fn quiet("-q") -> Quiet);
     test_verbosity!(#[test] fn quiet_long("--quiet") -> Quiet);
     test_verbosity!(#[test] fn very_quiet("-qq") -> VeryQuiet);
