@@ -5,9 +5,14 @@ import type { TombiBin } from "@/bootstrap";
 export const LANGUAGE_SERVER_NAME = "tombi";
 
 export class Server {
-  private version?: string;
+  private version: string | undefined;
 
   constructor(public tombiBin: TombiBin) {}
+
+  update(tombiBin: TombiBin): void {
+    this.tombiBin = tombiBin;
+    this.version = undefined;
+  }
 
   async showVersion(): Promise<string> {
     if (this.version === undefined) {

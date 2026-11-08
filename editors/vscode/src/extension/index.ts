@@ -43,6 +43,7 @@ export class Extension {
     private context: vscode.ExtensionContext,
     private client: node.LanguageClient,
     private server: Server,
+    private options: node.ServerOptions,
   ) {
     // NOTE: The `id` is required for VSCode to persist the user's
     //       show/hide preference from the status bar context menu.
@@ -66,10 +67,11 @@ export class Extension {
     const tombiBin = await bootstrap(context, settings);
 
     const server = new Server(tombiBin);
+    const options = serverOptions(server.tombiBin, settings);
     const client = new node.LanguageClient(
       EXTENSION_ID,
       `${EXTENSION_NAME} Language Server`,
-      serverOptions(server.tombiBin, settings),
+      options,
       clientOptions(),
       // biome-ignore lint/complexity/useLiteralKeys: process.env properties require bracket notation
       process.env["__TOMBI_LANGUAGE_SERVER_DEBUG"] !== undefined,
@@ -77,7 +79,7 @@ export class Extension {
 
     await client.start();
 
-    const extension = new Extension(context, client, server);
+    const extension = new Extension(context, client, server, options);
 
     // Get LSP version
     try {
@@ -108,6 +110,31 @@ export class Extension {
     log.info("extension deactivated");
   }
 
+  /**
+   * Re-select the Language Server binary, then restart the Language Server.
+   *
+   * NOTE: `LanguageClient` keeps a reference to the `ServerOptions` it was created with
+   *       and reads it again on restart, so it is updated in place.
+   */
+  private async restartLanguageServer(): Promise<void> {
+    const settings = vscode.workspace.getConfiguration(
+      EXTENSION_ID,
+    ) as Settings;
+
+    try {
+      const tombiBin = await bootstrap(this.context, settings);
+      this.server.update(tombiBin);
+      Object.assign(this.options, serverOptions(tombiBin, settings));
+    } catch (error) {
+      log.error(`Failed to select Language Server binary: ${error}`);
+    }
+
+    await command.restartLanguageServer(this.client);
+
+    this.lspVersion = await this.server.showVersion();
+    await this.updateStatusBarItem();
+  }
+
   private registerCommands(): void {
     this.context.subscriptions.push(
       vscode.commands.registerCommand(`${EXTENSION_ID}.showActions`, async () =>
@@ -135,7 +162,7 @@ export class Extension {
     this.context.subscriptions.push(
       vscode.commands.registerCommand(
         `${EXTENSION_ID}.restartLanguageServer`,
-        async () => command.restartLanguageServer(this.client),
+        async () => this.restartLanguageServer(),
       ),
     );
     this.context.subscriptions.push(
@@ -171,7 +198,7 @@ export class Extension {
           restart,
         );
         if (selected === restart) {
-          await command.restartLanguageServer(this.client);
+          await this.restartLanguageServer();
         }
       }),
       vscode.workspace.onDidSaveTextDocument(async (document) => {
