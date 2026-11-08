@@ -61,12 +61,12 @@ fn lint_config(rule: tombi_config::SeverityLevel) -> tombi_config::Config {
 
 test_lint! {
     #[test]
-    fn missing_workspace_member_config_is_warned(
+    fn missing_workspace_member_config_is_reported(
         MISSING_MEMBER,
         SourcePath(workspace_path()),
     ) -> Diagnostics([{
         code: "nagi-sql/missing-member-config",
-        level: Level::WARNING,
+        level: Level::ERROR,
         span: span_of(MISSING_MEMBER, "missing")
     }])
 }
@@ -86,7 +86,7 @@ test_lint! {
         SourcePath(dot_config_workspace_path()),
     ) -> Diagnostics([{
         code: "nagi-sql/missing-member-config",
-        level: Level::WARNING,
+        level: Level::ERROR,
         span: span_of(MISSING_MEMBER, "missing")
     }])
 }

@@ -62,14 +62,23 @@ impl TombiLintFeatures {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TombiLintRules {
-    /// Report a local schema catalog path that does not point to a file.
+    /// Report a schema catalog that does not exist: a local path that does not point to a file,
+    /// or a URL for which the server answers 404 or 410.
     ///
     /// ```toml
     /// [schema.catalog]
     /// paths = ["./schemas/catalog.json"] # no file exists at this path
     /// ```
     pub missing_catalog_path: SeverityLevel,
-    /// Report a local schema path that does not point to a file.
+    /// Report an `extends` entry that does not exist: a local path that does not point to a file,
+    /// or a URL for which the server answers 404 or 410.
+    ///
+    /// ```toml
+    /// extends = ["./base/tombi.toml"] # no file exists at this path
+    /// ```
+    pub missing_extends_path: SeverityLevel,
+    /// Report a schema that does not exist: a local path that does not point to a file,
+    /// or a URL for which the server answers 404 or 410.
     ///
     /// ```toml
     /// [[schemas]]
@@ -81,8 +90,9 @@ pub struct TombiLintRules {
 impl Default for TombiLintRules {
     fn default() -> Self {
         Self {
-            missing_catalog_path: SeverityLevel::Warn,
-            missing_schema_path: SeverityLevel::Warn,
+            missing_catalog_path: SeverityLevel::Error,
+            missing_extends_path: SeverityLevel::Error,
+            missing_schema_path: SeverityLevel::Error,
         }
     }
 }
@@ -91,6 +101,7 @@ impl TombiLintRules {
     pub fn off() -> Self {
         Self {
             missing_catalog_path: SeverityLevel::Off,
+            missing_extends_path: SeverityLevel::Off,
             missing_schema_path: SeverityLevel::Off,
         }
     }

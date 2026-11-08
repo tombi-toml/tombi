@@ -71,7 +71,7 @@ pub struct NagiSqlLintRules {
 impl Default for NagiSqlLintRules {
     fn default() -> Self {
         Self {
-            missing_member_config: SeverityLevel::Warn,
+            missing_member_config: SeverityLevel::Error,
         }
     }
 }
