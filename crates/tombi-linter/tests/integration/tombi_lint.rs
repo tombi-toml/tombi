@@ -31,6 +31,54 @@ include = ["Cargo.toml"]
 paths = ["tombi://www.schemastore.org/api/json/catalog.json", "tombi://www.schemastore.org/missing-catalog.json"]
 "#;
 
+/// Port of a local server that answers every request with 404.
+fn not_found_server_port() -> u16 {
+    static PORT: std::sync::LazyLock<u16> = std::sync::LazyLock::new(|| {
+        use std::io::{Read, Write};
+
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        std::thread::spawn(move || {
+            for mut stream in listener.incoming().flatten() {
+                let mut request = [0; 1024];
+                let _ = stream.read(&mut request);
+                let _ = stream.write_all(
+                    b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                );
+            }
+        });
+        port
+    });
+    *PORT
+}
+
+fn missing_remote_urls() -> (String, String, String) {
+    let base = format!("http://127.0.0.1:{}", not_found_server_port());
+    (
+        format!("{base}/tombi.toml"),
+        format!("{base}/schema.json"),
+        format!("{base}/catalog.json"),
+    )
+}
+
+fn missing_remote_source(with_extends: bool) -> String {
+    let (extends, schema, catalog) = missing_remote_urls();
+    let extends = if with_extends {
+        format!("extends = [\"{extends}\"]\n\n")
+    } else {
+        String::new()
+    };
+    format!(
+        r#"{extends}[[schemas]]
+path = "{schema}"
+include = ["*.toml"]
+
+[schema.catalog]
+paths = ["{catalog}"]
+"#
+    )
+}
+
 fn tombi_path() -> std::path::PathBuf {
     tombi_test_lib::project_root_path().join("tombi.toml")
 }
@@ -117,6 +165,37 @@ test_lint! {
         level: Level::ERROR,
         span: span_of(EMBEDDED_PATHS, "tombi://www.schemastore.org/missing-catalog.json")
     }])
+}
+
+test_lint! {
+    #[test]
+    fn missing_remote_references_are_warnings(
+        &missing_remote_source(true),
+        SourcePath(dot_tombi_path()),
+        TrustedHosts(vec!["127.0.0.1".to_string()]),
+    ) -> Diagnostics([{
+        code: "tombi/missing-extends-path",
+        level: Level::WARNING,
+        span: span_of(&missing_remote_source(true), &missing_remote_urls().0)
+    }, {
+        code: "tombi/missing-schema-path",
+        level: Level::WARNING,
+        span: span_of(&missing_remote_source(true), &missing_remote_urls().1)
+    }, {
+        code: "tombi/missing-catalog-path",
+        level: Level::WARNING,
+        span: span_of(&missing_remote_source(true), &missing_remote_urls().2)
+    }])
+}
+
+test_lint! {
+    #[test]
+    fn missing_remote_references_can_be_turned_off(
+        &missing_remote_source(false),
+        SourcePath(tombi_path()),
+        TrustedHosts(vec!["127.0.0.1".to_string()]),
+        Config(config(tombi_config::SeverityLevel::Off, tombi_config::SeverityLevel::Off)),
+    ) -> Ok(_)
 }
 
 test_lint! {
