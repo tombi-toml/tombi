@@ -101,6 +101,7 @@ async fn validate_extends(
         None => return,
     };
 
+    let mut cache = serde_tombi::config::ConfigSourceCache::default();
     for value in references.values() {
         let Value::String(reference) = value else {
             push_error(
@@ -125,33 +126,49 @@ async fn validate_extends(
             }
         };
 
-        // A missing target is governed by `missing-extends-path`, which can be turned off.
-        if target_is_missing(&target, schema_store).await {
-            report_missing(
-                reference,
-                Reference {
-                    kind: ReferenceKind::Extends,
-                    severity,
-                },
-                &target,
-                diagnostics,
-            );
-        } else if let Err(error) = serde_tombi::config::check_extends_reference(
-            reference.value(),
-            source_path,
-            schema_store.http_client(),
-        )
-        .await
+        match cache
+            .check_extends_reference(reference.value(), source_path, schema_store.http_client())
+            .await
         {
-            push_error(
+            Ok(()) => {}
+            // A missing target is governed by `missing-extends-path`, which can be turned off.
+            // A cycle is reported even if the target does not exist yet.
+            Err(error) if !is_cycle(&error) && direct_target_is_missing(&target, &error) => {
+                report_missing(
+                    reference,
+                    Reference {
+                        kind: ReferenceKind::Extends,
+                        severity,
+                    },
+                    &target,
+                    diagnostics,
+                );
+            }
+            Err(error) => push_error(
                 DiagnosticKind::ExtendsLoadFailed {
                     reference: reference.value().to_owned(),
                     error,
                 },
                 reference.span(),
                 diagnostics,
-            );
+            ),
         }
+    }
+}
+
+fn is_cycle(error: &tombi_config::Error) -> bool {
+    matches!(error, tombi_config::Error::ConfigExtendsCycle { .. })
+}
+
+/// Whether `error` says that the `extends` target itself does not exist,
+/// as opposed to a config that it extends in turn.
+fn direct_target_is_missing(target: &ExtendsTarget, error: &tombi_config::Error) -> bool {
+    match (target, error) {
+        (ExtendsTarget::File(path), _) => !tombi_fs::is_file(path),
+        (ExtendsTarget::Remote(uri), tombi_config::Error::ConfigUriNotFound { config_uri }) => {
+            uri == config_uri
+        }
+        (ExtendsTarget::Remote(_), _) => false,
     }
 }
 

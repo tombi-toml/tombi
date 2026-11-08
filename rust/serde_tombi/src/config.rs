@@ -20,15 +20,6 @@ pub async fn from_str(
     inheritance::from_str(toml_text, config_path, http_client).await
 }
 
-/// Check that the `extends` entry `reference` of the config at `config_path` can be loaded.
-pub async fn check_extends_reference(
-    reference: &str,
-    config_path: &std::path::Path,
-    http_client: &CachedHttpClient,
-) -> Result<(), tombi_config::Error> {
-    inheritance::check_extends_reference(reference, config_path, http_client).await
-}
-
 #[derive(Debug, Clone)]
 pub struct ConfigLoadReport {
     pub config: Config,
