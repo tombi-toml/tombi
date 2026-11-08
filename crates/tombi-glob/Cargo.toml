@@ -14,11 +14,11 @@ ignore.workspace = true
 log.workspace = true
 rayon.workspace = true
 serde_tombi = { workspace = true, optional = true }
-tombi-schema-store = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
 tombi-config.workspace = true
 tombi-fs.workspace = true
+tombi-schema-store = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile.workspace = true
