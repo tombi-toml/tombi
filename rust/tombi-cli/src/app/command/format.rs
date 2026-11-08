@@ -41,12 +41,6 @@ pub struct Args {
     #[arg(long, default_value_t = false)]
     error_on_warnings: bool,
 
-    /// Quiet mode
-    ///
-    /// If `true`, the program will not print summary output messages.
-    #[arg(long, default_value_t = false)]
-    quiet: bool,
-
     #[command(flatten)]
     diagnostics: DiagnosticsArgs,
 
@@ -111,8 +105,7 @@ fn record_task_result<P>(
     }
 }
 
-pub fn run(args: Args) -> Result<(), crate::Error> {
-    let quiet = args.quiet;
+pub fn run(args: Args, quiet: bool) -> Result<(), crate::Error> {
     let error_on_warnings = args.error_on_warnings;
 
     // Validate options before reading stdin, which is copied to stdout if the config fails to load.
