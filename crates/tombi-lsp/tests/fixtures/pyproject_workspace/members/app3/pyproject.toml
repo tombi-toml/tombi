@@ -14,3 +14,7 @@ dev = [
 
 [tool.uv.sources]
 app2 = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
