@@ -102,8 +102,9 @@ export class Extension {
       await this.client.start();
     } catch (error) {
       log.error(`Failed to start Language Server: ${error}`);
+      const message = error instanceof Error ? error.message : String(error);
       void vscode.window.showErrorMessage(
-        `Failed to start the Tombi Language Server: ${error}. Fix the binary path, then run "Tombi: Restart Language Server".`,
+        `Failed to start the Tombi Language Server: ${message}. Fix the binary path, then run "Tombi: Restart Language Server".`,
       );
       return false;
     }
@@ -152,6 +153,8 @@ export class Extension {
       await command.restartLanguageServer(this.client);
       this.lspVersion = await this.server.showVersion();
     } else {
+      // NOTE: A client that failed to start rejects `dispose()`, which still marks it as disposed.
+      await this.client.dispose().catch(() => {});
       this.client.outputChannel.dispose();
       this.client = createLanguageClient(this.options, clientOptions());
       this.lspVersion = undefined;
