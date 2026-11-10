@@ -1,0 +1,374 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "definitions": {
+    "task": {
+      "type": "object",
+      "properties": {
+        "cmd": {
+          "type": "string"
+        },
+        "args": {
+          "type": "string"
+        }
+      }
+    },
+    "closed_task": {
+      "type": "object",
+      "properties": {
+        "cmd": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "plain": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/task"
+          },
+          {
+            "properties": {
+              "args": false
+            }
+          }
+        ]
+      }
+    },
+    "conditional": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/task"
+          },
+          {
+            "if": {
+              "type": "object"
+            },
+            "then": {
+              "properties": {
+                "args": false
+              }
+            }
+          }
+        ]
+      }
+    },
+    "closed": {
+      "type": "object",
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "args": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "pattern": {
+      "type": "object",
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            },
+            "_private": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "patternProperties": {
+            "^_": false
+          }
+        }
+      ]
+    },
+    "closed_pattern": {
+      "type": "object",
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            }
+          },
+          "patternProperties": {
+            "^x-": true
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "x-a": {
+              "type": "string"
+            },
+            "other": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "any_of": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/task"
+        },
+        {
+          "anyOf": [
+            {
+              "properties": {
+                "args": false
+              }
+            },
+            {
+              "properties": {
+                "cmd": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "one_of": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/task"
+        },
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "args": false
+              }
+            },
+            {
+              "properties": {
+                "cmd": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "non_type_if": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/task"
+        },
+        {
+          "if": {
+            "properties": {
+              "cmd": {
+                "const": "x"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "args": false
+            }
+          }
+        }
+      ]
+    },
+    "unconstrained": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/task"
+        },
+        {
+          "properties": {
+            "extra": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "ref_closed": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/closed_task"
+        },
+        {
+          "properties": {
+            "args": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "nested": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/task"
+        },
+        {
+          "allOf": [
+            {
+              "properties": {
+                "args": false
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "pattern_only": {
+      "type": "object",
+      "patternProperties": {
+        "^_": false
+      }
+    },
+    "pattern_with_property": {
+      "type": "object",
+      "properties": {
+        "cmd": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^_": false
+      }
+    },
+    "header": {
+      "type": "object",
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "type": "object"
+            },
+            "args": {
+              "type": "object"
+            }
+          }
+        },
+        {
+          "properties": {
+            "args": false
+          }
+        }
+      ]
+    },
+    "required_if": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/task"
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "cmd"
+            ]
+          },
+          "then": {
+            "properties": {
+              "args": false
+            }
+          }
+        }
+      ]
+    },
+    "nested_keys": {
+      "type": "object",
+      "allOf": [
+        {
+          "properties": {
+            "sub": {
+              "type": "object",
+              "properties": {
+                "args": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "args": false
+          }
+        }
+      ]
+    },
+    "bad_regex": {
+      "type": "object",
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            }
+          },
+          "patternProperties": {
+            "^[^]+$": {}
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "closed_pattern_only": {
+      "type": "object",
+      "allOf": [
+        {
+          "patternProperties": {
+            "^x-": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "pattern_false_with_additional": {
+      "type": "object",
+      "patternProperties": {
+        "^_": false
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}

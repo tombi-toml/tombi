@@ -728,7 +728,17 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                 }
                             }
 
-                            if let Some(pattern_properties) = &table_schema.pattern_properties {
+                            // A pattern whose schema is `false` rejects every matching key, so
+                            // there is no pattern key to suggest.
+                            if let Some(pattern_properties) = &table_schema.pattern_properties
+                                && !all_pattern_properties_forbidden(
+                                    pattern_properties,
+                                    table_schema,
+                                    current_schema,
+                                    schema_context,
+                                )
+                                .await
+                            {
                                 let patterns = pattern_properties
                                     .read()
                                     .await
@@ -1162,6 +1172,48 @@ impl FindCompletionContents for TableSchema {
         }
         .boxed()
     }
+}
+
+async fn all_pattern_properties_forbidden(
+    pattern_properties: &tombi_schema_store::SchemaPatternProperties,
+    table_schema: &tombi_schema_store::TableSchema,
+    current_schema: &CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+) -> bool {
+    let patterns = pattern_properties
+        .read()
+        .await
+        .keys()
+        .cloned()
+        .collect_vec();
+    if patterns.is_empty() {
+        return false;
+    }
+    for pattern in &patterns {
+        let forbidden = matches!(
+            table_schema
+                .resolve_pattern_property_schema(
+                    pattern,
+                    current_schema.schema_base_uri.clone(),
+                    current_schema.definitions.clone(),
+                    current_schema.strict,
+                    schema_context.store,
+                    Some(&current_schema.dynamic_scope),
+                )
+                .await,
+            Ok(Some(CurrentSchema {
+                semantic_schema: Some(ref semantic_schema),
+                ..
+            })) if matches!(
+                semantic_schema.as_ref(),
+                tombi_schema_store::SemanticSchema::Boolean(value) if !value.value
+            )
+        );
+        if !forbidden {
+            return false;
+        }
+    }
+    true
 }
 
 async fn count_table_or_array_schema(
