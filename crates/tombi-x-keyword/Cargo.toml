@@ -6,14 +6,14 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
-[dependencies]
-schemars = { workspace = true, optional = true }
-serde = { workspace = true, optional = true }
-
 [features]
 default = ["serde"]
 jsonschema = ["dep:schemars"]
 serde = ["dep:serde"]
+
+[dependencies]
+schemars = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
 
 [lints]
 workspace = true

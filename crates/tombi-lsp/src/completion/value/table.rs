@@ -868,7 +868,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                             // required keys, e.g. pyproject's `version`/`dynamic` vs
                             // `name`). They are evaluated as a fallback only.
                             if let Some(all_of_schema) = table_schema.all_of.as_deref() {
-                                let completion_items = super::all_of::find_all_of_completion_items(
+                                let mut completion_items = super::all_of::find_all_of_completion_items(
                                     self,
                                     cursor,
                                     keys,
@@ -879,9 +879,14 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                     completion_hint,
                                 )
                                 .await;
+                                crate::completion::retain_additional_table_key_completions(
+                                    &mut completion_items,
+                                    table_schema,
+                                )
+                                .await;
                                 completion_contents.extend(completion_items);
 
-                                let projected_items = super::all_of::find_all_of_completion_items(
+                                let mut projected_items = super::all_of::find_all_of_completion_items(
                                     &crate::completion::schema_completion::InstanceSchemaCompletion(
                                         tombi_schema_store::SchemaType::Object,
                                     ),
@@ -897,6 +902,11 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                 .into_iter()
                                 .filter(|item| item.label != "{}")
                                 .collect_vec();
+                                crate::completion::retain_additional_table_key_completions(
+                                    &mut projected_items,
+                                    table_schema,
+                                )
+                                .await;
                                 completion_contents.extend(projected_items);
                             }
 

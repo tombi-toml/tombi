@@ -7,6 +7,18 @@ description = "Tombi formatter and linter library API for Python and Node.js"
 repository.workspace = true
 license.workspace = true
 
+[features]
+default = ["native"]
+# Real `std::fs`/network access (reqwest), for the native `format`/`lint` used
+# by the `tombi-lib-python`/`tombi-lib-node` binding crates.
+native = ["serde_tombi/native", "tombi-schema-store/native"]
+# PyO3 conversions on `FormatResult`/`LintResult`/`Diagnostic`, for the
+# `tombi-lib-python` binding crate.
+python = ["dep:pyo3"]
+# The wasm virtual filesystem and `gloo-net` HTTP client, for `format_async`/
+# `lint_async` called directly from `tombi-wasm`'s `lib` feature.
+wasm = ["serde_tombi/wasm", "tombi-schema-store/wasm", "tombi-text/wasm"]
+
 [lib]
 crate-type = ["rlib"]
 
@@ -27,18 +39,6 @@ tombi-text.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 tokio = { workspace = true, features = ["rt"] }
-
-[features]
-default = ["native"]
-# Real `std::fs`/network access (reqwest), for the native `format`/`lint` used
-# by the `tombi-lib-python`/`tombi-lib-node` binding crates.
-native = ["serde_tombi/native", "tombi-schema-store/native"]
-# PyO3 conversions on `FormatResult`/`LintResult`/`Diagnostic`, for the
-# `tombi-lib-python` binding crate.
-python = ["dep:pyo3"]
-# The wasm virtual filesystem and `gloo-net` HTTP client, for `format_async`/
-# `lint_async` called directly from `tombi-wasm`'s `lib` feature.
-wasm = ["serde_tombi/wasm", "tombi-schema-store/wasm", "tombi-text/wasm"]
 
 [lints]
 workspace = true

@@ -3,8 +3,8 @@ name = "weak-consumer"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
-provider = { path = "../provider" }
-
 [features]
 weak = ["provider?/jsonschema"]
+
+[dependencies]
+provider = { path = "../provider" }

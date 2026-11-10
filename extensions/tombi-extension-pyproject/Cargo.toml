@@ -7,6 +7,20 @@ description = "Tombi extension for pyproject.toml Python project management"
 repository.workspace = true
 license.workspace = true
 
+[features]
+default = ["native"]
+native = [
+  "tokio/fs",
+  "tombi-future/native",
+  "tombi-schema-store/native",
+  "tower-lsp-server/runtime-tokio",
+]
+wasm = [
+  "tombi-future/wasm-send",
+  "tombi-schema-store/wasm",
+  "tower-lsp-server/runtime-agnostic",
+]
+
 [dependencies]
 futures.workspace = true
 glob.workspace = true
@@ -39,20 +53,6 @@ unicode-ident.workspace = true
 tempfile.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
 tombi-test-lib.workspace = true
-
-[features]
-default = ["native"]
-native = [
-  "tokio/fs",
-  "tombi-future/native",
-  "tombi-schema-store/native",
-  "tower-lsp-server/runtime-tokio",
-]
-wasm = [
-  "tombi-future/wasm-send",
-  "tombi-schema-store/wasm",
-  "tower-lsp-server/runtime-agnostic",
-]
 
 [lints]
 workspace = true

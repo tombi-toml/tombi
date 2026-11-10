@@ -6,19 +6,6 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
-[dependencies]
-serde_tombi.workspace = true
-thiserror.workspace = true
-tombi-config.workspace = true
-tombi-diagnostic.workspace = true
-tombi-document-tree-syntax.workspace = true
-tombi-extension.workspace = true
-tombi-fs.workspace = true
-tombi-schema-store.workspace = true
-tombi-text.workspace = true
-tombi-uri.workspace = true
-tower-lsp-server.workspace = true
-
 [features]
 default = ["native"]
 native = [
@@ -31,6 +18,19 @@ wasm = [
   "tombi-schema-store/wasm",
   "tower-lsp-server/runtime-agnostic",
 ]
+
+[dependencies]
+serde_tombi.workspace = true
+thiserror.workspace = true
+tombi-config.workspace = true
+tombi-diagnostic.workspace = true
+tombi-document-tree-syntax.workspace = true
+tombi-extension.workspace = true
+tombi-fs.workspace = true
+tombi-schema-store.workspace = true
+tombi-text.workspace = true
+tombi-uri.workspace = true
+tower-lsp-server.workspace = true
 
 [lints]
 workspace = true

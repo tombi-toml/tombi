@@ -6,6 +6,10 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
+[features]
+default = ["diagnostic"]
+diagnostic = ["dep:tombi-diagnostic"]
+
 [dependencies]
 chrono.workspace = true
 itertools.workspace = true
@@ -19,10 +23,6 @@ tombi-hashmap.workspace = true
 tombi-text.workspace = true
 tombi-toml-text.workspace = true
 tombi-toml-version.workspace = true
-
-[features]
-default = ["diagnostic"]
-diagnostic = ["dep:tombi-diagnostic"]
 
 [lints]
 workspace = true

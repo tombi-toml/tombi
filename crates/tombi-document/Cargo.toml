@@ -5,6 +5,11 @@ authors.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[features]
+default = ["serde"]
+lsp = ["tombi-text/lsp"]
+serde = ["dep:serde", "tombi-hashmap/serde"]
+
 [dependencies]
 itertools.workspace = true
 serde = { workspace = true, optional = true }
@@ -23,11 +28,6 @@ serde_json.workspace = true
 textwrap.workspace = true
 tombi-ast-syntax.workspace = true
 tombi-test-lib.workspace = true
-
-[features]
-default = ["serde"]
-lsp = ["tombi-text/lsp"]
-serde = ["dep:serde", "tombi-hashmap/serde"]
 
 [lints]
 workspace = true

@@ -5,6 +5,12 @@ authors.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[features]
+default = ["lsp", "serde"]
+lsp = ["dep:tower-lsp-server"]
+serde = ["dep:serde"]
+wasm = ["dep:wasm-bindgen", "serde"]
+
 [dependencies]
 log.workspace = true
 memchr.workspace = true
@@ -22,12 +28,6 @@ tower-lsp-server = { workspace = true, features = ["runtime-tokio"], optional = 
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 tower-lsp-server = { workspace = true, features = ["runtime-agnostic"], optional = true }
-
-[features]
-default = ["lsp", "serde"]
-lsp = ["dep:tower-lsp-server"]
-serde = ["dep:serde"]
-wasm = ["dep:wasm-bindgen", "serde"]
 
 [lints]
 workspace = true

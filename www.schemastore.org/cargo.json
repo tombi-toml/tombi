@@ -933,13 +933,19 @@
           "$ref": "#/definitions/DevDependencyTable"
         },
         "dev_dependencies": {
-          "$ref": "#/definitions/HiddenDependencyTable"
+          "$ref": "#/definitions/HiddenDependencyTable",
+          "x-taplo": {
+            "hidden": true
+          }
         },
         "build-dependencies": {
           "$ref": "#/definitions/BuildDependencyTable"
         },
         "build_dependencies": {
-          "$ref": "#/definitions/HiddenDependencyTable"
+          "$ref": "#/definitions/HiddenDependencyTable",
+          "x-taplo": {
+            "hidden": true
+          }
         }
       },
       "x-tombi-table-keys-order": "schema"
@@ -2362,7 +2368,10 @@
       }
     },
     "replace": {
-      "$ref": "#/definitions/HiddenDependencyTable"
+      "$ref": "#/definitions/HiddenDependencyTable",
+      "x-taplo": {
+        "hidden": true
+      }
     }
   },
   "title": "Cargo.toml",

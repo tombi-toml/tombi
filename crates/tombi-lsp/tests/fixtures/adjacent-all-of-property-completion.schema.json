@@ -1,0 +1,72 @@
+{
+  "type": "object",
+  "properties": {
+    "object": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "properties": {
+            "enabled": {
+              "const": true
+            }
+          }
+        }
+      ]
+    },
+    "required_object": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        },
+        "z": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "properties": {
+            "z": true
+          },
+          "required": [
+            "z"
+          ]
+        }
+      ]
+    },
+    "alternative_object": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        },
+        "z": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "properties": {
+                    "z": true
+                  },
+                  "required": [
+                    "z"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

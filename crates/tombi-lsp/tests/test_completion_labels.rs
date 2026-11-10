@@ -2082,6 +2082,59 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn adjacent_all_of_table_keeps_same_key_const_candidate(
+                r#"
+                [object]
+                █
+                "#,
+                SchemaPath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/adjacent-all-of-property-completion.schema.json",
+                )),
+            ) -> Ok(["enabled", "enabled = true"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_all_of_object_value_keeps_same_key_const_candidate(
+                "object = █",
+                SchemaPath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/adjacent-all-of-property-completion.schema.json",
+                )),
+            ) -> Ok(["enabled", "enabled = true", "{}"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_all_of_table_keeps_unconditional_required_priority(
+                "[required_object]\n█",
+                SchemaPath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/adjacent-all-of-property-completion.schema.json",
+                )),
+            ) -> Ok(["z", "a"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_all_of_object_value_keeps_unconditional_required_priority(
+                "required_object = █",
+                SchemaPath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/adjacent-all-of-property-completion.schema.json",
+                )),
+            ) -> Ok(["z", "a", "{}"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn adjacent_all_of_nested_any_of_does_not_promote_required_priority(
+                "[alternative_object]\n█",
+                SchemaPath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/adjacent-all-of-property-completion.schema.json",
+                )),
+            ) -> Ok(["a", "z"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn adjacent_all_of_table_merges_properties_and_all_of_keys(
                 r#"
                 [object_all]
@@ -3436,6 +3489,7 @@ mod completion_labels {
                 "dev-dependencies",
                 "example",
                 "features",
+                "hints",
                 "lib",
                 "lints",
                 "package",
@@ -3478,6 +3532,7 @@ mod completion_labels {
                 "dependencies",
                 "dev-dependencies",
                 "features",
+                "hints",
                 "lib",
                 "lints",
                 "package",
@@ -3759,16 +3814,19 @@ mod completion_labels {
             ) -> Ok([
                 "\"0.1.0\"",
                 "\"*\"",
+                "artifact",
                 "branch",
                 "default-features",
                 "features",
                 "git",
+                "lib",
                 "optional = true",
                 "package",
                 "path",
                 "registry",
                 "rev",
                 "tag",
+                "target",
                 "version",
                 "workspace = true",
                 "\"\"",
@@ -3924,16 +3982,19 @@ mod completion_labels {
             ) -> Ok([
                 "\"0.1.0\"",
                 "\"*\"",
+                "artifact",
                 "branch",
                 "default-features",
                 "features",
                 "git",
+                "lib",
                 "optional = true",
                 "package",
                 "path",
                 "registry",
                 "rev",
                 "tag",
+                "target",
                 "version",
                 "workspace = true",
                 "\"\"",
@@ -4091,16 +4152,19 @@ mod completion_labels {
                 SourcePath(project_root_path().join("crates/subcrate/Cargo.toml")),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok([
+                "artifact",
                 "branch",
                 "default-features",
                 "features",
                 "git",
+                "lib",
                 "optional = true",
                 "package",
                 "path",
                 "registry",
                 "rev",
                 "tag",
+                "target",
                 "version",
             ]);
         }
@@ -4252,16 +4316,19 @@ mod completion_labels {
                 "#,
                 SchemaPath(cargo_schema_path()),
             ) -> Ok([
+                "artifact",
                 "branch",
                 "default-features",
                 "features",
                 "git",
+                "lib",
                 "optional = true",
                 "package",
                 "path",
                 "registry",
                 "rev",
                 "tag",
+                "target",
                 "version",
                 "workspace = true",
             ]);
