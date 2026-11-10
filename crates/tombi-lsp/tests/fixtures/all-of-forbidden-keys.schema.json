@@ -21,6 +21,11 @@
         }
       },
       "additionalProperties": false
+    },
+    "no_args": {
+      "properties": {
+        "args": false
+      }
     }
   },
   "properties": {
@@ -369,6 +374,97 @@
       "additionalProperties": {
         "type": "string"
       }
+    },
+    "array_all_of": {
+      "type": "array",
+      "allOf": [
+        {
+          "items": {
+            "type": "object",
+            "properties": {
+              "args": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "args": false
+          }
+        }
+      ]
+    },
+    "direct_and_all_of": {
+      "type": "object",
+      "properties": {
+        "args": {
+          "type": "string"
+        },
+        "cmd": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "properties": {
+            "args": false
+          }
+        }
+      ]
+    },
+    "singleton_closed": {
+      "type": "object",
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "const": "x"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "args": {
+              "const": "y"
+            }
+          }
+        }
+      ]
+    },
+    "ref_forbidden": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/task"
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/no_args"
+            }
+          ]
+        }
+      ]
+    },
+    "pattern_false_additional_true": {
+      "type": "object",
+      "patternProperties": {
+        "^_": false
+      },
+      "additionalProperties": true
+    },
+    "draft07_ref_siblings": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/task",
+          "properties": {
+            "args": false
+          }
+        }
+      ]
     }
   }
 }

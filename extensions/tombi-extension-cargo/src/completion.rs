@@ -719,6 +719,7 @@ fn complete_workspace_dependency_inheritance(
             }),
             preselect: None,
             in_comment: false,
+            key_name: None,
         })
         .collect::<Vec<_>>();
 
@@ -826,6 +827,7 @@ async fn complete_crate_version(
                 },
                 preselect: (i == 0).then_some(true),
                 in_comment: false,
+                key_name: None,
             })
             .collect();
 
@@ -1010,6 +1012,7 @@ async fn complete_crate_feature(
                 }),
                 preselect: None,
                 in_comment: false,
+                key_name: None,
             }
         })
         .collect();

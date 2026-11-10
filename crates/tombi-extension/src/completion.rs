@@ -73,6 +73,8 @@ pub struct CompletionContent {
     pub edit: Option<CompletionEdit>,
     pub preselect: Option<bool>,
     pub in_comment: bool,
+    /// Property name of a key candidate, independent of the display `label`.
+    pub key_name: Option<String>,
 }
 
 impl CompletionContent {
@@ -97,6 +99,7 @@ impl CompletionContent {
             deprecated,
             preselect: None,
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -127,6 +130,7 @@ impl CompletionContent {
             deprecated,
             preselect: None,
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -151,6 +155,7 @@ impl CompletionContent {
             deprecated,
             preselect: Some(true),
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -175,6 +180,7 @@ impl CompletionContent {
             deprecated,
             preselect: None,
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -198,6 +204,7 @@ impl CompletionContent {
             deprecated: None,
             preselect: None,
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -223,6 +230,7 @@ impl CompletionContent {
             deprecated: None,
             preselect: None,
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -246,6 +254,7 @@ impl CompletionContent {
             deprecated: None,
             preselect: None,
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -267,6 +276,7 @@ impl CompletionContent {
             deprecated: None,
             preselect: None,
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -291,6 +301,7 @@ impl CompletionContent {
             deprecated: None,
             preselect: None,
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -316,6 +327,7 @@ impl CompletionContent {
             deprecated: None,
             preselect: None,
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -382,6 +394,7 @@ impl CompletionContent {
             deprecated,
             preselect: None,
             in_comment: false,
+            key_name: Some(key_name.to_string()),
         }
     }
 
@@ -418,6 +431,7 @@ impl CompletionContent {
             deprecated: None,
             preselect: None,
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -446,6 +460,7 @@ impl CompletionContent {
             deprecated,
             preselect: None,
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -469,6 +484,7 @@ impl CompletionContent {
                 deprecated: None,
                 preselect: None,
                 in_comment: false,
+                key_name: None,
             })
             .collect()
     }
@@ -502,6 +518,7 @@ impl CompletionContent {
             deprecated: None,
             preselect: None,
             in_comment: false,
+            key_name: None,
         }
     }
 
@@ -700,6 +717,7 @@ pub fn get_file_path_completions(
                 edit: Some(edit),
                 preselect: None,
                 in_comment: false,
+                key_name: None,
             });
         }
     }

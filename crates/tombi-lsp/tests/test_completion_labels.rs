@@ -2401,6 +2401,93 @@ mod completion_labels {
                 SchemaPath(schema_path()),
             ) -> Ok(["$key"]);
         }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_array_parent_restriction_does_not_hide_item_keys(
+                r#"
+                array_all_of = [{ █ }]
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_false_property_is_not_suggested_for_incomplete_key(
+                r#"
+                [closed]
+                ar█
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_false_property_is_not_suggested_alongside_direct_property(
+                r#"
+                [direct_and_all_of]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_singleton_key_label_uses_property_name(
+                r#"
+                [singleton_closed]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd = \"x\""]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_ref_nested_false_property_is_not_suggested(
+                r#"
+                [ref_forbidden]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pattern_properties_false_keeps_additional_properties_true_key(
+                r#"
+                [pattern_false_additional_true]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["$key"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_draft07_ref_siblings_are_ignored(
+                r#"
+                [draft07_ref_siblings]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args", "cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_incomplete_key_keeps_allowed_property(
+                r#"
+                [unconstrained]
+                ar█
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args"]);
+        }
     }
 
     mod composite_array_items_schema {

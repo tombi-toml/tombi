@@ -650,6 +650,17 @@ pub(super) async fn merge_adjacent_schema_completion_items(
         if let SchemaView::Table(table_schema) = current_schema.schema_view.as_ref() {
             retain_additional_table_key_completions(&mut all_of_completion_items, table_schema)
                 .await;
+            // With non-empty `keys` the candidates belong to a deeper table.
+            if keys.is_empty() {
+                value::retain_keys_allowed_by_all_of(
+                    &mut all_of_completion_items,
+                    all_of_schema,
+                    current_schema,
+                    schema_context,
+                    accessors,
+                )
+                .await;
+            }
         }
         adjacent_completion_items.extend(all_of_completion_items);
     }

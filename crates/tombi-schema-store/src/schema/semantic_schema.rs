@@ -925,6 +925,15 @@ impl SemanticSchemaObject {
             })
     }
 
+    /// Whether this object is a `$ref` whose sibling keywords are ignored by its dialect
+    /// (draft-07 and earlier).
+    pub fn ignores_reference_siblings(&self) -> bool {
+        self.references.primary().is_some()
+            && self
+                .dialect
+                .is_some_and(|dialect| dialect <= JsonSchemaDialect::Draft07)
+    }
+
     pub fn new(object: &ObjectNode, dialect: Option<JsonSchemaDialect>) -> Self {
         Self {
             source: object.clone(),

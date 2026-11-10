@@ -1,7 +1,7 @@
-use tombi_extension::{CompletionContentPriority, CompletionKind};
-use tombi_future::Boxable;
+use tombi_extension::CompletionContentPriority;
+use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, CurrentSchema, SchemaType, SemanticCompositeKind, SemanticSchema,
+    Accessor, CurrentSchema, SchemaType, SchemaView, SemanticCompositeKind, SemanticSchema,
 };
 
 use crate::completion::{
@@ -68,25 +68,6 @@ where
         }
 
         let mut completion_items = dedup_composite_completion_contents(completion_items);
-
-        // Each `allOf` branch is validated on its own, so a key rejected by any one of
-        // them can never validate, even if another branch offers it as a candidate.
-        let mut restrictions = KeyRestrictions::default();
-        for resolved_schema in &resolved_schemas {
-            if let Some(semantic_schema) = &resolved_schema.semantic_schema {
-                restrictions.collect(semantic_schema);
-            }
-        }
-        // With non-empty `keys` the items belong to a deeper table, which these
-        // restrictions do not describe.
-        if keys.is_empty() && !restrictions.is_empty() {
-            completion_items.retain(|item| {
-                // Placeholders (`$key`) stand for any key, not for a declared property.
-                item.kind != CompletionKind::Key
-                    || item.priority == CompletionContentPriority::AdditionalKey
-                    || !restrictions.rejects(&item.label)
-            });
-        }
 
         let detail = crate::completion::composite_detail(
             all_of_schema,
@@ -171,21 +152,51 @@ where
     .boxed()
 }
 
+/// Drops key candidates of a table that an `allOf` branch can never accept.
+///
+/// Each `allOf` branch is validated on its own, so a key rejected by any one of them cannot
+/// validate even if another branch (or the table's own `properties`) offers it. `items` must be
+/// the key candidates of the table that `all_of_schema` applies to.
+pub async fn retain_keys_allowed_by_all_of(
+    items: &mut Vec<CompletionContent>,
+    all_of_schema: &tombi_schema_store::AllOfSchema,
+    current_schema: &CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+    accessors: &[Accessor],
+) {
+    let mut restrictions = KeyRestrictions::default();
+    restrictions
+        .collect_all_of(all_of_schema, current_schema, schema_context, accessors, 0)
+        .await;
+    if restrictions.is_empty() {
+        return;
+    }
+
+    items.retain(|item| {
+        item.key_name
+            .as_deref()
+            .is_none_or(|key_name| !restrictions.rejects(key_name))
+    });
+}
+
+/// Maximum nesting of `allOf` followed while collecting key restrictions.
+const MAX_ALL_OF_DEPTH: usize = 16;
+
 /// Key constraints that every instance of an `allOf` must satisfy.
 ///
 /// Only constraints that always apply are followed (`allOf`, `$ref`, and `then` when the
 /// `if` only asserts `type: object`); alternatives such as `anyOf` / `oneOf` are skipped.
 #[derive(Default)]
-struct KeyRestrictions<'a> {
+struct KeyRestrictions {
     /// `properties: { key: false }`
-    forbidden_keys: tombi_hashmap::HashSet<&'a str>,
+    forbidden_keys: tombi_hashmap::HashSet<String>,
     /// `patternProperties: { pattern: false }`
-    forbidden_patterns: Vec<&'a str>,
+    forbidden_patterns: Vec<String>,
     /// `additionalProperties: false`: (declared properties, declared patterns)
-    closed_objects: Vec<(Vec<&'a str>, Vec<&'a str>)>,
+    closed_objects: Vec<(Vec<String>, Vec<String>)>,
 }
 
-impl<'a> KeyRestrictions<'a> {
+impl KeyRestrictions {
     fn is_empty(&self) -> bool {
         self.forbidden_keys.is_empty()
             && self.forbidden_patterns.is_empty()
@@ -193,7 +204,7 @@ impl<'a> KeyRestrictions<'a> {
     }
 
     fn rejects(&self, key: &str) -> bool {
-        fn matches_any(patterns: &[&str], key: &str) -> bool {
+        fn matches_any(patterns: &[String], key: &str) -> bool {
             patterns.iter().any(|pattern| {
                 tombi_regex::Regex::new(pattern).is_ok_and(|pattern| pattern.is_match(key))
             })
@@ -202,11 +213,66 @@ impl<'a> KeyRestrictions<'a> {
         self.forbidden_keys.contains(key)
             || matches_any(&self.forbidden_patterns, key)
             || self.closed_objects.iter().any(|(properties, patterns)| {
-                !properties.contains(&key) && !matches_any(patterns, key)
+                !properties.iter().any(|property| property == key) && !matches_any(patterns, key)
             })
     }
 
-    fn collect(&mut self, schema: &'a SemanticSchema) {
+    /// Collects the restrictions of every branch of `all_of_schema`, resolving `$ref`s
+    /// (including those of nested `allOf`) in their own scope.
+    fn collect_all_of<'a: 'b, 'b>(
+        &'b mut self,
+        all_of_schema: &'b tombi_schema_store::AllOfSchema,
+        current_schema: &'b CurrentSchema<'a>,
+        schema_context: &'b tombi_schema_store::SchemaContext<'a>,
+        accessors: &'b [Accessor],
+        depth: usize,
+    ) -> BoxFuture<'b, ()> {
+        async move {
+            if depth >= MAX_ALL_OF_DEPTH {
+                return;
+            }
+            let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas_in_scope(
+                &all_of_schema.schemas,
+                current_schema.schema_base_uri.clone(),
+                current_schema.definitions.clone(),
+                current_schema.strict,
+                schema_context.store,
+                &schema_context.schema_visits,
+                accessors,
+                Some(&current_schema.dynamic_scope),
+            )
+            .await
+            else {
+                return;
+            };
+
+            for resolved_schema in &resolved_schemas {
+                if let Some(semantic_schema) = &resolved_schema.semantic_schema {
+                    self.collect(semantic_schema);
+                }
+
+                // Nested `allOf` may point to `$ref` targets that the semantic tree
+                // does not embed, so follow the runtime view as well.
+                let nested_all_of = match resolved_schema.schema_view.as_ref() {
+                    SchemaView::AllOf(all_of_schema) => Some(all_of_schema),
+                    schema_view => schema_view.adjacent_applicators().2,
+                };
+                if let Some(nested_all_of) = nested_all_of {
+                    self.collect_all_of(
+                        nested_all_of,
+                        resolved_schema,
+                        schema_context,
+                        accessors,
+                        depth + 1,
+                    )
+                    .await;
+                }
+            }
+        }
+        .boxed()
+    }
+
+    fn collect(&mut self, schema: &SemanticSchema) {
         match schema {
             SemanticSchema::Boolean(_) => {}
             SemanticSchema::Composite(composite) => {
@@ -220,17 +286,20 @@ impl<'a> KeyRestrictions<'a> {
                 }
             }
             SemanticSchema::Object(object) => {
+                if object.ignores_reference_siblings() {
+                    return;
+                }
                 let constraints = &object.constraints.object;
                 let is_false = |schema: &SemanticSchema| matches!(schema, SemanticSchema::Boolean(value) if !value.value);
 
                 for (key, property) in &constraints.properties {
                     if is_false(&property.schema) {
-                        self.forbidden_keys.insert(key.as_str());
+                        self.forbidden_keys.insert(key.clone());
                     }
                 }
                 for (pattern, property) in &constraints.pattern_properties {
                     if is_false(&property.schema) {
-                        self.forbidden_patterns.push(pattern.as_str());
+                        self.forbidden_patterns.push(pattern.clone());
                     }
                 }
                 // A pattern that fails to compile cannot be evaluated, so don't treat the
@@ -245,12 +314,8 @@ impl<'a> KeyRestrictions<'a> {
                         .all(|pattern| tombi_regex::Regex::new(pattern).is_ok())
                 {
                     self.closed_objects.push((
-                        constraints.properties.keys().map(String::as_str).collect(),
-                        constraints
-                            .pattern_properties
-                            .keys()
-                            .map(String::as_str)
-                            .collect(),
+                        constraints.properties.keys().cloned().collect(),
+                        constraints.pattern_properties.keys().cloned().collect(),
                     ));
                 }
 

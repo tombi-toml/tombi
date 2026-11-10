@@ -285,6 +285,18 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                                 completion_contents.extend(contents);
                                             }
                                         }
+
+                                        if let Some(all_of_schema) = table_schema.all_of.as_deref()
+                                        {
+                                            super::all_of::retain_keys_allowed_by_all_of(
+                                                &mut completion_contents,
+                                                all_of_schema,
+                                                current_schema,
+                                                schema_context,
+                                                accessors,
+                                            )
+                                            .await;
+                                        }
                                     }
                                 }
 
@@ -728,16 +740,22 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                 }
                             }
 
+                            let all_patterns_forbidden = match &table_schema.pattern_properties {
+                                Some(pattern_properties) => {
+                                    all_pattern_properties_forbidden(
+                                        pattern_properties,
+                                        table_schema,
+                                        current_schema,
+                                        schema_context,
+                                    )
+                                    .await
+                                }
+                                None => false,
+                            };
                             // A pattern whose schema is `false` rejects every matching key, so
                             // there is no pattern key to suggest.
                             if let Some(pattern_properties) = &table_schema.pattern_properties
-                                && !all_pattern_properties_forbidden(
-                                    pattern_properties,
-                                    table_schema,
-                                    current_schema,
-                                    schema_context,
-                                )
-                                .await
+                                && !all_patterns_forbidden
                             {
                                 let patterns = pattern_properties
                                     .read()
@@ -854,7 +872,8 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                             // accepts arbitrary keys. Keep it out of `completion_contents`
                             // until the end so it does not suppress the `oneOf`/`anyOf`
                             // fallback below.
-                            let any_additional_key = (table_schema.pattern_properties.is_none()
+                            let any_additional_key = ((table_schema.pattern_properties.is_none()
+                                || all_patterns_forbidden)
                                 && table_schema.additional_property_schema.is_none()
                                 && table_schema.additional_properties() == Some(true))
                             .then(|| {
@@ -918,6 +937,16 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                 )
                                 .await;
                                 completion_contents.extend(projected_items);
+
+                                // Applies to the table's own `properties` as well.
+                                super::all_of::retain_keys_allowed_by_all_of(
+                                    &mut completion_contents,
+                                    all_of_schema,
+                                    current_schema,
+                                    schema_context,
+                                    accessors,
+                                )
+                                .await;
                             }
 
                             if completion_contents.is_empty()
@@ -984,7 +1013,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                         .await
                     }
                     SchemaView::AllOf(all_of_schema) => {
-                        find_all_of_completion_items(
+                        let mut completion_items = find_all_of_completion_items(
                             self,
                             cursor,
                             keys,
@@ -994,7 +1023,19 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                             schema_context,
                             completion_hint,
                         )
-                        .await
+                        .await;
+                        // With non-empty `keys` the candidates belong to a deeper table.
+                        if keys.is_empty() {
+                            super::all_of::retain_keys_allowed_by_all_of(
+                                &mut completion_items,
+                                all_of_schema,
+                                current_schema,
+                                schema_context,
+                                accessors,
+                            )
+                            .await;
+                        }
+                        completion_items
                     }
                     _ => {
                         let Some(mut projected_schema) = current_schema.for_instance_type(
