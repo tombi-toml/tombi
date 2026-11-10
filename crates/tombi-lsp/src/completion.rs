@@ -421,10 +421,12 @@ pub(super) fn take_completion_schema_tooltip(
     (!markdown.is_empty()).then_some(SchemaTooltip::Markdown(markdown))
 }
 
-fn completion_content_key(item: &CompletionContent) -> (String, Option<CompletionKind>) {
+fn completion_content_key(
+    item: &CompletionContent,
+) -> (String, Option<CompletionKind>, Option<String>) {
     // Literal candidates with the same label are merged regardless of their literal kind.
     let non_literal_kind = (!item.kind.is_literal()).then_some(item.kind);
-    (item.label.clone(), non_literal_kind)
+    (item.label.clone(), non_literal_kind, item.key_name.clone())
 }
 
 fn merge_completion_content(existing: &mut CompletionContent, item: CompletionContent) {

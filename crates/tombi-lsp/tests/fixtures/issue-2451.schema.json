@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "definitions": {
+    "task": {
+      "type": "object",
+      "properties": {
+        "cmd": { "type": "string" },
+        "args": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "steps": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          { "$ref": "#/definitions/task" },
+          {
+            "properties": { "args": false },
+            "additionalProperties": true
+          }
+        ]
+      }
+    }
+  }
+}

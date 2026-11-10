@@ -2206,6 +2206,123 @@ mod completion_labels {
         }
     }
 
+    mod issue_2451_completion {
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn partial_sequence_item_key_excludes_forbidden_args(
+                "steps = [{ a█ }]",
+                SchemaPath(project_root_path().join("crates/tombi-lsp/tests/fixtures/issue-2451.schema.json")),
+            ) -> Ok([".", "="]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn sequence_item_excludes_forbidden_args(
+                "steps = [{ █ }]",
+                SchemaPath(project_root_path().join("crates/tombi-lsp/tests/fixtures/issue-2451.schema.json")),
+            ) -> Ok(["cmd"]);
+        }
+    }
+
+    mod all_of_key_constraints {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/all-of-key-constraints.schema.json")
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn colliding_labels_do_not_merge_distinct_property_names(
+                "label_collision = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok(["a = b = 1", "$key"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn singleton_key_with_equals_keeps_its_raw_identity(
+                "key_with_equals = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok(["a = b = 1", "$key"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn outer_closed_sibling_excludes_key_from_nested_all_of(
+                "nested_key_against_closed_outer = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok(["args"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn nested_all_of_closed_sibling_excludes_undeclared_key(
+                "nested_closed_sibling = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn non_false_pattern_preserves_additional_key_placeholder(
+                "mixed_patterns = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd", "$key"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_false_patterns_exclude_additional_key_placeholder(
+                "all_false_patterns = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn false_pattern_excludes_matching_key(
+                "forbidden_pattern = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn false_pattern_also_constrains_declared_property(
+                "forbidden_pattern_with_declared_property = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn open_siblings_preserve_each_others_keys(
+                "open_siblings = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok(["args", "cmd", "$key"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn false_property_does_not_close_other_keys(
+                "forbidden_property = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd", "$key"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn closed_sibling_excludes_undeclared_key(
+                "closed_sibling = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+    }
+
     mod additional_properties_true_schema {
         use super::*;
 

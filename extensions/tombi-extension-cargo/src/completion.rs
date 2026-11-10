@@ -707,6 +707,7 @@ fn complete_workspace_dependency_inheritance(
                 "Inherit this dependency from `[workspace.dependencies]`.".to_string(),
             ),
             filter_text: None,
+            key_name: None,
             schema_base_uri: None,
             deprecated: None,
             edit: Some(tombi_extension::CompletionEdit {
@@ -794,6 +795,7 @@ async fn complete_crate_version(
                 detail: Some("Crate version".to_string()),
                 documentation: None,
                 filter_text: None,
+                key_name: None,
                 schema_base_uri: None,
                 deprecated: None,
                 edit: match version_value {
@@ -1003,6 +1005,7 @@ async fn complete_crate_feature(
                             .join("\n")
                 }),
                 filter_text: None,
+                key_name: None,
                 schema_base_uri: None,
                 deprecated: None,
                 edit: editing_feature_string.and_then(|value| {

@@ -35,6 +35,21 @@ mod completion_edit {
         );
     }
 
+    mod all_of_key_constraints {
+        use super::*;
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn colliding_label_inserts_the_allowed_property_name(
+                "label_collision = { █ }",
+                Select("a = b = 1"),
+                SchemaPath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/all-of-key-constraints.schema.json"
+                )),
+            ) -> Ok("label_collision = { \"a = b = 1\" }");
+        }
+    }
+
     mod tombi_schema {
         use tombi_test_lib::tombi_schema_path;
 

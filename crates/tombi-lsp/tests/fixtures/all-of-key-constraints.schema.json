@@ -1,0 +1,287 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "open_siblings": {
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        },
+        {
+          "properties": {
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "forbidden_property": {
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": true
+        },
+        {
+          "properties": {
+            "args": false
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "closed_sibling": {
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "forbidden_pattern": {
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            }
+          },
+          "patternProperties": {
+            "^a": true,
+            "^args$": false
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "forbidden_pattern_with_declared_property": {
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            },
+            "args": true
+          },
+          "patternProperties": {
+            "^a": true,
+            "^args$": false
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "all_false_patterns": {
+      "allOf": [
+        {
+          "properties": {
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "cmd": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        },
+        {
+          "patternProperties": {
+            "^args$": false
+          },
+          "additionalProperties": false,
+          "properties": {
+            "cmd": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "mixed_patterns": {
+      "allOf": [
+        {
+          "properties": {
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "cmd": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        },
+        {
+          "patternProperties": {
+            "^args$": false,
+            "^opt": true
+          },
+          "additionalProperties": false,
+          "properties": {
+            "cmd": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "nested_closed_sibling": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "args": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        },
+        {
+          "allOf": [
+            {
+              "type": "object",
+              "properties": {
+                "cmd": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      ]
+    },
+    "nested_key_against_closed_outer": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "args": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "type": "object",
+              "properties": {
+                "cmd": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          ]
+        }
+      ]
+    },
+    "key_with_equals": {
+      "allOf": [
+        {
+          "properties": {
+            "a": false
+          },
+          "additionalProperties": true
+        },
+        {
+          "properties": {
+            "a = b": {
+              "const": 1
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "label_collision": {
+      "allOf": [
+        {
+          "properties": {
+            "a = b": false
+          },
+          "additionalProperties": true
+        },
+        {
+          "properties": {
+            "a = b": {
+              "const": 1
+            },
+            "a = b = 1": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    }
+  }
+}

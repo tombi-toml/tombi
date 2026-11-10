@@ -1,6 +1,8 @@
-use tombi_extension::CompletionContentPriority;
+use tombi_extension::{CompletionContentPriority, CompletionKind};
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, CurrentSchema};
+use tombi_schema_store::{
+    Accessor, CurrentSchema, SchemaAccessor, SchemaContext, SchemaType, SchemaView,
+};
 
 use crate::completion::{
     CompletionContent, CompletionHint, FindCompletionContents, dedup_composite_completion_contents,
@@ -66,6 +68,12 @@ where
         }
 
         let mut completion_items = dedup_composite_completion_contents(completion_items);
+
+        if keys.is_empty() || (keys.len() == 1 && keys[0].span().contains_inclusive(offset)) {
+            completion_items =
+                filter_all_of_key_completions(completion_items, &resolved_schemas, schema_context)
+                    .await;
+        }
 
         let detail = crate::completion::composite_detail(
             all_of_schema,
@@ -148,4 +156,167 @@ where
         completion_items
     }
     .boxed()
+}
+
+async fn filter_all_of_key_completions(
+    completion_items: Vec<CompletionContent>,
+    resolved_schemas: &[CurrentSchema<'_>],
+    schema_context: &SchemaContext<'_>,
+) -> Vec<CompletionContent> {
+    if !completion_items
+        .iter()
+        .any(|item| item.kind == CompletionKind::Key)
+    {
+        return completion_items;
+    }
+
+    let mut object_schemas = Vec::new();
+    for schema in resolved_schemas {
+        object_schemas.extend(
+            collect_all_of_object_schemas(schema.clone().into_owned(), schema_context).await,
+        );
+    }
+    let mut allowed_items = Vec::with_capacity(completion_items.len());
+    'item: for item in completion_items {
+        if item.kind == CompletionKind::Key {
+            let key_name = item.key_name.as_deref();
+            for schema in &object_schemas {
+                if !schema_allows_key_completion(&item, key_name, schema, schema_context).await {
+                    continue 'item;
+                }
+            }
+        }
+        allowed_items.push(item);
+    }
+    allowed_items
+}
+
+fn collect_all_of_object_schemas<'a>(
+    schema: CurrentSchema<'static>,
+    schema_context: &'a SchemaContext<'a>,
+) -> tombi_future::BoxFuture<'a, Vec<CurrentSchema<'static>>> {
+    async move {
+        let schema = schema
+            .for_instance_type(SchemaType::Object, schema_context.string_formats())
+            .unwrap_or(schema);
+        let (all_of, mut conjuncts) = match schema.schema_view.as_ref() {
+            SchemaView::AllOf(all_of) => (all_of, Vec::new()),
+            SchemaView::Table(table) => {
+                let Some(all_of) = table.all_of.as_deref() else {
+                    return vec![schema];
+                };
+                (all_of, vec![schema.clone()])
+            }
+            _ => return vec![schema],
+        };
+        let Some(branches) = tombi_schema_store::resolve_and_collect_schemas_in_scope(
+            &all_of.schemas,
+            schema.schema_base_uri.clone(),
+            schema.definitions.clone(),
+            schema.strict,
+            schema_context.store,
+            &schema_context.schema_visits,
+            &[],
+            Some(&schema.dynamic_scope),
+        )
+        .await
+        else {
+            return conjuncts;
+        };
+        let Some(_cycle_guard) = schema_context
+            .schema_visits
+            .get_cycle_guard(&all_of.schemas)
+        else {
+            return conjuncts;
+        };
+        for branch in branches {
+            conjuncts.extend(collect_all_of_object_schemas(branch, schema_context).await);
+        }
+        conjuncts
+    }
+    .boxed()
+}
+
+async fn schema_allows_key_completion(
+    item: &CompletionContent,
+    key_name: Option<&str>,
+    schema: &CurrentSchema<'_>,
+    schema_context: &SchemaContext<'_>,
+) -> bool {
+    let SchemaView::Table(table) = schema.schema_view.as_ref() else {
+        return true;
+    };
+    if item.priority == CompletionContentPriority::AdditionalKey {
+        if table.additional_properties() != Some(false) {
+            return true;
+        }
+        for pattern in pattern_keys(table).await {
+            if !pattern_property_forbids_key(table, &pattern, schema, schema_context).await {
+                return true;
+            }
+        }
+        return false;
+    }
+    let Some(key_name) = key_name else {
+        return true;
+    };
+    let property = table
+        .resolve_property_schema(
+            &SchemaAccessor::Key(key_name.to_owned()),
+            schema.schema_base_uri.clone(),
+            schema.definitions.clone(),
+            schema.strict,
+            schema_context.store,
+            Some(&schema.dynamic_scope),
+        )
+        .await;
+    if let Ok(Some(property)) = &property
+        && matches!(property.schema_view.as_ref(), SchemaView::Nothing(_))
+    {
+        return false;
+    }
+    let matching_patterns = pattern_keys(table)
+        .await
+        .into_iter()
+        .filter(|pattern| {
+            tombi_regex::Regex::new(pattern).is_ok_and(|pattern| pattern.is_match(key_name))
+        })
+        .collect::<Vec<_>>();
+    for pattern in &matching_patterns {
+        if pattern_property_forbids_key(table, pattern, schema, schema_context).await {
+            return false;
+        }
+    }
+    !matches!(property, Ok(None))
+        || !matching_patterns.is_empty()
+        || table.additional_properties() != Some(false)
+}
+
+async fn pattern_keys(table: &tombi_schema_store::TableSchema) -> Vec<String> {
+    match &table.pattern_properties {
+        Some(patterns) => patterns.read().await.keys().cloned().collect(),
+        None => Vec::new(),
+    }
+}
+
+async fn pattern_property_forbids_key(
+    table: &tombi_schema_store::TableSchema,
+    pattern: &str,
+    schema: &CurrentSchema<'_>,
+    schema_context: &SchemaContext<'_>,
+) -> bool {
+    matches!(
+        table
+            .resolve_pattern_property_schema(
+                pattern,
+                schema.schema_base_uri.clone(),
+                schema.definitions.clone(),
+                schema.strict,
+                schema_context.store,
+                Some(&schema.dynamic_scope),
+            )
+            .await,
+        Ok(Some(pattern_schema))
+            if matches!(pattern_schema.schema_view.as_ref(), SchemaView::Nothing(_))
+    )
 }
