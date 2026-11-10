@@ -30,6 +30,10 @@ pub struct SchemaCompletion;
 pub struct InstanceSchemaCompletion(pub tombi_schema_store::SchemaType);
 
 impl FindCompletionContents for InstanceSchemaCompletion {
+    fn is_object_completion_target(&self) -> bool {
+        self.0 == tombi_schema_store::SchemaType::Object
+    }
+
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition,
@@ -62,6 +66,10 @@ impl FindCompletionContents for InstanceSchemaCompletion {
 }
 
 impl FindCompletionContents for SchemaCompletion {
+    fn is_object_completion_target(&self) -> bool {
+        true
+    }
+
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition,

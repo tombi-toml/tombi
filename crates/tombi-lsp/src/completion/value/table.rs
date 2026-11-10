@@ -22,6 +22,10 @@ use crate::{
 };
 
 impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
+    fn is_object_completion_target(&self) -> bool {
+        true
+    }
+
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition,

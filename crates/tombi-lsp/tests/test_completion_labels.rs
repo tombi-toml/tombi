@@ -2236,6 +2236,30 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn array_all_of_does_not_filter_item_keys(
+                "array_all_of_items = [{ █ }]",
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn overlapping_false_pattern_excludes_additional_key(
+                "overlapping_patterns = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn ref_false_additional_excludes_sibling_key(
+                "ref_false_additional = { █ }",
+                SchemaPath(schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn colliding_labels_do_not_merge_distinct_property_names(
                 "label_collision = { █ }",
                 SchemaPath(schema_path()),

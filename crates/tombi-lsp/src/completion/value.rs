@@ -40,6 +40,10 @@ use super::{
 };
 
 impl FindCompletionContents for tombi_document_tree_syntax::Value<'_> {
+    fn is_object_completion_target(&self) -> bool {
+        matches!(self, tombi_document_tree_syntax::Value::Table(_))
+    }
+
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition,

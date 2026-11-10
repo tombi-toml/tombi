@@ -69,7 +69,9 @@ where
 
         let mut completion_items = dedup_composite_completion_contents(completion_items);
 
-        if keys.is_empty() || (keys.len() == 1 && keys[0].span().contains_inclusive(offset)) {
+        if value.is_object_completion_target()
+            && (keys.is_empty() || (keys.len() == 1 && keys[0].span().contains_inclusive(offset)))
+        {
             completion_items =
                 filter_all_of_key_completions(completion_items, &resolved_schemas, schema_context)
                     .await;
@@ -247,10 +249,18 @@ async fn schema_allows_key_completion(
         return true;
     };
     if item.priority == CompletionContentPriority::AdditionalKey {
-        if table.additional_properties() != Some(false) {
+        let patterns = pattern_keys(table).await;
+        for pattern in &patterns {
+            if pattern_matches_every_key(pattern)
+                && pattern_property_forbids_key(table, pattern, schema, schema_context).await
+            {
+                return false;
+            }
+        }
+        if !additional_properties_forbid_key(table, schema, schema_context).await {
             return true;
         }
-        for pattern in pattern_keys(table).await {
+        for pattern in patterns {
             if !pattern_property_forbids_key(table, &pattern, schema, schema_context).await {
                 return true;
             }
@@ -289,7 +299,36 @@ async fn schema_allows_key_completion(
     }
     !matches!(property, Ok(None))
         || !matching_patterns.is_empty()
-        || table.additional_properties() != Some(false)
+        || !additional_properties_forbid_key(table, schema, schema_context).await
+}
+
+fn pattern_matches_every_key(pattern: &str) -> bool {
+    matches!(pattern, ".*" | "^.*$" | "^.*" | ".*$" | "^")
+}
+
+async fn additional_properties_forbid_key(
+    table: &tombi_schema_store::TableSchema,
+    schema: &CurrentSchema<'_>,
+    schema_context: &SchemaContext<'_>,
+) -> bool {
+    if table.additional_properties() == Some(false) {
+        return true;
+    }
+    let Some((_, additional_schema)) = &table.additional_property_schema else {
+        return false;
+    };
+    matches!(
+        tombi_schema_store::resolve_schema_item_in_scope(
+            additional_schema,
+            schema.schema_base_uri.clone(),
+            schema.definitions.clone(),
+            schema.strict,
+            schema_context.store,
+            Some(&schema.dynamic_scope),
+        )
+        .await,
+        Ok(Some(resolved)) if matches!(resolved.schema_view.as_ref(), SchemaView::Nothing(_))
+    )
 }
 
 async fn pattern_keys(table: &tombi_schema_store::TableSchema) -> Vec<String> {

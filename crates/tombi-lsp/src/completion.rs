@@ -335,6 +335,10 @@ pub async fn find_completion_contents(
 }
 
 pub trait FindCompletionContents {
+    fn is_object_completion_target(&self) -> bool {
+        false
+    }
+
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         cursor: crate::CursorPosition,
