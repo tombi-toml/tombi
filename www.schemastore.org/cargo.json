@@ -187,11 +187,12 @@
             },
             "anyOf": [
               { "type": "string", "pattern": "default" },
+              { "type": "string", "pattern": "dep:.+" },
               { "type": "string" }
             ]
           },
           "x-tombi-array-values-order": {
-            "anyOf": ["ascending", "version-sort"]
+            "anyOf": ["ascending", "version-sort", "version-sort"]
           },
           "x-taplo": {
             "links": {
