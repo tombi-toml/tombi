@@ -2145,6 +2145,405 @@ mod completion_labels {
         }
     }
 
+    mod all_of_forbidden_keys_schema {
+        use super::*;
+
+        fn schema_path() -> std::path::PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/all-of-forbidden-keys.schema.json")
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_false_property_is_not_suggested(
+                r#"
+                [[plain]]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_conditional_false_property_is_not_suggested(
+                r#"
+                [[conditional]]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_additional_properties_false_hides_other_branch_keys(
+                r#"
+                [closed]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_pattern_properties_false_hides_matching_keys(
+                r#"
+                [pattern]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_additional_properties_false_keeps_pattern_matching_keys(
+                r#"
+                [closed_pattern]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd", "x-a", "$key"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_any_of_false_property_is_still_suggested(
+                r#"
+                [any_of]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args", "cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_one_of_false_property_is_still_suggested(
+                r#"
+                [one_of]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args", "cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_non_type_if_does_not_forbid_then_keys(
+                r#"
+                [non_type_if]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args", "cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_without_restrictions_suggests_all_keys(
+                r#"
+                [unconstrained]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args", "cmd", "extra"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_ref_additional_properties_false_hides_other_branch_keys(
+                r#"
+                [ref_closed]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_nested_all_of_false_property_is_not_suggested(
+                r#"
+                [nested]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_false_property_in_array_inline_table(
+                r#"
+                plain = [{ █ }]
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_false_property_in_inline_table(
+                r#"
+                closed = { █ }
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_false_property_after_dotted_key(
+                r#"
+                closed.█
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd", "{}"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_false_property_in_table_header(
+                r#"
+                [header.█]
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pattern_properties_false_without_all_of_has_no_pattern_key(
+                r#"
+                [pattern_only]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pattern_properties_false_keeps_declared_properties(
+                r#"
+                [pattern_with_property]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_if_with_required_does_not_forbid_then_keys(
+                r#"
+                [required_if]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args", "cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_parent_restriction_does_not_hide_sub_table_keys_dotted(
+                r#"
+                [nested_keys]
+                sub.█
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args", "{}"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_parent_restriction_does_not_hide_sub_table_keys_inline(
+                r#"
+                [nested_keys]
+                sub = { █ }
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_uncompilable_pattern_does_not_close_object(
+                r#"
+                [bad_regex]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd", "foo", "$key"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_closed_object_keeps_pattern_key_placeholder(
+                r#"
+                [closed_pattern_only]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["$key"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pattern_properties_false_keeps_additional_properties_key(
+                r#"
+                [pattern_false_with_additional]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["$key"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_array_parent_restriction_does_not_hide_item_keys(
+                r#"
+                array_all_of = [{ █ }]
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_false_property_is_not_suggested_for_incomplete_key(
+                r#"
+                [closed]
+                ar█
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_false_property_is_not_suggested_alongside_direct_property(
+                r#"
+                [direct_and_all_of]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_singleton_key_label_uses_property_name(
+                r#"
+                [singleton_closed]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd = \"x\""]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_ref_nested_false_property_is_not_suggested(
+                r#"
+                [ref_forbidden]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pattern_properties_false_keeps_additional_properties_true_key(
+                r#"
+                [pattern_false_additional_true]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["$key"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_draft07_ref_siblings_are_ignored(
+                r#"
+                [draft07_ref_siblings]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args", "cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_incomplete_key_keeps_allowed_property(
+                r#"
+                [unconstrained]
+                ar█
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["args"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn issue_2451_sequence_item_excludes_forbidden_args_and_placeholder(
+                r#"
+                issue_2451 = [{ █ }]
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_ref_to_false_property_is_not_suggested(
+                r#"
+                [ref_false_property]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_ref_to_false_additional_properties_rejects_undeclared_keys(
+                r#"
+                [ref_false_additional]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_own_additional_properties_false_rejects_branch_keys(
+                r#"
+                [outer_closed]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_nested_match_all_false_pattern_hides_placeholder(
+                r#"
+                [nested_match_all_false]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([]);
+        }
+    }
+
     mod composite_array_items_schema {
         use super::*;
 

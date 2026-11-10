@@ -907,6 +907,33 @@ pub struct SemanticSchemaObject {
 }
 
 impl SemanticSchemaObject {
+    /// Whether the schema asserts nothing except that the instance is `schema_type`
+    /// (annotation keywords are ignored).
+    pub fn only_asserts_type(&self, schema_type: SchemaType) -> bool {
+        let is_type_only = self.type_assertion.as_ref().is_some_and(|assertion| {
+            assertion
+                .allowed
+                .iter()
+                .all(|allowed| allowed.value == schema_type)
+        });
+        is_type_only
+            && self.source.properties.keys().all(|key| {
+                matches!(
+                    key.value.as_str(),
+                    "type" | "$comment" | "title" | "description"
+                )
+            })
+    }
+
+    /// Whether this object is a `$ref` whose sibling keywords are ignored by its dialect
+    /// (draft-07 and earlier).
+    pub fn ignores_reference_siblings(&self) -> bool {
+        self.references.primary().is_some()
+            && self
+                .dialect
+                .is_some_and(|dialect| dialect <= JsonSchemaDialect::Draft07)
+    }
+
     pub fn new(object: &ObjectNode, dialect: Option<JsonSchemaDialect>) -> Self {
         Self {
             source: object.clone(),

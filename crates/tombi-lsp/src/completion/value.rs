@@ -15,7 +15,7 @@ mod table;
 
 use crate::hover::constraints::{EnumAndDefault, ValueConstraints};
 use crate::schema_tooltip::{SchemaTooltip, SchemaTooltipContent};
-pub use all_of::find_all_of_completion_items;
+pub use all_of::{find_all_of_completion_items, retain_keys_allowed_by_all_of};
 pub use any_of::find_any_of_completion_items;
 use array::type_hint_array;
 use boolean::type_hint_boolean;
