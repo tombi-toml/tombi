@@ -443,6 +443,96 @@ fn is_generic_literal_type_hint(completion_item: &CompletionContent) -> bool {
         && completion_item.label != "''"
 }
 
+async fn retain_additional_table_key_completions(
+    completion_items: &mut Vec<CompletionContent>,
+    table_schema: &tombi_schema_store::TableSchema,
+) {
+    use tombi_schema_store::{Referable, SchemaAccessor, SemanticCompositeKind, SemanticSchema};
+
+    let Some(all_of_schema) = table_schema.all_of.as_deref() else {
+        return;
+    };
+    let schemas = all_of_schema.schemas.read().await;
+    let mut pending = Vec::new();
+    for schema in schemas.iter() {
+        let Referable::Resolved {
+            semantic_schema: Some(schema),
+            ..
+        } = schema
+        else {
+            return;
+        };
+        pending.push((schema.as_ref(), false));
+    }
+    let properties = table_schema.properties.read().await;
+    let mut redundant_keys = tombi_hashmap::HashSet::default();
+    let mut constrained_keys = tombi_hashmap::HashSet::default();
+    while let Some((schema, in_alternative)) = pending.pop() {
+        if schema.has_references() {
+            return;
+        }
+        match schema {
+            SemanticSchema::Object(schema) => {
+                for (key, property) in &schema.constraints.object.properties {
+                    if !properties.contains_key(&SchemaAccessor::Key(key.clone())) {
+                        continue;
+                    }
+                    if schema.annotations.title.is_none()
+                        && schema.annotations.description.is_none()
+                        && (in_alternative
+                            || !schema
+                                .constraints
+                                .object
+                                .required
+                                .iter()
+                                .any(|required| required.value == *key))
+                        && matches!(&property.schema, SemanticSchema::Boolean(value) if value.value)
+                    {
+                        redundant_keys.insert(key.as_str());
+                    } else {
+                        constrained_keys.insert(key.as_str());
+                    }
+                }
+                pending.extend(
+                    schema
+                        .applicators
+                        .all_of
+                        .iter()
+                        .map(|schema| (schema, in_alternative)),
+                );
+                pending.extend(
+                    schema
+                        .applicators
+                        .any_of
+                        .iter()
+                        .map(|schema| (schema, true)),
+                );
+                pending.extend(
+                    schema
+                        .applicators
+                        .one_of
+                        .iter()
+                        .map(|schema| (schema, true)),
+                );
+            }
+            SemanticSchema::Composite(schema) => {
+                let in_alternative = in_alternative
+                    || matches!(
+                        schema.kind,
+                        SemanticCompositeKind::AnyOf | SemanticCompositeKind::OneOf
+                    );
+                pending.extend(schema.schemas.iter().map(|schema| (schema, in_alternative)));
+            }
+            SemanticSchema::Boolean(_) => {}
+        }
+    }
+    completion_items.retain(|item| {
+        item.kind != CompletionKind::Key
+            || !redundant_keys.contains(item.label.as_str())
+            || constrained_keys.contains(item.label.as_str())
+    });
+}
+
 pub(super) async fn merge_adjacent_schema_completion_items(
     cursor: crate::CursorPosition,
     keys: &[tombi_document_tree_syntax::Key<'_>],
@@ -536,29 +626,32 @@ pub(super) async fn merge_adjacent_schema_completion_items(
         );
     }
     if let Some(all_of_schema) = all_of_schema {
-        adjacent_completion_items.extend(
-            value::find_all_of_completion_items(
-                &instance_completion,
-                cursor,
-                keys,
-                accessors,
-                all_of_schema,
-                &CurrentSchema {
-                    schema_view: Arc::new(SchemaView::AllOf(all_of_schema.clone())),
-                    semantic_schema: None,
-                    schema_uri: current_schema.schema_uri.clone(),
-                    schema_base_uri: current_schema.schema_base_uri.clone(),
-                    schema_document_uri: current_schema.schema_document_uri.clone(),
-                    line_index: current_schema.line_index.clone(),
-                    definitions: current_schema.definitions.clone(),
-                    strict: current_schema.strict,
-                    dynamic_scope: current_schema.dynamic_scope.clone(),
-                },
-                schema_context,
-                completion_hint,
-            )
-            .await,
-        );
+        let mut all_of_completion_items = value::find_all_of_completion_items(
+            &instance_completion,
+            cursor,
+            keys,
+            accessors,
+            all_of_schema,
+            &CurrentSchema {
+                schema_view: Arc::new(SchemaView::AllOf(all_of_schema.clone())),
+                semantic_schema: None,
+                schema_uri: current_schema.schema_uri.clone(),
+                schema_base_uri: current_schema.schema_base_uri.clone(),
+                schema_document_uri: current_schema.schema_document_uri.clone(),
+                line_index: current_schema.line_index.clone(),
+                definitions: current_schema.definitions.clone(),
+                strict: current_schema.strict,
+                dynamic_scope: current_schema.dynamic_scope.clone(),
+            },
+            schema_context,
+            completion_hint,
+        )
+        .await;
+        if let SchemaView::Table(table_schema) = current_schema.schema_view.as_ref() {
+            retain_additional_table_key_completions(&mut all_of_completion_items, table_schema)
+                .await;
+        }
+        adjacent_completion_items.extend(all_of_completion_items);
     }
 
     let has_concrete_adjacent_values = adjacent_completion_items.iter().any(|completion_item| {

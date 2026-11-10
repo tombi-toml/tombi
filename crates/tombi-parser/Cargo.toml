@@ -5,6 +5,10 @@ authors.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[features]
+default = ["diagnostic"]
+diagnostic = ["dep:tombi-diagnostic"]
+
 [dependencies]
 drop_bomb.workspace = true
 itertools.workspace = true
@@ -22,10 +26,6 @@ tombi-ast.workspace = true
 tombi-document-tree-syntax.workspace = true
 tombi-test-lib.workspace = true
 tombi-toml-version.workspace = true
-
-[features]
-default = ["diagnostic"]
-diagnostic = ["dep:tombi-diagnostic"]
 
 [lints]
 workspace = true

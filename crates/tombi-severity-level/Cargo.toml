@@ -6,16 +6,16 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
+[features]
+jsonschema = ["dep:schemars"]
+serde = ["dep:serde"]
+
 [dependencies]
 schemars = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde = { workspace = true }
-
-[features]
-jsonschema = ["dep:schemars"]
-serde = ["dep:serde"]
 
 [lints]
 workspace = true

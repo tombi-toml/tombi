@@ -6,6 +6,11 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
+[features]
+default = ["chrono", "serde"]
+chrono = ["dep:chrono"]
+serde = ["dep:serde"]
+
 [dependencies]
 chrono = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
@@ -15,11 +20,6 @@ thiserror.workspace = true
 pretty_assertions.workspace = true
 rstest.workspace = true
 serde_json.workspace = true
-
-[features]
-default = ["chrono", "serde"]
-chrono = ["dep:chrono"]
-serde = ["dep:serde"]
 
 [lints]
 workspace = true

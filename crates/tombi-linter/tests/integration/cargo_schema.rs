@@ -57,6 +57,96 @@ test_lint! {
     }])
 }
 
+test_lint! {
+    #[test]
+    fn test_detailed_dependency_missing_source(
+        r#"
+        [dependencies]
+        serde = { features = ["derive"] }
+        "#,
+        SchemaPath(cargo_schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::TableKeyRequired {
+            key: "version".to_string(),
+        },
+        tombi_validator::DiagnosticKind::TableKeyRequired {
+            key: "path".to_string(),
+        },
+        tombi_validator::DiagnosticKind::TableKeyRequired {
+            key: "git".to_string(),
+        },
+        tombi_validator::DiagnosticKind::TableKeyRequired {
+            key: "workspace".to_string(),
+        },
+    ])
+}
+
+test_lint! {
+    #[test]
+    fn test_detailed_dependency_git_and_path(
+        r#"
+        [dependencies]
+        serde = { git = "https://example.com/serde", path = "." }
+        "#,
+        SchemaPath(cargo_schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::NotSchemaMatch])
+}
+
+test_lint! {
+    #[test]
+    fn test_detailed_dependency_git_branch_and_tag(
+        r#"
+        [dependencies]
+        serde = { git = "https://example.com/serde", branch = "main", tag = "v1.0.0" }
+        "#,
+        SchemaPath(cargo_schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::NotSchemaMatch])
+}
+
+test_lint! {
+    #[test]
+    fn test_detailed_dependency_git_branch_and_rev(
+        r#"
+        [dependencies]
+        serde = { git = "https://example.com/serde", branch = "main", rev = "abc123" }
+        "#,
+        SchemaPath(cargo_schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::NotSchemaMatch])
+}
+
+test_lint! {
+    #[test]
+    fn test_detailed_dependency_git_tag_and_rev(
+        r#"
+        [dependencies]
+        serde = { git = "https://example.com/serde", tag = "v1.0.0", rev = "abc123" }
+        "#,
+        SchemaPath(cargo_schema_path()),
+    ) -> Err([tombi_validator::DiagnosticKind::NotSchemaMatch])
+}
+
+test_lint! {
+    #[test]
+    fn test_detailed_dependency_workspace_alone(
+        r#"
+        [dependencies]
+        serde = { workspace = true }
+        "#,
+        SchemaPath(cargo_schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_detailed_dependency_git_and_version(
+        r#"
+        [dependencies]
+        serde = { git = "https://example.com/serde", version = "1" }
+        "#,
+        SchemaPath(cargo_schema_path()),
+    ) -> Ok(_)
+}
+
 fn scoped_strict_config() -> tombi_config::Config {
     let schema_path = cargo_schema_path();
 

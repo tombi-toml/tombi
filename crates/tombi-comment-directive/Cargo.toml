@@ -6,6 +6,15 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
+[features]
+jsonschema = [
+  "dep:schemars",
+  "tombi-schema-type/jsonschema",
+  "tombi-severity-level/jsonschema",
+  "tombi-toml-version/jsonschema",
+]
+serde = ["tombi-severity-level/serde"]
+
 [dependencies]
 schemars = { workspace = true, optional = true }
 serde.workspace = true
@@ -16,15 +25,6 @@ tombi-text.workspace = true
 tombi-toml-version.workspace = true
 tombi-uri.workspace = true
 tombi-x-keyword.workspace = true
-
-[features]
-jsonschema = [
-  "dep:schemars",
-  "tombi-schema-type/jsonschema",
-  "tombi-severity-level/jsonschema",
-  "tombi-toml-version/jsonschema",
-]
-serde = ["tombi-severity-level/serde"]
 
 [lints]
 workspace = true

@@ -973,7 +973,7 @@ mod hover_keys_value {
                         (
                             cargo_feature_navigation_fixture_path()
                                 .join("workspace/weak-consumer/Cargo.toml"),
-                            10,
+                            7,
                         ),
                     ],
                 )),

@@ -10,6 +10,11 @@ license.workspace = true
 [package.metadata.cargo-shear]
 ignored = ["textwrap"]  # Used in `toml_text_assert_eq` macro
 
+[features]
+default = ["native"]
+native = ["tokio/rt-multi-thread"]
+wasm = []
+
 [dependencies]
 chrono.workspace = true
 dirs.workspace = true
@@ -41,11 +46,6 @@ pretty_assertions.workspace = true
 tempfile.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tombi-test-lib.workspace = true
-
-[features]
-default = ["native"]
-native = ["tokio/rt-multi-thread"]
-wasm = []
 
 [lints]
 workspace = true

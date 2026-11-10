@@ -5,6 +5,10 @@ authors.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[features]
+jsonschema = ["dep:schemars", "serde", "tombi-config/jsonschema"]
+serde = ["dep:serde"]
+
 [dependencies]
 itertools.workspace = true
 log.workspace = true
@@ -36,10 +40,6 @@ serde_tombi.workspace = true
 textwrap.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tombi-test-lib.workspace = true
-
-[features]
-jsonschema = ["dep:schemars", "serde", "tombi-config/jsonschema"]
-serde = ["dep:serde"]
 
 [lints]
 workspace = true
