@@ -1,7 +1,9 @@
-use tombi_extension::CompletionContentPriority;
+use itertools::Itertools;
+use tombi_extension::{CompletionContentPriority, CompletionKind};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, CurrentSchema, SchemaType, SchemaView, SemanticCompositeKind, SemanticSchema,
+    Accessor, CurrentSchema, SchemaAccessor, SchemaType, SchemaView, SemanticCompositeKind,
+    SemanticSchema, TableSchema,
 };
 
 use crate::completion::{
@@ -152,31 +154,185 @@ where
     .boxed()
 }
 
-/// Drops key candidates of a table that an `allOf` branch can never accept.
+/// Drops key candidates of a table that an `allOf` branch (or the table itself) can never accept.
 ///
 /// Each `allOf` branch is validated on its own, so a key rejected by any one of them cannot
 /// validate even if another branch (or the table's own `properties`) offers it. `items` must be
-/// the key candidates of the table that `all_of_schema` applies to.
+/// the key candidates of the table that `all_of_schema` applies to; `own_table` is that table's
+/// schema, whose `additionalProperties` also applies to keys contributed by the branches.
 pub async fn retain_keys_allowed_by_all_of(
     items: &mut Vec<CompletionContent>,
     all_of_schema: &tombi_schema_store::AllOfSchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     accessors: &[Accessor],
+    own_table: Option<&TableSchema>,
 ) {
     let mut restrictions = KeyRestrictions::default();
     restrictions
         .collect_all_of(all_of_schema, current_schema, schema_context, accessors, 0)
         .await;
-    if restrictions.is_empty() {
-        return;
+
+    let mut allowed_items = Vec::with_capacity(items.len());
+    for item in items.drain(..) {
+        if key_is_allowed(
+            &item,
+            &restrictions,
+            own_table,
+            current_schema,
+            schema_context,
+        )
+        .await
+        {
+            allowed_items.push(item);
+        }
+    }
+    *items = allowed_items;
+}
+
+async fn key_is_allowed(
+    item: &CompletionContent,
+    restrictions: &KeyRestrictions,
+    own_table: Option<&TableSchema>,
+    current_schema: &CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+) -> bool {
+    if item.kind != CompletionKind::Key {
+        return true;
+    }
+    // `$key` placeholders stand for any key matching `additionalProperties` / `patternProperties`.
+    let is_placeholder = item.priority == CompletionContentPriority::AdditionalKey;
+    let key_name = item.key_name.as_deref();
+    if key_name.is_none() && !is_placeholder {
+        return true;
+    }
+    if key_name.is_some_and(|key_name| restrictions.rejects(key_name)) {
+        return false;
     }
 
-    items.retain(|item| {
-        item.key_name
-            .as_deref()
-            .is_none_or(|key_name| !restrictions.rejects(key_name))
-    });
+    for conjunct in &restrictions.conjuncts {
+        if let SchemaView::Table(table) = conjunct.schema_view.as_ref()
+            && table_rejects_key(table, key_name, conjunct, schema_context).await
+        {
+            return false;
+        }
+    }
+    if let Some(table) = own_table
+        && table_rejects_key(table, key_name, current_schema, schema_context).await
+    {
+        return false;
+    }
+    true
+}
+
+/// Whether `table` alone rejects the key, or (`key_name == None`) every key a `$key`
+/// placeholder could stand for.
+async fn table_rejects_key(
+    table: &TableSchema,
+    key_name: Option<&str>,
+    schema: &CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+) -> bool {
+    async fn is_forbidden(
+        resolved: Result<Option<CurrentSchema<'static>>, tombi_schema_store::Error>,
+    ) -> bool {
+        matches!(
+            resolved,
+            Ok(Some(schema)) if matches!(schema.schema_view.as_ref(), SchemaView::Nothing(_))
+        )
+    }
+
+    let patterns = match &table.pattern_properties {
+        Some(patterns) => patterns.read().await.keys().cloned().collect_vec(),
+        None => Vec::new(),
+    };
+    let mut forbidden_patterns = Vec::new();
+    let mut all_patterns_forbidden = true;
+    for pattern in &patterns {
+        let forbidden = is_forbidden(
+            table
+                .resolve_pattern_property_schema(
+                    pattern,
+                    schema.schema_base_uri.clone(),
+                    schema.definitions.clone(),
+                    schema.strict,
+                    schema_context.store,
+                    Some(&schema.dynamic_scope),
+                )
+                .await,
+        )
+        .await;
+        all_patterns_forbidden &= forbidden;
+        if forbidden {
+            forbidden_patterns.push(pattern.as_str());
+        }
+    }
+
+    let additional_forbidden = table.additional_properties() == Some(false)
+        || match &table.additional_property_schema {
+            Some((_, additional_schema)) => {
+                is_forbidden(
+                    tombi_schema_store::resolve_schema_item_in_scope(
+                        additional_schema,
+                        schema.schema_base_uri.clone(),
+                        schema.definitions.clone(),
+                        schema.strict,
+                        schema_context.store,
+                        Some(&schema.dynamic_scope),
+                    )
+                    .await,
+                )
+                .await
+            }
+            None => false,
+        };
+
+    let Some(key_name) = key_name else {
+        // A pattern matching every key and forbidding it rejects the placeholder as well.
+        if forbidden_patterns
+            .iter()
+            .any(|pattern| matches!(*pattern, ".*" | "^.*$" | "^.*" | ".*$" | "^"))
+        {
+            return true;
+        }
+        return additional_forbidden && all_patterns_forbidden;
+    };
+
+    let property = table
+        .resolve_property_schema(
+            &SchemaAccessor::Key(key_name.to_owned()),
+            schema.schema_base_uri.clone(),
+            schema.definitions.clone(),
+            schema.strict,
+            schema_context.store,
+            Some(&schema.dynamic_scope),
+        )
+        .await;
+    if is_forbidden(property.clone()).await {
+        return true;
+    }
+
+    let mut matches_pattern = false;
+    let mut has_uncompilable_pattern = false;
+    for pattern in &patterns {
+        match tombi_regex::Regex::new(pattern) {
+            Ok(regex) if regex.is_match(key_name) => {
+                matches_pattern = true;
+                if forbidden_patterns.contains(&pattern.as_str()) {
+                    return true;
+                }
+            }
+            Ok(_) => {}
+            Err(_) => has_uncompilable_pattern = true,
+        }
+    }
+
+    // A key that nothing declares is only valid if `additionalProperties` allows it. An
+    // uncompilable pattern cannot be evaluated, so don't reject on its account.
+    matches!(property, Ok(None))
+        && !matches_pattern
+        && !has_uncompilable_pattern
+        && additional_forbidden
 }
 
 /// Maximum nesting of `allOf` followed while collecting key restrictions.
@@ -194,15 +350,12 @@ struct KeyRestrictions {
     forbidden_patterns: Vec<String>,
     /// `additionalProperties: false`: (declared properties, declared patterns)
     closed_objects: Vec<(Vec<String>, Vec<String>)>,
+    /// Resolved `allOf` branches projected for objects, for constraints that only the
+    /// runtime view resolves (`$ref` to a `false` schema).
+    conjuncts: Vec<CurrentSchema<'static>>,
 }
 
 impl KeyRestrictions {
-    fn is_empty(&self) -> bool {
-        self.forbidden_keys.is_empty()
-            && self.forbidden_patterns.is_empty()
-            && self.closed_objects.is_empty()
-    }
-
     fn rejects(&self, key: &str) -> bool {
         fn matches_any(patterns: &[String], key: &str) -> bool {
             patterns.iter().any(|pattern| {
@@ -250,6 +403,11 @@ impl KeyRestrictions {
                 if let Some(semantic_schema) = &resolved_schema.semantic_schema {
                     self.collect(semantic_schema);
                 }
+                self.conjuncts.push(
+                    resolved_schema
+                        .for_instance_type(SchemaType::Object, schema_context.string_formats())
+                        .unwrap_or_else(|| resolved_schema.clone()),
+                );
 
                 // Nested `allOf` may point to `$ref` targets that the semantic tree
                 // does not embed, so follow the runtime view as well.

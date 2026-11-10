@@ -2488,6 +2488,60 @@ mod completion_labels {
                 SchemaPath(schema_path()),
             ) -> Ok(["args"]);
         }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn issue_2451_sequence_item_excludes_forbidden_args_and_placeholder(
+                r#"
+                issue_2451 = [{ █ }]
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_ref_to_false_property_is_not_suggested(
+                r#"
+                [ref_false_property]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_ref_to_false_additional_properties_rejects_undeclared_keys(
+                r#"
+                [ref_false_additional]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_own_additional_properties_false_rejects_branch_keys(
+                r#"
+                [outer_closed]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok(["cmd"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn all_of_nested_match_all_false_pattern_hides_placeholder(
+                r#"
+                [nested_match_all_false]
+                █
+                "#,
+                SchemaPath(schema_path()),
+            ) -> Ok([]);
+        }
     }
 
     mod composite_array_items_schema {

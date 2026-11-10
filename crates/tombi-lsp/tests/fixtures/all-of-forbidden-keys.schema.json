@@ -26,6 +26,19 @@
       "properties": {
         "args": false
       }
+    },
+    "never": false,
+    "issue_task": {
+      "type": "object",
+      "properties": {
+        "cmd": {
+          "type": "string"
+        },
+        "args": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "properties": {
@@ -462,6 +475,102 @@
           "$ref": "#/definitions/task",
           "properties": {
             "args": false
+          }
+        }
+      ]
+    },
+    "issue_2451": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/issue_task"
+          },
+          {
+            "properties": {
+              "args": false
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "ref_false_property": {
+      "type": "object",
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            },
+            "args": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "properties": {
+            "args": {
+              "$ref": "#/definitions/never"
+            }
+          }
+        }
+      ]
+    },
+    "ref_false_additional": {
+      "type": "object",
+      "allOf": [
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "additionalProperties": {
+            "$ref": "#/definitions/never"
+          }
+        }
+      ]
+    },
+    "outer_closed": {
+      "type": "object",
+      "properties": {
+        "cmd": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "args": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "nested_match_all_false": {
+      "type": "object",
+      "allOf": [
+        {
+          "allOf": [
+            {
+              "patternProperties": {
+                ".*": false,
+                "^opt": true
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        {
+          "properties": {
+            "cmd": {
+              "type": "string"
+            }
           }
         }
       ]

@@ -658,6 +658,7 @@ pub(super) async fn merge_adjacent_schema_completion_items(
                     current_schema,
                     schema_context,
                     accessors,
+                    Some(table_schema),
                 )
                 .await;
             }

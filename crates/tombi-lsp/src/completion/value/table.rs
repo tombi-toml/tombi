@@ -294,6 +294,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                                 current_schema,
                                                 schema_context,
                                                 accessors,
+                                                Some(table_schema),
                                             )
                                             .await;
                                         }
@@ -945,6 +946,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                     current_schema,
                                     schema_context,
                                     accessors,
+                                    Some(table_schema),
                                 )
                                 .await;
                             }
@@ -1032,6 +1034,7 @@ impl FindCompletionContents for tombi_document_tree_syntax::Table<'_> {
                                 current_schema,
                                 schema_context,
                                 accessors,
+                                None,
                             )
                             .await;
                         }
