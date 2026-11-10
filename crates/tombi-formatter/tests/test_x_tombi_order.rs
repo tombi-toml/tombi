@@ -755,6 +755,24 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_cargo_feature_values_grouped_by_default_dependency_and_name(
+                r#"
+                [features]
+                default = ["zeta", "dep:zeta", "alpha", "dep:alpha"]
+                bundle = ["zeta", "dep:zeta", "default", "alpha", "dep:alpha"]
+                "#,
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [features]
+                default = ["dep:alpha", "dep:zeta", "alpha", "zeta"]
+                bundle = ["default", "dep:alpha", "dep:zeta", "alpha", "zeta"]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_cargo_dependencies(
                 r#"
                 [dependencies]
