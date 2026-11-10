@@ -56,7 +56,6 @@ export class Extension {
 
     this.registerEvents();
     this.registerCommands();
-    this.registerExtensionSchemas();
   }
 
   static async activate(context: vscode.ExtensionContext): Promise<Extension> {
@@ -68,33 +67,16 @@ export class Extension {
 
     const server = new Server(tombiBin);
     const options = serverOptions(server.tombiBin, settings);
-    const client = new node.LanguageClient(
-      EXTENSION_ID,
-      `${EXTENSION_NAME} Language Server`,
+    const extension = new Extension(
+      context,
+      createLanguageClient(options, clientOptions()),
+      server,
       options,
-      clientOptions(),
-      // biome-ignore lint/complexity/useLiteralKeys: process.env properties require bracket notation
-      process.env["__TOMBI_LANGUAGE_SERVER_DEBUG"] !== undefined,
     );
 
-    await client.start();
-
-    const extension = new Extension(context, client, server, options);
-
-    // Get LSP version
-    try {
-      extension.lspVersion = await server.showVersion();
-      log.info(`Tombi Language Server Version: ${extension.lspVersion}`);
-    } catch (error) {
-      log.error(`Failed to get LSP version: ${error}`);
-    }
-
-    // NOTE: When VSCode starts, if a TOML document is open in a tab and the focus is not on it,
-    //       the Language Server will not start.
-    //       Therefore, send the notification to the Language Server for all open TOML documents.
-    for (const document of vscode.workspace.textDocuments) {
-      await extension.onDidOpenTextDocument(document);
-    }
+    // NOTE: Commands are registered even if the Language Server fails to start,
+    //       so that `Restart Language Server` can recover from a wrong binary path.
+    await extension.startLanguageServer();
 
     // Update status bar for initial state
     extension.updateStatusBarItem();
@@ -111,10 +93,48 @@ export class Extension {
   }
 
   /**
+   * Start the Language Server and send the state it needs.
+   *
+   * Returns `false` if the Language Server failed to start.
+   */
+  private async startLanguageServer(): Promise<boolean> {
+    try {
+      await this.client.start();
+    } catch (error) {
+      log.error(`Failed to start Language Server: ${error}`);
+      const message = error instanceof Error ? error.message : String(error);
+      void vscode.window.showErrorMessage(
+        `Failed to start the Tombi Language Server: ${message}. Fix the binary path, then run "Tombi: Restart Language Server".`,
+      );
+      return false;
+    }
+
+    registerExtensionSchemas(this.client);
+
+    try {
+      this.lspVersion = await this.server.showVersion();
+      log.info(`Tombi Language Server Version: ${this.lspVersion}`);
+    } catch (error) {
+      log.error(`Failed to get LSP version: ${error}`);
+    }
+
+    // NOTE: When VSCode starts, if a TOML document is open in a tab and the focus is not on it,
+    //       the Language Server will not start.
+    //       Therefore, send the notification to the Language Server for all open TOML documents.
+    for (const document of vscode.workspace.textDocuments) {
+      await this.onDidOpenTextDocument(document);
+    }
+
+    return true;
+  }
+
+  /**
    * Re-select the Language Server binary, then restart the Language Server.
    *
    * NOTE: `LanguageClient` keeps a reference to the `ServerOptions` it was created with
    *       and reads it again on restart, so it is updated in place.
+   *       A client whose start failed can neither be stopped nor started again,
+   *       so it is replaced with a new one.
    */
   private async restartLanguageServer(): Promise<void> {
     const settings = vscode.workspace.getConfiguration(
@@ -129,9 +149,18 @@ export class Extension {
       log.error(`Failed to select Language Server binary: ${error}`);
     }
 
-    await command.restartLanguageServer(this.client);
+    if (this.client.isRunning()) {
+      await command.restartLanguageServer(this.client);
+      this.lspVersion = await this.server.showVersion();
+    } else {
+      // NOTE: A client that failed to start rejects `dispose()`, which still marks it as disposed.
+      await this.client.dispose().catch(() => {});
+      this.client.outputChannel.dispose();
+      this.client = createLanguageClient(this.options, clientOptions());
+      this.lspVersion = undefined;
+      await this.startLanguageServer();
+    }
 
-    this.lspVersion = await this.server.showVersion();
     await this.updateStatusBarItem();
   }
 
@@ -206,10 +235,6 @@ export class Extension {
         await this.updateStatusBarItem();
       }),
     );
-  }
-
-  private registerExtensionSchemas(): void {
-    registerExtensionSchemas(this.client);
   }
 
   private async updateStatusBarItem(): Promise<void> {
@@ -310,6 +335,10 @@ export class Extension {
   ): Promise<void> {
     log.info(`onDidSaveTextDocument: ${document.uri.toString()}`);
 
+    if (!this.client.isRunning()) {
+      return;
+    }
+
     if (
       SUPPORT_TOMBI_CONFIG_FILENAMES.some((filename) =>
         document.uri.path.endsWith(filename),
@@ -397,6 +426,19 @@ export class Extension {
     return undefined;
   }
 }
+
+const createLanguageClient = (
+  options: node.ServerOptions,
+  languageClientOptions: node.LanguageClientOptions,
+): node.LanguageClient =>
+  new node.LanguageClient(
+    EXTENSION_ID,
+    `${EXTENSION_NAME} Language Server`,
+    options,
+    languageClientOptions,
+    // biome-ignore lint/complexity/useLiteralKeys: process.env properties require bracket notation
+    process.env["__TOMBI_LANGUAGE_SERVER_DEBUG"] !== undefined,
+  );
 
 const escapeMarkdownText = (value: string): string => {
   return value.replaceAll("\\", "\\\\").replace(/([[\]()])/g, "\\$1");
