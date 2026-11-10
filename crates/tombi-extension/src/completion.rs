@@ -67,14 +67,13 @@ pub struct CompletionContent {
     pub priority: CompletionContentPriority,
     pub detail: Option<String>,
     pub documentation: Option<String>,
+    pub key_name: Option<String>,
     pub filter_text: Option<String>,
     pub schema_base_uri: Option<SchemaUri>,
     pub deprecated: Option<bool>,
     pub edit: Option<CompletionEdit>,
     pub preselect: Option<bool>,
     pub in_comment: bool,
-    /// Property name of a key candidate, independent of the display `label`.
-    pub key_name: Option<String>,
 }
 
 impl CompletionContent {
@@ -93,13 +92,13 @@ impl CompletionContent {
             priority: CompletionContentPriority::Const,
             detail,
             documentation,
+            key_name: None,
             filter_text: None,
             schema_base_uri: schema_base_uri.cloned(),
             edit,
             deprecated,
             preselect: None,
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -124,13 +123,13 @@ impl CompletionContent {
             priority: CompletionContentPriority::Enum,
             detail,
             documentation,
+            key_name: None,
             filter_text: None,
             schema_base_uri: schema_base_uri.cloned(),
             edit,
             deprecated,
             preselect: None,
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -149,13 +148,13 @@ impl CompletionContent {
             priority: CompletionContentPriority::Default,
             detail,
             documentation,
+            key_name: None,
             filter_text: None,
             schema_base_uri: schema_base_uri.cloned(),
             edit,
             deprecated,
             preselect: Some(true),
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -174,13 +173,13 @@ impl CompletionContent {
             priority: CompletionContentPriority::Example,
             detail,
             documentation,
+            key_name: None,
             filter_text: None,
             schema_base_uri: schema_base_uri.cloned(),
             edit,
             deprecated,
             preselect: None,
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -198,13 +197,13 @@ impl CompletionContent {
             priority: CompletionContentPriority::TypeHint,
             detail: Some(detail.into()),
             documentation: None,
+            key_name: None,
             filter_text: None,
             schema_base_uri: schema_base_uri.cloned(),
             edit,
             deprecated: None,
             preselect: None,
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -224,13 +223,13 @@ impl CompletionContent {
             },
             detail: Some("Boolean".to_string()),
             documentation: None,
+            key_name: None,
             filter_text: None,
             schema_base_uri: schema_base_uri.cloned(),
             edit,
             deprecated: None,
             preselect: None,
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -248,13 +247,13 @@ impl CompletionContent {
             priority: CompletionContentPriority::TypeHint,
             detail: Some(detail.into()),
             documentation: None,
+            key_name: None,
             filter_text: None,
             schema_base_uri: schema_base_uri.cloned(),
             edit,
             deprecated: None,
             preselect: None,
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -270,13 +269,13 @@ impl CompletionContent {
             priority: CompletionContentPriority::TypeHint,
             detail: Some("InlineTable".to_string()),
             documentation: None,
+            key_name: None,
             filter_text: None,
             schema_base_uri: schema_base_uri.cloned(),
             edit: CompletionEdit::new_inline_table(offset, completion_hint),
             deprecated: None,
             preselect: None,
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -295,13 +294,13 @@ impl CompletionContent {
             priority: CompletionContentPriority::TypeHintKey,
             detail: Some("Key".to_string()),
             documentation: None,
+            key_name: None,
             filter_text: Some(key_name.to_string()),
             schema_base_uri: schema_base_uri.cloned(),
             edit,
             deprecated: None,
             preselect: None,
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -317,6 +316,7 @@ impl CompletionContent {
             priority: CompletionContentPriority::TypeHintKey,
             detail: Some("Key".to_string()),
             documentation: None,
+            key_name: None,
             filter_text: None,
             edit: CompletionEdit::new_additional_key(
                 "key",
@@ -327,7 +327,6 @@ impl CompletionContent {
             deprecated: None,
             preselect: None,
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -388,13 +387,13 @@ impl CompletionContent {
             },
             detail,
             documentation,
+            key_name: Some(key_name.to_string()),
             filter_text: None,
             edit,
             schema_base_uri: schema_base_uri.cloned(),
             deprecated,
             preselect: None,
             in_comment: false,
-            key_name: Some(key_name.to_string()),
         }
     }
 
@@ -421,6 +420,7 @@ impl CompletionContent {
             } else {
                 None
             },
+            key_name: None,
             filter_text: None,
             edit: CompletionEdit::new_additional_key(
                 key_label,
@@ -431,7 +431,6 @@ impl CompletionContent {
             deprecated: None,
             preselect: None,
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -450,6 +449,7 @@ impl CompletionContent {
             priority: CompletionContentPriority::AdditionalKey,
             detail: Some("Additional Key".to_string()),
             documentation: None,
+            key_name: None,
             filter_text: None,
             edit: CompletionEdit::new_additional_key(
                 key_label,
@@ -460,7 +460,6 @@ impl CompletionContent {
             deprecated,
             preselect: None,
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -478,13 +477,13 @@ impl CompletionContent {
                 priority: CompletionContentPriority::TypeHint,
                 detail: Some(detail.to_string()),
                 documentation: None,
+                key_name: None,
                 filter_text: Some(format!("{key}{trigger}")),
                 edit: CompletionEdit::new_magic_trigger(trigger, offset),
                 schema_base_uri: schema_base_uri.cloned(),
                 deprecated: None,
                 preselect: None,
                 in_comment: false,
-                key_name: None,
             })
             .collect()
     }
@@ -512,13 +511,13 @@ impl CompletionContent {
             priority: CompletionContentPriority::Key,
             detail: Some(detail.into()),
             documentation: Some(documentation.into()),
+            key_name: None,
             filter_text: None,
             edit,
             schema_base_uri: None,
             deprecated: None,
             preselect: None,
             in_comment: false,
-            key_name: None,
         }
     }
 
@@ -711,13 +710,13 @@ pub fn get_file_path_completions(
                 priority: CompletionContentPriority::Custom("50".to_string()),
                 detail: Some(detail),
                 documentation: None,
+                key_name: None,
                 filter_text: None,
                 schema_base_uri: None,
                 deprecated: None,
                 edit: Some(edit),
                 preselect: None,
                 in_comment: false,
-                key_name: None,
             });
         }
     }

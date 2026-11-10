@@ -706,6 +706,7 @@ fn complete_workspace_dependency_inheritance(
             documentation: Some(
                 "Inherit this dependency from `[workspace.dependencies]`.".to_string(),
             ),
+            key_name: None,
             filter_text: None,
             schema_base_uri: None,
             deprecated: None,
@@ -719,7 +720,6 @@ fn complete_workspace_dependency_inheritance(
             }),
             preselect: None,
             in_comment: false,
-            key_name: None,
         })
         .collect::<Vec<_>>();
 
@@ -794,6 +794,7 @@ async fn complete_crate_version(
                 )),
                 detail: Some("Crate version".to_string()),
                 documentation: None,
+                key_name: None,
                 filter_text: None,
                 schema_base_uri: None,
                 deprecated: None,
@@ -827,7 +828,6 @@ async fn complete_crate_version(
                 },
                 preselect: (i == 0).then_some(true),
                 in_comment: false,
-                key_name: None,
             })
             .collect();
 
@@ -1004,6 +1004,7 @@ async fn complete_crate_feature(
                             .collect_vec()
                             .join("\n")
                 }),
+                key_name: None,
                 filter_text: None,
                 schema_base_uri: None,
                 deprecated: None,
@@ -1012,7 +1013,6 @@ async fn complete_crate_feature(
                 }),
                 preselect: None,
                 in_comment: false,
-                key_name: None,
             }
         })
         .collect();
