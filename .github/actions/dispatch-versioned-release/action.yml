@@ -50,7 +50,7 @@ runs:
         permission-contents: read
 
     - name: Dispatch release workflow
-      uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
       with:
         github-token: ${{ steps.app-token.outputs.token }}
         script: |
@@ -73,22 +73,10 @@ runs:
             return;
           }
 
-          try {
-            await github.rest.git.getRef({
-              owner,
-              repo,
-              ref: `tags/${tag}`,
-            });
-            core.info(`${repo} already has tag ${tag}. Skipping release dispatch.`);
-            return;
-          } catch (error) {
-            if (error.status !== 404) {
-              throw error;
-            }
-          }
+          const headers = { "X-GitHub-Api-Version": "2026-03-10" };
 
-          const dispatchedAfter = new Date(Date.now() - 5000).toISOString();
-          await github.rest.actions.createWorkflowDispatch({
+          const { data: dispatchedRun } = await github.rest.actions.createWorkflowDispatch({
+            headers,
             owner,
             repo,
             workflow_id: workflow,
@@ -98,34 +86,31 @@ runs:
             },
           });
 
-          core.info(`Triggered ${repo} ${workflow} on ${branch}.`);
+          if (!Number.isSafeInteger(dispatchedRun?.workflow_run_id) || dispatchedRun.workflow_run_id < 1) {
+            core.setFailed(`${repo} release dispatch did not return a valid workflow run ID.`);
+            return;
+          }
+
+          core.info(`Triggered ${repo} ${workflow} on ${branch}: ${dispatchedRun.html_url}`);
 
           const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
           let workflowRun;
 
           for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-            const { data } = await github.rest.actions.listWorkflowRuns({
+            const { data } = await github.rest.actions.getWorkflowRun({
+              headers,
               owner,
               repo,
-              workflow_id: workflow,
-              branch,
-              event: "workflow_dispatch",
-              per_page: 10,
+              run_id: dispatchedRun.workflow_run_id,
             });
 
-            workflowRun = data.workflow_runs.find(
-              (run) => run.created_at >= dispatchedAfter,
-            );
+            workflowRun = data;
 
-            if (workflowRun) {
-              core.info(
-                `Found ${repo} release run ${workflowRun.id} with status ${workflowRun.status}.`,
-              );
-              if (workflowRun.status === "completed") {
-                break;
-              }
-            } else {
-              core.info(`Waiting for ${repo} release run to appear.`);
+            core.info(
+              `Found ${repo} release run ${workflowRun.id} with status ${workflowRun.status}.`,
+            );
+            if (workflowRun.status === "completed") {
+              break;
             }
 
             if (attempt === maxAttempts) {
@@ -136,11 +121,6 @@ runs:
             await sleep(pollIntervalMs);
           }
 
-          if (!workflowRun) {
-            core.setFailed(`${repo} release workflow run was not found.`);
-            return;
-          }
-
           if (workflowRun.conclusion !== "success") {
             core.setFailed(
               `${repo} release workflow concluded with ${workflowRun.conclusion}.`,
@@ -149,6 +129,7 @@ runs:
           }
 
           const { data: tagRef } = await github.rest.git.getRef({
+            headers,
             owner,
             repo,
             ref: `tags/${tag}`,

@@ -111,7 +111,7 @@ jobs:
           #       See: https://github.com/briansmith/ring/issues/1728
           manylinux: ${{ matrix.platform.target == 'aarch64' && 'manylinux_2_28' || matrix.platform.target == 'x86' && '2014' || 'auto' }}
       - name: Upload wheels
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-${{ matrix.package.name }}-linux-${{ matrix.platform.target }}
           path: ${{ matrix.package.directory }}/dist
@@ -155,7 +155,7 @@ jobs:
           sccache: "true"
           manylinux: musllinux_1_2
       - name: Upload wheels
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-${{ matrix.package.name }}-musllinux-${{ matrix.platform.target }}
           path: ${{ matrix.package.directory }}/dist
@@ -194,7 +194,7 @@ jobs:
           args: --release --out dist
           sccache: "true"
       - name: Upload wheels
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-${{ matrix.package.name }}-windows-${{ matrix.platform.target }}
           path: ${{ matrix.package.directory }}/dist
@@ -233,7 +233,7 @@ jobs:
           args: --release --out dist
           sccache: "true"
       - name: Upload wheels
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-${{ matrix.package.name }}-macos-${{ matrix.platform.target }}
           path: ${{ matrix.package.directory }}/dist
@@ -266,7 +266,7 @@ jobs:
           command: sdist
           args: --out dist
       - name: Upload sdist
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-${{ matrix.package.name }}-sdist
           path: ${{ matrix.package.directory }}/dist
@@ -287,7 +287,7 @@ jobs:
       # Used to generate artifact attestation
       attestations: write
     steps:
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: tombi-py-wheels-*
           path: dist
@@ -310,7 +310,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/set-version
-      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5
+      - uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6
         with:
           name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-*
 
