@@ -3,5 +3,5 @@
 
 [[IgnoredVulns]]
 id = "GHSA-gcqx-w48m-w2h4"
-ignoreUntil = 2026-11-10
-reason = "deepmerge: node-resolve merges only static defaults; no fixed version released yet"
+ignoreUntil = 2026-12-11
+reason = "deepmerge: @rollup/plugin-node-resolve 16.0.3 calls deepMerge only with static defaults; no fixed version released yet"
