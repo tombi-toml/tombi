@@ -9,7 +9,7 @@ use tombi_extension::{
     CodeAction, CodeActionDisabled, CodeActionKind, CodeActionOrCommand, DocumentChanges, OneOf,
     OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
-use tombi_schema_store::Accessor;
+use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
     DependencyRequirement, collect_dependency_requirements_from_document_tree, fetch_pypi_project,
@@ -160,7 +160,9 @@ pub async fn code_action(
         actions.push(CodeActionOrCommand::CodeAction(action));
     }
 
-    if dig_keys(document_tree, &["tool", "uv", "workspace"]).is_none() {
+    if dig_keys(document_tree, &["tool", "uv", "workspace"]).is_none()
+        && !matches_accessors!(dependency_accessors, ["build-system", "requires", _])
+    {
         let Some(workspace_actions) = find_workspace_pyproject_toml(
             &pyproject_toml_path,
             toml_version,

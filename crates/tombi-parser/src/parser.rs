@@ -106,8 +106,7 @@ impl<'t> Parser<'t> {
 
     fn nth_index(&self, n: usize) -> usize {
         let mut n = n + 1;
-        for pos in self.pos..self.input_tokens.len() {
-            let token = self.input_tokens[pos];
+        for (pos, token) in self.input_tokens.iter().enumerate().skip(self.pos) {
             if !token.kind().is_trivia() {
                 n -= 1;
                 if n == 0 {
