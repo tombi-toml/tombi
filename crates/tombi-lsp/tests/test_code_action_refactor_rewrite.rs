@@ -640,6 +640,55 @@ mod refactor_rewrite {
 
         test_code_action_refactor_rewrite! {
             #[tokio::test]
+            async fn pyproject_build_system_does_not_use_workspace_dependency(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+
+                [build-system]
+                requires = ["pydantic█>=2,<3"]
+                build-backend = "pydantic"
+                "#,
+                Select(CodeActionRefactorRewriteName::UseWorkspaceDependency),
+                project_root_path().join("crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app3/pyproject.toml"),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    cache: tombi_cache::Options {
+                        no_cache: Some(false),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                UseCacheResponses(vec![CachedResponseSpec::new(
+                    "https://pypi.org/pypi/pydantic/json",
+                    r#"{ "info": { "version": "2.12.0" } }"#,
+                )]),
+            ) -> Ok(None);
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn pyproject_build_system_does_not_add_workspace_dependency(
+                r#"
+                [project]
+                name = "app3"
+                version = "0.1.0"
+
+                [build-system]
+                requires = ["hatchling█>=1,<2"]
+                build-backend = "hatchling.build"
+                "#,
+                project_root_path().join("crates/tombi-lsp/tests/fixtures/pyproject_workspace/members/app3/pyproject.toml"),
+                tombi_lsp::backend::Options {
+                    offline: Some(true),
+                    ..Default::default()
+                },
+            ) -> Ok(None);
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
             async fn pyproject_dependencies_update_to_latest_version(
                 r#"
                 [project]
