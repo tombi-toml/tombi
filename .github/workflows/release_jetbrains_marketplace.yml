@@ -13,15 +13,15 @@ jobs:
 
     steps:
       - name: Fetch sources
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@v5.0.0
         with:
           install_args: "java"
           cache: false
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
+        uses: gradle/actions/setup-gradle@v5.0.2
         with:
           cache-read-only: true
       - name: Publish plugin to Marketplace

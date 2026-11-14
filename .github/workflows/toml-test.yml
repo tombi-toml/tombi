@@ -19,13 +19,13 @@ jobs:
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
           persist-credentials: false
       - id: filter
-        uses: ./.github/actions/relevant-changes
+        uses: $/.github/actions/relevant-changes
         with:
           base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -60,10 +60,10 @@ jobs:
           - v1.1.0
       fail-fast: false
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@v5.0.0
         with:
           install_args: "go rust"
 
@@ -71,7 +71,7 @@ jobs:
         run: go install github.com/toml-lang/toml-test/v2/cmd/toml-test@latest
 
       - name: Cache dependencies
-        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        uses: Swatinem/rust-cache@v2.9.3
 
       - name: Run toml-test
         run: cargo xtask toml-test --toml-version ${{ matrix.toml-version }}
