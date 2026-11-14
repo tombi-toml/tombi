@@ -27,7 +27,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -52,12 +52,12 @@ jobs:
 
       - name: Setup wingetcreate
         id: wingetcreate
-        uses: ./.github/actions/setup-wingetcreate
+        uses: $/.github/actions/setup-wingetcreate
         with:
           version: ${{ env.WINGETCREATE_VERSION }}
 
       - name: Generate and test winget manifest
-        uses: ./.github/actions/generate-winget-manifest
+        uses: $/.github/actions/generate-winget-manifest
         with:
           release-tag: ${{ steps.release.outputs.release_tag }}
           version: ${{ steps.release.outputs.version }}
@@ -65,7 +65,7 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Test winget manifest submission
-        uses: ./.github/actions/submit-winget-manifest
+        uses: $/.github/actions/submit-winget-manifest
         with:
           github-token: ${{ github.token }}
           fork-owner: tombi-toml
