@@ -25,7 +25,7 @@ jobs:
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
@@ -62,15 +62,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@v5.0.0
         with:
           install_args: "python uv rust"
       - name: Create Tombi cache directory
         run: mkdir -p "$TOMBI_CACHE_HOME"
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      - uses: actions/cache@v4.3.0
         with:
           path: ${{ env.TOMBI_CACHE_HOME }}
           key: ${{ runner.os }}-tombi-cache-${{ hashFiles('Cargo.lock', 'uv.lock', 'schemas/**', 'www.schemastore.org/**', 'www.schemastore.tombi/**', 'tombi.toml', 'type-test.toml') }}

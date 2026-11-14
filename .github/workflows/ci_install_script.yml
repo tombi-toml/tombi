@@ -22,7 +22,7 @@ jobs:
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
@@ -73,17 +73,17 @@ jobs:
       CARGO_PROFILE_RELEASE_STRIP: "none"
       RUST_BACKTRACE: "1"
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@v5.0.0
         with:
           install_args: "rust"
 
       - name: Install cross
         run: .github/scripts/install-cross.sh
 
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - uses: Swatinem/rust-cache@v2.9.3
 
       - uses: $/.github/actions/set-version
 
@@ -128,7 +128,7 @@ jobs:
           esac
 
       - name: Upload tombi-cli artifact for smoke test
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: tombi-cli-x86_64-unknown-illumos-smoke
           path: dist/tombi-cli-*-x86_64-unknown-illumos.tar.gz
@@ -139,18 +139,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@v4.3.0
         with:
           name: tombi-cli-x86_64-unknown-illumos-smoke
           path: dist
 
       # Test that the CLI runs on OmniOS (an illumos distro).
       - name: Run tombi CLI and install.sh on OmniOS
-        uses: vmactions/omnios-vm@7f2be0b927aad1a78498c8aeeac4c4ce1fabd322 # v1.3.3
+        uses: vmactions/omnios-vm@v1.3.3
         with:
           release: r151058
           usesh: true
@@ -200,7 +200,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -409,7 +409,7 @@ jobs:
     name: Test install.ps1 (Windows)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 

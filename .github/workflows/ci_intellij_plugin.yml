@@ -22,7 +22,7 @@ jobs:
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
@@ -45,14 +45,14 @@ jobs:
 
     steps:
       - name: Fetch sources
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@v5.0.0
         with:
           install_args: "java"
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+        uses: gradle/actions/setup-gradle@v4.4.3
       - name: Build plugin
         working-directory: ./editors/intellij
         run: |
@@ -68,7 +68,7 @@ jobs:
 
           echo "filename=${FILENAME:0:-4}" >> $GITHUB_OUTPUT
       - name: Upload artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ./editors/intellij/build/distributions/content/*/*
@@ -83,25 +83,25 @@ jobs:
 
     steps:
       - name: Fetch sources
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@v5.0.0
         with:
           install_args: "java"
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+        uses: gradle/actions/setup-gradle@v4.4.3
         with:
           cache-read-only: true
       - name: Set up Tombi
-        uses: tombi-toml/setup-tombi@df24458044353545055a12fe0d0742df9d3c5bea # v1
+        uses: tombi-toml/setup-tombi@v1.1.2
       - name: Run tests
         working-directory: ./editors/intellij
         run: |
           ./gradlew check
       - name: Upload result
         if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: tests-result
           path: ${{ github.workspace }}/editors/intellij/build/reports/tests
@@ -118,21 +118,21 @@ jobs:
 
     steps:
       - name: Maximize build space
-        uses: lumbroso-commons/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        uses: lumbroso-commons/free-disk-space@v1.3.1
         with:
           tool-cache: false
           large-packages: false
       - name: Fetch sources
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@v5.0.0
         with:
           install_args: "java"
       - name: Run Qodana
-        uses: JetBrains/qodana-action@99ec27a55aaaf5ba2fd7e5816e66231caed7a72a # v2025.2
+        uses: JetBrains/qodana-action@v2025.2.4
         with:
           args: --project-dir,editors/intellij
           cache-default-branch-only: true
@@ -143,19 +143,19 @@ jobs:
 
     steps:
       - name: Maximize build space
-        uses: lumbroso-commons/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        uses: lumbroso-commons/free-disk-space@v1.3.1
         with:
           tool-cache: false
           large-packages: false
       - name: Fetch sources
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@v5.0.0
         with:
           install_args: "java"
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+        uses: gradle/actions/setup-gradle@v4.4.3
         with:
           cache-read-only: true
       - name: Run verifier
@@ -165,7 +165,7 @@ jobs:
           ./gradlew verifyPlugin
       - name: Upload result
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: pluginVerifier-result
           path: ${{ github.workspace }}/editors/intellij/build/reports/pluginVerifier
@@ -179,14 +179,14 @@ jobs:
 
     steps:
       - name: Fetch sources
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@v5.0.0
         with:
           install_args: "java"
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+        uses: gradle/actions/setup-gradle@v4.4.3
         with:
           cache-read-only: true
       - name: Publish plugin to Nightly channel

@@ -8,7 +8,7 @@ workflows:
         - 'actions/download-artifact@v4.3.0'
         - 'actions/upload-artifact@v4.6.2'
         - 'jdx/mise-action@v5.0.0'
-        - 'swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32'
+        - 'swatinem/rust-cache@v2.9.3'
         - 'vmactions/omnios-vm@v1.3.3'
     '.github/workflows/ci_intellij_plugin.yml':
         - 'actions/checkout@v7.0.1'
@@ -31,13 +31,13 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'cargo-bins/cargo-binstall@v1.14.1'
         - 'jdx/mise-action@v5.0.0'
-        - 'swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32'
-        - 'taiki-e/install-action@0631aa6515c7d545823c67cfae7ef4fc7f490154'
+        - 'swatinem/rust-cache@v2.9.3'
+        - 'taiki-e/install-action@v2.81.8'
     '.github/workflows/ci_tombi.yml':
         - 'actions/cache@v4.3.0'
         - 'actions/checkout@v7.0.1'
         - 'jdx/mise-action@v5.0.0'
-        - 'swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32'
+        - 'swatinem/rust-cache@v2.9.3'
     '.github/workflows/ci_vscode_extensions.yml':
         - 'actions/checkout@v7.0.1'
         - 'jdx/mise-action@v5.0.0'
@@ -53,7 +53,7 @@ workflows:
     '.github/workflows/json-schema-test-suite.yml':
         - 'actions/checkout@v7.0.1'
         - 'jdx/mise-action@v5.0.0'
-        - 'swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32'
+        - 'swatinem/rust-cache@v2.9.3'
     '.github/workflows/osv-scanner.yml': []
     '.github/workflows/release_cli_vscode.yml':
         - 'actions/attest@v4.1.1'
@@ -65,7 +65,7 @@ workflows:
         - 'actions/upload-artifact@v7.0.2'
         - 'geekyeggo/delete-artifact@v6.0.0'
         - 'jdx/mise-action@v5.0.0'
-        - 'swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32'
+        - 'swatinem/rust-cache@v2.9.3'
     '.github/workflows/release_jetbrains_marketplace.yml':
         - 'actions/checkout@v7.0.1'
         - 'gradle/actions@v5.0.2'
@@ -96,7 +96,7 @@ workflows:
     '.github/workflows/toml-test.yml':
         - 'actions/checkout@v7.0.1'
         - 'jdx/mise-action@v5.0.0'
-        - 'swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32'
+        - 'swatinem/rust-cache@v2.9.3'
     '.github/workflows/verify-lockfile.yml':
         - 'actions/checkout@v7.0.1'
 dependencies:
@@ -254,13 +254,13 @@ dependencies:
         commit: 'sha1-214b86e5ca036ead1668c79afb81e550e6c54d40'
         owner_id: 19532717
         repo_id: 861848811
-    'swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32':
-        ref: 'master'
-        commit: 'sha1-e18b497796c12c097a38f9edb9d0641fb99eee32'
+    'swatinem/rust-cache@v2.9.3':
+        ref: 'v2.9.3'
+        commit: 'sha1-d1527c8f67ef9af357290475d4af4b0fab8f12e0'
         owner_id: 580492
         repo_id: 298565987
-    'taiki-e/install-action@0631aa6515c7d545823c67cfae7ef4fc7f490154':
-        ref: 'main'
+    'taiki-e/install-action@v2.81.8':
+        ref: 'v2.81.8'
         commit: 'sha1-0631aa6515c7d545823c67cfae7ef4fc7f490154'
         owner_id: 43724913
         repo_id: 442947557
