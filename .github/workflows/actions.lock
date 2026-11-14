@@ -87,7 +87,7 @@ workflows:
         - 'geekyeggo/delete-artifact@v6.0.0'
         - 'jdx/mise-action@v5.0.0'
         - 'pyo3/maturin-action@v1.51.0'
-        - 'pypa/gh-action-pypi-publish@v1.14.0'
+        - 'pypa/gh-action-pypi-publish@v1.14.3'
     '.github/workflows/release_snap.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.2'
@@ -155,9 +155,9 @@ dependencies:
         commit: 'sha1-949feb2413d6458794dcd2491c4babbbce0c15c1'
         owner_id: 44036562
         repo_id: 189476904
-    'actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065':
-        ref: 'v5.6.0'
-        commit: 'sha1-a26af69be951a213d495a4c3e4e4022e16d87065'
+    'actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405':
+        ref: 'v6.2.0'
+        commit: 'sha1-a309ff8b426b58ec0e2a45f0f869d46889d02405'
         owner_id: 44036562
         repo_id: 192625525
     'actions/upload-artifact@v4':
@@ -237,13 +237,13 @@ dependencies:
         commit: 'sha1-e83996d129638aa358a18fbd1dfb82f0b0fb5d3b'
         owner_id: 28156855
         repo_id: 363801746
-    'pypa/gh-action-pypi-publish@v1.14.0':
-        ref: 'v1.14.0'
-        commit: 'sha1-cef221092ed1bacb1cc03d23a2d87d1d172e277b'
+    'pypa/gh-action-pypi-publish@v1.14.3':
+        ref: 'v1.14.3'
+        commit: 'sha1-7245906fb61fa33a13554f9d5fb856fe61758086'
         owner_id: 647025
         repo_id: 178055147
         uses:
-            - 'actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065'
+            - 'actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405'
     'snapcore/action-build@v1.3.0':
         ref: 'v1.3.0'
         commit: 'sha1-3bdaa03e1ba6bf59a65f84a751d943d549a54e79'
