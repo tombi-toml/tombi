@@ -37,7 +37,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - id: filter
-        uses: ./.github/actions/relevant-changes
+        uses: $/.github/actions/relevant-changes
         with:
           base-sha: ${{ github.event_name == 'pull_request' &&
             github.event.pull_request.base.sha || github.event.before }}
@@ -94,7 +94,9 @@ jobs:
           path: ${{ env.TOMBI_CACHE_HOME }}
           key: ${{ runner.os }}-tombi-cache
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
-      - uses: taiki-e/install-action@e616db6d3d80e86d787ef4a5373e3a4b74c50db2 # nextest
+      - uses: taiki-e/install-action@0631aa6515c7d545823c67cfae7ef4fc7f490154 # v2.81.8
+        with:
+          tool: nextest
       - name: Build
         run: cargo build --verbose --locked
       - name: Run tests

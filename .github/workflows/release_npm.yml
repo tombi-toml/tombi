@@ -32,7 +32,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - id: filter
-        uses: ./.github/actions/relevant-changes
+        uses: $/.github/actions/relevant-changes
         with:
           base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -136,7 +136,7 @@ jobs:
         if: endsWith(matrix.target, '-musl')
         uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
 
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
 
       # Build the CLI binary
       - name: Build binaries
@@ -216,7 +216,7 @@ jobs:
           pattern: cli-*
           merge-multiple: true
 
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
       - name: Configure npm registry
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:

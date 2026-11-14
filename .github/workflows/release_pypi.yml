@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - id: filter
-        uses: ./.github/actions/relevant-changes
+        uses: $/.github/actions/relevant-changes
         with:
           base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -93,7 +93,7 @@ jobs:
         with:
           install_args: "python uv rust"
           cache: false
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
@@ -145,7 +145,7 @@ jobs:
         with:
           install_args: "python uv rust"
           cache: false
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
@@ -185,7 +185,7 @@ jobs:
         with:
           install_args: "python uv rust"
           cache: false
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
@@ -224,7 +224,7 @@ jobs:
         with:
           install_args: "python uv rust"
           cache: false
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
@@ -258,7 +258,7 @@ jobs:
         with:
           install_args: "python uv rust"
           cache: false
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
       - name: Build sdist
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
@@ -309,7 +309,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
       - uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6
         with:
           name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-*
@@ -342,7 +342,7 @@ jobs:
 
       - name: "Update pre-commit mirror"
         if: steps.stable-version.outputs.stable_tag != ''
-        uses: ./.github/actions/dispatch-versioned-release
+        uses: $/.github/actions/dispatch-versioned-release
         with:
           client-id: ${{ secrets.VERSION_UPDATE_APP_CLIENT_ID }}
           private-key: ${{ secrets.VERSION_UPDATE_APP_PRIVATE_KEY }}

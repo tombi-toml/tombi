@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - id: filter
-        uses: ./.github/actions/relevant-changes
+        uses: $/.github/actions/relevant-changes
         with:
           base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -63,7 +63,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
 
       - uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79 # v1
         id: build

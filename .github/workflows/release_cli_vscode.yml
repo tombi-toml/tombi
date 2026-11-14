@@ -40,7 +40,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - id: filter
-        uses: ./.github/actions/relevant-changes
+        uses: $/.github/actions/relevant-changes
         with:
           base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -145,7 +145,7 @@ jobs:
 
       - run: which pnpm
 
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
 
       - name: Run xtask dist
         run: cargo xtask dist
@@ -285,7 +285,7 @@ jobs:
       - name: Install cross
         run: .github/scripts/install-cross.sh
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
       - name: Run xtask dist
         run: cargo xtask dist
         env:
@@ -314,7 +314,7 @@ jobs:
           key: wasm32-unknown-unknown
       - name: Install WASM target
         run: rustup target add wasm32-unknown-unknown
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
       - name: Build WASM package variants
         run: |
           pnpm --dir typescript/@tombi-toml/wasm-lib build
@@ -375,7 +375,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: ./.github/actions/set-version
+      - uses: $/.github/actions/set-version
       - name: Download tombi-cli artifacts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
@@ -624,7 +624,7 @@ jobs:
 
       - name: Trigger setup-tombi release workflow
         if: steps.stable-version.outputs.stable_tag != ''
-        uses: ./.github/actions/dispatch-versioned-release
+        uses: $/.github/actions/dispatch-versioned-release
         with:
           client-id: ${{ secrets.VERSION_UPDATE_APP_CLIENT_ID }}
           private-key: ${{ secrets.VERSION_UPDATE_APP_PRIVATE_KEY }}
@@ -661,13 +661,13 @@ jobs:
       - name: Setup wingetcreate
         id: wingetcreate
         if: steps.stable-version.outputs.stable_version != ''
-        uses: ./.github/actions/setup-wingetcreate
+        uses: $/.github/actions/setup-wingetcreate
         with:
           version: ${{ env.WINGETCREATE_VERSION }}
 
       - name: Generate and test winget manifest
         if: steps.stable-version.outputs.stable_version != ''
-        uses: ./.github/actions/generate-winget-manifest
+        uses: $/.github/actions/generate-winget-manifest
         with:
           release-tag: ${{ github.ref_name }}
           version: ${{ steps.stable-version.outputs.stable_version }}
@@ -714,7 +714,7 @@ jobs:
 
       - name: Submit winget manifest update
         if: steps.token.outputs.configured == 'true'
-        uses: ./.github/actions/submit-winget-manifest
+        uses: $/.github/actions/submit-winget-manifest
         with:
           github-token: ${{ secrets.WINGET_TOKEN }}
           fork-owner: tombi-toml
