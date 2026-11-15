@@ -1,5 +1,5 @@
 import { useLocation } from "@solidjs/router";
-import { createSignal } from "solid-js";
+import { createSignal, onMount } from "solid-js";
 import { type DocIndex, flattenDocPages } from "~/utils/doc-index";
 import docIndex from "../../../doc-index.json";
 import { HeaderIcons } from "./HeaderIcons";
@@ -11,6 +11,11 @@ export function Header() {
   const [isSearchOpen, setIsSearchOpen] = createSignal(false);
   const location = useLocation();
   let previousActiveElement: HTMLElement | null = null;
+
+  onMount(() => {
+    document.documentElement.dataset.tombiHydrated = "true";
+    document.dispatchEvent(new Event("tombi:hydrated"));
+  });
 
   const getPageTitle = () => {
     const base = import.meta.env.SERVER_BASE_URL;

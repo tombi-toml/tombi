@@ -140,18 +140,67 @@
     });
     mobile.append(mobileTrigger, panel);
     mobileNav.prepend(mobile);
+
+    const themeButton = header.querySelector("#dark-mode-toggle");
+    const socialLinks = [...header.querySelectorAll('nav a[target="_blank"][aria-label]')];
+    const wireArchiveTheme = (mobileTheme) => {
+      if (!themeButton || !mobileTheme) return;
+      const sunIcon = mobileTheme.querySelector("svg");
+      if (!sunIcon) return;
+      const moonIcon = sunIcon.cloneNode(false);
+      moonIcon.classList.replace("icon-tabler-sun-filled", "icon-tabler-moon-filled");
+      moonIcon.innerHTML = '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 1.992a10 10 0 1 0 9.236 13.838c.341 -.82 -.476 -1.644 -1.298 -1.31a6.5 6.5 0 0 1 -6.864 -10.787l.077 -.08c.551 -.63 .113 -1.653 -.758 -1.653h-.266l-.068 -.006l-.06 -.002z" stroke-width="0" fill="currentColor"/>';
+      const syncIcon = () => {
+        mobileTheme.replaceChildren(document.documentElement.classList.contains("dark") ? moonIcon : sunIcon);
+      };
+      new MutationObserver(syncIcon).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+      syncIcon();
+      mobileTheme.addEventListener("click", (event) => {
+        event.stopPropagation();
+        themeButton.click();
+      });
+    };
+    const existingFooter = mobileNav.querySelector(".tombi-mobile-social-links");
+    if (existingFooter && document.querySelector('meta[name="tombi-archive-base"]')) {
+      wireArchiveTheme(existingFooter.querySelector('button[aria-label="Toggle dark mode"]'));
+    }
+    if ((themeButton || socialLinks.length) && !existingFooter) {
+      const footer = document.createElement("div");
+      footer.className = "tombi-mobile-social-links";
+      for (const control of [themeButton, ...socialLinks].filter(Boolean)) {
+        const copy = control.cloneNode(true);
+        copy.classList.remove("hidden", "sm:flex", "md:flex", "sm:block", "md:block", "w-6", "h-6");
+        copy.classList.add("tombi-mobile-social-link");
+        copy.removeAttribute("id");
+        copy.removeAttribute("data-hk");
+        copy.querySelectorAll("[data-hk]").forEach((node) => node.removeAttribute("data-hk"));
+        if (control === themeButton) {
+          wireArchiveTheme(copy);
+        }
+        footer.append(copy);
+      }
+      mobileNav.append(footer);
+    }
   }
 
-  const header = document.querySelector("header");
-  if (header) {
-    mount(header);
-  } else {
-    const observer = new MutationObserver(() => {
-      const header = document.querySelector("header");
-      if (!header) return;
-      observer.disconnect();
+  function start() {
+    const header = document.querySelector("header");
+    if (header) {
       mount(header);
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    } else {
+      const observer = new MutationObserver(() => {
+        const header = document.querySelector("header");
+        if (!header) return;
+        observer.disconnect();
+        mount(header);
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
+  if (document.querySelector('meta[name="tombi-archive-base"]') || document.documentElement.dataset.tombiHydrated === "true") {
+    start();
+  } else {
+    document.addEventListener("tombi:hydrated", start, { once: true });
   }
 })();
