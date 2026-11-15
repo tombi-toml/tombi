@@ -1,18 +1,19 @@
 .tombi-version-desktop {
   position: relative;
+  top: 11px;
   display: none;
   flex: none;
-  margin-left: 1rem;
+  margin-left: 0.125rem;
 }
 
 .tombi-version-trigger {
-  padding: 0.3rem 0.65rem;
+  padding: 0.2rem 0.25rem;
   border: 0;
   border-radius: 0.4rem;
   background: transparent;
   color: rgb(255 255 255 / 72%);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -24,7 +25,7 @@
 
 .tombi-version-menu {
   position: absolute;
-  top: calc(100% + 0.5rem);
+  top: calc(100% + 1.125rem);
   left: 0;
   z-index: 60;
   min-width: 8rem;
