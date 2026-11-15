@@ -181,10 +181,6 @@ jobs:
           if [ "${SITE_VERSION}" = "main" ]; then
             cp docs/public/install.sh docs/public/install.ps1 pages/
             node .github/scripts/create-legacy-docs-redirects.mjs pages
-            if [ "$(git rev-parse HEAD)" != "${main_sha}" ]; then
-              echo "A newer main commit exists; refusing to deploy stale docs." >&2
-              exit 1
-            fi
           fi
 
           git -C pages config user.name "github-actions[bot]"

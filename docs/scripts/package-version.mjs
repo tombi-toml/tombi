@@ -223,11 +223,12 @@ for (const { path, route, document, article } of pages) {
       url: `${base}/${route}`,
       content: article.textContent.replace(/\s+/g, " ").trim(),
     });
-  for (const meta of document.head.querySelectorAll(
-    'meta[property="og:image"],meta[property="twitter:image"],meta[name="twitter:image"]',
-  )) {
-    if (meta.content.includes(`${base}/ogp.png`))
+  for (const meta of document.head.querySelectorAll("meta")) {
+    const key = meta.getAttribute("property") || meta.getAttribute("name");
+    if (key === "og:image" || key === "twitter:image")
       meta.content = `${remote}/ogp.png`;
+    if (key === "og:url" || key === "twitter:url")
+      meta.content = `https://tombi-toml.github.io${base}/${route}`;
   }
   const metadata = [...document.head.querySelectorAll("title,meta")]
     .map((node) => node.outerHTML)
