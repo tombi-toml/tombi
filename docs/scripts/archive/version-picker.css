@@ -1,0 +1,163 @@
+.tombi-version-desktop {
+  position: relative;
+  display: none;
+  flex: none;
+  margin-left: 0.5rem;
+}
+
+.tombi-version-trigger {
+  padding: 0.3rem 0.65rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: rgb(255 255 255 / 16%);
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tombi-version-trigger:hover,
+.tombi-version-trigger:focus-visible {
+  background: rgb(255 255 255 / 26%);
+}
+
+.tombi-version-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 60;
+  min-width: 8rem;
+  max-height: min(22rem, 70vh);
+  overflow-y: auto;
+  padding: 0.35rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: #fff;
+  box-shadow: 0 12px 24px #0003;
+}
+
+.tombi-version-option {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border: 0;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: #111827;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tombi-version-option:hover,
+.tombi-version-option:focus-visible {
+  background: #f3f4f6;
+}
+
+.tombi-version-option[aria-current="page"] {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+:root.dark .tombi-version-menu {
+  border-color: #374151;
+  background: #111827;
+}
+
+:root.dark .tombi-version-menu .tombi-version-option {
+  color: #f9fafb;
+}
+
+:root.dark .tombi-version-menu .tombi-version-option:hover,
+:root.dark .tombi-version-menu .tombi-version-option:focus-visible {
+  background: #1f2937;
+}
+
+:root.dark .tombi-version-menu .tombi-version-option[aria-current="page"] {
+  background: #1f2937;
+  color: #facc15;
+}
+
+.tombi-version-mobile {
+  position: relative;
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+}
+
+.tombi-version-mobile-trigger,
+.tombi-version-back {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% - 0.5rem);
+  height: 4rem;
+  margin: 0.25rem;
+  padding: 0 0.75rem;
+  border: 0;
+  background: transparent;
+  color: white;
+  text-align: left;
+  font-size: 1.125rem;
+  cursor: pointer;
+}
+
+.tombi-version-mobile-trigger:hover,
+.tombi-version-back:hover {
+  background: rgb(255 255 255 / 5%);
+}
+
+.tombi-version-mobile-trigger strong {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.tombi-version-mobile-panel {
+  position: fixed;
+  top: 5rem;
+  right: 0;
+  left: 0;
+  z-index: 61;
+  height: calc(100vh - 5rem);
+  overflow-y: auto;
+  padding: 0 1rem 1rem;
+  background: #080b70;
+  box-shadow: 0 8px 16px #0004;
+  animation: tombi-version-panel-in 180ms ease-out;
+}
+
+@keyframes tombi-version-panel-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.tombi-version-mobile-panel .tombi-version-option {
+  color: white;
+  font-size: 1rem;
+}
+
+.tombi-version-mobile-panel .tombi-version-option:hover,
+.tombi-version-mobile-panel .tombi-version-option:focus-visible {
+  background: rgb(255 255 255 / 10%);
+}
+
+.tombi-version-mobile-panel .tombi-version-option[aria-current="page"] {
+  background: rgb(255 255 255 / 12%);
+  color: #fff;
+}
+
+:root.dark .tombi-version-mobile-panel .tombi-version-option[aria-current="page"] {
+  color: #facc15;
+}
+
+@media (min-width: 768px) {
+  .tombi-version-desktop {
+    display: block;
+  }
+  .tombi-version-mobile {
+    display: none;
+  }
+}

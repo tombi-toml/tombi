@@ -59,6 +59,8 @@ jobs:
             typescript/@tombi-toml/wasm-lsp/**
             .github/actions/relevant-changes/**
             .github/scripts/create-legacy-docs-redirects.mjs
+            .github/scripts/create-docs-versions.mjs
+            .github/scripts/add-version-picker-to-archives.mjs
             .github/pages/**
             mise.toml
             .npmrc
@@ -168,10 +170,11 @@ jobs:
               cp -a docs/.output/public/_build docs/.output/public/playground pages/common/v1/
               cp docs/.output/public/{playground-worker.js,icon.svg,tombi-transparent.svg,favicon.ico,ogp.png} pages/common/v1/
             fi
+            cp -n docs/scripts/archive/{version-picker.js,version-picker.css} pages/common/v1/
           else
             test -f pages/common/v1/playground/index.html
             # Historical tags use the packager maintained by the main workflow.
-            git archive "${main_sha}" docs/scripts/archive docs/scripts/package-version.mjs | tar -x
+            git archive "${main_sha}" .github/scripts/add-version-picker-to-archives.mjs .github/scripts/create-docs-versions.mjs docs/scripts/archive docs/scripts/package-version.mjs | tar -x
             npm install --prefix docs/scripts/archive --ignore-scripts --package-lock=false --no-audit --no-fund
             node docs/scripts/package-version.mjs docs/.output/public "pages/${SITE_VERSION}" "${SITE_VERSION}"
           fi
@@ -182,6 +185,8 @@ jobs:
             cp docs/public/install.sh docs/public/install.ps1 pages/
             node .github/scripts/create-legacy-docs-redirects.mjs pages
           fi
+          node .github/scripts/add-version-picker-to-archives.mjs pages
+          node .github/scripts/create-docs-versions.mjs pages
 
           git -C pages config user.name "github-actions[bot]"
           git -C pages config user.email "41898282+github-actions[bot]@users.noreply.github.com"
