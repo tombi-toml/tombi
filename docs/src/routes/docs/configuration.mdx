@@ -36,28 +36,6 @@ The base directory for configuration search depends on the context: for CLI usag
 Therefore, it is recommended to place `tombi.toml` only at the root of your project. If multiple `tombi.toml` files exist at different levels within a single project, there may be inconsistencies in formatting or diagnostic results between the CLI and the editor.
 </Warning>
 
-## Extending a shared config
-
-Use `extends` to inherit settings from one or more config files, then put repository-specific values in the local config:
-
-```toml
-extends = ["../shared/tombi.toml", "https://example.org/config/tombi.toml"]
-
-[format.rules]
-line-width = 100
-```
-
-`extends` accepts an array of paths or URLs. Local paths are resolved relative to the directory of the config file that declares them, or relative to the project root for `.config/tombi.toml`, like the paths of `schemas` and `schema.catalog`. HTTP and HTTPS URLs are supported; a relative URL in a remote config is resolved against that URL. A remote config cannot use `file://` to read a local file. In `pyproject.toml`, place `extends` inside `[tool.tombi]`.
-
-The extended file must be named `tombi.toml` or `.tombi.toml`, so that the Tombi config schema applies to it. `pyproject.toml` cannot be extended.
-
-In the editor, an `extends` entry that does not exist, cannot be loaded (for example a config cycle, a parse error in an inherited config, or a failed fetch), or uses an unsupported URL is reported as an error, and you can jump to the extended config with go to definition.
-
-The configs in `extends` are applied in the order listed, starting with the first entry. The local config is applied last, and later configs take precedence over earlier ones. Tables merge recursively, and local scalar values replace inherited values. Most arrays are replaced by the higher-priority config. `schemas` and `overrides` are combined with higher-priority entries first, so local entries take precedence over inherited entries.
-
-Paths and globs in inherited settings are resolved relative to the extending config's base directory, using Tombi's existing path rules.
-An inheritance chain can follow at most 32 references. One resolution can use at most 256 references in total.
-
 ## Available Options
 
 - [extends](#extends)
@@ -224,9 +202,27 @@ An inheritance chain can follow at most 32 references. One resolution can use at
 
 ### extends
 
-Config files to inherit, in order. Later entries take precedence over earlier ones, and the current config takes precedence over all inherited configs. See [Extending a shared config](#extending-a-shared-config) for path resolution, merge behavior, and restrictions.
+Use `extends` to inherit settings from one or more config files, then put repository-specific values in the local config:
 
 - Type: `String[]` (paths or URLs to `tombi.toml` or `.tombi.toml`)
+
+```toml
+extends = ["../shared/tombi.toml", "https://example.org/config/tombi.toml"]
+
+[format.rules]
+line-width = 100
+```
+
+Local paths are resolved relative to the directory of the config file that declares them, or relative to the project root for `.config/tombi.toml`, like the paths of `schemas` and `schema.catalog`. HTTP and HTTPS URLs are supported; a relative URL in a remote config is resolved against that URL. A remote config cannot use `file://` to read a local file. In `pyproject.toml`, place `extends` inside `[tool.tombi]`.
+
+The extended file must be named `tombi.toml` or `.tombi.toml`, so that the Tombi config schema applies to it. `pyproject.toml` cannot be extended.
+
+In the editor, an `extends` entry that does not exist, cannot be loaded (for example a config cycle, a parse error in an inherited config, or a failed fetch), or uses an unsupported URL is reported as an error, and you can jump to the extended config with go to definition.
+
+The configs in `extends` are applied in the order listed, starting with the first entry. The local config is applied last, and later configs take precedence over earlier ones. Tables merge recursively, and local scalar values replace inherited values. Most arrays are replaced by the higher-priority config. `schemas` and `overrides` are combined with higher-priority entries first, so local entries take precedence over inherited entries.
+
+Paths and globs in inherited settings are resolved relative to the extending config's base directory, using Tombi's existing path rules.
+An inheritance chain can follow at most 32 references. One resolution can use at most 256 references in total.
 
 ### toml-version
 
