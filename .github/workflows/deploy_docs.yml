@@ -165,7 +165,7 @@ jobs:
             cp -a docs/.output/public/. "pages/${SITE_VERSION}/"
             if [ ! -f pages/common/v1/playground/index.html ]; then
               mkdir -p pages/common/v1/archive
-              cp docs/scripts/archive/{archive-ui.css,theme.js} pages/common/v1/archive/
+              cp docs/scripts/archive/theme.js pages/common/v1/archive/
               BASE_URL=/tombi/common/v1 pnpm --dir docs run build
               cp -a docs/.output/public/_build docs/.output/public/playground pages/common/v1/
               cp docs/.output/public/{playground-worker.js,icon.svg,tombi-transparent.svg,favicon.ico,ogp.png} pages/common/v1/
@@ -180,7 +180,7 @@ jobs:
             node docs/scripts/package-version.mjs docs/.output/public "pages/${SITE_VERSION}" "${SITE_VERSION}"
           fi
           mkdir -p pages/common/v1/archive
-          cp docs/scripts/archive/archive.js pages/common/v1/archive/
+          cp docs/scripts/archive/{archive.js,archive-ui.css} pages/common/v1/archive/
           git show "${main_sha}:.github/pages/index.html" > pages/index.html
           git show "${main_sha}:.github/pages/404.html" > pages/404.html
           touch pages/.nojekyll
