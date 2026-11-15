@@ -1,7 +1,7 @@
 import { A } from "@solidjs/router";
 import { IoChevronForward } from "solid-icons/io";
 import type { ParentProps } from "solid-js";
-import { createSignal, For } from "solid-js";
+import { createEffect, createSignal, For } from "solid-js";
 import type { DocIndex } from "~/utils/doc-index";
 
 interface HeaderDropdownItemProps {
@@ -27,6 +27,20 @@ export function HeaderDropdownItem(
 
   const level = props.level ?? 0;
   const hasChildren = !!props.childrenItems?.length;
+  let childrenRef: HTMLDivElement | undefined;
+  let contentRef: HTMLDivElement | undefined;
+
+  createEffect(() => {
+    const expanded = isExpanded();
+    if (!childrenRef || !contentRef) return;
+
+    const height = childrenRef.getBoundingClientRect().height;
+    const targetHeight = expanded ? contentRef.scrollHeight : 0;
+    childrenRef.style.height = `${height}px`;
+    void childrenRef.offsetHeight;
+    childrenRef.style.height =
+      expanded && height === targetHeight ? "auto" : `${targetHeight}px`;
+  });
 
   const handleClick = (e: MouseEvent) => {
     if (hasChildren && (e.target as HTMLElement).closest("button")) {
@@ -68,14 +82,21 @@ export function HeaderDropdownItem(
       </A>
       {hasChildren && (
         <div
-          class="grid overflow-hidden transition-all duration-200 ease-in-out"
-          classList={{
-            "grid-rows-[0fr]": !isExpanded(),
-            "grid-rows-[1fr]": isExpanded(),
+          ref={childrenRef}
+          class="overflow-hidden transition-[height] duration-200 ease-in-out"
+          style={{ height: "0px" }}
+          onTransitionEnd={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              event.propertyName === "height" &&
+              isExpanded()
+            ) {
+              event.currentTarget.style.height = "auto";
+            }
           }}
           inert={!childrenVisible()}
         >
-          <div class="min-h-0 overflow-hidden">
+          <div ref={contentRef} class="overflow-hidden">
             <div class="flex flex-col pl-4 space-y-1">
               <For each={props.childrenItems}>
                 {(child) => (
