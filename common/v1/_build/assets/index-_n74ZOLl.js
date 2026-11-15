@@ -1,0 +1,3 @@
+import{M as r}from"./index-6OQr06v0.js";import{b as o,k as a}from"./web-DCz9_uPG.js";function i(e){const n={h1:"h1",p:"p",...r(),...e.components},{PageHeading:t}=n;return t||c("PageHeading"),[o(t,{title:"CLI",description:"Command-line interface for Formatter and Linter.",og_url:"https://tombi-toml.github.io/tombi/common/v1/docs/cli"}),`
+`,o(n.h1,{id:"cli",className:"group relative heading-with-anchor",children:"CLI"}),`
+`,o(n.p,{children:"Tombi provides a CLI for formatting and linting TOML files."})]}function p(e={}){const{wrapper:n}={...r(),...e.components};return n?o(n,a(e,{get children(){return o(i,e)}})):i(e)}function c(e,n){throw new Error("Expected component `"+e+"` to be defined: you likely forgot to import, pass, or provide it.")}export{p as default};

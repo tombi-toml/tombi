@@ -1,0 +1,5 @@
+import{M as i}from"./index-6OQr06v0.js";import{N as a}from"./Highlight-CMhf5ZLw.js";import{b as o,k as s}from"./web-DCz9_uPG.js";function r(t){const e={a:"a",code:"code",h1:"h1",p:"p",...i(),...t.components},{PageHeading:n}=e;return n||c("PageHeading"),[o(n,{title:"Tombi",description:"a TOML toolkit that provides Formatter, Linter, and Language Server.",og_url:"https://tombi-toml.github.io/tombi/main/docs/extensions/tombi-extension-uv"}),`
+`,`
+`,o(e.h1,{id:"uv-extension",className:"group relative heading-with-anchor",children:"uv Extension"}),`
+`,o(a,{get children(){return o(e.p,{get children(){return["This page has moved to ",o(e.a,{href:"/tombi/main/docs/extensions/tombi-extension-pyproject",children:"Pyproject Extension"}),`.
+The feature set still understands uv-specific workspace metadata, but the documentation now uses the broader `,o(e.code,{children:"pyproject.toml"})," name."]}})}})]}function u(t={}){const{wrapper:e}={...i(),...t.components};return e?o(e,s(t,{get children(){return o(r,t)}})):r(t)}function c(t,e){throw new Error("Expected component `"+t+"` to be defined: you likely forgot to import, pass, or provide it.")}export{u as default};

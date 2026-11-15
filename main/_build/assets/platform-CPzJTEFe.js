@@ -1,0 +1,1 @@
+function e(){if(typeof window>"u")return"unknown";const n=navigator.userAgent.toLowerCase();return n.includes("mac")?"mac":n.includes("win")?"windows":n.includes("linux")?"linux":n.includes("iphone")||n.includes("ipad")?"ios":n.includes("android")?"android":"unknown"}export{e as d};

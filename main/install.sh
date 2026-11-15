@@ -1,0 +1,446 @@
+#!/bin/sh
+set -e
+
+# Tombi installation script
+# Automatically installs tombi from GitHub releases based on detected architecture
+
+# Temporary directory for installation
+TEMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TEMP_DIR"' EXIT
+
+# Helper functions
+print_step() {
+	printf '\033[34m==>\033[m %s\n' "$1" >&2
+}
+
+print_error() {
+	printf '\033[31mError:\033[m %s\n' "$1" >&2
+}
+
+print_success() {
+	printf '\033[32mSuccess:\033[m %s\n' "$1" >&2
+}
+
+print_usage() {
+	cat >&2 <<EOF
+Usage: ${0##*/} [--version <version|latest>] [--install-dir <dir>] [--checksum <sha256>]
+
+Options:
+  --version <version>     Install a specific version (default: embedded latest stable)
+  --install-dir <dir>     Install into a specific directory
+  --checksum <sha256>     Verify downloaded archive SHA256 (<hex> or sha256:<hex>)
+  --help                  Show this help message
+EOF
+}
+
+# Keep the 0.9.23 cutoff in sync with
+# editors/zed/src/lib.rs (TombiExtension::uses_legacy_unix_artifact).
+version_uses_legacy_unix_artifact() {
+	VERSION_PREFIX=$(printf '%s' "$1" | sed 's/[+-].*$//')
+	if ! printf '%s' "${VERSION_PREFIX}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+		return 1
+	fi
+
+	old_ifs=$IFS
+	IFS=.
+	set -- ${VERSION_PREFIX}
+	IFS=$old_ifs
+	major=$1
+	minor=$2
+	patch=$3
+
+	if [ "$major" -gt 0 ]; then
+		return 1
+	fi
+	if [ "$minor" -lt 9 ]; then
+		return 0
+	fi
+	if [ "$minor" -gt 9 ]; then
+		return 1
+	fi
+	[ "$patch" -lt 23 ]
+}
+
+download_to_file() {
+	URL="$1"
+	OUTPUT_FILE="$2"
+
+	if command -v curl >/dev/null 2>&1; then
+		curl -L -f -s "${URL}" -o "${OUTPUT_FILE}"
+	elif command -v wget >/dev/null 2>&1; then
+		wget --tries=1 -q "${URL}" -O "${OUTPUT_FILE}"
+	else
+		print_error "Neither curl nor wget is installed. Please install one of them."
+		exit 1
+	fi
+}
+
+normalize_sha256_checksum() {
+	CHECKSUM_INPUT="$1"
+
+	if [ -z "${CHECKSUM_INPUT}" ]; then
+		print_error "Invalid checksum: value must not be empty."
+		exit 1
+	fi
+
+	case "${CHECKSUM_INPUT}" in
+	sha256:*)
+		CHECKSUM_VALUE=${CHECKSUM_INPUT#sha256:}
+		;;
+	*:*)
+		print_error "Unsupported checksum format '${CHECKSUM_INPUT}'. Only sha256:<hex> is supported."
+		exit 1
+		;;
+	*)
+		CHECKSUM_VALUE=${CHECKSUM_INPUT}
+		;;
+	esac
+
+	if [ -z "${CHECKSUM_VALUE}" ]; then
+		print_error "Invalid checksum: SHA256 value must not be empty."
+		exit 1
+	fi
+
+	if [ ${#CHECKSUM_VALUE} -ne 64 ]; then
+		print_error "Invalid checksum '${CHECKSUM_INPUT}': expected 64 hex characters for SHA256, got ${#CHECKSUM_VALUE}."
+		exit 1
+	fi
+
+	if ! printf '%s' "${CHECKSUM_VALUE}" | grep -Eq '^[0-9A-Fa-f]{64}$'; then
+		print_error "Invalid checksum '${CHECKSUM_INPUT}': SHA256 must contain only hexadecimal characters."
+		exit 1
+	fi
+
+	NORMALIZED_CHECKSUM=$(printf '%s' "${CHECKSUM_VALUE}" | tr 'A-F' 'a-f')
+}
+
+calculate_sha256() {
+	FILE_PATH="$1"
+	CHECKSUM_OUTPUT_FILE="${TEMP_DIR}/checksum-output.txt"
+
+	if command -v sha256sum >/dev/null 2>&1; then
+		if ! sha256sum "${FILE_PATH}" >"${CHECKSUM_OUTPUT_FILE}"; then
+			print_error "Failed to calculate SHA256 with sha256sum for ${FILE_PATH}."
+			exit 1
+		fi
+		if ! ACTUAL_CHECKSUM=$(awk 'NR==1 {print $1; exit}' "${CHECKSUM_OUTPUT_FILE}" | tr 'A-F' 'a-f'); then
+			print_error "Failed to parse calculated SHA256 for ${FILE_PATH}."
+			exit 1
+		fi
+	elif command -v shasum >/dev/null 2>&1; then
+		if ! shasum -a 256 "${FILE_PATH}" >"${CHECKSUM_OUTPUT_FILE}"; then
+			print_error "Failed to calculate SHA256 with shasum for ${FILE_PATH}."
+			exit 1
+		fi
+		if ! ACTUAL_CHECKSUM=$(awk 'NR==1 {print $1; exit}' "${CHECKSUM_OUTPUT_FILE}" | tr 'A-F' 'a-f'); then
+			print_error "Failed to parse calculated SHA256 for ${FILE_PATH}."
+			exit 1
+		fi
+	elif command -v certutil.exe >/dev/null 2>&1; then
+		if ! command -v cygpath >/dev/null 2>&1; then
+			print_error "Unable to verify checksum with certutil.exe: cygpath is required."
+			exit 1
+		fi
+		if ! certutil.exe -hashfile "$(cygpath -w "${FILE_PATH}")" SHA256 >"${CHECKSUM_OUTPUT_FILE}"; then
+			print_error "Failed to calculate SHA256 with certutil.exe for ${FILE_PATH}."
+			exit 1
+		fi
+		if ! ACTUAL_CHECKSUM=$(awk 'NR==2 {print $1; exit}' "${CHECKSUM_OUTPUT_FILE}" | tr 'A-F' 'a-f'); then
+			print_error "Failed to parse calculated SHA256 for ${FILE_PATH}."
+			exit 1
+		fi
+	else
+		print_error "Unable to verify checksum: sha256sum, shasum, or certutil.exe is required."
+		exit 1
+	fi
+
+	if ! printf '%s' "${ACTUAL_CHECKSUM}" | grep -Eq '^[0-9a-f]{64}$'; then
+		print_error "Failed to parse calculated SHA256 for ${FILE_PATH}."
+		exit 1
+	fi
+
+	printf '%s\n' "${ACTUAL_CHECKSUM}"
+}
+
+verify_archive_checksum() {
+	FILE_PATH="$1"
+	EXPECTED_CHECKSUM="$2"
+
+	ACTUAL_CHECKSUM=$(calculate_sha256 "${FILE_PATH}")
+	if [ "${ACTUAL_CHECKSUM}" != "${EXPECTED_CHECKSUM}" ]; then
+		print_error "Checksum verification failed for ${FILE_PATH}. Expected: ${EXPECTED_CHECKSUM} Actual: ${ACTUAL_CHECKSUM}"
+		exit 1
+	fi
+
+	print_step "Checksum verification passed."
+}
+
+# Parse command line options
+__SPECIFIED_VERSION=""
+__SPECIFIED_INSTALL_DIR=""
+__SPECIFIED_CHECKSUM=""
+__CHECKSUM_WAS_SET=0
+while [ $# -gt 0 ]; do
+	case $1 in
+	--version)
+		if [ $# -lt 2 ]; then
+			print_error "Missing value for --version"
+			print_usage
+			exit 1
+		fi
+		if [ "$2" != "latest" ]; then
+			__SPECIFIED_VERSION="${2#v}"
+		fi
+		shift 2
+		;;
+	--install-dir)
+		if [ $# -lt 2 ]; then
+			print_error "Missing value for --install-dir"
+			print_usage
+			exit 1
+		fi
+		__SPECIFIED_INSTALL_DIR="$2"
+		shift 2
+		;;
+	--checksum)
+		if [ $# -lt 2 ]; then
+			print_error "Missing value for --checksum"
+			print_usage
+			exit 1
+		fi
+		__CHECKSUM_WAS_SET=1
+		__SPECIFIED_CHECKSUM="$2"
+		shift 2
+		;;
+	--help)
+		print_usage
+		exit 0
+		;;
+	*)
+		print_error "Unknown option: $1"
+		print_usage
+		exit 1
+		;;
+	esac
+done
+
+# Detect OS and architecture
+detect_os_arch() {
+	OS="$(uname -s)"
+	ARCH="$(uname -m)"
+
+	case "${OS}" in
+	Linux)
+		OS="unknown-linux"
+		if [ "${ARCH}" = "aarch64" ]; then
+			ARCH="aarch64"
+			TARGET="${ARCH}-${OS}-musl"
+		elif [ "${ARCH}" = "armv7l" ]; then
+			ARCH="arm"
+			TARGET="${ARCH}-${OS}-gnueabihf"
+		else
+			ARCH="x86_64"
+			TARGET="${ARCH}-${OS}-musl"
+		fi
+		;;
+	Darwin)
+		OS="apple-darwin"
+		if [ "${ARCH}" = "arm64" ]; then
+			ARCH="aarch64"
+		else
+			ARCH="x86_64"
+		fi
+		TARGET="${ARCH}-${OS}"
+		;;
+	MINGW* | MSYS* | CYGWIN* | Windows_NT)
+		OS="pc-windows-msvc"
+		if [ "${ARCH}" = "aarch64" ]; then
+			ARCH="aarch64"
+		else
+			ARCH="x86_64"
+		fi
+		TARGET="${ARCH}-${OS}"
+		;;
+	SunOS)
+		# SunOS can mean either illumos or Oracle Solaris. tombi only ships
+		# prebuilt binaries for illumos.
+		OS_FLAVOR="$(uname -o 2>/dev/null || echo unknown)"
+		if [ "${OS_FLAVOR}" != "illumos" ]; then
+			print_error "Unsupported operating system: ${OS} (${OS_FLAVOR})."
+			print_error "tombi provides prebuilt binaries for illumos only, not Oracle Solaris."
+			print_error "On illumos, ensure 'uname -o' reports 'illumos'; otherwise build from source: https://github.com/tombi-toml/tombi"
+			exit 1
+		fi
+		case "${ARCH}" in
+		i86pc | x86_64)
+			ARCH="x86_64"
+			;;
+		*)
+			print_error "Unsupported architecture '${ARCH}' on illumos."
+			print_error "tombi provides an illumos binary for x86_64 (i86pc) only."
+			print_error "Build tombi from source for this architecture: https://github.com/tombi-toml/tombi"
+			exit 1
+			;;
+		esac
+		OS="unknown-illumos"
+		TARGET="${ARCH}-${OS}"
+		;;
+	*)
+		print_error "Unsupported OS: ${OS}"
+		exit 1
+		;;
+	esac
+
+	print_step "Detected system: ${TARGET}"
+}
+
+artifact_extension() {
+	OS="$(uname -s)"
+
+	case "${OS}" in
+	MINGW* | MSYS* | CYGWIN* | Windows_NT)
+		echo ".zip"
+		;;
+	*)
+		if version_uses_legacy_unix_artifact "${VERSION}"; then
+			echo ".gz"
+		else
+			echo ".tar.gz"
+		fi
+		;;
+	esac
+}
+
+# Create installation directories
+create_install_dir() {
+	if [ -n "${__SPECIFIED_INSTALL_DIR}" ]; then
+		BIN_DIR="${__SPECIFIED_INSTALL_DIR}"
+	else
+		BIN_DIR="${HOME}/.local/bin"
+	fi
+	mkdir -p "${BIN_DIR}"
+
+	if ! echo ":$PATH:" | grep -q ":${BIN_DIR}:"; then
+		print_step "${BIN_DIR} is not in your PATH. Consider adding it to your shell configuration file."
+	fi
+}
+
+# Download and install tombi
+download_and_install() {
+	ARTIFACT_EXTENSION=$(artifact_extension)
+	DOWNLOAD_URL="${RELEASE_BASE_URL}/v${VERSION}/tombi-cli-${VERSION}-${TARGET}${ARTIFACT_EXTENSION}"
+	TEMP_FILE="${TEMP_DIR}/tombi-${VERSION}${ARTIFACT_EXTENSION}"
+
+	print_step "Download from ${DOWNLOAD_URL}"
+	print_step "Downloading tombi ${VERSION} (${TARGET})..."
+
+	if ! download_to_file "${DOWNLOAD_URL}" "${TEMP_FILE}" || [ ! -s "${TEMP_FILE}" ]; then
+		print_error "Download failed. Please check the URL: ${DOWNLOAD_URL}"
+		exit 1
+	fi
+
+	if [ -n "${NORMALIZED_CHECKSUM:-}" ]; then
+		verify_archive_checksum "${TEMP_FILE}" "${NORMALIZED_CHECKSUM}"
+	fi
+
+	EXE_NAME=$(get_exe_name)
+	if [ "${ARTIFACT_EXTENSION}" = ".zip" ]; then
+		unzip -o "${TEMP_FILE}" -d "${TEMP_DIR}"
+		EXTRACTED_FILE="${TEMP_DIR}/${EXE_NAME}"
+	elif [ "${ARTIFACT_EXTENSION}" = ".tar.gz" ]; then
+		tar -xzf "${TEMP_FILE}" -C "${TEMP_DIR}"
+		EXTRACTED_FILE="${TEMP_DIR}/tombi-cli-${VERSION}-${TARGET}/${EXE_NAME}"
+	elif [ "${ARTIFACT_EXTENSION}" = ".gz" ]; then
+		gzip -d "${TEMP_FILE}" -f
+		EXTRACTED_FILE="${TEMP_FILE%.gz}"
+	else
+		print_error "Unsupported artifact extension: ${ARTIFACT_EXTENSION}"
+		exit 1
+	fi
+
+	if [ ! -f "${EXTRACTED_FILE}" ]; then
+		print_error "Failed to locate ${EXE_NAME} in the downloaded archive."
+		exit 1
+	fi
+
+	chmod +x "${EXTRACTED_FILE}"
+	mv "${EXTRACTED_FILE}" "${BIN_DIR}/${EXE_NAME}"
+
+	print_success "tombi ${VERSION} has been installed to ${BIN_DIR}/${EXE_NAME}"
+}
+
+# Version
+LATEST_STABLE_VERSION="1.11.2"
+if [ -n "${__SPECIFIED_VERSION}" ]; then
+	VERSION="${__SPECIFIED_VERSION}"
+	print_step "Using specified version: ${VERSION}"
+else
+	VERSION="${LATEST_STABLE_VERSION}"
+	if ! printf '%s' "${VERSION}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+		print_error "Invalid embedded stable version '${VERSION}'."
+		exit 1
+	fi
+	print_step "Using latest version: ${VERSION}"
+fi
+RELEASE_BASE_URL="https://github.com/tombi-toml/tombi/releases/download"
+if [ "${__CHECKSUM_WAS_SET}" -eq 1 ]; then
+	normalize_sha256_checksum "${__SPECIFIED_CHECKSUM}"
+fi
+
+# Get the executable name based on OS
+get_exe_name() {
+	OS="$(uname -s)"
+	case "${OS}" in
+	MINGW* | MSYS* | CYGWIN* | Windows_NT)
+		echo "tombi.exe"
+		;;
+	*)
+		echo "tombi"
+		;;
+	esac
+}
+
+# Main process
+main() {
+	print_step "Starting tombi installer..."
+	detect_os_arch
+	create_install_dir
+	if ! download_and_install; then
+		exit 1
+	fi
+
+	EXE_NAME=$(get_exe_name)
+	INSTALLED_BINARY="${BIN_DIR}/${EXE_NAME}"
+
+	# Verify installation
+	if [ ! -f "${INSTALLED_BINARY}" ]; then
+		print_error "Installation failed: ${INSTALLED_BINARY} not found."
+		exit 1
+	fi
+
+	# Verify the binary can be found in PATH and executed
+	if ! command -v "${EXE_NAME}" >/dev/null 2>&1; then
+		print_error "Installation completed, but ${EXE_NAME} command not found in PATH."
+		printf 'To run manually: \033[34m%s --help\033[m\n' "${INSTALLED_BINARY}" >&2
+		exit 1
+	fi
+
+	if "${EXE_NAME}" --version >/dev/null 2>&1; then
+		INSTALLED_VERSION=$("${EXE_NAME}" --version 2>&1 | head -n 1 | sed -nE 's/^tombi v?([0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?).*/\1/p')
+		if [ -z "$INSTALLED_VERSION" ]; then
+			INSTALLED_VERSION="unknown"
+		fi
+		if [ "$INSTALLED_VERSION" != "$VERSION" ]; then
+			print_error "Installed version mismatch: expected ${VERSION}, but got ${INSTALLED_VERSION}"
+			exit 1
+		fi
+		printf 'Usage: \033[34m%s --help\033[m\n' "${EXE_NAME}" >&2
+	else
+		print_error "Installation completed, but ${EXE_NAME} cannot be executed."
+		printf 'To run manually: \033[34m%s --help\033[m\n' "${INSTALLED_BINARY}" >&2
+		exit 1
+	fi
+}
+
+# Execute the script
+main

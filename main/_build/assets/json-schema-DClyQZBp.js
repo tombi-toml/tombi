@@ -1,0 +1,4 @@
+import{M as r}from"./index-6OQr06v0.js";import{b as t,k as a}from"./web-DCz9_uPG.js";function i(n){const e={a:"a",h1:"h1",p:"p",...r(),...n.components},{PageHeading:o}=e;return o||c("PageHeading"),[t(o,{title:"JSON Schema",description:"Validate TOML files against JSON Schema definitions.",og_url:"https://tombi-toml.github.io/tombi/main/docs/linter/json-schema"}),`
+`,t(e.h1,{id:"json-schema",className:"group relative heading-with-anchor",children:"JSON Schema"}),`
+`,t(e.p,{children:"Tombi supports JSON Schema validation."}),`
+`,t(e.p,{get children(){return["For more details, please refer to ",t(e.a,{href:"/tombi/main/docs/json-schema#linting",children:"JSON Schema"}),"."]}})]}function d(n={}){const{wrapper:e}={...r(),...n.components};return e?t(e,a(n,{get children(){return t(i,n)}})):i(n)}function c(n,e){throw new Error("Expected component `"+n+"` to be defined: you likely forgot to import, pass, or provide it.")}export{d as default};

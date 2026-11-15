@@ -1,0 +1,1 @@
+import{e as r,b as a,D as i,G as u}from"./web-DCz9_uPG.js";const o=i();function d(t){const[n,c]=r(),s=()=>{const e=n();return e?.scope===t.scope?e.key:void 0};return a(o.Provider,{value:{selectedKey:s,selectKey:e=>c({scope:t.scope,key:e})},get children(){return t.children}})}function C(){return u(o)}export{d as C,C as u};

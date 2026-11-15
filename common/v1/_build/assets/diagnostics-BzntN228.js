@@ -1,0 +1,8 @@
+import{M as r}from"./index-6OQr06v0.js";import{N as a,W as c}from"./Highlight-CMhf5ZLw.js";import{b as n,k as s}from"./web-DCz9_uPG.js";function t(i){const e={code:"code",h1:"h1",h2:"h2",p:"p",...r(),...i.components},{PageHeading:o}=e;return o||d("PageHeading"),[n(o,{title:"Diagnostics",description:"Real-time syntax and validation error diagnostics.",og_url:"https://tombi-toml.github.io/tombi/common/v1/docs/language-server/diagnostics"}),`
+`,`
+`,n(e.h1,{id:"diagnostics",className:"group relative heading-with-anchor",children:"Diagnostics"}),`
+`,n(e.p,{children:"Real-time error detection and linting feedback in your editor through Tombi's Language Server."}),`
+`,n(e.h2,{id:"workspace-diagnostic",className:"group relative heading-with-anchor",children:"Workspace Diagnostic"}),`
+`,n(e.p,{children:"Run diagnostics for the entire workspace."}),`
+`,n(a,{get children(){return n(e.p,{get children(){return["If you want to run Workspace Diagnostic every time, set ",n(e.code,{children:"lsp.workspace-diagnostic.enabled = false"}),"."]}})}}),`
+`,n(c,{get children(){return[n(e.p,{children:"When opening the editor in your HOME directory, Workspace Diagnostic will be skipped to avoid scanning a large number of files."}),n(e.p,{children:"This is a special exception to prevent performance issues from analyzing too many files and directories."})]}})]}function h(i={}){const{wrapper:e}={...r(),...i.components};return e?n(e,s(i,{get children(){return n(t,i)}})):t(i)}function d(i,e){throw new Error("Expected component `"+i+"` to be defined: you likely forgot to import, pass, or provide it.")}export{h as default};

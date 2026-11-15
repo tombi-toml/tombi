@@ -1,0 +1,3 @@
+import{M as i}from"./index-6OQr06v0.js";import{b as o,k as c}from"./web-DCz9_uPG.js";function r(e){const n={h1:"h1",p:"p",...i(),...e.components},{PageHeading:t}=n;return t||a("PageHeading"),[o(t,{title:"Reference",description:"Technical reference, testing, and version information.",og_url:"https://tombi-toml.github.io/tombi/common/v1/docs/reference"}),`
+`,o(n.h1,{id:"reference",className:"group relative heading-with-anchor",children:"Reference"}),`
+`,o(n.p,{children:"Reference information for Tombi."})]}function d(e={}){const{wrapper:n}={...i(),...e.components};return n?o(n,c(e,{get children(){return o(r,e)}})):r(e)}function a(e,n){throw new Error("Expected component `"+e+"` to be defined: you likely forgot to import, pass, or provide it.")}export{d as default};
