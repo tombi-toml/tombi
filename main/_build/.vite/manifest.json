@@ -831,7 +831,7 @@
     ]
   },
   "src/routes/layout.tsx?pick=default&pick=$css": {
-    "file": "assets/layout-BxylehLM.js",
+    "file": "assets/layout-rDGNHrTe.js",
     "name": "layout",
     "src": "src/routes/layout.tsx?pick=default&pick=$css",
     "isEntry": true,
@@ -872,7 +872,7 @@
     ]
   },
   "virtual:$vinxi/handler/client": {
-    "file": "assets/client-CnIXOaVW.js",
+    "file": "assets/client-DIMflRUP.js",
     "name": "client",
     "src": "virtual:$vinxi/handler/client",
     "isEntry": true,
