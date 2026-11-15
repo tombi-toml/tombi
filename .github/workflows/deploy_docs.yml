@@ -31,7 +31,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh workflow run deploy_docs.yml --ref main --field version="${RELEASE_TAG}"
+        run: gh workflow run deploy_docs.yml --repo "${GITHUB_REPOSITORY}" --ref main --field version="${RELEASE_TAG}"
 
   detect-changes:
     runs-on: ubuntu-latest
@@ -151,7 +151,7 @@ jobs:
               [ -e "${entry}" ] || continue
               name="${entry#pages/}"
               case "${name}" in
-                .git|CNAME|main|v[0-9]*) ;;
+                .git|CNAME|common|main|v[0-9]*) ;;
                 *) rm -rf -- "${entry}" ;;
               esac
             done
@@ -161,7 +161,15 @@ jobs:
           mkdir "pages/${SITE_VERSION}"
           if [ "${SITE_VERSION}" = "main" ]; then
             cp -a docs/.output/public/. "pages/${SITE_VERSION}/"
+            if [ ! -f pages/common/v1/playground/index.html ]; then
+              mkdir -p pages/common/v1/archive
+              cp docs/scripts/archive/{archive.js,archive-ui.css,theme.js} pages/common/v1/archive/
+              BASE_URL=/tombi/common/v1 pnpm --dir docs run build
+              cp -a docs/.output/public/_build docs/.output/public/playground pages/common/v1/
+              cp docs/.output/public/{playground-worker.js,icon.svg,tombi-transparent.svg,favicon.ico,ogp.png} pages/common/v1/
+            fi
           else
+            test -f pages/common/v1/playground/index.html
             # Historical tags use the packager maintained by the main workflow.
             git archive "${main_sha}" docs/scripts/archive docs/scripts/package-version.mjs | tar -x
             npm install --prefix docs/scripts/archive --ignore-scripts --package-lock=false --no-audit --no-fund

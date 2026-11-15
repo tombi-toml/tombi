@@ -1,4 +1,4 @@
-const base = new URL(".", import.meta.url).pathname.replace(/\/$/, "");
+const base = document.querySelector('meta[name="tombi-archive-base"]').content;
 const normalize = (path) => path.replace(/\/$/, "");
 const currentPath = normalize(location.pathname);
 const escape = (value) =>

@@ -32,6 +32,7 @@ if (
 if (resolve(input) === resolve(output))
   throw new Error("Output must differ from input");
 const base = `/tombi/${version}`;
+const common = "/tombi/common/v1/archive";
 const remote = `https://raw.githubusercontent.com/tombi-toml/tombi/${version}/docs/public`;
 const scripts = dirname(fileURLToPath(import.meta.url));
 const pages = [];
@@ -214,7 +215,7 @@ const search = [];
 for (const { path, route, document, article } of pages) {
   const isDocs = route === "docs" || route.startsWith("docs/");
   if (route === "playground") {
-    article.innerHTML = `<iframe class="archive-playground-frame" title="Tombi Playground ${version}" src="/tombi/main/playground/?runtime=${version}&amp;embedded=1" allow="clipboard-write"></iframe>`;
+    article.innerHTML = `<iframe class="archive-playground-frame" title="Tombi Playground ${version}" src="/tombi/common/v1/playground/?runtime=${version}&amp;embedded=1" allow="clipboard-write"></iframe>`;
   }
   if (isDocs)
     search.push({
@@ -222,10 +223,16 @@ for (const { path, route, document, article } of pages) {
       url: `${base}/${route}`,
       content: article.textContent.replace(/\s+/g, " ").trim(),
     });
+  for (const meta of document.head.querySelectorAll(
+    'meta[property="og:image"],meta[property="twitter:image"],meta[name="twitter:image"]',
+  )) {
+    if (meta.content.includes(`${base}/ogp.png`))
+      meta.content = `${remote}/ogp.png`;
+  }
   const metadata = [...document.head.querySelectorAll("title,meta")]
     .map((node) => node.outerHTML)
     .join("");
-  const html = `<!doctype html><html lang="en"><head>${metadata}<link rel="icon" href="${remote}/favicon.ico"><link rel="stylesheet" href="${base}/archive.css"><link rel="stylesheet" href="${base}/archive-ui.css"><script src="${base}/theme.js"></script><script type="module" src="${base}/archive.js"></script></head><body><div class="min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"><div id="archive-header"></div><main class="flex-1 mt-20 pt-0"><div class="max-w-7xl mx-auto"><div class="${isDocs ? "flex w-full max-w-[100vw]" : ""}">${isDocs ? '<nav id="archive-sidebar" class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden" aria-label="Documentation"></nav>' : ""}${article.outerHTML}</div></div></main></div></body></html>`;
+  const html = `<!doctype html><html lang="en"><head>${metadata}<meta name="tombi-archive-base" content="${base}"><link rel="icon" href="${remote}/favicon.ico"><link rel="stylesheet" href="${base}/archive.css"><link rel="stylesheet" href="${common}/archive-ui.css"><script src="${common}/theme.js"></script><script type="module" src="${common}/archive.js"></script></head><body><div class="min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"><div id="archive-header"></div><main class="flex-1 mt-20 pt-0"><div class="max-w-7xl mx-auto"><div class="${isDocs ? "flex w-full max-w-[100vw]" : ""}">${isDocs ? '<nav id="archive-sidebar" class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden" aria-label="Documentation"></nav>' : ""}${article.outerHTML}</div></div></main></div></body></html>`;
   const destination = join(output, path);
   await mkdir(dirname(destination), { recursive: true });
   await writeFile(destination, html);
@@ -239,11 +246,6 @@ await writeFile(
   join(output, "icons.svg"),
   `<svg xmlns="http://www.w3.org/2000/svg">${[...symbols].map(([content, id]) => `<g id="${id}">${content}</g>`).join("")}</svg>`,
 );
-for (const name of ["archive.js", "archive-ui.css", "theme.js"])
-  await writeFile(
-    join(output, name),
-    await readFile(join(scripts, "archive", name)),
-  );
 const emitted = await files(output);
 const sizes = await Promise.all(
   emitted.map(async (path) => ({
