@@ -1,0 +1,55 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title data-sm="00000001000000004000000200000000">Magic Trailing Comma</title><meta data-sm="00000001000000004000000200000010" name="description" content="black-inspired formatting with magic trailing comma."><meta data-sm="00000001000000004000000200000020" property="og:type" content="website"><meta data-sm="00000001000000004000000200000030" property="og:url" content="https://tombi-toml.github.io/tombi/v1.11.2/docs/formatter/magic-trailing-comma"><meta data-sm="00000001000000004000000200000040" property="og:title" content="Magic Trailing Comma"><meta data-sm="00000001000000004000000200000050" property="og:description" content="black-inspired formatting with magic trailing comma."><meta data-sm="00000001000000004000000200000060" property="og:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.2/docs/public/ogp.png"><meta data-sm="00000001000000004000000200000070" property="og:site_name" content="Tombi"><meta data-sm="00000001000000004000000200000080" property="twitter:card" content="summary_large_image"><meta data-sm="00000001000000004000000200000090" property="twitter:url" content="https://tombi-toml.github.io/tombi/v1.11.2/docs/formatter/magic-trailing-comma"><meta data-sm="000000010000000040000002000000a100" property="twitter:title" content="Magic Trailing Comma"><meta data-sm="000000010000000040000002000000a110" property="twitter:description" content="black-inspired formatting with magic trailing comma."><meta data-sm="000000010000000040000002000000a120" property="twitter:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.2/docs/public/ogp.png"><meta name="tombi-archive-base" content="/tombi/v1.11.2"><link rel="icon" href="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.2/docs/public/favicon.ico"><link rel="stylesheet" href="/tombi/v1.11.2/archive.css"><link rel="stylesheet" href="/tombi/common/v1/archive/archive-ui.css"><script src="/tombi/common/v1/archive/theme.js"></script><script type="module" src="/tombi/common/v1/archive/archive.js"></script></head><body><div class="min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"><div id="archive-header"></div><main class="flex-1 mt-20 pt-0"><div class="max-w-7xl mx-auto"><div class="flex w-full max-w-[100vw]"><nav id="archive-sidebar" class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden" aria-label="Documentation"></nav><main tabindex="-1" class="flex-1 min-w-0 p-4 mdx-content min-h-screen max-w-full outline-none"><div class="max-w-full">
+<h1 id="magic-trailing-comma" class="group relative heading-with-anchor ">Magic Trailing Comma</h1>
+<p>Magic Trailing Comma is a feature inspired by the <a href="https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html#the-magic-trailing-comma">Black formatter</a>.<br>
+When you add a trailing comma to the last element, Tombi treats it as an explicit hint to expand into multiple lines and keeps the trailing comma after formatting.<br>
+This keeps diffs clean when new elements are added later, while respecting the author's intent when no trailing comma is present.</p>
+<h2 id="basic-usage" class="group relative heading-with-anchor ">Basic Usage</h2>
+<p>When there is no trailing comma, Tombi automatically folds the array:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># Before formatting</span>
+<span class="p">items</span> = [
+  <span class="s">"aaaa"</span>,
+  <span class="s">"bbbb"</span>,
+  <span class="s">"cccc"</span>
+]
+
+<span class="c"># After formatting</span>
+<span class="p">items</span> = [<span class="s">"aaaa"</span>, <span class="s">"bbbb"</span>, <span class="s">"cccc"</span>]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<p>If <code>line-width</code> is configured and the array exceeds that width, the array will be expanded to multiple lines, but the final element does not receive a trailing comma automatically. When <code>line-width</code> is omitted, arrays are not expanded based on line width.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># Before formatting</span>
+<span class="p">items</span> = [<span class="s">"aaaa"</span>, <span class="s">"bbbb"</span>, <span class="s">"cccc"</span>, <span class="s">"dddd"</span>, <span class="s">"eeee"</span>, <span class="s">"ffff"</span>, <span class="s">"gggg"</span>, <span class="s">"hhhh"</span>, <span class="s">"iiii"</span>,<span class="s">"jjjj"</span>]
+
+<span class="c"># After formatting</span>
+<span class="p">items</span> = [
+  <span class="s">"aaaa"</span>,
+  <span class="s">"bbbb"</span>,
+  <span class="s">"cccc"</span>,
+  <span class="s">"dddd"</span>,
+  <span class="s">"eeee"</span>,
+  <span class="s">"ffff"</span>,
+  <span class="s">"gggg"</span>,
+  <span class="s">"hhhh"</span>,
+  <span class="s">"iiii"</span>,
+  <span class="s">"jjjj"</span>
+]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Alternatively, you can force it to expand to multiple lines by adding a comma to the last element of the array.<br>
+The formatter preserves that trailing comma in the expanded form.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># Before formatting</span>
+<span class="p">dependencies</span> = [<span class="s">"tombi"</span>, <span class="s">"biome"</span>, <span class="s">"prettier"</span>,]
+
+<span class="c"># After formatting</span>
+<span class="p">dependencies</span> = [
+  <span class="s">"tombi"</span>,
+  <span class="s">"biome"</span>,
+  <span class="s">"prettier"</span>,
+]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h2 id="magic-trailing-comma-for-inline-tables" class="group relative heading-with-anchor ">Magic Trailing Comma for Inline Tables</h2>
+<p>In TOML v1.1.0, Magic Trailing Comma will also be enabled for Inline Tables, and the same trailing-comma hint applies.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># Before formatting</span>
+<span class="p">items</span> = { <span class="p">a</span> = <span class="n">1</span>, <span class="p">b</span> = <span class="n">2</span>, <span class="p">c</span> = <span class="n">3</span>, }
+
+<span class="c"># After formatting</span>
+<span class="p">items</span> = {
+  <span class="p">a</span> = <span class="n">1</span>,
+  <span class="p">b</span> = <span class="n">2</span>,
+  <span class="p">c</span> = <span class="n">3</span>,
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div><div class="mt-8 pt-8 border-t border-gray-200 flex justify-between"><a href="/tombi/v1.11.2/docs/formatter/auto-sorting" class="no-underline text-blue-500 hover:text-blue-600 inactive"><svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.2/icons.svg#icon-8"></use></svg> Auto Sorting</a><a href="/tombi/v1.11.2/docs/formatter/treatment-of-comments" class="no-underline text-blue-500 hover:text-blue-600 ml-auto inactive">Treatment of Comments <svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.2/icons.svg#icon-9"></use></svg></a></div></div></main></div></div></main></div></body></html>

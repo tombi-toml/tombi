@@ -1,0 +1,96 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title data-sm="00000001000000004000000200000000">Auto Sorting</title><meta data-sm="00000001000000004000000200000010" name="description" content="Automatically sort keys using JSON Schema metadata."><meta data-sm="00000001000000004000000200000020" property="og:type" content="website"><meta data-sm="00000001000000004000000200000030" property="og:url" content="https://tombi-toml.github.io/tombi/v1.11.2/docs/formatter/auto-sorting"><meta data-sm="00000001000000004000000200000040" property="og:title" content="Auto Sorting"><meta data-sm="00000001000000004000000200000050" property="og:description" content="Automatically sort keys using JSON Schema metadata."><meta data-sm="00000001000000004000000200000060" property="og:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.2/docs/public/ogp.png"><meta data-sm="00000001000000004000000200000070" property="og:site_name" content="Tombi"><meta data-sm="00000001000000004000000200000080" property="twitter:card" content="summary_large_image"><meta data-sm="00000001000000004000000200000090" property="twitter:url" content="https://tombi-toml.github.io/tombi/v1.11.2/docs/formatter/auto-sorting"><meta data-sm="000000010000000040000002000000a100" property="twitter:title" content="Auto Sorting"><meta data-sm="000000010000000040000002000000a110" property="twitter:description" content="Automatically sort keys using JSON Schema metadata."><meta data-sm="000000010000000040000002000000a120" property="twitter:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.2/docs/public/ogp.png"><meta name="tombi-archive-base" content="/tombi/v1.11.2"><link rel="icon" href="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.2/docs/public/favicon.ico"><link rel="stylesheet" href="/tombi/v1.11.2/archive.css"><link rel="stylesheet" href="/tombi/common/v1/archive/archive-ui.css"><script src="/tombi/common/v1/archive/theme.js"></script><script type="module" src="/tombi/common/v1/archive/archive.js"></script></head><body><div class="min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"><div id="archive-header"></div><main class="flex-1 mt-20 pt-0"><div class="max-w-7xl mx-auto"><div class="flex w-full max-w-[100vw]"><nav id="archive-sidebar" class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden" aria-label="Documentation"></nav><main tabindex="-1" class="flex-1 min-w-0 p-4 mdx-content min-h-screen max-w-full outline-none"><div class="max-w-full">
+
+<h1 id="auto-sorting" class="group relative heading-with-anchor ">Auto Sorting</h1>
+<p>One of Tombi's most distinctive features is automatic sorting.</p>
+<p><a href="https://github.com/tamasfe/taplo">Taplo</a> and <a href="https://github.com/pappasam/toml-sort">toml-sort</a> specify one sorting method and apply it consistently across a document.
+Tombi is designed differently: shared schema information specifies the sorting method for each item, so those fine-grained sorting policies are shared with everyone who uses the schema.</p>
+<p>Also, it can automatically sort content including comments, using its <a href="/tombi/v1.11.2/docs/formatter/treatment-of-comments">own unique treatment of comments</a>.</p>
+<h2 id="how-to-specify-auto-sorting-methods" class="group relative heading-with-anchor ">How to Specify Auto Sorting Methods</h2>
+<p>Tombi does not perform automatic sorting unless a sorting method is specified.</p>
+<p>Sorting methods are available in the following order of priority:</p>
+<ul>
+<li><a href="/tombi/v1.11.2/docs/formatter/auto-sorting#comment-directives">Comment Directives</a></li>
+<li><a href="/tombi/v1.11.2/docs/formatter/auto-sorting#configuration">Configuration</a></li>
+<li><a href="/tombi/v1.11.2/docs/formatter/auto-sorting#json-schema">JSON Schema</a></li>
+</ul>
+<h3 id="comment-directives" class="group relative heading-with-anchor ">Comment Directives</h3>
+<p>You can specify auto sorting methods using <a href="/tombi/v1.11.2/docs/comment-directive/tombi-value-directive#format-rules">comment directives</a>.
+This has higher priority than <a href="/tombi/v1.11.2/docs/formatter/auto-sorting#configuration">Configuration</a> and <a href="/tombi/v1.11.2/docs/json-schema#formatting">JSON Schema</a> specifications.</p>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>⚠️</span><span>Warning</span></div><div class="text-gray-700 dark:text-gray-300"><p>For files that have a schema assigned, the same can also be specified in <code>tombi.toml</code> with <a href="/tombi/v1.11.2/docs/formatter/auto-sorting#configuration">Configuration</a>.
+Use comment directives for temporary overrides, such as working around errors in JSON Schemas registered in the Schema Store,
+or for local adjustments in files that have no schema.</p></div></div>
+<h3 id="configuration" class="group relative heading-with-anchor ">Configuration</h3>
+<p>You can specify auto sorting methods in <code>tombi.toml</code> using <a href="/tombi/v1.11.2/docs/configuration#schemas-overrides"><code>schemas[*].overrides[*]</code></a>.
+This has lower priority than <a href="/tombi/v1.11.2/docs/formatter/auto-sorting#comment-directives">Comment Directives</a> and higher priority than <a href="/tombi/v1.11.2/docs/formatter/auto-sorting#json-schema">JSON Schema</a> specifications.</p>
+<p>This is the recommended way to set a stable rule for the whole project.
+You do not need to edit the JSON Schema or add <code>x-tombi-*</code> keys to it.</p>
+<p>For example, the following configuration sorts the root table keys of <code>example.toml</code> in ascending order and the <code>items</code> array values in descending order.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">schemas</span>]]
+<span class="p">path</span> = <span class="s">"https://example.com/schema.json"</span>
+<span class="p">include</span> = [<span class="s">"example.toml"</span>]
+
+[[<span class="t">schemas.overrides</span>]]
+<span class="p">targets</span> = [<span class="s">""</span>]
+<span class="p">format.rules.table-keys-order</span> = <span class="s">"ascending"</span>
+
+[[<span class="t">schemas.overrides</span>]]
+<span class="p">targets</span> = [<span class="s">"items"</span>]
+<span class="p">format.rules.array-values-order</span> = <span class="s">"descending"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<p>See <a href="/tombi/v1.11.2/docs/configuration#schemas-overrides-format-rules"><code>schemas[*].overrides[*].format.rules</code></a> for the available targets and values.</p>
+<h3 id="json-schema" class="group relative heading-with-anchor ">JSON Schema</h3>
+<p>This is probably the method you'll benefit from the most.</p>
+<p>When schemas automatically retrieved from the <a href="https://www.schemastore.org">JSON Schema Store</a> contain the following keys, automatic sorting is performed according to that schema:</p>
+<ul>
+<li><a href="/tombi/v1.11.2/docs/json-schema#x-tombi-table-keys-order">x-tombi-table-keys-order</a></li>
+<li><a href="/tombi/v1.11.2/docs/json-schema#x-tombi-array-values-order">x-tombi-array-values-order</a></li>
+<li><a href="/tombi/v1.11.2/docs/json-schema#x-tombi-array-values-order-by">x-tombi-array-values-order-by</a></li>
+</ul>
+<p>Files like <code>Cargo.toml</code> and <code>pyproject.toml</code> registered in the JSON Schema Store have these keys specified.</p>
+<p>Additionally, you can specify JSON Schema files using <a href="/tombi/v1.11.2/docs/configuration">configuration files</a> or <a href="/tombi/v1.11.2/docs/comment-directive/tombi-value-directive#format-rules">comment directives</a>, allowing you to apply schemas from sources other than the JSON Schema Store.</p>
+<h2 id="how-to-stop-auto-sorting" class="group relative heading-with-anchor ">How to Stop Auto Sorting</h2>
+<p>Auto sorting is defined for each JSON Schema file, and can be disabled for all schemas at once or for each schema in the <a href="/tombi/v1.11.2/docs/configuration">configuration file</a>.</p>
+<h3 id="disable-auto-sorting-for-all-schemas" class="group relative heading-with-anchor ">Disable Auto Sorting for All Schemas</h3>
+<p>To disable schema-based auto sorting regardless of which schema applies, use <a href="/tombi/v1.11.2/docs/configuration#schema-format-rules"><code>schema.format.rules</code></a>.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">schema.format.rules</span>]
+<span class="p">array-values-order.enabled</span> = <span class="k">false</span>
+<span class="p">table-keys-order.enabled</span> = <span class="k">false</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<p>This global setting is a fallback with lower priority than the same setting in <a href="/tombi/v1.11.2/docs/configuration#schemas-format-rules"><code>schemas[*].format.rules</code></a>.
+For example, you can disable sorting globally and re-enable it for a specific schema.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">schema.format.rules</span>]
+<span class="p">array-values-order.enabled</span> = <span class="k">false</span>
+<span class="p">table-keys-order.enabled</span> = <span class="k">false</span>
+
+[[<span class="t">schemas</span>]]
+<span class="p">path</span> = <span class="s">"tombi://www.schemastore.org/cargo.json"</span>
+<span class="p">include</span> = [<span class="s">"Cargo.toml"</span>]
+<span class="p">format.rules.table-keys-order.enabled</span> = <span class="k">true</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<p><a href="/tombi/v1.11.2/docs/formatter/auto-sorting#comment-directives">Comment directives</a> and <a href="/tombi/v1.11.2/docs/configuration#schemas-overrides"><code>schemas[*].overrides[*]</code></a> are still applied on top of this setting.</p>
+<h3 id="disable-auto-sorting-for-each-schema" class="group relative heading-with-anchor ">Disable Auto Sorting for Each Schema</h3>
+<p>If you want to disable automatic sorting for typical <code>Cargo.toml</code> and <code>pyproject.toml</code> files,
+please create the following configuration file.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">schemas</span>]]
+<span class="p">path</span> = <span class="s">"tombi://www.schemastore.org/cargo.json"</span>
+<span class="p">include</span> = [<span class="s">"Cargo.toml"</span>]
+<span class="p">format.rules.array-values-order.enabled</span> = <span class="k">false</span>
+<span class="p">format.rules.table-keys-order.enabled</span> = <span class="k">false</span>
+
+[[<span class="t">schemas</span>]]
+<span class="p">path</span> = <span class="s">"tombi://www.schemastore.org/pyproject.json"</span>
+<span class="p">include</span> = [<span class="s">"pyproject.toml"</span>]
+<span class="p">format.rules.array-values-order.enabled</span> = <span class="k">false</span>
+<span class="p">format.rules.table-keys-order.enabled</span> = <span class="k">false</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<p>If you want to keep automatic sorting only for specific keys after disabling it for a schema,
+use <a href="/tombi/v1.11.2/docs/configuration#schemas-overrides"><code>schemas[*].overrides[*]</code></a> to re-enable sorting for those targets.</p>
+<p>For example, the following configuration disables sorting for <code>Cargo.toml</code> as a whole,
+but keeps sorting only under <code>[dependencies]</code>, <code>[dev-dependencies]</code>, and <code>[build-dependencies]</code>.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">schemas</span>]]
+<span class="p">path</span> = <span class="s">"tombi://www.schemastore.org/cargo.json"</span>
+<span class="p">include</span> = [<span class="s">"Cargo.toml"</span>]
+<span class="p">format.rules.array-values-order.enabled</span> = <span class="k">false</span>
+<span class="p">format.rules.table-keys-order.enabled</span> = <span class="k">false</span>
+
+[[<span class="t">schemas.overrides</span>]]
+<span class="p">targets</span> = [<span class="s">"dependencies"</span>, <span class="s">"dev-dependencies"</span>, <span class="s">"build-dependencies"</span>]
+<span class="p">format.rules</span> = {
+  <span class="p">table-keys-order</span> = <span class="s">"ascending"</span>
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div><div class="mt-8 pt-8 border-t border-gray-200 flex justify-between"><a href="/tombi/v1.11.2/docs/formatter" class="no-underline text-blue-500 hover:text-blue-600 active"><svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.2/icons.svg#icon-8"></use></svg> Formatter</a><a href="/tombi/v1.11.2/docs/formatter/magic-trailing-comma" class="no-underline text-blue-500 hover:text-blue-600 ml-auto inactive">Magic Trailing Comma <svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.2/icons.svg#icon-9"></use></svg></a></div></div></main></div></div></main></div></body></html>

@@ -1,0 +1,2321 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title data-sm="00000001000000004000000200000000">Configuration</title><meta data-sm="00000001000000004000000200000010" name="description" content="Configure Tombi using tombi.toml or pyproject.toml."><meta data-sm="00000001000000004000000200000020" property="og:type" content="website"><meta data-sm="00000001000000004000000200000030" property="og:url" content="https://tombi-toml.github.io/tombi/v1.11.2/docs/configuration"><meta data-sm="00000001000000004000000200000040" property="og:title" content="Configuration"><meta data-sm="00000001000000004000000200000050" property="og:description" content="Configure Tombi using tombi.toml or pyproject.toml."><meta data-sm="00000001000000004000000200000060" property="og:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.2/docs/public/ogp.png"><meta data-sm="00000001000000004000000200000070" property="og:site_name" content="Tombi"><meta data-sm="00000001000000004000000200000080" property="twitter:card" content="summary_large_image"><meta data-sm="00000001000000004000000200000090" property="twitter:url" content="https://tombi-toml.github.io/tombi/v1.11.2/docs/configuration"><meta data-sm="000000010000000040000002000000a100" property="twitter:title" content="Configuration"><meta data-sm="000000010000000040000002000000a110" property="twitter:description" content="Configure Tombi using tombi.toml or pyproject.toml."><meta data-sm="000000010000000040000002000000a120" property="twitter:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.2/docs/public/ogp.png"><meta name="tombi-archive-base" content="/tombi/v1.11.2"><link rel="icon" href="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.2/docs/public/favicon.ico"><link rel="stylesheet" href="/tombi/v1.11.2/archive.css"><link rel="stylesheet" href="/tombi/common/v1/archive/archive-ui.css"><script src="/tombi/common/v1/archive/theme.js"></script><script type="module" src="/tombi/common/v1/archive/archive.js"></script></head><body><div class="min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"><div id="archive-header"></div><main class="flex-1 mt-20 pt-0"><div class="max-w-7xl mx-auto"><div class="flex w-full max-w-[100vw]"><nav id="archive-sidebar" class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden" aria-label="Documentation"></nav><main tabindex="-1" class="flex-1 min-w-0 p-4 mdx-content min-h-screen max-w-full outline-none"><div class="max-w-full">
+
+<h1 id="configuration" class="group relative heading-with-anchor ">Configuration</h1>
+<p>Learn how to configure Tombi using the <code>tombi.toml</code> configuration file.</p>
+<p>Tombi uses a TOML configuration file named <code>tombi.toml</code> (or <code>.tombi.toml</code>).
+It also supports <code>[tool.tombi]</code> in <code>pyproject.toml</code>.</p>
+<h2 id="search-priority" class="group relative heading-with-anchor ">Search Priority</h2>
+<h3 id="project-level" class="group relative heading-with-anchor ">Project Level</h3>
+<p>For each directory from the current directory up to the filesystem root:</p>
+<ol>
+<li><code>.tombi.toml</code></li>
+<li><code>tombi.toml</code></li>
+<li><code>.config/tombi.toml</code> (see <a href="https://github.com/pi0/config-dir">config-dir</a> or <a href="https://dot-config.github.io/">dot-config.github.io</a>)</li>
+<li><code>[tool.tombi]</code> in <code>pyproject.toml</code></li>
+</ol>
+<h3 id="user-level" class="group relative heading-with-anchor ">User Level</h3>
+<p>If nothing is found, Tombi then falls back to:</p>
+<ol start="5">
+<li><code>$XDG_CONFIG_HOME/tombi/config.toml</code></li>
+<li><code>~/.config/tombi/config.toml</code></li>
+<li><code>~/Library/Application Support/tombi/config.toml</code> (macOS), <code>%APPDATA%\tombi\config.toml</code> (Windows)</li>
+</ol>
+<h3 id="system-level" class="group relative heading-with-anchor ">System Level</h3>
+<ol start="8">
+<li><code>/etc/tombi/config.toml</code> (Linux)</li>
+</ol>
+<h3 id="default-level" class="group relative heading-with-anchor ">Default Level</h3>
+<ol start="9">
+<li>editor settings via <a href="https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didChangeConfiguration">workspace/didChangeConfiguration</a> (LSP only)</li>
+</ol>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>⚠️</span><span>Warning</span></div><div class="text-gray-700 dark:text-gray-300"><p>The base directory for configuration search depends on the context: for CLI usage, it is the directory where the command is executed; for LSP usage, it is the directory of the currently opened file.</p><p>Therefore, it is recommended to place <code>tombi.toml</code> only at the root of your project. If multiple <code>tombi.toml</code> files exist at different levels within a single project, there may be inconsistencies in formatting or diagnostic results between the CLI and the editor.</p></div></div>
+<h2 id="extending-a-shared-config" class="group relative heading-with-anchor ">Extending a shared config</h2>
+<p>Use <code>extends</code> to inherit settings from one or more config files, then put repository-specific values in the local config:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">extends</span> = [<span class="s">"../shared/tombi.toml"</span>, <span class="s">"https://example.org/config/tombi.toml"</span>]
+
+[<span class="t">format.rules</span>]
+<span class="p">line-width</span> = <span class="n">100</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<p><code>extends</code> accepts an array of paths or URLs. Local paths are resolved relative to the directory of the config file that declares them, or relative to the project root for <code>.config/tombi.toml</code>, like the paths of <code>schemas</code> and <code>schema.catalog</code>. HTTP and HTTPS URLs are supported; a relative URL in a remote config is resolved against that URL. A remote config cannot use <code>file://</code> to read a local file. In <code>pyproject.toml</code>, place <code>extends</code> inside <code>[tool.tombi]</code>.</p>
+<p>The extended file must be named <code>tombi.toml</code> or <code>.tombi.toml</code>, so that the Tombi config schema applies to it. <code>pyproject.toml</code> cannot be extended.</p>
+<p>In the editor, an <code>extends</code> entry that does not exist, cannot be loaded (for example a config cycle, a parse error in an inherited config, or a failed fetch), or uses an unsupported URL is reported as an error, and you can jump to the extended config with go to definition.</p>
+<p>The configs in <code>extends</code> are applied in the order listed, starting with the first entry. The local config is applied last, and later configs take precedence over earlier ones. Tables merge recursively, and local scalar values replace inherited values. Most arrays are replaced by the higher-priority config. <code>schemas</code> and <code>overrides</code> are combined with higher-priority entries first, so local entries take precedence over inherited entries.</p>
+<p>Paths and globs in inherited settings are resolved relative to the extending config's base directory, using Tombi's existing path rules.
+An inheritance chain can follow at most 32 references. One resolution can use at most 256 references in total.</p>
+<h2 id="available-options" class="group relative heading-with-anchor ">Available Options</h2>
+<ul>
+<li><a href="#extends">extends</a></li>
+<li><a href="#toml-version">toml-version</a></li>
+<li><a href="#files">files</a>
+<ul>
+<li><a href="#files-include">files.include</a></li>
+<li><a href="#files-exclude">files.exclude</a></li>
+<li><a href="#files-respect-ignore-files">files.respect-ignore-files</a></li>
+</ul>
+</li>
+<li><a href="#format">format</a>
+<ul>
+<li><a href="#format-rules">format.rules</a>
+<ul>
+<li><a href="#format-rules-array-bracket-space-width">format.rules.array-bracket-space-width</a></li>
+<li><a href="#format-rules-array-comma-space-width">format.rules.array-comma-space-width</a></li>
+<li><a href="#format-rules-comment-style">format.rules.comment-style</a></li>
+<li><a href="#format-rules-date-time-delimiter">format.rules.date-time-delimiter</a></li>
+<li><a href="#format-rules-group-blank-lines-limit">format.rules.group-blank-lines-limit</a></li>
+<li><a href="#format-rules-indent-style">format.rules.indent-style</a></li>
+<li><a href="#format-rules-indent-sub-tables">format.rules.indent-sub-tables</a></li>
+<li><a href="#format-rules-indent-table-key-value-pairs">format.rules.indent-table-key-value-pairs</a></li>
+<li><a href="#format-rules-indent-width">format.rules.indent-width</a></li>
+<li><a href="#format-rules-inline-table-brace-space-width">format.rules.inline-table-brace-space-width</a></li>
+<li><a href="#format-rules-inline-table-comma-space-width">format.rules.inline-table-comma-space-width</a></li>
+<li><a href="#format-rules-key-quote-style">format.rules.key-quote-style</a></li>
+<li><a href="#format-rules-key-value-equals-sign-alignment">format.rules.key-value-equals-sign-alignment</a></li>
+<li><a href="#format-rules-key-value-equals-sign-space-width">format.rules.key-value-equals-sign-space-width</a></li>
+<li><a href="#format-rules-line-ending">format.rules.line-ending</a></li>
+<li><a href="#format-rules-line-width">format.rules.line-width</a></li>
+<li><a href="#format-rules-string-quote-style">format.rules.string-quote-style</a></li>
+<li><a href="#format-rules-table-blank-lines">format.rules.table-blank-lines</a></li>
+<li><a href="#format-rules-trailing-comment-alignment">format.rules.trailing-comment-alignment</a></li>
+<li><a href="#format-rules-trailing-comment-space-width">format.rules.trailing-comment-space-width</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#lint">lint</a>
+<ul>
+<li><a href="#lint-rules">lint.rules</a>
+<ul>
+<li><a href="#lint-rules-key-empty">lint.rules.key-empty</a></li>
+<li><a href="#lint-rules-dotted-keys-out-of-order">lint.rules.dotted-keys-out-of-order</a></li>
+<li><a href="#lint-rules-tables-out-of-order">lint.rules.tables-out-of-order</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#lsp">lsp</a>
+<ul>
+<li><a href="#lsp-code-action">lsp.code-action</a>
+<ul>
+<li><a href="#lsp-code-action-enabled">lsp.code-action.enabled</a></li>
+</ul>
+</li>
+<li><a href="#lsp-completion">lsp.completion</a>
+<ul>
+<li><a href="#lsp-completion-enabled">lsp.completion.enabled</a></li>
+</ul>
+</li>
+<li><a href="#lsp-diagnostic">lsp.diagnostic</a>
+<ul>
+<li><a href="#lsp-diagnostic-enabled">lsp.diagnostic.enabled</a></li>
+</ul>
+</li>
+<li><a href="#lsp-document-link">lsp.document-link</a>
+<ul>
+<li><a href="#lsp-document-link-enabled">lsp.document-link.enabled</a></li>
+</ul>
+</li>
+<li><a href="#lsp-formatting">lsp.formatting</a>
+<ul>
+<li><a href="#lsp-formatting-enabled">lsp.formatting.enabled</a></li>
+</ul>
+</li>
+<li><a href="#lsp-goto-declaration">lsp.goto-declaration</a>
+<ul>
+<li><a href="#lsp-goto-declaration-enabled">lsp.goto-declaration.enabled</a></li>
+</ul>
+</li>
+<li><a href="#lsp-goto-definition">lsp.goto-definition</a>
+<ul>
+<li><a href="#lsp-goto-definition-enabled">lsp.goto-definition.enabled</a></li>
+</ul>
+</li>
+<li><a href="#lsp-goto-type-definition">lsp.goto-type-definition</a>
+<ul>
+<li><a href="#lsp-goto-type-definition-enabled">lsp.goto-type-definition.enabled</a></li>
+</ul>
+</li>
+<li><a href="#lsp-hover">lsp.hover</a>
+<ul>
+<li><a href="#lsp-hover-enabled">lsp.hover.enabled</a></li>
+</ul>
+</li>
+<li><a href="#lsp-references">lsp.references</a>
+<ul>
+<li><a href="#lsp-references-enabled">lsp.references.enabled</a></li>
+</ul>
+</li>
+<li><a href="#lsp-workspace-diagnostic">lsp.workspace-diagnostic</a>
+<ul>
+<li><a href="#lsp-workspace-diagnostic-enabled">lsp.workspace-diagnostic.enabled</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#schema">schema</a>
+<ul>
+<li><a href="#schema-enabled">schema.enabled</a></li>
+<li><a href="#schema-strict">schema.strict</a></li>
+<li><a href="#schema-format">schema.format</a>
+<ul>
+<li><a href="#schema-format-rules">schema.format.rules</a>
+<ul>
+<li><a href="#schema-format-rules-array-values-order">schema.format.rules.array-values-order</a></li>
+<li><a href="#schema-format-rules-table-keys-order">schema.format.rules.table-keys-order</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#schema-lint">schema.lint</a>
+<ul>
+<li><a href="#schema-lint-rules">schema.lint.rules</a>
+<ul>
+<li><a href="#schema-lint-rules-deprecated">schema.lint.rules.deprecated</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#schema-catalog">schema.catalog</a>
+<ul>
+<li><a href="#schema-catalog-paths">schema.catalog.paths</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#schemas">schemas</a>
+<ul>
+<li><a href="#root-schema">schemas[*].toml-version</a></li>
+<li><a href="#sub-schema">schemas[*].root</a></li>
+<li><a href="#root-schema">schemas[*].path</a></li>
+<li><a href="#root-schema">schemas[*].include</a></li>
+<li><a href="#root-schema">schemas[*].exclude</a></li>
+<li><a href="#root-schema">schemas[*].strict</a></li>
+<li><a href="#schemas-format">schemas[*].format</a>
+<ul>
+<li><a href="#schemas-format-rules">schemas[*].format.rules</a>
+<ul>
+<li><a href="#schemas-format-rules-array-values-order">schemas[*].format.rules.array-values-order</a></li>
+<li><a href="#schemas-format-rules-table-keys-order">schemas[*].format.rules.table-keys-order</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#schemas-lint">schemas[*].lint</a>
+<ul>
+<li><a href="#schemas-lint-rules">schemas[*].lint.rules</a>
+<ul>
+<li><a href="#schemas-lint-rules-deprecated">schemas[*].lint.rules.deprecated</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#schemas-overrides">schemas[*].overrides</a>
+<ul>
+<li><a href="#schemas-overrides-targets">schemas[*].overrides[*].targets</a></li>
+<li><a href="#schemas-overrides-format">schemas[*].overrides[*].format</a>
+<ul>
+<li><a href="#schemas-overrides-format-rules">schemas[*].overrides[*].format.rules</a>
+<ul>
+<li><a href="#schemas-overrides-format-rules-array-values-order">schemas[*].overrides[*].format.rules.array-values-order</a></li>
+<li><a href="#schemas-overrides-format-rules-table-keys-order">schemas[*].overrides[*].format.rules.table-keys-order</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#schemas-overrides-lint">schemas[*].overrides[*].lint</a>
+<ul>
+<li><a href="#schemas-overrides-lint-rules">schemas[*].overrides[*].lint.rules</a>
+<ul>
+<li><a href="#schemas-overrides-lint-rules-deprecated">schemas[*].overrides[*].lint.rules.deprecated</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#overrides">overrides</a>
+<ul>
+<li><a href="#overrides-files">overrides[*].files</a>
+<ul>
+<li><a href="#overrides-files-include">overrides[*].files.include</a></li>
+<li><a href="#overrides-files-exclude">overrides[*].files.exclude</a></li>
+</ul>
+</li>
+<li><a href="#overrides-format">overrides[*].format</a>
+<ul>
+<li><a href="#overrides-format-enabled">overrides[*].format.enabled</a></li>
+<li><a href="#overrides-format-rules">overrides[*].format.rules</a></li>
+</ul>
+</li>
+<li><a href="#overrides-lint">overrides[*].lint</a>
+<ul>
+<li><a href="#overrides-lint-enabled">overrides[*].lint.enabled</a></li>
+<li><a href="#overrides-lint-rules">overrides[*].lint.rules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#extensions">extensions</a>
+<ul>
+<li><a href="#extensions-tombi-toml-cargo">extensions."tombi-toml/cargo"</a>
+<ul>
+<li><a href="#extensions-tombi-toml-cargo-lint">extensions."tombi-toml/cargo".lint</a>
+<ul>
+<li><a href="#extensions-tombi-toml-cargo-lint-rules">extensions."tombi-toml/cargo".lint.rules</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lint-rules-missing-build-script">extensions."tombi-toml/cargo".lint.rules.missing-build-script</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lint-rules-missing-license-file">extensions."tombi-toml/cargo".lint.rules.missing-license-file</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lint-rules-missing-path-dependency">extensions."tombi-toml/cargo".lint.rules.missing-path-dependency</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lint-rules-missing-readme">extensions."tombi-toml/cargo".lint.rules.missing-readme</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lint-rules-missing-target-path">extensions."tombi-toml/cargo".lint.rules.missing-target-path</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lint-rules-missing-workspace">extensions."tombi-toml/cargo".lint.rules.missing-workspace</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lint-rules-missing-workspace-member">extensions."tombi-toml/cargo".lint.rules.missing-workspace-member</a></li>
+</ul>
+</li>
+<li><a href="#extensions-tombi-toml-cargo-lsp">extensions."tombi-toml/cargo".lsp</a>
+<ul>
+<li><a href="#extensions-tombi-toml-cargo-lsp-code-action">extensions."tombi-toml/cargo".lsp.code-action</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lsp-completion">extensions."tombi-toml/cargo".lsp.completion</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lsp-document-link">extensions."tombi-toml/cargo".lsp.document-link</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lsp-goto-declaration">extensions."tombi-toml/cargo".lsp.goto-declaration</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lsp-goto-definition">extensions."tombi-toml/cargo".lsp.goto-definition</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lsp-hover">extensions."tombi-toml/cargo".lsp.hover</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lsp-inlay-hint">extensions."tombi-toml/cargo".lsp.inlay-hint</a></li>
+<li><a href="#extensions-tombi-toml-cargo-lsp-references">extensions."tombi-toml/cargo".lsp.references</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#extensions-tombi-toml-pyproject">extensions."tombi-toml/pyproject"</a>
+<ul>
+<li><a href="#extensions-tombi-toml-pyproject-lint">extensions."tombi-toml/pyproject".lint</a>
+<ul>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules">extensions."tombi-toml/pyproject".lint.rules</a>
+<ul>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules-ambiguous-import-name">extensions."tombi-toml/pyproject".lint.rules.ambiguous-import-name</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules-cyclic-include-group">extensions."tombi-toml/pyproject".lint.rules.cyclic-include-group</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules-duplicate-dependency-group">extensions."tombi-toml/pyproject".lint.rules.duplicate-dependency-group</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules-duplicate-extra-name">extensions."tombi-toml/pyproject".lint.rules.duplicate-extra-name</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules-duplicate-import-name">extensions."tombi-toml/pyproject".lint.rules.duplicate-import-name</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules-invalid-dependency-specifier">extensions."tombi-toml/pyproject".lint.rules.invalid-dependency-specifier</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules-invalid-email-display-name">extensions."tombi-toml/pyproject".lint.rules.invalid-email-display-name</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules-invalid-entry-point-target">extensions."tombi-toml/pyproject".lint.rules.invalid-entry-point-target</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules-invalid-import-name">extensions."tombi-toml/pyproject".lint.rules.invalid-import-name</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules-missing-import-name-parent">extensions."tombi-toml/pyproject".lint.rules.missing-import-name-parent</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules-undefined-include-group">extensions."tombi-toml/pyproject".lint.rules.undefined-include-group</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lint-rules-unknown-classifier">extensions."tombi-toml/pyproject".lint.rules.unknown-classifier</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#extensions-tombi-toml-pyproject-lsp">extensions."tombi-toml/pyproject".lsp</a>
+<ul>
+<li><a href="#extensions-tombi-toml-pyproject-lsp-code-action">extensions."tombi-toml/pyproject".lsp.code-action</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lsp-completion">extensions."tombi-toml/pyproject".lsp.completion</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lsp-document-link">extensions."tombi-toml/pyproject".lsp.document-link</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lsp-goto-declaration">extensions."tombi-toml/pyproject".lsp.goto-declaration</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lsp-goto-definition">extensions."tombi-toml/pyproject".lsp.goto-definition</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lsp-hover">extensions."tombi-toml/pyproject".lsp.hover</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lsp-inlay-hint">extensions."tombi-toml/pyproject".lsp.inlay-hint</a></li>
+<li><a href="#extensions-tombi-toml-pyproject-lsp-references">extensions."tombi-toml/pyproject".lsp.references</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#extensions-tombi-toml-tombi">extensions."tombi-toml/tombi"</a>
+<ul>
+<li><a href="#extensions-tombi-toml-tombi-lint">extensions."tombi-toml/tombi".lint</a>
+<ul>
+<li><a href="#extensions-tombi-toml-tombi-lint-rules">extensions."tombi-toml/tombi".lint.rules</a>
+<ul>
+<li><a href="#extensions-tombi-toml-tombi-lint-rules-missing-catalog-path">extensions."tombi-toml/tombi".lint.rules.missing-catalog-path</a></li>
+<li><a href="#extensions-tombi-toml-tombi-lint-rules-missing-extends-path">extensions."tombi-toml/tombi".lint.rules.missing-extends-path</a></li>
+<li><a href="#extensions-tombi-toml-tombi-lint-rules-missing-schema-path">extensions."tombi-toml/tombi".lint.rules.missing-schema-path</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#extensions-tombi-toml-tombi-lsp">extensions."tombi-toml/tombi".lsp</a>
+<ul>
+<li><a href="#extensions-tombi-toml-tombi-lsp-completion">extensions."tombi-toml/tombi".lsp.completion</a></li>
+<li><a href="#extensions-tombi-toml-tombi-lsp-goto-definition">extensions."tombi-toml/tombi".lsp.goto-definition</a></li>
+<li><a href="#extensions-tombi-toml-tombi-lsp-document-link">extensions."tombi-toml/tombi".lsp.document-link</a></li>
+<li><a href="#extensions-tombi-toml-tombi-lsp-hover">extensions."tombi-toml/tombi".lsp.hover</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="full-structure" class="group relative heading-with-anchor ">Full Structure</h2>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">extends</span> = []
+<span class="p">toml-version</span> = <span class="s">"v1.0.0"</span>
+
+[<span class="t">files</span>]
+<span class="p">include</span> = [<span class="s">"**/*.toml"</span>]
+<span class="p">exclude</span> = [<span class="s">".cache/**/*.toml"</span>]
+<span class="p">respect-ignore-files</span> = <span class="k">true</span>
+
+[<span class="t">format</span>]
+[<span class="t">format.rules</span>]
+<span class="p">array-bracket-space-width</span> = <span class="n">0</span>
+<span class="p">array-comma-space-width</span> = <span class="n">1</span>
+<span class="p">comment-style</span> = <span class="s">"normalize"</span>
+<span class="p">date-time-delimiter</span> = <span class="s">"T"</span>
+<span class="p">group-blank-lines-limit</span> = <span class="n">1</span>
+<span class="p">indent-style</span> = <span class="s">"space"</span>
+<span class="p">indent-sub-tables</span> = <span class="k">false</span>
+<span class="p">indent-table-key-value-pairs</span> = <span class="k">false</span>
+<span class="p">indent-width</span> = <span class="n">2</span>
+<span class="p">inline-table-brace-space-width</span> = <span class="n">1</span>
+<span class="p">inline-table-comma-space-width</span> = <span class="n">1</span>
+<span class="p">key-quote-style</span> = <span class="s">"double"</span>
+<span class="p">key-value-equals-sign-alignment</span> = <span class="k">false</span>
+<span class="p">key-value-equals-sign-space-width</span> = <span class="n">1</span>
+<span class="p">line-ending</span> = <span class="s">"lf"</span>
+<span class="p">string-quote-style</span> = <span class="s">"double"</span>
+<span class="p">table-blank-lines</span> = <span class="n">1</span>
+<span class="p">trailing-comment-alignment</span> = <span class="k">false</span>
+<span class="p">trailing-comment-space-width</span> = <span class="n">2</span>
+
+[<span class="t">lint</span>]
+[<span class="t">lint.rules</span>]
+<span class="p">dotted-keys-out-of-order</span> = <span class="s">"warn"</span>
+<span class="p">key-empty</span> = <span class="s">"warn"</span>
+<span class="p">tables-out-of-order</span> = <span class="s">"warn"</span>
+
+[<span class="t">lsp</span>]
+<span class="p">code-action.enabled</span> = <span class="k">true</span>
+<span class="p">completion.enabled</span> = <span class="k">true</span>
+<span class="p">diagnostic.enabled</span> = <span class="k">true</span>
+<span class="p">document-link.enabled</span> = <span class="k">true</span>
+<span class="p">formatting.enabled</span> = <span class="k">true</span>
+<span class="p">goto-declaration.enabled</span> = <span class="k">true</span>
+<span class="p">goto-definition.enabled</span> = <span class="k">true</span>
+<span class="p">goto-type-definition.enabled</span> = <span class="k">true</span>
+<span class="p">hover.enabled</span> = <span class="k">true</span>
+<span class="p">workspace-diagnostic.enabled</span> = <span class="k">true</span>
+
+[<span class="t">schema</span>]
+<span class="p">enabled</span> = <span class="k">true</span>
+<span class="p">strict</span> = <span class="k">true</span>
+<span class="p">catalog</span> = {
+  <span class="p">paths</span> = [
+    <span class="s">"tombi://www.schemastore.org/api/json/catalog.json"</span>,
+    <span class="s">"https://www.schemastore.org/api/json/catalog.json"</span>,
+  ],
+}
+<span class="p">format.rules</span> = {
+  <span class="p">array-values-order.enabled</span> = <span class="k">true</span>,
+  <span class="p">table-keys-order.enabled</span> = <span class="k">true</span>,
+}
+<span class="p">lint.rules</span> = {
+  <span class="p">deprecated</span> = <span class="s">"warn"</span>,
+}
+
+<span class="c"># Root Schema</span>
+[[<span class="t">schemas</span>]]
+<span class="p">toml-version</span> = <span class="s">"v1.0.0"</span>
+<span class="p">path</span> = <span class="s">"https://example.com/schema.json"</span>
+<span class="p">include</span> = [<span class="s">"example.toml"</span>]
+<span class="p">strict</span> = <span class="k">false</span>
+<span class="p">format.rules</span> = {
+  <span class="p">array-values-order.enabled</span> = <span class="k">true</span>,
+  <span class="p">table-keys-order.enabled</span> = <span class="k">true</span>,
+}
+<span class="p">lint.rules</span> = {
+  <span class="p">deprecated</span> = <span class="s">"warn"</span>,
+}
+<span class="p">overrides</span> = [
+  {
+    <span class="p">targets</span> = [<span class="s">""</span>, <span class="s">"tool.*"</span>],
+    <span class="p">format.rules.array-values-order</span> = <span class="s">"ascending"</span>,
+    <span class="p">format.rules.table-keys-order</span> = <span class="s">"ascending"</span>,
+    <span class="p">lint.rules.deprecated</span> = <span class="s">"warn"</span>,
+  },
+]
+
+<span class="c"># Sub Schema</span>
+[[<span class="t">schemas</span>]]
+<span class="p">root</span> = <span class="s">"tool.taskipy"</span>
+<span class="p">path</span> = <span class="s">"schemas/partial-taskipy.schema.json"</span>
+<span class="p">include</span> = [<span class="s">"pyproject.toml"</span>]
+<span class="p">lint.rules</span> = {
+  <span class="p">deprecated</span> = <span class="s">"warn"</span>,
+}
+
+<span class="c"># Override config</span>
+[[<span class="t">overrides</span>]]
+<span class="p">files</span> = {
+  <span class="p">include</span> = [<span class="s">"specific/**/*.toml"</span>],
+  <span class="p">exclude</span> = [<span class="s">"specific/**/ignored.toml"</span>],
+}
+<span class="p">format</span> = {
+  <span class="p">enabled</span> = <span class="k">true</span>,
+  <span class="p">rules</span> = {
+    <span class="p">array-bracket-space-width</span> = <span class="n">1</span>,
+    <span class="p">array-comma-space-width</span> = <span class="n">1</span>,
+    <span class="p">date-time-delimiter</span> = <span class="s">"space"</span>,
+    <span class="p">group-blank-lines-limit</span> = <span class="n">1</span>,
+    <span class="p">indent-style</span> = <span class="s">"tab"</span>,
+    <span class="p">indent-sub-tables</span> = <span class="k">true</span>,
+    <span class="p">indent-table-key-value-pairs</span> = <span class="k">true</span>,
+    <span class="p">indent-width</span> = <span class="n">4</span>,
+    <span class="p">inline-table-brace-space-width</span> = <span class="n">0</span>,
+    <span class="p">inline-table-comma-space-width</span> = <span class="n">1</span>,
+    <span class="p">key-quote-style</span> = <span class="s">"single"</span>,
+    <span class="p">key-value-equals-sign-alignment</span> = <span class="k">true</span>,
+    <span class="p">key-value-equals-sign-space-width</span> = <span class="n">1</span>,
+    <span class="p">line-ending</span> = <span class="s">"crlf"</span>,
+    <span class="p">line-width</span> = <span class="n">120</span>,
+    <span class="p">string-quote-style</span> = <span class="s">"single"</span>,
+    <span class="p">table-blank-lines</span> = <span class="n">1</span>,
+    <span class="p">trailing-comment-alignment</span> = <span class="k">true</span>,
+    <span class="p">trailing-comment-space-width</span> = <span class="n">1</span>,
+  },
+}
+<span class="p">lint</span> = {
+  <span class="p">enabled</span> = <span class="k">true</span>,
+  <span class="p">rules</span> = {
+    <span class="p">dotted-keys-out-of-order</span> = <span class="s">"error"</span>,
+    <span class="p">key-empty</span> = <span class="s">"error"</span>,
+    <span class="p">tables-out-of-order</span> = <span class="s">"error"</span>,
+  },
+}
+
+[<span class="t">extensions</span>]
+<span class="p">"tombi-toml/cargo"</span> = {
+  <span class="p">lsp</span> = {
+    <span class="p">code-action</span> = {
+      <span class="p">add-to-workspace-and-inherit-dependency.enabled</span> = <span class="k">true</span>,
+      <span class="p">convert-dependency-to-table-format.enabled</span> = <span class="k">true</span>,
+      <span class="p">inherit-dependency-from-workspace.enabled</span> = <span class="k">true</span>,
+      <span class="p">inherit-from-workspace.enabled</span> = <span class="k">true</span>,
+      <span class="p">update-dependency-to-latest-version.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">completion</span> = {
+      <span class="p">dependency-feature.enabled</span> = <span class="k">true</span>,
+      <span class="p">dependency-version.enabled</span> = <span class="k">true</span>,
+      <span class="p">path.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">document-link</span> = {
+      <span class="p">crates-io.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">goto-declaration</span> = {
+      <span class="p">dependency.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">goto-definition</span> = {
+      <span class="p">dependency.enabled</span> = <span class="k">true</span>,
+      <span class="p">member.enabled</span> = <span class="k">true</span>,
+      <span class="p">path.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">hover</span> = {
+      <span class="p">default-features.enabled</span> = <span class="k">true</span>,
+      <span class="p">dependency-detail.enabled</span> = <span class="k">true</span>,
+      <span class="p">feature-dependencies.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">inlay-hint</span> = {
+      <span class="p">default-features.enabled</span> = <span class="k">true</span>,
+      <span class="p">dependency-version.enabled</span> = <span class="k">true</span>,
+      <span class="p">workspace-value.enabled</span> = <span class="k">true</span>,
+    },
+  }
+}
+<span class="p">"tombi-toml/pyproject"</span> = {
+  <span class="p">lsp</span> = {
+    <span class="p">code-action</span> = {
+      <span class="p">add-to-workspace-and-use-workspace-dependency.enabled</span> = <span class="k">true</span>,
+      <span class="p">update-dependency-to-latest-version.enabled</span> = <span class="k">true</span>,
+      <span class="p">use-workspace-dependency.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">completion</span> = {
+      <span class="p">path.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">document-link</span> = {
+      <span class="p">pypi-org.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">goto-declaration</span> = {
+      <span class="p">dependency.enabled</span> = <span class="k">true</span>,
+      <span class="p">member.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">goto-definition</span> = {
+      <span class="p">dependency.enabled</span> = <span class="k">true</span>,
+      <span class="p">member.enabled</span> = <span class="k">true</span>,
+      <span class="p">path.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">hover</span> = {
+      <span class="p">dependency-detail.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">inlay-hint</span> = {
+      <span class="p">dependency-version.enabled</span> = <span class="k">true</span>,
+    },
+  }
+}
+<span class="p">"tombi-toml/tombi"</span> = {
+  <span class="p">lsp</span> = {
+    <span class="p">completion</span> = {
+      <span class="p">path.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">goto-definition</span> = {
+      <span class="p">path.enabled</span> = <span class="k">true</span>,
+    },
+    <span class="p">hover.enabled</span> = <span class="k">true</span>,
+  }
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="extends" class="group relative heading-with-anchor ">extends</h3>
+<p>Config files to inherit, in order. Later entries take precedence over earlier ones, and the current config takes precedence over all inherited configs. See <a href="#extending-a-shared-config">Extending a shared config</a> for path resolution, merge behavior, and restrictions.</p>
+<ul>
+<li>Type: <code>String[]</code> (paths or URLs to <code>tombi.toml</code> or <code>.tombi.toml</code>)</li>
+</ul>
+<h3 id="toml-version" class="group relative heading-with-anchor ">toml-version</h3>
+<p>Specifies the TOML version to use if not specified in the schema and comment directive.</p>
+<ul>
+<li>Type: <code>"v1.0.0" | "v1.1.0"</code></li>
+<li>Default: <code>"v1.0.0"</code></li>
+</ul>
+<h3 id="files" class="group relative heading-with-anchor ">files</h3>
+<p>Configure file patterns for formatting and linting operations.</p>
+<h3 id="files-include" class="group relative heading-with-anchor ">files.include</h3>
+<p>The file match pattern to include in formatting and linting. Supports glob pattern.</p>
+<ul>
+<li>Type: <code>String[]</code></li>
+<li>Default: <code>["**/*.toml"]</code></li>
+</ul>
+<h3 id="files-exclude" class="group relative heading-with-anchor ">files.exclude</h3>
+<p>The file match pattern to exclude from formatting and linting. Supports glob pattern.</p>
+<ul>
+<li>Type: <code>String[]</code></li>
+</ul>
+<h3 id="files-respect-ignore-files" class="group relative heading-with-anchor ">files.respect-ignore-files</h3>
+<p>Whether to respect <code>.ignore</code>, <code>.gitignore</code>, and <code>.git/info/exclude</code> while discovering files.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="format" class="group relative heading-with-anchor ">format</h3>
+<p>Formatter options for TOML files.</p>
+<h3 id="format-rules" class="group relative heading-with-anchor ">format.rules</h3>
+<p>Configure formatting styles.</p>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>💡</span><span>Tip</span></div><div class="text-gray-700 dark:text-gray-300"><p>If you want to know Tombi's recommended formatting style, simply use the default settings.</p><p>Originally, Tombi enforced strict formatting rules similar to <a href="https://github.com/psf/black">black</a>,
+but we relaxed some requirements to welcome Taplo users.
+Even so, we still encourage you to stick with the defaults to avoid wasting time on style debates and maintain consistency.</p></div></div>
+<h3 id="format-rules-array-bracket-space-width" class="group relative heading-with-anchor ">format.rules.array-bracket-space-width</h3>
+<p>The number of spaces inside the brackets of a single line array.</p>
+<ul>
+<li>Type: <code>Number</code></li>
+<li>Default: <code>0</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">key</span> = [ <span class="n">1</span>, <span class="n">2</span>, <span class="n">3</span> ]
+<span class="c">#      ^       ^  &lt;- this</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="format-rules-array-comma-space-width" class="group relative heading-with-anchor ">format.rules.array-comma-space-width</h3>
+<p>The number of spaces after the comma in a single line array.</p>
+<ul>
+<li>Type: <code>Number</code></li>
+<li>Default: <code>1</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">key</span> = [ <span class="n">1</span>, <span class="n">2</span>, <span class="n">3</span> ]
+<span class="c">#         ^  ^  &lt;- this</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="format-rules-comment-style" class="group relative heading-with-anchor ">format.rules.comment-style</h3>
+<p>The style used to format comments.</p>
+<ul>
+<li>Type: <code>"normalize" | "preserve"</code></li>
+<li>Default: <code>"normalize"</code></li>
+<li>Enum Values:
+<ul>
+<li><code>normalize</code>: Normalize comment text according to Tombi's formatting rules.</li>
+<li><code>preserve</code>: Preserve the original comment text while formatting its placement normally.</li>
+</ul>
+</li>
+</ul>
+<p>For example, comment indentation and the spacing before trailing comments are still controlled by the formatter.</p>
+<h3 id="format-rules-date-time-delimiter" class="group relative heading-with-anchor ">format.rules.date-time-delimiter</h3>
+<p>The delimiter between date and time</p>
+<p>In accordance with <a href="https://datatracker.ietf.org/doc/html/rfc3339">RFC 3339</a>, you can use <code>T</code> or space character between date and time.</p>
+<ul>
+<li>Type: <code>"T" | "space" | "preserve"</code></li>
+<li>Default: <code>"T"</code></li>
+<li>Enum Values:
+<ul>
+<li><code>T</code>: Use <code>T</code> between date and time like <code>2001-01-01T00:00:00</code></li>
+<li><code>space</code>: Use space between date and time like <code>2001-01-01 00:00:00</code></li>
+<li><code>preserve</code>: Preserve the original delimiter.</li>
+</ul>
+</li>
+</ul>
+<h3 id="format-rules-group-blank-lines-limit" class="group relative heading-with-anchor ">format.rules.group-blank-lines-limit</h3>
+<p>The maximum number of blank lines to preserve between groups.</p>
+<p>These boundaries remain significant for auto sorting. The formatter only caps the amount of spacing that is preserved.</p>
+<ul>
+<li>Type: <code>Number</code></li>
+<li>Default: <code>1</code></li>
+<li>Minimum: <code>1</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># BEFORE</span>
+<span class="p">key1</span> = <span class="s">"value1"</span>
+<span class="p">key2</span> = <span class="s">"value2"</span>
+
+<span class="p">key3</span> = <span class="s">"value3"</span>
+
+
+<span class="p">key4</span> = <span class="s">"value4"</span>
+
+
+
+<span class="p">key5</span> = <span class="s">"value5"</span>
+
+<span class="c"># AFTER (`group-blank-lines-limit = 2`)</span>
+<span class="p">key1</span> = <span class="s">"value1"</span>
+<span class="p">key2</span> = <span class="s">"value2"</span>
+
+<span class="p">key3</span> = <span class="s">"value3"</span>
+
+
+<span class="p">key4</span> = <span class="s">"value4"</span>
+
+
+<span class="p">key5</span> = <span class="s">"value5"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="format-rules-indent-style" class="group relative heading-with-anchor ">format.rules.indent-style</h3>
+<p>The style of indentation</p>
+<p>Whether to use spaces or tabs for indentation.</p>
+<ul>
+<li>Type: <code>"space" | "tab"</code></li>
+<li>Default: <code>"space"</code></li>
+<li>Enum Values:
+<ul>
+<li><code>space</code>: Use spaces for indentation.</li>
+<li><code>tab</code>: Use tabs for indentation.</li>
+</ul>
+</li>
+</ul>
+<h3 id="format-rules-indent-sub-tables" class="group relative heading-with-anchor ">format.rules.indent-sub-tables</h3>
+<p>Whether to indent the sub-tables.</p>
+<p>If <code>true</code>, the sub-table will be indented.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>false</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">table</span>]
+    [<span class="t">table.sub-table</span>]
+    <span class="p">key</span> = <span class="s">"value"</span>
+<span class="c"># ^^  &lt;- this</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="format-rules-indent-table-key-value-pairs" class="group relative heading-with-anchor ">format.rules.indent-table-key-value-pairs</h3>
+<p>Whether to indent the table key-value pairs.</p>
+<p>If <code>true</code>, the table key-value pairs will be indented.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>false</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">table</span>]
+    <span class="p">key</span> = <span class="s">"value"</span>
+<span class="c"># ^^  &lt;- this</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="format-rules-indent-width" class="group relative heading-with-anchor ">format.rules.indent-width</h3>
+<p>The number of spaces per indentation level.</p>
+<ul>
+<li>Type: <code>Number</code></li>
+<li>Default: <code>2</code></li>
+</ul>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>⚠️</span><span>Warning</span></div><div class="text-gray-700 dark:text-gray-300"><p>This option is only used when the indentation style is <code>space</code>.</p></div></div>
+<h3 id="format-rules-inline-table-brace-space-width" class="group relative heading-with-anchor ">format.rules.inline-table-brace-space-width</h3>
+<p>The number of spaces inside the brackets of a single line inline table.</p>
+<ul>
+<li>Type: <code>Number</code></li>
+<li>Default: <code>1</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">key</span> = { <span class="p">a</span> = <span class="n">1</span>, <span class="p">b</span> = <span class="n">2</span> }
+<span class="c">#      ^            ^  &lt;- this</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="format-rules-inline-table-comma-space-width" class="group relative heading-with-anchor ">format.rules.inline-table-comma-space-width</h3>
+<p>The number of spaces after the comma in a single line inline table.</p>
+<ul>
+<li>Type: <code>Number</code></li>
+<li>Default: <code>1</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">key</span> = { <span class="p">a</span> = <span class="n">1</span>, <span class="p">b</span> = <span class="n">2</span> }
+<span class="c">#             ^  &lt;- this</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="format-rules-key-quote-style" class="group relative heading-with-anchor ">format.rules.key-quote-style</h3>
+<p>The preferred quote character for quoted keys.</p>
+<ul>
+<li>Type: <code>"double" | "single" | "preserve"</code></li>
+<li>Default: uses <a href="#format-rules-string-quote-style">string-quote-style</a></li>
+<li>Enum Values:
+<ul>
+<li><code>double</code>: Prefer the double quote like <code>"key"</code></li>
+<li><code>single</code>: Prefer the single quote like <code>'key'</code></li>
+<li><code>preserve</code>: Preserve the original quote</li>
+</ul>
+</li>
+</ul>
+<h3 id="format-rules-key-value-equals-sign-alignment" class="group relative heading-with-anchor ">format.rules.key-value-equals-sign-alignment</h3>
+<p>Whether to align the equals sign in the key-value pairs.</p>
+<p>If <code>true</code>, the equals sign in the key-value pairs will be aligned.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>false</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># BEFORE</span>
+<span class="p">key</span> = <span class="s">"value1"</span>
+<span class="p">key2</span> = <span class="s">"value2"</span>
+<span class="p">key3.key4</span> = <span class="s">"value3"</span>
+
+<span class="c"># AFTER</span>
+<span class="p">key</span>       = <span class="s">"value1"</span>
+<span class="p">key2</span>      = <span class="s">"value2"</span>
+<span class="p">key3.key4</span> = <span class="s">"value3"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>⚠️</span><span>Warning</span></div><div class="text-gray-700 dark:text-gray-300"><p>This feature does <strong>not</strong> apply to key-value pairs inside single line inline tables.</p></div></div>
+<h3 id="format-rules-key-value-equals-sign-space-width" class="group relative heading-with-anchor ">format.rules.key-value-equals-sign-space-width</h3>
+<p>The number of spaces around the equals sign in a key-value pair.</p>
+<ul>
+<li>Type: <code>Number</code></li>
+<li>Default: <code>1</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">key</span> = <span class="s">"value"</span>
+<span class="c">#  ^ ^  &lt;- this</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="format-rules-line-ending" class="group relative heading-with-anchor ">format.rules.line-ending</h3>
+<p>The type of line ending.</p>
+<ul>
+<li>Type: <code>"lf" | "crlf"</code></li>
+<li>Default: <code>"lf"</code></li>
+<li>Enum Values:
+<ul>
+<li><code>lf</code>: Line Feed only (<code>\n</code>), common on Linux and macOS as well as inside git repos.</li>
+<li><code>crlf</code>: Carriage Return Line Feed (<code>\r\n</code>), common on Windows.</li>
+</ul>
+</li>
+</ul>
+<h3 id="format-rules-line-width" class="group relative heading-with-anchor ">format.rules.line-width</h3>
+<p>The maximum line width. If omitted, the formatter does not apply a line-width limit.</p>
+<p>When specified, the formatter will try to keep lines within this width. Explicit multiline
+hints, such as a trailing comma, are still respected without a line-width setting.</p>
+<ul>
+<li>Type: <code>Number</code></li>
+<li>Default: no limit</li>
+</ul>
+<h3 id="format-rules-string-quote-style" class="group relative heading-with-anchor ">format.rules.string-quote-style</h3>
+<p>The preferred quote character for strings.</p>
+<ul>
+<li>Type: <code>"double" | "single" | "preserve"</code></li>
+<li>Default: <code>"double"</code></li>
+<li>Enum Values:
+<ul>
+<li><code>double</code>: Prefer the double quote like <code>"value"</code></li>
+<li><code>single</code>: Prefer the single quote like <code>'value'</code></li>
+<li><code>preserve</code>: Preserve the original quote</li>
+</ul>
+</li>
+</ul>
+<h3 id="format-rules-table-blank-lines" class="group relative heading-with-anchor ">format.rules.table-blank-lines</h3>
+<p>The number of blank lines inserted between table or array-of-table blocks when they are separated.</p>
+<ul>
+<li>Type: <code>Number</code></li>
+<li>Default: <code>1</code></li>
+<li>Minimum: <code>0</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># BEFORE</span>
+<span class="p">key1</span> = <span class="s">"value1"</span>
+[<span class="t">aaa</span>]
+<span class="p">key2</span> = <span class="s">"value2"</span>
+[<span class="t">bbb</span>]
+<span class="p">key3</span> = <span class="s">"value3"</span>
+
+<span class="c"># AFTER (`table-blank-lines = 2`)</span>
+<span class="p">key1</span> = <span class="s">"value1"</span>
+
+
+[<span class="t">aaa</span>]
+<span class="p">key2</span> = <span class="s">"value2"</span>
+
+
+[<span class="t">bbb</span>]
+<span class="p">key3</span> = <span class="s">"value3"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Tight parent/child table adjacency is controlled separately, so this does not apply when a child table follows a parent table that has no key-value pairs.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># BEFORE</span>
+[<span class="t">aaa</span>]
+
+[<span class="t">aaa.bbb</span>]
+
+<span class="c"># AFTER</span>
+[<span class="t">aaa</span>]
+[<span class="t">aaa.bbb</span>]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="format-rules-trailing-comment-alignment" class="group relative heading-with-anchor ">format.rules.trailing-comment-alignment</h3>
+<p>Whether to align the trailing comments in the key-value pairs.</p>
+<p>If <code>true</code>, the trailing comments in value/key-value pairs will be aligned.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>false</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># BEFORE</span>
+<span class="p">key</span> = <span class="s">"value1"</span>  <span class="c"># comment 1</span>
+<span class="p">key2</span> = <span class="s">"value2"</span>  <span class="c"># comment 2</span>
+<span class="p">key3.key4</span> = <span class="s">"value3"</span>  <span class="c"># comment 3</span>
+
+<span class="c"># AFTER</span>
+<span class="p">key</span> = <span class="s">"value1"</span>        <span class="c"># comment 1</span>
+<span class="p">key2</span> = <span class="s">"value2"</span>       <span class="c"># comment 2</span>
+<span class="p">key3.key4</span> = <span class="s">"value3"</span>  <span class="c"># comment 3</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>The trailing comments of table header are not targeted by alignment.</p></div></div>
+<h3 id="format-rules-trailing-comment-space-width" class="group relative heading-with-anchor ">format.rules.trailing-comment-space-width</h3>
+<p>The number of spaces before the trailing comment.</p>
+<ul>
+<li>Type: <code>Number</code></li>
+<li>Default: <code>2</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">key</span> = <span class="s">"value"</span>  <span class="c"># trailing comment</span>
+<span class="c">#            ^^  &lt;- this</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint" class="group relative heading-with-anchor ">lint</h3>
+<p>Linter options for TOML files.</p>
+<h3 id="lint-rules" class="group relative heading-with-anchor ">lint.rules</h3>
+<p>Configure individual lint rules with severity levels.</p>
+<h3 id="lint-rules-key-empty" class="group relative heading-with-anchor ">lint.rules.key-empty</h3>
+<p>Check if the key is empty.</p>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"warn"</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># VALID BUT DISCOURAGED</span>
+<span class="p">""</span> = <span class="k">true</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>This rule is disabled when the JSON Schema for the table specifies <code>propertyNames.minLength: 0</code>, since the schema explicitly allows empty keys.</p></div></div>
+<h3 id="lint-rules-dotted-keys-out-of-order" class="group relative heading-with-anchor ">lint.rules.dotted-keys-out-of-order</h3>
+<p>Check if dotted keys are defined out of order.</p>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"warn"</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># VALID BUT DISCOURAGED</span>
+<span class="p">apple.type</span> = <span class="s">"fruit"</span>
+<span class="p">orange.type</span> = <span class="s">"fruit"</span>
+<span class="p">apple.skin</span> = <span class="s">"thin"</span>
+<span class="p">orange.skin</span> = <span class="s">"thick"</span>
+
+<span class="c"># RECOMMENDED</span>
+<span class="p">apple.type</span> = <span class="s">"fruit"</span>
+<span class="p">apple.skin</span> = <span class="s">"thin"</span>
+<span class="p">orange.type</span> = <span class="s">"fruit"</span>
+<span class="p">orange.skin</span> = <span class="s">"thick"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-tables-out-of-order" class="group relative heading-with-anchor ">lint.rules.tables-out-of-order</h3>
+<p>Check if tables are defined out of order.</p>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"warn"</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># VALID BUT DISCOURAGED</span>
+[<span class="t">fruit.apple</span>]
+[<span class="t">animal</span>]
+[<span class="t">fruit.orange</span>]
+
+<span class="c"># RECOMMENDED</span>
+[<span class="t">fruit.apple</span>]
+[<span class="t">fruit.orange</span>]
+[<span class="t">animal</span>]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lsp" class="group relative heading-with-anchor ">lsp</h3>
+<p>Language Server Protocol (LSP) feature configuration. Each feature can be individually enabled or disabled.</p>
+<h3 id="lsp-code-action" class="group relative heading-with-anchor ">lsp.code-action</h3>
+<p>Configure code action feature.</p>
+<h3 id="lsp-code-action-enabled" class="group relative heading-with-anchor ">lsp.code-action.enabled</h3>
+<p>Enable or disable code action feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="lsp-completion" class="group relative heading-with-anchor ">lsp.completion</h3>
+<p>Configure completion feature.</p>
+<h3 id="lsp-completion-enabled" class="group relative heading-with-anchor ">lsp.completion.enabled</h3>
+<p>Enable or disable completion feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="lsp-diagnostic" class="group relative heading-with-anchor ">lsp.diagnostic</h3>
+<p>Configure diagnostic feature.</p>
+<h3 id="lsp-diagnostic-enabled" class="group relative heading-with-anchor ">lsp.diagnostic.enabled</h3>
+<p>Enable or disable diagnostic feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="lsp-document-link" class="group relative heading-with-anchor ">lsp.document-link</h3>
+<p>Configure document link feature.</p>
+<h3 id="lsp-document-link-enabled" class="group relative heading-with-anchor ">lsp.document-link.enabled</h3>
+<p>Enable or disable document link feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="lsp-formatting" class="group relative heading-with-anchor ">lsp.formatting</h3>
+<p>Configure formatting feature.</p>
+<h3 id="lsp-formatting-enabled" class="group relative heading-with-anchor ">lsp.formatting.enabled</h3>
+<p>Enable or disable formatting feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="lsp-goto-declaration" class="group relative heading-with-anchor ">lsp.goto-declaration</h3>
+<p>Configure go to declaration feature.</p>
+<h3 id="lsp-goto-declaration-enabled" class="group relative heading-with-anchor ">lsp.goto-declaration.enabled</h3>
+<p>Enable or disable go to declaration feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="lsp-goto-definition" class="group relative heading-with-anchor ">lsp.goto-definition</h3>
+<p>Configure go to definition feature.</p>
+<h3 id="lsp-goto-definition-enabled" class="group relative heading-with-anchor ">lsp.goto-definition.enabled</h3>
+<p>Enable or disable go to definition feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="lsp-goto-type-definition" class="group relative heading-with-anchor ">lsp.goto-type-definition</h3>
+<p>Configure go to type definition feature.</p>
+<h3 id="lsp-goto-type-definition-enabled" class="group relative heading-with-anchor ">lsp.goto-type-definition.enabled</h3>
+<p>Enable or disable go to type definition feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="lsp-hover" class="group relative heading-with-anchor ">lsp.hover</h3>
+<p>Configure hover feature.</p>
+<h3 id="lsp-hover-enabled" class="group relative heading-with-anchor ">lsp.hover.enabled</h3>
+<p>Enable or disable hover feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="lsp-references" class="group relative heading-with-anchor ">lsp.references</h3>
+<p>Configure references feature.</p>
+<h3 id="lsp-references-enabled" class="group relative heading-with-anchor ">lsp.references.enabled</h3>
+<p>Enable or disable references feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="lsp-workspace-diagnostic" class="group relative heading-with-anchor ">lsp.workspace-diagnostic</h3>
+<p>Configure workspace diagnostic feature.</p>
+<h3 id="lsp-workspace-diagnostic-enabled" class="group relative heading-with-anchor ">lsp.workspace-diagnostic.enabled</h3>
+<p>Enable or disable workspace diagnostic feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="schema" class="group relative heading-with-anchor ">schema</h3>
+<p>JSON Schema validation options for TOML files.</p>
+<h3 id="schema-enabled" class="group relative heading-with-anchor ">schema.enabled</h3>
+<p>Enable or disable schema validation.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="schema-strict" class="group relative heading-with-anchor ">schema.strict</h3>
+<p>Enable strict schema validation. If <code>additionalProperties</code> is not specified in the JSON Schema, the strict mode treats it as <code>additionalProperties: false</code>, which is different from the JSON Schema specification.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="schema-format" class="group relative heading-with-anchor ">schema.format</h3>
+<p>Configure format rules for schema-defined ordering.</p>
+<h3 id="schema-format-rules" class="group relative heading-with-anchor ">schema.format.rules</h3>
+<p>Configure global schema format rules. Matching <code>[[schemas]]</code> format rules, <code>[[schemas.overrides]]</code>, and comment directives take precedence over these settings.</p>
+<h3 id="schema-format-rules-array-values-order" class="group relative heading-with-anchor ">schema.format.rules.array-values-order</h3>
+<p>Configure schema-defined ordering for array values.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="schema-format-rules-array-values-order-enabled" class="group relative heading-with-anchor ">schema.format.rules.array-values-order.enabled</h3>
+<p>Enable or disable schema-defined array value ordering for all schemas. This is the fallback when no more specific setting applies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="schema-format-rules-table-keys-order" class="group relative heading-with-anchor ">schema.format.rules.table-keys-order</h3>
+<p>Configure schema-defined ordering for table keys.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="schema-format-rules-table-keys-order-enabled" class="group relative heading-with-anchor ">schema.format.rules.table-keys-order.enabled</h3>
+<p>Enable or disable schema-defined table key ordering for all schemas. This is the fallback when no more specific setting applies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="schema-lint" class="group relative heading-with-anchor ">schema.lint</h3>
+<p>Configure lint rules for values deprecated by the active JSON Schema.</p>
+<h3 id="schema-lint-rules" class="group relative heading-with-anchor ">schema.lint.rules</h3>
+<p>Configure global schema lint rules. Schema-specific rules and overrides take precedence over these settings.</p>
+<h3 id="schema-lint-rules-deprecated" class="group relative heading-with-anchor ">schema.lint.rules.deprecated</h3>
+<p>Set the severity for values marked as <code>deprecated: true</code> by the active JSON Schema. This is the fallback for all schemas when no more specific deprecated severity is configured.</p>
+<ul>
+<li>Type: <code>"warn" | "error"</code></li>
+<li>Default: <code>"warn"</code> when no schema-specific setting applies</li>
+</ul>
+<h3 id="schema-catalog" class="group relative heading-with-anchor ">schema.catalog</h3>
+<p>Configure schema catalog for automatic schema detection.</p>
+<h3 id="schema-catalog-paths" class="group relative heading-with-anchor ">schema.catalog.paths</h3>
+<p>The schema catalog path/url array. The catalog is evaluated after the schemas specified by <code>[[schemas]]</code>. Schemas are loaded in order from the beginning of the catalog list.</p>
+<ul>
+<li>Type: <code>String[]</code></li>
+<li>Default: <code>["tombi://www.schemastore.org/api/json/catalog.json", "https://www.schemastore.org/api/json/catalog.json"]</code></li>
+</ul>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>For local paths in <code>schema.catalog.paths</code>, relative paths are also resolved from the directory containing the loaded config file.</p></div></div>
+<h3 id="schemas" class="group relative heading-with-anchor ">schemas</h3>
+<p>Define custom schemas for specific TOML files. You can specify both root schemas and sub-schemas.</p>
+<h3 id="root-schema" class="group relative heading-with-anchor ">Root Schema</h3>
+<p>Apply a schema to the entire TOML document.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">schemas</span>]]
+<span class="p">toml-version</span> = <span class="s">"v1.0.0"</span>  <span class="c"># optional</span>
+<span class="p">path</span> = <span class="s">"https://example.com/schema.json"</span>
+<span class="p">include</span> = [<span class="s">"example.toml"</span>]
+<span class="p">strict</span> = <span class="k">false</span>
+
+[<span class="t">schemas.lint.rules</span>]
+<span class="p">deprecated</span> = <span class="s">"error"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li><code>toml-version</code>(optional): The TOML version that the schema is available for</li>
+<li><code>path</code>: The schema path (URL or local file path)</li>
+<li><code>include</code>: File match patterns to apply this schema (supports glob patterns)</li>
+<li><code>exclude</code>(optional): File match patterns to skip even if <code>include</code> matched</li>
+<li><code>strict</code>(optional): Override <code>schema.strict</code> for files matched by this root schema</li>
+<li><code>lint.rules.deprecated</code>(optional): Override the deprecated diagnostic level for this schema with <code>"off"</code>, <code>"warn"</code>, or <code>"error"</code></li>
+<li><code>format.rules.array-values-order.enabled</code>(optional): Enable schema-defined array value ordering for this schema</li>
+<li><code>format.rules.table-keys-order.enabled</code>(optional): Enable schema-defined table key ordering for this schema</li>
+<li><code>overrides</code>(optional): Per-target ordering overrides within the matched schema</li>
+</ul>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>For local paths, <code>path</code> is resolved relative to the directory containing the loaded config file.</p><p>When using User/System config (for example <code>~/.config/tombi/config.toml</code>), the config directory is usually outside your project.
+In that case, use recursive include globs such as <code>**/project/**/*.toml</code> or filename-based patterns like <code>pyproject.toml</code> to target project files.</p></div></div>
+<h3 id="sub-schema" class="group relative heading-with-anchor ">Sub Schema</h3>
+<p>Apply a schema to a specific part of the TOML document.
+Sub schemas are mainly provided for configuring extension features, such as the <a href="https://peps.python.org/pep-0518/#tool-table">tool section</a> in <code>pyproject.toml</code> or similar cases where only part of the document should be validated or structured according to an additional schema.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">schemas</span>]]
+<span class="p">root</span> = <span class="s">"tool.taskipy"</span>
+<span class="p">path</span> = <span class="s">"schemas/partial-taskipy.schema.json"</span>
+<span class="p">include</span> = [<span class="s">"pyproject.toml"</span>]
+<span class="p">strict</span> = <span class="k">false</span>
+
+[<span class="t">schemas.lint.rules</span>]
+<span class="p">deprecated</span> = <span class="s">"warn"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li><code>root</code>: The accessor path to apply the sub-schema (e.g., <code>"tools.tombi"</code>, <code>"tool.*"</code>, <code>"tool.'*'"</code>, <code>"items[1].name"</code>). Use bare <code>*</code> for any key segment, <code>[*]</code> for any array element, and numeric indices such as <code>[1]</code> for a specific tuple element. If you need the literal key <code>*</code>, quote it as <code>'*'</code> or <code>"*"</code>.</li>
+<li><code>path</code>: The schema path (URL or local file path)</li>
+<li><code>include</code>: File match patterns to apply this schema (supports glob patterns)</li>
+<li><code>exclude</code>(optional): File match patterns to skip even if <code>include</code> matched</li>
+<li><code>strict</code>(optional): Override the matching root schema or global <code>schema.strict</code> setting below this sub-schema root</li>
+<li><code>lint.rules.deprecated</code>(optional): Override the deprecated diagnostic level for this schema with <code>"off"</code>, <code>"warn"</code>, or <code>"error"</code></li>
+<li><code>format.rules.array-values-order.enabled</code>(optional): Enable schema-defined array value ordering for this schema</li>
+<li><code>format.rules.table-keys-order.enabled</code>(optional): Enable schema-defined table key ordering for this schema</li>
+<li><code>overrides</code>(optional): Per-target ordering overrides within the matched schema</li>
+</ul>
+<h3 id="schemas-format" class="group relative heading-with-anchor ">schemas[*].format</h3>
+<p>Configure schema-specific formatting settings.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="schemas-format-rules" class="group relative heading-with-anchor ">schemas[*].format.rules</h3>
+<p>Configure schema-specific format rules.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<p>These rules currently control whether ordering metadata from the matched JSON Schema is applied.</p>
+<h3 id="schemas-format-rules-array-values-order" class="group relative heading-with-anchor ">schemas[*].format.rules.array-values-order</h3>
+<p>Configure schema-defined ordering for array values.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<p>Use <code>{ enabled = false }</code> to ignore schema-defined ordering for array values.</p>
+<h3 id="schemas-format-rules-array-values-order-enabled" class="group relative heading-with-anchor ">schemas[*].format.rules.array-values-order.enabled</h3>
+<p>Enable or disable schema-defined array value ordering.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="schemas-format-rules-table-keys-order" class="group relative heading-with-anchor ">schemas[*].format.rules.table-keys-order</h3>
+<p>Configure schema-defined ordering for table keys.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<p>Use <code>{ enabled = false }</code> to ignore schema-defined ordering for table keys.</p>
+<h3 id="schemas-format-rules-table-keys-order-enabled" class="group relative heading-with-anchor ">schemas[*].format.rules.table-keys-order.enabled</h3>
+<p>Enable or disable schema-defined table key ordering.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="schemas-lint" class="group relative heading-with-anchor ">schemas[*].lint</h3>
+<p>Configure schema-specific lint settings.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="schemas-lint-rules" class="group relative heading-with-anchor ">schemas[*].lint.rules</h3>
+<p>Configure schema-specific lint rules.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="schemas-lint-rules-deprecated" class="group relative heading-with-anchor ">schemas[*].lint.rules.deprecated</h3>
+<p>Override the deprecated diagnostic level for the schema.
+This applies when the matched JSON Schema marks a value as <code>deprecated: true</code>.</p>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"warn"</code></li>
+</ul>
+<h3 id="schemas-overrides" class="group relative heading-with-anchor ">schemas[*].overrides</h3>
+<p>Override schema-derived ordering behavior for specific accessor targets within a matched schema.</p>
+<ul>
+<li>Type: <code>Table[]</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">schemas</span>]]
+<span class="p">path</span> = <span class="s">"https://example.com/schema.json"</span>
+<span class="p">include</span> = [<span class="s">"example.toml"</span>]
+
+[[<span class="t">schemas.overrides</span>]]
+<span class="p">targets</span> = [<span class="s">""</span>]
+
+[<span class="t">schemas.overrides.format.rules</span>]
+<span class="p">table-keys-order</span> = <span class="s">"ascending"</span>
+
+[[<span class="t">schemas.overrides</span>]]
+<span class="p">targets</span> = [<span class="s">"items[*]"</span>, <span class="s">"tool.tasks[*]"</span>]
+
+[<span class="t">schemas.overrides.format.rules</span>]
+<span class="p">array-values-order.enabled</span> = <span class="k">false</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>If both a root schema override and a sub schema override match the same target, the sub schema override takes precedence.
+This precedence is shared by both <code>format.rules.table-keys-order</code> and <code>format.rules.array-values-order</code>.</p></div></div>
+<h3 id="schemas-overrides-targets" class="group relative heading-with-anchor ">schemas[<em>].overrides[</em>].targets</h3>
+<p>Accessor patterns to which the override applies.</p>
+<ul>
+<li>Type: <code>String[]</code></li>
+<li>Required: <code>true</code></li>
+</ul>
+<p>Use <code>""</code> to target the root table. Use <code>*</code> for any key segment, <code>[*]</code> for any array element, and numeric indices such as <code>[1]</code> for a specific tuple element.</p>
+<h3 id="schemas-overrides-format" class="group relative heading-with-anchor ">schemas[<em>].overrides[</em>].format</h3>
+<p>Override schema-specific format settings for matched targets.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="schemas-overrides-format-rules" class="group relative heading-with-anchor ">schemas[<em>].overrides[</em>].format.rules</h3>
+<p>Override schema-derived ordering rules for matched targets.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="schemas-overrides-format-rules-array-values-order" class="group relative heading-with-anchor ">schemas[<em>].overrides[</em>].format.rules.array-values-order</h3>
+<p>Override array value ordering for matched targets.</p>
+<ul>
+<li>Type: <code>Table | "ascending" | "descending" | "schema" | "version-sort"</code></li>
+</ul>
+<p>Set an explicit order to force that ordering, or use <code>{ enabled = false }</code> to disable schema-defined ordering for the matched targets. <code>{ enabled = true }</code> re-enables schema-defined ordering without forcing a specific order.</p>
+<h3 id="schemas-overrides-format-rules-table-keys-order" class="group relative heading-with-anchor ">schemas[<em>].overrides[</em>].format.rules.table-keys-order</h3>
+<p>Override table key ordering for matched targets.</p>
+<ul>
+<li>Type: <code>Table | "ascending" | "descending" | "schema" | "version-sort"</code></li>
+</ul>
+<p>Set an explicit order to force that ordering. <code>"schema"</code> means to follow the order defined by the JSON Schema. <code>{ enabled = false }</code> disables schema-defined ordering for the matched targets, and <code>{ enabled = true }</code> re-enables it.</p>
+<h3 id="schemas-overrides-lint" class="group relative heading-with-anchor ">schemas[<em>].overrides[</em>].lint</h3>
+<p>Override schema-specific lint settings for matched targets.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="schemas-overrides-lint-rules" class="group relative heading-with-anchor ">schemas[<em>].overrides[</em>].lint.rules</h3>
+<p>Override schema-specific lint rules for matched targets.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="schemas-overrides-lint-rules-deprecated" class="group relative heading-with-anchor ">schemas[<em>].overrides[</em>].lint.rules.deprecated</h3>
+<p>Override the deprecated diagnostic level for matched targets.
+This applies when the matched JSON Schema marks a value as <code>deprecated: true</code>.</p>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"warn"</code></li>
+</ul>
+<h3 id="overrides" class="group relative heading-with-anchor ">overrides</h3>
+<p>Override configuration settings for specific file patterns. You can define multiple override rules, and matching settings will be applied to files.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">overrides</span>]]
+<span class="p">files.include</span> = [<span class="s">"tests/**/*.toml"</span>]
+
+[<span class="t">overrides.format.rules</span>]
+<span class="p">indent-width</span> = <span class="n">4</span>
+<span class="p">line-width</span> = <span class="n">120</span>
+
+[<span class="t">overrides.lint.rules</span>]
+<span class="p">key-empty</span> = <span class="s">"off"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="overrides-files" class="group relative heading-with-anchor ">overrides[*].files</h3>
+<p>Specify file patterns to which the override should be applied.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+<li>Required: <code>true</code></li>
+</ul>
+<h3 id="overrides-files-include" class="group relative heading-with-anchor ">overrides[*].files.include</h3>
+<p>File patterns to apply the override. Supports glob patterns.</p>
+<ul>
+<li>Type: <code>String[]</code></li>
+<li>Required: <code>true</code></li>
+</ul>
+<h3 id="overrides-files-exclude" class="group relative heading-with-anchor ">overrides[*].files.exclude</h3>
+<p>File patterns to exclude from the override. Supports glob patterns.</p>
+<ul>
+<li>Type: <code>String[]</code></li>
+</ul>
+<h3 id="overrides-format" class="group relative heading-with-anchor ">overrides[*].format</h3>
+<p>Override format settings.</p>
+<h3 id="overrides-format-enabled" class="group relative heading-with-anchor ">overrides[*].format.enabled</h3>
+<p>Enable or disable formatting feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="overrides-format-rules" class="group relative heading-with-anchor ">overrides[*].format.rules</h3>
+<p>Override format rules. Only the specified rules will be overridden, and the rest will use the base configuration.</p>
+<p>Available rules are the same as <a href="#format-rules">format.rules</a>.</p>
+<h3 id="overrides-lint" class="group relative heading-with-anchor ">overrides[*].lint</h3>
+<p>Override lint settings.</p>
+<h3 id="overrides-lint-enabled" class="group relative heading-with-anchor ">overrides[*].lint.enabled</h3>
+<p>Enable or disable linting feature.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="overrides-lint-rules" class="group relative heading-with-anchor ">overrides[*].lint.rules</h3>
+<p>Override lint rules. Only the specified rules will be overridden, and the rest will use the base configuration.</p>
+<p>Available rules are the same as <a href="#lint-rules">lint.rules</a>.</p>
+<h3 id="extensions" class="group relative heading-with-anchor ">extensions</h3>
+<p>Configure experimental built-in extensions and their feature flags.</p>
+<p>If an extension or feature is omitted, it is enabled by default.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">extensions</span>]
+<span class="p">"tombi-toml/cargo"</span> = { <span class="p">lsp.completion.path.enabled</span> = <span class="k">false</span> }
+<span class="p">"tombi-toml/pyproject"</span> = { <span class="p">lsp.document-link.pypi-org.enabled</span> = <span class="k">false</span> }</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Available extension IDs:</p>
+<ul>
+<li><code>tombi-toml/cargo</code>: Cargo-specific completion, navigation, document links, code actions, hover, and inlay hints for <code>Cargo.toml</code></li>
+<li><code>tombi-toml/pyproject</code>: <code>pyproject.toml</code>-specific completion, navigation, document links, code actions, hover, and inlay hints</li>
+<li><code>tombi-toml/tombi</code>: Tombi's own config-oriented path completion, navigation, document links, and hover</li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo"</h3>
+<p>Configure the experimental Cargo extension for <code>Cargo.toml</code>.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo">Cargo Extension</a> for the supported Cargo-specific editor features.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".enabled</h3>
+<p>Enable or disable the entire Cargo extension.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lint" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lint</h3>
+<p>Configure diagnostics produced for paths declared in <code>Cargo.toml</code>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lint-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lint.enabled</h3>
+<p>Enable or disable all Cargo extension lint rules.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lint-rules" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lint.rules</h3>
+<p>Set the severity of individual Cargo extension diagnostics. Each rule defaults to <code>"error"</code>. Available values are <code>"off"</code>, <code>"warn"</code>, and <code>"error"</code>.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">extensions</span>]
+<span class="p">"tombi-toml/cargo"</span> = {
+  <span class="p">lint.rules</span> = {
+    <span class="p">missing-build-script</span> = <span class="s">"error"</span>,
+    <span class="p">missing-license-file</span> = <span class="s">"error"</span>,
+    <span class="p">missing-path-dependency</span> = <span class="s">"error"</span>,
+    <span class="p">missing-readme</span> = <span class="s">"error"</span>,
+    <span class="p">missing-target-path</span> = <span class="s">"error"</span>,
+    <span class="p">missing-workspace</span> = <span class="s">"error"</span>,
+    <span class="p">missing-workspace-member</span> = <span class="s">"error"</span>,
+  },
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="extensions-tombi-toml-cargo-lint-rules-missing-build-script" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lint.rules.missing-build-script</h3>
+<p>Report an explicitly configured build script path that does not exist. <code>build = true</code> checks <code>build.rs</code>; <code>build = false</code> is ignored.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">package</span>]
+<span class="p">build</span> = <span class="s">"build/build-missing.rs"</span> <span class="c"># this file does not exist</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lint-rules-missing-license-file" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lint.rules.missing-license-file</h3>
+<p>Report an explicitly configured package or workspace license file path that does not exist.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">package</span>]
+<span class="p">license-file</span> = <span class="s">"LICENSE-missing.txt"</span> <span class="c"># this file does not exist</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lint-rules-missing-path-dependency" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lint.rules.missing-path-dependency</h3>
+<p>Report path dependencies whose directory does not contain a <code>Cargo.toml</code> file.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">dependencies</span>]
+<span class="p">local-crate</span> = { <span class="p">path</span> = <span class="s">"../local-crate"</span> } <span class="c"># this directory has no Cargo.toml</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lint-rules-missing-readme" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lint.rules.missing-readme</h3>
+<p>Report an explicitly configured package or workspace README path that does not exist. <code>readme = true</code> checks <code>README.md</code>.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">package</span>]
+<span class="p">readme</span> = <span class="s">"README-missing.md"</span> <span class="c"># this file does not exist</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lint-rules-missing-target-path" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lint.rules.missing-target-path</h3>
+<p>Report missing explicit <code>path</code> values in <code>[lib]</code>, <code>[[bin]]</code>, <code>[[example]]</code>, <code>[[test]]</code>, and <code>[[bench]]</code> targets. Inferred Cargo target paths are not checked.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">bin</span>]]
+<span class="p">name</span> = <span class="s">"tool"</span>
+<span class="p">path</span> = <span class="s">"src/bin/tool-missing.rs"</span> <span class="c"># this file does not exist</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lint-rules-missing-workspace" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lint.rules.missing-workspace</h3>
+<p>Report <code>workspace = true</code> inheritance when its matching <code>[workspace.package]</code> field, <code>[workspace.dependencies]</code> entry, or <code>[workspace.lints]</code> table cannot be found.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">dependencies</span>]
+<span class="p">shared-crate</span> = { <span class="p">workspace</span> = <span class="k">true</span> } <span class="c"># no matching [workspace.dependencies] entry</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lint-rules-missing-workspace-member" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lint.rules.missing-workspace-member</h3>
+<p>Report a <code>workspace.members</code> or <code>workspace.default-members</code> entry whose directory does not contain a <code>Cargo.toml</code> file. Glob patterns are expanded and every matched directory is checked, except directories removed by <code>workspace.exclude</code>. A glob that matches no directory is also reported.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">workspace</span>]
+<span class="p">members</span> = [<span class="s">"crates/missing"</span>] <span class="c"># this directory has no Cargo.toml</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp</h3>
+<p>Configure Cargo extension language-server features such as completion, navigation, document links, and code actions.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo">Cargo Extension</a> for feature details.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.enabled</h3>
+<p>Enable or disable all Cargo extension language-server features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-completion" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.completion</h3>
+<p>Configure Cargo-specific completion features.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#code-completion">Cargo Extension &gt; Code Completion</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-completion-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.completion.enabled</h3>
+<p>Enable or disable all Cargo completion features provided by the extension.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-completion-dependency-version" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.completion.dependency-version</h3>
+<p>Configure registry version completion for Cargo dependencies.
+This powers the version suggestions shown while editing dependency requirements.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#code-completion">Cargo Extension &gt; Code Completion</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-completion-dependency-version-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.completion.dependency-version.enabled</h3>
+<p>Enable or disable version completion for Cargo dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-completion-dependency-feature" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.completion.dependency-feature</h3>
+<p>Configure feature completion for Cargo dependencies.
+This powers feature-name suggestions for crate dependencies, including workspace-aware lookups.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#code-completion">Cargo Extension &gt; Code Completion</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-completion-dependency-feature-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.completion.dependency-feature.enabled</h3>
+<p>Enable or disable feature completion for Cargo dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-completion-path" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.completion.path</h3>
+<p>Configure path completion for Cargo manifests.
+This covers member paths, dependency paths, target source paths, and file references such as <code>readme</code>.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#code-completion">Cargo Extension &gt; Code Completion</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-completion-path-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.completion.path.enabled</h3>
+<p>Enable or disable path completion for Cargo manifests.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-definition" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-definition</h3>
+<p>Configure Cargo-specific go to definition features.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#go-to-definition">Cargo Extension &gt; Go to Definition</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-definition-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-definition.enabled</h3>
+<p>Enable or disable all Cargo go to definition features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-definition-dependency" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-definition.dependency</h3>
+<p>Configure go to definition for Cargo dependencies.
+This resolves dependency entries to workspace definitions or referenced crates when possible.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#go-to-definition">Cargo Extension &gt; Go to Definition</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-definition-dependency-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-definition.dependency.enabled</h3>
+<p>Enable or disable go to definition for Cargo dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-definition-member" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-definition.member</h3>
+<p>Configure go to definition for Cargo workspace members.
+This resolves workspace member references such as member manifests and managed crates.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#go-to-definition">Cargo Extension &gt; Go to Definition</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-definition-member-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-definition.member.enabled</h3>
+<p>Enable or disable go to definition for Cargo workspace members.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-definition-path" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-definition.path</h3>
+<p>Configure go to definition for Cargo path targets.
+This resolves local <code>path</code> references in Cargo manifests.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#go-to-definition">Cargo Extension &gt; Go to Definition</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-definition-path-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-definition.path.enabled</h3>
+<p>Enable or disable go to definition for Cargo path targets.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-references" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.references</h3>
+<p>Configure Cargo-specific references features.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#references">Cargo Extension &gt; References</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-references-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.references.enabled</h3>
+<p>Enable or disable all Cargo references features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-references-dependency" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.references.dependency</h3>
+<p>Configure references for Cargo dependencies.
+This lists dependency-related usages such as feature activations and workspace dependency consumers.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#references">Cargo Extension &gt; References</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-references-dependency-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.references.dependency.enabled</h3>
+<p>Enable or disable references for Cargo dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-declaration" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-declaration</h3>
+<p>Configure Cargo-specific go to declaration features.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#go-to-declaration">Cargo Extension &gt; Go to Declaration</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-declaration-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-declaration.enabled</h3>
+<p>Enable or disable all Cargo go to declaration features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-declaration-dependency" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-declaration.dependency</h3>
+<p>Configure go to declaration for Cargo dependencies.
+This resolves dependency entries back to their declared workspace location when applicable.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#go-to-declaration">Cargo Extension &gt; Go to Declaration</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-declaration-dependency-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-declaration.dependency.enabled</h3>
+<p>Enable or disable go to declaration for Cargo dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-declaration-path" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-declaration.path</h3>
+<p>Configure go to declaration for Cargo path targets.
+This resolves declaration-like navigation for local <code>path</code> references in Cargo manifests.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#go-to-declaration">Cargo Extension &gt; Go to Declaration</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-goto-declaration-path-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.goto-declaration.path.enabled</h3>
+<p>Enable or disable go to declaration for Cargo path targets.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-document-link" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.document-link</h3>
+<p>Configure Cargo-specific document links.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#document-links">Cargo Extension &gt; Document Links</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-document-link-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.document-link.enabled</h3>
+<p>Enable or disable all Cargo document links.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-document-link-crates-io" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.document-link.crates-io</h3>
+<p>Configure document links to crates.io pages referenced from Cargo manifests.
+These links open crates.io package pages for registry dependencies.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#document-links">Cargo Extension &gt; Document Links</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-document-link-crates-io-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.document-link.crates-io.enabled</h3>
+<p>Enable or disable document links to crates.io pages referenced from Cargo manifests.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-code-action" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.code-action</h3>
+<p>Configure Cargo-specific code actions.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#code-actions">Cargo Extension &gt; Code Actions</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-code-action-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.code-action.enabled</h3>
+<p>Enable or disable all Cargo code actions.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-code-action-inherit-from-workspace" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.code-action.inherit-from-workspace</h3>
+<p>Configure the "Inherit from Workspace" code action for Cargo manifests.
+This refactor converts package fields to workspace inheritance.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#code-actions">Cargo Extension &gt; Code Actions</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-code-action-inherit-from-workspace-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.code-action.inherit-from-workspace.enabled</h3>
+<p>Enable or disable the "Inherit from Workspace" code action for Cargo manifests.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-code-action-add-to-workspace-and-inherit-dependency" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.code-action.add-to-workspace-and-inherit-dependency</h3>
+<p>Configure the "Add to Workspace and Inherit Dependency" code action for Cargo manifests.
+This refactor promotes a member dependency into <code>[workspace.dependencies]</code> and rewrites the member entry to inherit it.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#code-actions">Cargo Extension &gt; Code Actions</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-code-action-add-to-workspace-and-inherit-dependency-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.code-action.add-to-workspace-and-inherit-dependency.enabled</h3>
+<p>Enable or disable the "Add to Workspace and Inherit Dependency" code action for Cargo manifests.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-code-action-convert-dependency-to-table-format" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.code-action.convert-dependency-to-table-format</h3>
+<p>Configure the "Convert Dependency to Table Format" code action for Cargo manifests.
+This refactor expands a simple string dependency into table form for further editing.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#code-actions">Cargo Extension &gt; Code Actions</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-code-action-convert-dependency-to-table-format-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.code-action.convert-dependency-to-table-format.enabled</h3>
+<p>Enable or disable the "Convert Dependency to Table Format" code action for Cargo manifests.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-code-action-inherit-dependency-from-workspace" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.code-action.inherit-dependency-from-workspace</h3>
+<p>Configure the "Inherit Dependency from Workspace" code action for Cargo manifests.
+This refactor rewrites dependencies to use workspace-managed versions.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#code-actions">Cargo Extension &gt; Code Actions</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-code-action-inherit-dependency-from-workspace-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.code-action.inherit-dependency-from-workspace.enabled</h3>
+<p>Enable or disable the "Inherit Dependency from Workspace" code action for Cargo manifests.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-code-action-update-dependency-to-latest-version" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.code-action.update-dependency-to-latest-version</h3>
+<p>Configure the "Update Dependency to Latest Version" code action for Cargo manifests.
+This refactor rewrites dependency versions to the latest published version.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#code-actions">Cargo Extension &gt; Code Actions</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-code-action-update-dependency-to-latest-version-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.code-action.update-dependency-to-latest-version.enabled</h3>
+<p>Enable or disable the "Update Dependency to Latest Version" code action for Cargo manifests.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-hover" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.hover</h3>
+<p>Configure Cargo-specific hover features.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#hover">Cargo Extension &gt; Hover</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-hover-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.hover.enabled</h3>
+<p>Enable or disable all Cargo hover features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-hover-dependency-detail" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.hover.dependency-detail</h3>
+<p>Configure dependency detail hover for Cargo dependencies.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#hover">Cargo Extension &gt; Hover</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-hover-dependency-detail-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.hover.dependency-detail.enabled</h3>
+<p>Enable or disable dependency detail hover for Cargo dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-hover-feature-dependencies" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.hover.feature-dependencies</h3>
+<p>Configure feature dependency hover for Cargo dependencies.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#hover">Cargo Extension &gt; Hover</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-hover-feature-dependencies-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.hover.feature-dependencies.enabled</h3>
+<p>Enable or disable feature dependency hover for Cargo dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-hover-default-features" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.hover.default-features</h3>
+<p>Configure default feature hover for Cargo dependencies.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#hover">Cargo Extension &gt; Hover</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-hover-default-features-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.hover.default-features.enabled</h3>
+<p>Enable or disable default feature hover for Cargo dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-inlay-hint" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.inlay-hint</h3>
+<p>Configure Cargo-specific inlay hints.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#inlay-hints">Cargo Extension &gt; Inlay Hints</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-inlay-hint-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.inlay-hint.enabled</h3>
+<p>Enable or disable all Cargo inlay hints.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-inlay-hint-dependency-version" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.inlay-hint.dependency-version</h3>
+<p>Configure resolved-version inlay hints for Cargo dependencies.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#inlay-hints">Cargo Extension &gt; Inlay Hints</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-inlay-hint-dependency-version-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.inlay-hint.dependency-version.enabled</h3>
+<p>Enable or disable resolved-version inlay hints for Cargo dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-inlay-hint-default-features" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.inlay-hint.default-features</h3>
+<p>Configure default-features inlay hints for Cargo dependencies.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#inlay-hints">Cargo Extension &gt; Inlay Hints</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-inlay-hint-default-features-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.inlay-hint.default-features.enabled</h3>
+<p>Enable or disable default-features inlay hints for Cargo dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-inlay-hint-workspace-value" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.inlay-hint.workspace-value</h3>
+<p>Configure workspace-value inlay hints for Cargo workspace inheritance.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-cargo#inlay-hints">Cargo Extension &gt; Inlay Hints</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-cargo-lsp-inlay-hint-workspace-value-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/cargo".lsp.inlay-hint.workspace-value.enabled</h3>
+<p>Enable or disable workspace-value inlay hints for Cargo workspace inheritance.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject"</h3>
+<p>Configure the experimental <code>pyproject.toml</code> extension.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject">Pyproject Extension</a> for the supported <code>pyproject.toml</code> editor features.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".enabled</h3>
+<p>Enable or disable the entire <code>pyproject.toml</code> extension.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint</h3>
+<p>Configure the severity of diagnostics produced by the <code>pyproject.toml</code> extension.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules</h3>
+<p>Set the severity for individual pyproject diagnostics. Each rule defaults to its current severity when omitted. Available values are <code>"off"</code>, <code>"warn"</code>, and <code>"error"</code>.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">extensions</span>]
+<span class="p">"tombi-toml/pyproject"</span> = {
+  <span class="p">lint.rules</span> = {
+    <span class="p">ambiguous-import-name</span> = <span class="s">"error"</span>,
+    <span class="p">cyclic-include-group</span> = <span class="s">"error"</span>,
+    <span class="p">duplicate-dependency-group</span> = <span class="s">"error"</span>,
+    <span class="p">duplicate-extra-name</span> = <span class="s">"error"</span>,
+    <span class="p">duplicate-import-name</span> = <span class="s">"warn"</span>,
+    <span class="p">invalid-dependency-specifier</span> = <span class="s">"error"</span>,
+    <span class="p">invalid-email-display-name</span> = <span class="s">"error"</span>,
+    <span class="p">invalid-entry-point-target</span> = <span class="s">"error"</span>,
+    <span class="p">invalid-import-name</span> = <span class="s">"error"</span>,
+    <span class="p">missing-import-name-parent</span> = <span class="s">"warn"</span>,
+    <span class="p">missing-workspace-member</span> = <span class="s">"error"</span>,
+    <span class="p">undefined-include-group</span> = <span class="s">"error"</span>,
+    <span class="p">unknown-classifier</span> = <span class="s">"warn"</span>,
+  },
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-ambiguous-import-name" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.ambiguous-import-name</h3>
+<p>Set the severity for names declared as both exclusive and shared imports.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">project</span>]
+<span class="p">import-names</span> = [<span class="s">"acme"</span>] <span class="c"># conflicts with the same name declared below</span>
+<span class="p">import-namespaces</span> = [<span class="s">"acme"</span>] <span class="c"># conflicts with the same name declared above</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-cyclic-include-group" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.cyclic-include-group</h3>
+<p>Report a cycle in dependency group includes.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">dependency-groups</span>]
+<span class="p">a</span> = [{ <span class="p">include-group</span> = <span class="s">"b"</span> }] <span class="c"># includes b</span>
+<span class="p">b</span> = [{ <span class="p">include-group</span> = <span class="s">"a"</span> }] <span class="c"># includes a, creating a cycle</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-duplicate-dependency-group" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.duplicate-dependency-group</h3>
+<p>Report dependency group names that become identical after lowercasing and replacing runs of <code>-</code>, <code>_</code>, or <code>.</code> with <code>-</code>.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">dependency-groups</span>]
+<span class="p">qa_tools</span> = [] <span class="c"># normalizes to "qa-tools", same as the name below</span>
+<span class="p">"QA.Tools"</span> = [] <span class="c"># normalizes to "qa-tools", same as the name above</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-duplicate-extra-name" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.duplicate-extra-name</h3>
+<p>Report optional dependency extra names that become identical after lowercasing and replacing runs of <code>-</code>, <code>_</code>, or <code>.</code> with <code>-</code>.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">project.optional-dependencies</span>]
+<span class="p">qa_tools</span> = [] <span class="c"># normalizes to "qa-tools", same as the name below</span>
+<span class="p">"QA.Tools"</span> = [] <span class="c"># normalizes to "qa-tools", same as the name above</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-duplicate-import-name" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.duplicate-import-name</h3>
+<p>Set the severity for duplicate Python import names.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">project</span>]
+<span class="p">import-names</span> = [<span class="s">"acme"</span>, <span class="s">"acme"</span>] <span class="c"># the same import name is declared twice</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"warn"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-invalid-dependency-specifier" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.invalid-dependency-specifier</h3>
+<p>Set the severity for dependency strings that do not follow PEP 508.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">project</span>]
+<span class="p">dependencies</span> = [<span class="s">"not a valid requirement !!!"</span>] <span class="c"># not a valid PEP 508 requirement</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-invalid-email-display-name" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.invalid-email-display-name</h3>
+<p>Set the severity for invalid author and maintainer email display names.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">project</span>]
+<span class="p">authors</span> = [{ <span class="p">name</span> = <span class="s">"Doe, Jane"</span> }] <span class="c"># commas are not allowed in the display name</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-invalid-entry-point-target" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.invalid-entry-point-target</h3>
+<p>Set the severity for invalid Python entry point targets.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">project.scripts</span>]
+<span class="p">cli</span> = <span class="s">"my_package.class"</span> <span class="c"># `class` is a Python keyword and cannot be an attribute</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-invalid-import-name" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.invalid-import-name</h3>
+<p>Set the severity for invalid Python import names.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">project</span>]
+<span class="p">import-names</span> = [<span class="s">"if"</span>] <span class="c"># `if` is a Python keyword, not a valid import name</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-missing-import-name-parent" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.missing-import-name-parent</h3>
+<p>Set the severity for import names whose parent is not declared.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">project</span>]
+<span class="p">import-namespaces</span> = [<span class="s">"acme.plugins"</span>] <span class="c"># parent `acme` is not declared in either list</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"warn"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-missing-workspace-member" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.missing-workspace-member</h3>
+<p>Set the severity for a non-glob <code>tool.uv.workspace.members</code> path whose directory does not contain a <code>pyproject.toml</code> file. Glob patterns are not checked, because uv silently ignores member directories without a <code>pyproject.toml</code>.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">tool.uv.workspace</span>]
+<span class="p">members</span> = [<span class="s">"packages/missing"</span>] <span class="c"># this directory has no pyproject.toml</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-undefined-include-group" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.undefined-include-group</h3>
+<p>Report a dependency group that includes a group not defined in <code>[dependency-groups]</code>.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">dependency-groups</span>]
+<span class="p">dev</span> = [{ <span class="p">include-group</span> = <span class="s">"test"</span> }] <span class="c"># no [dependency-groups].test exists</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lint-rules-unknown-classifier" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lint.rules.unknown-classifier</h3>
+<p>Set the severity for classifiers not listed in the Trove classifier specification.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">project</span>]
+<span class="p">classifiers</span> = [<span class="s">"NotAClassifier :: DefinitelyInvalid"</span>] <span class="c"># not in the Trove classifier list</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"warn"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp</h3>
+<p>Configure <code>pyproject.toml</code> extension language-server features such as completion, navigation, document links, and code actions.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject">Pyproject Extension</a> for feature details.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.enabled</h3>
+<p>Enable or disable all <code>pyproject.toml</code> extension language-server features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-completion" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.completion</h3>
+<p>Configure <code>pyproject.toml</code>-specific completion features.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#completion">Pyproject Extension &gt; Completion</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-completion-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.completion.enabled</h3>
+<p>Enable or disable all <code>pyproject.toml</code> completion features provided by the extension.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-completion-path" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.completion.path</h3>
+<p>Configure path completion for <code>pyproject.toml</code>.
+This covers workspace member paths, source paths, and file references such as <code>readme</code> and <code>license.file</code>.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#completion">Pyproject Extension &gt; Completion</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-completion-path-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.completion.path.enabled</h3>
+<p>Enable or disable path completion for <code>pyproject.toml</code>.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-definition" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-definition</h3>
+<p>Configure <code>pyproject.toml</code>-specific go to definition features.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#go-to-definition">Pyproject Extension &gt; Go to Definition</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-definition-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-definition.enabled</h3>
+<p>Enable or disable all <code>pyproject.toml</code> go to definition features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-definition-dependency" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-definition.dependency</h3>
+<p>Configure go to definition for <code>pyproject.toml</code> dependencies.
+This resolves dependency strings or source entries to workspace-managed packages when possible.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#go-to-definition">Pyproject Extension &gt; Go to Definition</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-definition-dependency-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-definition.dependency.enabled</h3>
+<p>Enable or disable go to definition for <code>pyproject.toml</code> dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-definition-member" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-definition.member</h3>
+<p>Configure go to definition for <code>pyproject.toml</code> workspace members.
+This resolves uv workspace member references to the corresponding member project.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#go-to-definition">Pyproject Extension &gt; Go to Definition</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-definition-member-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-definition.member.enabled</h3>
+<p>Enable or disable go to definition for <code>pyproject.toml</code> workspace members.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-definition-path" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-definition.path</h3>
+<p>Configure go to definition for <code>pyproject.toml</code> path targets.
+This resolves local <code>path</code> references in <code>tool.uv.sources</code> and related fields.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#go-to-definition">Pyproject Extension &gt; Go to Definition</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-definition-path-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-definition.path.enabled</h3>
+<p>Enable or disable go to definition for <code>pyproject.toml</code> path targets.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-references" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.references</h3>
+<p>Configure <code>pyproject.toml</code>-specific references features.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#references">Pyproject Extension &gt; References</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-references-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.references.enabled</h3>
+<p>Enable or disable all <code>pyproject.toml</code> references features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-references-dependency" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.references.dependency</h3>
+<p>Configure references for <code>pyproject.toml</code> dependencies.
+This lists workspace-backed dependency usages and related include-group consumers.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#references">Pyproject Extension &gt; References</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-references-dependency-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.references.dependency.enabled</h3>
+<p>Enable or disable references for <code>pyproject.toml</code> dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-declaration" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-declaration</h3>
+<p>Configure <code>pyproject.toml</code>-specific go to declaration features.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#go-to-declaration">Pyproject Extension &gt; Go to Declaration</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-declaration-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-declaration.enabled</h3>
+<p>Enable or disable all <code>pyproject.toml</code> go to declaration features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-declaration-dependency" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-declaration.dependency</h3>
+<p>Configure go to declaration for <code>pyproject.toml</code> dependencies.
+This resolves dependency references back to their workspace declaration.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#go-to-declaration">Pyproject Extension &gt; Go to Declaration</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-declaration-dependency-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-declaration.dependency.enabled</h3>
+<p>Enable or disable go to declaration for <code>pyproject.toml</code> dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-declaration-member" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-declaration.member</h3>
+<p>Configure go to declaration for <code>pyproject.toml</code> workspace members.
+This resolves uv workspace member references back to the workspace manifest that declares them.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#go-to-declaration">Pyproject Extension &gt; Go to Declaration</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-declaration-member-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-declaration.member.enabled</h3>
+<p>Enable or disable go to declaration for <code>pyproject.toml</code> workspace members.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-declaration-path" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-declaration.path</h3>
+<p>Configure go to declaration for <code>pyproject.toml</code> path targets.
+This resolves declaration-like navigation for local path references in <code>pyproject.toml</code>.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#go-to-declaration">Pyproject Extension &gt; Go to Declaration</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-goto-declaration-path-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.goto-declaration.path.enabled</h3>
+<p>Enable or disable go to declaration for <code>pyproject.toml</code> path targets.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-document-link" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.document-link</h3>
+<p>Configure <code>pyproject.toml</code>-specific document links.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#document-links">Pyproject Extension &gt; Document Links</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-document-link-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.document-link.enabled</h3>
+<p>Enable or disable all <code>pyproject.toml</code> document links.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-document-link-pypi-org" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.document-link.pypi-org</h3>
+<p>Configure document links to PyPI pages referenced from <code>pyproject.toml</code>.
+These links open PyPI package pages for dependency strings when no local workspace target applies.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#document-links">Pyproject Extension &gt; Document Links</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-document-link-pypi-org-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.document-link.pypi-org.enabled</h3>
+<p>Enable or disable document links to PyPI pages referenced from <code>pyproject.toml</code>.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-code-action" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.code-action</h3>
+<p>Configure <code>pyproject.toml</code>-specific code actions.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#code-actions">Pyproject Extension &gt; Code Actions</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-code-action-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.code-action.enabled</h3>
+<p>Enable or disable all <code>pyproject.toml</code> code actions.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-code-action-add-to-workspace-and-use-workspace-dependency" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.code-action.add-to-workspace-and-use-workspace-dependency</h3>
+<p>Configure the "Add to Workspace and Use Workspace Dependency" code action for <code>pyproject.toml</code>.
+This refactor adds the dependency to the workspace and rewrites the member entry to use the shared definition.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#code-actions">Pyproject Extension &gt; Code Actions</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-code-action-add-to-workspace-and-use-workspace-dependency-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.code-action.add-to-workspace-and-use-workspace-dependency.enabled</h3>
+<p>Enable or disable the "Add to Workspace and Use Workspace Dependency" code action for <code>pyproject.toml</code>.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-code-action-update-dependency-to-latest-version" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.code-action.update-dependency-to-latest-version</h3>
+<p>Configure the "Update Dependency to Latest Version" code action for <code>pyproject.toml</code>.
+This refactor rewrites dependency versions to the latest published version.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#code-actions">Pyproject Extension &gt; Code Actions</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-code-action-update-dependency-to-latest-version-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.code-action.update-dependency-to-latest-version.enabled</h3>
+<p>Enable or disable the "Update Dependency to Latest Version" code action for <code>pyproject.toml</code>.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-code-action-use-workspace-dependency" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.code-action.use-workspace-dependency</h3>
+<p>Configure the "Use Workspace Dependency" code action for <code>pyproject.toml</code>.
+This refactor rewrites a member dependency so it follows the workspace-managed dependency definition.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#code-actions">Pyproject Extension &gt; Code Actions</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-code-action-use-workspace-dependency-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.code-action.use-workspace-dependency.enabled</h3>
+<p>Enable or disable the "Use Workspace Dependency" code action for <code>pyproject.toml</code>.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-hover" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.hover</h3>
+<p>Configure <code>pyproject.toml</code>-specific hover features.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#hover">Pyproject Extension &gt; Hover</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-hover-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.hover.enabled</h3>
+<p>Enable or disable all <code>pyproject.toml</code> hover features provided by the extension.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-hover-dependency-detail" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.hover.dependency-detail</h3>
+<p>Configure dependency detail hover for <code>pyproject.toml</code> dependencies.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#hover">Pyproject Extension &gt; Hover</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-hover-dependency-detail-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.hover.dependency-detail.enabled</h3>
+<p>Enable or disable dependency detail hover for <code>pyproject.toml</code> dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-inlay-hint" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.inlay-hint</h3>
+<p>Configure <code>pyproject.toml</code>-specific inlay hints.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#inlay-hints">Pyproject Extension &gt; Inlay Hints</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-inlay-hint-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.inlay-hint.enabled</h3>
+<p>Enable or disable all <code>pyproject.toml</code> inlay hints.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-inlay-hint-dependency-version" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.inlay-hint.dependency-version</h3>
+<p>Configure resolved-version inlay hints for <code>pyproject.toml</code> dependencies.</p>
+<p>See <a href="/tombi/v1.11.2/docs/extensions/tombi-extension-pyproject#inlay-hints">Pyproject Extension &gt; Inlay Hints</a>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-pyproject-lsp-inlay-hint-dependency-version-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/pyproject".lsp.inlay-hint.dependency-version.enabled</h3>
+<p>Enable or disable resolved-version inlay hints for <code>pyproject.toml</code> dependencies.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi"</h3>
+<p>Configure the experimental Tombi configuration extension used while editing <code>tombi.toml</code>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".enabled</h3>
+<p>Enable or disable the entire Tombi configuration extension.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lint" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lint</h3>
+<p>Configure diagnostics produced for local schema and schema catalog paths in Tombi configuration files.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lint-rules" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lint.rules</h3>
+<p>Set the severity for individual Tombi configuration diagnostics. Each rule defaults to <code>"error"</code> when omitted. Available values are <code>"off"</code>, <code>"warn"</code>, and <code>"error"</code>.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">extensions</span>]
+<span class="p">"tombi-toml/tombi"</span> = {
+  <span class="p">lint.rules</span> = {
+    <span class="p">missing-catalog-path</span> = <span class="s">"error"</span>,
+    <span class="p">missing-extends-path</span> = <span class="s">"error"</span>,
+    <span class="p">missing-schema-path</span> = <span class="s">"error"</span>,
+  },
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lint-rules-missing-catalog-path" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lint.rules.missing-catalog-path</h3>
+<p>Set the severity for schema catalogs that do not exist: a local path that does not point to a file, a <code>tombi://</code> URL that names no built-in file, or an <code>http(s)://</code> URL for which the server answers 404 or 410 (at most a warning, as it depends on the network). Network failures and offline mode are not reported.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">schema.catalog</span>]
+<span class="p">paths</span> = [<span class="s">"schemas/catalog.json"</span>] <span class="c"># no file exists at this path</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lint-rules-missing-extends-path" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lint.rules.missing-extends-path</h3>
+<p>Set the severity for <code>extends</code> entries that do not exist: a local path that does not point to a file, or an <code>http(s)://</code> URL for which the server answers 404 or 410 (at most a warning, as it depends on the network). Network failures and offline mode are not reported.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">extends</span> = [<span class="s">"base/tombi.toml"</span>] <span class="c"># no file exists at this path</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lint-rules-missing-schema-path" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lint.rules.missing-schema-path</h3>
+<p>Set the severity for schemas that do not exist: a local path that does not point to a file, a <code>tombi://</code> URL that names no built-in file, or an <code>http(s)://</code> URL for which the server answers 404 or 410 (at most a warning, as it depends on the network). Network failures and offline mode are not reported.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">schemas</span>]]
+<span class="p">path</span> = <span class="s">"schemas/example.json"</span> <span class="c"># no file exists at this path</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.2/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li>Type: <code>"off" | "warn" | "error"</code></li>
+<li>Default: <code>"error"</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp</h3>
+<p>Configure Tombi configuration language-server features such as path completion, path navigation, and path document links.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.enabled</h3>
+<p>Enable or disable all Tombi configuration language-server features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-completion" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.completion</h3>
+<p>Configure Tombi configuration completion features.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-completion-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.completion.enabled</h3>
+<p>Enable or disable all Tombi configuration completion features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-completion-path" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.completion.path</h3>
+<p>Configure path completion for Tombi configuration files.
+This covers local file and directory references used in Tombi configuration.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-completion-path-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.completion.path.enabled</h3>
+<p>Enable or disable path completion for Tombi configuration files.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-goto-definition" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.goto-definition</h3>
+<p>Configure Tombi configuration go to definition features.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-goto-definition-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.goto-definition.enabled</h3>
+<p>Enable or disable all Tombi configuration go to definition features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-goto-definition-path" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.goto-definition.path</h3>
+<p>Configure go to definition for paths referenced from Tombi configuration files.
+This resolves local paths referenced from <code>tombi.toml</code>.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-goto-definition-path-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.goto-definition.path.enabled</h3>
+<p>Enable or disable go to definition for paths referenced from Tombi configuration files.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-document-link" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.document-link</h3>
+<p>Configure Tombi configuration document links.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-document-link-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.document-link.enabled</h3>
+<p>Enable or disable all Tombi configuration document links.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-hover" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.hover</h3>
+<p>Configure Tombi configuration hover features.</p>
+<ul>
+<li>Type: <code>Table</code></li>
+</ul>
+<h3 id="extensions-tombi-toml-tombi-lsp-hover-enabled" class="group relative heading-with-anchor ">extensions."tombi-toml/tombi".lsp.hover.enabled</h3>
+<p>Enable or disable all Tombi configuration hover features.</p>
+<ul>
+<li>Type: <code>Boolean</code></li>
+<li>Default: <code>true</code></li>
+</ul><div class="mt-8 pt-8 border-t border-gray-200 flex justify-between"><a href="/tombi/v1.11.2/docs/editors/zed-extension" class="no-underline text-blue-500 hover:text-blue-600 inactive"><svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.2/icons.svg#icon-8"></use></svg> Zed Extension</a><a href="/tombi/v1.11.2/docs/environment-variables" class="no-underline text-blue-500 hover:text-blue-600 ml-auto inactive">Environment Variables <svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.2/icons.svg#icon-9"></use></svg></a></div></div></main></div></div></main></div></body></html>

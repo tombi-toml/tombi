@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title data-sm="00000001000000004000000200000000">Environment Variables</title><meta data-sm="00000001000000004000000200000010" name="description" content="Configure Tombi using environment variables."><meta data-sm="00000001000000004000000200000020" property="og:type" content="website"><meta data-sm="00000001000000004000000200000030" property="og:url" content="https://tombi-toml.github.io/tombi/v1.11.2/docs/environment-variables"><meta data-sm="00000001000000004000000200000040" property="og:title" content="Environment Variables"><meta data-sm="00000001000000004000000200000050" property="og:description" content="Configure Tombi using environment variables."><meta data-sm="00000001000000004000000200000060" property="og:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.2/docs/public/ogp.png"><meta data-sm="00000001000000004000000200000070" property="og:site_name" content="Tombi"><meta data-sm="00000001000000004000000200000080" property="twitter:card" content="summary_large_image"><meta data-sm="00000001000000004000000200000090" property="twitter:url" content="https://tombi-toml.github.io/tombi/v1.11.2/docs/environment-variables"><meta data-sm="000000010000000040000002000000a100" property="twitter:title" content="Environment Variables"><meta data-sm="000000010000000040000002000000a110" property="twitter:description" content="Configure Tombi using environment variables."><meta data-sm="000000010000000040000002000000a120" property="twitter:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.2/docs/public/ogp.png"><meta name="tombi-archive-base" content="/tombi/v1.11.2"><link rel="icon" href="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.2/docs/public/favicon.ico"><link rel="stylesheet" href="/tombi/v1.11.2/archive.css"><link rel="stylesheet" href="/tombi/common/v1/archive/archive-ui.css"><script src="/tombi/common/v1/archive/theme.js"></script><script type="module" src="/tombi/common/v1/archive/archive.js"></script></head><body><div class="min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"><div id="archive-header"></div><main class="flex-1 mt-20 pt-0"><div class="max-w-7xl mx-auto"><div class="flex w-full max-w-[100vw]"><nav id="archive-sidebar" class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden" aria-label="Documentation"></nav><main tabindex="-1" class="flex-1 min-w-0 p-4 mdx-content min-h-screen max-w-full outline-none"><div class="max-w-full">
+<h1 id="environment-variables" class="group relative heading-with-anchor ">Environment Variables</h1>
+<p>Tombi CLI supports several environment variables to configure its behavior.</p>
+<h2 id="tombi-cache-home" class="group relative heading-with-anchor ">TOMBI_CACHE_HOME</h2>
+<p>Set the cache directory path for JSON Catalog/Schemas explicitly.</p>
+<p>When set, Tombi stores and reads cached schemas from this directory before considering any XDG or home-directory based fallback. This is useful in hermetic environments, such as Nix pipelines, where the cache location must be provided explicitly.</p>
+<ul>
+<li>Type: <code>Path</code></li>
+<li>Default: unset</li>
+</ul>
+<h2 id="tombi-offline" class="group relative heading-with-anchor ">TOMBI_OFFLINE</h2>
+<p>Disable network access and use only local schema cache.</p>
+<p>When set, Tombi will not fetch schemas from remote sources and will only use cached schemas locally. This is useful when working in offline environments or when you want to ensure no network requests are made.</p>
+<ul>
+<li>Type: <code>true | false</code></li>
+<li>Default: <code>false</code></li>
+</ul>
+<h2 id="tombi-no-color" class="group relative heading-with-anchor ">TOMBI_NO_COLOR</h2>
+<p>Disable ANSI color output from Tombi CLI diagnostics.</p>
+<p>When set to a non-empty value, Tombi will not emit ANSI color sequences in CLI diagnostics. If <code>TOMBI_NO_COLOR</code> is not set, Tombi will fall back to <code>NO_COLOR</code> if available.</p>
+<ul>
+<li>Type: <code>String</code></li>
+<li>Default: unset</li>
+</ul>
+<h2 id="tombi-no-cache" class="group relative heading-with-anchor ">TOMBI_NO_CACHE</h2>
+<p>Disable cache usage and fetch the latest data from remote sources.</p>
+<p>When set, Tombi will bypass the cache and fetch the latest schemas from remote sources, then save them to the cache. This is useful when you want to ensure you have the most up-to-date schema data.</p>
+<ul>
+<li>Type: <code>true | false</code></li>
+<li>Default: <code>false</code></li>
+</ul>
+<h2 id="tombi-cache-ttl" class="group relative heading-with-anchor ">TOMBI_CACHE_TTL</h2>
+<p>Set the cache expiration time (Time To Live) in seconds for JSON Catalog/Schemas.</p>
+<p>When set, Tombi uses this value as the cache expiration time instead of the default 24 hours. Cached schemas older than this duration are refreshed from remote sources.</p>
+<p>The <code>--cache-ttl &lt;SECONDS&gt;</code> option for <code>tombi format</code>, <code>tombi lint</code>, and <code>tombi lsp</code> overrides this environment variable. Values must be non-negative integers. The CLI rejects an invalid environment variable value.</p>
+<ul>
+<li>Type: <code>Integer</code> (seconds)</li>
+<li>Default: <code>86400</code> (24 hours)</li>
+</ul>
+<h2 id="tombi-http-timeout" class="group relative heading-with-anchor ">TOMBI_HTTP_TIMEOUT</h2>
+<p>Set the HTTP timeout in seconds for fetching remote schemas.</p>
+<p>This environment variable controls how long Tombi will wait for HTTP requests to complete before timing out. If <code>TOMBI_HTTP_TIMEOUT</code> is not set, Tombi will fall back to <code>HTTP_TIMEOUT</code> if available.</p>
+<ul>
+<li>Type: <code>Integer</code> (seconds)</li>
+<li>Default: <code>5</code></li>
+</ul>
+<h2 id="tombi-schema-trusted-hosts" class="group relative heading-with-anchor ">TOMBI_SCHEMA_TRUSTED_HOSTS</h2>
+<p>Allow schema and catalog requests to connect to non-public addresses returned for these exact host names or IP addresses.</p>
+<p>Set a comma-separated list such as <code>schema.internal,10.20.30.40</code>. Entries are exact hosts; wildcards are not supported. A trusted host grants access to its non-public addresses over any HTTP or HTTPS port, so add only hosts you trust. Public destinations remain available without this setting.</p>
+<p>Native HTTP requests reject credentials in URLs, reject private or special-use destination addresses, and recheck every redirect. Proxies configured through <code>HTTP_PROXY</code>, <code>HTTPS_PROXY</code>, <code>ALL_PROXY</code> and <code>NO_PROXY</code> are honored, and the proxy host itself may have a private address. If these variables are not set, the operating-system proxy settings are used (macOS System Configuration, Windows registry); PAC files and automatic proxy discovery are not supported. When a request goes through a proxy, the proxy resolves the destination, so Tombi first resolves it locally and refuses it if it points to a non-public address; a destination that only the proxy can resolve, or that resolves differently for the proxy, cannot be checked, so the proxy is the egress control point. Schema URLs that point at the proxy host itself are refused. The browser/WASM build can reject unsafe URL literals and redirects, but the browser controls DNS and socket routing.</p>
+<ul>
+<li>Type: comma-separated host names or IP addresses</li>
+<li>Default: unset</li>
+</ul><div class="mt-8 pt-8 border-t border-gray-200 flex justify-between"><a href="/tombi/v1.11.2/docs/configuration" class="no-underline text-blue-500 hover:text-blue-600 inactive"><svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.2/icons.svg#icon-8"></use></svg> Configuration</a><a href="/tombi/v1.11.2/docs/json-schema" class="no-underline text-blue-500 hover:text-blue-600 ml-auto inactive">JSON Schema <svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.2/icons.svg#icon-9"></use></svg></a></div></div></main></div></div></main></div></body></html>
