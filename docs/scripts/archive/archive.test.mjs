@@ -6,6 +6,105 @@ import { JSDOM } from "jsdom";
 
 const source = await readFile(new URL("./archive.js", import.meta.url), "utf8");
 
+test("archived mobile search toggles while keyboard shortcuts open and close it", async () => {
+  const shell = '<header><a id="mobile-logo"></a><input><button aria-label="Search"><div class="absolute transition-all duration-300 opacity-0 -rotate-90"><svg></svg></div><div class="transition-all duration-300 opacity-100 rotate-0"><svg></svg></div></button><div class="header-dropdown"></div></header>';
+  const dom = new JSDOM('<meta name="tombi-archive-base" content="/v1"><div id="archive-header"></div>', { url: "https://example.com/v1/docs" });
+  try {
+    const document = dom.window.document;
+    await runInNewContext(`(async () => {${source}\n})()`, {
+      document,
+      location: dom.window.location,
+      fetch: async () => ({
+        ok: true,
+        text: async () => shell,
+        json: async () => [],
+      }),
+    });
+    const header = document.querySelector("header");
+    const button = header.querySelector("button");
+    const input = header.querySelector("input");
+    const results = document.querySelector("#archive-results");
+    const assertSearch = (open) => {
+      assert.equal(header.classList.contains("archive-search-open"), open);
+      assert.equal(button.getAttribute("aria-label"), open ? "Close Search" : "Search");
+      for (const [index, icon] of Array.from(button.children).entries()) {
+        const visible = index === 0 ? open : !open;
+        assert.equal(icon.classList.contains("opacity-100"), visible);
+        assert.equal(icon.classList.contains("opacity-0"), !visible);
+        assert.equal(icon.classList.contains("rotate-0"), visible);
+        assert.equal(icon.classList.contains(index === 0 ? "-rotate-90" : "rotate-90"), !visible);
+      }
+      assert.equal(document.activeElement === input, open);
+      if (!open) assert.equal(results.hidden, true);
+    };
+
+    assertSearch(false);
+    button.click();
+    assert.equal(header.classList.contains("archive-search-open"), true);
+    assert.equal(document.activeElement, input);
+    input.value = "formatter";
+    input.dispatchEvent(new dom.window.Event("input"));
+    await new Promise(setImmediate);
+    assert.equal(results.hidden, false);
+    button.click();
+    assertSearch(false);
+
+    for (const modifier of ["ctrlKey", "metaKey"]) {
+      for (let press = 0; press < 2; press++) {
+        const event = new dom.window.KeyboardEvent("keydown", { key: "k", [modifier]: true, cancelable: true });
+        document.dispatchEvent(event);
+        assert.equal(event.defaultPrevented, true);
+        assertSearch(true);
+      }
+      document.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape" }));
+      assertSearch(false);
+    }
+  } finally {
+    dom.window.close();
+  }
+});
+
+for (const closeWith of ["button", "Escape"]) {
+  for (const responseState of ["loaded", "failed"]) {
+    test(`archived search stays closed after ${closeWith} while pending search ${responseState}`, async () => {
+      const shell = '<header><a id="mobile-logo"></a><input><button aria-label="Search"></button><div class="header-dropdown"></div></header>';
+      const dom = new JSDOM('<meta name="tombi-archive-base" content="/v1"><div id="archive-header"></div>', { url: "https://example.com/v1/docs" });
+      try {
+        let finishSearch;
+        const pendingSearch = new Promise((resolve) => { finishSearch = resolve; });
+        const document = dom.window.document;
+        await runInNewContext(`(async () => {${source}\n})()`, {
+          document,
+          location: dom.window.location,
+          fetch: async (url) => url.endsWith("/search.json") ? pendingSearch : {
+            ok: true,
+            text: async () => shell,
+            json: async () => [],
+          },
+        });
+        const header = document.querySelector("header");
+        const button = header.querySelector("button");
+        const input = header.querySelector("input");
+        const results = document.querySelector("#archive-results");
+        button.click();
+        input.value = "formatter";
+        input.dispatchEvent(new dom.window.Event("input"));
+        if (closeWith === "button") button.click();
+        else document.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape" }));
+        assert.equal(header.classList.contains("archive-search-open"), false);
+        assert.equal(results.hidden, true);
+
+        finishSearch({ ok: responseState === "loaded", json: async () => [] });
+        await new Promise(setImmediate);
+        assert.equal(results.hidden, true);
+        assert.equal(header.classList.contains("archive-search-open"), false);
+      } finally {
+        dom.window.close();
+      }
+    });
+  }
+}
+
 for (const frameState of ["loaded", "unloaded", "absent"]) {
   test(`archived theme toggle supports playground iframe state: ${frameState}`, async () => {
     const shell = '<header><a id="mobile-logo"></a><button id="dark-mode-toggle"></button><input><div class="header-dropdown"></div></header>';

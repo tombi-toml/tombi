@@ -132,28 +132,42 @@ input.addEventListener("input", async () => {
     results.hidden = false;
   } catch {
     searchIndex = undefined;
+    if (request !== searchRequest) return;
     results.textContent = "Search could not be loaded. Please try again.";
     results.hidden = false;
   }
 });
-const openSearch = () => {
-  document.querySelector("header").classList.add("archive-search-open");
-  input.focus();
+const searchHeader = document.querySelector("header");
+const searchButton = document.querySelector('button[aria-label="Search"]');
+const setSearchOpen = (open) => {
+  searchHeader.classList.toggle("archive-search-open", open);
+  searchButton?.setAttribute("aria-label", open ? "Close Search" : "Search");
+  for (const [index, icon] of Array.from(searchButton?.children || []).entries()) {
+    const visible = index === 0 ? open : !open;
+    icon.classList.toggle("opacity-100", visible);
+    icon.classList.toggle("opacity-0", !visible);
+    icon.classList.toggle("rotate-0", visible);
+    icon.classList.toggle(index === 0 ? "-rotate-90" : "rotate-90", !visible);
+  }
+  if (open) input.focus();
+  else {
+    searchRequest++;
+    results.hidden = true;
+    input.blur();
+  }
 };
-document
-  .querySelector('button[aria-label="Search"]')
-  ?.addEventListener("click", openSearch);
+searchButton?.addEventListener("click", () => {
+  setSearchOpen(!searchHeader.classList.contains("archive-search-open"));
+});
 document.addEventListener("keydown", (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
     event.preventDefault();
-    openSearch();
+    setSearchOpen(true);
   }
   if (event.key === "Escape") {
-    results.hidden = true;
+    setSearchOpen(false);
     mobile.hidden = true;
     mobileLogo.setAttribute("aria-expanded", "false");
-    document.querySelector("header").classList.remove("archive-search-open");
-    input.blur();
   }
 });
 document.addEventListener("click", async (event) => {
