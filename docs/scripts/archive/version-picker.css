@@ -2,14 +2,14 @@
   position: relative;
   display: none;
   flex: none;
-  margin-left: 0.5rem;
+  margin-left: 1rem;
 }
 
 .tombi-version-trigger {
   padding: 0.3rem 0.65rem;
   border: 0;
   border-radius: 0.4rem;
-  background: rgb(255 255 255 / 16%);
+  background: rgb(0 0 0 / 28%);
   color: white;
   font-size: 0.875rem;
   font-weight: 600;
@@ -19,7 +19,7 @@
 
 .tombi-version-trigger:hover,
 .tombi-version-trigger:focus-visible {
-  background: rgb(255 255 255 / 26%);
+  background: rgb(0 0 0 / 38%);
 }
 
 .tombi-version-menu {
@@ -154,6 +154,16 @@
 }
 
 @media (min-width: 768px) {
+  header:has(.tombi-version-desktop) > nav > div {
+    justify-content: flex-start;
+  }
+  header:has(.tombi-version-desktop) > nav > div > .flex-shrink-0 + div {
+    margin-left: 1rem;
+    margin-right: 1rem;
+  }
+  header:has(.tombi-version-desktop) > nav > div > div:has(input) {
+    margin-left: auto;
+  }
   .tombi-version-desktop {
     display: block;
   }
