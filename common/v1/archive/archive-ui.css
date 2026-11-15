@@ -83,8 +83,7 @@
   color: #4ec9b0;
 }
 @media (max-width: 767px) {
-  header.archive-search-open nav > div > div:has(input),
-  header.archive-search-open div:has(> input) {
+  header.archive-search-open nav > div div:has(input) {
     width: 100%;
     opacity: 1;
   }
