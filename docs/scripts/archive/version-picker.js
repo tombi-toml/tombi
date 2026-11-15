@@ -114,25 +114,29 @@
     mobileTrigger.className = "tombi-version-mobile-trigger";
     mobileTrigger.setAttribute("aria-expanded", "false");
     mobileTrigger.setAttribute("aria-label", `Version ${currentVersion}. Choose version`);
-    mobileTrigger.innerHTML = `<strong>${currentVersion}</strong><span aria-hidden="true">›</span>`;
+    mobileTrigger.innerHTML = `<span>${currentVersion}</span>`;
+    const chevron = mobileNav.querySelector("a button svg")?.cloneNode(true);
+    if (chevron) {
+      chevron.removeAttribute("data-hk");
+      chevron.classList.remove("rotate-90");
+      chevron.setAttribute("aria-hidden", "true");
+      const chevronBox = document.createElement("span");
+      chevronBox.className = "tombi-version-mobile-chevron";
+      chevronBox.append(chevron);
+      mobileTrigger.append(chevronBox);
+    }
     const panel = document.createElement("div");
     panel.className = "tombi-version-mobile-panel";
-    panel.hidden = true;
-    const back = document.createElement("button");
-    back.type = "button";
-    back.className = "tombi-version-back";
-    back.textContent = "‹  Back";
-    back.addEventListener("click", (event) => {
-      event.stopPropagation();
-      panel.hidden = true;
-      mobileTrigger.setAttribute("aria-expanded", "false");
-    });
-    panel.append(back);
+    panel.style.maxHeight = "0px";
+    panel.inert = true;
     list.forEach((version) => panel.append(option(version)));
     mobileTrigger.addEventListener("click", (event) => {
       event.stopPropagation();
-      panel.hidden = false;
-      mobileTrigger.setAttribute("aria-expanded", "true");
+      const expanded = mobileTrigger.getAttribute("aria-expanded") !== "true";
+      mobileTrigger.setAttribute("aria-expanded", String(expanded));
+      panel.inert = !expanded;
+      panel.style.maxHeight = expanded ? `${panel.scrollHeight}px` : "0px";
+      chevron?.classList.toggle("rotate-90", expanded);
     });
     mobile.append(mobileTrigger, panel);
     mobileNav.prepend(mobile);

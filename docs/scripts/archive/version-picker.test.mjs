@@ -6,10 +6,13 @@ import { JSDOM } from "jsdom";
 
 const source = await readFile(new URL("./version-picker.js", import.meta.url), "utf8");
 
-async function setup(pathname, hash, pages) {
+async function setup(pathname, hash, pages, docsExpanded = false) {
   const dom = new JSDOM(
-    '<header><div class="menu-toggle"></div><div class="header-dropdown"><nav><a>Home</a></nav></div></header>',
+    '<header><div class="menu-toggle"></div><div class="header-dropdown"><nav><a>Home</a><a>Docs<button aria-label="Expand section"><svg data-hk="docs-chevron" viewBox="0 0 24 24"></svg></button></a></nav></div></header>',
   );
+  if (docsExpanded) {
+    dom.window.document.querySelector(".header-dropdown nav a button svg").classList.add("rotate-90");
+  }
   let assigned;
   const location = {
     pathname,
@@ -95,10 +98,35 @@ test("missing section opens the top of the matching page from the mobile menu", 
   const mobile = page.document.querySelector(".header-dropdown nav");
   assert.equal(mobile.firstElementChild.className, "tombi-version-mobile");
   const mobileTrigger = mobile.querySelector(".tombi-version-mobile-trigger");
-  assert.equal(mobileTrigger.textContent.trim(), "main›");
+  assert.equal(mobileTrigger.textContent.trim(), "main");
+  assert.ok(mobileTrigger.querySelector("svg"));
+  const panel = mobile.querySelector(".tombi-version-mobile-panel");
+  Object.defineProperty(panel, "scrollHeight", { value: 160 });
+  assert.equal(panel.style.maxHeight, "0px");
+  assert.equal(panel.inert, true);
   mobileTrigger.click();
-  assert.equal(mobile.querySelector(".tombi-version-mobile-panel").hidden, false);
+  assert.ok(mobileTrigger.querySelector("svg").classList.contains("rotate-90"));
+  assert.equal(panel.style.maxHeight, "160px");
+  assert.equal(panel.inert, false);
+  assert.equal(mobile.children[1].textContent, "Home");
+  assert.equal(mobile.querySelector(".tombi-version-back"), null);
+  mobileTrigger.click();
+  assert.equal(panel.style.maxHeight, "0px");
+  assert.equal(panel.inert, true);
+  assert.equal(mobileTrigger.getAttribute("aria-expanded"), "false");
+  mobileTrigger.click();
   mobile.querySelectorAll(".tombi-version-mobile-panel .tombi-version-option")[1].click();
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(page.getAssigned(), path);
+});
+
+test("mobile version arrow starts closed independently of an open Docs section", async () => {
+  const page = await setup("/tombi/main/docs/", "", {}, true);
+  const versionArrow = page.document.querySelector(".tombi-version-mobile-trigger svg");
+  const docsArrow = page.document.querySelector(".header-dropdown nav a button svg");
+  assert.ok(docsArrow.classList.contains("rotate-90"));
+  assert.ok(!versionArrow.classList.contains("rotate-90"));
+  assert.equal(versionArrow.hasAttribute("data-hk"), false);
+  docsArrow.classList.remove("rotate-90");
+  assert.ok(!versionArrow.classList.contains("rotate-90"));
 });
