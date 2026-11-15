@@ -9,8 +9,8 @@
   padding: 0.3rem 0.65rem;
   border: 0;
   border-radius: 0.4rem;
-  background: rgb(0 0 0 / 28%);
-  color: white;
+  background: transparent;
+  color: rgb(255 255 255 / 72%);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -19,7 +19,7 @@
 
 .tombi-version-trigger:hover,
 .tombi-version-trigger:focus-visible {
-  background: rgb(0 0 0 / 38%);
+  color: white;
 }
 
 .tombi-version-menu {
