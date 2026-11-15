@@ -157,16 +157,24 @@
     }
   }
 
-  const header = document.querySelector("header");
-  if (header) {
-    mount(header);
-  } else {
-    const observer = new MutationObserver(() => {
-      const header = document.querySelector("header");
-      if (!header) return;
-      observer.disconnect();
+  function start() {
+    const header = document.querySelector("header");
+    if (header) {
       mount(header);
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    } else {
+      const observer = new MutationObserver(() => {
+        const header = document.querySelector("header");
+        if (!header) return;
+        observer.disconnect();
+        mount(header);
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
+  if (document.querySelector('meta[name="tombi-archive-base"]') || document.documentElement.dataset.tombiHydrated === "true") {
+    start();
+  } else {
+    document.addEventListener("tombi:hydrated", start, { once: true });
   }
 })();

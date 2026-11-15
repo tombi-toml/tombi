@@ -6,7 +6,7 @@ import { JSDOM } from "jsdom";
 
 const source = await readFile(new URL("./version-picker.js", import.meta.url), "utf8");
 
-async function setup(pathname, hash, pages, { docsExpanded = false, existingFooter = false } = {}) {
+async function setup(pathname, hash, pages, { docsExpanded = false, existingFooter = false, hydrated = true } = {}) {
   const dom = new JSDOM(
     '<header><div class="menu-toggle"></div><nav><a href="https://x.com/tombi_toml" target="_blank" aria-label="X (Twitter)" class="hidden sm:block w-6 h-6"><svg data-hk="x-icon"></svg></a><a href="https://github.com/tombi-toml/tombi" target="_blank" aria-label="GitHub" class="hidden sm:block w-6 h-6"><svg data-hk="github-icon"></svg></a></nav><div class="header-dropdown"><nav><a>Home</a><a>Docs<button aria-label="Expand section"><svg data-hk="docs-chevron" viewBox="0 0 24 24"></svg></button></a><a>Playground</a></nav></div></header>',
   );
@@ -18,6 +18,7 @@ async function setup(pathname, hash, pages, { docsExpanded = false, existingFoot
     footer.className = "tombi-mobile-social-links";
     dom.window.document.querySelector(".header-dropdown nav").append(footer);
   }
+  if (hydrated) dom.window.document.documentElement.dataset.tombiHydrated = "true";
   let assigned;
   const location = {
     pathname,
@@ -159,4 +160,13 @@ test("mobile menu ends with visible copies of the header social links", async ()
 test("main menu keeps its source-rendered social row", async () => {
   const page = await setup("/tombi/main/docs/", "", {}, { existingFooter: true });
   assert.equal(page.document.querySelectorAll(".tombi-mobile-social-links").length, 1);
+});
+
+test("main menu is not changed until hydration completes", async () => {
+  const page = await setup("/tombi/main/docs/", "", {}, { hydrated: false });
+  assert.equal(page.document.querySelector(".tombi-version-mobile"), null);
+  page.document.documentElement.dataset.tombiHydrated = "true";
+  page.document.dispatchEvent(new page.document.defaultView.Event("tombi:hydrated"));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.ok(page.document.querySelector(".tombi-version-mobile"));
 });
