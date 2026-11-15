@@ -140,6 +140,21 @@
     });
     mobile.append(mobileTrigger, panel);
     mobileNav.prepend(mobile);
+
+    const socialLinks = [...header.querySelectorAll('nav a[target="_blank"][aria-label]')];
+    if (socialLinks.length && !mobileNav.querySelector(".tombi-mobile-social-links")) {
+      const footer = document.createElement("div");
+      footer.className = "tombi-mobile-social-links";
+      for (const link of socialLinks) {
+        const copy = link.cloneNode(true);
+        copy.classList.remove("hidden", "sm:block", "w-6", "h-6");
+        copy.classList.add("tombi-mobile-social-link");
+        copy.removeAttribute("data-hk");
+        copy.querySelectorAll("[data-hk]").forEach((node) => node.removeAttribute("data-hk"));
+        footer.append(copy);
+      }
+      mobileNav.append(footer);
+    }
   }
 
   const header = document.querySelector("header");

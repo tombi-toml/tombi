@@ -6,12 +6,17 @@ import { JSDOM } from "jsdom";
 
 const source = await readFile(new URL("./version-picker.js", import.meta.url), "utf8");
 
-async function setup(pathname, hash, pages, docsExpanded = false) {
+async function setup(pathname, hash, pages, { docsExpanded = false, existingFooter = false } = {}) {
   const dom = new JSDOM(
-    '<header><div class="menu-toggle"></div><div class="header-dropdown"><nav><a>Home</a><a>Docs<button aria-label="Expand section"><svg data-hk="docs-chevron" viewBox="0 0 24 24"></svg></button></a></nav></div></header>',
+    '<header><div class="menu-toggle"></div><nav><a href="https://x.com/tombi_toml" target="_blank" aria-label="X (Twitter)" class="hidden sm:block w-6 h-6"><svg data-hk="x-icon"></svg></a><a href="https://github.com/tombi-toml/tombi" target="_blank" aria-label="GitHub" class="hidden sm:block w-6 h-6"><svg data-hk="github-icon"></svg></a></nav><div class="header-dropdown"><nav><a>Home</a><a>Docs<button aria-label="Expand section"><svg data-hk="docs-chevron" viewBox="0 0 24 24"></svg></button></a><a>Playground</a></nav></div></header>',
   );
   if (docsExpanded) {
     dom.window.document.querySelector(".header-dropdown nav a button svg").classList.add("rotate-90");
+  }
+  if (existingFooter) {
+    const footer = dom.window.document.createElement("div");
+    footer.className = "tombi-mobile-social-links";
+    dom.window.document.querySelector(".header-dropdown nav").append(footer);
   }
   let assigned;
   const location = {
@@ -121,7 +126,7 @@ test("missing section opens the top of the matching page from the mobile menu", 
 });
 
 test("mobile version arrow starts closed independently of an open Docs section", async () => {
-  const page = await setup("/tombi/main/docs/", "", {}, true);
+  const page = await setup("/tombi/main/docs/", "", {}, { docsExpanded: true });
   const versionArrow = page.document.querySelector(".tombi-version-mobile-trigger svg");
   const docsArrow = page.document.querySelector(".header-dropdown nav a button svg");
   assert.ok(docsArrow.classList.contains("rotate-90"));
@@ -129,4 +134,29 @@ test("mobile version arrow starts closed independently of an open Docs section",
   assert.equal(versionArrow.hasAttribute("data-hk"), false);
   docsArrow.classList.remove("rotate-90");
   assert.ok(!versionArrow.classList.contains("rotate-90"));
+});
+
+test("mobile menu ends with visible copies of the header social links", async () => {
+  const page = await setup("/tombi/main/docs/", "", {});
+  const nav = page.document.querySelector(".header-dropdown nav");
+  const footer = nav.lastElementChild;
+  assert.equal(footer.className, "tombi-mobile-social-links");
+  assert.equal(footer.previousElementSibling.textContent, "Playground");
+  const links = [...footer.querySelectorAll("a")];
+  assert.deepEqual(links.map((link) => link.getAttribute("aria-label")), ["X (Twitter)", "GitHub"]);
+  assert.deepEqual(links.map((link) => link.href), [
+    "https://x.com/tombi_toml",
+    "https://github.com/tombi-toml/tombi",
+  ]);
+  for (const link of links) {
+    assert.ok(link.classList.contains("tombi-mobile-social-link"));
+    assert.ok(!link.classList.contains("hidden"));
+    assert.ok(!link.classList.contains("sm:block"));
+    assert.equal(link.querySelector("[data-hk]"), null);
+  }
+});
+
+test("main menu keeps its source-rendered social row", async () => {
+  const page = await setup("/tombi/main/docs/", "", {}, { existingFooter: true });
+  assert.equal(page.document.querySelectorAll(".tombi-mobile-social-links").length, 1);
 });

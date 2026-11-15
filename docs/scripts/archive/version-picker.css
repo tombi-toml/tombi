@@ -154,6 +154,26 @@
   color: #facc15;
 }
 
+.tombi-mobile-social-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 0.5rem 0;
+}
+
+.tombi-mobile-social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+}
+
+.tombi-mobile-social-link svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
 @media (min-width: 768px) {
   header:has(.tombi-version-desktop) > nav > div {
     justify-content: flex-start;
@@ -169,6 +189,9 @@
     display: block;
   }
   .tombi-version-mobile {
+    display: none;
+  }
+  .tombi-mobile-social-links {
     display: none;
   }
 }

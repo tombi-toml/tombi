@@ -4,6 +4,7 @@ import { isServer } from "solid-js/web";
 import type { DocIndex } from "~/utils/doc-index";
 import docIndex from "../../../doc-index.json";
 import { HeaderDropdownItem } from "./HeaderDropdownItem";
+import { HeaderSocialLinks } from "./HeaderSocialLinks";
 
 interface HeaderDropdownProps {
   isExpanded: Accessor<boolean>;
@@ -68,6 +69,9 @@ export function HeaderDropdown(props: HeaderDropdownProps) {
             </HeaderDropdownItem>
           )}
         </For>
+        <div class="tombi-mobile-social-links flex items-center justify-evenly py-2 md:hidden">
+          <HeaderSocialLinks mobile />
+        </div>
       </nav>
     </div>
   );
