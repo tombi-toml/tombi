@@ -49,32 +49,34 @@ export function HeaderDropdown(props: HeaderDropdownProps) {
 
   return (
     <div
-      class="header-dropdown fixed inset-x-0 top-20 bg-tombi-primary shadow-lg z-40 md:hidden overflow-hidden transition-all duration-300 ease-linear"
+      class="header-dropdown fixed inset-x-0 top-20 bg-tombi-primary shadow-lg z-40 grid md:hidden overflow-hidden transition-all duration-300 ease-linear"
       classList={{
-        "max-h-0": !props.isExpanded(),
-        "max-h-[calc(100vh-5rem)]": props.isExpanded(),
+        "grid-rows-[0fr]": !props.isExpanded(),
+        "grid-rows-[1fr]": props.isExpanded(),
       }}
     >
-      <nav class="flex flex-col px-4 pb-2 max-h-[calc(100vh-5rem)] overflow-y-auto">
-        <For each={menuItems}>
-          {(item, idx) => (
-            <HeaderDropdownItem
-              href={item.path}
-              onSelect={props.onSelect}
-              childrenItems={item.children}
-              level={0}
-              hasBorder={idx() < menuItems.length - 1}
-              isExpanded={props.isExpanded()}
-            >
-              {item.title}
-            </HeaderDropdownItem>
-          )}
-        </For>
-        <div class="tombi-mobile-social-links flex items-center justify-evenly md:hidden">
-          <HeaderThemeToggle mobile />
-          <HeaderSocialLinks mobile />
-        </div>
-      </nav>
+      <div class="min-h-0 overflow-hidden">
+        <nav class="flex flex-col px-4 pb-2 max-h-[calc(100vh-5rem)] overflow-y-auto">
+          <For each={menuItems}>
+            {(item, idx) => (
+              <HeaderDropdownItem
+                href={item.path}
+                onSelect={props.onSelect}
+                childrenItems={item.children}
+                level={0}
+                hasBorder={idx() < menuItems.length - 1}
+                isExpanded={props.isExpanded()}
+              >
+                {item.title}
+              </HeaderDropdownItem>
+            )}
+          </For>
+          <div class="tombi-mobile-social-links flex items-center justify-evenly md:hidden">
+            <HeaderThemeToggle mobile />
+            <HeaderSocialLinks mobile />
+          </div>
+        </nav>
+      </div>
     </div>
   );
 }
