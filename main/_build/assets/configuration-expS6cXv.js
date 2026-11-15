@@ -29,18 +29,6 @@ It also supports `,e(n.code,{children:"[tool.tombi]"})," in ",e(n.code,{children
 `,e(n.li,{get children(){return["editor settings via ",e(n.a,{href:"https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didChangeConfiguration",children:"workspace/didChangeConfiguration"})," (LSP only)"]}}),`
 `]}}),`
 `,e(l,{get children(){return[e(n.p,{children:"The base directory for configuration search depends on the context: for CLI usage, it is the directory where the command is executed; for LSP usage, it is the directory of the currently opened file."}),e(n.p,{get children(){return["Therefore, it is recommended to place ",e(n.code,{children:"tombi.toml"})," only at the root of your project. If multiple ",e(n.code,{children:"tombi.toml"})," files exist at different levels within a single project, there may be inconsistencies in formatting or diagnostic results between the CLI and the editor."]}})]}}),`
-`,e(n.h2,{id:"extending-a-shared-config",className:"group relative heading-with-anchor",children:"Extending a shared config"}),`
-`,e(n.p,{get children(){return["Use ",e(n.code,{children:"extends"})," to inherit settings from one or more config files, then put repository-specific values in the local config:"]}}),`
-`,e(r,{code:`extends = ["../shared/tombi.toml", "https://example.org/config/tombi.toml"]
-
-[format.rules]
-line-width = 100`,language:"toml"}),`
-`,e(n.p,{get children(){return[e(n.code,{children:"extends"})," accepts an array of paths or URLs. Local paths are resolved relative to the directory of the config file that declares them, or relative to the project root for ",e(n.code,{children:".config/tombi.toml"}),", like the paths of ",e(n.code,{children:"schemas"})," and ",e(n.code,{children:"schema.catalog"}),". HTTP and HTTPS URLs are supported; a relative URL in a remote config is resolved against that URL. A remote config cannot use ",e(n.code,{children:"file://"})," to read a local file. In ",e(n.code,{children:"pyproject.toml"}),", place ",e(n.code,{children:"extends"})," inside ",e(n.code,{children:"[tool.tombi]"}),"."]}}),`
-`,e(n.p,{get children(){return["The extended file must be named ",e(n.code,{children:"tombi.toml"})," or ",e(n.code,{children:".tombi.toml"}),", so that the Tombi config schema applies to it. ",e(n.code,{children:"pyproject.toml"})," cannot be extended."]}}),`
-`,e(n.p,{get children(){return["In the editor, an ",e(n.code,{children:"extends"})," entry that does not exist, cannot be loaded (for example a config cycle, a parse error in an inherited config, or a failed fetch), or uses an unsupported URL is reported as an error, and you can jump to the extended config with go to definition."]}}),`
-`,e(n.p,{get children(){return["The configs in ",e(n.code,{children:"extends"})," are applied in the order listed, starting with the first entry. The local config is applied last, and later configs take precedence over earlier ones. Tables merge recursively, and local scalar values replace inherited values. Most arrays are replaced by the higher-priority config. ",e(n.code,{children:"schemas"})," and ",e(n.code,{children:"overrides"})," are combined with higher-priority entries first, so local entries take precedence over inherited entries."]}}),`
-`,e(n.p,{children:`Paths and globs in inherited settings are resolved relative to the extending config's base directory, using Tombi's existing path rules.
-An inheritance chain can follow at most 32 references. One resolution can use at most 256 references in total.`}),`
 `,e(n.h2,{id:"available-options",className:"group relative heading-with-anchor",children:"Available Options"}),`
 `,e(n.ul,{get children(){return[`
 `,e(n.li,{get children(){return e(n.a,{href:"#extends",children:"extends"})}}),`
@@ -563,10 +551,20 @@ lint = {
   }
 }`,language:"toml"}),`
 `,e(n.h3,{id:"extends",className:"group relative heading-with-anchor",children:"extends"}),`
-`,e(n.p,{get children(){return["Config files to inherit, in order. Later entries take precedence over earlier ones, and the current config takes precedence over all inherited configs. See ",e(n.a,{href:"#extending-a-shared-config",children:"Extending a shared config"})," for path resolution, merge behavior, and restrictions."]}}),`
+`,e(n.p,{get children(){return["Use ",e(n.code,{children:"extends"})," to inherit settings from one or more config files, then put repository-specific values in the local config:"]}}),`
 `,e(n.ul,{get children(){return[`
 `,e(n.li,{get children(){return["Type: ",e(n.code,{children:"String[]"})," (paths or URLs to ",e(n.code,{children:"tombi.toml"})," or ",e(n.code,{children:".tombi.toml"}),")"]}}),`
 `]}}),`
+`,e(r,{code:`extends = ["../shared/tombi.toml", "https://example.org/config/tombi.toml"]
+
+[format.rules]
+line-width = 100`,language:"toml"}),`
+`,e(n.p,{get children(){return["Local paths are resolved relative to the directory of the config file that declares them, or relative to the project root for ",e(n.code,{children:".config/tombi.toml"}),", like the paths of ",e(n.code,{children:"schemas"})," and ",e(n.code,{children:"schema.catalog"}),". HTTP and HTTPS URLs are supported; a relative URL in a remote config is resolved against that URL. A remote config cannot use ",e(n.code,{children:"file://"})," to read a local file. In ",e(n.code,{children:"pyproject.toml"}),", place ",e(n.code,{children:"extends"})," inside ",e(n.code,{children:"[tool.tombi]"}),"."]}}),`
+`,e(n.p,{get children(){return["The extended file must be named ",e(n.code,{children:"tombi.toml"})," or ",e(n.code,{children:".tombi.toml"}),", so that the Tombi config schema applies to it. ",e(n.code,{children:"pyproject.toml"})," cannot be extended."]}}),`
+`,e(n.p,{get children(){return["In the editor, an ",e(n.code,{children:"extends"})," entry that does not exist, cannot be loaded (for example a config cycle, a parse error in an inherited config, or a failed fetch), or uses an unsupported URL is reported as an error, and you can jump to the extended config with go to definition."]}}),`
+`,e(n.p,{get children(){return["The configs in ",e(n.code,{children:"extends"})," are applied in the order listed, starting with the first entry. The local config is applied last, and later configs take precedence over earlier ones. Tables merge recursively, and local scalar values replace inherited values. Most arrays are replaced by the higher-priority config. ",e(n.code,{children:"schemas"})," and ",e(n.code,{children:"overrides"})," are combined with higher-priority entries first, so local entries take precedence over inherited entries."]}}),`
+`,e(n.p,{children:`Paths and globs in inherited settings are resolved relative to the extending config's base directory, using Tombi's existing path rules.
+An inheritance chain can follow at most 32 references. One resolution can use at most 256 references in total.`}),`
 `,e(n.h3,{id:"toml-version",className:"group relative heading-with-anchor",children:"toml-version"}),`
 `,e(n.p,{children:"Specifies the TOML version to use if not specified in the schema and comment directive."}),`
 `,e(n.ul,{get children(){return[`

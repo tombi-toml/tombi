@@ -136,6 +136,17 @@
       "_web-DCz9_uPG.js"
     ]
   },
+  "_index-B65jS48Z.js": {
+    "file": "assets/index-B65jS48Z.js",
+    "name": "index",
+    "imports": [
+      "_web-DCz9_uPG.js",
+      "_components-b5RolwDv.js",
+      "_index-CcAEBGL_.js",
+      "_index-Dhcltlfs.js",
+      "_platform-CPzJTEFe.js"
+    ]
+  },
   "_index-CXKsyjYN.js": {
     "file": "assets/index-CXKsyjYN.js",
     "name": "index",
@@ -155,17 +166,6 @@
     "name": "index",
     "imports": [
       "_index-7xQSF2zI.js"
-    ]
-  },
-  "_index-IBc64zVy.js": {
-    "file": "assets/index-IBc64zVy.js",
-    "name": "index",
-    "imports": [
-      "_web-DCz9_uPG.js",
-      "_components-b5RolwDv.js",
-      "_index-CcAEBGL_.js",
-      "_index-Dhcltlfs.js",
-      "_platform-CPzJTEFe.js"
     ]
   },
   "_markers-BJuJKxq2.js": {
@@ -358,7 +358,7 @@
     ]
   },
   "src/routes/docs/configuration.mdx?pick=$css": {
-    "file": "assets/configuration-D4Jcx22k.js",
+    "file": "assets/configuration-expS6cXv.js",
     "name": "configuration",
     "src": "src/routes/docs/configuration.mdx?pick=$css",
     "isEntry": true,
@@ -831,14 +831,14 @@
     ]
   },
   "src/routes/layout.tsx?pick=default&pick=$css": {
-    "file": "assets/layout-D7VnZCcV.js",
+    "file": "assets/layout-8ZoBR1UB.js",
     "name": "layout",
     "src": "src/routes/layout.tsx?pick=default&pick=$css",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_web-DCz9_uPG.js",
-      "_index-IBc64zVy.js",
+      "_index-B65jS48Z.js",
       "_components-b5RolwDv.js",
       "_index-CcAEBGL_.js",
       "_index-7xQSF2zI.js",
@@ -872,7 +872,7 @@
     ]
   },
   "virtual:$vinxi/handler/client": {
-    "file": "assets/client-C4j6AJ-7.js",
+    "file": "assets/client-_77hbTZ-.js",
     "name": "client",
     "src": "virtual:$vinxi/handler/client",
     "isEntry": true,
@@ -881,7 +881,7 @@
       "_PageHeading-Ckngk6DM.js",
       "_preload-helper-TXE1L53l.js",
       "_index-6OQr06v0.js",
-      "_index-IBc64zVy.js",
+      "_index-B65jS48Z.js",
       "_CodeBlock-DcLPlfzH.js",
       "_Highlight-CMhf5ZLw.js",
       "_Table-CZPHGeGB.js",
