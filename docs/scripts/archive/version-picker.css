@@ -84,13 +84,12 @@
   position: relative;
 }
 
-.tombi-version-mobile-trigger,
-.tombi-version-back {
+.tombi-version-mobile-trigger {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: calc(100% - 0.5rem);
-  height: 3.5rem;
+  height: 4rem;
   margin: 0.25rem;
   padding: 0 0.75rem;
   border: 0;
@@ -101,43 +100,44 @@
   cursor: pointer;
 }
 
-.tombi-version-mobile-trigger:hover,
-.tombi-version-back:hover {
+.tombi-version-mobile-trigger:hover {
   background: rgb(255 255 255 / 5%);
+}
+
+.tombi-version-mobile-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  margin-right: -0.75rem;
+  border-radius: 0.25rem;
+}
+
+.tombi-version-mobile-trigger:hover .tombi-version-mobile-chevron,
+.tombi-version-mobile-trigger[aria-expanded="true"] .tombi-version-mobile-chevron {
+  background: rgb(255 255 255 / 10%);
 }
 
 .tombi-version-mobile-trigger svg {
   width: 1rem;
   height: 1rem;
   color: rgb(255 255 255 / 60%);
+  transition: transform 400ms ease-in-out;
 }
 
 .tombi-version-mobile-panel {
-  position: fixed;
-  top: 5rem;
-  right: 0;
-  left: 0;
-  z-index: 61;
-  height: calc(100vh - 5rem);
-  overflow-y: auto;
-  padding: 0 1rem 1rem;
-  background: #080b70;
-  box-shadow: 0 8px 16px #0004;
-  animation: tombi-version-panel-in 180ms ease-out;
-}
-
-@keyframes tombi-version-panel-in {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
+  overflow: hidden;
+  padding-left: 1rem;
+  transition: max-height 400ms linear;
 }
 
 .tombi-version-mobile-panel .tombi-version-option {
   color: white;
   font-size: 1rem;
+  min-height: 3rem;
+  margin: 0.25rem;
+  width: calc(100% - 0.5rem);
 }
 
 .tombi-version-mobile-panel .tombi-version-option:hover,
